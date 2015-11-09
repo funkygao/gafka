@@ -2,13 +2,27 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 
 	"github.com/mitchellh/cli"
 )
 
 func main() {
+	log.SetOutput(ioutil.Discard)
+
 	app := os.Args[0]
+	args := os.Args[1:]
+	for _, arg := range args {
+		if arg == "-v" || arg == "--version" {
+			newArgs := make([]string, len(args)+1)
+			newArgs[0] = "version"
+			copy(newArgs[1:], args)
+			args = newArgs
+			break
+		}
+	}
 	c := cli.NewCLI(app, version)
 	c.Args = os.Args[1:]
 	c.Commands = commands
