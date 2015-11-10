@@ -27,8 +27,11 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 
 	if zone != "" {
 		zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
-		for brokerId, broker := range zkutil.GetBrokers() {
-			this.Ui.Output(fmt.Sprintf("%8s %s", brokerId, broker))
+		for cluster, brokers := range zkutil.GetBrokers() {
+			this.Ui.Output(cluster)
+			for brokerId, broker := range brokers {
+				this.Ui.Output(fmt.Sprintf("\t%8s %s", brokerId, broker))
+			}
 		}
 
 		return
@@ -38,8 +41,11 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	for name, zkAddrs := range cf.Zones {
 		this.Ui.Output(name)
 		zkutil := zk.NewZkUtil(zk.DefaultConfig(zkAddrs))
-		for _, broker := range zkutil.GetBrokers() {
-			this.Ui.Output(fmt.Sprintf("\t%s:%d", broker.Host, broker.Port))
+		for cluster, brokers := range zkutil.GetBrokers() {
+			this.Ui.Output(strings.Repeat(" ", 4) + cluster)
+			for brokerId, broker := range brokers {
+				this.Ui.Output(fmt.Sprintf("\t%8s %s", brokerId, broker))
+			}
 		}
 	}
 

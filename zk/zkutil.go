@@ -86,20 +86,27 @@ func (this *ZkUtil) GetClusters() map[string]string {
 	return r
 }
 
-func (this *ZkUtil) GetBrokers() map[string]*Broker {
-	r := make(map[string]*Broker)
+func (this *ZkUtil) GetBrokers() map[string]map[string]*Broker {
+	r := make(map[string]map[string]*Broker)
 	for cluster, path := range this.GetClusters() {
-		for brokerId, brokerInfo := range this.getChildrenWithData(path + BrokerIdsPath) {
-			var broker Broker
-			if err := json.Unmarshal(brokerInfo, &broker); err != nil {
-				if this.conf.PanicOnError {
-					panic(err)
+		liveBrokers := this.getChildrenWithData(path + BrokerIdsPath)
+		if len(liveBrokers) > 0 {
+			r[cluster] = make(map[string]*Broker)
+			for brokerId, brokerInfo := range liveBrokers {
+				var broker Broker
+				if err := json.Unmarshal(brokerInfo, &broker); err != nil {
+					if this.conf.PanicOnError {
+						panic(err)
+					}
 				}
-			}
-			broker.Cluster = cluster
 
-			r[brokerId] = &broker
+				r[cluster][brokerId] = &broker
+			}
+		} else {
+			// this cluster all brokers down?
+			r[cluster] = nil
 		}
+
 	}
 
 	return r

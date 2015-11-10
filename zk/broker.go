@@ -12,13 +12,11 @@ type Broker struct {
 	Host      string   `json:"host"`
 	Port      int      `json:"port"`
 	Version   int      `json:"version"`
-	Cluster   string   `json:-`
 }
 
 func (b Broker) String() string {
-	return fmt.Sprintf("%s:%d ver:%d uptime:%s cluster:%s",
+	return fmt.Sprintf("%s:%d ver:%d uptime:%s",
 		b.Host, b.Port,
 		b.Version,
-		time.Since(TimestampToTime(b.Timestamp)),
-		b.Cluster)
+		time.Since(TimestampToTime(b.Timestamp)))
 }
