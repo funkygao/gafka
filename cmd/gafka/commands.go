@@ -42,6 +42,12 @@ func init() {
 				Ui: ui,
 			}, nil
 		},
+
+		"peek", func() (cli.Command, error) {
+			return &command.Peek{
+				Ui: ui,
+			}, nil
+		},
 	}
 
 }
