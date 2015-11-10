@@ -7,6 +7,10 @@ kafka clusters management tool in golang
 
   Zone is groups of kafka cluster.
 
+  - zkAddrs
+
+    Zookeeper connection string.
+
 - cluster
 
   Kafka cluster.
