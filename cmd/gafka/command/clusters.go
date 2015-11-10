@@ -42,13 +42,12 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 			}
 		} else {
 			// print all zones all clusters
-			for name, zkAddrs := range cf.Zones {
-				this.Ui.Output(name)
-				zkutil := zk.NewZkUtil(zk.DefaultConfig(zkAddrs))
+			forAllZones(func(zone, zkAddrs string, zkutil *zk.ZkUtil) {
+				this.Ui.Output(zone)
 				for name, path := range zkutil.GetClusters() {
 					this.Ui.Output(fmt.Sprintf("%35s: %s", name, path))
 				}
-			}
+			})
 		}
 
 		return

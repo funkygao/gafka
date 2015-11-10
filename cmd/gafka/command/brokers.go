@@ -32,7 +32,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 
 		zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
 		if cluster != "" {
-			for brokerId, broker := range zkutil.GetBrokersOfCluster(zkutil.ClusterPath(cluster)) {
+			for brokerId, broker := range zkutil.GetBrokersOfCluster(cluster) {
 				this.Ui.Output(fmt.Sprintf("\t%8s %s", brokerId, broker))
 			}
 
@@ -50,16 +50,15 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	}
 
 	// print all brokers on all zones by default
-	for name, zkAddrs := range cf.Zones {
-		this.Ui.Output(name)
-		zkutil := zk.NewZkUtil(zk.DefaultConfig(zkAddrs))
+	forAllZones(func(zone string, zkAddrs string, zkutil *zk.ZkUtil) {
+		this.Ui.Output(zone)
 		for cluster, brokers := range zkutil.GetBrokers() {
 			this.Ui.Output(strings.Repeat(" ", 4) + cluster)
 			for brokerId, broker := range brokers {
 				this.Ui.Output(fmt.Sprintf("\t%8s %s", brokerId, broker))
 			}
 		}
-	}
+	})
 
 	return
 

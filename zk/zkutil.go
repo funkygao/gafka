@@ -1,11 +1,11 @@
 package zk
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/funkygao/go-simplejson"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
@@ -67,25 +67,25 @@ func (this *ZkUtil) getChildrenWithData(path string) map[string][]byte {
 
 	r := make(map[string][]byte)
 	for _, name := range children {
-		path, _, err := this.conn.Get(path + zkPathSeperator + name)
-		if err != nil {
-			panic(err)
+		path := this.getData(path + zkPathSeperator + name)
+		if path != nil {
+			r[name] = path
 		}
-
-		r[name] = path
 	}
 	return r
 }
 
-func (this *ZkUtil) ClusterPath(name string) string {
-	this.connectIfNeccessary()
-
-	path, _, err := this.conn.Get(clusterRoot + zkPathSeperator + name)
+func (this *ZkUtil) getData(path string) []byte {
+	data, _, err := this.conn.Get(path)
 	if err != nil {
-		panic(err)
+		if this.conf.PanicOnError {
+			panic(err)
+		} else {
+			return nil
+		}
 	}
 
-	return string(path)
+	return data
 }
 
 func (this *ZkUtil) GetClusters() map[string]string {
@@ -97,15 +97,61 @@ func (this *ZkUtil) GetClusters() map[string]string {
 	return r
 }
 
-func (this *ZkUtil) GetBrokersOfCluster(clusterZkPath string) map[string]*Broker {
+func (this *ZkUtil) clusterPath(name string) string {
+	this.connectIfNeccessary()
+
+	path, _, err := this.conn.Get(clusterRoot + zkPathSeperator + name)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(path)
+}
+
+// GetControllers returns {cluster: controllerBroker}
+func (this *ZkUtil) GetControllers() map[string]*Controller {
+	this.connectIfNeccessary()
+
+	r := make(map[string]*Controller)
+	for cluster, path := range this.GetClusters() {
+		controllerData := this.getData(path + ControllerPath)
+		js, err := simplejson.NewJson(controllerData)
+		if err != nil {
+			if this.conf.PanicOnError {
+				panic(err)
+			} else {
+				continue
+			}
+		}
+
+		brokerId := js.Get("brokerid").MustInt()
+		broker := this.clusterBrokerIdInfo(path, brokerId)
+
+		epochData := this.getData(path + ControllerEpochPath)
+		controller := Controller{
+			Broker:   broker,
+			BrokerId: brokerId,
+			Epoch:    string(epochData),
+		}
+
+		r[cluster] = &controller
+
+	}
+	return r
+}
+
+func (this *ZkUtil) clusterBrokerIdInfo(clusterZkPath string, id int) (b *Broker) {
+	zkData := this.getData(clusterZkPath + zkPathSeperator + BrokerIdsPath + zkPathSeperator + string(id))
+	b.from(zkData)
+	return
+}
+
+func (this *ZkUtil) GetBrokersOfCluster(clusterName string) map[string]*Broker {
+	clusterZkPath := this.clusterPath(clusterName)
 	r := make(map[string]*Broker)
 	for brokerId, brokerInfo := range this.getChildrenWithData(clusterZkPath + BrokerIdsPath) {
 		var broker Broker
-		if err := json.Unmarshal(brokerInfo, &broker); err != nil {
-			if this.conf.PanicOnError {
-				panic(err)
-			}
-		}
+		broker.from(brokerInfo)
 
 		r[brokerId] = &broker
 	}
@@ -113,6 +159,7 @@ func (this *ZkUtil) GetBrokersOfCluster(clusterZkPath string) map[string]*Broker
 	return r
 }
 
+// GetBrokers returns {cluster: {brokerId: broker}}
 func (this *ZkUtil) GetBrokers() map[string]map[string]*Broker {
 	r := make(map[string]map[string]*Broker)
 	for cluster, path := range this.GetClusters() {
@@ -121,11 +168,7 @@ func (this *ZkUtil) GetBrokers() map[string]map[string]*Broker {
 			r[cluster] = make(map[string]*Broker)
 			for brokerId, brokerInfo := range liveBrokers {
 				var broker Broker
-				if err := json.Unmarshal(brokerInfo, &broker); err != nil {
-					if this.conf.PanicOnError {
-						panic(err)
-					}
-				}
+				broker.from(brokerInfo)
 
 				r[cluster][brokerId] = &broker
 			}

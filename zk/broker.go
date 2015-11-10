@@ -1,6 +1,7 @@
 package zk
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -19,4 +20,10 @@ func (b Broker) String() string {
 		b.Host, b.Port,
 		b.Version,
 		time.Since(TimestampToTime(b.Timestamp)))
+}
+
+func (b *Broker) from(zkData []byte) {
+	if err := json.Unmarshal(zkData, b); err != nil {
+		panic(err)
+	}
 }
