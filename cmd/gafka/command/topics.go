@@ -10,16 +10,16 @@ type Topics struct {
 	Ui cli.Ui
 }
 
-func (t *Topics) Run(args []string) (exitCode int) {
+func (this *Topics) Run(args []string) (exitCode int) {
 	return
 
 }
 
-func (t *Topics) Synopsis() string {
+func (*Topics) Synopsis() string {
 	return "Print available brokers from Zookeeper."
 }
 
-func (t *Topics) Help() string {
+func (*Topics) Help() string {
 	help := `
 Usage: gafka brokers
 `

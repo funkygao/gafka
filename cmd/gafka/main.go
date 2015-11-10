@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/mitchellh/cli"
+	"github.com/funkygao/gocli"
 )
 
 func main() {
