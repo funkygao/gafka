@@ -13,13 +13,15 @@ type Topics struct {
 
 func (this *Topics) Run(args []string) (exitCode int) {
 	var (
-		zone  string
-		topic string
+		zone    string
+		cluster string
+		topic   string
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&topic, "t", "", "")
+	cmdFlags.StringVar(&cluster, "c", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -28,6 +30,8 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		this.Ui.Error("empty zone not allowed")
 		return 2
 	}
+
+	ensureZoneValid(zone)
 
 	return
 

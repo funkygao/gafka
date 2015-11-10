@@ -66,10 +66,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 
 func (this *Clusters) validate(addMode bool, name, path string, zone string) bool {
 	if zone != "" {
-		if _, present := cf.Zones[zone]; !present {
-			this.Ui.Error(fmt.Sprintf("invalid zone: %s", zone))
-			return false
-		}
+		ensureZoneValid(zone)
 	}
 
 	if addMode {

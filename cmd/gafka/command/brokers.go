@@ -28,6 +28,8 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	}
 
 	if zone != "" {
+		ensureZoneValid(zone)
+
 		zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
 		if cluster != "" {
 			for brokerId, broker := range zkutil.GetBrokersOfCluster(zkutil.ClusterPath(cluster)) {
