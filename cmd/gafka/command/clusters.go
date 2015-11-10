@@ -34,15 +34,28 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
 	if !addMode {
-		for name, path := range zkutil.GetClusters() {
-			this.Ui.Output(fmt.Sprintf("%20s: %s", name, path))
+		if zone != "" {
+			zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
+			for name, path := range zkutil.GetClusters() {
+				this.Ui.Output(fmt.Sprintf("%20s: %s", name, path))
+			}
+		} else {
+			// print all zones all clusters
+			for name, zkAddrs := range cf.Zones {
+				this.Ui.Output(name)
+				zkutil := zk.NewZkUtil(zk.DefaultConfig(zkAddrs))
+				for name, path := range zkutil.GetClusters() {
+					this.Ui.Output(fmt.Sprintf("%20s: %s", name, path))
+				}
+			}
 		}
+
 		return
 	}
 
 	// add cluster
+	zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
 	if err := zkutil.AddCluster(clusterName, clusterPath); err != nil {
 		this.Ui.Error(err.Error())
 		return 1
