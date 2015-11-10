@@ -3,7 +3,7 @@ package command
 import (
 	"strings"
 
-	"github.com/mitchellh/cli"
+	"github.com/funkygao/gocli"
 )
 
 type Brokers struct {
