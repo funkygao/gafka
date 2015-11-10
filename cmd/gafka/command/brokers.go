@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
@@ -29,11 +28,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	if zone != "" {
 		zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
 		for brokerId, broker := range zkutil.GetBrokers() {
-			this.Ui.Output(fmt.Sprintf("%8s %s:%d ver:%d %s %s", brokerId,
-				broker.Host, broker.Port, broker.Version,
-				time.Since(zkutil.TimestampToTime(broker.Timestamp)),
-				broker.Cluster))
-
+			this.Ui.Output(fmt.Sprintf("%8s %s", brokerId, broker))
 		}
 
 		return

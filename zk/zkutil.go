@@ -19,7 +19,7 @@ func NewZkUtil(config *Config) *ZkUtil {
 	return &ZkUtil{conf: config}
 }
 
-func (this *ZkUtil) TimestampToTime(ts string) time.Time {
+func TimestampToTime(ts string) time.Time {
 	sec, _ := strconv.ParseInt(ts, 10, 64)
 	if sec > 143761237100 {
 		sec /= 1000
