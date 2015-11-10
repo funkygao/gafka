@@ -50,7 +50,7 @@ func (this *ZkUtil) getChildrenWithData(path string) map[string][]byte {
 	this.connectIfNeccessary()
 
 	children, _, err := this.conn.Children(path)
-	if err != nil {
+	if err != nil && err != zk.ErrNoNode {
 		panic(path + ":" + err.Error())
 	}
 
@@ -91,4 +91,8 @@ func (this *ZkUtil) GetBrokers() map[string]*Broker {
 	}
 
 	return r
+}
+
+func (this *ZkUtil) GetTopics() {
+
 }
