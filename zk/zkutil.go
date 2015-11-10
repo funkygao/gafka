@@ -2,7 +2,9 @@ package zk
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/samuel/go-zookeeper/zk"
 )
@@ -15,6 +17,15 @@ type ZkUtil struct {
 
 func NewZkUtil(config *Config) *ZkUtil {
 	return &ZkUtil{conf: config}
+}
+
+func (this *ZkUtil) TimestampToTime(ts string) time.Time {
+	sec, _ := strconv.ParseInt(ts, 10, 64)
+	if sec > 143761237100 {
+		sec /= 1000
+	}
+
+	return time.Unix(sec, 0)
 }
 
 func (this *ZkUtil) connectIfNeccessary() {
@@ -77,7 +88,7 @@ func (this *ZkUtil) GetClusters() map[string]string {
 
 func (this *ZkUtil) GetBrokers() map[string]*Broker {
 	r := make(map[string]*Broker)
-	for _, path := range this.GetClusters() {
+	for cluster, path := range this.GetClusters() {
 		for brokerId, brokerInfo := range this.getChildrenWithData(path + BrokerIdsPath) {
 			var broker Broker
 			if err := json.Unmarshal(brokerInfo, &broker); err != nil {
@@ -85,6 +96,7 @@ func (this *ZkUtil) GetBrokers() map[string]*Broker {
 					panic(err)
 				}
 			}
+			broker.Cluster = cluster
 
 			r[brokerId] = &broker
 		}

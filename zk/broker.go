@@ -7,4 +7,5 @@ type Broker struct {
 	Host      string   `json:"host"`
 	Port      int      `json:"port"`
 	Version   int      `json:"version"`
+	Cluster   string   `json:-`
 }
