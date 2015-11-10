@@ -77,10 +77,37 @@ func (this *ZkUtil) getChildrenWithData(path string) map[string][]byte {
 	return r
 }
 
+func (this *ZkUtil) ClusterPath(name string) string {
+	this.connectIfNeccessary()
+
+	path, _, err := this.conn.Get(clusterRoot + zkPathSeperator + name)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(path)
+}
+
 func (this *ZkUtil) GetClusters() map[string]string {
 	r := make(map[string]string)
 	for name, path := range this.getChildrenWithData(clusterRoot) {
 		r[name] = string(path)
+	}
+
+	return r
+}
+
+func (this *ZkUtil) GetBrokersOfCluster(clusterZkPath string) map[string]*Broker {
+	r := make(map[string]*Broker)
+	for brokerId, brokerInfo := range this.getChildrenWithData(clusterZkPath + BrokerIdsPath) {
+		var broker Broker
+		if err := json.Unmarshal(brokerInfo, &broker); err != nil {
+			if this.conf.PanicOnError {
+				panic(err)
+			}
+		}
+
+		r[brokerId] = &broker
 	}
 
 	return r

@@ -96,16 +96,16 @@ Usage: gafka clusters [options]
 
 Options:
 
-  -z
+  -z zone
   	Only print kafka clusters within this zone.
 
   -a
   	Add a new kafka cluster into a zone.
 
-  -n
+  -n cluster name
   	The new kafka cluster name.
 
-  -p
+  -p cluster zk path
   	The new kafka cluser chroot path in Zookeeper.
 
 `

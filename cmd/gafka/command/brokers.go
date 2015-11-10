@@ -16,17 +16,27 @@ type Brokers struct {
 // TODO dedupe
 func (this *Brokers) Run(args []string) (exitCode int) {
 	var (
-		zone string
+		zone    string
+		cluster string
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.StringVar(&cluster, "c", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	if zone != "" {
 		zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
+		if cluster != "" {
+			for brokerId, broker := range zkutil.GetBrokersOfCluster(zkutil.ClusterPath(cluster)) {
+				this.Ui.Output(fmt.Sprintf("\t%8s %s", brokerId, broker))
+			}
+
+			return
+		}
+
 		for cluster, brokers := range zkutil.GetBrokers() {
 			this.Ui.Output(cluster)
 			for brokerId, broker := range brokers {
@@ -54,7 +64,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 }
 
 func (*Brokers) Synopsis() string {
-	return "Print available brokers from Zookeeper."
+	return "Print available brokers from Zookeeper"
 }
 
 func (*Brokers) Help() string {
@@ -65,8 +75,12 @@ Usage: gafka brokers [options]
 
 Options:
 
-  -z
+  -z zone
   	Only print brokers within a zone.
+
+  -c cluster name
+  	Only print brokers of this cluster.
+
 `
 	return strings.TrimSpace(help)
 }
