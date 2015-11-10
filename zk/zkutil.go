@@ -1,9 +1,7 @@
 package zk
 
 import (
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/funkygao/go-simplejson"
 	"github.com/samuel/go-zookeeper/zk"
@@ -17,15 +15,6 @@ type ZkUtil struct {
 
 func NewZkUtil(config *Config) *ZkUtil {
 	return &ZkUtil{conf: config}
-}
-
-func TimestampToTime(ts string) time.Time {
-	sec, _ := strconv.ParseInt(ts, 10, 64)
-	if sec > 143761237100 {
-		sec /= 1000
-	}
-
-	return time.Unix(sec, 0)
 }
 
 func (this *ZkUtil) connectIfNeccessary() {
@@ -97,7 +86,7 @@ func (this *ZkUtil) GetClusters() map[string]string {
 	return r
 }
 
-func (this *ZkUtil) clusterPath(name string) string {
+func (this *ZkUtil) ClusterPath(name string) string {
 	this.connectIfNeccessary()
 
 	path, _, err := this.conn.Get(clusterRoot + zkPathSeperator + name)
@@ -147,7 +136,7 @@ func (this *ZkUtil) clusterBrokerIdInfo(clusterZkPath string, id int) (b *Broker
 }
 
 func (this *ZkUtil) GetBrokersOfCluster(clusterName string) map[string]*Broker {
-	clusterZkPath := this.clusterPath(clusterName)
+	clusterZkPath := this.ClusterPath(clusterName)
 	r := make(map[string]*Broker)
 	for brokerId, brokerInfo := range this.getChildrenWithData(clusterZkPath + BrokerIdsPath) {
 		var broker Broker
