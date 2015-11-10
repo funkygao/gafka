@@ -4,6 +4,7 @@ import (
 	"flag"
 	"strings"
 
+	"github.com/Shopify/sarama"
 	"github.com/funkygao/gocli"
 )
 
@@ -32,6 +33,23 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	}
 
 	ensureZoneValid(zone)
+
+	zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
+	if cluster != "" {
+		broker0 := zkutil.GetBrokersOfCluster(cluster)["0"]
+		b := sarama.NewBroker(broker0.Addr())
+		b.GetMetadata(request)
+
+		return
+	}
+
+	// cluster provided
+	for cluster, brokers := range zkutil.GetBrokers() {
+		this.Ui.Output(cluster)
+		for brokerId, broker := range brokers {
+			this.Ui.Output(fmt.Sprintf("\t%8s %s", brokerId, broker))
+		}
+	}
 
 	return
 

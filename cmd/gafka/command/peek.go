@@ -35,6 +35,9 @@ func (this *Peek) Run(args []string) (exitCode int) {
 
 	sarama.NewConsumer(addrs, sarama.NewConfig())
 
+	b := sarama.NewBroker(addr)
+	b.GetMetadata(request)
+
 	return
 }
 

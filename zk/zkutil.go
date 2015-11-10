@@ -77,6 +77,15 @@ func (this *ZkUtil) getData(path string) []byte {
 	return data
 }
 
+func (this *ZkUtil) GetTopics(cluster string) []string {
+	r := make([]string, 0)
+	for name, _ := range this.getChildrenWithData(clusterRoot + BrokerTopicsPath) {
+		r = append(r, name)
+	}
+	return r
+
+}
+
 func (this *ZkUtil) GetClusters() map[string]string {
 	r := make(map[string]string)
 	for name, path := range this.getChildrenWithData(clusterRoot) {

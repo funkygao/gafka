@@ -39,6 +39,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 			return
 		}
 
+		// cluster provided
 		for cluster, brokers := range zkutil.GetBrokers() {
 			this.Ui.Output(cluster)
 			for brokerId, broker := range brokers {
