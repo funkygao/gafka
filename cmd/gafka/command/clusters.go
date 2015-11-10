@@ -38,7 +38,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		if zone != "" {
 			zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
 			for name, path := range zkutil.GetClusters() {
-				this.Ui.Output(fmt.Sprintf("%20s: %s", name, path))
+				this.Ui.Output(fmt.Sprintf("%35s: %s", name, path))
 			}
 		} else {
 			// print all zones all clusters
@@ -46,7 +46,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 				this.Ui.Output(name)
 				zkutil := zk.NewZkUtil(zk.DefaultConfig(zkAddrs))
 				for name, path := range zkutil.GetClusters() {
-					this.Ui.Output(fmt.Sprintf("%20s: %s", name, path))
+					this.Ui.Output(fmt.Sprintf("%35s: %s", name, path))
 				}
 			}
 		}
