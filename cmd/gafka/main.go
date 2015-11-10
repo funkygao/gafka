@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/funkygao/gafka/ver"
 	"github.com/funkygao/gocli"
 )
 
@@ -23,7 +24,7 @@ func main() {
 			break
 		}
 	}
-	c := cli.NewCLI(app, version)
+	c := cli.NewCLI(app, ver.Version+"-"+ver.BuildId)
 	c.Args = os.Args[1:]
 	c.Commands = commands
 	c.HelpFunc = cli.BasicHelpFunc(app)
