@@ -24,3 +24,5 @@ _testmain.go
 *.prof
 
 cmd/gafka/gafka
+cmd/laborer/laborer
+cmd/pubsub/pubsub

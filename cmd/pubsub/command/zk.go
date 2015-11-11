@@ -41,6 +41,7 @@ const (
 )
 
 var (
+	emptyData     = []byte("")
 	ErrDupConnect = errors.New("dup connect")
 )
 
@@ -206,7 +207,11 @@ func (this *Zk) Bind(binding map[string]string) error {
 		return err
 	}
 
-	return this.setNode(this.bindPath(), data)
+	err = this.setNode(this.bindPath(), data)
+	if err != nil {
+		return err
+	}
+	return this.setNode(BindChange, emptyData)
 }
 
 func (this *Zk) Binding() (bindings map[string]string, err error) {

@@ -17,12 +17,12 @@ func main() {
 	log4go.AddFilter("stdout", level, log4go.NewConsoleLogWriter())
 
 	zk := command.NewZk(command.DefaultConfig("", command.ZkAddr))
-	_, _, events, err := zk.Conn().GetW(command.BindChange)
-	if err != nil {
-		panic(err)
-	}
-
 	for {
+		_, _, events, err := zk.Conn().GetW(command.BindChange)
+		if err != nil {
+			panic(err)
+		}
+
 		select {
 		case <-time.After(time.Minute):
 			log4go.Debug("no binding change during the last 1m")
