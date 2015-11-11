@@ -46,7 +46,8 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(config.ZonePath(zone)))
 	if cluster != "" {
-		broker0 := zkzone.GetBrokersOfCluster(cluster)["0"]
+		zkcluster := zkzone.NewCluster(cluster)
+		broker0 := zkcluster.Brokers()["0"]
 		kc, err := sarama.NewClient([]string{broker0.Addr()}, sarama.NewConfig())
 		must(err)
 

@@ -35,39 +35,33 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 
 		zkzone := zk.NewZkZone(zk.DefaultConfig(config.ZonePath(zone)))
 		if cluster != "" {
-			this.printBrokers(zkzone.GetBrokersOfCluster(cluster))
+			zkcluster := zkzone.NewCluster(cluster)
+			this.printBrokers(zkcluster.Brokers())
 
 			return
 		}
 
-		this.displayZonebrokers(zone, zkzone)
+		this.displayZoneBrokers(zone, zkzone)
 
 		return
 	}
 
 	// print all brokers on all zones by default
 	forAllZones(func(zone string, zkzone *zk.ZkZone) {
-		this.displayZonebrokers(zone, zkzone)
+		this.displayZoneBrokers(zone, zkzone)
 	})
 
 	return
 
 }
 
-func (this *Brokers) displayZonebrokers(zone string, zkzone *zk.ZkZone) {
+func (this *Brokers) displayZoneBrokers(zone string, zkzone *zk.ZkZone) {
 	this.Ui.Output(zone)
 
-	// sort by cluster name
-	brokersOfClusters := zkzone.GetBrokers()
-	sortedClusters := make([]string, 0, len(brokersOfClusters))
-	for cluster, _ := range brokersOfClusters {
-		sortedClusters = append(sortedClusters, cluster)
-	}
-	sort.Strings(sortedClusters)
-	for _, cluster := range sortedClusters {
+	zkzone.WithinBrokers(func(cluster string, brokers map[string]*zk.Broker) {
 		this.Ui.Output(strings.Repeat(" ", 4) + cluster)
-		this.printBrokers(brokersOfClusters[cluster])
-	}
+		this.printBrokers(brokers)
+	})
 }
 
 func (this *Brokers) printBrokers(brokers map[string]*zk.Broker) {

@@ -2,7 +2,6 @@ package zk
 
 import (
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -30,11 +29,11 @@ func NewZkZone(config *Config) *ZkZone {
 	}
 }
 
-func (this *ZkZone) NewCluster(name string) *ZkCluster {
+func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
 	return &ZkCluster{
 		zone: this,
-		name: name,
-		path: this.clusterPath(name),
+		name: cluster,
+		path: this.clusterPath(cluster),
 	}
 }
 
@@ -141,6 +140,7 @@ func (this *ZkZone) getChildrenWithData(path string) map[string][]byte {
 }
 
 func (this *ZkZone) getData(path string) (data []byte, err error) {
+	log.Debug("get data: %s", path)
 	data, _, err = this.conn.Get(path)
 
 	return
@@ -208,7 +208,8 @@ func (this *ZkZone) controllers() map[string]*Controller {
 		}
 
 		brokerId := js.Get("brokerid").MustInt()
-		broker := this.clusterBrokerIdInfo(path, brokerId)
+		zkcluster := this.NewCluster(cluster)
+		broker := zkcluster.Broker(brokerId)
 
 		epochData, _ := this.getData(path + ControllerEpochPath)
 		controller := &Controller{
@@ -234,30 +235,8 @@ func (this *ZkZone) WithinControllers(fn func(cluster string, controller *Contro
 	}
 }
 
-func (this *ZkZone) clusterBrokerIdInfo(clusterZkPath string, id int) (b *Broker) {
-	idStr := strconv.Itoa(id)
-	zkData, _ := this.getData(clusterZkPath + BrokerIdsPath +
-		zkPathSeperator + idStr)
-	b = newBroker(idStr)
-	b.from(zkData)
-	return
-}
-
-func (this *ZkZone) GetBrokersOfCluster(clusterName string) map[string]*Broker {
-	clusterZkPath := this.clusterPath(clusterName)
-	r := make(map[string]*Broker)
-	for brokerId, brokerInfo := range this.getChildrenWithData(clusterZkPath + BrokerIdsPath) {
-		broker := newBroker(brokerId)
-		broker.from(brokerInfo)
-
-		r[brokerId] = broker
-	}
-
-	return r
-}
-
 // GetBrokers returns {cluster: {brokerId: broker}}
-func (this *ZkZone) GetBrokers() map[string]map[string]*Broker {
+func (this *ZkZone) brokers() map[string]map[string]*Broker {
 	r := make(map[string]map[string]*Broker)
 	for cluster, path := range this.clusters() {
 		liveBrokers := this.getChildrenWithData(path + BrokerIdsPath)
@@ -273,8 +252,20 @@ func (this *ZkZone) GetBrokers() map[string]map[string]*Broker {
 			// this cluster all brokers down?
 			r[cluster] = nil
 		}
-
 	}
 
 	return r
+}
+
+func (this *ZkZone) WithinBrokers(fn func(cluster string, brokers map[string]*Broker)) {
+	// sort by cluster name
+	brokersOfClusters := this.brokers()
+	sortedClusters := make([]string, 0, len(brokersOfClusters))
+	for cluster, _ := range brokersOfClusters {
+		sortedClusters = append(sortedClusters, cluster)
+	}
+	sort.Strings(sortedClusters)
+	for _, cluster := range sortedClusters {
+		fn(cluster, brokersOfClusters[cluster])
+	}
 }
