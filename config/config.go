@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"sort"
 
 	conf "github.com/funkygao/jsconf"
 )
@@ -22,6 +23,17 @@ func (c *Config) ZkAddrs(zone string) (string, error) {
 	}
 
 	return "", ErrInvalidZone
+}
+
+func (c *Config) SortedZones() []string {
+	zones := make([]string, len(c.Zones))
+	idx := 0
+	for name, _ := range c.Zones {
+		zones[idx] = name
+		idx++
+	}
+	sort.Strings(zones)
+	return zones
 }
 
 func LoadConfig(fn string) *Config {

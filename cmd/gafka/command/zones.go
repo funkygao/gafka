@@ -26,8 +26,8 @@ func (this *Zones) Run(args []string) (exitCode int) {
 	}
 
 	// print all by default
-	for name, zkAddrs := range cf.Zones {
-		this.Ui.Output(fmt.Sprintf("%8s: %s", name, zkAddrs))
+	for _, zone := range cf.SortedZones() {
+		this.Ui.Output(fmt.Sprintf("%8s: %s", zone, cf.Zones[zone]))
 	}
 
 	return
