@@ -22,7 +22,7 @@ func (this *Outbox) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&id, "id", "", "")
 	cmdFlags.StringVar(&topic, "add", "", "")
-	cmdFlags.BoolVar(&list, "list", true, "")
+	cmdFlags.BoolVar(&list, "list", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
