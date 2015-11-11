@@ -9,7 +9,6 @@ type Config struct {
 	ZkAddrs      string
 	Timeout      time.Duration
 	PanicOnError bool
-	LogLevel     string
 }
 
 func DefaultConfig(name, addrs string) *Config {
@@ -18,6 +17,5 @@ func DefaultConfig(name, addrs string) *Config {
 		ZkAddrs:      addrs,
 		Timeout:      time.Minute,
 		PanicOnError: true,
-		LogLevel:     "info",
 	}
 }
