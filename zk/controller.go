@@ -11,5 +11,5 @@ type Controller struct {
 }
 
 func (c *Controller) String() string {
-	return fmt.Sprintf("%8d %s epoch:%s", c.BrokerId, c.Broker.String(), c.Epoch)
+	return fmt.Sprintf("%8d epoch:%s", c.BrokerId, c.Epoch, c.Broker.String())
 }
