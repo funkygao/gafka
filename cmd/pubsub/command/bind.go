@@ -92,6 +92,10 @@ Options:
   -del
   	Unbind a binding(TODO).
 
+  -pause TODO
+
+  -resume TODO
+
   -from appId:outbox
 
   -to inbox

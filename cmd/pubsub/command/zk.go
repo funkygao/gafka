@@ -36,6 +36,7 @@ import (
 
 const (
 	PubsubRoot = "/_pubsub"
+	BindRoot   = PubsubRoot + "/bind"
 	BindChange = PubsubRoot + "/bind_change"
 	ZkAddr     = "localhost:2181" // TODO
 )

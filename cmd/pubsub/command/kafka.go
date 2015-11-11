@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	kafkaBrokerList = []string{"localhost:9092"} // TODO
+	KafkaBrokerList = []string{"localhost:9092"} // TODO
 )
 
 func KafkaCreateTopic(topic string) error {
