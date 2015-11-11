@@ -1,7 +1,7 @@
 package config
 
 import (
-	conf "github.com/funkygao/jsconf"
+	"github.com/funkygao/jsconf"
 )
 
 type zone struct {
@@ -9,7 +9,7 @@ type zone struct {
 	zk   string
 }
 
-func (this *zone) loadConfig(section *conf.Conf) {
+func (this *zone) loadConfig(section *ljconf.Conf) {
 	this.name = section.String("name", "")
 	this.zk = section.String("zk", "")
 	if this.name == "" || this.zk == "" {

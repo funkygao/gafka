@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/funkygao/gafka/config"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 )
@@ -37,13 +38,13 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 
 	if !addMode {
 		if zone != "" {
-			zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
-			this.printClusters(zkutil)
+			zkzone := zk.NewZkZone(zk.DefaultConfig(config.ZonePath(zone)))
+			this.printClusters(zkzone)
 		} else {
 			// print all zones all clusters
-			forAllZones(func(zone string, zkutil *zk.ZkUtil) {
+			forAllZones(func(zone string, zkzone *zk.ZkZone) {
 				this.Ui.Output(zone)
-				this.printClusters(zkutil)
+				this.printClusters(zkzone)
 			})
 		}
 
@@ -51,8 +52,8 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	}
 
 	// add cluster
-	zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
-	if err := zkutil.AddCluster(clusterName, clusterPath); err != nil {
+	zkzone := zk.NewZkZone(zk.DefaultConfig(config.ZonePath(zone)))
+	if err := zkzone.RegisterCluster(clusterName, clusterPath); err != nil {
 		this.Ui.Error(err.Error())
 		return 1
 	}
@@ -60,8 +61,8 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Clusters) printClusters(zkutil *zk.ZkUtil) {
-	zkutil.WithinClusters(func(name, path string) {
+func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
+	zkzone.WithinClusters(func(name, path string) {
 		this.Ui.Output(fmt.Sprintf("%35s: %s", name, path))
 	})
 

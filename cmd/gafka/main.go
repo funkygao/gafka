@@ -6,12 +6,15 @@ import (
 	"log"
 	"os"
 
+	"github.com/funkygao/gafka/config"
 	"github.com/funkygao/gafka/ver"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/log4go"
 )
 
 func main() {
-	log.SetOutput(ioutil.Discard)
+	config.LoadConfig("/etc/gafka.cf")
+	setupLogging()
 
 	app := os.Args[0]
 	args := os.Args[1:]
@@ -36,4 +39,35 @@ func main() {
 	}
 
 	os.Exit(exitCode)
+}
+
+func setupLogging() {
+	log.SetOutput(ioutil.Discard)
+
+	level := log4go.DEBUG
+	switch config.LogLevel() {
+	case "info":
+		level = log4go.INFO
+
+	case "warn":
+		level = log4go.WARNING
+
+	case "error":
+		level = log4go.ERROR
+
+	case "debug":
+		level = log4go.DEBUG
+
+	case "trace":
+		level = log4go.TRACE
+
+	case "alarm":
+		level = log4go.ALARM
+	}
+
+	for _, filter := range log4go.Global {
+		filter.Level = level
+	}
+
+	log4go.AddFilter("stdout", level, log4go.NewConsoleLogWriter())
 }

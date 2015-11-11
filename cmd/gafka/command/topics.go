@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/config"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 )
@@ -43,9 +44,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		}
 	}
 
-	zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(config.ZonePath(zone)))
 	if cluster != "" {
-		broker0 := zkutil.GetBrokersOfCluster(cluster)["0"]
+		broker0 := zkzone.GetBrokersOfCluster(cluster)["0"]
 		kc, err := sarama.NewClient([]string{broker0.Addr()}, sarama.NewConfig())
 		must(err)
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/funkygao/gafka/config"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
@@ -28,23 +29,23 @@ func (this *Controllers) Run(args []string) (exitCode int) {
 	}
 
 	if zone == "" {
-		forAllZones(func(zone string, zkutil *zk.ZkUtil) {
-			this.printControllers(zone, zkutil)
+		forAllZones(func(zone string, zkzone *zk.ZkZone) {
+			this.printControllers(zone, zkzone)
 		})
 
 		return
 	}
 
-	zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
-	this.printControllers(zone, zkutil)
+	zkzone := zk.NewZkZone(zk.DefaultConfig(config.ZonePath(zone)))
+	this.printControllers(zone, zkzone)
 
 	return
 }
 
 // Print all controllers of all clusters within a zone.
-func (this *Controllers) printControllers(zone string, zkutil *zk.ZkUtil) {
+func (this *Controllers) printControllers(zone string, zkzone *zk.ZkZone) {
 	this.Ui.Output(zone)
-	zkutil.WithinControllers(func(cluster string, controller *zk.Controller) {
+	zkzone.WithinControllers(func(cluster string, controller *zk.Controller) {
 		this.Ui.Output(strings.Repeat(" ", 4) + cluster)
 		if controller == nil {
 			this.Ui.Output(fmt.Sprintf("\t%s", color.Red("empty")))

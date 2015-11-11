@@ -3,19 +3,18 @@ package command
 import (
 	"sort"
 
+	"github.com/funkygao/gafka/config"
 	"github.com/funkygao/gafka/zk"
 )
 
 func ensureZoneValid(zone string) {
-	if _, present := cf.Zones[zone]; !present {
-		panic("invalid zone: " + zone)
-	}
+	config.ZonePath(zone) // will panic if zone not found
 }
 
-func forAllZones(fn func(zone string, zkutil *zk.ZkUtil)) {
-	for _, zone := range cf.SortedZones() {
-		zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
-		fn(zone, zkutil)
+func forAllZones(fn func(zone string, zkzone *zk.ZkZone)) {
+	for _, zone := range config.SortedZones() {
+		zkzone := zk.NewZkZone(zk.DefaultConfig(config.ZonePath(zone)))
+		fn(zone, zkzone)
 	}
 }
 

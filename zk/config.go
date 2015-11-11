@@ -5,15 +5,17 @@ import (
 )
 
 type Config struct {
-	Addrs        string
+	ZkAddrs      string
 	Timeout      time.Duration
 	PanicOnError bool
+	LogLevel     string
 }
 
 func DefaultConfig(addrs string) *Config {
 	return &Config{
-		Addrs:        addrs,
+		ZkAddrs:      addrs,
 		Timeout:      time.Minute,
 		PanicOnError: true,
+		LogLevel:     "info",
 	}
 }

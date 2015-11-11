@@ -7,8 +7,9 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	cf := LoadConfig("../etc/gafka.cf")
-	t.Logf("%+v", cf)
-	assert.Equal(t, 3, len(cf.Zones))
+	LoadConfig("../etc/gafka.cf")
+	t.Logf("%+v", conf)
+	assert.Equal(t, 3, len(conf.zones))
+	assert.Equal(t, "debug", conf.logLevel)
 
 }

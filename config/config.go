@@ -5,44 +5,70 @@ import (
 	"fmt"
 	"sort"
 
-	conf "github.com/funkygao/jsconf"
+	jsconf "github.com/funkygao/jsconf"
 )
 
 var (
 	ErrInvalidZone = errors.New("Invalid zone")
 )
 
-type Config struct {
-	KafkaHome string
-	Zones     map[string]string // name:zkConn
+func ensureLogLoaded() {
+	if conf == nil {
+		panic("call LoadConfig before this")
+	}
 }
 
-func (c *Config) ZkAddrs(zone string) (string, error) {
-	if zkAddrs, present := c.Zones[zone]; present {
-		return zkAddrs, nil
+func LogLevel() string {
+	ensureLogLoaded()
+	return conf.logLevel
+}
+
+func Zones() map[string]string {
+	ensureLogLoaded()
+	return conf.zones
+}
+
+func SortedZones() []string {
+	ensureLogLoaded()
+	return conf.sortedZones()
+}
+
+func ZonePath(zone string) (zkAddrs string) {
+	ensureLogLoaded()
+	var present bool
+	if zkAddrs, present = conf.zones[zone]; present {
+		return
 	}
 
-	return "", ErrInvalidZone
+	// should never happen
+	panic(zone + " undefined")
 }
 
-func (c *Config) SortedZones() []string {
-	sortedZones := make([]string, 0, len(c.Zones))
-	for name, _ := range c.Zones {
+type config struct {
+	kafkaHome string
+	logLevel  string
+	zones     map[string]string // name:zkConn
+}
+
+func (c *config) sortedZones() []string {
+	sortedZones := make([]string, 0, len(c.zones))
+	for name, _ := range c.zones {
 		sortedZones = append(sortedZones, name)
 	}
 	sort.Strings(sortedZones)
 	return sortedZones
 }
 
-func LoadConfig(fn string) *Config {
-	cf, err := conf.Load(fn)
+func LoadConfig(fn string) {
+	cf, err := jsconf.Load(fn)
 	if err != nil {
 		panic(err)
 	}
 
-	this := new(Config)
-	this.KafkaHome = cf.String("kafka_home", "")
-	this.Zones = make(map[string]string)
+	conf = new(config)
+	conf.kafkaHome = cf.String("kafka_home", "")
+	conf.logLevel = cf.String("loglevel", "info")
+	conf.zones = make(map[string]string)
 	for i := 0; i < len(cf.List("zones", nil)); i++ {
 		section, err := cf.Section(fmt.Sprintf("zones[%d]", i))
 		if err != nil {
@@ -51,8 +77,7 @@ func LoadConfig(fn string) *Config {
 
 		z := new(zone)
 		z.loadConfig(section)
-		this.Zones[z.name] = z.zk
+		conf.zones[z.name] = z.zk
 	}
 
-	return this
 }
