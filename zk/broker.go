@@ -7,12 +7,17 @@ import (
 )
 
 type Broker struct {
+	Id        string   `json:-`
 	JmxPort   int      `json:"jmx_port"`
 	Timestamp string   `json:"timestamp"`
 	Endpoints []string `json:"endpoints"`
 	Host      string   `json:"host"`
 	Port      int      `json:"port"`
 	Version   int      `json:"version"`
+}
+
+func newBroker(id string) *Broker {
+	return &Broker{Id: id}
 }
 
 func (b Broker) String() string {

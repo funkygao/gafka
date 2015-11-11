@@ -3,11 +3,14 @@ package command
 import (
 	"flag"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/config"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 )
 
 type Topics struct {
@@ -37,47 +40,96 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	ensureZoneValid(zone)
 
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
+	if cluster != "" {
+		this.displayTopicsOfCluster(cluster, zkzone)
+		return
+	}
+
+	// all clusters
+	zkzone.WithinClusters(func(cluster string, path string) {
+		this.displayTopicsOfCluster(cluster, zkzone)
+	})
+
+	return
+}
+
+func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone) {
 	must := func(err error) {
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
-	if cluster != "" {
-		broker0 := zkutil.GetBrokersOfCluster(cluster)["0"]
-		kc, err := sarama.NewClient([]string{broker0.Addr()}, sarama.NewConfig())
-		must(err)
+	this.Ui.Output(cluster)
+	zkcluster := zkzone.NewCluster(cluster)
 
-		topics, err := kc.Topics()
-		must(err)
-		for _, topic := range topics {
-			partions, err := kc.Partitions(topic)
-			must(err)
-
-			this.Ui.Output(topic)
-			for _, partitionID := range partions {
-				leader, err := kc.Leader(topic, partitionID)
-				must(err)
-
-				this.Ui.Output(leader.Addr())
-
-				replicas, err := kc.Replicas(topic, partitionID)
-				must(err)
-
-				this.Ui.Output(fmt.Sprintf("%4d Leader:%+v Replicas:%+v Isr:%+v",
-					partitionID, replicas, leader.ID()))
-			}
-		}
-		kc.Close()
-
+	// get all alive brokers within this cluster
+	brokers := zkcluster.Brokers()
+	if len(brokers) == 0 {
+		this.Ui.Output(fmt.Sprintf("%4s%s", " ", color.Red("empty brokers")))
 		return
 	}
 
-	// all clusters
+	sortedBrokerIds := make([]string, 0, len(brokers))
+	for brokerId, _ := range brokers {
+		sortedBrokerIds = append(sortedBrokerIds, brokerId)
+	}
+	sort.Strings(sortedBrokerIds)
+	for _, brokerId := range sortedBrokerIds {
+		this.Ui.Output(fmt.Sprintf("%4s%s %s", " ", color.Green(brokerId),
+			brokers[brokerId]))
+	}
 
-	return
+	// find 1st broker in the cluster
+	// each broker in the cluster has same metadata
+	var broker0 *zk.Broker
+	for _, broker := range brokers {
+		broker0 = broker
+		break
+	}
 
+	kfkClient, err := sarama.NewClient([]string{broker0.Addr()}, sarama.NewConfig())
+	if err != nil {
+		this.Ui.Output(fmt.Sprintf("%5s%s %s", " ", broker0.Addr(),
+			err.Error()))
+		return
+	}
+	defer kfkClient.Close()
+
+	topics, err := kfkClient.Topics()
+	must(err)
+	if len(topics) == 0 {
+		this.Ui.Output(fmt.Sprintf("%5s%s", " ", color.Magenta("no topics")))
+		return
+	}
+
+	this.Ui.Output(fmt.Sprintf("%80d topics", len(topics)))
+	for _, topic := range topics {
+		this.Ui.Output(strings.Repeat(" ", 4) + topic)
+
+		// get partitions and check if some dead
+		alivePartitions, err := kfkClient.WritablePartitions(topic)
+		must(err)
+		partions, err := kfkClient.Partitions(topic)
+		must(err)
+		if len(alivePartitions) != len(partions) {
+			this.Ui.Output(fmt.Sprintf("topic[%s] has %s partitions: %+v/%+v",
+				alivePartitions, color.Red("dead"), partions))
+		}
+
+		for _, partitionID := range alivePartitions {
+			leader, err := kfkClient.Leader(topic, partitionID)
+			must(err)
+
+			replicas, err := kfkClient.Replicas(topic, partitionID)
+			must(err)
+
+			// TODO isr not implemented
+			this.Ui.Output(fmt.Sprintf("%8d Leader:%d Replicas:%+v",
+				partitionID, leader.ID(), replicas))
+		}
+	}
 }
 
 func (*Topics) Synopsis() string {

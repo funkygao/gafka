@@ -27,3 +27,4 @@ kafka clusters management tool in golang
 
 - [ ] topic name regex
 - [ ] show each partition replication lag
+- [ ] housekeep of clusters info automatically find stale info

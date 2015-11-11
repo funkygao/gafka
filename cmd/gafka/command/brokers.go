@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/funkygao/gafka/config"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
@@ -32,41 +33,38 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	if zone != "" {
 		ensureZoneValid(zone)
 
-		zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
 		if cluster != "" {
-			this.printBrokers(zkutil.GetBrokersOfCluster(cluster))
+			zkcluster := zkzone.NewCluster(cluster)
+			this.printBrokers(zkcluster.Brokers())
 
 			return
 		}
 
-		this.displayZonebrokers(zone, zkutil)
+		this.displayZoneBrokers(zone, zkzone)
 
 		return
 	}
 
 	// print all brokers on all zones by default
-	forAllZones(func(zone string, zkutil *zk.ZkUtil) {
-		this.displayZonebrokers(zone, zkutil)
+	forAllZones(func(zone string, zkzone *zk.ZkZone) {
+		this.displayZoneBrokers(zone, zkzone)
 	})
 
 	return
 
 }
 
-func (this *Brokers) displayZonebrokers(zone string, zkutil *zk.ZkUtil) {
+func (this *Brokers) displayZoneBrokers(zone string, zkzone *zk.ZkZone) {
 	this.Ui.Output(zone)
 
-	// sort by cluster name
-	brokersOfClusters := zkutil.GetBrokers()
-	sortedClusters := make([]string, 0, len(brokersOfClusters))
-	for cluster, _ := range brokersOfClusters {
-		sortedClusters = append(sortedClusters, cluster)
-	}
-	sort.Strings(sortedClusters)
-	for _, cluster := range sortedClusters {
+	n := 0
+	zkzone.WithinBrokers(func(cluster string, brokers map[string]*zk.Broker) {
+		n += len(brokers)
 		this.Ui.Output(strings.Repeat(" ", 4) + cluster)
-		this.printBrokers(brokersOfClusters[cluster])
-	}
+		this.printBrokers(brokers)
+	})
+	this.Ui.Output(fmt.Sprintf("%80d", n))
 }
 
 func (this *Brokers) printBrokers(brokers map[string]*zk.Broker) {
