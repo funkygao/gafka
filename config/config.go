@@ -26,14 +26,12 @@ func (c *Config) ZkAddrs(zone string) (string, error) {
 }
 
 func (c *Config) SortedZones() []string {
-	zones := make([]string, len(c.Zones))
-	idx := 0
+	sortedZones := make([]string, 0, len(c.Zones))
 	for name, _ := range c.Zones {
-		zones[idx] = name
-		idx++
+		sortedZones = append(sortedZones, name)
 	}
-	sort.Strings(zones)
-	return zones
+	sort.Strings(sortedZones)
+	return sortedZones
 }
 
 func LoadConfig(fn string) *Config {

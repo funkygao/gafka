@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/funkygao/gafka/zk"
@@ -28,7 +29,7 @@ func (this *Controllers) Run(args []string) (exitCode int) {
 	}
 
 	if zone == "" {
-		forAllZones(func(zone string, zkAddrs string, zkutil *zk.ZkUtil) {
+		forAllZones(func(zone string, zkutil *zk.ZkUtil) {
 			this.printControllers(zone, zkutil)
 		})
 
@@ -44,15 +45,23 @@ func (this *Controllers) Run(args []string) (exitCode int) {
 // Print all controllers of all clusters within a zone.
 func (this *Controllers) printControllers(zone string, zkutil *zk.ZkUtil) {
 	this.Ui.Output(zone)
-	for cluster, controller := range zkutil.GetControllers() {
+	controllers := zkutil.GetControllers()
+	sortedClusters := make([]string, 0, len(controllers))
+	for cluster, _ := range controllers {
+		sortedClusters = append(sortedClusters, cluster)
+	}
+	sort.Strings(sortedClusters)
+
+	for _, cluster := range sortedClusters {
 		this.Ui.Output(strings.Repeat(" ", 4) + cluster)
+		controller := controllers[cluster]
 		if controller == nil {
 			this.Ui.Output(fmt.Sprintf("\t%s", color.Red("empty")))
 		} else {
 			this.Ui.Output(fmt.Sprintf("\t%s", controller))
 		}
-
 	}
+
 }
 
 func (*Controllers) Synopsis() string {

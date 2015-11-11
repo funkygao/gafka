@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/funkygao/gafka/zk"
@@ -13,6 +14,7 @@ type Clusters struct {
 	Ui cli.Ui
 }
 
+// TODO cluster info will contain desciption,owner,etc.
 func (this *Clusters) Run(args []string) (exitCode int) {
 	var (
 		addMode     bool
@@ -37,16 +39,12 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	if !addMode {
 		if zone != "" {
 			zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
-			for name, path := range zkutil.GetClusters() {
-				this.Ui.Output(fmt.Sprintf("%35s: %s", name, path))
-			}
+			this.printClusters(zkutil)
 		} else {
 			// print all zones all clusters
-			forAllZones(func(zone, zkAddrs string, zkutil *zk.ZkUtil) {
+			forAllZones(func(zone string, zkutil *zk.ZkUtil) {
 				this.Ui.Output(zone)
-				for name, path := range zkutil.GetClusters() {
-					this.Ui.Output(fmt.Sprintf("%35s: %s", name, path))
-				}
+				this.printClusters(zkutil)
 			})
 		}
 
@@ -61,6 +59,18 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Clusters) printClusters(zkutil *zk.ZkUtil) {
+	clusters := zkutil.GetClusters()
+	sortedNames := make([]string, 0, len(clusters))
+	for name, _ := range clusters {
+		sortedNames = append(sortedNames, name)
+	}
+	sort.Strings(sortedNames)
+	for _, name := range sortedNames {
+		this.Ui.Output(fmt.Sprintf("%35s: %s", name, clusters[name]))
+	}
 }
 
 func (this *Clusters) validate(addMode bool, name, path string, zone string) bool {

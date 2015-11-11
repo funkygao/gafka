@@ -26,3 +26,4 @@ kafka clusters management tool in golang
 ### TODO
 
 - [ ] topic name regex
+- [ ] show each partition replication lag
