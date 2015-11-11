@@ -31,6 +31,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	if zone == "" {
 		this.Ui.Error("empty zone not allowed")
+		this.Ui.Output(this.Help())
 		return 2
 	}
 
@@ -85,15 +86,12 @@ func (*Topics) Synopsis() string {
 
 func (*Topics) Help() string {
 	help := `
-Usage: gafka topics [options]
+Usage: gafka topics -z zone [options]
 
 	Print available kafka topics from Zookeeper
 
 Options:
-
-  -z zone
-  	Only print kafka topics within this zone.
-
+  
   -c cluster
 
   -t topic
