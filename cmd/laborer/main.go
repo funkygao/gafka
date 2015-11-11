@@ -29,7 +29,7 @@ func main() {
 
 		case <-events:
 			log4go.Info("bindings changed, dispatching to workers")
-			dispatchWorkers()
+			dispatchWorkers(zk)
 		}
 
 	}
