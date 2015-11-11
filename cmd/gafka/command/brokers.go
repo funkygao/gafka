@@ -61,7 +61,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 }
 
 func (this *Brokers) printBrokers(brokers map[string]*zk.Broker) {
-	if brokers == nil {
+	if brokers == nil || len(brokers) == 0 {
 		this.Ui.Output(fmt.Sprintf("\t%s", color.Red("empty")))
 	}
 	for brokerId, broker := range brokers {

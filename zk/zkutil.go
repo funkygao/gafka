@@ -113,6 +113,11 @@ func (this *ZkUtil) GetControllers() map[string]*Controller {
 
 	r := make(map[string]*Controller)
 	for cluster, path := range this.GetClusters() {
+		if present, _, _ := this.conn.Exists(path + ControllerPath); !present {
+			r[cluster] = nil
+			continue
+		}
+
 		controllerData := this.getData(path + ControllerPath)
 		js, err := simplejson.NewJson(controllerData)
 		if err != nil {

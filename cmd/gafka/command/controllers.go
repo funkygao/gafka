@@ -7,6 +7,7 @@ import (
 
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 )
 
 type Controllers struct {
@@ -45,7 +46,12 @@ func (this *Controllers) printControllers(zone string, zkutil *zk.ZkUtil) {
 	this.Ui.Output(zone)
 	for cluster, controller := range zkutil.GetControllers() {
 		this.Ui.Output(strings.Repeat(" ", 4) + cluster)
-		this.Ui.Output(fmt.Sprintf("\t%s", controller))
+		if controller == nil {
+			this.Ui.Output(fmt.Sprintf("\t%s", color.Red("empty")))
+		} else {
+			this.Ui.Output(fmt.Sprintf("\t%s", controller))
+		}
+
 	}
 }
 
