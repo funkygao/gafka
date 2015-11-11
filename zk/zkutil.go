@@ -1,6 +1,7 @@
 package zk
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 
@@ -96,6 +97,18 @@ func (this *ZkUtil) GetClusters() map[string]string {
 	return r
 }
 
+func (this *ZkUtil) WithinClusters(fn func(name string, path string)) {
+	clusters := this.GetClusters()
+	sortedNames := make([]string, 0, len(clusters))
+	for name, _ := range clusters {
+		sortedNames = append(sortedNames, name)
+	}
+	sort.Strings(sortedNames)
+	for _, name := range sortedNames {
+		fn(name, clusters[name])
+	}
+}
+
 func (this *ZkUtil) ClusterPath(name string) string {
 	this.connectIfNeccessary()
 
@@ -142,6 +155,19 @@ func (this *ZkUtil) GetControllers() map[string]*Controller {
 
 	}
 	return r
+}
+
+func (this *ZkUtil) WithinControllers(fn func(cluster string, controller *Controller)) {
+	controllers := this.GetControllers()
+	sortedClusters := make([]string, 0, len(controllers))
+	for cluster, _ := range controllers {
+		sortedClusters = append(sortedClusters, cluster)
+	}
+	sort.Strings(sortedClusters)
+
+	for _, cluster := range sortedClusters {
+		fn(cluster, controllers[cluster])
+	}
 }
 
 func (this *ZkUtil) clusterBrokerIdInfo(clusterZkPath string, id int) (b *Broker) {

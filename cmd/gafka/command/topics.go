@@ -60,12 +60,10 @@ func (this *Topics) Run(args []string) (exitCode int) {
 				leader, err := kc.Leader(topic, partitionID)
 				must(err)
 
+				this.Ui.Output(leader.Addr())
+
 				replicas, err := kc.Replicas(topic, partitionID)
 				must(err)
-
-				req := sarama.MetadataRequest{Topics: []string{"foobar"}}
-				x, _ := leader.GetMetadata(&req)
-				fmt.Printf("%+v\n", x.Topics[0].Partitions[0])
 
 				this.Ui.Output(fmt.Sprintf("%4d Leader:%+v Replicas:%+v Isr:%+v",
 					partitionID, replicas, leader.ID()))
@@ -75,6 +73,8 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 		return
 	}
+
+	// all clusters
 
 	return
 

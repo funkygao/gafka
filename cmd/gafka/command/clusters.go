@@ -3,7 +3,6 @@ package command
 import (
 	"flag"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/funkygao/gafka/zk"
@@ -62,15 +61,10 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 }
 
 func (this *Clusters) printClusters(zkutil *zk.ZkUtil) {
-	clusters := zkutil.GetClusters()
-	sortedNames := make([]string, 0, len(clusters))
-	for name, _ := range clusters {
-		sortedNames = append(sortedNames, name)
-	}
-	sort.Strings(sortedNames)
-	for _, name := range sortedNames {
-		this.Ui.Output(fmt.Sprintf("%35s: %s", name, clusters[name]))
-	}
+	zkutil.WithinClusters(func(name, path string) {
+		this.Ui.Output(fmt.Sprintf("%35s: %s", name, path))
+	})
+
 }
 
 func (this *Clusters) validate(addMode bool, name, path string, zone string) bool {
