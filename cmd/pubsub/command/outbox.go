@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 )
 
 type Outbox struct {
@@ -13,15 +14,15 @@ type Outbox struct {
 
 func (this *Outbox) Run(args []string) (exitCode int) {
 	var (
-		id   string
-		list bool
-		add  string
+		id    string
+		list  bool
+		topic string
 	)
 	cmdFlags := flag.NewFlagSet("bind", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&id, "id", "", "")
-	cmdFlags.StringVar(&add, "add", "", "")
-	cmdFlags.BoolVar(&list, "list", true, "")
+	cmdFlags.StringVar(&topic, "add", "", "")
+	cmdFlags.BoolVar(&list, "list", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -32,8 +33,29 @@ func (this *Outbox) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	return
+	zk := NewZk(DefaultConfig(id, zkAddr))
 
+	if list {
+		this.Ui.Output("outboxes:")
+		for _, outbox := range zk.Outboxes() {
+			this.Ui.Output(color.Green("    %s", outbox))
+		}
+		return
+	}
+
+	// add new outbox
+	if err := zk.RegisterOutbox(topic); err != nil {
+		this.Ui.Output(color.Red("%v", err))
+		return 1
+	}
+	if err := KafkaCreateTopic(KafkaOutboxTopic(id, topic)); err != nil {
+		this.Ui.Output(color.Red("%v", err))
+		return 1
+	}
+
+	this.Ui.Output(color.Green("outbox:%s added successfully", topic))
+
+	return
 }
 
 func (*Outbox) Synopsis() string {
@@ -51,6 +73,7 @@ Options:
   -list
 
   -add topic
+
 `
 	return strings.TrimSpace(help)
 }

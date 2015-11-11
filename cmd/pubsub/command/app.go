@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 )
 
 type App struct {
@@ -29,8 +30,12 @@ func (this *App) Run(args []string) (exitCode int) {
 	}
 
 	// init
-	NewZk(DefaultConfig(id, zkAddr)).Init()
-	this.Ui.Output("init success")
+	if err := NewZk(DefaultConfig(id, zkAddr)).Init(); err != nil {
+		this.Ui.Output(color.Red("%v", err))
+		return 1
+	}
+
+	this.Ui.Output(color.Green("app:%s initialized successfully", id))
 
 	return
 

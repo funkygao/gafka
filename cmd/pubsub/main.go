@@ -42,7 +42,7 @@ func main() {
 func setupLogging() {
 	log.SetOutput(ioutil.Discard)
 
-	level := log4go.DEBUG
+	level := log4go.DEBUG // TODO
 
 	for _, filter := range log4go.Global {
 		filter.Level = level

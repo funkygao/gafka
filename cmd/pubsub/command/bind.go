@@ -35,6 +35,8 @@ func (this *Bind) Run(args []string) (exitCode int) {
 		return 2
 	}
 
+	//zk := NewZk(DefaultConfig(id, zkAddr))
+
 	return
 
 }

@@ -118,13 +118,37 @@ func (this *Zk) Connect() (err error) {
 	return
 }
 
-func (this *Zk) Init() {
+func (this *Zk) Init() error {
 	this.connectIfNeccessary()
 	emptyData := []byte("")
-	this.createNode(this.root(), emptyData)
-	this.createNode(this.inboxRoot(), emptyData)
-	this.createNode(this.outboxRoot(), emptyData)
-	this.createNode(this.bindRoot(), emptyData)
+	if err := this.createNode(this.root(), emptyData); err != nil {
+		return err
+	}
+	if err := this.createNode(this.inboxRoot(), emptyData); err != nil {
+		return err
+	}
+	if err := this.createNode(this.outboxRoot(), emptyData); err != nil {
+		return err
+	}
+	if err := this.createNode(this.bindRoot(), emptyData); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (this *Zk) EnsureOutboxExists(topic string) {
+	_, err := this.getData(this.outboxRoot() + "/" + topic)
+	if err != nil {
+		panic(fmt.Sprintf("outbox topic:%s not found", topic))
+	}
+}
+
+func (this *Zk) EnsureInboxExists(topic string) {
+	_, err := this.getData(this.inboxRoot() + "/" + topic)
+	if err != nil {
+		panic(fmt.Sprintf("inbox topic:%s not found", topic))
+	}
 }
 
 func (this *Zk) root() string {
@@ -145,6 +169,7 @@ func (this *Zk) bindRoot() string {
 
 func (this *Zk) createNode(path string, data []byte) error {
 	this.connectIfNeccessary()
+
 	acl := zk.WorldACL(zk.PermAll)
 	flags := int32(0)
 	log.Debug("create %s with data: %s", path, string(data))
@@ -154,6 +179,28 @@ func (this *Zk) createNode(path string, data []byte) error {
 
 func (this *Zk) RegisterInbox(topic string) error {
 	return this.createNode(this.inboxRoot()+"/"+topic, []byte(""))
+}
+
+func (this *Zk) Inboxes() []string {
+	this.connectIfNeccessary()
+
+	children, _, err := this.conn.Children(this.inboxRoot())
+	if err != nil {
+		panic(err)
+	}
+
+	return children
+}
+
+func (this *Zk) Outboxes() []string {
+	this.connectIfNeccessary()
+
+	children, _, err := this.conn.Children(this.outboxRoot())
+	if err != nil {
+		panic(err)
+	}
+
+	return children
 }
 
 func (this *Zk) RegisterOutbox(topic string) error {
