@@ -21,6 +21,10 @@ type ZkZone struct {
 	errs []error
 }
 
+func (this *ZkZone) Name() string {
+	return this.conf.Name
+}
+
 // NewZkZone creates a new ZkZone instance.
 func NewZkZone(config *Config) *ZkZone {
 	return &ZkZone{

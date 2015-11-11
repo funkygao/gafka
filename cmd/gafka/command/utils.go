@@ -13,7 +13,7 @@ func ensureZoneValid(zone string) {
 
 func forAllZones(fn func(zone string, zkzone *zk.ZkZone)) {
 	for _, zone := range config.SortedZones() {
-		zkzone := zk.NewZkZone(zk.DefaultConfig(config.ZonePath(zone)))
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
 		fn(zone, zkzone)
 	}
 }

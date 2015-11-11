@@ -44,7 +44,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		}
 	}
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(config.ZonePath(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
 	if cluster != "" {
 		zkcluster := zkzone.NewCluster(cluster)
 		broker0 := zkcluster.Brokers()["0"]

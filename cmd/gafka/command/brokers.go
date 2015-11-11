@@ -33,7 +33,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	if zone != "" {
 		ensureZoneValid(zone)
 
-		zkzone := zk.NewZkZone(zk.DefaultConfig(config.ZonePath(zone)))
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
 		if cluster != "" {
 			zkcluster := zkzone.NewCluster(cluster)
 			this.printBrokers(zkcluster.Brokers())
@@ -58,10 +58,13 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 func (this *Brokers) displayZoneBrokers(zone string, zkzone *zk.ZkZone) {
 	this.Ui.Output(zone)
 
+	n := 0
 	zkzone.WithinBrokers(func(cluster string, brokers map[string]*zk.Broker) {
+		n += len(brokers)
 		this.Ui.Output(strings.Repeat(" ", 4) + cluster)
 		this.printBrokers(brokers)
 	})
+	this.Ui.Output(fmt.Sprintf("%80d", n))
 }
 
 func (this *Brokers) printBrokers(brokers map[string]*zk.Broker) {
