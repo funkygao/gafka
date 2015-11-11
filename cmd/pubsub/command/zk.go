@@ -120,6 +120,7 @@ func (this *Zk) Connect() (err error) {
 
 func (this *Zk) Init() error {
 	this.connectIfNeccessary()
+
 	emptyData := []byte("")
 	if err := this.createNode(this.root(), emptyData); err != nil {
 		return err
@@ -138,6 +139,8 @@ func (this *Zk) Init() error {
 }
 
 func (this *Zk) EnsureOutboxExists(topic string) {
+	this.connectIfNeccessary()
+
 	_, err := this.getData(this.outboxRoot() + "/" + topic)
 	if err != nil {
 		panic(fmt.Sprintf("outbox topic:%s not found", topic))
@@ -145,6 +148,8 @@ func (this *Zk) EnsureOutboxExists(topic string) {
 }
 
 func (this *Zk) EnsureInboxExists(topic string) {
+	this.connectIfNeccessary()
+
 	_, err := this.getData(this.inboxRoot() + "/" + topic)
 	if err != nil {
 		panic(fmt.Sprintf("inbox topic:%s not found", topic))

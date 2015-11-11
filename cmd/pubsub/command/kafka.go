@@ -12,6 +12,10 @@ const (
 	kafkaHome = "/Users/apple/github/kafka-0.8.1.1-src" // TODO
 )
 
+var (
+	kafkaBrokerList = []string{"localhost:9092"} // TODO
+)
+
 func KafkaCreateTopic(topic string) error {
 	testcase := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", kafkaHome),
 		fmt.Sprintf("--zookeeper %s", zkAddr),

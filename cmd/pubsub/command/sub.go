@@ -4,6 +4,7 @@ import (
 	"flag"
 	"strings"
 
+	//"github.com/Shopify/sarama"
 	"github.com/funkygao/gocli"
 )
 
