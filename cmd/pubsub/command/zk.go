@@ -11,6 +11,26 @@ import (
 	"github.com/samuel/go-zookeeper/zk"
 )
 
+/*
+    /_pubsub
+        |
+        |---${app}
+             |
+             |---in
+             |    |
+             |    |--${inbox}
+             |    |--${inbox}
+             |
+             |---out
+             |    |
+             |    |--${outbox}
+             |    |--${outbox}
+             |
+             |---bind
+                  |
+                  |--{"${inbox}":"${outbox}"}
+*/
+
 const (
 	pubsubRoot = "/_pubsub"
 )
