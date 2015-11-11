@@ -46,7 +46,7 @@ func (this *Sub) Run(args []string) (exitCode int) {
 }
 
 func (this *Sub) consumeTopic(app string, inbox string, step int) {
-	kfk, err := sarama.NewClient(kafkaBrokerList, sarama.NewConfig())
+	kfk, err := sarama.NewClient(KafkaBrokerList, sarama.NewConfig())
 	if err != nil {
 		panic(err)
 	}

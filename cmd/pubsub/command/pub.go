@@ -53,7 +53,7 @@ func (this *Pub) Run(args []string) (exitCode int) {
 		cf := sarama.NewConfig()
 		cf.Producer.RequiredAcks = sarama.WaitForLocal
 		cf.Producer.Retry.Max = 3
-		producer, err := sarama.NewSyncProducer(kafkaBrokerList, cf)
+		producer, err := sarama.NewSyncProducer(KafkaBrokerList, cf)
 		if err != nil {
 			panic(err)
 		}
