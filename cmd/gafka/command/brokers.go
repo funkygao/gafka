@@ -7,6 +7,7 @@ import (
 
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 )
 
 type Brokers struct {
@@ -32,19 +33,15 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 
 		zkutil := zk.NewZkUtil(zk.DefaultConfig(cf.Zones[zone]))
 		if cluster != "" {
-			for brokerId, broker := range zkutil.GetBrokersOfCluster(cluster) {
-				this.Ui.Output(fmt.Sprintf("\t%8s %s", brokerId, broker))
-			}
+			this.printBrokers(zkutil.GetBrokersOfCluster(cluster))
 
 			return
 		}
 
-		// cluster provided
+		// of all clusters
 		for cluster, brokers := range zkutil.GetBrokers() {
 			this.Ui.Output(cluster)
-			for brokerId, broker := range brokers {
-				this.Ui.Output(fmt.Sprintf("\t%8s %s", brokerId, broker))
-			}
+			this.printBrokers(brokers)
 		}
 
 		return
@@ -55,14 +52,21 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 		this.Ui.Output(zone)
 		for cluster, brokers := range zkutil.GetBrokers() {
 			this.Ui.Output(strings.Repeat(" ", 4) + cluster)
-			for brokerId, broker := range brokers {
-				this.Ui.Output(fmt.Sprintf("\t%8s %s", brokerId, broker))
-			}
+			this.printBrokers(brokers)
 		}
 	})
 
 	return
 
+}
+
+func (this *Brokers) printBrokers(brokers map[string]*zk.Broker) {
+	if brokers == nil {
+		this.Ui.Output(fmt.Sprintf("\t%s", color.Red("empty")))
+	}
+	for brokerId, broker := range brokers {
+		this.Ui.Output(fmt.Sprintf("\t%8s %s", brokerId, broker))
+	}
 }
 
 func (*Brokers) Synopsis() string {
