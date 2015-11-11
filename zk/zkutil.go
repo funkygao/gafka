@@ -1,6 +1,7 @@
 package zk
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/funkygao/go-simplejson"
@@ -68,7 +69,7 @@ func (this *ZkUtil) getData(path string) []byte {
 	data, _, err := this.conn.Get(path)
 	if err != nil {
 		if this.conf.PanicOnError {
-			panic(err)
+			panic(path + ":" + err.Error())
 		} else {
 			return nil
 		}
@@ -139,7 +140,9 @@ func (this *ZkUtil) GetControllers() map[string]*Controller {
 }
 
 func (this *ZkUtil) clusterBrokerIdInfo(clusterZkPath string, id int) (b *Broker) {
-	zkData := this.getData(clusterZkPath + zkPathSeperator + BrokerIdsPath + zkPathSeperator + string(id))
+	zkData := this.getData(clusterZkPath + BrokerIdsPath +
+		zkPathSeperator + strconv.Itoa(id))
+	b = new(Broker)
 	b.from(zkData)
 	return
 }
@@ -178,8 +181,4 @@ func (this *ZkUtil) GetBrokers() map[string]map[string]*Broker {
 	}
 
 	return r
-}
-
-func (this *ZkUtil) GetTopics() {
-
 }

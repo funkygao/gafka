@@ -43,7 +43,7 @@ func init() {
 			}, nil
 		},
 
-		"peek", func() (cli.Command, error) {
+		"peek": func() (cli.Command, error) {
 			return &command.Peek{
 				Ui: ui,
 			}, nil

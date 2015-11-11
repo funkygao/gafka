@@ -1,14 +1,27 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 
 	conf "github.com/funkygao/jsconf"
 )
 
+var (
+	ErrInvalidZone = errors.New("Invalid zone")
+)
+
 type Config struct {
 	KafkaHome string
 	Zones     map[string]string // name:zkConn
+}
+
+func (c *Config) ZkAddrs(zone string) (string, error) {
+	if zkAddrs, present := c.Zones[zone]; present {
+		return zkAddrs, nil
+	}
+
+	return "", ErrInvalidZone
 }
 
 func LoadConfig(fn string) *Config {

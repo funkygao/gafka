@@ -2,11 +2,10 @@ package command
 
 import (
 	"flag"
-	"fmt"
 	"strings"
 
-	"github.com/Shopify/sarama"
-	"github.com/funkygao/gafka/zk"
+	//"github.com/Shopify/sarama"
+	//"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 )
 
@@ -32,11 +31,6 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	}
 
 	ensureZoneValid(zone)
-
-	sarama.NewConsumer(addrs, sarama.NewConfig())
-
-	b := sarama.NewBroker(addr)
-	b.GetMetadata(request)
 
 	return
 }

@@ -11,8 +11,8 @@ func ensureZoneValid(zone string) {
 }
 
 func forAllZones(fn func(zone string, zkAddrs string, zkutil *zk.ZkUtil)) {
-	zkutil := zk.NewZkUtil(zk.DefaultConfig(zkAddrs))
 	for zone, zkAddrs := range cf.Zones {
+		zkutil := zk.NewZkUtil(zk.DefaultConfig(zkAddrs))
 		fn(zone, zkAddrs, zkutil)
 	}
 }

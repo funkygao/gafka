@@ -29,5 +29,5 @@ func (b *Broker) from(zkData []byte) {
 }
 
 func (b *Broker) Addr() string {
-	return fmt.Sprintf("%s:%s", b.Host, b.Port)
+	return fmt.Sprintf("%s:%d", b.Host, b.Port)
 }
