@@ -12,27 +12,28 @@ import (
 )
 
 /*
-    /_pubsub
-        |
-        |---${app}
-             |
-             |---in
-             |    |
-             |    |--${inbox}
-             |    |--${inbox}
-             |
-             |---out
-             |    |
-             |    |--${outbox}
-             |    |--${outbox}
-             |
-             |---bind
-                  |
-                  |--{"${inbox}":"${outbox}"}
+   /_pubsub
+       |
+       |---${app}
+            |
+            |---in
+            |    |
+            |    |--${inbox}
+            |    |--${inbox}
+            |
+            |---out
+            |    |
+            |    |--${outbox}
+            |    |--${outbox}
+            |
+            |---bind
+                 |
+                 |--{"${inbox}":"${outbox}"}
 */
 
 const (
 	pubsubRoot = "/_pubsub"
+	zkAddr     = "localhost:2181"
 )
 
 var (
@@ -117,22 +118,36 @@ func (this *Zk) Connect() (err error) {
 	return
 }
 
+func (this *Zk) Init() {
+	this.connectIfNeccessary()
+	emptyData := []byte("")
+	this.createNode(this.root(), emptyData)
+	this.createNode(this.inboxRoot(), emptyData)
+	this.createNode(this.outboxRoot(), emptyData)
+	this.createNode(this.bindRoot(), emptyData)
+}
+
+func (this *Zk) root() string {
+	return fmt.Sprintf("%s/%s", pubsubRoot, this.conf.App)
+}
+
 func (this *Zk) inboxRoot() string {
-	return fmt.Sprintf("%s/%s/in", pubsubRoot, this.conf.App)
+	return fmt.Sprintf("%s/in", this.root())
 }
 
 func (this *Zk) outboxRoot() string {
-	return fmt.Sprintf("%s/%s/out", pubsubRoot, this.conf.App)
+	return fmt.Sprintf("%s/out", this.root())
 }
 
 func (this *Zk) bindRoot() string {
-	return ""
+	return fmt.Sprintf("%s/bind", this.root())
 }
 
 func (this *Zk) createNode(path string, data []byte) error {
 	this.connectIfNeccessary()
 	acl := zk.WorldACL(zk.PermAll)
 	flags := int32(0)
+	log.Debug("create %s with data: %s", path, string(data))
 	_, err := this.conn.Create(path, data, flags, acl)
 	return err
 }
