@@ -48,6 +48,18 @@ func init() {
 				Ui: ui,
 			}, nil
 		},
+
+		"top": func() (cli.Command, error) {
+			return &command.Top{
+				Ui: ui,
+			}, nil
+		},
+
+		"topology": func() (cli.Command, error) {
+			return &command.Topology{
+				Ui: ui,
+			}, nil
+		},
 	}
 
 }
