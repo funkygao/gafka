@@ -33,7 +33,7 @@ func (this *Outbox) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	zk := NewZk(DefaultConfig(id, zkAddr))
+	zk := NewZk(DefaultConfig(id, ZkAddr))
 
 	if list {
 		this.Ui.Output("outboxes:")

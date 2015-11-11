@@ -46,7 +46,7 @@ func (this *Pub) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	zk := NewZk(DefaultConfig(id, zkAddr))
+	zk := NewZk(DefaultConfig(id, ZkAddr))
 	zk.EnsureOutboxExists(topic)
 
 	if stress {

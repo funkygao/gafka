@@ -33,7 +33,7 @@ func (this *Sub) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	zk := NewZk(DefaultConfig(id, zkAddr))
+	zk := NewZk(DefaultConfig(id, ZkAddr))
 	for _, inbox := range zk.Inboxes() {
 		log.Info("sub inbox: %s", inbox)
 		go this.consumeTopic(id, inbox, step)

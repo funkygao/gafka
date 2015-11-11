@@ -41,7 +41,7 @@ func (this *Bind) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	zk := NewZk(DefaultConfig(id, zkAddr))
+	zk := NewZk(DefaultConfig(id, ZkAddr))
 	binding, err := zk.Binding()
 	if err != nil {
 		this.Ui.Error(color.Red("%v", err))

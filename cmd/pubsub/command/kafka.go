@@ -18,7 +18,7 @@ var (
 
 func KafkaCreateTopic(topic string) error {
 	testcase := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", kafkaHome),
-		fmt.Sprintf("--zookeeper %s", zkAddr),
+		fmt.Sprintf("--zookeeper %s", ZkAddr),
 		fmt.Sprintf("--create"),
 		fmt.Sprintf("--topic %s", topic),
 		fmt.Sprintf("--partitions 1"),         // TODO

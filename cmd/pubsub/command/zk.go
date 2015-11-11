@@ -15,6 +15,8 @@ import (
 /*
    /_pubsub
        |
+       |---bind_change
+       |
        |---bind
        |    |
        |    |---${app} {"${inbox}":"${outbox}"}
@@ -33,8 +35,9 @@ import (
 */
 
 const (
-	pubsubRoot = "/_pubsub"
-	zkAddr     = "localhost:2181"
+	PubsubRoot = "/_pubsub"
+	BindChange = PubsubRoot + "/bind_change"
+	ZkAddr     = "localhost:2181" // TODO
 )
 
 var (
@@ -71,6 +74,11 @@ func NewZk(config *Config) *Zk {
 		conf: config,
 		errs: make([]error, 0),
 	}
+}
+
+func (this *Zk) Conn() *zk.Conn {
+	this.connectIfNeccessary()
+	return this.conn
 }
 
 func (this *Zk) addError(err error) {
@@ -155,7 +163,7 @@ func (this *Zk) EnsureInboxExists(topic string) {
 }
 
 func (this *Zk) root() string {
-	return fmt.Sprintf("%s/%s", pubsubRoot, this.conf.App)
+	return fmt.Sprintf("%s/%s", PubsubRoot, this.conf.App)
 }
 
 func (this *Zk) inboxRoot() string {
@@ -167,7 +175,7 @@ func (this *Zk) outboxRoot() string {
 }
 
 func (this *Zk) bindPath() string {
-	return fmt.Sprintf("%s/bind/%s", pubsubRoot, this.conf.App)
+	return fmt.Sprintf("%s/bind/%s", PubsubRoot, this.conf.App)
 }
 
 func (this *Zk) createNode(path string, data []byte) error {

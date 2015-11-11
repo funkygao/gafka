@@ -30,7 +30,7 @@ func (this *App) Run(args []string) (exitCode int) {
 	}
 
 	// init
-	if err := NewZk(DefaultConfig(id, zkAddr)).Init(); err != nil {
+	if err := NewZk(DefaultConfig(id, ZkAddr)).Init(); err != nil {
 		this.Ui.Error(color.Red("%v", err))
 		return 1
 	}
