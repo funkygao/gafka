@@ -24,14 +24,14 @@ func (this *App) Run(args []string) (exitCode int) {
 	}
 
 	if id == "" {
-		this.Ui.Output("please provide app id")
-		this.Ui.Output(this.Help())
+		this.Ui.Error(color.Red("-init required"))
+		this.Ui.Error(this.Help())
 		return 2
 	}
 
 	// init
 	if err := NewZk(DefaultConfig(id, zkAddr)).Init(); err != nil {
-		this.Ui.Output(color.Red("%v", err))
+		this.Ui.Error(color.Red("%v", err))
 		return 1
 	}
 

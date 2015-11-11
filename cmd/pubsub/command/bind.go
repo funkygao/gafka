@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 )
 
 type Bind struct {
@@ -24,18 +25,47 @@ func (this *Bind) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&to, "to", "", "")
 	cmdFlags.StringVar(&from, "from", "", "")
 	cmdFlags.BoolVar(&add, "add", false, "")
-	cmdFlags.BoolVar(&list, "list", true, "")
+	cmdFlags.BoolVar(&list, "list", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	if id == "" {
-		this.Ui.Output("-id is required")
-		this.Ui.Output(this.Help())
+		this.Ui.Error(color.Red("-id is required"))
+		this.Ui.Error(this.Help())
 		return 2
 	}
 
-	//zk := NewZk(DefaultConfig(id, zkAddr))
+	if strings.Count(from, ":") != 1 {
+		this.Ui.Error(color.Red("-from must be appId:outbox format"))
+		return 2
+	}
+
+	zk := NewZk(DefaultConfig(id, zkAddr))
+	binding, err := zk.Binding()
+	if err != nil {
+		this.Ui.Error(color.Red("%v", err))
+		return 2
+	}
+
+	if list {
+		for k, v := range binding {
+			this.Ui.Output(color.Green("%s -> %s", k, v))
+		}
+
+		return
+	}
+
+	// add bindings TODO multi-multi
+	// TODO ensure from and to exists
+
+	binding[from] = to
+	if err = zk.Bind(binding); err != nil {
+		this.Ui.Error(color.Red("%v", err))
+		return 1
+	}
+
+	this.Ui.Output(color.Green("bound successfully"))
 
 	return
 
@@ -59,9 +89,12 @@ Options:
   -add
   	Define a new binding.
 
-  -from topic
+  -del
+  	Unbind a binding(TODO).
 
-  -to topic
+  -from appId:outbox
+
+  -to inbox
 `
 	return strings.TrimSpace(help)
 }

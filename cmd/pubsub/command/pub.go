@@ -35,14 +35,14 @@ func (this *Pub) Run(args []string) (exitCode int) {
 	}
 
 	if id == "" {
-		this.Ui.Output("-id is required")
-		this.Ui.Output(this.Help())
+		this.Ui.Error(color.Red("-id is required"))
+		this.Ui.Error(this.Help())
 		return 2
 	}
 
 	if topic == "" {
-		this.Ui.Output("-topic is required")
-		this.Ui.Output(this.Help())
+		this.Ui.Error(color.Red("-topic is required"))
+		this.Ui.Error(this.Help())
 		return 2
 	}
 

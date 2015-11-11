@@ -22,14 +22,14 @@ func (this *Inbox) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&id, "id", "", "")
 	cmdFlags.StringVar(&topic, "add", "", "")
-	cmdFlags.BoolVar(&list, "list", false, "")
+	cmdFlags.BoolVar(&list, "list", true, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	if id == "" {
-		this.Ui.Output("-id is required")
-		this.Ui.Output(this.Help())
+		this.Ui.Error(color.Red("-id is required"))
+		this.Ui.Error(this.Help())
 		return 2
 	}
 
@@ -44,12 +44,18 @@ func (this *Inbox) Run(args []string) (exitCode int) {
 	}
 
 	// add new inbox
+	if topic == "" {
+		this.Ui.Error(color.Red("-add required"))
+		this.Ui.Output(this.Help())
+		return 2
+	}
+
 	if err := zk.RegisterInbox(topic); err != nil {
-		this.Ui.Output(color.Red("%v", err))
+		this.Ui.Error(color.Red("%v", err))
 		return 1
 	}
 	if err := KafkaCreateTopic(KafkaInboxTopic(id, topic)); err != nil {
-		this.Ui.Output(color.Red("%v", err))
+		this.Ui.Error(color.Red("%v", err))
 		return 1
 	}
 

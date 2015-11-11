@@ -1,6 +1,7 @@
 package command
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -14,6 +15,10 @@ import (
 /*
    /_pubsub
        |
+       |---bind
+       |    |
+       |    |---${app} {"${inbox}":"${outbox}"}
+       |
        |---${app}
             |
             |---in
@@ -22,13 +27,9 @@ import (
             |    |--${inbox}
             |
             |---out
-            |    |
-            |    |--${outbox}
-            |    |--${outbox}
-            |
-            |---bind
                  |
-                 |--{"${inbox}":"${outbox}"}
+                 |--${outbox}
+                 |--${outbox}
 */
 
 const (
@@ -131,9 +132,6 @@ func (this *Zk) Init() error {
 	if err := this.createNode(this.outboxRoot(), emptyData); err != nil {
 		return err
 	}
-	if err := this.createNode(this.bindRoot(), emptyData); err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -168,8 +166,8 @@ func (this *Zk) outboxRoot() string {
 	return fmt.Sprintf("%s/out", this.root())
 }
 
-func (this *Zk) bindRoot() string {
-	return fmt.Sprintf("%s/bind", this.root())
+func (this *Zk) bindPath() string {
+	return fmt.Sprintf("%s/bind/%s", pubsubRoot, this.conf.App)
 }
 
 func (this *Zk) createNode(path string, data []byte) error {
@@ -182,8 +180,36 @@ func (this *Zk) createNode(path string, data []byte) error {
 	return err
 }
 
+func (this *Zk) setNode(path string, data []byte) error {
+	this.connectIfNeccessary()
+
+	log.Debug("set %s with data: %s", path, string(data))
+	_, err := this.conn.Set(path, data, -1)
+	return err
+}
+
 func (this *Zk) RegisterInbox(topic string) error {
 	return this.createNode(this.inboxRoot()+"/"+topic, []byte(""))
+}
+
+func (this *Zk) Bind(binding map[string]string) error {
+	data, err := json.Marshal(binding)
+	if err != nil {
+		return err
+	}
+
+	return this.setNode(this.bindPath(), data)
+}
+
+func (this *Zk) Binding() (bindings map[string]string, err error) {
+	this.connectIfNeccessary()
+
+	bindings, err = this.getJsonData(this.bindPath())
+	if err == zk.ErrNoNode {
+		err = this.createNode(this.bindPath(), []byte(""))
+		bindings = make(map[string]string)
+	}
+	return
 }
 
 func (this *Zk) Inboxes() []string {
@@ -241,8 +267,24 @@ func (this *Zk) getChildrenWithData(path string) map[string][]byte {
 }
 
 func (this *Zk) getData(path string) (data []byte, err error) {
-	log.Debug("get data: %s", path)
 	data, _, err = this.conn.Get(path)
+	log.Debug("get data: %s -> %s", path, string(data))
 
 	return
+}
+
+func (this *Zk) getJsonData(path string) (map[string]string, error) {
+	data, err := this.getData(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(data) == 0 {
+		return make(map[string]string), nil
+	}
+
+	r := make(map[string]string)
+	err = json.Unmarshal(data, &r)
+	return r, err
+
 }
