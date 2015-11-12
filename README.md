@@ -1,5 +1,5 @@
 # gafka
-Simplified CLI kafka clusters management tool powered by golang.
+Simplified CLI multi-datacenter kafka clusters management tool powered by golang.
 
 ### Install
 
@@ -11,7 +11,8 @@ Simplified CLI kafka clusters management tool powered by golang.
     /etc/gafka.cf
 
     {
-        // a zone is groups of kafka cluster that share the same zookeeper ensemble
+        // a zone is groups of kafka cluster that share the same zookeeper ensemble.
+        // zones may reside in different data centers.
         zones: [
             {
                 name: "integration"
