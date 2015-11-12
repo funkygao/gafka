@@ -9,8 +9,6 @@ import (
 	"github.com/funkygao/log4go"
 )
 
-// TODO how to load balance across the cluster?
-// TODO how to init when startup, checkpoint of the routing table
 func main() {
 	level := log4go.DEBUG // TODO
 	for _, filter := range log4go.Global {

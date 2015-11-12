@@ -33,9 +33,10 @@ import (
 */
 
 const (
-	PubsubRoot = "/_pubsub"
-	BindRoot   = PubsubRoot + "/bind"
-	ZkAddr     = "localhost:2181" // TODO
+	PubsubRoot   = "/_pubsub"
+	BindRoot     = PubsubRoot + "/bind"
+	ExchangeRoot = PubsubRoot + "/exchange"
+	ZkAddr       = "localhost:2181" // TODO
 )
 
 var (
