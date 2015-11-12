@@ -185,7 +185,7 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 				sarama.OffsetOldest)
 			must(err)
 
-			isr := zkcluster.Isr(topic, partitionID)
+			isr := zkcluster.Isr(topic, partitionID) // TODO patch sarama to export Isrs
 			underReplicated := false
 			if len(isr) != len(replicas) {
 				underReplicated = true
