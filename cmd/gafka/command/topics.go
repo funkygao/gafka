@@ -98,7 +98,7 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 	kfkClient, err := sarama.NewClient([]string{broker0.Addr()}, sarama.NewConfig())
 	if err != nil {
 		if verbose {
-			this.Ui.Output(fmt.Sprintf("%5s%s %s", " ", broker0.Addr(),
+			this.Ui.Output(color.Yellow("%5s%s %s", " ", broker0.Addr(),
 				err.Error()))
 		}
 
