@@ -127,7 +127,9 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 			}
 		}
 
-		this.Ui.Output(strings.Repeat(" ", 4) + color.Blue(topic))
+		if verbose {
+			this.Ui.Output(strings.Repeat(" ", 4) + color.Blue(topic))
+		}
 
 		// get partitions and check if some dead
 		alivePartitions, err := kfkClient.WritablePartitions(topic)
@@ -137,6 +139,12 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 		if len(alivePartitions) != len(partions) {
 			this.Ui.Output(fmt.Sprintf("topic[%s] has %s partitions: %+v/%+v",
 				alivePartitions, color.Red("dead"), partions))
+		}
+
+		if !verbose {
+			this.Ui.Output(strings.Repeat(" ", 4) + color.Blue("%30s %d",
+				topic, len(partions)))
+			continue
 		}
 
 		for _, partitionID := range alivePartitions {
