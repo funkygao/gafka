@@ -7,13 +7,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/config"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/pipestream"
 	log "github.com/funkygao/log4go"
+	"github.com/funkygao/sarama"
 )
 
 type Topics struct {
@@ -177,6 +177,14 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 			replicas, err := kfkClient.Replicas(topic, partitionID)
 			must(err)
 
+			isr, err := kfkClient.Isr(topics, partitionID)
+			must(err)
+
+			underReplicated := false
+			if len(isr) != len(replicas) {
+				underReplicated = true
+			}
+
 			latestOffset, err := kfkClient.GetOffset(topic, partitionID,
 				sarama.OffsetNewest)
 			must(err)
@@ -184,12 +192,6 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 			oldestOffset, err := kfkClient.GetOffset(topic, partitionID,
 				sarama.OffsetOldest)
 			must(err)
-
-			isr := zkcluster.Isr(topic, partitionID) // TODO patch sarama to export Isrs
-			underReplicated := false
-			if len(isr) != len(replicas) {
-				underReplicated = true
-			}
 
 			if !underReplicated {
 				this.Ui.Output(fmt.Sprintf("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",
