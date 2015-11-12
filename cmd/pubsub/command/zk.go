@@ -15,8 +15,6 @@ import (
 /*
    /_pubsub
        |
-       |---bind_change
-       |
        |---bind
        |    |
        |    |---${app} {"${inbox}":"${outbox}"}
@@ -37,7 +35,6 @@ import (
 const (
 	PubsubRoot = "/_pubsub"
 	BindRoot   = PubsubRoot + "/bind"
-	BindChange = PubsubRoot + "/bind_change"
 	ZkAddr     = "localhost:2181" // TODO
 )
 
@@ -202,19 +199,6 @@ func (this *Zk) RegisterInbox(topic string) error {
 	return this.createNode(this.inboxRoot()+"/"+topic, []byte(""))
 }
 
-func (this *Zk) Bind(binding map[string]string) error {
-	data, err := json.Marshal(binding)
-	if err != nil {
-		return err
-	}
-
-	err = this.setNode(this.bindPath(), data)
-	if err != nil {
-		return err
-	}
-	return this.setNode(BindChange, emptyData)
-}
-
 func (this *Zk) Binding() (bindings map[string]string, err error) {
 	this.connectIfNeccessary()
 
@@ -224,6 +208,15 @@ func (this *Zk) Binding() (bindings map[string]string, err error) {
 		bindings = make(map[string]string)
 	}
 	return
+}
+
+func (this *Zk) Bind(binding map[string]string) error {
+	data, err := json.Marshal(binding)
+	if err != nil {
+		return err
+	}
+
+	return this.setNode(this.bindPath(), data)
 }
 
 func (this *Zk) Inboxes() []string {

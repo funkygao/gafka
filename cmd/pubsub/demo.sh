@@ -1,6 +1,5 @@
 # zk create /_pubsub
 # zk create /_pubsub/bind
-# zk create /_pubsub/bind_change
 
 ./pubsub 
 

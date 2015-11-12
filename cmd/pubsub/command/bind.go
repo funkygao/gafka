@@ -2,6 +2,7 @@ package command
 
 import (
 	"flag"
+	"fmt"
 	"strings"
 
 	"github.com/funkygao/gocli"
@@ -64,6 +65,9 @@ func (this *Bind) Run(args []string) (exitCode int) {
 		this.Ui.Error(color.Red("%v", err))
 		return 1
 	}
+
+	// send notification to exchange daemon
+	KafkaSendMessage(fmt.Sprintf("%s,%s:%s", from, id, to))
 
 	this.Ui.Output(color.Green("bound successfully"))
 

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 
+	"github.com/Shopify/sarama"
 	"github.com/funkygao/golib/pipestream"
 	log "github.com/funkygao/log4go"
 )
@@ -14,6 +15,7 @@ const (
 
 var (
 	KafkaBrokerList = []string{"localhost:9092"} // TODO
+	BindingTopic    = "_bindings"
 )
 
 func KafkaCreateTopic(topic string) error {
@@ -52,4 +54,22 @@ func KafkaInboxTopic(app, inbox string) string {
 
 func KafkaOutboxTopic(app, outbox string) string {
 	return fmt.Sprintf("_pubsub.%s.outbox.%s", app, outbox)
+}
+
+func KafkaSendMessage(msg string) error {
+	cf := sarama.NewConfig()
+	cf.Producer.RequiredAcks = sarama.WaitForLocal
+	cf.Producer.Retry.Max = 3
+	producer, err := sarama.NewSyncProducer(KafkaBrokerList, cf)
+	if err != nil {
+		panic(err)
+	}
+	defer producer.Close()
+
+	_, _, err = producer.SendMessage(&sarama.ProducerMessage{
+		Topic: BindingTopic,
+		Value: sarama.StringEncoder(msg),
+	})
+
+	return err
 }
