@@ -60,17 +60,19 @@ func (this *Pub) Run(args []string) (exitCode int) {
 		defer producer.Close()
 
 		msgBody := strings.Repeat("X", size)
+		var msg string
 		var i int64 = 0
 		for {
+			msg = fmt.Sprintf("%d:[%s]%s", i, id, msgBody)
 			producer.SendMessage(&sarama.ProducerMessage{
 				Topic: KafkaOutboxTopic(id, topic),
-				Value: sarama.StringEncoder(fmt.Sprintf("%d:%s", i, msgBody)),
+				Value: sarama.StringEncoder(msg),
 			})
 
 			i++
 			if i%int64(step) == 0 {
 				this.Ui.Output(color.Green("%d msgs written, current %s",
-					i, fmt.Sprintf("%d:%s", i, msgBody)))
+					i, msg))
 			}
 		}
 
