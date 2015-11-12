@@ -16,6 +16,10 @@ func addRouter(binding string) {
 	fromApp, fromOutbox := p[0], p[1]
 	p = strings.SplitN(to, ":", 2)
 	toApp, toInbox := p[0], p[1]
+
+	log4go.Info("add routing %s:%s -> %s:%s", fromApp, fromOutbox,
+		toApp, toInbox)
+
 	go runRouting(fromApp, fromOutbox, toApp, toInbox)
 }
 
@@ -45,6 +49,8 @@ func runRouting(fromApp, fromOutbox, toApp, toInbox string) {
 
 	p, _ := consumer.ConsumePartition(fromTopic, 0, sarama.OffsetNewest)
 	defer p.Close()
+
+	log4go.Info("router[%s:%s -> %s:%s] ready", fromApp, fromOutbox, toApp, toInbox)
 
 	var n int64 = 0
 	for {

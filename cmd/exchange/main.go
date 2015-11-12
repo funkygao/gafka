@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -18,6 +19,9 @@ func main() {
 
 	log4go.AddFilter("stdout", level, log4go.NewConsoleLogWriter())
 
+	// FIXME race condition with receiveNewBindings, lost bindings
+	loadBindings()
+
 	log4go.Info("waiting for new binding event")
 	bindingChan := receiveNewBindings()
 	for {
@@ -32,6 +36,30 @@ func main() {
 		}
 	}
 
+}
+
+func loadBindings() {
+	log4go.Debug("loading bindings")
+
+	zk := command.NewZk(command.DefaultConfig("", command.ZkAddr))
+	conn := zk.Conn()
+	children, _, err := conn.Children(command.BindRoot)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, app := range children {
+		log4go.Info("found bindings for: %s", app)
+
+		bindings, err := zk.GetJsonData(command.BindRoot + "/" + app)
+		if err != nil {
+			log4go.Error(err)
+			continue
+		}
+		for from, to := range bindings {
+			addRouter(fmt.Sprintf("%s,%s:%s", from, app, to))
+		}
+	}
 }
 
 // FIXME when to cleanup connections

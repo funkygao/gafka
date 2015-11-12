@@ -206,7 +206,7 @@ func (this *Zk) RegisterInbox(topic string) error {
 func (this *Zk) Binding() (bindings map[string]string, err error) {
 	this.connectIfNeccessary()
 
-	bindings, err = this.getJsonData(this.bindPath())
+	bindings, err = this.GetJsonData(this.bindPath())
 	if err == zk.ErrNoNode {
 		err = this.createNode(this.bindPath(), []byte(""))
 		bindings = make(map[string]string)
@@ -284,7 +284,7 @@ func (this *Zk) getData(path string) (data []byte, err error) {
 	return
 }
 
-func (this *Zk) getJsonData(path string) (map[string]string, error) {
+func (this *Zk) GetJsonData(path string) (map[string]string, error) {
 	data, err := this.getData(path)
 	if err != nil {
 		return nil, err
