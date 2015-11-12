@@ -19,6 +19,12 @@ func init() {
 			}, nil
 		},
 
+		"lags": func() (cli.Command, error) {
+			return &command.Lags{
+				Ui: ui,
+			}, nil
+		},
+
 		"consumers": func() (cli.Command, error) {
 			return &command.Consumers{
 				Ui: ui,
