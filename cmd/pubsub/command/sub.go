@@ -7,6 +7,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/gofmt"
 	log "github.com/funkygao/log4go"
 )
 
@@ -62,14 +63,14 @@ func (this *Sub) consumeTopic(app string, inbox string, step int) {
 	p, _ := consumer.ConsumePartition(topic, 0, sarama.OffsetNewest)
 	defer p.Close()
 
-	var i int64 = 0
+	var n int64 = 0
 	for {
 		select {
 		case msg := <-p.Messages():
-			i++
-			if i%int64(step) == 0 {
-				this.Ui.Output(color.Green("inbox:%s consumed %d messages <- %s",
-					inbox, i,
+			n++
+			if n%int64(step) == 0 {
+				this.Ui.Output(color.Green("inbox:%s consumed %s messages <- %s",
+					inbox, gofmt.Comma(n),
 					string(msg.Value)))
 			}
 		}

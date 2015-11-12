@@ -29,7 +29,8 @@ func runRouting(fromApp, fromOutbox, toApp, toInbox string) {
 	toTopic := command.KafkaInboxTopic(toApp, toInbox)
 
 	cf := sarama.NewConfig()
-	cf.Producer.RequiredAcks = sarama.WaitForLocal
+	cf.Producer.RequiredAcks = sarama.NoResponse
+	//cf.Producer.RequiredAcks = sarama.WaitForLocal
 	cf.Producer.Retry.Max = 3
 	producer, err := sarama.NewSyncProducer(command.KafkaBrokerList, cf)
 	if err != nil {

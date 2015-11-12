@@ -8,6 +8,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/gofmt"
 )
 
 type Pub struct {
@@ -62,18 +63,18 @@ func (this *Pub) Run(args []string) (exitCode int) {
 
 		msgBody := strings.Repeat("X", size)
 		var msg string
-		var i int64 = 0
+		var n int64 = 0
 		for {
-			msg = fmt.Sprintf("%d:[%s]%s", i, id, msgBody)
+			msg = fmt.Sprintf("%d:[%s]%s", n, id, msgBody)
 			producer.SendMessage(&sarama.ProducerMessage{
 				Topic: KafkaOutboxTopic(id, topic),
 				Value: sarama.StringEncoder(msg),
 			})
 
-			i++
-			if i%int64(step) == 0 {
-				this.Ui.Output(color.Green("%d msgs written, current %s",
-					i, msg))
+			n++
+			if n%int64(step) == 0 {
+				this.Ui.Output(color.Green("%s msgs written, current %s",
+					gofmt.Comma(n), msg))
 			}
 		}
 
