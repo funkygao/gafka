@@ -9,10 +9,12 @@ Simplified CLI kafka clusters management tool powered by golang.
 ### Configuration
 
     /etc/gafka.cf
+
     {
+        // a zone is groups of kafka cluster that share the same zookeeper ensemble
         zones: [
             {
-                name: "sit"
+                name: "integration"
                 zk: "10.77.144.87:10181,10.77.144.88:10181,10.77.144.89:10181"
             }
             {
@@ -20,7 +22,7 @@ Simplified CLI kafka clusters management tool powered by golang.
                 zk: "10.77.144.101:10181,10.77.144.132:10181,10.77.144.182:10181"
             }
             {
-                name: "prod"
+                name: "production"
                 zk: "10.209.33.69:2181,10.209.37.19:2181,10.209.37.68:2181"
             }
         ]
