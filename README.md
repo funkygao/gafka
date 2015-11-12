@@ -1,33 +1,12 @@
 # gafka
-kafka clusters management tool in golang
+Simplified CLI kafka clusters management tool powered by golang.
 
-### Terms
+### Install
 
-- zone
+    go get github.com/funkygao/gafka
+    sudo cp $GOPATH/src/github.com/funkygao/gafka/etc/gafka.cf /etc
 
-  Zone is groups of kafka cluster.
+### Usage
 
-  - zkAddrs
+    gafka
 
-    Zookeeper connection string.
-
-- cluster
-
-  Kafka cluster.
-
-  - name
-
-    Human readable kafka cluster name
-
-  - path
-
-    The chroot path in zk
-
-### TODO
-
-- [ ] topic name regex
-- [ ] show each partition replication lag
-- [ ] housekeep of clusters info automatically find stale info
-- [ ] topology of each host
-- [ ] topics show consumer groups
-- [ ] add topic in zone/cluster
