@@ -42,3 +42,4 @@ Simplified CLI multi-datacenter kafka clusters management tool powered by golang
 - [ ] rebalance a kafka cluster
 - [ ] add partitions on broker
 - [ ] show offline partitions besides under-replicated partitions
+- [ ] display consumer lags
