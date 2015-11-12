@@ -23,12 +23,14 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		zone         string
 		cluster      string
 		topicPattern string
+		verbose      bool
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&topicPattern, "t", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
+	cmdFlags.BoolVar(&verbose, "verbose", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -43,20 +45,20 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
 	if cluster != "" {
-		this.displayTopicsOfCluster(cluster, zkzone, topicPattern)
+		this.displayTopicsOfCluster(cluster, zkzone, topicPattern, verbose)
 		return
 	}
 
 	// all clusters
 	zkzone.WithinClusters(func(cluster string, path string) {
-		this.displayTopicsOfCluster(cluster, zkzone, topicPattern)
+		this.displayTopicsOfCluster(cluster, zkzone, topicPattern, verbose)
 	})
 
 	return
 }
 
 func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
-	topicPattern string) {
+	topicPattern string, verbose bool) {
 	must := func(err error) {
 		if err != nil {
 			panic(err)
@@ -73,7 +75,7 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 		return
 	}
 
-	if topicPattern == "" {
+	if topicPattern == "" && verbose {
 		sortedBrokerIds := make([]string, 0, len(brokers))
 		for brokerId, _ := range brokers {
 			sortedBrokerIds = append(sortedBrokerIds, brokerId)
@@ -95,8 +97,11 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 
 	kfkClient, err := sarama.NewClient([]string{broker0.Addr()}, sarama.NewConfig())
 	if err != nil {
-		this.Ui.Output(fmt.Sprintf("%5s%s %s", " ", broker0.Addr(),
-			err.Error()))
+		if verbose {
+			this.Ui.Output(fmt.Sprintf("%5s%s %s", " ", broker0.Addr(),
+				err.Error()))
+		}
+
 		return
 	}
 	defer kfkClient.Close()
@@ -104,14 +109,14 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 	topics, err := kfkClient.Topics()
 	must(err)
 	if len(topics) == 0 {
-		if topicPattern == "" {
+		if topicPattern == "" && verbose {
 			this.Ui.Output(fmt.Sprintf("%5s%s", " ", color.Magenta("no topics")))
 		}
 
 		return
 	}
 
-	if topicPattern == "" {
+	if topicPattern == "" && verbose {
 		this.Ui.Output(fmt.Sprintf("%80d topics", len(topics)))
 	}
 
@@ -186,6 +191,8 @@ Options:
 
   -t topic
   	Topic name, regex supported.
+
+  -verbose
 `
 	return strings.TrimSpace(help)
 }
