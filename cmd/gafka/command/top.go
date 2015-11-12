@@ -16,7 +16,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 }
 
 func (*Top) Synopsis() string {
-	return "Display top kafka cluster activities"
+	return "Display top kafka cluster activities TODO"
 }
 
 func (*Top) Help() string {

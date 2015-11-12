@@ -29,6 +29,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		addTopic     string
 		replicas     int
 		partitions   int
+		topicConfig  string
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -38,6 +39,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&verbose, "verbose", false, "")
 	cmdFlags.StringVar(&add, "add", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
+	cmdFlags.StringVar(&topicConfig, "config", "", "")
 	cmdFlags.IntVar(&replicas, "replicas", 2, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -255,6 +257,9 @@ Options:
 
   -t topic
   	Topic name pattern to display, regex supported.
+
+  -config k=v
+  	Config a topic. 
 
   -add topic
   	Add a topic to a kafka cluster.

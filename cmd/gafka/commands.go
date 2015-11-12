@@ -25,6 +25,12 @@ func init() {
 			}, nil
 		},
 
+		"rebalance": func() (cli.Command, error) {
+			return &command.Rebalance{
+				Ui: ui,
+			}, nil
+		},
+
 		"brokers": func() (cli.Command, error) {
 			return &command.Brokers{
 				Ui: ui,
@@ -39,6 +45,12 @@ func init() {
 
 		"clusters": func() (cli.Command, error) {
 			return &command.Clusters{
+				Ui: ui,
+			}, nil
+		},
+
+		"partition": func() (cli.Command, error) {
+			return &command.Partition{
 				Ui: ui,
 			}, nil
 		},
