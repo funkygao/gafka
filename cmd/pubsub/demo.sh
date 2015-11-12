@@ -40,4 +40,5 @@ app=app3
 ./pubsub bind -id app3 -add -from app2:out2 -to in3
 
 # ./pubsub pub -id app1 -topic out1
+# ./pubsub pub -id app2 -topic out2
 # ./pubsub sub -id app3

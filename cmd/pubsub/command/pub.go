@@ -21,7 +21,7 @@ func (this *Pub) Run(args []string) (exitCode int) {
 		stress  bool
 		size    int
 		topic   string
-		step    = 1000
+		step    int
 	)
 	cmdFlags := flag.NewFlagSet("pub", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -29,7 +29,8 @@ func (this *Pub) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&topic, "topic", "", "")
 	cmdFlags.BoolVar(&console, "console", false, "")
 	cmdFlags.BoolVar(&stress, "stress", true, "")
-	cmdFlags.IntVar(&size, "size", 100, "")
+	cmdFlags.IntVar(&size, "size", 500, "")
+	cmdFlags.IntVar(&step, "step", 10000, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -103,6 +104,9 @@ Options:
 
   -size size
    	Under stress mode, specify each msg size.
+
+  -step 
+  	Progress bar interval.
 `
 	return strings.TrimSpace(help)
 }

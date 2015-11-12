@@ -5,6 +5,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/pubsub/command"
+	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/log4go"
 )
 
@@ -51,8 +52,8 @@ func runRouting(fromApp, fromOutbox, toApp, toInbox string) {
 		case msg := <-p.Messages():
 			n++
 			if n%10000 == 0 {
-				log4go.Debug("total %10d. [%s:%s -> %s:%s]: %s",
-					n,
+				log4go.Debug("total %10s. [%s:%s -> %s:%s]: %s",
+					gofmt.Comma(n),
 					fromApp, fromOutbox,
 					toApp, toInbox,
 					string(msg.Value))
