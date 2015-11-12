@@ -12,6 +12,8 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/pipestream"
+	log "github.com/funkygao/log4go"
 )
 
 type Topics struct {
@@ -24,6 +26,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		cluster      string
 		topicPattern string
 		verbose      bool
+		addTopic     string
+		replicas     int
+		partitions   int
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -31,6 +36,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&topicPattern, "t", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&verbose, "verbose", false, "")
+	cmdFlags.StringVar(&add, "add", "", "")
+	cmdFlags.IntVar(&partitions, "partitions", 1, "")
+	cmdFlags.IntVar(&replicas, "replicas", 2, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -39,6 +47,21 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		this.Ui.Error("empty zone not allowed")
 		this.Ui.Output(this.Help())
 		return 2
+	}
+
+	if addTopic != "" {
+		if cluster == "" {
+			this.Ui.Error("to add a topic, -cluster required")
+			this.Ui.Output(this.Help())
+			return 2
+		}
+
+		zkAddrs := config.ZonePath(zone)
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
+		zkAddrs = zkAddrs + zkzone.ClusterPath(cluster)
+		this.addTopic(zkAddrs, topic, replicas, partitions)
+
+		return
 	}
 
 	ensureZoneValid(zone)
@@ -183,6 +206,37 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 	}
 }
 
+func (this *Topics) addTopic(zkAddrs string, topic string, replicas, partitions int) {
+	log.Debug("creating kafka topic: %s", topic)
+
+	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", config.KafkaHome()),
+		fmt.Sprintf("--zookeeper %s", zkAddrs),
+		fmt.Sprintf("--create"),
+		fmt.Sprintf("--topic %s", topic),
+		fmt.Sprintf("--partitions %d", partitions),
+		fmt.Sprintf("--replication-factor %d", replicas),
+	)
+	err := cmd.Open()
+	if err != nil {
+		return err
+	}
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+	var lastLine string
+	for scanner.Scan() {
+		lastLine = scanner.Text()
+		log.Debug(lastLine)
+	}
+	err = scanner.Err()
+	if err != nil {
+		return err
+	}
+	cmd.Close()
+
+	log.Info("kafka created topic[%s]: %s", topic, lastLine)
+}
+
 func (*Topics) Synopsis() string {
 	return "Print available topics from Zookeeper"
 }
@@ -198,7 +252,14 @@ Options:
   -c cluster
 
   -t topic
-  	Topic name, regex supported.
+  	Topic name pattern to display, regex supported.
+
+  -add topic
+  	Add a topic to a kafka cluster.
+
+  -partitions n
+
+  -replicas n
 
   -verbose
 `

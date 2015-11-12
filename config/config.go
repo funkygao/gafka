@@ -28,6 +28,11 @@ func Zones() map[string]string {
 	return conf.zones
 }
 
+func KafkaHome() string {
+	ensureLogLoaded()
+	return conf.kafkaHome
+}
+
 func SortedZones() []string {
 	ensureLogLoaded()
 	return conf.sortedZones()

@@ -37,7 +37,7 @@ func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
 	return &ZkCluster{
 		zone: this,
 		name: cluster,
-		path: this.clusterPath(cluster),
+		path: this.ClusterPath(cluster),
 	}
 }
 
@@ -172,7 +172,8 @@ func (this *ZkZone) WithinClusters(fn func(name string, path string)) {
 	}
 }
 
-func (this *ZkZone) clusterPath(name string) string {
+// ClusterPath return the zk chroot path of a cluster.
+func (this *ZkZone) ClusterPath(name string) string {
 	this.connectIfNeccessary()
 
 	zkPath := clusterRoot + zkPathSeperator + name
