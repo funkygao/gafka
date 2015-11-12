@@ -14,9 +14,17 @@ type ZkCluster struct {
 	path string // cluster's kafka chroot path in zk cluster
 }
 
-func (this *ZkCluster) GetTopics(cluster string) []string {
+func (this *ZkCluster) Topics() []string {
 	r := make([]string, 0)
-	for name, _ := range this.zone.getChildrenWithData(clusterRoot + BrokerTopicsPath) {
+	for name, _ := range this.zone.getChildrenWithData(this.path + BrokerTopicsPath) {
+		r = append(r, name)
+	}
+	return r
+}
+
+func (this *ZkCluster) Consumers() []string {
+	r := make([]string, 0)
+	for name, _ := range this.zone.getChildrenWithData(this.path + ConsumersPath) {
 		r = append(r, name)
 	}
 	return r

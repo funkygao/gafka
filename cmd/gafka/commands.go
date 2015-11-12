@@ -19,6 +19,12 @@ func init() {
 			}, nil
 		},
 
+		"consumers": func() (cli.Command, error) {
+			return &command.Consumers{
+				Ui: ui,
+			}, nil
+		},
+
 		"brokers": func() (cli.Command, error) {
 			return &command.Brokers{
 				Ui: ui,
