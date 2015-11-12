@@ -36,3 +36,9 @@ Simplified CLI multi-datacenter kafka clusters management tool powered by golang
 
     gafka
 
+### TODO
+
+- [ ] add/remove a broker
+- [ ] rebalance a kafka cluster
+- [ ] add partitions on broker
+- [ ] show offline partitions besides under-replicated partitions
