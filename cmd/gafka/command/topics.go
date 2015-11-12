@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -19,14 +20,14 @@ type Topics struct {
 
 func (this *Topics) Run(args []string) (exitCode int) {
 	var (
-		zone    string
-		cluster string
-		topic   string
+		zone         string
+		cluster      string
+		topicPattern string
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
-	cmdFlags.StringVar(&topic, "t", "", "")
+	cmdFlags.StringVar(&topicPattern, "t", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -42,19 +43,20 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
 	if cluster != "" {
-		this.displayTopicsOfCluster(cluster, zkzone)
+		this.displayTopicsOfCluster(cluster, zkzone, topicPattern)
 		return
 	}
 
 	// all clusters
 	zkzone.WithinClusters(func(cluster string, path string) {
-		this.displayTopicsOfCluster(cluster, zkzone)
+		this.displayTopicsOfCluster(cluster, zkzone, topicPattern)
 	})
 
 	return
 }
 
-func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone) {
+func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
+	topicPattern string) {
 	must := func(err error) {
 		if err != nil {
 			panic(err)
@@ -71,14 +73,16 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone) {
 		return
 	}
 
-	sortedBrokerIds := make([]string, 0, len(brokers))
-	for brokerId, _ := range brokers {
-		sortedBrokerIds = append(sortedBrokerIds, brokerId)
-	}
-	sort.Strings(sortedBrokerIds)
-	for _, brokerId := range sortedBrokerIds {
-		this.Ui.Output(fmt.Sprintf("%4s%s %s", " ", color.Green(brokerId),
-			brokers[brokerId]))
+	if topicPattern == "" {
+		sortedBrokerIds := make([]string, 0, len(brokers))
+		for brokerId, _ := range brokers {
+			sortedBrokerIds = append(sortedBrokerIds, brokerId)
+		}
+		sort.Strings(sortedBrokerIds)
+		for _, brokerId := range sortedBrokerIds {
+			this.Ui.Output(fmt.Sprintf("%4s%s %s", " ", color.Green(brokerId),
+				brokers[brokerId]))
+		}
 	}
 
 	// find 1st broker in the cluster
@@ -100,13 +104,25 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone) {
 	topics, err := kfkClient.Topics()
 	must(err)
 	if len(topics) == 0 {
-		this.Ui.Output(fmt.Sprintf("%5s%s", " ", color.Magenta("no topics")))
+		if topicPattern == "" {
+			this.Ui.Output(fmt.Sprintf("%5s%s", " ", color.Magenta("no topics")))
+		}
+
 		return
 	}
 
-	this.Ui.Output(fmt.Sprintf("%80d topics", len(topics)))
+	if topicPattern == "" {
+		this.Ui.Output(fmt.Sprintf("%80d topics", len(topics)))
+	}
+
 	for _, topic := range topics {
-		this.Ui.Output(strings.Repeat(" ", 4) + topic)
+		if topicPattern != "" {
+			if matched, _ := regexp.MatchString(topicPattern, topic); !matched {
+				continue
+			}
+		}
+
+		this.Ui.Output(strings.Repeat(" ", 4) + color.Blue(topic))
 
 		// get partitions and check if some dead
 		alivePartitions, err := kfkClient.WritablePartitions(topic)
