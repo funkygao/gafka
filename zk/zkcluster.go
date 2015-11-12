@@ -43,6 +43,16 @@ func (this *ZkCluster) Brokers() map[string]*Broker {
 	return r
 }
 
+func (this *ZkCluster) BrokerList() []string {
+	r := make([]string, 0)
+	for brokerId, brokerInfo := range this.zone.getChildrenWithData(this.path + BrokerIdsPath) {
+		broker := newBroker(brokerId)
+		broker.from(brokerInfo)
+		r = append(r, broker.Addr())
+	}
+	return r
+}
+
 func (this *ZkCluster) Isr(topic string, partitionId int32) []int {
 	partitionStateData, _ := this.zone.getData(fmt.Sprintf("%s%s/%s/partitions/%d/state", this.path, BrokerTopicsPath, topic,
 		partitionId))
