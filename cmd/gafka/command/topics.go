@@ -141,9 +141,31 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 			replicas, err := kfkClient.Replicas(topic, partitionID)
 			must(err)
 
-			// TODO isr not implemented
-			this.Ui.Output(fmt.Sprintf("%8d Leader:%d Replicas:%+v",
-				partitionID, leader.ID(), replicas))
+			latestOffset, err := kfkClient.GetOffset(topic, partitionID,
+				sarama.OffsetNewest)
+			must(err)
+
+			oldestOffset, err := kfkClient.GetOffset(topic, partitionID,
+				sarama.OffsetOldest)
+			must(err)
+
+			isr := zkcluster.Isr(topic, partitionID)
+			underReplicated := false
+			if len(isr) != len(replicas) {
+				underReplicated = true
+			}
+
+			if !underReplicated {
+				this.Ui.Output(fmt.Sprintf("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",
+					partitionID, leader.ID(), replicas, isr,
+					latestOffset, latestOffset-oldestOffset))
+			} else {
+				// use red for alert
+				this.Ui.Output(color.Red("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",
+					partitionID, leader.ID(), replicas, isr,
+					latestOffset, latestOffset-oldestOffset))
+			}
+
 		}
 	}
 }

@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+var PanicHandler func(interface{})
+
 func TimestampToTime(ts string) time.Time {
 	sec, _ := strconv.ParseInt(ts, 10, 64)
 	if sec > 143761237100 {
@@ -12,4 +14,17 @@ func TimestampToTime(ts string) time.Time {
 	}
 
 	return time.Unix(sec, 0)
+}
+
+func withRecover(fn func()) {
+	defer func() {
+		handler := PanicHandler
+		if handler != nil {
+			if err := recover(); err != nil {
+				handler(err)
+			}
+		}
+	}()
+
+	fn()
 }

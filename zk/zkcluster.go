@@ -1,6 +1,9 @@
 package zk
 
 import (
+	"encoding/json"
+	"fmt"
+	"sort"
 	"strconv"
 )
 
@@ -28,6 +31,21 @@ func (this *ZkCluster) Brokers() map[string]*Broker {
 
 		r[brokerId] = broker
 	}
+
+	return r
+}
+
+func (this *ZkCluster) Isr(topic string, partitionId int32) []int {
+	partitionStateData, _ := this.zone.getData(fmt.Sprintf("%s%s/%s/partitions/%d/state", this.path, BrokerTopicsPath, topic,
+		partitionId))
+	partitionState := make(map[string]interface{})
+	json.Unmarshal(partitionStateData, &partitionState)
+	isr := partitionState["isr"].([]interface{})
+	r := make([]int, 0, len(isr))
+	for _, id := range isr {
+		r = append(r, int(id.(float64)))
+	}
+	sort.Ints(r)
 
 	return r
 }
