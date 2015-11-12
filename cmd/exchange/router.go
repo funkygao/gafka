@@ -5,6 +5,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/pubsub/command"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/log4go"
 )
@@ -50,12 +51,16 @@ func runRouting(fromApp, fromOutbox, toApp, toInbox string) {
 	p, _ := consumer.ConsumePartition(fromTopic, 0, sarama.OffsetNewest)
 	defer p.Close()
 
-	log4go.Info("router[%s:%s -> %s:%s] ready", fromApp, fromOutbox, toApp, toInbox)
+	log4go.Info("router[%s:%s -> %s:%s] %s", fromApp, fromOutbox,
+		toApp, toInbox,
+		color.Green("ready"))
 
 	var n int64 = 0
 	for {
 		select {
 		case msg := <-p.Messages():
+			stats.MsgPerSecond.Mark(1)
+
 			n++
 			if n%10000 == 0 {
 				log4go.Debug("total %10s. [%s:%s -> %s:%s]: %s",

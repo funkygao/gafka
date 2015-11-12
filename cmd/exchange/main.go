@@ -19,6 +19,9 @@ func main() {
 
 	log4go.AddFilter("stdout", level, log4go.NewConsoleLogWriter())
 
+	stats = newExchangeStats()
+	stats.start()
+
 	// FIXME race condition with receiveNewBindings, lost bindings
 	loadBindings()
 
@@ -27,7 +30,7 @@ func main() {
 	for {
 		select {
 		case msg := <-bindingChan:
-			log4go.Info("new binding: %s", msg.Value)
+			log4go.Info("received new binding event: %s", msg.Value)
 			addRouter(string(msg.Value))
 
 		case <-time.After(time.Minute):
