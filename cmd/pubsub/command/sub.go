@@ -22,7 +22,7 @@ func (this *Sub) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("sub", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&id, "id", "", "")
-	cmdFlags.IntVar(&step, "step", 1000, "")
+	cmdFlags.IntVar(&step, "step", 10000, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -35,7 +35,7 @@ func (this *Sub) Run(args []string) (exitCode int) {
 
 	zk := NewZk(DefaultConfig(id, ZkAddr))
 	for _, inbox := range zk.Inboxes() {
-		log.Info("sub inbox: %s", inbox)
+		log.Info("subscribed my[%s] inbox: %s", id, inbox)
 		go this.consumeTopic(id, inbox, step)
 	}
 
@@ -59,16 +59,17 @@ func (this *Sub) consumeTopic(app string, inbox string, step int) {
 	defer consumer.Close()
 
 	topic := KafkaInboxTopic(app, inbox)
-	p, _ := consumer.ConsumePartition(KafkaInboxTopic(app, topic), 0, sarama.OffsetNewest)
+	p, _ := consumer.ConsumePartition(topic, 0, sarama.OffsetNewest)
 	defer p.Close()
 
-	var i int64 = 1
+	var i int64 = 0
 	for {
 		select {
 		case msg := <-p.Messages():
 			i++
 			if i%int64(step) == 0 {
-				this.Ui.Output(color.Green("topic:%s consumed %d messages <- %s", topic,
+				this.Ui.Output(color.Green("inbox:%s consumed %d messages <- %s",
+					inbox, i,
 					string(msg.Value)))
 			}
 		}

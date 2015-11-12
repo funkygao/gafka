@@ -67,7 +67,7 @@ func (this *Bind) Run(args []string) (exitCode int) {
 	}
 
 	// send notification to exchange daemon
-	KafkaSendMessage(fmt.Sprintf("%s,%s:%s", from, id, to))
+	KafkaNotifyBinding(fmt.Sprintf("%s,%s:%s", from, id, to))
 
 	this.Ui.Output(color.Green("bound successfully"))
 

@@ -129,6 +129,10 @@ func (this *Zk) Connect() (err error) {
 func (this *Zk) Init() error {
 	this.connectIfNeccessary()
 
+	// ensure pubsub root exits
+	this.createNode(PubsubRoot, emptyData)
+	this.createNode(BindRoot, emptyData)
+
 	emptyData := []byte("")
 	if err := this.createNode(this.root(), emptyData); err != nil {
 		return err

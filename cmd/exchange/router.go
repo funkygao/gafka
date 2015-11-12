@@ -45,10 +45,18 @@ func runRouting(fromApp, fromOutbox, toApp, toInbox string) {
 	p, _ := consumer.ConsumePartition(fromTopic, 0, sarama.OffsetNewest)
 	defer p.Close()
 
+	var n int64 = 0
 	for {
 		select {
 		case msg := <-p.Messages():
-			log4go.Debug("[%s->%s]: %s", fromTopic, toTopic, string(msg.Value))
+			n++
+			if n%10000 == 0 {
+				log4go.Debug("total %10d. [%s:%s -> %s:%s]: %s",
+					n,
+					fromApp, fromOutbox,
+					toApp, toInbox,
+					string(msg.Value))
+			}
 
 			producer.SendMessage(&sarama.ProducerMessage{
 				Topic: toTopic,
