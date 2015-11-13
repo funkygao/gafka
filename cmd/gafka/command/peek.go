@@ -92,7 +92,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 			stats.MsgBytesPerSecond.Mark(int64(len(msg.Value)))
 
 			if !neat {
-				this.Ui.Output(fmt.Sprintf("%s %s %s", color.Green(topic),
+				this.Ui.Output(fmt.Sprintf("%s %s  %s", color.Green(msg.Topic),
 					gofmt.Comma(msg.Offset), string(msg.Value)))
 			}
 		}
@@ -188,7 +188,7 @@ Options:
   -t topic 
 
   -p partition id
-  	If -1, peek all partitions of a topic
+  	-1 will peek all partitions of a topic
 
   -n
   	Neat mode, only display statastics instead of message content
