@@ -1,6 +1,6 @@
 package ver
 
 var (
-	Version string = "0.0.1alpha"
+	Version string = "0.0.2stable"
 	BuildId string
 )

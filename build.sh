@@ -6,7 +6,7 @@ if [[ $1 = "-loc" ]]; then
     exit
 fi
 
-VER=0.0.1alpha
+VER=0.0.2stable
 # get the git commit
 GIT_ID=$(git rev-parse HEAD | cut -c1-7)
 GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)
