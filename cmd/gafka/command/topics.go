@@ -142,10 +142,6 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 		return
 	}
 
-	if topicPattern == "" && verbose {
-		this.Ui.Output(fmt.Sprintf("%80d topics", len(topics)))
-	}
-
 	for _, topic := range topics {
 		if topicPattern != "" {
 			if matched, _ := regexp.MatchString(topicPattern, topic); !matched {
