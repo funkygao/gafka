@@ -1,5 +1,5 @@
 # gafka
-Simplified CLI multi-datacenter kafka clusters management tool powered by golang.
+Simplified multi-datacenter kafka clusters management console powered by golang.
 
 ### Install
 
