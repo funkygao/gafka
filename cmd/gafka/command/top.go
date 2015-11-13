@@ -1,6 +1,7 @@
 package command
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -21,13 +22,22 @@ type Top struct {
 	Ui       cli.Ui
 	mu       sync.Mutex
 	limit    int
+	topic    string
 	counters map[string]int // key is cluster:topic TODO int64
 }
 
 func (this *Top) Run(args []string) (exitCode int) {
-	if len(args) == 0 {
-		this.Ui.Error("zone required")
-		this.Ui.Output(this.Help())
+	var zone string
+	cmdFlags := flag.NewFlagSet("top", flag.ContinueOnError)
+	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
+	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.StringVar(&this.topic, "t", "", "")
+	cmdFlags.IntVar(&this.limit, "n", 35, "")
+	if err := cmdFlags.Parse(args); err != nil {
+		return 1
+	}
+
+	if validateArgs(this, this.Ui).require("-z").invalid(args) {
 		return 2
 	}
 
@@ -45,10 +55,6 @@ func (this *Top) Run(args []string) (exitCode int) {
 			zkcluster := zkzone.NewCluster(cluster)
 			go this.clusterTop(zkcluster)
 		})
-	}
-
-	if this.limit == 0 {
-		this.limit = 35
 	}
 
 	for {
@@ -78,11 +84,14 @@ func (this *Top) showAndResetCounters() {
 	counterFlip := make(map[int]string)
 	sortedNum := make([]int, 0, len(this.counters))
 	for ct, num := range this.counters {
-		counterFlip[num] = ct
-		if num > 100 {
-			sortedNum = append(sortedNum, num)
+		if this.topic != "" && !strings.HasSuffix(ct, ":"+this.topic) {
+			continue
 		}
 
+		counterFlip[num] = ct
+		if num > 100 { // TODO kill the magic number
+			sortedNum = append(sortedNum, num)
+		}
 	}
 	sort.Ints(sortedNum)
 
@@ -120,6 +129,10 @@ func (this *Top) clusterTop(zkcluster *zk.ZkCluster) {
 		}
 
 		for _, topic := range topics {
+			if this.topic != "" && this.topic != topic {
+				continue
+			}
+
 			msgs := int64(0)
 			alivePartitions, err := kfkClient.WritablePartitions(topic)
 			if err != nil {
@@ -153,9 +166,15 @@ func (*Top) Synopsis() string {
 
 func (*Top) Help() string {
 	help := `
-Usage: gafka top [zone ...] [limit]
+Usage: gafka top [options]
 
 	Display top kafka cluster activities
+
+  -z zone
+
+  -t topic
+
+  -n limit
 `
 	return strings.TrimSpace(help)
 }

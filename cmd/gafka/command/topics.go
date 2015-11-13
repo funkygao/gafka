@@ -93,7 +93,7 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 		return
 	}
 
-	if topicPattern == "" && verbose {
+	if verbose {
 		sortedBrokerIds := make([]string, 0, len(brokers))
 		for brokerId, _ := range brokers {
 			sortedBrokerIds = append(sortedBrokerIds, brokerId)
