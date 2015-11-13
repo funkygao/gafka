@@ -114,7 +114,7 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 		break
 	}
 
-	kfkClient, err := sarama.NewClient([]string{broker0.Addr()}, sarama.NewConfig())
+	kfk, err := sarama.NewClient([]string{broker0.Addr()}, sarama.NewConfig())
 	if err != nil {
 		if verbose {
 			this.Ui.Output(color.Yellow("%5s%s %s", " ", broker0.Addr(),
@@ -123,9 +123,9 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 
 		return
 	}
-	defer kfkClient.Close()
+	defer kfk.Close()
 
-	topics, err := kfkClient.Topics()
+	topics, err := kfk.Topics()
 	must(err)
 	if len(topics) == 0 {
 		if topicPattern == "" && verbose {
@@ -147,9 +147,9 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 		}
 
 		// get partitions and check if some dead
-		alivePartitions, err := kfkClient.WritablePartitions(topic)
+		alivePartitions, err := kfk.WritablePartitions(topic)
 		must(err)
-		partions, err := kfkClient.Partitions(topic)
+		partions, err := kfk.Partitions(topic)
 		must(err)
 		if len(alivePartitions) != len(partions) {
 			this.Ui.Output(fmt.Sprintf("topic[%s] has %s partitions: %+v/%+v",
@@ -163,13 +163,13 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 		}
 
 		for _, partitionID := range alivePartitions {
-			leader, err := kfkClient.Leader(topic, partitionID)
+			leader, err := kfk.Leader(topic, partitionID)
 			must(err)
 
-			replicas, err := kfkClient.Replicas(topic, partitionID)
+			replicas, err := kfk.Replicas(topic, partitionID)
 			must(err)
 
-			isr, err := kfkClient.Isr(topic, partitionID)
+			isr, err := kfk.Isr(topic, partitionID)
 			must(err)
 
 			underReplicated := false
@@ -177,11 +177,11 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 				underReplicated = true
 			}
 
-			latestOffset, err := kfkClient.GetOffset(topic, partitionID,
+			latestOffset, err := kfk.GetOffset(topic, partitionID,
 				sarama.OffsetNewest)
 			must(err)
 
-			oldestOffset, err := kfkClient.GetOffset(topic, partitionID,
+			oldestOffset, err := kfk.GetOffset(topic, partitionID,
 				sarama.OffsetOldest)
 			must(err)
 

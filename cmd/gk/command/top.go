@@ -117,14 +117,14 @@ func (this *Top) clusterTop(zkcluster *zk.ZkCluster) {
 		return
 	}
 
-	kfkClient, err := sarama.NewClient(brokerList, sarama.NewConfig())
+	kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
 	if err != nil {
 		return
 	}
-	defer kfkClient.Close()
+	defer kfk.Close()
 
 	for {
-		topics, err := kfkClient.Topics()
+		topics, err := kfk.Topics()
 		if err != nil || len(topics) == 0 {
 			return
 		}
@@ -135,13 +135,13 @@ func (this *Top) clusterTop(zkcluster *zk.ZkCluster) {
 			}
 
 			msgs := int64(0)
-			alivePartitions, err := kfkClient.WritablePartitions(topic)
+			alivePartitions, err := kfk.WritablePartitions(topic)
 			if err != nil {
 				panic(err)
 			}
 
 			for _, partitionID := range alivePartitions {
-				latestOffset, err := kfkClient.GetOffset(topic, partitionID,
+				latestOffset, err := kfk.GetOffset(topic, partitionID,
 					sarama.OffsetNewest)
 				if err != nil {
 					panic(err)
@@ -156,7 +156,7 @@ func (this *Top) clusterTop(zkcluster *zk.ZkCluster) {
 		}
 
 		time.Sleep(time.Second)
-		kfkClient.RefreshMetadata(topics...)
+		kfk.RefreshMetadata(topics...)
 	}
 
 }
