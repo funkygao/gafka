@@ -46,19 +46,11 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if zone == "" {
-		this.Ui.Error("empty zone not allowed")
-		this.Ui.Output(this.Help())
+	if validateArgs(this, this.Ui).require("-z").on("-add", "-c").invalid(args) {
 		return 2
 	}
 
 	if addTopic != "" {
-		if cluster == "" {
-			this.Ui.Error("to add a topic, -c cluster required")
-			this.Ui.Output(this.Help())
-			return 2
-		}
-
 		zkAddrs := config.ZonePath(zone)
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
 		zkAddrs = zkAddrs + zkzone.ClusterPath(cluster)

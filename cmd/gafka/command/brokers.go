@@ -16,7 +16,6 @@ type Brokers struct {
 	Ui cli.Ui
 }
 
-// TODO dedupe
 func (this *Brokers) Run(args []string) (exitCode int) {
 	var (
 		zone    string
@@ -52,7 +51,6 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	})
 
 	return
-
 }
 
 func (this *Brokers) displayZoneBrokers(zone string, zkzone *zk.ZkZone) {

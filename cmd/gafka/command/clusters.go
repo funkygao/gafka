@@ -32,8 +32,8 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if !this.validate(addMode, clusterName, clusterPath, zone) {
-		return 1
+	if validateArgs(this, this.Ui).on("-a", "-n", "-z", "-p").invalid(args) {
+		return 2
 	}
 
 	if !addMode {
@@ -71,32 +71,15 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 
 }
 
-func (this *Clusters) validate(addMode bool, name, path string, zone string) bool {
-	if zone != "" {
-		ensureZoneValid(zone)
-	}
-
-	if addMode {
-		if name == "" || zone == "" || path == "" {
-			// TODO more strict validator on clusterName
-			this.Ui.Error("when add new cluster, you must specify zone, cluster name, cluster path")
-			return false
-		}
-
-	}
-
-	return true
-}
-
 func (*Clusters) Synopsis() string {
-	return "Manage register kafka clusters"
+	return "Register kafka clusters"
 }
 
 func (*Clusters) Help() string {
 	help := `
 Usage: gafka clusters [options]
 
-	Manage register kafka clusters
+	Register kafka clusters
 
 Options:
 
