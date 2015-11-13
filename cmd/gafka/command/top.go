@@ -18,11 +18,12 @@ import (
 )
 
 type Top struct {
-	Ui       cli.Ui
-	mu       sync.Mutex
-	limit    int
-	topic    string
-	counters map[string]int // key is cluster:topic TODO int64
+	Ui           cli.Ui
+	mu           sync.Mutex
+	limit        int
+	topic        string
+	counters     map[string]int // key is cluster:topic TODO int64
+	lastCounters map[string]int
 }
 
 func (this *Top) Run(args []string) (exitCode int) {
@@ -41,6 +42,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	}
 
 	this.counters = make(map[string]int)
+	this.lastCounters = make(map[string]int)
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
 	zkzone.WithinClusters(func(cluster string, path string) {
@@ -57,8 +59,9 @@ func (this *Top) Run(args []string) (exitCode int) {
 			c.Run()
 
 			// header
-			this.Ui.Output(fmt.Sprintf("%30s %50s %20s", "cluster", "topic", "num"))
-			this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 102)))
+			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
+				"cluster", "topic", "num", "delta"))
+			this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 113)))
 
 			this.showAndResetCounters()
 		}
@@ -93,10 +96,15 @@ func (this *Top) showAndResetCounters() {
 
 		num := sortedNum[i]
 		p := strings.SplitN(counterFlip[num], ":", 2)
-		this.Ui.Output(fmt.Sprintf("%30s %50s %20s", p[0], p[1],
-			gofmt.Comma(int64(num))))
+		delta := num - this.lastCounters[counterFlip[num]]
+		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s", p[0], p[1],
+			gofmt.Comma(int64(num)), gofmt.Comma(int64(delta))))
 	}
 
+	// record last counters and reset current counters
+	for k, v := range this.counters {
+		this.lastCounters[k] = v
+	}
 	this.counters = make(map[string]int)
 }
 
@@ -141,7 +149,7 @@ func (this *Top) clusterTop(zkcluster *zk.ZkCluster) {
 			}
 
 			this.mu.Lock()
-			this.counters[cluster+":"+topic] += int(msgs)
+			this.counters[cluster+":"+topic] = int(msgs)
 			this.mu.Unlock()
 		}
 
