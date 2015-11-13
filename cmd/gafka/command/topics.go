@@ -54,7 +54,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	if addTopic != "" {
 		if cluster == "" {
-			this.Ui.Error("to add a topic, -cluster required")
+			this.Ui.Error("to add a topic, -c cluster required")
 			this.Ui.Output(this.Help())
 			return 2
 		}
@@ -245,14 +245,14 @@ func (this *Topics) addTopic(zkAddrs string, topic string, replicas,
 }
 
 func (*Topics) Synopsis() string {
-	return "Print available topics from Zookeeper"
+	return "Manage topics & partitions of a zone"
 }
 
 func (*Topics) Help() string {
 	help := `
 Usage: gafka topics -z zone [options]
 
-	Print available kafka topics from Zookeeper
+	Manage topics & partitions of a zone
 
 Options:
   
@@ -262,7 +262,7 @@ Options:
   	Topic name pattern to display, regex supported.
 
   -config k=v
-  	Config a topic. 
+  	Config a topic. TODO
 
   -add topic
   	Add a topic to a kafka cluster.

@@ -87,14 +87,14 @@ func (this *Brokers) printBrokers(brokers map[string]*zk.Broker) {
 }
 
 func (*Brokers) Synopsis() string {
-	return "Print available brokers from Zookeeper"
+	return "Print online brokers from Zookeeper"
 }
 
 func (*Brokers) Help() string {
 	help := `
 Usage: gafka brokers [options]
 
-	Print available brokers from Zookeeper.
+	Print online brokers from Zookeeper.
 
 Options:
 

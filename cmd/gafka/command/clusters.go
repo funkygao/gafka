@@ -89,14 +89,14 @@ func (this *Clusters) validate(addMode bool, name, path string, zone string) boo
 }
 
 func (*Clusters) Synopsis() string {
-	return "Print available kafka clusters from Zookeeper"
+	return "Manage register kafka clusters"
 }
 
 func (*Clusters) Help() string {
 	help := `
 Usage: gafka clusters [options]
 
-	Print available kafka clusters from Zookeeper
+	Manage register kafka clusters
 
 Options:
 

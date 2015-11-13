@@ -36,12 +36,14 @@ func (this *Zones) Run(args []string) (exitCode int) {
 }
 
 func (*Zones) Synopsis() string {
-	return "Print available zones defined in /etc/gafka.cf"
+	return "Print zones defined in /etc/gafka.cf"
 }
 
 func (*Zones) Help() string {
 	help := `
 Usage: gafka zones [zone ...]
+
+	Print zones defined in /etc/gafka.cf
 `
 	return strings.TrimSpace(help)
 }

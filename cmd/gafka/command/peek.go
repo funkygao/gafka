@@ -12,6 +12,8 @@ import (
 	"github.com/funkygao/gafka/config"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/metrics"
 )
 
@@ -119,7 +121,8 @@ func (this *Peek) consumeTopic(kfk sarama.Client, topic string, partitionId int3
 	for {
 		select {
 		case msg := <-p.Messages():
-			msgCh <- fmt.Sprintf("[%s] %s", topic, string(msg.Value))
+			msgCh <- fmt.Sprintf("%s %s %s", color.Green(topic),
+				gofmt.Comma(msg.Offset), string(msg.Value))
 		}
 	}
 }

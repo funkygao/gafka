@@ -61,14 +61,14 @@ func (this *Controllers) printControllers(zone string, zkzone *zk.ZkZone) {
 }
 
 func (*Controllers) Synopsis() string {
-	return "Print available kafka controllers from Zookeeper"
+	return "Print active controllers in kafka clusters"
 }
 
 func (*Controllers) Help() string {
 	help := `
 Usage: gafka controllers [options]
 
-	Print available kafka controllers from Zookeeper
+	Print active controllers in kafka clusters
 
 Options:
 

@@ -64,12 +64,14 @@ func (this *Topology) displayZoneTopology(zone string, zkzone *zk.ZkZone) {
 }
 
 func (*Topology) Synopsis() string {
-	return "Print topology of kafka clusters"
+	return "Print server topology of kafka clusters"
 }
 
 func (*Topology) Help() string {
 	help := `
 Usage: gafka topology [zone ...]
+
+	Print server topology of kafka clusters
 `
 	return strings.TrimSpace(help)
 }
