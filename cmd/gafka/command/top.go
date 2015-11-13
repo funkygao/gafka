@@ -2,9 +2,9 @@ package command
 
 import (
 	"fmt"
-	//"sort"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -12,13 +12,14 @@ import (
 	"github.com/funkygao/gafka/config"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/sarama"
 )
 
 type Top struct {
 	Ui       cli.Ui
 	mu       sync.Mutex
-	counters map[string]int64 // key is cluster:topic
+	counters map[string]int // key is cluster:topic TODO int64
 }
 
 func (this *Top) Run(args []string) (exitCode int) {
@@ -28,7 +29,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	this.counters = make(map[string]int64)
+	this.counters = make(map[string]int)
 
 	for _, zone := range args {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
@@ -47,8 +48,8 @@ func (this *Top) Run(args []string) (exitCode int) {
 			c.Run()
 
 			// header
-			this.Ui.Output(fmt.Sprintf("%30s %50s %15s", "cluster", "topic", "num"))
-			this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 97)))
+			this.Ui.Output(fmt.Sprintf("%30s %50s %20s", "cluster", "topic", "num"))
+			this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 102)))
 
 			this.showAndResetCounters()
 		}
@@ -62,13 +63,29 @@ func (this *Top) showAndResetCounters() {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
-	// sort by cluster name
+	counterFlip := make(map[int]string)
+	sortedNum := make([]int, 0, len(this.counters))
 	for ct, num := range this.counters {
-		p := strings.SplitN(ct, ":", 2)
-		this.Ui.Output(fmt.Sprintf("%30s %50s %15d", p[0], p[1], num))
+		counterFlip[num] = ct
+		if num > 100 {
+			sortedNum = append(sortedNum, num)
+		}
+
+	}
+	sort.Ints(sortedNum)
+
+	for i := len(sortedNum) - 1; i >= 0; i-- {
+		if len(sortedNum)-i > 35 {
+			break
+		}
+
+		num := sortedNum[i]
+		p := strings.SplitN(counterFlip[num], ":", 2)
+		this.Ui.Output(fmt.Sprintf("%30s %50s %20s", p[0], p[1],
+			gofmt.Comma(int64(num))))
 	}
 
-	this.counters = make(map[string]int64)
+	this.counters = make(map[string]int)
 }
 
 func (this *Top) clusterTop(zkcluster *zk.ZkCluster) {
@@ -108,7 +125,7 @@ func (this *Top) clusterTop(zkcluster *zk.ZkCluster) {
 			}
 
 			this.mu.Lock()
-			this.counters[cluster+":"+topic] += msgs
+			this.counters[cluster+":"+topic] += int(msgs)
 			this.mu.Unlock()
 		}
 
