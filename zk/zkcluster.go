@@ -16,16 +16,21 @@ type ZkCluster struct {
 
 func (this *ZkCluster) Topics() []string {
 	r := make([]string, 0)
-	for name, _ := range this.zone.getChildrenWithData(this.path + BrokerTopicsPath) {
+	for name, _ := range this.zone.childrenWithData(this.path + BrokerTopicsPath) {
 		r = append(r, name)
 	}
 	return r
 }
 
-func (this *ZkCluster) Consumers() []string {
-	r := make([]string, 0)
-	for name, _ := range this.zone.getChildrenWithData(this.path + ConsumersPath) {
-		r = append(r, name)
+// Returns {groupName: online}
+func (this *ZkCluster) ConsumerGroups() map[string]bool {
+	r := make(map[string]bool)
+	for _, group := range this.zone.children(this.path + ConsumersPath) {
+		if len(this.zone.children(this.path+ConsumersPath+"/"+group+"/ids")) > 0 {
+			r[group] = true
+		} else {
+			r[group] = false
+		}
 	}
 	return r
 }
@@ -33,7 +38,7 @@ func (this *ZkCluster) Consumers() []string {
 // returns {brokerId: broker}
 func (this *ZkCluster) Brokers() map[string]*Broker {
 	r := make(map[string]*Broker)
-	for brokerId, brokerInfo := range this.zone.getChildrenWithData(this.path + BrokerIdsPath) {
+	for brokerId, brokerInfo := range this.zone.childrenWithData(this.path + BrokerIdsPath) {
 		broker := newBroker(brokerId)
 		broker.from(brokerInfo)
 
@@ -45,7 +50,7 @@ func (this *ZkCluster) Brokers() map[string]*Broker {
 
 func (this *ZkCluster) BrokerList() []string {
 	r := make([]string, 0)
-	for brokerId, brokerInfo := range this.zone.getChildrenWithData(this.path + BrokerIdsPath) {
+	for brokerId, brokerInfo := range this.zone.childrenWithData(this.path + BrokerIdsPath) {
 		broker := newBroker(brokerId)
 		broker.from(brokerInfo)
 		r = append(r, broker.Addr())

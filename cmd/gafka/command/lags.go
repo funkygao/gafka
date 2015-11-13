@@ -13,6 +13,9 @@ type Lags struct {
 func (this *Lags) Run(args []string) (exitCode int) {
 	return
 
+	// /$cluster/consumers/$group/offsets/$topic/$partition
+	// if > 1000, red
+
 }
 
 func (*Lags) Synopsis() string {

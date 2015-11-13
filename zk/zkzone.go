@@ -107,7 +107,7 @@ func (this *ZkZone) UnregisterCluster(name string) error {
 	return this.conn.Delete(clusterRoot+zkPathSeperator+name, -1)
 }
 
-func (this *ZkZone) getChildrenWithData(path string) map[string][]byte {
+func (this *ZkZone) children(path string) []string {
 	this.connectIfNeccessary()
 
 	log.Debug("get children: %s", path)
@@ -124,6 +124,12 @@ func (this *ZkZone) getChildrenWithData(path string) map[string][]byte {
 
 		return nil
 	}
+
+	return children
+}
+
+func (this *ZkZone) childrenWithData(path string) map[string][]byte {
+	children := this.children(path)
 
 	r := make(map[string][]byte, len(children))
 	for _, name := range children {
@@ -153,7 +159,7 @@ func (this *ZkZone) getData(path string) (data []byte, err error) {
 // returns {clusterName: clusterZkPath}
 func (this *ZkZone) clusters() map[string]string {
 	r := make(map[string]string)
-	for name, path := range this.getChildrenWithData(clusterRoot) {
+	for name, path := range this.childrenWithData(clusterRoot) {
 		r[name] = string(path)
 	}
 
@@ -244,7 +250,7 @@ func (this *ZkZone) WithinControllers(fn func(cluster string, controller *Contro
 func (this *ZkZone) brokers() map[string]map[string]*Broker {
 	r := make(map[string]map[string]*Broker)
 	for cluster, path := range this.clusters() {
-		liveBrokers := this.getChildrenWithData(path + BrokerIdsPath)
+		liveBrokers := this.childrenWithData(path + BrokerIdsPath)
 		if len(liveBrokers) > 0 {
 			r[cluster] = make(map[string]*Broker)
 			for brokerId, brokerInfo := range liveBrokers {

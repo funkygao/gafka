@@ -11,6 +11,7 @@ type Partition struct {
 }
 
 func (this *Partition) Run(args []string) (exitCode int) {
+	// ./bin/kafka-topics.sh --zookeeper localhost:2181/kafka --alter --topic foobar --partitions 5
 	return
 
 }
