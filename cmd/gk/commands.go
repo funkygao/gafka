@@ -11,7 +11,7 @@ var commands map[string]cli.CommandFactory
 
 func init() {
 	ui := &cli.BasicUi{Writer: os.Stdout}
-	cmd := "gk"
+	cmd := os.Args[0]
 
 	commands = map[string]cli.CommandFactory{
 		"zones": func() (cli.Command, error) {
