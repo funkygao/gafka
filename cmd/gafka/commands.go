@@ -67,6 +67,12 @@ func init() {
 			}, nil
 		},
 
+		"underreplicated": func() (cli.Command, error) {
+			return &command.UnderReplicated{
+				Ui: ui,
+			}, nil
+		},
+
 		"audit": func() (cli.Command, error) {
 			return &command.Audit{
 				Ui: ui,
