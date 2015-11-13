@@ -104,7 +104,7 @@ func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topic string,
 		this.Ui.Output(err.Error())
 		return
 	}
-	defer kfk.Close()
+	//defer kfk.Close() // FIXME how to close it
 
 	if topic == "" {
 		// peek all topics
@@ -129,7 +129,29 @@ func (this *Peek) consumeTopic(kfk sarama.Client, topic string, partitionId int3
 	}
 	defer consumer.Close()
 
-	p, _ := consumer.ConsumePartition(topic, partitionId, sarama.OffsetNewest)
+	if partitionId == -1 {
+		// all partitions
+		partitions, err := kfk.Partitions(topic)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, p := range partitions {
+			go this.consumePartition(kfk, consumer, topic, p, msgCh)
+		}
+
+	} else {
+		this.consumePartition(kfk, consumer, topic, partitionId, msgCh)
+	}
+
+}
+
+func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
+	topic string, partitionId int32, msgCh chan string) {
+	p, err := consumer.ConsumePartition(topic, partitionId, sarama.OffsetNewest)
+	if err != nil {
+		panic(err)
+	}
 	defer p.Close()
 
 	for {
@@ -147,15 +169,18 @@ func (*Peek) Synopsis() string {
 
 func (*Peek) Help() string {
 	help := `
-Usage: gafka peek -z zone -c cluster [options]
+Usage: gafka peek -z zone [options]
 
 	Peek kafka cluster messages ongoing
 
 Options:
 
-  -t topic name
+  -c cluster
+
+  -t topic 
 
   -p partition id
+  	If -1, peek all partitions of a topic
 
   -n
   	Neat mode, only display statastics instead of message content
