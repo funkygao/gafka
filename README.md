@@ -62,3 +62,4 @@ Simplified multi-datacenter kafka clusters management console powered by golang.
 - [ ] display consumer lags
 - [ ] if a broker crash, how do we know it's member of the cluster
 - [ ] broker ownership management
+- [ ] zk need batch request

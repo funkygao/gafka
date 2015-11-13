@@ -10,6 +10,7 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/gofmt"
 )
 
 type Lags struct {
@@ -64,17 +65,18 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 	for _, group := range sortedGroups {
 		this.Ui.Output(strings.Repeat(" ", 4) + group)
 		for _, consumer := range consumersByGroup[group] {
+			// TODO if lag>1000? red alert
 			if consumer.Online {
-				this.Ui.Output(fmt.Sprintf("\t%s %s %s %d %s",
+				this.Ui.Output(fmt.Sprintf("\t%s %s/%s %s %s",
 					color.Green("☀︎"),
 					consumer.Topic, consumer.PartitionId,
-					consumer.Offset,
-					color.Cyan("%d", consumer.Lag))) // TODO if lag>1000? red alert
+					gofmt.Comma(consumer.Offset),
+					color.Cyan("%d", consumer.Lag)))
 			} else if !this.onlineOnly {
-				this.Ui.Output(fmt.Sprintf("\t%s %s %s %d %s",
+				this.Ui.Output(fmt.Sprintf("\t%s %s/%s %s %s",
 					color.Yellow("☔︎︎"),
 					consumer.Topic, consumer.PartitionId,
-					consumer.Offset,
+					gofmt.Comma(consumer.Offset),
 					color.Cyan("%d", consumer.Lag)))
 			}
 		}
