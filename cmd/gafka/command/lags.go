@@ -13,7 +13,8 @@ import (
 )
 
 type Lags struct {
-	Ui cli.Ui
+	Ui         cli.Ui
+	onlineOnly bool
 }
 
 func (this *Lags) Run(args []string) (exitCode int) {
@@ -25,6 +26,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
+	cmdFlags.BoolVar(&this.onlineOnly, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -68,7 +70,7 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					consumer.Topic, consumer.PartitionId,
 					consumer.Offset,
 					color.Cyan("%d", consumer.Lag))) // TODO if lag>1000? red alert
-			} else {
+			} else if !this.onlineOnly {
 				this.Ui.Output(fmt.Sprintf("\t%s %s %s %d %s",
 					color.Yellow("☔︎︎"),
 					consumer.Topic, consumer.PartitionId,
@@ -86,6 +88,11 @@ func (*Lags) Synopsis() string {
 func (*Lags) Help() string {
 	help := `
 Usage: gafka lags -z zone [options]
+
+  -c cluster
+
+  -l
+  	Only show online consumers lag.
 `
 	return strings.TrimSpace(help)
 }
