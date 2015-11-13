@@ -201,7 +201,7 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 
 func (this *Topics) addTopic(zkAddrs string, topic string, replicas,
 	partitions int) error {
-	log.Debug("creating kafka topic: %s", topic)
+	log.Info("creating kafka topic: %s", topic)
 
 	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", config.KafkaHome()),
 		fmt.Sprintf("--zookeeper %s", zkAddrs),
@@ -217,10 +217,10 @@ func (this *Topics) addTopic(zkAddrs string, topic string, replicas,
 
 	scanner := bufio.NewScanner(cmd.Reader())
 	scanner.Split(bufio.ScanLines)
-	var lastLine string
+	var line string
 	for scanner.Scan() {
-		lastLine = scanner.Text()
-		log.Debug(lastLine)
+		line = scanner.Text()
+		log.Info(line)
 	}
 	err = scanner.Err()
 	if err != nil {
@@ -228,7 +228,7 @@ func (this *Topics) addTopic(zkAddrs string, topic string, replicas,
 	}
 	cmd.Close()
 
-	log.Info("kafka created topic[%s]: %s", topic, lastLine)
+	log.Info("kafka created topic: %s", topic)
 	return nil
 }
 
