@@ -82,11 +82,12 @@ func (this *ZkCluster) ConsumersByGroup() map[string][]Consumer {
 				}
 
 				c := Consumer{
-					Online:      online,
-					Topic:       topic,
-					PartitionId: partitionId,
-					Offset:      consumerOffset,
-					Lag:         producerOffset - consumerOffset,
+					Online:         online,
+					Topic:          topic,
+					PartitionId:    partitionId,
+					ConsumerOffset: consumerOffset,
+					ProducerOffset: producerOffset,
+					Lag:            producerOffset - consumerOffset,
 				}
 				if _, present := r[group]; !present {
 					r[group] = make([]Consumer, 0)
