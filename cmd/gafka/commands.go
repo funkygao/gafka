@@ -67,6 +67,12 @@ func init() {
 			}, nil
 		},
 
+		"audit": func() (cli.Command, error) {
+			return &command.Audit{
+				Ui: ui,
+			}, nil
+		},
+
 		"controllers": func() (cli.Command, error) {
 			return &command.Controllers{
 				Ui: ui,
