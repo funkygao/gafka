@@ -17,6 +17,11 @@ import (
 	"github.com/funkygao/sarama"
 )
 
+const (
+	topInterval     = 5
+	topIntervalTime = time.Second * topInterval
+)
+
 type Top struct {
 	Ui  cli.Ui
 	Cmd string
@@ -54,15 +59,14 @@ func (this *Top) Run(args []string) (exitCode int) {
 
 	for {
 		select {
-		case <-time.After(time.Second * 5):
-
+		case <-time.After(topIntervalTime):
 			c := exec.Command("clear")
 			c.Stdout = os.Stdout
 			c.Run()
 
 			// header
 			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
-				"cluster", "topic", "num", "delta"))
+				"cluster", "topic", "num", "mps"))
 			this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 113)))
 
 			this.showAndResetCounters()
@@ -98,9 +102,9 @@ func (this *Top) showAndResetCounters() {
 
 		num := sortedNum[i]
 		p := strings.SplitN(counterFlip[num], ":", 2)
-		delta := num - this.lastCounters[counterFlip[num]]
+		mps := (num - this.lastCounters[counterFlip[num]]) / topInterval // msg per sec
 		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s", p[0], p[1],
-			gofmt.Comma(int64(num)), gofmt.Comma(int64(delta))))
+			gofmt.Comma(int64(num)), gofmt.Comma(int64(mps))))
 	}
 
 	// record last counters and reset current counters
