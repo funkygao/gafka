@@ -49,6 +49,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		zone        string
 		topic       string
 		partitionId int
+		neat        bool
 	)
 	cmdFlags := flag.NewFlagSet("peek", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -56,6 +57,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.StringVar(&topic, "t", "", "")
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
+	cmdFlags.BoolVar(&neat, "n", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -101,7 +103,9 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		case msg = <-msgChan:
 			stats.MsgPerSecond.Mark(1)
 
-			this.Ui.Output(msg)
+			if !neat {
+				this.Ui.Output(msg)
+			}
 		}
 	}
 
@@ -142,6 +146,9 @@ Options:
   -t topic name
 
   -p partition id
+
+  -n
+  	Neat mode, only display statastics instead of message content
 `
 	return strings.TrimSpace(help)
 }
