@@ -39,27 +39,28 @@ Simplified multi-datacenter kafka clusters management console powered by golang.
     usage: gafka [--version] [--help] <command> [<args>]
     
     Available commands are:
-        brokers        Print online brokers from Zookeeper
-        clusters       Register kafka clusters
-        consumers      Print online consumers
-        controllers    Print active controllers in kafka clusters
-        lags           Display consumer lags TODO
-        partition      Add partition num to a topic TODO
-        peek           Peek kafka cluster messages ongoing
-        rebalance      Rebalance the load of brokers in a kafka cluster TODO
-        top            Display top kafka cluster activities TODO
-        topics         Manage topics & partitions of a zone
-        topology       Print server topology of kafka clusters
-        zones          Print zones defined in /etc/gafka.cf
-
+        audit              Audit of the message streams TODO
+        brokers            Print online brokers from Zookeeper
+        clusters           Register kafka clusters
+        consumers          Print consumer groups from Zookeeper
+        controllers        Print active controllers in kafka clusters
+        lags               Display consumers lag for each topic each partition
+        partition          Add partition num to a topic TODO
+        peek               Peek kafka cluster messages ongoing
+        producers          Display online producers TODO
+        rebalance          Rebalance the load of brokers in a kafka cluster TODO
+        top                Display top kafka cluster activities
+        topics             Manage topics & partitions of a zone
+        topology           Print server topology of kafka clusters
+        underreplicated    Display under-replicated partitions
+        zones              Print zones defined in /etc/gafka.cf
+    
 ### TODO
 
 - [X] bash autocomplete
-- [ ] add/remove a broker
-- [ ] rebalance a kafka cluster
+- [X] display consumer lags
 - [ ] add partitions on broker
+- [ ] rebalance a kafka cluster
 - [ ] show offline partitions besides under-replicated partitions
-- [ ] display consumer lags
-- [ ] if a broker crash, how do we know it's member of the cluster
-- [ ] broker ownership management
+- [ ] broker ownership management, what if a broker crash? how to find it
 - [ ] zk need batch request
