@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+
+	"github.com/Shopify/sarama"
+	log "github.com/funkygao/log4go"
 )
 
 // ZkCluster is a kafka cluster that has a chroot path in Zookeeper.
@@ -38,23 +41,47 @@ func (this *ZkCluster) ConsumerGroups() map[string]bool {
 // returns {consumerGroup: consumerInfo}
 func (this *ZkCluster) ConsumersByGroup() map[string][]Consumer {
 	r := make(map[string][]Consumer)
+	brokerList := this.BrokerList()
+	if len(brokerList) == 0 {
+		// no brokers alive, so cannot tell the consumer lags
+		return r
+	}
+
+	// TODO zk coupled with kafka, bad design
+	kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
+	if err != nil {
+		log.Error("%+v %v", brokerList, err)
+		return r
+	}
+
 	for group, online := range this.ConsumerGroups() {
 		offsetsPath := this.path + ConsumersPath + "/" + group + "/offsets"
 		topics := this.zone.children(offsetsPath)
 		for _, topic := range topics {
 			for partitionId, offsetData := range this.zone.childrenWithData(offsetsPath +
 				"/" + topic) {
-				offset, err := strconv.ParseInt(string(offsetData), 10, 64)
-				if err != nil {
-					// should never happen
-					panic(err)
+				consumerOffset, err := strconv.ParseInt(string(offsetData), 10, 64)
+				if !this.zone.swallow(err) {
+					return r
 				}
+
+				pid, err := strconv.Atoi(partitionId)
+				if !this.zone.swallow(err) {
+					return r
+				}
+
+				producerOffset, err := kfk.GetOffset(topic, int32(pid),
+					sarama.OffsetNewest)
+				if !this.zone.swallow(err) {
+					return r
+				}
+
 				c := Consumer{
 					Online:      online,
 					Topic:       topic,
 					PartitionId: partitionId,
-					Offset:      offset,
-					Lag:         0,
+					Offset:      consumerOffset,
+					Lag:         producerOffset - consumerOffset,
 				}
 				if _, present := r[group]; !present {
 					r[group] = make([]Consumer, 0)

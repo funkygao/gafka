@@ -41,6 +41,20 @@ func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
 	}
 }
 
+func (this *ZkZone) swallow(err error) bool {
+	if err != nil {
+		if this.conf.PanicOnError {
+			panic(err)
+		}
+
+		log.Error(err)
+		this.addError(err)
+		return false
+	}
+
+	return true
+}
+
 func (this *ZkZone) addError(err error) {
 	this.errs = append(this.errs, err)
 }
@@ -114,12 +128,7 @@ func (this *ZkZone) children(path string) []string {
 	children, _, err := this.conn.Children(path)
 	if err != nil {
 		if err != zk.ErrNoNode {
-			if this.conf.PanicOnError {
-				panic(path + ":" + err.Error())
-			}
-
-			log.Error(err)
-			this.addError(err)
+			this.swallow(err)
 		}
 
 		return nil
@@ -134,13 +143,7 @@ func (this *ZkZone) childrenWithData(path string) map[string][]byte {
 	r := make(map[string][]byte, len(children))
 	for _, name := range children {
 		path, err := this.getData(path + zkPathSeperator + name)
-		if err != nil {
-			if this.conf.PanicOnError {
-				panic(err)
-			}
-
-			log.Error(err)
-			this.addError(err)
+		if !this.swallow(err) {
 			continue
 		}
 
@@ -184,13 +187,7 @@ func (this *ZkZone) ClusterPath(name string) string {
 
 	zkPath := clusterRoot + zkPathSeperator + name
 	clusterPath, _, err := this.conn.Get(zkPath)
-	if err != nil {
-		if this.conf.PanicOnError {
-			panic(zkPath + ":" + err.Error())
-		}
-
-		log.Error(err)
-		this.addError(err)
+	if !this.swallow(err) {
 		return ""
 	}
 
@@ -210,12 +207,8 @@ func (this *ZkZone) controllers() map[string]*Controller {
 
 		controllerData, _ := this.getData(path + ControllerPath)
 		js, err := simplejson.NewJson(controllerData)
-		if err != nil {
-			if this.conf.PanicOnError {
-				panic(err)
-			} else {
-				continue
-			}
+		if !this.swallow(err) {
+			continue
 		}
 
 		brokerId := js.Get("brokerid").MustInt()
