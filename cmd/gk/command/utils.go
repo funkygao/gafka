@@ -25,8 +25,8 @@ func validateArgs(cmd cli.Command, ui cli.Ui) *argsRule {
 	}
 }
 
-func (this *argsRule) require(option string) *argsRule {
-	this.requires = append(this.requires, option)
+func (this *argsRule) require(option ...string) *argsRule {
+	this.requires = append(this.requires, option...)
 	return this
 }
 
