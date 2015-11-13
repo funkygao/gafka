@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -24,19 +23,19 @@ type Topics struct {
 
 func (this *Topics) Run(args []string) (exitCode int) {
 	var (
-		zone         string
-		cluster      string
-		topicPattern string
-		verbose      bool
-		addTopic     string
-		replicas     int
-		partitions   int
-		topicConfig  string
+		zone        string
+		cluster     string
+		topicPrefix string
+		verbose     bool
+		addTopic    string
+		replicas    int
+		partitions  int
+		topicConfig string
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
-	cmdFlags.StringVar(&topicPattern, "t", "", "")
+	cmdFlags.StringVar(&topicPrefix, "t", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&verbose, "verbose", false, "")
 	cmdFlags.StringVar(&addTopic, "add", "", "")
@@ -64,27 +63,30 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
 	if cluster != "" {
-		this.displayTopicsOfCluster(cluster, zkzone, topicPattern, verbose)
+		this.displayTopicsOfCluster(cluster, zkzone, topicPrefix, verbose)
 		return
 	}
 
 	// all clusters
 	zkzone.WithinClusters(func(cluster string, path string) {
-		this.displayTopicsOfCluster(cluster, zkzone, topicPattern, verbose)
+		this.displayTopicsOfCluster(cluster, zkzone, topicPrefix, verbose)
 	})
 
 	return
 }
 
 func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
-	topicPattern string, verbose bool) {
+	topicPrefix string, verbose bool) {
 	must := func(err error) {
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	this.Ui.Output(cluster)
+	if verbose {
+		this.Ui.Output(cluster)
+	}
+
 	zkcluster := zkzone.NewCluster(cluster)
 
 	// get all alive brokers within this cluster
@@ -128,7 +130,7 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 	topics, err := kfk.Topics()
 	must(err)
 	if len(topics) == 0 {
-		if topicPattern == "" && verbose {
+		if topicPrefix == "" && verbose {
 			this.Ui.Output(fmt.Sprintf("%5s%s", " ", color.Magenta("no topics")))
 		}
 
@@ -136,10 +138,8 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 	}
 
 	for _, topic := range topics {
-		if topicPattern != "" {
-			if matched, _ := regexp.MatchString(topicPattern, topic); !matched {
-				continue
-			}
+		if topicPrefix != "" && !strings.HasPrefix(topic, topicPrefix) {
+			continue
 		}
 
 		if verbose {
@@ -157,8 +157,10 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 		}
 
 		if !verbose {
-			this.Ui.Output(strings.Repeat(" ", 4) + color.Blue("%30s %d",
-				topic, len(partions)))
+			this.Ui.Output(fmt.Sprintf("%30s %s %3dP",
+				cluster,
+				color.Blue("%50s", topic),
+				len(partions)))
 			continue
 		}
 
@@ -247,8 +249,8 @@ Options:
   
   -c cluster
 
-  -t topic
-  	Topic name pattern to display, regex supported.
+  -t topic prefix
+  	Only show topics like this give topic.
 
   -config k=v
   	Config a topic. TODO
