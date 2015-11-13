@@ -21,6 +21,13 @@ func init() {
 			}, nil
 		},
 
+		"stalebrokers": func() (cli.Command, error) {
+			return &command.StaleBrokers{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"producers": func() (cli.Command, error) {
 			return &command.Producers{
 				Ui:  ui,
