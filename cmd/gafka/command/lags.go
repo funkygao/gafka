@@ -67,14 +67,14 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 		for _, consumer := range consumersByGroup[group] {
 			// TODO if lag>1000? red alert
 			if consumer.Online {
-				this.Ui.Output(fmt.Sprintf("\t%s %s/%s %s<-%s %s",
+				this.Ui.Output(fmt.Sprintf("\t%s %s/%s %s -> %s %s",
 					color.Green("☀︎"),
 					consumer.Topic, consumer.PartitionId,
 					gofmt.Comma(consumer.ProducerOffset),
 					gofmt.Comma(consumer.ConsumerOffset),
 					color.Cyan("%s", gofmt.Comma(consumer.Lag))))
 			} else if !this.onlineOnly {
-				this.Ui.Output(fmt.Sprintf("\t%s %s/%s %s<-%s %s",
+				this.Ui.Output(fmt.Sprintf("\t%s %s/%s %s -> %s %s",
 					color.Yellow("☔︎︎"),
 					consumer.Topic, consumer.PartitionId,
 					gofmt.Comma(consumer.ProducerOffset),

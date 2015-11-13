@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +20,7 @@ import (
 type Top struct {
 	Ui       cli.Ui
 	mu       sync.Mutex
+	limit    int
 	counters map[string]int // key is cluster:topic TODO int64
 }
 
@@ -32,11 +34,21 @@ func (this *Top) Run(args []string) (exitCode int) {
 	this.counters = make(map[string]int)
 
 	for _, zone := range args {
+		n, err := strconv.Atoi(zone)
+		if err == nil {
+			this.limit = n
+			continue
+		}
+
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
 		zkzone.WithinClusters(func(cluster string, path string) {
 			zkcluster := zkzone.NewCluster(cluster)
 			go this.clusterTop(zkcluster)
 		})
+	}
+
+	if this.limit == 0 {
+		this.limit = 35
 	}
 
 	for {
@@ -75,7 +87,7 @@ func (this *Top) showAndResetCounters() {
 	sort.Ints(sortedNum)
 
 	for i := len(sortedNum) - 1; i >= 0; i-- {
-		if len(sortedNum)-i > 35 {
+		if len(sortedNum)-i > this.limit {
 			break
 		}
 
@@ -141,7 +153,7 @@ func (*Top) Synopsis() string {
 
 func (*Top) Help() string {
 	help := `
-Usage: gafka top [zone ...]
+Usage: gafka top [zone ...] [limit]
 
 	Display top kafka cluster activities
 `
