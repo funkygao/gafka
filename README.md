@@ -35,26 +35,30 @@ Simplified CLI multi-datacenter kafka clusters management tool powered by golang
 ### Usage
 
     $gafka
-    usage: gafka [--version] [--help] <command> [<args>]
+    
+    usage: ./gafka [--version] [--help] <command> [<args>]
     
     Available commands are:
-        brokers        Print available brokers from Zookeeper
-        clusters       Print available kafka clusters from Zookeeper
+        brokers        Print online brokers from Zookeeper
+        clusters       Manage register kafka clusters
         consumers      Print online consumers
-        controllers    Print available kafka controllers from Zookeeper
+        controllers    Print active controllers in kafka clusters
         lags           Display consumer lags TODO
         partition      Add partition num to a topic TODO
         peek           Peek kafka cluster messages ongoing
         rebalance      Rebalance the load of brokers in a kafka cluster TODO
         top            Display top kafka cluster activities TODO
-        topics         Print available topics from Zookeeper
-        topology       Print topology of kafka clusters
-        zones          Print available zones defined in /etc/gafka.cf
-    
+        topics         Manage topics & partitions of a zone
+        topology       Print server topology of kafka clusters
+        zones          Print zones defined in /etc/gafka.cf
+
 ### TODO
 
+- [X] bash autocomplete
 - [ ] add/remove a broker
 - [ ] rebalance a kafka cluster
 - [ ] add partitions on broker
 - [ ] show offline partitions besides under-replicated partitions
 - [ ] display consumer lags
+- [ ] if a broker crash, how do we know it's member of the cluster
+- [ ] broker ownership management

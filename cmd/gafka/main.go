@@ -26,6 +26,13 @@ func main() {
 			args = newArgs
 			break
 		}
+
+		if arg == "--generate-bash-completion" {
+			for name, _ := range commands {
+				fmt.Println(name)
+			}
+			return
+		}
 	}
 	c := cli.NewCLI(app, ver.Version+"-"+ver.BuildId)
 	c.Args = os.Args[1:]
