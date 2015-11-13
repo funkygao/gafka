@@ -1,13 +1,15 @@
 package command
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/funkygao/gocli"
 )
 
 type Partition struct {
-	Ui cli.Ui
+	Ui  cli.Ui
+	Cmd string
 }
 
 func (this *Partition) Run(args []string) (exitCode int) {
@@ -20,9 +22,9 @@ func (*Partition) Synopsis() string {
 	return "Add partition num to a topic TODO"
 }
 
-func (*Partition) Help() string {
-	help := `
-Usage: gafka partition -z zone -c cluster -t topic [options]
-`
+func (this *Partition) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s partition -z zone -c cluster -t topic [options]
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

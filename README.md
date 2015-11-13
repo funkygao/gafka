@@ -34,9 +34,9 @@ Simplified multi-datacenter kafka clusters management console powered by golang.
 
 ### Usage
 
-    $gafka
+    $gk
     
-    usage: gafka [--version] [--help] <command> [<args>]
+    usage: gk [--version] [--help] <command> [<args>]
     
     Available commands are:
         audit              Audit of the message streams TODO

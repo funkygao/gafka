@@ -13,7 +13,8 @@ import (
 )
 
 type Brokers struct {
-	Ui cli.Ui
+	Ui  cli.Ui
+	Cmd string
 }
 
 func (this *Brokers) Run(args []string) (exitCode int) {
@@ -88,9 +89,9 @@ func (*Brokers) Synopsis() string {
 	return "Print online brokers from Zookeeper"
 }
 
-func (*Brokers) Help() string {
-	help := `
-Usage: gafka brokers [options]
+func (this *Brokers) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s brokers [options]
 
 	Print online brokers from Zookeeper.
 
@@ -102,6 +103,6 @@ Options:
   -c cluster name
   	Only print brokers of this cluster.
 
-`
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

@@ -18,7 +18,9 @@ import (
 )
 
 type Top struct {
-	Ui           cli.Ui
+	Ui  cli.Ui
+	Cmd string
+
 	mu           sync.Mutex
 	limit        int
 	topic        string
@@ -163,9 +165,9 @@ func (*Top) Synopsis() string {
 	return "Display top kafka cluster activities"
 }
 
-func (*Top) Help() string {
-	help := `
-Usage: gafka top [options]
+func (this *Top) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s top [options]
 
 	Display top kafka cluster activities
 
@@ -174,6 +176,6 @@ Usage: gafka top [options]
   -t topic
 
   -n limit
-`
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

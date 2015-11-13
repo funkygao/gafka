@@ -23,6 +23,8 @@ _testmain.go
 *.test
 *.prof
 
-cmd/gafka/gafka
+cmd/gk/gk
 cmd/exchange/exchange
 cmd/pubsub/pubsub
+misc/scripts
+cmd/pubsub/restart.sh

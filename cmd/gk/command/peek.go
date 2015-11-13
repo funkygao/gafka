@@ -43,7 +43,8 @@ func (this *peekStats) start() {
 }
 
 type Peek struct {
-	Ui cli.Ui
+	Ui  cli.Ui
+	Cmd string
 }
 
 func (this *Peek) Run(args []string) (exitCode int) {
@@ -175,9 +176,9 @@ func (*Peek) Synopsis() string {
 	return "Peek kafka cluster messages ongoing"
 }
 
-func (*Peek) Help() string {
-	help := `
-Usage: gafka peek -z zone [options]
+func (this *Peek) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s peek -z zone [options]
 
 	Peek kafka cluster messages ongoing
 
@@ -192,6 +193,6 @@ Options:
 
   -n
   	Neat mode, only display statastics instead of message content
-`
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

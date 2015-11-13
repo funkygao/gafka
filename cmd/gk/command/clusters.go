@@ -11,7 +11,8 @@ import (
 )
 
 type Clusters struct {
-	Ui cli.Ui
+	Ui  cli.Ui
+	Cmd string
 }
 
 // TODO cluster info will contain desciption,owner,etc.
@@ -75,9 +76,9 @@ func (*Clusters) Synopsis() string {
 	return "Register kafka clusters"
 }
 
-func (*Clusters) Help() string {
-	help := `
-Usage: gafka clusters [options]
+func (this *Clusters) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s clusters [options]
 
 	Register kafka clusters
 
@@ -95,6 +96,6 @@ Options:
   -p cluster zk path
   	The new kafka cluser chroot path in Zookeeper.
 
-`
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

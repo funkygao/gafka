@@ -18,7 +18,8 @@ import (
 )
 
 type Topics struct {
-	Ui cli.Ui
+	Ui  cli.Ui
+	Cmd string
 }
 
 func (this *Topics) Run(args []string) (exitCode int) {
@@ -236,9 +237,9 @@ func (*Topics) Synopsis() string {
 	return "Manage topics & partitions of a zone"
 }
 
-func (*Topics) Help() string {
-	help := `
-Usage: gafka topics -z zone [options]
+func (this *Topics) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s topics -z zone [options]
 
 	Manage topics & partitions of a zone
 
@@ -260,6 +261,6 @@ Options:
   -replicas n
 
   -verbose
-`
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

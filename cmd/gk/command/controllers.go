@@ -12,7 +12,8 @@ import (
 )
 
 type Controllers struct {
-	Ui cli.Ui
+	Ui  cli.Ui
+	Cmd string
 }
 
 func (this *Controllers) Run(args []string) (exitCode int) {
@@ -64,9 +65,9 @@ func (*Controllers) Synopsis() string {
 	return "Print active controllers in kafka clusters"
 }
 
-func (*Controllers) Help() string {
-	help := `
-Usage: gafka controllers [options]
+func (this *Controllers) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s controllers [options]
 
 	Print active controllers in kafka clusters
 
@@ -77,6 +78,6 @@ Options:
 
   -c cluster
 
-`
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

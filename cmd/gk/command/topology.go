@@ -12,7 +12,8 @@ import (
 )
 
 type Topology struct {
-	Ui cli.Ui
+	Ui  cli.Ui
+	Cmd string
 }
 
 func (this *Topology) Run(args []string) (exitCode int) {
@@ -67,11 +68,11 @@ func (*Topology) Synopsis() string {
 	return "Print server topology of kafka clusters"
 }
 
-func (*Topology) Help() string {
-	help := `
-Usage: gafka topology [zone ...]
+func (this *Topology) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s topology [zone ...]
 
 	Print server topology of kafka clusters
-`
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

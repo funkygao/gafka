@@ -13,6 +13,7 @@ import (
 
 type Consumers struct {
 	Ui         cli.Ui
+	Cmd        string
 	onlineOnly bool
 }
 
@@ -69,9 +70,9 @@ func (*Consumers) Synopsis() string {
 	return "Print consumer groups from Zookeeper"
 }
 
-func (*Consumers) Help() string {
-	help := `
-Usage: gafka consumers [options]
+func (this *Consumers) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s consumers [options]
 
 	Print consumer groups from Zookeeper
 
@@ -85,6 +86,6 @@ Options:
   -l 
   	Only show online consumer groups.
 
-`
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

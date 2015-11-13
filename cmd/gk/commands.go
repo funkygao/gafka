@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/funkygao/gafka/cmd/gafka/command"
+	"github.com/funkygao/gafka/cmd/gk/command"
 	"github.com/funkygao/gocli"
 )
 
@@ -11,95 +11,111 @@ var commands map[string]cli.CommandFactory
 
 func init() {
 	ui := &cli.BasicUi{Writer: os.Stdout}
+	cmd := "gk"
 
 	commands = map[string]cli.CommandFactory{
 		"zones": func() (cli.Command, error) {
 			return &command.Zones{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"producers": func() (cli.Command, error) {
 			return &command.Producers{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"lags": func() (cli.Command, error) {
 			return &command.Lags{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"consumers": func() (cli.Command, error) {
 			return &command.Consumers{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"rebalance": func() (cli.Command, error) {
 			return &command.Rebalance{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"brokers": func() (cli.Command, error) {
 			return &command.Brokers{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"topics": func() (cli.Command, error) {
 			return &command.Topics{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"clusters": func() (cli.Command, error) {
 			return &command.Clusters{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"partition": func() (cli.Command, error) {
 			return &command.Partition{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"underreplicated": func() (cli.Command, error) {
 			return &command.UnderReplicated{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"audit": func() (cli.Command, error) {
 			return &command.Audit{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"controllers": func() (cli.Command, error) {
 			return &command.Controllers{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"peek": func() (cli.Command, error) {
 			return &command.Peek{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"top": func() (cli.Command, error) {
 			return &command.Top{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 
 		"topology": func() (cli.Command, error) {
 			return &command.Topology{
-				Ui: ui,
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 	}

@@ -1,13 +1,15 @@
 package command
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/funkygao/gocli"
 )
 
 type Audit struct {
-	Ui cli.Ui
+	Ui  cli.Ui
+	Cmd string
 }
 
 func (this *Audit) Run(args []string) (exitCode int) {
@@ -18,12 +20,12 @@ func (*Audit) Synopsis() string {
 	return "Audit of the message streams TODO"
 }
 
-func (*Audit) Help() string {
-	help := `
-Usage: gafka audit [options]
+func (this *Audit) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s audit [options]
 
 	Audit of the message streams
 
-`
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

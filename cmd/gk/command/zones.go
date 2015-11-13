@@ -9,7 +9,8 @@ import (
 )
 
 type Zones struct {
-	Ui cli.Ui
+	Ui  cli.Ui
+	Cmd string
 }
 
 func (this *Zones) Run(args []string) (exitCode int) {
@@ -39,11 +40,11 @@ func (*Zones) Synopsis() string {
 	return "Print zones defined in /etc/gafka.cf"
 }
 
-func (*Zones) Help() string {
-	help := `
-Usage: gafka zones [zone ...]
+func (this *Zones) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s zones [zone ...]
 
 	Print zones defined in /etc/gafka.cf
-`
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

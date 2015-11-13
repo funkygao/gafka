@@ -15,6 +15,7 @@ import (
 
 type Lags struct {
 	Ui         cli.Ui
+	Cmd        string
 	onlineOnly bool
 }
 
@@ -89,9 +90,9 @@ func (*Lags) Synopsis() string {
 	return "Display consumers lag for each topic each partition"
 }
 
-func (*Lags) Help() string {
-	help := `
-Usage: gafka lags -z zone [options]
+func (this *Lags) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s lags -z zone [options]
 
 	Display consumers lag for each topic each partition
 
@@ -99,6 +100,6 @@ Usage: gafka lags -z zone [options]
 
   -l
   	Only show online consumers lag.
-`
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

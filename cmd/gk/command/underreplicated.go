@@ -12,7 +12,8 @@ import (
 )
 
 type UnderReplicated struct {
-	Ui cli.Ui
+	Ui  cli.Ui
+	Cmd string
 }
 
 func (this *UnderReplicated) Run(args []string) (exitCode int) {
@@ -110,11 +111,11 @@ func (*UnderReplicated) Synopsis() string {
 	return "Display under-replicated partitions"
 }
 
-func (*UnderReplicated) Help() string {
-	help := `
-Usage: gafka underreplicated [zone ...]
+func (this *UnderReplicated) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s underreplicated [zone ...]
 
 	Display under-replicated partitions
-`
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

@@ -20,7 +20,7 @@ if [[ $1 = "-gc" ]]; then
     BUILD_FLAGS="$BUILD_FLAGS -gcflags '-m=1'"
 fi
 
-cd cmd/gafka/
+cd cmd/gk/
 if [ $GOVER -gt 4 ]; then
     go build $BUILD_FLAGS -tags release -ldflags "-X github.com/funkygao/gafka/ver.Version=$VER -X github.com/funkygao/gafka/ver.BuildId=${GIT_ID}${GIT_DIRTY} -w"
 else
@@ -28,10 +28,10 @@ else
 fi
 
 if [[ $1 = "-install" ]]; then
-    install gafka $GOPATH/bin
+    install gk $GOPATH/bin
 fi
 
 #---------
 # show ver
 #---------
-./gafka -version
+./gk -version
