@@ -62,9 +62,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if zone == "" || cluster == "" {
-		this.Ui.Output("-z zone and -c cluster required")
-		this.Ui.Output(this.Help())
+	if validateArgs(this, this.Ui).require("-z").invalid(args) {
 		return 2
 	}
 
@@ -72,29 +70,15 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	go stats.start()
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
-	zkcluster := zkzone.NewCluster(cluster)
-	brokerList := zkcluster.BrokerList()
-	kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
-	if err != nil {
-		this.Ui.Output(err.Error())
-		return 1
-	}
-	defer kfk.Close()
-
-	msgChan := make(chan string, 1000)
-	if topic == "" {
-		// peek all topics
-		topics, err := kfk.Topics()
-		if err != nil {
-			this.Ui.Output(err.Error())
-			return 1
-		}
-
-		for _, t := range topics {
-			go this.consumeTopic(kfk, t, int32(partitionId), msgChan)
-		}
+	msgChan := make(chan string, 2000) // msg aggerator channel
+	if cluster == "" {
+		zkzone.WithinClusters(func(name string, path string) {
+			zkcluster := zkzone.NewCluster(name)
+			this.consumeCluster(zkcluster, topic, partitionId, msgChan)
+		})
 	} else {
-		go this.consumeTopic(kfk, topic, int32(partitionId), msgChan)
+		zkcluster := zkzone.NewCluster(cluster)
+		this.consumeCluster(zkcluster, topic, partitionId, msgChan)
 	}
 
 	var msg string
@@ -110,6 +94,32 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topic string,
+	partitionId int, msgChan chan string) {
+	brokerList := zkcluster.BrokerList()
+	kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
+	if err != nil {
+		this.Ui.Output(err.Error())
+		return
+	}
+	defer kfk.Close()
+
+	if topic == "" {
+		// peek all topics
+		topics, err := kfk.Topics()
+		if err != nil {
+			this.Ui.Output(err.Error())
+			return
+		}
+
+		for _, t := range topics {
+			go this.consumeTopic(kfk, t, int32(partitionId), msgChan)
+		}
+	} else {
+		go this.consumeTopic(kfk, topic, int32(partitionId), msgChan)
+	}
 }
 
 func (this *Peek) consumeTopic(kfk sarama.Client, topic string, partitionId int32, msgCh chan string) {
