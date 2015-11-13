@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"regexp"
@@ -37,7 +38,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&topicPattern, "t", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&verbose, "verbose", false, "")
-	cmdFlags.StringVar(&add, "add", "", "")
+	cmdFlags.StringVar(&addTopic, "add", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
 	cmdFlags.StringVar(&topicConfig, "config", "", "")
 	cmdFlags.IntVar(&replicas, "replicas", 2, "")
@@ -61,7 +62,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		zkAddrs := config.ZonePath(zone)
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
 		zkAddrs = zkAddrs + zkzone.ClusterPath(cluster)
-		this.addTopic(zkAddrs, topic, replicas, partitions)
+		this.addTopic(zkAddrs, addTopic, replicas, partitions)
 
 		return
 	}
@@ -179,7 +180,7 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 			replicas, err := kfkClient.Replicas(topic, partitionID)
 			must(err)
 
-			isr, err := kfkClient.Isr(topics, partitionID)
+			isr, err := kfkClient.Isr(topic, partitionID)
 			must(err)
 
 			underReplicated := false
@@ -210,7 +211,8 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 	}
 }
 
-func (this *Topics) addTopic(zkAddrs string, topic string, replicas, partitions int) {
+func (this *Topics) addTopic(zkAddrs string, topic string, replicas,
+	partitions int) error {
 	log.Debug("creating kafka topic: %s", topic)
 
 	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", config.KafkaHome()),
@@ -239,6 +241,7 @@ func (this *Topics) addTopic(zkAddrs string, topic string, replicas, partitions 
 	cmd.Close()
 
 	log.Info("kafka created topic[%s]: %s", topic, lastLine)
+	return nil
 }
 
 func (*Topics) Synopsis() string {

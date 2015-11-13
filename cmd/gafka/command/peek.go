@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/config"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/metrics"
@@ -57,7 +58,11 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	ensureZoneValid(zone)
+	if zone == "" || cluster == "" {
+		this.Ui.Output("-z zone and -c cluster required")
+		this.Ui.Output(this.Help())
+		return 2
+	}
 
 	stats := newPeekStats()
 	go stats.start()
@@ -82,17 +87,17 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		}
 
 		for _, t := range topics {
-			go this.consumeTopic(kfk, t, partitionId, msgChan)
+			go this.consumeTopic(kfk, t, int32(partitionId), msgChan)
 		}
 	} else {
-		go this.consumeTopic(kfk, topic, partitionId, msgChan)
+		go this.consumeTopic(kfk, topic, int32(partitionId), msgChan)
 	}
 
 	var msg string
 	for {
 		select {
 		case msg = <-msgChan:
-			stats.MsgPerSecond.Mark()
+			stats.MsgPerSecond.Mark(1)
 
 			this.Ui.Output(msg)
 		}
@@ -101,7 +106,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Peek) consumeTopic(kfk *sarama.Client, topic string, partitionId int32, msgCh chan string) {
+func (this *Peek) consumeTopic(kfk sarama.Client, topic string, partitionId int32, msgCh chan string) {
 	consumer, err := sarama.NewConsumerFromClient(kfk)
 	if err != nil {
 		panic(err)

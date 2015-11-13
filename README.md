@@ -34,8 +34,23 @@ Simplified CLI multi-datacenter kafka clusters management tool powered by golang
 
 ### Usage
 
-    gafka
-
+    $gafka
+    usage: gafka [--version] [--help] <command> [<args>]
+    
+    Available commands are:
+        brokers        Print available brokers from Zookeeper
+        clusters       Print available kafka clusters from Zookeeper
+        consumers      Print online consumers
+        controllers    Print available kafka controllers from Zookeeper
+        lags           Display consumer lags TODO
+        partition      Add partition num to a topic TODO
+        peek           Peek kafka cluster messages ongoing
+        rebalance      Rebalance the load of brokers in a kafka cluster TODO
+        top            Display top kafka cluster activities TODO
+        topics         Print available topics from Zookeeper
+        topology       Print topology of kafka clusters
+        zones          Print available zones defined in /etc/gafka.cf
+    
 ### TODO
 
 - [ ] add/remove a broker
