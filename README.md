@@ -36,11 +36,11 @@ Simplified CLI multi-datacenter kafka clusters management tool powered by golang
 
     $gafka
     
-    usage: ./gafka [--version] [--help] <command> [<args>]
+    usage: gafka [--version] [--help] <command> [<args>]
     
     Available commands are:
         brokers        Print online brokers from Zookeeper
-        clusters       Manage register kafka clusters
+        clusters       Register kafka clusters
         consumers      Print online consumers
         controllers    Print active controllers in kafka clusters
         lags           Display consumer lags TODO
