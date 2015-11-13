@@ -60,7 +60,8 @@ Simplified multi-datacenter kafka clusters management console powered by golang.
 - [X] bash autocomplete
 - [X] display consumer lags
 - [X] add partitions on broker
-- [ ] #partitions #leader on a broker
+- [X] #partitions #leader on a broker
+- [ ] find stale brokers: found in zk but not connectable
 - [ ] rebalance a kafka cluster
 - [ ] show offline partitions besides under-replicated partitions
 - [ ] broker ownership management, what if a broker crash? how to find it
