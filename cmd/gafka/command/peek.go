@@ -99,6 +99,9 @@ func (this *Peek) Run(args []string) (exitCode int) {
 func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topic string,
 	partitionId int, msgChan chan string) {
 	brokerList := zkcluster.BrokerList()
+	if len(brokerList) == 0 {
+		return
+	}
 	kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
 	if err != nil {
 		this.Ui.Output(err.Error())
