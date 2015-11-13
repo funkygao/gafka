@@ -35,6 +35,37 @@ func (this *ZkCluster) ConsumerGroups() map[string]bool {
 	return r
 }
 
+// returns {consumerGroup: consumerInfo}
+func (this *ZkCluster) ConsumersByGroup() map[string][]Consumer {
+	r := make(map[string][]Consumer)
+	for group, online := range this.ConsumerGroups() {
+		offsetsPath := this.path + ConsumersPath + "/" + group + "/offsets"
+		topics := this.zone.children(offsetsPath)
+		for _, topic := range topics {
+			for partitionId, offsetData := range this.zone.childrenWithData(offsetsPath +
+				"/" + topic) {
+				offset, err := strconv.ParseInt(string(offsetData), 10, 64)
+				if err != nil {
+					// should never happen
+					panic(err)
+				}
+				c := Consumer{
+					Online:      online,
+					Topic:       topic,
+					PartitionId: partitionId,
+					Offset:      offset,
+					Lag:         0,
+				}
+				if _, present := r[group]; !present {
+					r[group] = make([]Consumer, 0)
+				}
+				r[group] = append(r[group], c)
+			}
+		}
+	}
+	return r
+}
+
 // returns {brokerId: broker}
 func (this *ZkCluster) Brokers() map[string]*Broker {
 	r := make(map[string]*Broker)
