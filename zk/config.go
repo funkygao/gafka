@@ -16,6 +16,6 @@ func DefaultConfig(name, addrs string) *Config {
 		Name:         name,
 		ZkAddrs:      addrs,
 		Timeout:      time.Minute,
-		PanicOnError: true,
+		PanicOnError: false,
 	}
 }

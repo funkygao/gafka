@@ -70,6 +70,7 @@ func (this *ZkCluster) ConsumersByGroup() map[string][]Consumer {
 					return r
 				}
 
+				// found err: Request was for a topic or partition that does not exist on this broker.
 				producerOffset, err := kfk.GetOffset(topic, int32(pid),
 					sarama.OffsetNewest)
 				if !this.zone.swallow(err) {
