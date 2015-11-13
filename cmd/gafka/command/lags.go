@@ -82,12 +82,14 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 }
 
 func (*Lags) Synopsis() string {
-	return "Display consumer lags TODO"
+	return "Display consumers lag for each topic each partition"
 }
 
 func (*Lags) Help() string {
 	help := `
 Usage: gafka lags -z zone [options]
+
+	Display consumers lag for each topic each partition
 
   -c cluster
 
