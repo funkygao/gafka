@@ -22,15 +22,18 @@ var (
 )
 
 type peekStats struct {
-	MsgPerSecond metrics.Meter
+	MsgCountPerSecond metrics.Meter
+	MsgBytesPerSecond metrics.Meter
 }
 
 func newPeekStats() *peekStats {
 	this := &peekStats{
-		MsgPerSecond: metrics.NewMeter(),
+		MsgCountPerSecond: metrics.NewMeter(),
+		MsgBytesPerSecond: metrics.NewMeter(),
 	}
 
-	metrics.Register("msg.per.second", this.MsgPerSecond)
+	metrics.Register("msg.count.per.second", this.MsgCountPerSecond)
+	metrics.Register("msg.bytes.per.second", this.MsgBytesPerSecond)
 	return this
 }
 
@@ -70,7 +73,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	go stats.start()
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
-	msgChan := make(chan string, 2000) // msg aggerator channel
+	msgChan := make(chan *sarama.ConsumerMessage, 2000) // msg aggerator channel
 	if cluster == "" {
 		zkzone.WithinClusters(func(name string, path string) {
 			zkcluster := zkzone.NewCluster(name)
@@ -81,14 +84,16 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		this.consumeCluster(zkcluster, topic, partitionId, msgChan)
 	}
 
-	var msg string
+	var msg *sarama.ConsumerMessage
 	for {
 		select {
 		case msg = <-msgChan:
-			stats.MsgPerSecond.Mark(1)
+			stats.MsgCountPerSecond.Mark(1)
+			stats.MsgBytesPerSecond.Mark(int64(len(msg.Value)))
 
 			if !neat {
-				this.Ui.Output(msg)
+				this.Ui.Output(fmt.Sprintf("%s %s %s", color.Green(topic),
+					gofmt.Comma(msg.Offset), string(msg.Value)))
 			}
 		}
 	}
@@ -97,7 +102,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 }
 
 func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topic string,
-	partitionId int, msgChan chan string) {
+	partitionId int, msgChan chan *sarama.ConsumerMessage) {
 	brokerList := zkcluster.BrokerList()
 	if len(brokerList) == 0 {
 		return
@@ -125,7 +130,8 @@ func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topic string,
 	}
 }
 
-func (this *Peek) consumeTopic(kfk sarama.Client, topic string, partitionId int32, msgCh chan string) {
+func (this *Peek) consumeTopic(kfk sarama.Client, topic string, partitionId int32,
+	msgCh chan *sarama.ConsumerMessage) {
 	consumer, err := sarama.NewConsumerFromClient(kfk)
 	if err != nil {
 		panic(err)
@@ -150,7 +156,7 @@ func (this *Peek) consumeTopic(kfk sarama.Client, topic string, partitionId int3
 }
 
 func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
-	topic string, partitionId int32, msgCh chan string) {
+	topic string, partitionId int32, msgCh chan *sarama.ConsumerMessage) {
 	p, err := consumer.ConsumePartition(topic, partitionId, sarama.OffsetNewest)
 	if err != nil {
 		panic(err)
@@ -160,8 +166,7 @@ func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
 	for {
 		select {
 		case msg := <-p.Messages():
-			msgCh <- fmt.Sprintf("%s %s %s", color.Green(topic),
-				gofmt.Comma(msg.Offset), string(msg.Value))
+			msgCh <- msg
 		}
 	}
 }
