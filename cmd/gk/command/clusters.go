@@ -73,14 +73,14 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 }
 
 func (*Clusters) Synopsis() string {
-	return "Register kafka clusters"
+	return "Register kafka clusters to a zone"
 }
 
 func (this *Clusters) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s clusters [options]
 
-	Register kafka clusters
+	Register kafka clusters to a zone
 
 Options:
 
