@@ -1,6 +1,7 @@
 package zk
 
 import (
+	"path"
 	"sort"
 	"strings"
 	"sync"
@@ -11,8 +12,8 @@ import (
 	"github.com/samuel/go-zookeeper/zk"
 )
 
-// ZkZone represents a single Zookeeper cluster where many
-// kafka clusters can reside which of has a different chroot path.
+// ZkZone represents a single Zookeeper ensemble where many
+// kafka clusters can reside each of which has a different chroot path.
 type ZkZone struct {
 	conf *Config
 	conn *zk.Conn
@@ -21,16 +22,21 @@ type ZkZone struct {
 	errs []error
 }
 
-func (this *ZkZone) Name() string {
-	return this.conf.Name
-}
-
 // NewZkZone creates a new ZkZone instance.
 func NewZkZone(config *Config) *ZkZone {
 	return &ZkZone{
 		conf: config,
 		errs: make([]error, 0),
 	}
+}
+
+// Name of the zone.
+func (this *ZkZone) Name() string {
+	return this.conf.Name
+}
+
+func (this *ZkZone) Close() {
+	this.conn.Close()
 }
 
 func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
@@ -192,6 +198,46 @@ func (this *ZkZone) ClusterPath(name string) string {
 	}
 
 	return string(clusterPath)
+}
+
+// unused yet
+func (this *ZkZone) mkdirRecursive(node string) (err error) {
+	parent := path.Dir(node)
+	if parent != "/" {
+		if err = this.mkdirRecursive(parent); err != nil {
+			return
+		}
+	}
+
+	_, err = this.conn.Create(node, nil, 0, zk.WorldACL(zk.PermAll))
+	if err == zk.ErrNodeExists {
+		err = nil
+	}
+	return
+}
+
+// unused yet
+func (this *ZkZone) deleteRecursive(node string) (err error) {
+	children, stat, err := this.conn.Children(node)
+	if err == zk.ErrNoNode {
+		return nil
+	} else if err != nil {
+		return
+	}
+
+	for _, child := range children {
+		if err = this.deleteRecursive(path.Join(node, child)); err != nil {
+			return
+		}
+	}
+
+	return this.conn.Delete(node, stat.Version)
+}
+
+// unused yet
+func (this *ZkZone) exists(path string) (ok bool, err error) {
+	ok, _, err = this.conn.Exists(path)
+	return
 }
 
 // returns {cluster: controllerBroker}

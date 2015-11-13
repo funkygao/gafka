@@ -6,6 +6,24 @@ import (
 	"time"
 )
 
+type Consumer struct {
+	Online         bool
+	Topic          string
+	PartitionId    string
+	ConsumerOffset int64
+	ProducerOffset int64
+	Lag            int64
+}
+
+type Controller struct {
+	Broker *Broker
+	Epoch  string
+}
+
+func (c *Controller) String() string {
+	return fmt.Sprintf("%8s epoch:%s %s", c.Broker.Id, c.Epoch, c.Broker.String())
+}
+
 type Broker struct {
 	Id        string   `json:-`
 	JmxPort   int      `json:"jmx_port"`
