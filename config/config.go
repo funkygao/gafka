@@ -46,7 +46,7 @@ func ZonePath(zone string) (zkAddrs string) {
 	}
 
 	// should never happen
-	panic(zone + " undefined")
+	panic(fmt.Errorf("zone[%s] undefined", zone))
 }
 
 type config struct {

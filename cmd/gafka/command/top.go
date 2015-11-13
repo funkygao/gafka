@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -43,19 +42,11 @@ func (this *Top) Run(args []string) (exitCode int) {
 
 	this.counters = make(map[string]int)
 
-	for _, zone := range args {
-		n, err := strconv.Atoi(zone)
-		if err == nil {
-			this.limit = n
-			continue
-		}
-
-		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
-		zkzone.WithinClusters(func(cluster string, path string) {
-			zkcluster := zkzone.NewCluster(cluster)
-			go this.clusterTop(zkcluster)
-		})
-	}
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
+	zkzone.WithinClusters(func(cluster string, path string) {
+		zkcluster := zkzone.NewCluster(cluster)
+		go this.clusterTop(zkcluster)
+	})
 
 	for {
 		select {
