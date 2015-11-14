@@ -95,16 +95,32 @@ func (this *Top) showAndResetCounters() {
 	}
 	sort.Ints(sortedNum)
 
+	othersNum := 0
+	othersMps := 0
+	limitReached := false
 	for i := len(sortedNum) - 1; i >= 0; i-- {
-		if len(sortedNum)-i > this.limit {
-			break
+		if !limitReached && len(sortedNum)-i > this.limit {
+			limitReached = true
 		}
 
 		num := sortedNum[i]
-		p := strings.SplitN(counterFlip[num], ":", 2)
 		mps := (num - this.lastCounters[counterFlip[num]]) / topInterval // msg per sec
-		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s", p[0], p[1],
-			gofmt.Comma(int64(num)), gofmt.Comma(int64(mps))))
+		if limitReached {
+			othersNum += num
+			othersMps += mps
+		} else {
+			clusterAndTopic := strings.SplitN(counterFlip[num], ":", 2)
+			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
+				clusterAndTopic[0], clusterAndTopic[1],
+				gofmt.Comma(int64(num)), gofmt.Comma(int64(mps))))
+		}
+	}
+
+	if limitReached {
+		// the catchall row
+		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
+			"others", "others",
+			gofmt.Comma(int64(othersNum)), gofmt.Comma(int64(othersMps))))
 	}
 
 	// record last counters and reset current counters
