@@ -1,6 +1,15 @@
 # gafka
 Simplified multi-datacenter kafka clusters management console powered by golang.
 
+### Features
+
+- support multiple data centers of many kafka clusters
+- a top alike tool provided showing real time producers activity
+- kafka topic/partition operations on a central console
+- display global kafka brokers topology and check kafka balancing status
+- peek ongoing messages at data center level
+- explicit kafka clusters management
+
 ### Install
 
     go get github.com/funkygao/gafka
