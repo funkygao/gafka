@@ -22,9 +22,9 @@ fi
 
 cd cmd/gk/
 if [ $GOVER -gt 4 ]; then
-    go build $BUILD_FLAGS -tags release -ldflags "-X github.com/funkygao/gafka/ver.Version=$VER -X github.com/funkygao/gafka/ver.BuildId=${GIT_ID}${GIT_DIRTY} -w"
+    go build $BUILD_FLAGS -tags release -ldflags "-X github.com/funkygao/gafka.Version=$VER -X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
 else
-    go build $BUILD_FLAGS -tags release -ldflags "-X github.com/funkygao/gafka/ver.Version $VER -X github.com/funkygao/gafka/ver.BuildId ${GIT_ID}${GIT_DIRTY} -w"
+    go build $BUILD_FLAGS -tags release -ldflags "-X github.com/funkygao/gafka.Version $VER -X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
 fi
 
 if [[ $1 = "-install" ]]; then

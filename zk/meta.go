@@ -20,8 +20,9 @@ type Controller struct {
 	Epoch  string
 }
 
+// FIXME should not be consider padding
 func (c *Controller) String() string {
-	return fmt.Sprintf("%8s epoch:%s %s", c.Broker.Id, c.Epoch, c.Broker.String())
+	return fmt.Sprintf("%s epoch:%s %s", c.Broker.Id, c.Epoch, c.Broker.String())
 }
 
 type Broker struct {

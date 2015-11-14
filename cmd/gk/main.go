@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/config"
-	"github.com/funkygao/gafka/ver"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/log4go"
 )
@@ -34,7 +34,7 @@ func main() {
 			return
 		}
 	}
-	c := cli.NewCLI(app, ver.Version+"-"+ver.BuildId)
+	c := cli.NewCLI(app, gafka.Version+"-"+gafka.BuildId)
 	c.Args = os.Args[1:]
 	c.Commands = commands
 	c.HelpFunc = cli.BasicHelpFunc(app)
