@@ -6,10 +6,23 @@ import (
 	"time"
 )
 
+type zkTimestamp int64
+
+func (this zkTimestamp) Time() time.Time {
+	return time.Unix(int64(this)/int64(1000), 0)
+}
+
+type zkData struct {
+	data      []byte
+	timestamp zkTimestamp
+}
+
 type Consumer struct {
+	Group          string
 	Online         bool
 	Topic          string
 	PartitionId    string
+	Timestamp      zkTimestamp
 	ConsumerOffset int64
 	ProducerOffset int64
 	Lag            int64

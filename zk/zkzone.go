@@ -154,33 +154,30 @@ func (this *ZkZone) children(path string) []string {
 	return children
 }
 
-func (this *ZkZone) childrenWithData(path string) map[string][]byte {
+// return {childName: zkData}
+func (this *ZkZone) childrenWithData(path string) map[string]zkData {
 	children := this.children(path)
 
-	r := make(map[string][]byte, len(children))
+	r := make(map[string]zkData, len(children))
 	for _, name := range children {
-		path, err := this.getData(path + "/" + name)
+		data, stat, err := this.conn.Get(path + "/" + name)
 		if !this.swallow(err) {
 			continue
 		}
 
-		r[name] = path
+		r[name] = zkData{
+			data:      data,
+			timestamp: zkTimestamp(stat.Mtime),
+		}
 	}
 	return r
-}
-
-func (this *ZkZone) getData(path string) (data []byte, err error) {
-	log.Debug("get data: %s", path)
-	data, _, err = this.conn.Get(path)
-
-	return
 }
 
 // returns {clusterName: clusterZkPath}
 func (this *ZkZone) clusters() map[string]string {
 	r := make(map[string]string)
-	for name, path := range this.childrenWithData(clusterRoot) {
-		r[name] = string(path)
+	for cluster, clusterData := range this.childrenWithData(clusterRoot) {
+		r[cluster] = string(clusterData.data)
 	}
 
 	return r
@@ -262,7 +259,7 @@ func (this *ZkZone) controllers() map[string]*Controller {
 			continue
 		}
 
-		controllerData, _ := this.getData(path + ControllerPath)
+		controllerData, _, _ := this.conn.Get(path + ControllerPath)
 		js, err := simplejson.NewJson(controllerData)
 		if !this.swallow(err) {
 			continue
@@ -272,7 +269,7 @@ func (this *ZkZone) controllers() map[string]*Controller {
 		zkcluster := this.NewCluster(cluster)
 		broker := zkcluster.Broker(brokerId)
 
-		epochData, _ := this.getData(c.controllerEpochPath())
+		epochData, _, _ := this.conn.Get(c.controllerEpochPath())
 		controller := &Controller{
 			Broker: broker,
 			Epoch:  string(epochData),
@@ -306,7 +303,7 @@ func (this *ZkZone) brokers() map[string]map[string]*Broker {
 			r[cluster] = make(map[string]*Broker)
 			for brokerId, brokerInfo := range liveBrokers {
 				broker := newBroker(brokerId)
-				broker.from(brokerInfo)
+				broker.from(brokerInfo.data)
 
 				r[cluster][brokerId] = broker
 			}
