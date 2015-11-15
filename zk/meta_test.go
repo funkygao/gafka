@@ -17,3 +17,10 @@ func TestBrokerFrom(t *testing.T) {
 	assert.Equal(t, "1447157138058", b.Timestamp)
 	assert.Equal(t, "5", b.Id)
 }
+
+func TestZkTimestamp(t *testing.T) {
+	tm := zkTimestamp(1447157138058)
+	t.Logf("%v", tm.Time())
+	assert.Equal(t, 2015, tm.Time().Year())
+	assert.Equal(t, 10, tm.Time().Day())
+}

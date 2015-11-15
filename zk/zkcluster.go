@@ -64,8 +64,9 @@ func (this *ZkCluster) ConsumersByGroup() map[string][]Consumer {
 	for group, online := range this.ConsumerGroups() {
 		topics := this.zone.children(this.consumerGroupOffsetPath(group))
 		for _, topic := range topics {
+		topicLoop:
 			for partitionId, offsetData := range this.zone.childrenWithData(this.consumerGroupOffsetOfTopicPath(group, topic)) {
-				consumerOffset, err := strconv.ParseInt(string(offsetData), 10, 64)
+				consumerOffset, err := strconv.ParseInt(string(offsetData.data), 10, 64)
 				if !this.zone.swallow(err) {
 					return r
 				}
@@ -75,17 +76,26 @@ func (this *ZkCluster) ConsumersByGroup() map[string][]Consumer {
 					return r
 				}
 
-				// found err: Request was for a topic or partition that does not exist on this broker.
 				producerOffset, err := kfk.GetOffset(topic, int32(pid),
 					sarama.OffsetNewest)
-				if !this.zone.swallow(err) {
-					return r
+				if err != nil {
+					switch err {
+					case sarama.ErrUnknownTopicOrPartition:
+						// consumer is consuming a non-exist topic
+						log.Warn("invalid topic[%s] partition:%s", topic, partitionId)
+						continue topicLoop
+
+					default:
+						panic(err)
+					}
 				}
 
 				c := Consumer{
+					Group:          group,
 					Online:         online,
 					Topic:          topic,
 					PartitionId:    partitionId,
+					Timestamp:      offsetData.timestamp,
 					ConsumerOffset: consumerOffset,
 					ProducerOffset: producerOffset,
 					Lag:            producerOffset - consumerOffset,
@@ -105,7 +115,7 @@ func (this *ZkCluster) Brokers() map[string]*Broker {
 	r := make(map[string]*Broker)
 	for brokerId, brokerInfo := range this.zone.childrenWithData(this.brokerIdsRoot()) {
 		broker := newBroker(brokerId)
-		broker.from(brokerInfo)
+		broker.from(brokerInfo.data)
 
 		r[brokerId] = broker
 	}
@@ -123,7 +133,7 @@ func (this *ZkCluster) BrokerList() []string {
 }
 
 func (this *ZkCluster) Isr(topic string, partitionId int32) []int {
-	partitionStateData, _ := this.zone.getData(this.partitionStatePath(topic, partitionId))
+	partitionStateData, _, _ := this.zone.conn.Get(this.partitionStatePath(topic, partitionId))
 	partitionState := make(map[string]interface{})
 	json.Unmarshal(partitionStateData, &partitionState)
 	isr := partitionState["isr"].([]interface{})
@@ -137,7 +147,7 @@ func (this *ZkCluster) Isr(topic string, partitionId int32) []int {
 }
 
 func (this *ZkCluster) Broker(id int) (b *Broker) {
-	zkData, _ := this.zone.getData(this.brokerPath(id))
+	zkData, _, _ := this.zone.conn.Get(this.brokerPath(id))
 	b = newBroker(strconv.Itoa(id))
 	b.from(zkData)
 	return
