@@ -51,6 +51,14 @@ func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
 	}
 }
 
+func (this *ZkZone) newclusterWithPath(cluster, path string) *ZkCluster {
+	return &ZkCluster{
+		zone: this,
+		name: cluster,
+		path: path,
+	}
+}
+
 func (this *ZkZone) swallow(err error) bool {
 	if err != nil {
 		if this.conf.PanicOnError {
@@ -120,15 +128,14 @@ func (this *ZkZone) RegisterCluster(name, path string) error {
 
 	acl := zk.WorldACL(zk.PermAll)
 	flags := int32(0)
-	_, err := this.conn.Create(clusterRoot+zkPathSeperator+name,
-		[]byte(path), flags, acl)
+	_, err := this.conn.Create(clusterPath(name), []byte(path), flags, acl)
 	return err
 }
 
 func (this *ZkZone) UnregisterCluster(name string) error {
 	this.connectIfNeccessary()
 
-	return this.conn.Delete(clusterRoot+zkPathSeperator+name, -1)
+	return this.conn.Delete(clusterPath(name), -1)
 }
 
 func (this *ZkZone) children(path string) []string {
@@ -152,7 +159,7 @@ func (this *ZkZone) childrenWithData(path string) map[string][]byte {
 
 	r := make(map[string][]byte, len(children))
 	for _, name := range children {
-		path, err := this.getData(path + zkPathSeperator + name)
+		path, err := this.getData(path + "/" + name)
 		if !this.swallow(err) {
 			continue
 		}
@@ -195,8 +202,7 @@ func (this *ZkZone) WithinClusters(fn func(name string, path string)) {
 func (this *ZkZone) ClusterPath(name string) string {
 	this.connectIfNeccessary()
 
-	zkPath := clusterRoot + zkPathSeperator + name
-	clusterPath, _, err := this.conn.Get(zkPath)
+	clusterPath, _, err := this.conn.Get(clusterPath(name))
 	if !this.swallow(err) {
 		return ""
 	}
@@ -250,7 +256,8 @@ func (this *ZkZone) controllers() map[string]*Controller {
 
 	r := make(map[string]*Controller)
 	for cluster, path := range this.clusters() {
-		if present, _, _ := this.conn.Exists(path + ControllerPath); !present {
+		c := this.newclusterWithPath(cluster, path)
+		if present, _, _ := this.conn.Exists(c.controllerPath()); !present {
 			r[cluster] = nil
 			continue
 		}
@@ -265,7 +272,7 @@ func (this *ZkZone) controllers() map[string]*Controller {
 		zkcluster := this.NewCluster(cluster)
 		broker := zkcluster.Broker(brokerId)
 
-		epochData, _ := this.getData(path + ControllerEpochPath)
+		epochData, _ := this.getData(c.controllerEpochPath())
 		controller := &Controller{
 			Broker: broker,
 			Epoch:  string(epochData),
@@ -293,7 +300,8 @@ func (this *ZkZone) WithinControllers(fn func(cluster string, controller *Contro
 func (this *ZkZone) brokers() map[string]map[string]*Broker {
 	r := make(map[string]map[string]*Broker)
 	for cluster, path := range this.clusters() {
-		liveBrokers := this.childrenWithData(path + BrokerIdsPath)
+		c := this.newclusterWithPath(cluster, path)
+		liveBrokers := this.childrenWithData(c.brokerIdsRoot())
 		if len(liveBrokers) > 0 {
 			r[cluster] = make(map[string]*Broker)
 			for brokerId, brokerInfo := range liveBrokers {
