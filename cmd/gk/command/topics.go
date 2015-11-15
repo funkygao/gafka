@@ -169,8 +169,8 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 			replicas, err := kfk.Replicas(topic, partitionID)
 			must(err)
 
-			isr, err := kfk.Isr(topic, partitionID)
-			must(err)
+			isr := zkcluster.Isr(topic, partitionID)
+			//isr, err := kfk.Isr(topic, partitionID)
 
 			underReplicated := false
 			if len(isr) != len(replicas) {
