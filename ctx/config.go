@@ -1,4 +1,5 @@
-package config
+// Package ctx provides configurations loading and exporting.
+package ctx
 
 import (
 	"errors"
@@ -10,6 +11,8 @@ import (
 
 var (
 	ErrInvalidZone = errors.New("Invalid zone")
+
+	conf *config
 )
 
 func ensureLogLoaded() {
@@ -33,6 +36,11 @@ func KafkaHome() string {
 	return conf.kafkaHome
 }
 
+func InfluxdbHost() string {
+	ensureLogLoaded()
+	return conf.influxdbHost
+}
+
 func SortedZones() []string {
 	ensureLogLoaded()
 	return conf.sortedZones()
@@ -50,9 +58,10 @@ func ZonePath(zone string) (zkAddrs string) {
 }
 
 type config struct {
-	kafkaHome string
-	logLevel  string
-	zones     map[string]string // name:zkConn
+	kafkaHome    string
+	logLevel     string
+	influxdbHost string
+	zones        map[string]string // name:zkConn
 }
 
 func (c *config) sortedZones() []string {
@@ -73,6 +82,7 @@ func LoadConfig(fn string) {
 	conf = new(config)
 	conf.kafkaHome = cf.String("kafka_home", "")
 	conf.logLevel = cf.String("loglevel", "info")
+	conf.influxdbHost = cf.String("influxdb_host", "")
 	conf.zones = make(map[string]string)
 	for i := 0; i < len(cf.List("zones", nil)); i++ {
 		section, err := cf.Section(fmt.Sprintf("zones[%d]", i))

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/funkygao/gafka/config"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
@@ -50,7 +50,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	}
 
 	if addTopic != "" {
-		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 		zkcluster := zkzone.NewCluster(cluster)
 		this.addTopic(zkcluster, addTopic, replicas, partitions)
 
@@ -59,7 +59,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	ensureZoneValid(zone)
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	if cluster != "" {
 		this.displayTopicsOfCluster(cluster, zkzone, topicPrefix, verbose)
 		return
@@ -206,7 +206,7 @@ func (this *Topics) addTopic(zkcluster *zk.ZkCluster, topic string, replicas,
 
 	zkAddrs := zkcluster.ZkAddrs()
 
-	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", config.KafkaHome()),
+	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
 		fmt.Sprintf("--zookeeper %s", zkAddrs),
 		fmt.Sprintf("--create"),
 		fmt.Sprintf("--topic %s", topic),

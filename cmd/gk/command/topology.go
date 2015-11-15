@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/funkygao/gafka/config"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
@@ -28,7 +28,7 @@ func (this *Topology) Run(args []string) (exitCode int) {
 	for _, zone := range args {
 		ensureZoneValid(zone)
 
-		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 		this.displayZoneTopology(zone, zkzone)
 	}
 

@@ -1,4 +1,4 @@
-package config
+package ctx
 
 import (
 	"github.com/funkygao/jsconf"

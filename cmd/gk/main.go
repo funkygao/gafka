@@ -7,13 +7,13 @@ import (
 	"os"
 
 	"github.com/funkygao/gafka"
-	"github.com/funkygao/gafka/config"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/log4go"
 )
 
 func main() {
-	config.LoadConfig("/etc/gafka.cf")
+	ctx.LoadConfig("/etc/gafka.cf")
 	setupLogging()
 
 	app := os.Args[0]
@@ -52,7 +52,7 @@ func setupLogging() {
 	log.SetOutput(ioutil.Discard)
 
 	level := log4go.DEBUG
-	switch config.LogLevel() {
+	switch ctx.LogLevel() {
 	case "info":
 		level = log4go.INFO
 

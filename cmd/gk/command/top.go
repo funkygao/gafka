@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/funkygao/gafka/config"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/gofmt"
@@ -51,7 +51,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	this.counters = make(map[string]int)
 	this.lastCounters = make(map[string]int)
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	zkzone.WithinClusters(func(cluster string, path string) {
 		zkcluster := zkzone.NewCluster(cluster)
 		go this.clusterTop(zkcluster)

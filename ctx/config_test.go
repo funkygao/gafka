@@ -1,4 +1,4 @@
-package config
+package ctx
 
 import (
 	"testing"

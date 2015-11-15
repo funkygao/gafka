@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/funkygao/gafka/config"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
@@ -73,7 +73,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	stats := newPeekStats()
 	go stats.start()
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	msgChan := make(chan *sarama.ConsumerMessage, 2000) // msg aggerator channel
 	if cluster == "" {
 		zkzone.WithinClusters(func(name string, path string) {

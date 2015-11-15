@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/funkygao/gafka/config"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
@@ -37,7 +37,7 @@ func (this *Controllers) Run(args []string) (exitCode int) {
 		return
 	}
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	this.printControllers(zone, zkzone)
 
 	return

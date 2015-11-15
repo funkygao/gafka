@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/funkygao/gafka/config"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/pipestream"
@@ -39,17 +39,16 @@ func (this *Partition) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	zkAddrs := config.ZonePath(zone)
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
-	zkAddrs = zkAddrs + zkzone.ClusterPath(cluster)
-	this.addPartition(zkAddrs, topic, partitions)
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+	zkcluster := zkzone.NewCluster(cluster)
+	this.addPartition(zkcluster.ZkAddrs(), topic, partitions)
 	return
 }
 
 func (this *Partition) addPartition(zkAddrs string, topic string, partitions int) error {
 	log.Info("adding partitions to topic: %s", topic)
 
-	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", config.KafkaHome()),
+	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
 		fmt.Sprintf("--zookeeper %s", zkAddrs),
 		fmt.Sprintf("--alter"),
 		fmt.Sprintf("--topic %s", topic),

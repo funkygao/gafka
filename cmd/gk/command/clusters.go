@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/funkygao/gafka/config"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 )
@@ -39,7 +39,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 
 	if !addMode {
 		if zone != "" {
-			zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
+			zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 			this.printClusters(zkzone)
 		} else {
 			// print all zones all clusters
@@ -53,7 +53,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	}
 
 	// add cluster
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	if err := zkzone.RegisterCluster(clusterName, clusterPath); err != nil {
 		this.Ui.Error(err.Error())
 		return 1

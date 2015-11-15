@@ -3,7 +3,7 @@ package command
 import (
 	"sort"
 
-	"github.com/funkygao/gafka/config"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
@@ -72,12 +72,12 @@ func (this *argsRule) invalid(args []string) bool {
 }
 
 func ensureZoneValid(zone string) {
-	config.ZonePath(zone) // will panic if zone not found
+	ctx.ZonePath(zone) // will panic if zone not found
 }
 
 func forAllZones(fn func(zone string, zkzone *zk.ZkZone)) {
-	for _, zone := range config.SortedZones() {
-		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
+	for _, zone := range ctx.SortedZones() {
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 		fn(zone, zkzone)
 	}
 }

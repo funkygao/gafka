@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/funkygao/gafka/config"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gocli"
 )
 
@@ -17,7 +17,7 @@ func (this *Zones) Run(args []string) (exitCode int) {
 	if len(args) > 0 {
 		// user specified the zones to print
 		for _, name := range args {
-			if zk, present := config.Zones()[name]; present {
+			if zk, present := ctx.Zones()[name]; present {
 				this.Ui.Output(fmt.Sprintf("%8s: %s", name, zk))
 			} else {
 				this.Ui.Output(fmt.Sprintf("%8s: not defined", name))
@@ -28,8 +28,8 @@ func (this *Zones) Run(args []string) (exitCode int) {
 	}
 
 	// print all by default
-	for _, zone := range config.SortedZones() {
-		this.Ui.Output(fmt.Sprintf("%8s: %s", zone, config.ZonePath(zone)))
+	for _, zone := range ctx.SortedZones() {
+		this.Ui.Output(fmt.Sprintf("%8s: %s", zone, ctx.ZonePath(zone)))
 	}
 
 	return
