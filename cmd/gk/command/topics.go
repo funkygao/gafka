@@ -240,8 +240,8 @@ func (this *Topics) addTopic(zkcluster *zk.ZkCluster, topic string, replicas,
 		return fmt.Errorf("%s", errmsg)
 	}
 
-	this.Ui.Output(fmt.Sprintf("\tzk: %s", zkAddrs))
-	this.Ui.Output(fmt.Sprintf("\tbroker list: %s",
+	this.Ui.Output(fmt.Sprintf("\tzookeeper.connect: %s", zkAddrs))
+	this.Ui.Output(fmt.Sprintf("\t      broker list: %s",
 		strings.Join(zkcluster.BrokerList(), ",")))
 	return nil
 }
