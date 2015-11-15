@@ -42,10 +42,12 @@ func (this *Console) Run(args []string) (exitCode int) {
 
 		if this.runCommand(line) {
 			// write out the history
-			this.Line.AppendHistory(line)
-			if f, e := os.Create(historyFile); e == nil {
-				this.Line.WriteHistory(f)
-				f.Close()
+			if len(historyFile) > 0 {
+				this.Line.AppendHistory(line)
+				if f, e := os.Create(historyFile); e == nil {
+					this.Line.WriteHistory(f)
+					f.Close()
+				}
 			}
 		} else {
 			break
