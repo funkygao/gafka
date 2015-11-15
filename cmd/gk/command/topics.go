@@ -12,7 +12,6 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/pipestream"
-	log "github.com/funkygao/log4go"
 	"github.com/funkygao/sarama"
 )
 
@@ -51,10 +50,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	}
 
 	if addTopic != "" {
-		zkAddrs := config.ZonePath(zone)
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, config.ZonePath(zone)))
-		zkAddrs = zkAddrs + zkzone.ClusterPath(cluster)
-		this.addTopic(zkAddrs, addTopic, replicas, partitions)
+		zkcluster := zkzone.NewCluster(cluster)
+		this.addTopic(zkcluster, addTopic, replicas, partitions)
 
 		return
 	}
@@ -202,9 +200,11 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 	}
 }
 
-func (this *Topics) addTopic(zkAddrs string, topic string, replicas,
+func (this *Topics) addTopic(zkcluster *zk.ZkCluster, topic string, replicas,
 	partitions int) error {
-	log.Info("creating kafka topic: %s", topic)
+	this.Ui.Info(fmt.Sprintf("creating kafka topic: %s", topic))
+
+	zkAddrs := zkcluster.ZkAddrs()
 
 	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", config.KafkaHome()),
 		fmt.Sprintf("--zookeeper %s", zkAddrs),
@@ -220,10 +220,15 @@ func (this *Topics) addTopic(zkAddrs string, topic string, replicas,
 
 	scanner := bufio.NewScanner(cmd.Reader())
 	scanner.Split(bufio.ScanLines)
+	var errmsg string
 	var line string
 	for scanner.Scan() {
 		line = scanner.Text()
-		log.Info(line)
+
+		this.Ui.Info(line)
+		if strings.HasPrefix(line, "Error") {
+			errmsg = line
+		}
 	}
 	err = scanner.Err()
 	if err != nil {
@@ -231,7 +236,13 @@ func (this *Topics) addTopic(zkAddrs string, topic string, replicas,
 	}
 	cmd.Close()
 
-	log.Info("kafka created topic: %s", topic)
+	if errmsg != "" {
+		return fmt.Errorf("%s", errmsg)
+	}
+
+	this.Ui.Output(fmt.Sprintf("\tzk: %s", zkAddrs))
+	this.Ui.Output(fmt.Sprintf("\tbroker list: %s",
+		strings.Join(zkcluster.BrokerList(), ",")))
 	return nil
 }
 

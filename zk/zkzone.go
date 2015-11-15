@@ -35,6 +35,10 @@ func (this *ZkZone) Name() string {
 	return this.conf.Name
 }
 
+func (this *ZkZone) ZkAddrs() string {
+	return this.conf.ZkAddrs
+}
+
 func (this *ZkZone) Close() {
 	this.conn.Close()
 }

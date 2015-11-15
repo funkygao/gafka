@@ -9,6 +9,7 @@ Simplified multi-datacenter kafka clusters management console powered by golang.
 - display global kafka brokers topology and check kafka balancing status
 - peek ongoing messages at data center level
 - explicit kafka clusters management
+- monitors all consumers using Kafka-committed offsets
 
 ### Install
 
@@ -76,3 +77,4 @@ Simplified multi-datacenter kafka clusters management console powered by golang.
 - [ ] show offline partitions besides under-replicated partitions
 - [ ] broker ownership management, what if a broker crash? how to find it
 - [ ] zk need batch request
+- [ ] github.com/peterh/liner

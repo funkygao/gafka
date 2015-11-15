@@ -81,6 +81,7 @@ func (this *Top) showAndResetCounters() {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
+	// FIXME counterFlip should be map[int][]string
 	counterFlip := make(map[int]string)
 	sortedNum := make([]int, 0, len(this.counters))
 	for ct, num := range this.counters {

@@ -21,6 +21,10 @@ func (this *ZkCluster) Name() string {
 	return this.name
 }
 
+func (this *ZkCluster) ZkAddrs() string {
+	return this.zone.ZkAddrs() + this.path
+}
+
 func (this *ZkCluster) Topics() []string {
 	r := make([]string, 0)
 	for name, _ := range this.zone.childrenWithData(this.path + BrokerTopicsPath) {
