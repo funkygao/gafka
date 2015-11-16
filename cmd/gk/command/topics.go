@@ -7,12 +7,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/pipestream"
-	"github.com/funkygao/sarama"
 )
 
 type Topics struct {
