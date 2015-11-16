@@ -5,7 +5,7 @@ if [[ $1 = "-loc" ]]; then
     exit
 fi
 
-VER=0.0.3stable
+VER=0.0.4stable
 GOVER=$(go version | cut -d' ' -f3 | cut -d'.' -f2)
 # get the git commit
 GIT_ID=$(git rev-parse HEAD | cut -c1-7)
