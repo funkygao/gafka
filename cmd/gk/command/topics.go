@@ -16,16 +16,16 @@ import (
 )
 
 type Topics struct {
-	Ui  cli.Ui
-	Cmd string
+	Ui          cli.Ui
+	Cmd         string
+	topicPrefix string
+	verbose     bool
 }
 
 func (this *Topics) Run(args []string) (exitCode int) {
 	var (
 		zone        string
 		cluster     string
-		topicPrefix string
-		verbose     bool
 		addTopic    string
 		replicas    int
 		partitions  int
@@ -34,9 +34,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
-	cmdFlags.StringVar(&topicPrefix, "t", "", "")
+	cmdFlags.StringVar(&this.topicPrefix, "t", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
-	cmdFlags.BoolVar(&verbose, "verbose", false, "")
+	cmdFlags.BoolVar(&this.verbose, "verbose", false, "")
 	cmdFlags.StringVar(&addTopic, "add", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
 	cmdFlags.StringVar(&topicConfig, "config", "", "")
@@ -61,31 +61,30 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	if cluster != "" {
-		this.displayTopicsOfCluster(cluster, zkzone, topicPrefix, verbose)
+		zkcluster := zkzone.NewCluster(cluster)
+		this.displayTopicsOfCluster(zkcluster)
 		return
 	}
 
 	// all clusters
 	zkzone.WithinClusters(func(cluster string, path string) {
-		this.displayTopicsOfCluster(cluster, zkzone, topicPrefix, verbose)
+		zkcluster := zkzone.NewclusterWithPath(cluster, path)
+		this.displayTopicsOfCluster(zkcluster)
 	})
 
 	return
 }
 
-func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
-	topicPrefix string, verbose bool) {
+func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 	must := func(err error) {
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	if verbose {
-		this.Ui.Output(cluster)
+	if this.verbose {
+		this.Ui.Output(zkcluster.Name())
 	}
-
-	zkcluster := zkzone.NewCluster(cluster)
 
 	// get all alive brokers within this cluster
 	brokers := zkcluster.Brokers()
@@ -94,7 +93,7 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 		return
 	}
 
-	if verbose {
+	if this.verbose {
 		sortedBrokerIds := make([]string, 0, len(brokers))
 		for brokerId, _ := range brokers {
 			sortedBrokerIds = append(sortedBrokerIds, brokerId)
@@ -116,7 +115,7 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 
 	kfk, err := sarama.NewClient([]string{broker0.Addr()}, sarama.NewConfig())
 	if err != nil {
-		if verbose {
+		if this.verbose {
 			this.Ui.Output(color.Yellow("%5s%s %s", " ", broker0.Addr(),
 				err.Error()))
 		}
@@ -128,7 +127,7 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 	topics, err := kfk.Topics()
 	must(err)
 	if len(topics) == 0 {
-		if topicPrefix == "" && verbose {
+		if this.topicPrefix == "" && this.verbose {
 			this.Ui.Output(fmt.Sprintf("%5s%s", " ", color.Magenta("no topics")))
 		}
 
@@ -136,11 +135,11 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 	}
 
 	for _, topic := range topics {
-		if topicPrefix != "" && !strings.HasPrefix(topic, topicPrefix) {
+		if this.topicPrefix != "" && !strings.HasPrefix(topic, this.topicPrefix) {
 			continue
 		}
 
-		if verbose {
+		if this.verbose {
 			this.Ui.Output(strings.Repeat(" ", 4) + color.Blue(topic))
 		}
 
@@ -157,9 +156,9 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 		replicas, err := kfk.Replicas(topic, partions[0])
 		must(err)
 
-		if !verbose {
+		if !this.verbose {
 			this.Ui.Output(fmt.Sprintf("%30s %s %3dP %dR",
-				cluster,
+				zkcluster.Name(),
 				color.Blue("%50s", topic),
 				len(partions), len(replicas)))
 			continue
@@ -273,8 +272,10 @@ Options:
   	Add a topic to a kafka cluster.
 
   -partitions n
+  	Default 1
 
   -replicas n
+  	Default 2
 
   -verbose
 `, this.Cmd)
