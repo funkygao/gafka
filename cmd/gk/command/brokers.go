@@ -86,7 +86,7 @@ func (this *Brokers) printBrokers(cluster string, brokers map[string]*zk.Broker)
 			kfk, err := sarama.NewClient([]string{broker.Addr()}, sarama.NewConfig())
 			if err != nil {
 				n++
-				lines = append(lines, fmt.Sprintf("\t%8s %s %s",
+				lines = append(lines, color.Yellow("%8s %s %s",
 					brokerId, broker, err.Error()))
 			} else {
 				kfk.Close()

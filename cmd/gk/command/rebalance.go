@@ -13,6 +13,8 @@ type Rebalance struct {
 }
 
 func (this *Rebalance) Run(args []string) (exitCode int) {
+	// bin/kafka-preferred-replica-election.sh
+	// bin/kafka-reassign-partitions.sh
 	return
 }
 
