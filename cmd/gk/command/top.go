@@ -34,12 +34,16 @@ type Top struct {
 }
 
 func (this *Top) Run(args []string) (exitCode int) {
-	var zone string
+	var (
+		zone string
+		who  string
+	)
 	cmdFlags := flag.NewFlagSet("top", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&this.topic, "t", "", "")
 	cmdFlags.IntVar(&this.limit, "n", 35, "")
+	cmdFlags.StringVar(&who, "who", "producer", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -54,7 +58,12 @@ func (this *Top) Run(args []string) (exitCode int) {
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	zkzone.WithinClusters(func(cluster string, path string) {
 		zkcluster := zkzone.NewCluster(cluster)
-		go this.clusterTop(zkcluster)
+		if who == "producer" {
+			go this.clusterTopProducers(zkcluster)
+		} else {
+			go this.clusterTopConsumers(zkcluster)
+		}
+
 	})
 
 	for {
@@ -140,7 +149,11 @@ func (this *Top) showAndResetCounters() {
 	this.counters = make(map[string]int)
 }
 
-func (this *Top) clusterTop(zkcluster *zk.ZkCluster) {
+func (this *Top) clusterTopConsumers(zkcluster *zk.ZkCluster) {
+
+}
+
+func (this *Top) clusterTopProducers(zkcluster *zk.ZkCluster) {
 	cluster := zkcluster.Name()
 	brokerList := zkcluster.BrokerList()
 	if len(brokerList) == 0 {
@@ -206,6 +219,8 @@ Usage: %s top [options]
   -t topic
 
   -n limit
+
+  -who <produer|consumer>
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }

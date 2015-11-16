@@ -96,7 +96,7 @@ Options:
   	The new kafka cluster name.
 
   -p cluster zk path
-  	The new kafka cluser chroot path in Zookeeper.
+  	The new kafka cluster chroot path in Zookeeper.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
