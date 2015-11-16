@@ -59,6 +59,13 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	ensureZoneValid(zone)
 
+	if !this.verbose {
+		// output header
+		this.Ui.Output(fmt.Sprintf("%30s %50s", "cluster", "topic"))
+		this.Ui.Output(fmt.Sprintf("%30s %50s",
+			strings.Repeat("-", 30), strings.Repeat("-", 50)))
+	}
+
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	if cluster != "" {
 		zkcluster := zkzone.NewCluster(cluster)
