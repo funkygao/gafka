@@ -98,6 +98,8 @@ func (this *Top) showAndResetCounters() {
 
 	othersNum := 0
 	othersMps := 0
+	totalNum := 0
+	totalMps := 0
 	limitReached := false
 	for i := len(sortedNum) - 1; i >= 0; i-- {
 		if !limitReached && len(sortedNum)-i > this.limit {
@@ -106,6 +108,8 @@ func (this *Top) showAndResetCounters() {
 
 		num := sortedNum[i]
 		mps := (num - this.lastCounters[counterFlip[num]]) / topInterval // msg per sec
+		totalNum += num
+		totalMps += mps
 		if limitReached {
 			othersNum += num
 			othersMps += mps
@@ -122,6 +126,11 @@ func (this *Top) showAndResetCounters() {
 		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
 			"-OTHERS-", "-OTHERS-",
 			gofmt.Comma(int64(othersNum)), gofmt.Comma(int64(othersMps))))
+
+		// total row
+		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
+			"--TOTAL--", "--TOTAL--",
+			gofmt.Comma(int64(totalNum)), gofmt.Comma(int64(totalMps))))
 	}
 
 	// record last counters and reset current counters
