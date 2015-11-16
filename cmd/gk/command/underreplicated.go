@@ -78,8 +78,7 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 			replicas, err := kfk.Replicas(topic, partitionID)
 			this.swallow(err)
 
-			isr, err := kfk.Isr(topic, partitionID)
-			this.swallow(err)
+			isr := zkcluster.Isr(topic, partitionID)
 
 			underReplicated := false
 			if len(isr) != len(replicas) {
