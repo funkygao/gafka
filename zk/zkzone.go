@@ -200,8 +200,8 @@ func (this *ZkZone) ClusterPath(name string) string {
 	this.connectIfNeccessary()
 
 	clusterPath, _, err := this.conn.Get(clusterPath(name))
-	if !this.swallow(err) {
-		return ""
+	if err != nil {
+		panic(name + ": " + err.Error())
 	}
 
 	return string(clusterPath)
