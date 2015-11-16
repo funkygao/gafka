@@ -75,6 +75,16 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	return
 }
 
+func (this *Topics) echoOrBuffer(line string, buffer []string) []string {
+	if this.topicPrefix != "" {
+		// buffer
+		return append(buffer, line)
+	} else {
+		this.Ui.Output(line)
+		return nil
+	}
+}
+
 func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 	must := func(err error) {
 		if err != nil {
@@ -82,14 +92,23 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		}
 	}
 
+	echoBuffer := func(lines []string) {
+		for _, l := range lines {
+			this.Ui.Output(l)
+		}
+	}
+
+	linesInTopicMode := make([]string, 0)
 	if this.verbose {
-		this.Ui.Output(zkcluster.Name())
+		linesInTopicMode = this.echoOrBuffer(zkcluster.Name(), linesInTopicMode)
 	}
 
 	// get all alive brokers within this cluster
 	brokers := zkcluster.Brokers()
 	if len(brokers) == 0 {
-		this.Ui.Output(fmt.Sprintf("%4s%s", " ", color.Red("empty brokers")))
+		linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%4s%s", " ",
+			color.Red("empty brokers")), linesInTopicMode)
+		echoBuffer(linesInTopicMode)
 		return
 	}
 
@@ -100,8 +119,8 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		}
 		sort.Strings(sortedBrokerIds)
 		for _, brokerId := range sortedBrokerIds {
-			this.Ui.Output(fmt.Sprintf("%4s%s %s", " ", color.Green(brokerId),
-				brokers[brokerId]))
+			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%4s%s %s", " ",
+				color.Green(brokerId), brokers[brokerId]), linesInTopicMode)
 		}
 	}
 
@@ -116,8 +135,8 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 	kfk, err := sarama.NewClient([]string{broker0.Addr()}, sarama.NewConfig())
 	if err != nil {
 		if this.verbose {
-			this.Ui.Output(color.Yellow("%5s%s %s", " ", broker0.Addr(),
-				err.Error()))
+			linesInTopicMode = this.echoOrBuffer(color.Yellow("%5s%s %s", " ",
+				broker0.Addr(), err.Error()), linesInTopicMode)
 		}
 
 		return
@@ -128,19 +147,23 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 	must(err)
 	if len(topics) == 0 {
 		if this.topicPrefix == "" && this.verbose {
-			this.Ui.Output(fmt.Sprintf("%5s%s", " ", color.Magenta("no topics")))
+			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%5s%s", " ",
+				color.Magenta("no topics")), linesInTopicMode)
+			echoBuffer(linesInTopicMode)
 		}
 
 		return
 	}
 
+	hasTopicMatched := false
 	for _, topic := range topics {
-		if this.topicPrefix != "" && !strings.HasPrefix(topic, this.topicPrefix) {
+		if this.topicPrefix != "" && !strings.Contains(topic, this.topicPrefix) {
 			continue
 		}
 
+		hasTopicMatched = true
 		if this.verbose {
-			this.Ui.Output(strings.Repeat(" ", 4) + color.Blue(topic))
+			linesInTopicMode = this.echoOrBuffer(strings.Repeat(" ", 4)+color.Blue(topic), linesInTopicMode)
 		}
 
 		// get partitions and check if some dead
@@ -149,18 +172,18 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		partions, err := kfk.Partitions(topic)
 		must(err)
 		if len(alivePartitions) != len(partions) {
-			this.Ui.Output(fmt.Sprintf("topic[%s] has %s partitions: %+v/%+v",
-				alivePartitions, color.Red("dead"), partions))
+			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("topic[%s] has %s partitions: %+v/%+v",
+				alivePartitions, color.Red("dead"), partions), linesInTopicMode)
 		}
 
 		replicas, err := kfk.Replicas(topic, partions[0])
 		must(err)
 
 		if !this.verbose {
-			this.Ui.Output(fmt.Sprintf("%30s %s %3dP %dR",
+			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%30s %s %3dP %dR",
 				zkcluster.Name(),
 				color.Blue("%50s", topic),
-				len(partions), len(replicas)))
+				len(partions), len(replicas)), linesInTopicMode)
 			continue
 		}
 
@@ -188,17 +211,26 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 			must(err)
 
 			if !underReplicated {
-				this.Ui.Output(fmt.Sprintf("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",
+				linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",
 					partitionID, leader.ID(), replicas, isr,
-					latestOffset, latestOffset-oldestOffset))
+					latestOffset, latestOffset-oldestOffset), linesInTopicMode)
 			} else {
 				// use red for alert
-				this.Ui.Output(color.Red("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",
+				linesInTopicMode = this.echoOrBuffer(color.Red("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",
 					partitionID, leader.ID(), replicas, isr,
-					latestOffset, latestOffset-oldestOffset))
+					latestOffset, latestOffset-oldestOffset), linesInTopicMode)
 			}
 
 		}
+	}
+
+	if this.topicPrefix != "" {
+		if hasTopicMatched {
+			echoBuffer(linesInTopicMode)
+		}
+
+	} else {
+		echoBuffer(linesInTopicMode)
 	}
 }
 

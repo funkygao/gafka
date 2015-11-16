@@ -63,7 +63,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPrefix string) map[string][]Consume
 	}
 
 	for group, online := range this.ConsumerGroups() {
-		if groupPrefix != "" && !strings.HasPrefix(group, groupPrefix) {
+		if groupPrefix != "" && !strings.Contains(group, groupPrefix) {
 			continue
 		}
 
