@@ -23,8 +23,9 @@ func init() {
 
 		"console": func() (cli.Command, error) {
 			return &command.Console{
-				Ui:  ui,
-				Cmd: cmd,
+				Ui:   ui,
+				Cmd:  cmd,
+				Cmds: commands,
 			}, nil
 		},
 
