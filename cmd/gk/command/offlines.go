@@ -13,9 +13,6 @@ type Offlines struct {
 }
 
 func (this *Offlines) Run(args []string) (exitCode int) {
-	if validateArgs(this, this.Ui).require("-z", "-c").invalid(args) {
-		return 2
-	}
 
 	cmd := Brokers{
 		Ui:  this.Ui,
