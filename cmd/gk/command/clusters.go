@@ -44,7 +44,6 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		} else {
 			// print all zones all clusters
 			forAllZones(func(zone string, zkzone *zk.ZkZone) {
-				this.Ui.Output(zone)
 				this.printClusters(zkzone)
 			})
 		}
@@ -63,12 +62,15 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 }
 
 func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
-	n := 0
+	clusters := make([][2]string, 0)
 	zkzone.WithinClusters(func(name, path string) {
-		n++
-		this.Ui.Output(fmt.Sprintf("%35s: %s", name, path))
+		clusters = append(clusters, [2]string{name, path})
 	})
-	this.Ui.Output(fmt.Sprintf("%80d", n))
+
+	this.Ui.Output(fmt.Sprintf("%s: %d", zkzone.Name(), len(clusters)))
+	for _, c := range clusters {
+		this.Ui.Output(fmt.Sprintf("%30s: %s", c[0], c[1]))
+	}
 
 }
 
