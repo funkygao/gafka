@@ -120,7 +120,7 @@ func (this *Top) showAndResetCounters() {
 	if limitReached {
 		// the catchall row
 		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
-			"others", "others",
+			"-OTHERS-", "-OTHERS-",
 			gofmt.Comma(int64(othersNum)), gofmt.Comma(int64(othersMps))))
 	}
 

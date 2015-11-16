@@ -72,9 +72,12 @@ Simplified multi-datacenter kafka clusters management console powered by golang.
 - [X] display consumer lags
 - [X] add partitions on broker
 - [X] #partitions #leader on a broker
+- [ ] topics shows replicas
+- [ ] top consumers activities
 - [ ] find stale brokers: found in zk but not connectable
 - [ ] rebalance a kafka cluster
 - [ ] show offline partitions besides under-replicated partitions
 - [ ] broker ownership management, what if a broker crash? how to find it
 - [ ] zk need batch request
 - [ ] github.com/peterh/liner
+

@@ -10,11 +10,13 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/sarama"
 )
 
 type Brokers struct {
-	Ui  cli.Ui
-	Cmd string
+	Ui        cli.Ui
+	Cmd       string
+	staleOnly bool
 }
 
 func (this *Brokers) Run(args []string) (exitCode int) {
@@ -26,6 +28,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
+	cmdFlags.BoolVar(&this.staleOnly, "stale", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -36,7 +39,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 		if cluster != "" {
 			zkcluster := zkzone.NewCluster(cluster)
-			this.printBrokers(zkcluster.Brokers())
+			this.printBrokers(cluster, zkcluster.Brokers())
 
 			return
 		}
@@ -55,21 +58,42 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 }
 
 func (this *Brokers) displayZoneBrokers(zone string, zkzone *zk.ZkZone) {
-	this.Ui.Output(zone)
-
+	lines := make([]string, 0)
 	n := 0
 	zkzone.WithinBrokers(func(cluster string, brokers map[string]*zk.Broker) {
-		n += len(brokers)
-		this.Ui.Output(strings.Repeat(" ", 4) + cluster)
-		this.printBrokers(brokers)
+		outputs, count := this.printBrokers(cluster, brokers)
+		lines = append(lines, outputs...)
+		n += count
 	})
-	this.Ui.Output(fmt.Sprintf("%80d", n))
+	this.Ui.Output(fmt.Sprintf("%s: %d", zone, n))
+	for _, l := range lines {
+		this.Ui.Output(l)
+	}
 }
 
-func (this *Brokers) printBrokers(brokers map[string]*zk.Broker) {
+func (this *Brokers) printBrokers(cluster string, brokers map[string]*zk.Broker) ([]string, int) {
 	if brokers == nil || len(brokers) == 0 {
-		this.Ui.Output(fmt.Sprintf("\t%s", color.Red("empty")))
-		return
+		return []string{fmt.Sprintf("%s%s %s", strings.Repeat(" ", 4),
+			cluster, color.Red("empty brokers"))}, 0
+	}
+
+	lines := make([]string, 0, len(brokers))
+	lines = append(lines, strings.Repeat(" ", 4)+cluster)
+	if this.staleOnly {
+		// try each broker's aliveness
+		n := 0
+		for brokerId, broker := range brokers {
+			kfk, err := sarama.NewClient([]string{broker.Addr()}, sarama.NewConfig())
+			if err != nil {
+				n++
+				lines = append(lines, fmt.Sprintf("\t%8s %s %s",
+					brokerId, broker, err.Error()))
+			} else {
+				kfk.Close()
+			}
+		}
+
+		return lines, n
 	}
 
 	// sort by broker id
@@ -80,8 +104,9 @@ func (this *Brokers) printBrokers(brokers map[string]*zk.Broker) {
 	sort.Strings(sortedBrokerIds)
 
 	for _, brokerId := range sortedBrokerIds {
-		this.Ui.Output(fmt.Sprintf("\t%8s %s", brokerId, brokers[brokerId]))
+		lines = append(lines, fmt.Sprintf("\t%8s %s", brokerId, brokers[brokerId]))
 	}
+	return lines, len(brokers)
 
 }
 
@@ -102,6 +127,9 @@ Options:
 
   -c cluster name
   	Only print brokers of this cluster.
+
+  -stale 
+  	Only print stale brokers: found in zk but not connectable
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
