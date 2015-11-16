@@ -51,7 +51,7 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 
 	kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
 	if err != nil {
-		this.Ui.Output(color.Yellow("%+v%s %s", " ", brokerList, err.Error()))
+		this.Ui.Output(color.Yellow("%4s%+v %s", " ", brokerList, err.Error()))
 
 		return
 	}
