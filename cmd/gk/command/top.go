@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/sarama"
 )
@@ -58,12 +59,16 @@ func (this *Top) Run(args []string) (exitCode int) {
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	zkzone.WithinClusters(func(cluster string, path string) {
 		zkcluster := zkzone.NewCluster(cluster)
-		if who == "producer" {
+		switch who {
+		case "p", "producer":
 			go this.clusterTopProducers(zkcluster)
-		} else {
-			go this.clusterTopConsumers(zkcluster)
-		}
 
+		case "c", "consumer":
+			go this.clusterTopConsumers(zkcluster)
+
+		default:
+			this.Ui.Error(fmt.Sprintf("unknown type: %s", who))
+		}
 	})
 
 	for {
@@ -220,7 +225,8 @@ Usage: %s top [options]
 
   -n limit
 
-  -who <produer|consumer>
-`, this.Cmd)
+  -who <%s%s|%s%s>
+`, this.Cmd, color.Colorize([]string{color.Underscore}, "p"), "roducer",
+		color.Colorize([]string{color.Underscore}, "c"), "onsumer")
 	return strings.TrimSpace(help)
 }

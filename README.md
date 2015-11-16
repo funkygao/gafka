@@ -75,10 +75,8 @@ Simplified multi-datacenter multi-kafka-clusters management console powered by g
 - [X] #partitions #leader on a broker
 - [X] topics command shows replicas count 
 - [ ] top consumers activities: but in zk consumer offset is update at 1m interval
-- [ ] find stale brokers: found in zk but not connectable
 - [ ] rebalance a kafka cluster
 - [ ] show offline partitions besides under-replicated partitions
 - [ ] broker ownership management, what if a broker crash? how to find it
 - [ ] zk need batch request
-- [ ] github.com/peterh/liner
 
