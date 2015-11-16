@@ -1,21 +1,46 @@
 # gafka
-Simplified multi-datacenter kafka clusters management console powered by golang.
+Simplified multi-datacenter multi-kafka-clusters management console powered by golang.
 
 ### Features
 
 - support multiple data centers of many kafka clusters
 - a top alike tool provided showing real time producers activity
-- kafka topic/partition operations on a central console
+- kafka topic/partition routine OPS on a central console
 - display global kafka brokers topology and check kafka balancing status
 - peek ongoing messages at data center level
 - explicit kafka clusters management
-- monitors all consumers using Kafka-committed offsets
+- monitor consumer lags
+- discover under replicated brokers
 
 ### Install
 
     go get github.com/funkygao/gafka
     sudo cp $GOPATH/src/github.com/funkygao/gafka/etc/gafka.cf /etc
 
+### Usage
+
+    $gk
+    
+    usage: gk [--version] [--help] <command> [<args>]
+    
+    Available commands are:
+        audit              Audit of the message streams TODO
+        brokers            Print online brokers from Zookeeper
+        clusters           Register kafka clusters to a zone
+        consumers          Print consumer groups from Zookeeper
+        controllers        Print active controllers in kafka clusters
+        lags               Display consumers lag for each topic each partition
+        partition          Add partition num to a topic
+        peek               Peek kafka cluster messages ongoing
+        producers          Display online producers TODO
+        rebalance          Rebalance the load of brokers in a kafka cluster TODO
+        stalebrokers       Display stale brokers TODO
+        top                Display top kafka cluster activities
+        topics             Manage topics & partitions of a zone
+        topology           Print server topology and balancing stats of kafka clusters
+        underreplicated    Display under-replicated partitions
+        zones              Print zones defined in /etc/gafka.cf
+    
 ### Configuration
 
     /etc/gafka.cf
@@ -42,30 +67,6 @@ Simplified multi-datacenter kafka clusters management console powered by golang.
         kafka_home: "/opt/kafka_2.10-0.8.1.1"
     }
 
-### Usage
-
-    $gk
-    
-    usage: gk [--version] [--help] <command> [<args>]
-    
-    Available commands are:
-        audit              Audit of the message streams TODO
-        brokers            Print online brokers from Zookeeper
-        clusters           Register kafka clusters to a zone
-        consumers          Print consumer groups from Zookeeper
-        controllers        Print active controllers in kafka clusters
-        lags               Display consumers lag for each topic each partition
-        partition          Add partition num to a topic
-        peek               Peek kafka cluster messages ongoing
-        producers          Display online producers TODO
-        rebalance          Rebalance the load of brokers in a kafka cluster TODO
-        stalebrokers       Display stale brokers TODO
-        top                Display top kafka cluster activities
-        topics             Manage topics & partitions of a zone
-        topology           Print server topology and balancing stats of kafka clusters
-        underreplicated    Display under-replicated partitions
-        zones              Print zones defined in /etc/gafka.cf
-    
 ### TODO
 
 - [X] bash autocomplete
