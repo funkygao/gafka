@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/Shopify/sarama"
 	log "github.com/funkygao/log4go"
@@ -46,7 +47,7 @@ func (this *ZkCluster) ConsumerGroups() map[string]bool {
 }
 
 // returns {consumerGroup: consumerInfo}
-func (this *ZkCluster) ConsumersByGroup() map[string][]Consumer {
+func (this *ZkCluster) ConsumersByGroup(groupPrefix string) map[string][]Consumer {
 	r := make(map[string][]Consumer)
 	brokerList := this.BrokerList()
 	if len(brokerList) == 0 {
@@ -62,6 +63,10 @@ func (this *ZkCluster) ConsumersByGroup() map[string][]Consumer {
 	}
 
 	for group, online := range this.ConsumerGroups() {
+		if groupPrefix != "" && !strings.HasPrefix(group, groupPrefix) {
+			continue
+		}
+
 		topics := this.zone.children(this.consumerGroupOffsetPath(group))
 		for _, topic := range topics {
 		topicLoop:

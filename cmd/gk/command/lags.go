@@ -14,9 +14,10 @@ import (
 )
 
 type Lags struct {
-	Ui         cli.Ui
-	Cmd        string
-	onlineOnly bool
+	Ui          cli.Ui
+	Cmd         string
+	onlineOnly  bool
+	groupPrefix string
 }
 
 func (this *Lags) Run(args []string) (exitCode int) {
@@ -29,6 +30,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.onlineOnly, "l", false, "")
+	cmdFlags.StringVar(&this.groupPrefix, "g", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -57,7 +59,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 	// sort by group name
 	sortedGroups := make([]string, 0)
-	consumersByGroup := zkcluster.ConsumersByGroup()
+	consumersByGroup := zkcluster.ConsumersByGroup(this.groupPrefix)
 	for group, _ := range consumersByGroup {
 		sortedGroups = append(sortedGroups, group)
 	}
@@ -97,6 +99,8 @@ Usage: %s lags -z zone [options]
 	Display consumers lag for each topic each partition
 
   -c cluster
+
+  -g group name prefix
 
   -l
   	Only show online consumers lag.
