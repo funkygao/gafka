@@ -78,7 +78,7 @@ func (this *Console) runCommand(cmd string) (ok bool) {
 		this.doHistory()
 	default:
 		if _, present := this.Cmds[parts[0]]; !present {
-			this.Ui.Error(fmt.Sprintf("unkown command: %s", parts[0]))
+			this.Ui.Error(fmt.Sprintf("unknown command: %s", parts[0]))
 			return
 		}
 
