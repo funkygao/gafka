@@ -154,11 +154,14 @@ func (this *Topics) displayTopicsOfCluster(cluster string, zkzone *zk.ZkZone,
 				alivePartitions, color.Red("dead"), partions))
 		}
 
+		replicas, err := kfk.Replicas(topic, partions[0])
+		must(err)
+
 		if !verbose {
-			this.Ui.Output(fmt.Sprintf("%30s %s %3dP",
+			this.Ui.Output(fmt.Sprintf("%30s %s %3dP %dR",
 				cluster,
 				color.Blue("%50s", topic),
-				len(partions)))
+				len(partions), len(replicas)))
 			continue
 		}
 
