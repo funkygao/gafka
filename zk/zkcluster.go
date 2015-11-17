@@ -47,6 +47,20 @@ func (this *ZkCluster) ConsumerGroups() map[string][]*ConsumerZnode {
 	return r
 }
 
+// returns {partitionId: consumerId}
+func (this *ZkCluster) ownersOfGroupByTopic(group, topic string) map[string]string {
+	r := make(map[string]string)
+	for partition, data := range this.zone.childrenWithData(this.consumerGroupOwnerOfTopicPath(group, topic)) {
+		// data: $consumerId-$num
+		consumerIdNum := string(data.data)
+		var i int
+		for i = len(consumerIdNum) - 1; consumerIdNum[i] != '-'; i-- {
+		}
+		r[partition] = consumerIdNum[:i]
+	}
+	return r
+}
+
 // returns {consumerGroup: consumerInfo}
 func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consumer {
 	r := make(map[string][]Consumer)
@@ -73,13 +87,14 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 		topicLoop:
 			for partitionId, offsetData := range this.zone.childrenWithData(this.consumerGroupOffsetOfTopicPath(group, topic)) {
 				consumerOffset, err := strconv.ParseInt(string(offsetData.data), 10, 64)
-				if !this.zone.swallow(err) {
-					return r
+				if err != nil {
+					log.Error("%s %s P:%s %v", this.name, topic, partitionId, err)
+					continue topicLoop
 				}
 
 				pid, err := strconv.Atoi(partitionId)
-				if !this.zone.swallow(err) {
-					return r
+				if err != nil {
+					panic(err)
 				}
 
 				producerOffset, err := kfk.GetOffset(topic, int32(pid),

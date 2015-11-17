@@ -84,8 +84,8 @@ func (c *ConsumerZnode) Topics() []string {
 }
 
 func (c *ConsumerZnode) String() string {
-	return fmt.Sprintf("host:%s, topics:%+v, pattern:%s, uptime:%s",
-		c.Host(), c.Topics(), c.Pattern, time.Since(TimestampToTime(c.Timestamp)))
+	return fmt.Sprintf("host:%s, sub:%+v, uptime:%s",
+		c.Host(), c.Subscription, time.Since(TimestampToTime(c.Timestamp)))
 }
 
 type BrokerZnode struct {
