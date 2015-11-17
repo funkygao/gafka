@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
