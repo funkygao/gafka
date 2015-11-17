@@ -1,6 +1,7 @@
 package command
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"sort"
@@ -14,23 +15,31 @@ import (
 )
 
 type Topology struct {
-	Ui  cli.Ui
-	Cmd string
+	Ui   cli.Ui
+	Cmd  string
+	zone string
 }
 
 func (this *Topology) Run(args []string) (exitCode int) {
-	if len(args) == 0 {
-		this.Ui.Error("zone required")
-		this.Ui.Output(this.Help())
-		return 2
+	cmdFlags := flag.NewFlagSet("topology", flag.ContinueOnError)
+	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
+	cmdFlags.StringVar(&this.zone, "z", "", "")
+	if err := cmdFlags.Parse(args); err != nil {
+		return 1
 	}
 
-	for _, zone := range args {
-		ensureZoneValid(zone)
+	if this.zone == "" {
+		forAllZones(func(zkzone *zk.ZkZone) {
+			this.displayZoneTopology(zkzone)
+		})
 
-		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
-		this.displayZoneTopology(zone, zkzone)
+		return
 	}
+
+	// a single zone
+	ensureZoneValid(this.zone)
+	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZonePath(this.zone)))
+	this.displayZoneTopology(zkzone)
 
 	return
 }
@@ -56,8 +65,8 @@ func (this *Topology) swallow(err error) {
 	}
 }
 
-func (this *Topology) displayZoneTopology(zone string, zkzone *zk.ZkZone) {
-	this.Ui.Output(zone)
+func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
+	this.Ui.Output(zkzone.Name())
 
 	instances := make(map[string]*brokerHostInfo)
 	zkzone.WithinBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
@@ -113,9 +122,13 @@ func (*Topology) Synopsis() string {
 
 func (this *Topology) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s topology [zone ...]
+Usage: %s topology [options]
 
 	Print server topology and balancing stats of kafka clusters
+
+Options:
+
+  -z zone
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }

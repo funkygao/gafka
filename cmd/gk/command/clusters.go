@@ -43,7 +43,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 			this.printClusters(zkzone)
 		} else {
 			// print all zones all clusters
-			forAllZones(func(zone string, zkzone *zk.ZkZone) {
+			forAllZones(func(zkzone *zk.ZkZone) {
 				this.printClusters(zkzone)
 			})
 		}

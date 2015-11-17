@@ -1,6 +1,7 @@
 package command
 
 import (
+	"flag"
 	"fmt"
 	"strings"
 
@@ -12,24 +13,37 @@ import (
 )
 
 type UnderReplicated struct {
-	Ui  cli.Ui
-	Cmd string
+	Ui   cli.Ui
+	Cmd  string
+	zone string
 }
 
 func (this *UnderReplicated) Run(args []string) (exitCode int) {
-	if len(args) == 0 {
-		this.Ui.Error("zone required")
-		this.Ui.Output(this.Help())
-		return 2
+	cmdFlags := flag.NewFlagSet("underreplicated", flag.ContinueOnError)
+	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
+	cmdFlags.StringVar(&this.zone, "z", "", "")
+	if err := cmdFlags.Parse(args); err != nil {
+		return 1
 	}
 
-	for _, zone := range args {
-		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
-		zkzone.WithinClusters(func(cluster string, path string) {
-			zkcluster := zkzone.NewCluster(cluster)
-			this.displayUnderReplicatedPartitionsOfCluster(zkcluster)
+	if this.zone == "" {
+		forAllZones(func(zkzone *zk.ZkZone) {
+			zkzone.WithinClusters(func(cluster string, path string) {
+				zkcluster := zkzone.NewCluster(cluster)
+				this.displayUnderReplicatedPartitionsOfCluster(zkcluster)
+			})
 		})
+
+		return
 	}
+
+	// a single zone
+	ensureZoneValid(this.zone)
+	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZonePath(this.zone)))
+	zkzone.WithinClusters(func(cluster string, path string) {
+		zkcluster := zkzone.NewCluster(cluster)
+		this.displayUnderReplicatedPartitionsOfCluster(zkcluster)
+	})
 
 	return
 }
@@ -112,9 +126,13 @@ func (*UnderReplicated) Synopsis() string {
 
 func (this *UnderReplicated) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s underreplicated [zone ...]
+Usage: %s underreplicated [options]
 
 	Display under-replicated partitions
+
+Options:
+
+  -z zone
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }

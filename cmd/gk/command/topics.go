@@ -36,7 +36,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
-	cmdFlags.BoolVar(&this.verbose, "verbose", false, "")
+	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.StringVar(&addTopic, "add", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
 	cmdFlags.StringVar(&topicConfig, "config", "", "")
@@ -311,12 +311,13 @@ Options:
   	Add a topic to a kafka cluster.
 
   -partitions n
-  	Default 1
+  	Default 1.
 
   -replicas n
-  	Default 2
+  	Default 2.
 
-  -verbose
+  -l
+  	Use a long listing format.
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }

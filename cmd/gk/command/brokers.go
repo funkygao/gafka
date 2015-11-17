@@ -44,20 +44,20 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 			return
 		}
 
-		this.displayZoneBrokers(zone, zkzone)
+		this.displayZoneBrokers(zkzone)
 
 		return
 	}
 
 	// print all brokers on all zones by default
-	forAllZones(func(zone string, zkzone *zk.ZkZone) {
-		this.displayZoneBrokers(zone, zkzone)
+	forAllZones(func(zkzone *zk.ZkZone) {
+		this.displayZoneBrokers(zkzone)
 	})
 
 	return
 }
 
-func (this *Brokers) displayZoneBrokers(zone string, zkzone *zk.ZkZone) {
+func (this *Brokers) displayZoneBrokers(zkzone *zk.ZkZone) {
 	lines := make([]string, 0)
 	n := 0
 	zkzone.WithinBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
@@ -65,7 +65,7 @@ func (this *Brokers) displayZoneBrokers(zone string, zkzone *zk.ZkZone) {
 		lines = append(lines, outputs...)
 		n += count
 	})
-	this.Ui.Output(fmt.Sprintf("%s: %d", zone, n))
+	this.Ui.Output(fmt.Sprintf("%s: %d", zkzone.Name(), n))
 	for _, l := range lines {
 		this.Ui.Output(l)
 	}

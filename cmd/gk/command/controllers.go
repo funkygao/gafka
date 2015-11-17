@@ -30,22 +30,22 @@ func (this *Controllers) Run(args []string) (exitCode int) {
 	}
 
 	if zone == "" {
-		forAllZones(func(zone string, zkzone *zk.ZkZone) {
-			this.printControllers(zone, zkzone)
+		forAllZones(func(zkzone *zk.ZkZone) {
+			this.printControllers(zkzone)
 		})
 
 		return
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
-	this.printControllers(zone, zkzone)
+	this.printControllers(zkzone)
 
 	return
 }
 
 // Print all controllers of all clusters within a zone.
-func (this *Controllers) printControllers(zone string, zkzone *zk.ZkZone) {
-	this.Ui.Output(zone)
+func (this *Controllers) printControllers(zkzone *zk.ZkZone) {
+	this.Ui.Output(zkzone.Name())
 	zkzone.WithinControllers(func(cluster string, controller *zk.Controller) {
 		this.Ui.Output(strings.Repeat(" ", 4) + cluster)
 		if controller == nil {

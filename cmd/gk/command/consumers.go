@@ -35,22 +35,22 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	}
 
 	if zone == "" {
-		forAllZones(func(zone string, zkzone *zk.ZkZone) {
-			this.printConsumers(zone, zkzone, cluster)
+		forAllZones(func(zkzone *zk.ZkZone) {
+			this.printConsumers(zkzone, cluster)
 		})
 
 		return
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
-	this.printConsumers(zone, zkzone, cluster)
+	this.printConsumers(zkzone, cluster)
 
 	return
 }
 
 // Print all controllers of all clusters within a zone.
-func (this *Consumers) printConsumers(zone string, zkzone *zk.ZkZone, clusterFilter string) {
-	this.Ui.Output(zone)
+func (this *Consumers) printConsumers(zkzone *zk.ZkZone, clusterFilter string) {
+	this.Ui.Output(zkzone.Name())
 	zkzone.WithinClusters(func(name, path string) {
 		if clusterFilter != "" && clusterFilter != name {
 			return

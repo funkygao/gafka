@@ -75,10 +75,10 @@ func ensureZoneValid(zone string) {
 	ctx.ZonePath(zone) // will panic if zone not found
 }
 
-func forAllZones(fn func(zone string, zkzone *zk.ZkZone)) {
+func forAllZones(fn func(zkzone *zk.ZkZone)) {
 	for _, zone := range ctx.SortedZones() {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
-		fn(zone, zkzone)
+		fn(zkzone)
 	}
 }
 
