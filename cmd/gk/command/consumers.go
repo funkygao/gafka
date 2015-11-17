@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/funkygao/gafka/ctx"
@@ -58,9 +59,19 @@ func (this *Consumers) printConsumers(zone string, zkzone *zk.ZkZone, clusterFil
 		for group, consumers := range zkcluster.ConsumerGroups() {
 			if len(consumers) > 0 {
 				this.Ui.Output(fmt.Sprintf("\t%s %s", color.Green("☀︎"), group))
+
+				// sort by host
+				sortedIds := make([]string, 0)
+				consumersMap := make(map[string]*zk.ConsumerZnode)
 				for _, c := range consumers {
-					this.Ui.Output(fmt.Sprintf("\t\t%s", c))
+					sortedIds = append(sortedIds, c.Id)
+					consumersMap[c.Id] = c
 				}
+				sort.Strings(sortedIds)
+				for _, id := range sortedIds {
+					this.Ui.Output(fmt.Sprintf("\t\t%s", consumersMap[id]))
+				}
+
 			} else if !this.onlineOnly {
 				this.Ui.Output(fmt.Sprintf("\t%s %s", color.Yellow("☔︎"), group))
 			}
