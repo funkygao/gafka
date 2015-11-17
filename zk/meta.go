@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/funkygao/golib/gofmt"
 )
 
 type zkTimestamp int64
@@ -37,7 +39,7 @@ type ControllerMeta struct {
 
 func (c *ControllerMeta) String() string {
 	return fmt.Sprintf("%s epoch:%s/%s %s", c.Broker.Id, c.Epoch,
-		time.Since(c.Mtime.Time()), c.Broker.String())
+		gofmt.PrettySince(c.Mtime.Time()), c.Broker.String())
 }
 
 type ConsumerZnode struct {
@@ -91,7 +93,7 @@ func (c *ConsumerZnode) Uptime() time.Time {
 
 func (c *ConsumerZnode) String() string {
 	return fmt.Sprintf("host:%s, sub:%+v, uptime:%s",
-		c.Host(), c.Subscription, time.Since(c.Uptime()))
+		c.Host(), c.Subscription, gofmt.PrettySince(c.Uptime()))
 }
 
 type BrokerZnode struct {
@@ -112,7 +114,7 @@ func (b BrokerZnode) String() string {
 	return fmt.Sprintf("%s:%d ver:%d uptime:%s",
 		b.Host, b.Port,
 		b.Version,
-		time.Since(b.Uptime()))
+		gofmt.PrettySince(b.Uptime()))
 }
 
 func (b *BrokerZnode) Uptime() time.Time {
