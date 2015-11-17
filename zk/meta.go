@@ -38,6 +38,13 @@ func (c *Controller) String() string {
 	return fmt.Sprintf("%s epoch:%s %s", c.Broker.Id, c.Epoch, c.Broker.String())
 }
 
+type ConsumerNode struct {
+	Version      int            `json:"version"`
+	Subscription map[string]int `json:"subscription"` // topic:count
+	Pattern      string         `json:"pattern"`
+	Timestamp    string         `json:"timestamp"`
+}
+
 type Broker struct {
 	Id        string   `json:-`
 	JmxPort   int      `json:"jmx_port"`

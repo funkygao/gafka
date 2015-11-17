@@ -34,6 +34,7 @@ func (this *ZkCluster) Topics() []string {
 }
 
 func (this *ZkCluster) consumerGroupAlive(group string) bool {
+	this.zone.childrenWithData(this.consumerGroupIdsPath(group))
 	return len(this.zone.children(this.consumerGroupIdsPath(group))) > 0
 }
 
@@ -58,7 +59,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPrefix string) map[string][]Consume
 	// TODO zk coupled with kafka, bad design
 	kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
 	if err != nil {
-		log.Error("%+v %v", brokerList, err)
+		log.Error("%s %+v %v", this.name, brokerList, err)
 		return r
 	}
 
