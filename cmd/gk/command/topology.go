@@ -81,11 +81,12 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 		if len(brokerList) == 0 {
 			return
 		}
-		kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
+		kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
 		if err != nil {
-			this.Ui.Error(fmt.Sprintf("    %s", err.Error()))
+			this.Ui.Error(color.Red("    %+v %s", brokerList, err.Error()))
 			return
 		}
+
 		topics, err := kfk.Topics()
 		swallow(err)
 		for _, topic := range topics {
