@@ -77,8 +77,15 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 
 		// find how many partitions a broker is leading
 		zkcluster := zkzone.NewCluster(cluster)
+		brokerList := zkcluster.BrokerList()
+		if len(brokerList) == 0 {
+			return
+		}
 		kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
-		swallow(err)
+		if err != nil {
+			this.Ui.Error(fmt.Sprintf("    %s", err.Error()))
+			return
+		}
 		topics, err := kfk.Topics()
 		swallow(err)
 		for _, topic := range topics {

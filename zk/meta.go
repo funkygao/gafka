@@ -42,6 +42,12 @@ func (c *ControllerMeta) String() string {
 		gofmt.PrettySince(c.Mtime.Time()), c.Broker.String())
 }
 
+type TopicZnode struct {
+	Name       string           `json:-`
+	Version    int              `json:"version"`
+	Partitions map[string][]int `json:"partitions"` // {partitionId: replicas}
+}
+
 type ConsumerZnode struct {
 	Id           string         `json:-`
 	Version      int            `json:"version"`
