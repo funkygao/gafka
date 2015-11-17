@@ -33,21 +33,21 @@ func (this *ZkCluster) Topics() []string {
 	return r
 }
 
-// Returns {groupName: online}
-func (this *ZkCluster) ConsumerGroups() map[string][]*ConsumerZnode {
-	r := make(map[string][]*ConsumerZnode)
+// Returns {groupName: {consumerId: consumer}}
+func (this *ZkCluster) ConsumerGroups() map[string]map[string]*ConsumerZnode {
+	r := make(map[string]map[string]*ConsumerZnode)
 	for _, group := range this.zone.children(this.consumerGroupsRoot()) {
-		r[group] = make([]*ConsumerZnode, 0)
+		r[group] = make(map[string]*ConsumerZnode)
 		for consumerId, data := range this.zone.childrenWithData(this.consumerGroupIdsPath(group)) {
 			c := newConsumerZnode(consumerId)
 			c.from(data.data)
-			r[group] = append(r[group], c)
+			r[group][consumerId] = c
 		}
 	}
 	return r
 }
 
-// returns {partitionId: consumerId}
+// Returns {partitionId: consumerId}
 func (this *ZkCluster) ownersOfGroupByTopic(group, topic string) map[string]string {
 	r := make(map[string]string)
 	for partition, data := range this.zone.childrenWithData(this.consumerGroupOwnerOfTopicPath(group, topic)) {
@@ -77,13 +77,15 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 		return r
 	}
 
-	for group, consumers := range this.ConsumerGroups() {
+	consumerGroups := this.ConsumerGroups()
+	for group, consumers := range consumerGroups {
 		if groupPattern != "" && !strings.Contains(group, groupPattern) {
 			continue
 		}
 
 		topics := this.zone.children(this.consumerGroupOffsetPath(group))
 		for _, topic := range topics {
+			consumerInstances := this.ownersOfGroupByTopic(group, topic)
 		topicLoop:
 			for partitionId, offsetData := range this.zone.childrenWithData(this.consumerGroupOffsetOfTopicPath(group, topic)) {
 				consumerOffset, err := strconv.ParseInt(string(offsetData.data), 10, 64)
@@ -118,6 +120,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 					Topic:          topic,
 					PartitionId:    partitionId,
 					Timestamp:      offsetData.mtime,
+					ConsumerZnode:  consumerGroups[group][consumerInstances[partitionId]],
 					ConsumerOffset: consumerOffset,
 					ProducerOffset: producerOffset,
 					Lag:            producerOffset - consumerOffset,

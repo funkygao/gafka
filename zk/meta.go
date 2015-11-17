@@ -26,6 +26,7 @@ type Consumer struct {
 	ConsumerOffset int64
 	ProducerOffset int64
 	Lag            int64
+	ConsumerZnode  *ConsumerZnode
 }
 
 type Controller struct {
@@ -83,9 +84,13 @@ func (c *ConsumerZnode) Topics() []string {
 	return r
 }
 
+func (c *ConsumerZnode) Uptime() time.Time {
+	return TimestampToTime(c.Timestamp)
+}
+
 func (c *ConsumerZnode) String() string {
 	return fmt.Sprintf("host:%s, sub:%+v, uptime:%s",
-		c.Host(), c.Subscription, time.Since(TimestampToTime(c.Timestamp)))
+		c.Host(), c.Subscription, time.Since(c.Uptime()))
 }
 
 type BrokerZnode struct {
@@ -106,7 +111,11 @@ func (b BrokerZnode) String() string {
 	return fmt.Sprintf("%s:%d ver:%d uptime:%s",
 		b.Host, b.Port,
 		b.Version,
-		time.Since(TimestampToTime(b.Timestamp)))
+		time.Since(b.Uptime()))
+}
+
+func (b *BrokerZnode) Uptime() time.Time {
+	return TimestampToTime(b.Timestamp)
 }
 
 func (b *BrokerZnode) from(zkData []byte) {
