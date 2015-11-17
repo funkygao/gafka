@@ -46,7 +46,7 @@ func (this *Controllers) Run(args []string) (exitCode int) {
 // Print all controllers of all clusters within a zone.
 func (this *Controllers) printControllers(zkzone *zk.ZkZone) {
 	this.Ui.Output(zkzone.Name())
-	zkzone.WithinControllers(func(cluster string, controller *zk.Controller) {
+	zkzone.WithinControllers(func(cluster string, controller *zk.ControllerMeta) {
 		this.Ui.Output(strings.Repeat(" ", 4) + cluster)
 		if controller == nil {
 			this.Ui.Output(fmt.Sprintf("\t%s", color.Red("empty")))

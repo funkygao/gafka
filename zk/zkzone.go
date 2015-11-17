@@ -248,10 +248,10 @@ func (this *ZkZone) exists(path string) (ok bool, err error) {
 }
 
 // returns {cluster: controllerBroker}
-func (this *ZkZone) controllers() map[string]*Controller {
+func (this *ZkZone) controllers() map[string]*ControllerMeta {
 	this.connectIfNeccessary()
 
-	r := make(map[string]*Controller)
+	r := make(map[string]*ControllerMeta)
 	for cluster, path := range this.clusters() {
 		c := this.NewclusterWithPath(cluster, path)
 		if present, _, _ := this.conn.Exists(c.controllerPath()); !present {
@@ -259,7 +259,7 @@ func (this *ZkZone) controllers() map[string]*Controller {
 			continue
 		}
 
-		controllerData, _, _ := this.conn.Get(path + ControllerPath)
+		controllerData, stat, _ := this.conn.Get(path + ControllerPath)
 		js, err := simplejson.NewJson(controllerData)
 		if !this.swallow(err) {
 			continue
@@ -270,8 +270,9 @@ func (this *ZkZone) controllers() map[string]*Controller {
 		broker := zkcluster.Broker(brokerId)
 
 		epochData, _, _ := this.conn.Get(c.controllerEpochPath())
-		controller := &Controller{
+		controller := &ControllerMeta{
 			Broker: broker,
+			Mtime:  zkTimestamp(stat.Mtime),
 			Epoch:  string(epochData),
 		}
 
@@ -280,7 +281,7 @@ func (this *ZkZone) controllers() map[string]*Controller {
 	return r
 }
 
-func (this *ZkZone) WithinControllers(fn func(cluster string, controller *Controller)) {
+func (this *ZkZone) WithinControllers(fn func(cluster string, controller *ControllerMeta)) {
 	controllers := this.controllers()
 	sortedClusters := make([]string, 0, len(controllers))
 	for cluster, _ := range controllers {

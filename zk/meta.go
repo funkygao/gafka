@@ -22,21 +22,22 @@ type ConsumerMeta struct {
 	Online         bool
 	Topic          string
 	PartitionId    string
-	Timestamp      zkTimestamp // mtime
+	Mtime          zkTimestamp
 	ConsumerOffset int64
 	ProducerOffset int64
 	Lag            int64
 	ConsumerZnode  *ConsumerZnode
 }
 
-type Controller struct {
+type ControllerMeta struct {
 	Broker *BrokerZnode
+	Mtime  zkTimestamp
 	Epoch  string
 }
 
-// FIXME should not be consider padding
-func (c *Controller) String() string {
-	return fmt.Sprintf("%s epoch:%s %s", c.Broker.Id, c.Epoch, c.Broker.String())
+func (c *ControllerMeta) String() string {
+	return fmt.Sprintf("%s epoch:%s/%s %s", c.Broker.Id, c.Epoch,
+		time.Since(c.Mtime.Time()), c.Broker.String())
 }
 
 type ConsumerZnode struct {

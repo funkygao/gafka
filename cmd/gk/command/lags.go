@@ -77,7 +77,7 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					gofmt.Comma(consumer.ProducerOffset),
 					gofmt.Comma(consumer.ConsumerOffset),
 					color.Magenta("%15s", gofmt.Comma(consumer.Lag)),
-					time.Since(consumer.Timestamp.Time()),
+					time.Since(consumer.Mtime.Time()),
 					color.Green("%90s", consumer.ConsumerZnode.Host()),
 					time.Since(consumer.ConsumerZnode.Uptime())))
 			} else if !this.onlineOnly {
@@ -87,7 +87,7 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					gofmt.Comma(consumer.ProducerOffset),
 					gofmt.Comma(consumer.ConsumerOffset),
 					color.Magenta("%15s", gofmt.Comma(consumer.Lag)),
-					time.Since(consumer.Timestamp.Time())))
+					time.Since(consumer.Mtime.Time())))
 			}
 		}
 	}

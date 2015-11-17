@@ -119,7 +119,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 					Online:         len(consumers) > 0,
 					Topic:          topic,
 					PartitionId:    partitionId,
-					Timestamp:      offsetData.mtime,
+					Mtime:          offsetData.mtime,
 					ConsumerZnode:  consumerGroups[group][consumerInstances[partitionId]],
 					ConsumerOffset: consumerOffset,
 					ProducerOffset: producerOffset,
