@@ -76,10 +76,10 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					consumer.Topic, consumer.PartitionId,
 					gofmt.Comma(consumer.ProducerOffset),
 					gofmt.Comma(consumer.ConsumerOffset),
-					color.Cyan("%15s", gofmt.Comma(consumer.Lag)),
+					color.Magenta("%15s", gofmt.Comma(consumer.Lag)),
 					time.Since(consumer.Timestamp.Time())))
 			} else if !this.onlineOnly {
-				this.Ui.Output(fmt.Sprintf("\t%s %50s/%-2s %15s -> %15s %s %s",
+				this.Ui.Output(fmt.Sprintf("\t%s %40s/%-2s %15s -> %15s %s %s",
 					color.Yellow("☔︎︎"),
 					consumer.Topic, consumer.PartitionId,
 					gofmt.Comma(consumer.ProducerOffset),

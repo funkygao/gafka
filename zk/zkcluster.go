@@ -88,7 +88,8 @@ func (this *ZkCluster) ConsumersByGroup(groupPrefix string) map[string][]Consume
 					switch err {
 					case sarama.ErrUnknownTopicOrPartition:
 						// consumer is consuming a non-exist topic
-						log.Warn("invalid topic[%s] partition:%s", topic, partitionId)
+						log.Warn("%s %s invalid topic[%s] partition:%s",
+							this.name, group, topic, partitionId)
 						continue topicLoop
 
 					default:
