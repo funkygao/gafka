@@ -13,8 +13,8 @@ func (this zkTimestamp) Time() time.Time {
 }
 
 type zkData struct {
-	data      []byte
-	timestamp zkTimestamp
+	data  []byte
+	mtime zkTimestamp
 }
 
 type Consumer struct {
@@ -39,10 +39,53 @@ func (c *Controller) String() string {
 }
 
 type ConsumerZnode struct {
+	Id           string         `json:-`
 	Version      int            `json:"version"`
 	Subscription map[string]int `json:"subscription"` // topic:count
 	Pattern      string         `json:"pattern"`
 	Timestamp    string         `json:"timestamp"`
+}
+
+func newConsumerZnode(id string) *ConsumerZnode {
+	return &ConsumerZnode{Id: id}
+}
+
+func (c *ConsumerZnode) from(zkData []byte) {
+	if err := json.Unmarshal(zkData, c); err != nil {
+		panic(err)
+	}
+}
+
+func (c *ConsumerZnode) Host() string {
+	// consumerId: $group_$hostname-$timestamp-$uuid
+	dashN := 0
+	var lo, hi int
+	for hi = len(c.Id) - 1; hi >= 0; hi-- {
+		if c.Id[hi] == '-' {
+			dashN++
+			if dashN == 2 {
+				break
+			}
+		}
+	}
+
+	for lo = hi; c.Id[lo] != '_'; lo-- {
+	}
+
+	return c.Id[lo+1 : hi]
+}
+
+func (c *ConsumerZnode) Topics() []string {
+	r := make([]string, 0, len(c.Subscription))
+	for topic, _ := range c.Subscription {
+		r = append(r, topic)
+	}
+	return r
+}
+
+func (c *ConsumerZnode) String() string {
+	return fmt.Sprintf("host:%s, topics:%+v, pattern:%s, uptime:%s",
+		c.Host(), c.Topics(), c.Pattern, time.Since(TimestampToTime(c.Timestamp)))
 }
 
 type BrokerZnode struct {

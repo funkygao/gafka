@@ -6,8 +6,8 @@ import (
 	"github.com/funkygao/assert"
 )
 
-func TestBrokerFrom(t *testing.T) {
-	var b Broker
+func TestBrokerZnodeFrom(t *testing.T) {
+	var b BrokerZnode
 	b.Id = "5"
 	b.from([]byte(`{"jmx_port":-1,"timestamp":"1447157138058","host":"192.168.3.5","version":1,"port":9092}`))
 	assert.Equal(t, 9092, b.Port)
@@ -23,4 +23,9 @@ func TestZkTimestamp(t *testing.T) {
 	t.Logf("%v", tm.Time())
 	assert.Equal(t, 2015, tm.Time().Year())
 	assert.Equal(t, 10, tm.Time().Day())
+}
+
+func TestConsumerZnode(t *testing.T) {
+	c := newConsumerZnode("cloudparkingGroup_orderMsg_BJS0-D134-018-1447657979158-fa9d1dc8")
+	assert.Equal(t, "BJS0-D134-018", c.Host())
 }

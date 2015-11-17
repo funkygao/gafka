@@ -33,16 +33,16 @@ func (this *ZkCluster) Topics() []string {
 	return r
 }
 
-func (this *ZkCluster) consumerGroupAlive(group string) bool {
-	this.zone.childrenWithData(this.consumerGroupIdsPath(group))
-	return len(this.zone.children(this.consumerGroupIdsPath(group))) > 0
-}
-
 // Returns {groupName: online}
-func (this *ZkCluster) ConsumerGroups() map[string]bool {
-	r := make(map[string]bool)
+func (this *ZkCluster) ConsumerGroups() map[string][]*ConsumerZnode {
+	r := make(map[string][]*ConsumerZnode)
 	for _, group := range this.zone.children(this.consumerGroupsRoot()) {
-		r[group] = this.consumerGroupAlive(group)
+		r[group] = make([]*ConsumerZnode, 0)
+		for consumerId, data := range this.zone.childrenWithData(this.consumerGroupIdsPath(group)) {
+			c := newConsumerZnode(consumerId)
+			c.from(data.data)
+			r[group] = append(r[group], c)
+		}
 	}
 	return r
 }
@@ -63,7 +63,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPrefix string) map[string][]Consume
 		return r
 	}
 
-	for group, online := range this.ConsumerGroups() {
+	for group, consumers := range this.ConsumerGroups() {
 		if groupPrefix != "" && !strings.Contains(group, groupPrefix) {
 			continue
 		}
@@ -98,10 +98,10 @@ func (this *ZkCluster) ConsumersByGroup(groupPrefix string) map[string][]Consume
 
 				c := Consumer{
 					Group:          group,
-					Online:         online,
+					Online:         len(consumers) > 0,
 					Topic:          topic,
 					PartitionId:    partitionId,
-					Timestamp:      offsetData.timestamp,
+					Timestamp:      offsetData.mtime,
 					ConsumerOffset: consumerOffset,
 					ProducerOffset: producerOffset,
 					Lag:            producerOffset - consumerOffset,

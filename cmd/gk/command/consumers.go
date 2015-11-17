@@ -55,9 +55,12 @@ func (this *Consumers) printConsumers(zone string, zkzone *zk.ZkZone, clusterFil
 
 		zkcluster := zkzone.NewCluster(name)
 		this.Ui.Output(strings.Repeat(" ", 4) + name)
-		for group, online := range zkcluster.ConsumerGroups() {
-			if online {
+		for group, consumers := range zkcluster.ConsumerGroups() {
+			if len(consumers) > 0 {
 				this.Ui.Output(fmt.Sprintf("\t%s %s", color.Green("☀︎"), group))
+				for _, c := range consumers {
+					this.Ui.Output(fmt.Sprintf("\t\t%s", c))
+				}
 			} else if !this.onlineOnly {
 				this.Ui.Output(fmt.Sprintf("\t%s %s", color.Yellow("☔︎"), group))
 			}

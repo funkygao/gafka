@@ -166,8 +166,8 @@ func (this *ZkZone) childrenWithData(path string) map[string]zkData {
 		}
 
 		r[name] = zkData{
-			data:      data,
-			timestamp: zkTimestamp(stat.Mtime),
+			data:  data,
+			mtime: zkTimestamp(stat.Mtime),
 		}
 	}
 	return r
