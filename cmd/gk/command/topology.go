@@ -59,12 +59,6 @@ func (this *brokerHostInfo) addPort(port int) {
 	this.ports = append(this.ports, port)
 }
 
-func (this *Topology) swallow(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 	this.Ui.Output(zkzone.Name())
 
@@ -84,17 +78,17 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 		// find how many partitions a broker is leading
 		zkcluster := zkzone.NewCluster(cluster)
 		kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
-		this.swallow(err)
+		swallow(err)
 		topics, err := kfk.Topics()
-		this.swallow(err)
+		swallow(err)
 		for _, topic := range topics {
 			partions, err := kfk.WritablePartitions(topic)
-			this.swallow(err)
+			swallow(err)
 			for _, partitionID := range partions {
 				leader, err := kfk.Leader(topic, partitionID)
-				this.swallow(err)
+				swallow(err)
 				host, _, err := net.SplitHostPort(leader.Addr())
-				this.swallow(err)
+				swallow(err)
 				instances[host].leadingN++
 			}
 		}

@@ -48,12 +48,6 @@ func (this *UnderReplicated) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *UnderReplicated) swallow(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster *zk.ZkCluster) {
 	this.Ui.Output(zkcluster.Name())
 
@@ -72,7 +66,7 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 	defer kfk.Close()
 
 	topics, err := kfk.Topics()
-	this.swallow(err)
+	swallow(err)
 	if len(topics) == 0 {
 		return
 	}
@@ -80,9 +74,9 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 	for _, topic := range topics {
 		// get partitions and check if some dead
 		alivePartitions, err := kfk.WritablePartitions(topic)
-		this.swallow(err)
+		swallow(err)
 		partions, err := kfk.Partitions(topic)
-		this.swallow(err)
+		swallow(err)
 		if len(alivePartitions) != len(partions) {
 			this.Ui.Output(fmt.Sprintf("topic[%s] has %s partitions: %+v/%+v",
 				alivePartitions, color.Red("dead"), partions))
@@ -90,7 +84,7 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 
 		for _, partitionID := range alivePartitions {
 			replicas, err := kfk.Replicas(topic, partitionID)
-			this.swallow(err)
+			swallow(err)
 
 			isr := zkcluster.Isr(topic, partitionID)
 
@@ -101,15 +95,15 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 
 			if underReplicated {
 				leader, err := kfk.Leader(topic, partitionID)
-				this.swallow(err)
+				swallow(err)
 
 				latestOffset, err := kfk.GetOffset(topic, partitionID,
 					sarama.OffsetNewest)
-				this.swallow(err)
+				swallow(err)
 
 				oldestOffset, err := kfk.GetOffset(topic, partitionID,
 					sarama.OffsetOldest)
-				this.swallow(err)
+				swallow(err)
 
 				this.Ui.Output(color.Red("\t%s Partition:%d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",
 					topic,

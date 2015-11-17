@@ -82,6 +82,12 @@ func forAllZones(fn func(zkzone *zk.ZkZone)) {
 	}
 }
 
+func swallow(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 type sortedStrMap struct {
 	keys []string
 	vals []interface{}

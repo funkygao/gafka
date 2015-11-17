@@ -93,12 +93,6 @@ func (this *Topics) echoOrBuffer(line string, buffer []string) []string {
 }
 
 func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
-	must := func(err error) {
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	echoBuffer := func(lines []string) {
 		for _, l := range lines {
 			this.Ui.Output(l)
@@ -151,7 +145,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 	defer kfk.Close()
 
 	topics, err := kfk.Topics()
-	must(err)
+	swallow(err)
 	if len(topics) == 0 {
 		if this.topicPattern == "" && this.verbose {
 			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%5s%s", " ",
@@ -175,16 +169,16 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 
 		// get partitions and check if some dead
 		alivePartitions, err := kfk.WritablePartitions(topic)
-		must(err)
+		swallow(err)
 		partions, err := kfk.Partitions(topic)
-		must(err)
+		swallow(err)
 		if len(alivePartitions) != len(partions) {
 			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("topic[%s] has %s partitions: %+v/%+v",
 				alivePartitions, color.Red("dead"), partions), linesInTopicMode)
 		}
 
 		replicas, err := kfk.Replicas(topic, partions[0])
-		must(err)
+		swallow(err)
 
 		if !this.verbose {
 			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%30s %s %3dP %dR",
@@ -196,10 +190,10 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 
 		for _, partitionID := range alivePartitions {
 			leader, err := kfk.Leader(topic, partitionID)
-			must(err)
+			swallow(err)
 
 			replicas, err := kfk.Replicas(topic, partitionID)
-			must(err)
+			swallow(err)
 
 			isr := zkcluster.Isr(topic, partitionID)
 			//isr, err := kfk.Isr(topic, partitionID)
@@ -211,11 +205,11 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 
 			latestOffset, err := kfk.GetOffset(topic, partitionID,
 				sarama.OffsetNewest)
-			must(err)
+			swallow(err)
 
 			oldestOffset, err := kfk.GetOffset(topic, partitionID,
 				sarama.OffsetOldest)
-			must(err)
+			swallow(err)
 
 			if !underReplicated {
 				linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",
