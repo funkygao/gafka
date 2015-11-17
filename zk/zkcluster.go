@@ -62,8 +62,8 @@ func (this *ZkCluster) ownersOfGroupByTopic(group, topic string) map[string]stri
 }
 
 // returns {consumerGroup: consumerInfo}
-func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consumer {
-	r := make(map[string][]Consumer)
+func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]ConsumerMeta {
+	r := make(map[string][]ConsumerMeta)
 	brokerList := this.BrokerList()
 	if len(brokerList) == 0 {
 		// no brokers alive, so cannot tell the consumer lags
@@ -114,7 +114,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 					}
 				}
 
-				c := Consumer{
+				cm := ConsumerMeta{
 					Group:          group,
 					Online:         len(consumers) > 0,
 					Topic:          topic,
@@ -126,9 +126,9 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 					Lag:            producerOffset - consumerOffset,
 				}
 				if _, present := r[group]; !present {
-					r[group] = make([]Consumer, 0)
+					r[group] = make([]ConsumerMeta, 0)
 				}
-				r[group] = append(r[group], c)
+				r[group] = append(r[group], cm)
 			}
 		}
 	}

@@ -17,12 +17,12 @@ type zkData struct {
 	mtime zkTimestamp
 }
 
-type Consumer struct {
+type ConsumerMeta struct {
 	Group          string
 	Online         bool
 	Topic          string
 	PartitionId    string
-	Timestamp      zkTimestamp
+	Timestamp      zkTimestamp // mtime
 	ConsumerOffset int64
 	ProducerOffset int64
 	Lag            int64
