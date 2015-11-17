@@ -48,7 +48,7 @@ func (this *ZkCluster) ConsumerGroups() map[string][]*ConsumerZnode {
 }
 
 // returns {consumerGroup: consumerInfo}
-func (this *ZkCluster) ConsumersByGroup(groupPrefix string) map[string][]Consumer {
+func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consumer {
 	r := make(map[string][]Consumer)
 	brokerList := this.BrokerList()
 	if len(brokerList) == 0 {
@@ -64,7 +64,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPrefix string) map[string][]Consume
 	}
 
 	for group, consumers := range this.ConsumerGroups() {
-		if groupPrefix != "" && !strings.Contains(group, groupPrefix) {
+		if groupPattern != "" && !strings.Contains(group, groupPattern) {
 			continue
 		}
 

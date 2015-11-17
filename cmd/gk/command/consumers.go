@@ -13,9 +13,10 @@ import (
 )
 
 type Consumers struct {
-	Ui         cli.Ui
-	Cmd        string
-	onlineOnly bool
+	Ui           cli.Ui
+	Cmd          string
+	onlineOnly   bool
+	groupPattern string
 }
 
 func (this *Consumers) Run(args []string) (exitCode int) {
@@ -27,6 +28,7 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
+	cmdFlags.StringVar(&this.groupPattern, "g", "", "")
 	cmdFlags.BoolVar(&this.onlineOnly, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -56,7 +58,19 @@ func (this *Consumers) printConsumers(zone string, zkzone *zk.ZkZone, clusterFil
 
 		zkcluster := zkzone.NewCluster(name)
 		this.Ui.Output(strings.Repeat(" ", 4) + name)
-		for group, consumers := range zkcluster.ConsumerGroups() {
+		consumerGroups := zkcluster.ConsumerGroups()
+		sortedGroups := make([]string, 0, len(consumerGroups))
+		for group, _ := range consumerGroups {
+			if this.groupPattern != "" && !strings.Contains(group, this.groupPattern) {
+				continue
+			}
+
+			sortedGroups = append(sortedGroups, group)
+		}
+
+		sort.Strings(sortedGroups)
+		for _, group := range sortedGroups {
+			consumers := consumerGroups[group]
 			if len(consumers) > 0 {
 				this.Ui.Output(fmt.Sprintf("\t%s %s", color.Green("☀︎"), group))
 
@@ -96,6 +110,8 @@ Options:
   	Only print kafka controllers within this zone.
 
   -c cluster
+
+  -g group name pattern
 
   -l 
   	Only show online consumer groups.

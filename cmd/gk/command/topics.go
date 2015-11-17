@@ -16,10 +16,10 @@ import (
 )
 
 type Topics struct {
-	Ui          cli.Ui
-	Cmd         string
-	topicPrefix string
-	verbose     bool
+	Ui           cli.Ui
+	Cmd          string
+	topicPattern string
+	verbose      bool
 }
 
 func (this *Topics) Run(args []string) (exitCode int) {
@@ -34,7 +34,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
-	cmdFlags.StringVar(&this.topicPrefix, "t", "", "")
+	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.verbose, "verbose", false, "")
 	cmdFlags.StringVar(&addTopic, "add", "", "")
@@ -83,7 +83,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 }
 
 func (this *Topics) echoOrBuffer(line string, buffer []string) []string {
-	if this.topicPrefix != "" {
+	if this.topicPattern != "" {
 		// buffer
 		return append(buffer, line)
 	} else {
@@ -153,7 +153,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 	topics, err := kfk.Topics()
 	must(err)
 	if len(topics) == 0 {
-		if this.topicPrefix == "" && this.verbose {
+		if this.topicPattern == "" && this.verbose {
 			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%5s%s", " ",
 				color.Magenta("no topics")), linesInTopicMode)
 			echoBuffer(linesInTopicMode)
@@ -164,7 +164,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 
 	hasTopicMatched := false
 	for _, topic := range topics {
-		if this.topicPrefix != "" && !strings.Contains(topic, this.topicPrefix) {
+		if this.topicPattern != "" && !strings.Contains(topic, this.topicPattern) {
 			continue
 		}
 
@@ -231,7 +231,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		}
 	}
 
-	if this.topicPrefix != "" {
+	if this.topicPattern != "" {
 		if hasTopicMatched {
 			echoBuffer(linesInTopicMode)
 		}
@@ -301,7 +301,7 @@ Options:
   
   -c cluster
 
-  -t topic prefix
+  -t topic name pattern
   	Only show topics like this give topic.
 
   -config k=v
