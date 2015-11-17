@@ -29,7 +29,7 @@ type Consumer struct {
 }
 
 type Controller struct {
-	Broker *Broker
+	Broker *BrokerZnode
 	Epoch  string
 }
 
@@ -38,14 +38,14 @@ func (c *Controller) String() string {
 	return fmt.Sprintf("%s epoch:%s %s", c.Broker.Id, c.Epoch, c.Broker.String())
 }
 
-type ConsumerNode struct {
+type ConsumerZnode struct {
 	Version      int            `json:"version"`
 	Subscription map[string]int `json:"subscription"` // topic:count
 	Pattern      string         `json:"pattern"`
 	Timestamp    string         `json:"timestamp"`
 }
 
-type Broker struct {
+type BrokerZnode struct {
 	Id        string   `json:-`
 	JmxPort   int      `json:"jmx_port"`
 	Timestamp string   `json:"timestamp"`
@@ -55,23 +55,23 @@ type Broker struct {
 	Version   int      `json:"version"`
 }
 
-func newBroker(id string) *Broker {
-	return &Broker{Id: id}
+func newBrokerZnode(id string) *BrokerZnode {
+	return &BrokerZnode{Id: id}
 }
 
-func (b Broker) String() string {
+func (b BrokerZnode) String() string {
 	return fmt.Sprintf("%s:%d ver:%d uptime:%s",
 		b.Host, b.Port,
 		b.Version,
 		time.Since(TimestampToTime(b.Timestamp)))
 }
 
-func (b *Broker) from(zkData []byte) {
+func (b *BrokerZnode) from(zkData []byte) {
 	if err := json.Unmarshal(zkData, b); err != nil {
 		panic(err)
 	}
 }
 
-func (b *Broker) Addr() string {
+func (b *BrokerZnode) Addr() string {
 	return fmt.Sprintf("%s:%d", b.Host, b.Port)
 }

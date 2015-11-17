@@ -117,10 +117,10 @@ func (this *ZkCluster) ConsumersByGroup(groupPrefix string) map[string][]Consume
 }
 
 // returns {brokerId: broker}
-func (this *ZkCluster) Brokers() map[string]*Broker {
-	r := make(map[string]*Broker)
+func (this *ZkCluster) Brokers() map[string]*BrokerZnode {
+	r := make(map[string]*BrokerZnode)
 	for brokerId, brokerInfo := range this.zone.childrenWithData(this.brokerIdsRoot()) {
-		broker := newBroker(brokerId)
+		broker := newBrokerZnode(brokerId)
 		broker.from(brokerInfo.data)
 
 		r[brokerId] = broker
@@ -152,9 +152,9 @@ func (this *ZkCluster) Isr(topic string, partitionId int32) []int {
 	return r
 }
 
-func (this *ZkCluster) Broker(id int) (b *Broker) {
+func (this *ZkCluster) Broker(id int) (b *BrokerZnode) {
 	zkData, _, _ := this.zone.conn.Get(this.brokerPath(id))
-	b = newBroker(strconv.Itoa(id))
+	b = newBrokerZnode(strconv.Itoa(id))
 	b.from(zkData)
 	return
 }

@@ -294,15 +294,15 @@ func (this *ZkZone) WithinControllers(fn func(cluster string, controller *Contro
 }
 
 // GetBrokers returns {cluster: {brokerId: broker}}
-func (this *ZkZone) brokers() map[string]map[string]*Broker {
-	r := make(map[string]map[string]*Broker)
+func (this *ZkZone) brokers() map[string]map[string]*BrokerZnode {
+	r := make(map[string]map[string]*BrokerZnode)
 	for cluster, path := range this.clusters() {
 		c := this.NewclusterWithPath(cluster, path)
 		liveBrokers := this.childrenWithData(c.brokerIdsRoot())
 		if len(liveBrokers) > 0 {
-			r[cluster] = make(map[string]*Broker)
+			r[cluster] = make(map[string]*BrokerZnode)
 			for brokerId, brokerInfo := range liveBrokers {
-				broker := newBroker(brokerId)
+				broker := newBrokerZnode(brokerId)
 				broker.from(brokerInfo.data)
 
 				r[cluster][brokerId] = broker
@@ -316,7 +316,7 @@ func (this *ZkZone) brokers() map[string]map[string]*Broker {
 	return r
 }
 
-func (this *ZkZone) WithinBrokers(fn func(cluster string, brokers map[string]*Broker)) {
+func (this *ZkZone) WithinBrokers(fn func(cluster string, brokers map[string]*BrokerZnode)) {
 	// sort by cluster name
 	brokersOfClusters := this.brokers()
 	sortedClusters := make([]string, 0, len(brokersOfClusters))

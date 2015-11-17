@@ -133,7 +133,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 
 	// find 1st broker in the cluster
 	// each broker in the cluster has same metadata
-	var broker0 *zk.Broker
+	var broker0 *zk.BrokerZnode
 	for _, broker := range brokers {
 		broker0 = broker
 		break
