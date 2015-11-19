@@ -377,6 +377,8 @@ func (this *ZkZone) DiscoverClusters(rootPath string) ([]string, error) {
 
 			if strings.HasSuffix(p, BROKER_PATH) {
 				result = append(result, p[:len(p)-len(BROKER_PATH)])
+
+				// ignore the kafka cluster's children
 				excludedPaths[p[:len(p)-len(BROKER_PATH)]] = struct{}{}
 			} else {
 				queue.PushBack(p)

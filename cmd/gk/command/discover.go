@@ -65,7 +65,7 @@ func (this *Discover) discoverClusters(zkzone *zk.ZkZone) {
 }
 
 func (*Discover) Synopsis() string {
-	return "Register kafka clusters to a zone"
+	return "Automatically discover online kafka clusters"
 }
 
 func (this *Discover) Help() string {
