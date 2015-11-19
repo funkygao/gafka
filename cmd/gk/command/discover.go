@@ -58,7 +58,7 @@ func (this *Discover) discoverClusters(zkzone *zk.ZkZone) {
 	// print each cluster state: new, normal
 	for _, zkpath := range discoveredClusters {
 		if _, present := existingCluserPaths[zkpath]; !present {
-			this.Ui.Output(strings.Repeat(" ", 4) + color.Yellow("%s found new",
+			this.Ui.Output(strings.Repeat(" ", 4) + color.Green("%s +++",
 				zkpath))
 		} else {
 			this.Ui.Output(strings.Repeat(" ", 4) + zkpath)
@@ -77,7 +77,7 @@ func (this *Discover) discoverClusters(zkzone *zk.ZkZone) {
 			}
 		}
 		if !foundOnline {
-			this.Ui.Output(strings.Repeat(" ", 4) + color.Red("%s: %s offline", c, path))
+			this.Ui.Output(strings.Repeat(" ", 4) + color.Red("%s: %s ---", c, path))
 		}
 	}
 }
