@@ -39,7 +39,10 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 		if cluster != "" {
 			zkcluster := zkzone.NewCluster(cluster)
-			this.printBrokers(cluster, zkcluster.Brokers())
+			lines, _ := this.clusterBrokers(cluster, zkcluster.Brokers())
+			for _, l := range lines {
+				this.Ui.Output(l)
+			}
 
 			return
 		}
@@ -61,7 +64,7 @@ func (this *Brokers) displayZoneBrokers(zkzone *zk.ZkZone) {
 	lines := make([]string, 0)
 	n := 0
 	zkzone.WithinBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
-		outputs, count := this.printBrokers(cluster, brokers)
+		outputs, count := this.clusterBrokers(cluster, brokers)
 		lines = append(lines, outputs...)
 		n += count
 	})
@@ -71,7 +74,7 @@ func (this *Brokers) displayZoneBrokers(zkzone *zk.ZkZone) {
 	}
 }
 
-func (this *Brokers) printBrokers(cluster string, brokers map[string]*zk.BrokerZnode) ([]string, int) {
+func (this *Brokers) clusterBrokers(cluster string, brokers map[string]*zk.BrokerZnode) ([]string, int) {
 	if brokers == nil || len(brokers) == 0 {
 		return []string{fmt.Sprintf("%s%s %s", strings.Repeat(" ", 4),
 			cluster, color.Red("empty brokers"))}, 0
