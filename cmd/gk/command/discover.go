@@ -49,17 +49,35 @@ func (this *Discover) discoverClusters(zkzone *zk.ZkZone) {
 		existingCluserPaths[path] = struct{}{}
 	}
 
-	clusters, err := zkzone.DiscoverClusters("/")
+	discoveredClusters, err := zkzone.DiscoverClusters("/")
 	if err != nil {
 		this.Ui.Error(zkzone.Name() + ": " + err.Error())
 		return
 	}
 
-	for _, zkpath := range clusters {
+	// print each cluster state: new, normal
+	for _, zkpath := range discoveredClusters {
 		if _, present := existingCluserPaths[zkpath]; !present {
-			this.Ui.Output(strings.Repeat(" ", 4) + color.Yellow(zkpath))
+			this.Ui.Output(strings.Repeat(" ", 4) + color.Yellow("%s found new",
+				zkpath))
 		} else {
 			this.Ui.Output(strings.Repeat(" ", 4) + zkpath)
+		}
+	}
+
+	// find the offline clusters
+	for c, path := range existingClusters {
+		path = strings.TrimSpace(path)
+		foundOnline := false
+		for _, p := range discoveredClusters {
+			p = strings.TrimSpace(p)
+			if p == path {
+				foundOnline = true
+				break
+			}
+		}
+		if !foundOnline {
+			this.Ui.Output(strings.Repeat(" ", 4) + color.Red("%s: %s offline", c, path))
 		}
 	}
 }
