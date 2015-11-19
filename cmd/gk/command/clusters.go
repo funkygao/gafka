@@ -25,6 +25,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		clusterName string
 		clusterPath string
 		zone        string
+		discover    bool
 	)
 	cmdFlags := flag.NewFlagSet("clusters", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -33,12 +34,25 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&clusterName, "n", "", "")
 	cmdFlags.StringVar(&clusterPath, "p", "", "")
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
+	cmdFlags.BoolVar(&discover, "discover", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	if validateArgs(this, this.Ui).on("-a", "-n", "-z", "-p").invalid(args) {
 		return 2
+	}
+
+	if discover {
+		if zone != "" {
+			zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+			this.discover(zkzone)
+		} else {
+			forAllZones(func(zkzone *zk.ZkZone) {
+				this.discover(zkzone)
+			})
+		}
+		return
 	}
 
 	if !addMode {
@@ -63,6 +77,11 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+// TODO
+func (this *Clusters) discover(zkzone *zk.ZkZone) {
+
 }
 
 func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
@@ -178,6 +197,9 @@ Options:
 
   -p cluster zk path
   	The new kafka cluster chroot path in Zookeeper.
+
+  -discover
+  	Automatically discover clusters.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

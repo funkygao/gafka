@@ -75,6 +75,7 @@ Simplified multi-datacenter multi-kafka-clusters management console powered by g
 - [X] #partitions #leader on a broker
 - [X] topics command shows replicas count 
 - [X] show offline partitions: leader broker id = -1 
+- [ ] auto discover cluster
 - [ ] top consumers activities: but in zk consumer offset is update at 1m interval
 - [ ] rebalance a kafka cluster
 - [ ] broker ownership management, what if a broker crash? how to find it
