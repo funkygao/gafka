@@ -50,12 +50,16 @@ Simplified multi-datacenter multi-kafka-clusters management console powered by g
         // zones may reside in different data centers.
         zones: [
             {
-                name: "integration"
-                zk: "10.77.144.87:10181,10.77.144.88:10181,10.77.144.89:10181"
+                name: "dev"
+                zk: "10.77.144.101:10181,10.77.144.132:10181,10.77.144.182:10181"
             }
             {
                 name: "test"
                 zk: "10.77.144.101:10181,10.77.144.132:10181,10.77.144.182:10181"
+            }
+            {
+                name: "staging"
+                zk: "10.77.144.87:10181,10.77.144.88:10181,10.77.144.89:10181"
             }
             {
                 name: "production"
@@ -75,7 +79,7 @@ Simplified multi-datacenter multi-kafka-clusters management console powered by g
 - [X] #partitions #leader on a broker
 - [X] topics command shows replicas count 
 - [X] show offline partitions: leader broker id = -1 
-- [ ] auto discover cluster
+- [X] auto discover cluster
 - [ ] top consumers activities: but in zk consumer offset is update at 1m interval
 - [ ] rebalance a kafka cluster
 - [ ] broker ownership management, what if a broker crash? how to find it

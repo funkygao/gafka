@@ -1,6 +1,7 @@
 package zk
 
 import (
+	"container/list"
 	"path"
 	"sort"
 	"strings"
@@ -174,7 +175,7 @@ func (this *ZkZone) childrenWithData(path string) map[string]zkData {
 }
 
 // returns {clusterName: clusterZkPath}
-func (this *ZkZone) clusters() map[string]string {
+func (this *ZkZone) Clusters() map[string]string {
 	r := make(map[string]string)
 	for cluster, clusterData := range this.childrenWithData(clusterRoot) {
 		r[cluster] = string(clusterData.data)
@@ -184,7 +185,7 @@ func (this *ZkZone) clusters() map[string]string {
 }
 
 func (this *ZkZone) WithinClusters(fn func(name string, path string)) {
-	clusters := this.clusters()
+	clusters := this.Clusters()
 	sortedNames := make([]string, 0, len(clusters))
 	for name, _ := range clusters {
 		sortedNames = append(sortedNames, name)
@@ -252,7 +253,7 @@ func (this *ZkZone) controllers() map[string]*ControllerMeta {
 	this.connectIfNeccessary()
 
 	r := make(map[string]*ControllerMeta)
-	for cluster, path := range this.clusters() {
+	for cluster, path := range this.Clusters() {
 		c := this.NewclusterWithPath(cluster, path)
 		if present, _, _ := this.conn.Exists(c.controllerPath()); !present {
 			r[cluster] = nil
@@ -297,7 +298,7 @@ func (this *ZkZone) WithinControllers(fn func(cluster string, controller *Contro
 // GetBrokers returns {cluster: {brokerId: broker}}
 func (this *ZkZone) brokers() map[string]map[string]*BrokerZnode {
 	r := make(map[string]map[string]*BrokerZnode)
-	for cluster, path := range this.clusters() {
+	for cluster, path := range this.Clusters() {
 		c := this.NewclusterWithPath(cluster, path)
 		liveBrokers := this.childrenWithData(c.brokerIdsRoot())
 		if len(liveBrokers) > 0 {
@@ -328,4 +329,60 @@ func (this *ZkZone) WithinBrokers(fn func(cluster string, brokers map[string]*Br
 	for _, cluster := range sortedClusters {
 		fn(cluster, brokersOfClusters[cluster])
 	}
+}
+
+// DiscoverClusters find all possible kafka clusters.
+func (this *ZkZone) DiscoverClusters(rootPath string) ([]string, error) {
+	const BROKER_PATH = "/brokers/ids"
+	excludedPaths := map[string]struct{}{
+		"/zookeeper": struct{}{},
+	}
+
+	result := make([]string, 0, 100)
+	queue := list.New()
+	queue.PushBack(rootPath)
+	for {
+	MAIN_LOOP:
+		if queue.Len() == 0 {
+			break
+		}
+
+		element := queue.Back()
+		path := element.Value.(string)
+		queue.Remove(element)
+
+		// ignore the broker cluster we have already known
+		for _, ignoredPath := range result {
+			if strings.HasPrefix(path, ignoredPath) {
+				goto MAIN_LOOP
+			}
+		}
+
+		children, _, err := this.conn.Children(path)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, child := range children {
+			var p string
+			if path == "/" {
+				p = path + child
+			} else {
+				p = path + "/" + child
+			}
+
+			if _, present := excludedPaths[p]; present {
+				continue
+			}
+
+			if strings.HasSuffix(p, BROKER_PATH) {
+				result = append(result, p[:len(p)-len(BROKER_PATH)])
+				excludedPaths[p[:len(p)-len(BROKER_PATH)]] = struct{}{}
+			} else {
+				queue.PushBack(p)
+			}
+		}
+	}
+
+	return result, nil
 }

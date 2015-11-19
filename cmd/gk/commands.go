@@ -21,6 +21,13 @@ func init() {
 			}, nil
 		},
 
+		"discover": func() (cli.Command, error) {
+			return &command.Discover{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"verifyreplicas": func() (cli.Command, error) {
 			return &command.VerifyReplicas{
 				Ui:  ui,
