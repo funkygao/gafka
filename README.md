@@ -10,7 +10,8 @@ Simplified multi-datacenter multi-kafka-clusters management console powered by g
 - peek ongoing messages at data center level
 - explicit kafka clusters management
 - monitor consumer lags
-- discover under replicated brokers
+- automatically discovery of kafka clusters
+- list under-replicated/offline brokers
 
 ### Install
 
@@ -27,20 +28,23 @@ Simplified multi-datacenter multi-kafka-clusters management console powered by g
         audit              Audit of the message streams TODO
         brokers            Print online brokers from Zookeeper
         clusters           Register kafka clusters to a zone
+        console            Interactive mode
         consumers          Print consumer groups from Zookeeper
         controllers        Print active controllers in kafka clusters
+        discover           Automatically discover online kafka clusters
         lags               Display consumers lag for each topic each partition
+        offlines           Display all offline brokers
         partition          Add partition num to a topic
         peek               Peek kafka cluster messages ongoing
         producers          Display online producers TODO
         rebalance          Rebalance the load of brokers in a kafka cluster TODO
-        stalebrokers       Display stale brokers TODO
         top                Display top kafka cluster activities
         topics             Manage topics & partitions of a zone
         topology           Print server topology and balancing stats of kafka clusters
         underreplicated    Display under-replicated partitions
+        verifyreplicas     Validate that all replicas for a set of topics have the same data TODO
         zones              Print zones defined in /etc/gafka.cf
-    
+
 ### Configuration
 
     /etc/gafka.cf
