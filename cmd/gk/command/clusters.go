@@ -62,6 +62,8 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	this.Ui.Info(fmt.Sprintf("%s: %s created", clusterName, clusterPath))
+
 	return
 }
 
