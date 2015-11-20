@@ -43,7 +43,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 
 	if !addMode {
 		if zone != "" {
-			zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+			zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 			this.printClusters(zkzone)
 		} else {
 			// print all zones all clusters
@@ -56,7 +56,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	}
 
 	// add cluster
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	if err := zkzone.RegisterCluster(clusterName, clusterPath); err != nil {
 		this.Ui.Error(err.Error())
 		return 1

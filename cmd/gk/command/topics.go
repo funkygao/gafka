@@ -50,7 +50,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	}
 
 	if addTopic != "" {
-		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 		zkcluster := zkzone.NewCluster(cluster)
 		this.addTopic(zkcluster, addTopic, replicas, partitions)
 
@@ -66,7 +66,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 			strings.Repeat("-", 30), strings.Repeat("-", 50)))
 	}
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	if cluster != "" {
 		zkcluster := zkzone.NewCluster(cluster)
 		this.displayTopicsOfCluster(zkcluster)

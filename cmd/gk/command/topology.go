@@ -42,7 +42,7 @@ func (this *Topology) Run(args []string) (exitCode int) {
 
 	// a single zone
 	ensureZoneValid(this.zone)
-	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZonePath(this.zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	this.displayZoneTopology(zkzone)
 
 	return

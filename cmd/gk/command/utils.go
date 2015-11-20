@@ -89,12 +89,17 @@ func refreshScreen() {
 }
 
 func ensureZoneValid(zone string) {
-	ctx.ZonePath(zone) // will panic if zone not found
+	ctx.ZoneZkAddrs(zone) // will panic if zone not found
 }
 
 func forAllZones(fn func(zkzone *zk.ZkZone)) {
 	for _, zone := range ctx.SortedZones() {
-		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+		zkAddrs := ctx.ZoneZkAddrs(zone)
+		if strings.TrimSpace(zkAddrs) == "" {
+			continue
+		}
+
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, zkAddrs))
 		fn(zkzone)
 	}
 }

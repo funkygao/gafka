@@ -73,8 +73,8 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	stats := newPeekStats()
 	go stats.start()
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
-	msgChan := make(chan *sarama.ConsumerMessage, 2000) // msg aggerator channel
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	msgChan := make(chan *sarama.ConsumerMessage, 20000) // msg aggerator channel
 	if cluster == "" {
 		zkzone.WithinClusters(func(name string, path string) {
 			zkcluster := zkzone.NewCluster(name)

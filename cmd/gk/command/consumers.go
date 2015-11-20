@@ -42,7 +42,7 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 		return
 	}
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	this.printConsumers(zkzone, cluster)
 
 	return

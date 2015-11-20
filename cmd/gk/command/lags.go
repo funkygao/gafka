@@ -50,7 +50,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 		refreshScreen()
 	}
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	bar := progress.New(secondsInMinute)
 	if cluster == "" {
 		for {

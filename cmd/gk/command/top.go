@@ -57,7 +57,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	this.counters = make(map[string]float64)
 	this.lastCounters = make(map[string]float64)
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	zkzone.WithinClusters(func(cluster string, path string) {
 		if !patternMatched(cluster, this.clusterPattern) {
 			return

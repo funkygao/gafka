@@ -36,7 +36,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	if zone != "" {
 		ensureZoneValid(zone)
 
-		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 		if cluster != "" {
 			zkcluster := zkzone.NewCluster(cluster)
 			lines, _ := this.clusterBrokers(cluster, zkcluster.Brokers())

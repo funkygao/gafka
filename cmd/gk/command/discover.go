@@ -29,7 +29,7 @@ func (this *Discover) Run(args []string) (exitCode int) {
 	}
 
 	if zone != "" {
-		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 		this.discoverClusters(zkzone)
 	} else {
 		forAllZones(func(zkzone *zk.ZkZone) {

@@ -46,7 +46,7 @@ func SortedZones() []string {
 	return conf.sortedZones()
 }
 
-func ZonePath(zone string) (zkAddrs string) {
+func ZoneZkAddrs(zone string) (zkAddrs string) {
 	ensureLogLoaded()
 	var present bool
 	if zkAddrs, present = conf.zones[zone]; present {
