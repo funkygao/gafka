@@ -30,8 +30,8 @@ type Top struct {
 	topicPattern   string
 	clusterPattern string
 
-	counters     map[string]int // key is cluster:topic TODO int64
-	lastCounters map[string]int
+	counters     map[string]float64 // key is cluster:topic
+	lastCounters map[string]float64
 }
 
 func (this *Top) Run(args []string) (exitCode int) {
@@ -54,8 +54,8 @@ func (this *Top) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	this.counters = make(map[string]int)
-	this.lastCounters = make(map[string]int)
+	this.counters = make(map[string]float64)
+	this.lastCounters = make(map[string]float64)
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	zkzone.WithinClusters(func(cluster string, path string) {
@@ -103,8 +103,8 @@ func (this *Top) showAndResetCounters() {
 	defer this.mu.Unlock()
 
 	// FIXME counterFlip should be map[int][]string
-	counterFlip := make(map[int]string)
-	sortedNum := make([]int, 0, len(this.counters))
+	counterFlip := make(map[float64]string)
+	sortedNum := make([]float64, 0, len(this.counters))
 	for ct, num := range this.counters {
 		if this.topicPattern != "" && !strings.HasSuffix(ct, ":"+this.topicPattern) {
 			continue
@@ -115,12 +115,12 @@ func (this *Top) showAndResetCounters() {
 			sortedNum = append(sortedNum, num)
 		}
 	}
-	sort.Ints(sortedNum)
+	sort.Float64s(sortedNum)
 
-	othersNum := 0
-	othersMps := 0
-	totalNum := 0
-	totalMps := 0
+	othersNum := 0.
+	othersMps := 0.
+	totalNum := 0.
+	totalMps := 0.
 	limitReached := false
 	for i := len(sortedNum) - 1; i >= 0; i-- {
 		if !limitReached && len(sortedNum)-i > this.limit {
@@ -128,7 +128,7 @@ func (this *Top) showAndResetCounters() {
 		}
 
 		num := sortedNum[i]
-		mps := (num - this.lastCounters[counterFlip[num]]) / topInterval // msg per sec
+		mps := float64(num-this.lastCounters[counterFlip[num]]) / float64(topInterval) // msg per sec
 		totalNum += num
 		totalMps += mps
 		if limitReached {
@@ -136,30 +136,32 @@ func (this *Top) showAndResetCounters() {
 			othersMps += mps
 		} else {
 			clusterAndTopic := strings.SplitN(counterFlip[num], ":", 2)
-			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15s",
+			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
 				clusterAndTopic[0], clusterAndTopic[1],
 				gofmt.Comma(int64(num)),
-				gofmt.Comma(int64(mps))))
+				mps))
 		}
 	}
 
 	if limitReached {
 		// the catchall row
-		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15s",
+		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
 			"-OTHERS-", "-OTHERS-",
-			gofmt.Comma(int64(othersNum)), gofmt.Comma(int64(othersMps))))
+			gofmt.Comma(int64(othersNum)),
+			othersMps))
 
 		// total row
-		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15s",
+		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
 			"--TOTAL--", "--TOTAL--",
-			gofmt.Comma(int64(totalNum)), gofmt.Comma(int64(totalMps))))
+			gofmt.Comma(int64(totalNum)),
+			totalMps))
 	}
 
 	// record last counters and reset current counters
 	for k, v := range this.counters {
 		this.lastCounters[k] = v
 	}
-	this.counters = make(map[string]int)
+	this.counters = make(map[string]float64)
 }
 
 func (this *Top) clusterTopConsumers(zkcluster *zk.ZkCluster) {
@@ -207,7 +209,7 @@ func (this *Top) clusterTopProducers(zkcluster *zk.ZkCluster) {
 			}
 
 			this.mu.Lock()
-			this.counters[cluster+":"+topic] = int(msgs)
+			this.counters[cluster+":"+topic] = float64(msgs)
 			this.mu.Unlock()
 		}
 
