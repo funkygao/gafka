@@ -25,6 +25,7 @@ type Lags struct {
 }
 
 func (this *Lags) Run(args []string) (exitCode int) {
+	const secondsInMinute = 60
 	var (
 		cluster string
 		zone    string
@@ -50,7 +51,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
-	bar := progress.New(60)
+	bar := progress.New(secondsInMinute)
 	if cluster == "" {
 		for {
 			zkzone.WithinClusters(func(cluster, path string) {
@@ -60,7 +61,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 			})
 
 			if this.watchMode {
-				for i := 0; i < 60; i++ {
+				for i := 0; i < secondsInMinute; i++ {
 					bar.ShowProgress(i)
 					time.Sleep(time.Second)
 				}
@@ -78,7 +79,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 		this.printConsumersLag(zkcluster)
 
 		if this.watchMode {
-			for i := 0; i < 60; i++ {
+			for i := 0; i < secondsInMinute; i++ {
 				bar.ShowProgress(i)
 				time.Sleep(time.Second)
 			}
