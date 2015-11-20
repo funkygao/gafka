@@ -26,7 +26,7 @@ func (this *Rebalance) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s rebalance -z zone -c cluster [options]
 
-	Rebalance the load of brokers in a kafka cluster
+    Rebalance the load of brokers in a kafka cluster
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

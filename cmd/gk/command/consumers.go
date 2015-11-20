@@ -102,19 +102,19 @@ func (this *Consumers) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s consumers [options]
 
-	Print consumer groups from Zookeeper
+    Print consumer groups from Zookeeper
 
 Options:
 
-  -z zone
-  	Only print kafka controllers within this zone.
+    -z zone
+      Only print kafka controllers within this zone.
 
-  -c cluster
+    -c cluster
 
-  -g group name pattern
+    -g group name pattern
 
-  -l 
-  	Only show online consumer groups.
+    -l 
+      Only show online consumer groups.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

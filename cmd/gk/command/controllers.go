@@ -65,14 +65,14 @@ func (this *Controllers) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s controllers [options]
 
-	Print active controllers in kafka clusters
+    Print active controllers in kafka clusters
 
 Options:
 
-  -z zone
-  	Only print kafka controllers within this zone.
+    -z zone
+      Only print kafka controllers within this zone.
 
-  -c cluster
+    -c cluster
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

@@ -162,24 +162,24 @@ func (this *Clusters) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s clusters [options]
 
-	Register kafka clusters to a zone
+    Register kafka clusters to a zone
 
 Options:
 
-  -z zone
-  	Only print kafka clusters within this zone.
+    -z zone
+      Only print kafka clusters within this zone.
 
-  -l
-  	Use a long listing format.
+    -l
+      Use a long listing format.
 
-  -a
-  	Add a new kafka cluster into a zone.
+    -a
+      Add a new kafka cluster into a zone.
 
-  -n cluster name
-  	The new kafka cluster name.
+    -n cluster name
+      The new kafka cluster name.
 
-  -p cluster zk path
-  	The new kafka cluster chroot path in Zookeeper.
+    -p cluster zk path
+      The new kafka cluster chroot path in Zookeeper.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

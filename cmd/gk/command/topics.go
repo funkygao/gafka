@@ -289,29 +289,29 @@ func (this *Topics) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s topics -z zone [options]
 
-	Manage topics & partitions of a zone
+    Manage topics & partitions of a zone
 
 Options:
   
-  -c cluster
+    -c cluster
 
-  -t topic name pattern
-  	Only show topics like this give topic.
+    -t topic name pattern
+      Only show topics like this give topic.
 
-  -config k=v
-  	Config a topic. TODO
+    -config k=v
+      Config a topic. TODO
 
-  -add topic
-  	Add a topic to a kafka cluster.
+    -add topic
+      Add a topic to a kafka cluster.
 
-  -partitions n
-  	Default 1.
+    -partitions n
+      Default 1.
 
-  -replicas n
-  	Default 2.
+    -replicas n
+      Default 2.
 
-  -l
-  	Use a long listing format.
+    -l
+      Use a long listing format.
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }

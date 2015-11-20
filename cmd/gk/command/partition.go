@@ -84,7 +84,7 @@ func (this *Partition) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s partition -z zone -c cluster -t topic -n num
 
-	Add partition num to a topic
+    Add partition num to a topic
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }

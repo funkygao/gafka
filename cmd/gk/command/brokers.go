@@ -121,18 +121,18 @@ func (this *Brokers) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s brokers [options]
 
-	Print online brokers from Zookeeper.
+    Print online brokers from Zookeeper.
 
 Options:
 
-  -z zone
-  	Only print brokers within a zone.
+    -z zone
+      Only print brokers within a zone.
 
-  -c cluster name
-  	Only print brokers of this cluster.
+    -c cluster name
+      Only print brokers of this cluster.
 
-  -stale 
-  	Only print stale brokers: found in zk but not connectable
+    -stale
+      Only print stale brokers: found in zk but not connectable
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

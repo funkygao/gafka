@@ -180,19 +180,19 @@ func (this *Peek) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s peek -z zone [options]
 
-	Peek kafka cluster messages ongoing
+    Peek kafka cluster messages ongoing
 
 Options:
 
-  -c cluster
+    -c cluster
 
-  -t topic 
+    -t topic 
 
-  -p partition id
-  	-1 will peek all partitions of a topic
+    -p partition id
+      -1 will peek all partitions of a topic
 
-  -n
-  	Neat mode, only display statastics instead of message content
+    -n
+      Neat mode, only display statastics instead of message content
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }

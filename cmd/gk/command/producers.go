@@ -24,7 +24,7 @@ func (this *Producers) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s producers [options]
 
-	Display online producers
+    Display online producers
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

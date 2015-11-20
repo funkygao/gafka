@@ -122,11 +122,11 @@ func (this *UnderReplicated) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s underreplicated [options]
 
-	Display under-replicated partitions
+    Display under-replicated partitions
 
 Options:
 
-  -z zone
+    -z zone
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }

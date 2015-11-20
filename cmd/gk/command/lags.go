@@ -144,19 +144,22 @@ func (this *Lags) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s lags -z zone [options]
 
-	Display consumers lag for each topic each partition
+    Display consumers lag for each topic each partition
 
-  -c cluster
+Options:
 
-  -g group name pattern
+    -c cluster
 
-  -t topic name pattern
+    -g group name pattern
 
-  -w
-  	Watch mode. Keep printing out lags with 60s interval refresh.
+    -t topic name pattern
 
-  -l
-  	Only show online consumers lag.
+    -w
+      Watch mode. Keep printing out lags with 60s interval refresh.
+
+    -l
+      Only show online consumers lag.
+      
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }

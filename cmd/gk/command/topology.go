@@ -15,15 +15,19 @@ import (
 )
 
 type Topology struct {
-	Ui   cli.Ui
-	Cmd  string
-	zone string
+	Ui          cli.Ui
+	Cmd         string
+	zone        string
+	hostPattern string
+	verbose     bool
 }
 
 func (this *Topology) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("topology", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", "", "")
+	cmdFlags.StringVar(&this.hostPattern, "h", "", "")
+	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -126,11 +130,16 @@ func (this *Topology) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s topology [options]
 
-	Print server topology and balancing stats of kafka clusters
+    Print server topology and balancing stats of kafka clusters
 
 Options:
 
-  -z zone
+    -z zone
+
+    -h host pattern
+
+    -l
+      Use a long listing format.
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }

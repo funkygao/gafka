@@ -41,13 +41,15 @@ func (this *VerifyReplicas) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s verifyreplicas [options]
 
-	Validate that all replicas for a set of topics have the same data
+    Validate that all replicas for a set of topics have the same data
 
-  -z zone
+Options:
 
-  -c cluster
+    -z zone
 
-  -t topic
+    -c cluster
+
+    -t topic
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

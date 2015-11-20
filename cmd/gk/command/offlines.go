@@ -30,15 +30,15 @@ func (this *Offlines) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s offlines [options]
 
-	Display all offline brokers
+    Display all offline brokers
 
 Options:
 
-  -z zone
-  	Only print brokers within a zone.
+    -z zone
+      Only print brokers within a zone.
 
-  -c cluster name
-  	Only print brokers of this cluster.
+    -c cluster name
+      Only print brokers of this cluster.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

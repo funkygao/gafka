@@ -213,15 +213,17 @@ func (this *Top) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s top [options]
 
-	Display top kafka cluster activities
+    Display top kafka cluster activities
 
-  -z zone
+Options:
 
-  -t topic
+    -z zone
 
-  -n limit
+    -t topic
 
-  -who <%s%s|%s%s>
+    -n limit
+
+    -who <%s%s|%s%s>
 `, this.Cmd, color.Colorize([]string{color.Underscore}, "p"), "roducer",
 		color.Colorize([]string{color.Underscore}, "c"), "onsumer")
 	return strings.TrimSpace(help)
