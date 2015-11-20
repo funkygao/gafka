@@ -14,11 +14,11 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/golib/progress"
 )
 
 const (
-	topInterval     = 5
-	topIntervalTime = time.Second * topInterval
+	topInterval = 5
 )
 
 type Top struct {
@@ -44,7 +44,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
 	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
-	cmdFlags.IntVar(&this.limit, "n", 35, "")
+	cmdFlags.IntVar(&this.limit, "n", 34, "")
 	cmdFlags.StringVar(&who, "who", "producer", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -76,18 +76,22 @@ func (this *Top) Run(args []string) (exitCode int) {
 		}
 	})
 
+	bar := progress.New(topInterval)
 	for {
-		select {
-		case <-time.After(topIntervalTime):
-			refreshScreen()
+		refreshScreen()
+		// header
+		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15s",
+			"cluster", "topic", "num", "mps")) // mps=msg per second
+		this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 118)))
 
-			// header
-			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
-				"cluster", "topic", "num", "mps")) // mps=msg per second
-			this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 113)))
+		this.showAndResetCounters()
 
-			this.showAndResetCounters()
+		this.Ui.Output("")
+		for i := 1; i <= topInterval; i++ {
+			bar.ShowProgress(i)
+			time.Sleep(time.Second)
 		}
+
 	}
 
 	return
@@ -132,20 +136,21 @@ func (this *Top) showAndResetCounters() {
 			othersMps += mps
 		} else {
 			clusterAndTopic := strings.SplitN(counterFlip[num], ":", 2)
-			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
+			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15s",
 				clusterAndTopic[0], clusterAndTopic[1],
-				gofmt.Comma(int64(num)), gofmt.Comma(int64(mps))))
+				gofmt.Comma(int64(num)),
+				gofmt.Comma(int64(mps))))
 		}
 	}
 
 	if limitReached {
 		// the catchall row
-		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
+		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15s",
 			"-OTHERS-", "-OTHERS-",
 			gofmt.Comma(int64(othersNum)), gofmt.Comma(int64(othersMps))))
 
 		// total row
-		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
+		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15s",
 			"--TOTAL--", "--TOTAL--",
 			gofmt.Comma(int64(totalNum)), gofmt.Comma(int64(totalMps))))
 	}

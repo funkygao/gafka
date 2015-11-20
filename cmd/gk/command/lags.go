@@ -61,7 +61,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 			})
 
 			if this.watchMode {
-				for i := 0; i < secondsInMinute; i++ {
+				for i := 1; i <= secondsInMinute; i++ {
 					bar.ShowProgress(i)
 					time.Sleep(time.Second)
 				}
@@ -80,7 +80,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 		this.printConsumersLag(zkcluster)
 
 		if this.watchMode {
-			for i := 0; i < secondsInMinute; i++ {
+			for i := 1; i <= secondsInMinute; i++ {
 				bar.ShowProgress(i)
 				time.Sleep(time.Second)
 			}
