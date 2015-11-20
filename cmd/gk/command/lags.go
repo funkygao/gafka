@@ -12,6 +12,7 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/golib/progress"
 )
 
 type Lags struct {
@@ -49,6 +50,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
+	bar := progress.New(60)
 	if cluster == "" {
 		for {
 			zkzone.WithinClusters(func(cluster, path string) {
@@ -58,7 +60,10 @@ func (this *Lags) Run(args []string) (exitCode int) {
 			})
 
 			if this.watchMode {
-				time.Sleep(time.Minute)
+				for i := 0; i < 60; i++ {
+					bar.ShowProgress(i)
+					time.Sleep(time.Second)
+				}
 			} else {
 				break
 			}
@@ -73,7 +78,10 @@ func (this *Lags) Run(args []string) (exitCode int) {
 		this.printConsumersLag(zkcluster)
 
 		if this.watchMode {
-			time.Sleep(time.Minute)
+			for i := 0; i < 60; i++ {
+				bar.ShowProgress(i)
+				time.Sleep(time.Second)
+			}
 		} else {
 			break
 		}
