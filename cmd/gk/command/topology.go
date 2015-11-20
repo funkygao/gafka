@@ -26,7 +26,7 @@ func (this *Topology) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("topology", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", "", "")
-	cmdFlags.StringVar(&this.hostPattern, "h", "", "")
+	cmdFlags.StringVar(&this.hostPattern, "host", "", "")
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -50,17 +50,27 @@ func (this *Topology) Run(args []string) (exitCode int) {
 
 type brokerHostInfo struct {
 	ports    []int
-	leadingN int // being leader of how many partitions
+	leadingN int                // being leader of how many partitions
+	topics   map[string][]int32 // detailed leading topics info {topic: partitionIds}
 }
 
 func newBrokerHostInfo() *brokerHostInfo {
 	return &brokerHostInfo{
-		ports: make([]int, 0),
+		ports:  make([]int, 0),
+		topics: make(map[string][]int32),
 	}
 }
 
 func (this *brokerHostInfo) addPort(port int) {
 	this.ports = append(this.ports, port)
+}
+
+func (this *brokerHostInfo) addTopicPartition(topic string, partitionId int32) {
+	if _, present := this.topics[topic]; !present {
+		this.topics[topic] = []int32{partitionId}
+	} else {
+		this.topics[topic] = append(this.topics[topic], partitionId)
+	}
 }
 
 func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
@@ -73,6 +83,10 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 		}
 
 		for _, broker := range brokers {
+			if this.hostPattern != "" && !strings.Contains(broker.Host, this.hostPattern) {
+				continue
+			}
+
 			if _, present := instances[broker.Host]; !present {
 				instances[broker.Host] = newBrokerHostInfo()
 			}
@@ -101,7 +115,12 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 				swallow(err)
 				host, _, err := net.SplitHostPort(leader.Addr())
 				swallow(err)
+				if this.hostPattern != "" && !strings.Contains(host, this.hostPattern) {
+					continue
+				}
+
 				instances[host].leadingN++
+				instances[host].addTopicPartition(topic, partitionID)
 			}
 		}
 	})
@@ -114,11 +133,18 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 	sort.Strings(sortedHosts)
 
 	for _, host := range sortedHosts {
-		this.Ui.Output(fmt.Sprintf("    %s leading: %3dP ports %2d:%+v",
+		this.Ui.Output(fmt.Sprintf("    %s leading: %2dT %3dP ports %2d:%+v",
 			color.Green("%15s", host),
+			len(instances[host].topics),
 			instances[host].leadingN,
 			len(instances[host].ports),
 			instances[host].ports))
+
+		if this.verbose {
+			for topic, partitions := range instances[host].topics {
+				this.Ui.Output(fmt.Sprintf("%40s: P%+v", topic, partitions))
+			}
+		}
 	}
 }
 
@@ -136,7 +162,8 @@ Options:
 
     -z zone
 
-    -h host pattern
+    -host host pattern
+      Display given hosts only.
 
     -l
       Use a long listing format.
