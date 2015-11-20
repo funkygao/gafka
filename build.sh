@@ -5,6 +5,9 @@ if [[ $1 = "-loc" ]]; then
     exit
 fi
 
+PREFIX=$GOPATH
+BINDIR=${PREFIX}/bin
+
 VER=0.1.0stable
 GOVER=$(go version | cut -d' ' -f3 | cut -d'.' -f2)
 # get the git commit
@@ -27,7 +30,7 @@ else
 fi
 
 if [[ $1 = "-install" ]]; then
-    install gk $GOPATH/bin
+    install -m 755 gk $PREFIX/bin
 fi
 
 #---------
