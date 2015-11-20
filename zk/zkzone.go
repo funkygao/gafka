@@ -2,6 +2,7 @@ package zk
 
 import (
 	"container/list"
+	"fmt"
 	"path"
 	"sort"
 	"strings"
@@ -129,8 +130,9 @@ func (this *ZkZone) RegisterCluster(name, path string) error {
 
 	acl := zk.WorldACL(zk.PermAll)
 	flags := int32(0)
-	_, err := this.conn.Create(clusterPath(name), []byte(path), flags, acl)
-	return err
+	clusterZkPath := clusterPath(name)
+	_, err := this.conn.Create(clusterZkPath, []byte(path), flags, acl)
+	return fmt.Errorf("%s: %s", clusterZkPath, err.Error())
 }
 
 func (this *ZkZone) UnregisterCluster(name string) error {
