@@ -44,6 +44,10 @@ func (this *Lags) Run(args []string) (exitCode int) {
 		return 2
 	}
 
+	if this.watchMode {
+		refreshScreen()
+	}
+
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	if cluster == "" {
 		for {
@@ -159,7 +163,7 @@ Options:
 
     -l
       Only show online consumers lag.
-      
+
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }
