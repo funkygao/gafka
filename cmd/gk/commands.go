@@ -160,7 +160,7 @@ func makeShutdownCh() <-chan struct{} {
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		for {
-			<-signalCh
+			<-sigCh
 			ch <- struct{}{}
 		}
 	}()

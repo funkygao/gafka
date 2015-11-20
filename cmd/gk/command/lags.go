@@ -18,6 +18,7 @@ type Lags struct {
 	Cmd          string
 	onlineOnly   bool
 	groupPattern string
+	topicPattern string
 }
 
 func (this *Lags) Run(args []string) (exitCode int) {
@@ -31,6 +32,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.onlineOnly, "l", false, "")
 	cmdFlags.StringVar(&this.groupPattern, "g", "", "")
+	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -70,6 +72,10 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 		for _, consumer := range consumersByGroup[group] {
 			// TODO if lag>1000? red alert
 			if consumer.Online {
+				if this.topicPattern != "" && !strings.Contains(consumer.Topic, this.topicPattern) {
+					continue
+				}
+
 				this.Ui.Output(fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s\n%s %s",
 					color.Green("☀︎"),
 					consumer.Topic, consumer.PartitionId,
@@ -80,6 +86,10 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					color.Green("%90s", consumer.ConsumerZnode.Host()),
 					gofmt.PrettySince(consumer.ConsumerZnode.Uptime())))
 			} else if !this.onlineOnly {
+				if this.topicPattern != "" && !strings.Contains(consumer.Topic, this.topicPattern) {
+					continue
+				}
+
 				this.Ui.Output(fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s",
 					color.Yellow("☔︎︎"),
 					consumer.Topic, consumer.PartitionId,
@@ -105,6 +115,8 @@ Usage: %s lags -z zone [options]
   -c cluster
 
   -g group name pattern
+
+  -t topic name pattern
 
   -l
   	Only show online consumers lag.
