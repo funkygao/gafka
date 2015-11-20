@@ -12,6 +12,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/bjtime"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/golib/progress"
@@ -27,6 +28,7 @@ type Top struct {
 
 	mu             sync.Mutex
 	limit          int
+	batchMode      bool
 	topicPattern   string
 	clusterPattern string
 
@@ -46,6 +48,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
 	cmdFlags.IntVar(&this.limit, "n", 34, "")
 	cmdFlags.StringVar(&who, "who", "producer", "")
+	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -78,7 +81,12 @@ func (this *Top) Run(args []string) (exitCode int) {
 
 	bar := progress.New(topInterval)
 	for {
-		refreshScreen()
+		if this.batchMode {
+			this.Ui.Output(bjtime.TimeToString(bjtime.NowBj()))
+		} else {
+			refreshScreen()
+		}
+
 		// header
 		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15s",
 			"cluster", "topic", "num", "mps")) // mps=msg per second
@@ -86,16 +94,24 @@ func (this *Top) Run(args []string) (exitCode int) {
 
 		this.showAndResetCounters()
 
-		this.Ui.Output("")
-		for i := 1; i <= topInterval; i++ {
-			bar.ShowProgress(i)
-			time.Sleep(time.Second)
+		if !this.batchMode {
+			this.showRefreshBar(bar)
+		} else {
+			time.Sleep(topInterval * time.Second)
 		}
 
 	}
 
 	return
 
+}
+
+func (this *Top) showRefreshBar(bar *progress.Progress) {
+	this.Ui.Output("")
+	for i := 1; i <= topInterval; i++ {
+		bar.ShowProgress(i)
+		time.Sleep(time.Second)
+	}
 }
 
 func (this *Top) showAndResetCounters() {
@@ -238,6 +254,10 @@ Options:
     -t topic pattern    
 
     -n limit
+
+    -b 
+      Batch mode operation. 
+      Could be useful for sending output from top to other programs or to a file.
 
     -who <%s%s|%s%s>
 `, this.Cmd, color.Colorize([]string{color.Underscore}, "p"), "roducer",
