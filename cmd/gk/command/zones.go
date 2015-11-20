@@ -15,7 +15,7 @@ type Zones struct {
 
 func (this *Zones) Run(args []string) (exitCode int) {
 	// header
-	this.Ui.Output(fmt.Sprintf("%8s %-70s", "zone", "zookeeper"))
+	this.Ui.Output(fmt.Sprintf("%8s %-70s", "zone", "zookeeper ensemble"))
 	this.Ui.Output(fmt.Sprintf("%s %s",
 		strings.Repeat("-", 8),
 		strings.Repeat("-", 70)))
