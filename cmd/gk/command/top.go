@@ -59,7 +59,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	zkzone.WithinClusters(func(cluster string, path string) {
-		if this.clusterPattern != "" && !strings.Contains(cluster, this.clusterPattern) {
+		if !patternMatched(cluster, this.clusterPattern) {
 			return
 		}
 
@@ -83,7 +83,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 
 			// header
 			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
-				"cluster", "topic", "num", "mps"))
+				"cluster", "topic", "num", "mps")) // mps=msg per second
 			this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 113)))
 
 			this.showAndResetCounters()
@@ -102,7 +102,7 @@ func (this *Top) showAndResetCounters() {
 	counterFlip := make(map[int]string)
 	sortedNum := make([]int, 0, len(this.counters))
 	for ct, num := range this.counters {
-		if !patternMatched(ct, ":"+this.topicPattern) {
+		if this.topicPattern != "" && !strings.HasSuffix(ct, ":"+this.topicPattern) {
 			continue
 		}
 
@@ -181,7 +181,7 @@ func (this *Top) clusterTopProducers(zkcluster *zk.ZkCluster) {
 		}
 
 		for _, topic := range topics {
-			if !patternMatched(this.topicPattern, topic) {
+			if !patternMatched(topic, this.topicPattern) {
 				continue
 			}
 

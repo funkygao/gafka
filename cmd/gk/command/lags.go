@@ -65,6 +65,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 					bar.ShowProgress(i)
 					time.Sleep(time.Second)
 				}
+				//refreshScreen()
 			} else {
 				break
 			}
@@ -83,6 +84,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 				bar.ShowProgress(i)
 				time.Sleep(time.Second)
 			}
+			//refreshScreen()
 		} else {
 			break
 		}
