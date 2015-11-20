@@ -12,7 +12,7 @@ type zone struct {
 func (this *zone) loadConfig(section *ljconf.Conf) {
 	this.name = section.String("name", "")
 	this.zk = section.String("zk", "")
-	if this.name == "" || this.zk == "" {
-		panic("empty zone not allowed")
+	if this.name == "" {
+		panic("empty zone name not allowed")
 	}
 }
