@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"strings"
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
@@ -71,6 +72,14 @@ func (this *argsRule) invalid(args []string) bool {
 	}
 
 	return false
+}
+
+func patternMatched(s, pattern string) bool {
+	if pattern != "" && !strings.Contains(s, pattern) {
+		return false
+	}
+
+	return true
 }
 
 func refreshScreen() {

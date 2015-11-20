@@ -25,9 +25,11 @@ type Top struct {
 	Ui  cli.Ui
 	Cmd string
 
-	mu           sync.Mutex
-	limit        int
-	topic        string
+	mu             sync.Mutex
+	limit          int
+	topicPattern   string
+	clusterPattern string
+
 	counters     map[string]int // key is cluster:topic TODO int64
 	lastCounters map[string]int
 }
@@ -40,7 +42,8 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("top", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
-	cmdFlags.StringVar(&this.topic, "t", "", "")
+	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
+	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
 	cmdFlags.IntVar(&this.limit, "n", 35, "")
 	cmdFlags.StringVar(&who, "who", "producer", "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -56,6 +59,10 @@ func (this *Top) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	zkzone.WithinClusters(func(cluster string, path string) {
+		if this.clusterPattern != "" && !strings.Contains(cluster, this.clusterPattern) {
+			return
+		}
+
 		zkcluster := zkzone.NewCluster(cluster)
 		switch who {
 		case "p", "producer":
@@ -95,7 +102,7 @@ func (this *Top) showAndResetCounters() {
 	counterFlip := make(map[int]string)
 	sortedNum := make([]int, 0, len(this.counters))
 	for ct, num := range this.counters {
-		if this.topic != "" && !strings.HasSuffix(ct, ":"+this.topic) {
+		if !patternMatched(ct, ":"+this.topicPattern) {
 			continue
 		}
 
@@ -174,7 +181,7 @@ func (this *Top) clusterTopProducers(zkcluster *zk.ZkCluster) {
 		}
 
 		for _, topic := range topics {
-			if this.topic != "" && this.topic != topic {
+			if !patternMatched(this.topicPattern, topic) {
 				continue
 			}
 
@@ -219,7 +226,9 @@ Options:
 
     -z zone
 
-    -t topic
+    -c cluster pattern
+
+    -t topic pattern    
 
     -n limit
 
