@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
@@ -19,6 +20,7 @@ type Lags struct {
 	onlineOnly   bool
 	groupPattern string
 	topicPattern string
+	watchMode    bool
 }
 
 func (this *Lags) Run(args []string) (exitCode int) {
@@ -33,6 +35,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.onlineOnly, "l", false, "")
 	cmdFlags.StringVar(&this.groupPattern, "g", "", "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
+	cmdFlags.BoolVar(&this.watchMode, "w", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -43,18 +46,35 @@ func (this *Lags) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZonePath(zone)))
 	if cluster == "" {
-		zkzone.WithinClusters(func(cluster, path string) {
-			this.Ui.Output(cluster)
-			zkcluster := zkzone.NewCluster(cluster)
-			this.printConsumersLag(zkcluster)
-		})
+		for {
+			zkzone.WithinClusters(func(cluster, path string) {
+				this.Ui.Output(cluster)
+				zkcluster := zkzone.NewCluster(cluster)
+				this.printConsumersLag(zkcluster)
+			})
+
+			if this.watchMode {
+				time.Sleep(time.Minute)
+			} else {
+				break
+			}
+		}
 
 		return
 	}
 
-	this.Ui.Output(cluster)
-	zkcluster := zkzone.NewCluster(cluster)
-	this.printConsumersLag(zkcluster)
+	for {
+		this.Ui.Output(cluster)
+		zkcluster := zkzone.NewCluster(cluster) // panic if invalid cluster
+		this.printConsumersLag(zkcluster)
+
+		if this.watchMode {
+			time.Sleep(time.Minute)
+		} else {
+			break
+		}
+	}
+
 	return
 }
 
@@ -70,10 +90,17 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 	for _, group := range sortedGroups {
 		this.Ui.Output(strings.Repeat(" ", 4) + group)
 		for _, consumer := range consumersByGroup[group] {
-			// TODO if lag>1000? red alert
+			// TODO sort by partitionId
 			if consumer.Online {
 				if this.topicPattern != "" && !strings.Contains(consumer.Topic, this.topicPattern) {
 					continue
+				}
+
+				var lagOutput string
+				if consumer.Lag > 1000 {
+					lagOutput = color.Red("%15s", gofmt.Comma(consumer.Lag))
+				} else {
+					lagOutput = color.Magenta("%15s", gofmt.Comma(consumer.Lag))
 				}
 
 				this.Ui.Output(fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s\n%s %s",
@@ -81,7 +108,7 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					consumer.Topic, consumer.PartitionId,
 					gofmt.Comma(consumer.ProducerOffset),
 					gofmt.Comma(consumer.ConsumerOffset),
-					color.Magenta("%15s", gofmt.Comma(consumer.Lag)),
+					lagOutput,
 					gofmt.PrettySince(consumer.Mtime.Time()),
 					color.Green("%90s", consumer.ConsumerZnode.Host()),
 					gofmt.PrettySince(consumer.ConsumerZnode.Uptime())))
@@ -90,12 +117,19 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					continue
 				}
 
+				var lagOutput string
+				if consumer.Lag > 1000 {
+					lagOutput = color.Red("%15s", gofmt.Comma(consumer.Lag))
+				} else {
+					lagOutput = color.Magenta("%15s", gofmt.Comma(consumer.Lag))
+				}
+
 				this.Ui.Output(fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s",
 					color.Yellow("☔︎︎"),
 					consumer.Topic, consumer.PartitionId,
 					gofmt.Comma(consumer.ProducerOffset),
 					gofmt.Comma(consumer.ConsumerOffset),
-					color.Magenta("%15s", gofmt.Comma(consumer.Lag)),
+					lagOutput,
 					gofmt.PrettySince(consumer.Mtime.Time())))
 			}
 		}
@@ -117,6 +151,9 @@ Usage: %s lags -z zone [options]
   -g group name pattern
 
   -t topic name pattern
+
+  -w
+  	Watch mode. Keep printing out lags with 60s interval refresh.
 
   -l
   	Only show online consumers lag.

@@ -1,6 +1,8 @@
 package command
 
 import (
+	"os"
+	"os/exec"
 	"sort"
 
 	"github.com/funkygao/gafka/ctx"
@@ -69,6 +71,12 @@ func (this *argsRule) invalid(args []string) bool {
 	}
 
 	return false
+}
+
+func refreshScreen() {
+	c := exec.Command("clear")
+	c.Stdout = os.Stdout
+	c.Run()
 }
 
 func ensureZoneValid(zone string) {

@@ -3,8 +3,6 @@ package command
 import (
 	"flag"
 	"fmt"
-	"os"
-	"os/exec"
 	"sort"
 	"strings"
 	"sync"
@@ -74,9 +72,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	for {
 		select {
 		case <-time.After(topIntervalTime):
-			c := exec.Command("clear")
-			c.Stdout = os.Stdout
-			c.Run()
+			refreshScreen()
 
 			// header
 			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %10s",
