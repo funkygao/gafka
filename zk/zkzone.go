@@ -61,11 +61,6 @@ func (this *ZkZone) NewclusterWithPath(cluster, path string) *ZkCluster {
 	}
 }
 
-func (this *ZkZone) ZkStats() []*zk.ServerStats {
-	stats, _ := zk.FLWSrvr(this.conf.ZkServers(), time.Minute)
-	return stats
-}
-
 func (this *ZkZone) swallow(err error) bool {
 	if err != nil {
 		if this.conf.PanicOnError {

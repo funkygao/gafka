@@ -1,6 +1,8 @@
 package zk
 
 import (
+	"io/ioutil"
+	"net"
 	"strconv"
 	"time"
 )
@@ -27,4 +29,36 @@ func withRecover(fn func()) {
 	}()
 
 	fn()
+}
+
+// zkFourLetterWord execute ZooKeeper Commands: The Four Letter Words
+// conf, cons, crst, envi, ruok, stat, wchs, wchp
+func zkFourLetterWord(server, command string, timeout time.Duration) ([]byte, error) {
+	conn, err := net.DialTimeout("tcp", server, timeout)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// the zookeeper server should automatically close this socket
+	// once the command has been processed, but better safe than sorry
+	defer conn.Close()
+
+	conn.SetWriteDeadline(time.Now().Add(timeout))
+
+	_, err = conn.Write([]byte(command))
+
+	if err != nil {
+		return nil, err
+	}
+
+	conn.SetReadDeadline(time.Now().Add(timeout))
+
+	resp, err := ioutil.ReadAll(conn)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

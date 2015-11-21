@@ -80,8 +80,8 @@ func init() {
 			}, nil
 		},
 
-		"zookeepers": func() (cli.Command, error) {
-			return &command.Zookeepers{
+		"zookeeper": func() (cli.Command, error) {
+			return &command.Zookeeper{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
