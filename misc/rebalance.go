@@ -29,7 +29,7 @@ func main() {
 	nPartsPerConsumer := curPartitions / curConsumers
 	nConsumersWithExtraPart := curPartitions % curConsumers
 
-	partitionOwnershipDecision := make(map[int]int)
+	partitionOwnershipDecision := make(map[int][]int)
 
 	for myConsumerPosition := 0; myConsumerPosition < curConsumers; myConsumerPosition++ {
 		startPart := nPartsPerConsumer*myConsumerPosition + min(myConsumerPosition, nConsumersWithExtraPart)
@@ -39,9 +39,12 @@ func main() {
 		}
 		nParts := nPartsPerConsumer + x
 
-		for i := startPart; i < startPart+nParts; i++ {
-			fmt.Printf("thread[%d] consumes %2d\n", myConsumerPosition, i)
-			partitionOwnershipDecision[myConsumerPosition]++
+		for pid := startPart; pid < startPart+nParts; pid++ {
+			if _, present := partitionOwnershipDecision[myConsumerPosition]; !present {
+				partitionOwnershipDecision[myConsumerPosition] = []int{pid}
+			} else {
+				partitionOwnershipDecision[myConsumerPosition] = append(partitionOwnershipDecision[myConsumerPosition], pid)
+			}
 		}
 	}
 
@@ -51,7 +54,9 @@ func main() {
 	}
 	sort.Ints(sortedConsumerIds)
 	for _, cid := range sortedConsumerIds {
-		fmt.Printf("thread[%d] got %2d\n", cid, partitionOwnershipDecision[cid])
+		fmt.Printf("thread[%d] got %2d: %+v\n", cid,
+			len(partitionOwnershipDecision[cid]),
+			partitionOwnershipDecision[cid])
 	}
 
 }
