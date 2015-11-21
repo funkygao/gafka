@@ -22,11 +22,11 @@ func (this *Zones) Run(args []string) (exitCode int) {
 
 	if len(args) > 0 {
 		// user specified the zones to print
-		for _, name := range args {
-			if zk, present := ctx.Zones()[name]; present {
-				this.Ui.Output(fmt.Sprintf("%8s %s", name, zk))
+		for _, zone := range args {
+			if zk, present := ctx.Zones()[zone]; present {
+				this.Ui.Output(fmt.Sprintf("%8s %s", zone, zk))
 			} else {
-				this.Ui.Output(fmt.Sprintf("%8s not defined", name))
+				this.Ui.Output(fmt.Sprintf("%8s not defined", zone))
 			}
 		}
 

@@ -1,6 +1,7 @@
 package zk
 
 import (
+	"strings"
 	"time"
 )
 
@@ -18,4 +19,8 @@ func DefaultConfig(name, addrs string) *Config {
 		Timeout:      time.Minute,
 		PanicOnError: false,
 	}
+}
+
+func (this *Config) ZkServers() []string {
+	return strings.Split(this.ZkAddrs, ",")
 }
