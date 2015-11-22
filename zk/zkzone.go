@@ -47,17 +47,21 @@ func (this *ZkZone) Close() {
 
 func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
 	return &ZkCluster{
-		zone: this,
-		name: cluster,
-		path: this.ClusterPath(cluster),
+		zone:     this,
+		name:     cluster,
+		path:     this.ClusterPath(cluster),
+		Replicas: 2,
+		Priority: 1,
 	}
 }
 
 func (this *ZkZone) NewclusterWithPath(cluster, path string) *ZkCluster {
 	return &ZkCluster{
-		zone: this,
-		name: cluster,
-		path: path,
+		zone:     this,
+		name:     cluster,
+		path:     path,
+		Replicas: 2,
+		Priority: 1,
 	}
 }
 
@@ -128,10 +132,8 @@ func (this *ZkZone) Connect() (err error) {
 func (this *ZkZone) RegisterCluster(name, path string) error {
 	this.connectIfNeccessary()
 
-	acl := zk.WorldACL(zk.PermAll)
-	flags := int32(0)
 	clusterZkPath := clusterPath(name)
-	_, err := this.conn.Create(clusterZkPath, []byte(path), flags, acl)
+	err := this.createZnode(clusterPath(name), []byte(path))
 	if err == nil {
 		return nil
 	}
@@ -142,6 +144,18 @@ func (this *ZkZone) UnregisterCluster(name string) error {
 	this.connectIfNeccessary()
 
 	return this.conn.Delete(clusterPath(name), -1)
+}
+
+func (this *ZkZone) createZnode(path string, data []byte) error {
+	acl := zk.WorldACL(zk.PermAll)
+	flags := int32(0)
+	_, err := this.conn.Create(path, data, flags, acl)
+	return err
+}
+
+func (this *ZkZone) setZnode(path string, data []byte) error {
+	_, err := this.conn.Set(path, data, -1)
+	return err
 }
 
 func (this *ZkZone) children(path string) []string {

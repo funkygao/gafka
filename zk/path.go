@@ -5,7 +5,8 @@ import (
 )
 
 const (
-	clusterRoot = "/_kafka_clusters"
+	clusterRoot     = "/_kafka_clusters"
+	clusterInfoRoot = "/_kafa_clusters_info" // TODO on init, ensure it exists
 
 	ConsumersPath           = "/consumers"
 	BrokerIdsPath           = "/brokers/ids"

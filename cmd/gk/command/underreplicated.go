@@ -97,12 +97,10 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 				leader, err := kfk.Leader(topic, partitionID)
 				swallow(err)
 
-				latestOffset, err := kfk.GetOffset(topic, partitionID,
-					sarama.OffsetNewest)
+				latestOffset, err := kfk.GetOffset(topic, partitionID, sarama.OffsetNewest)
 				swallow(err)
 
-				oldestOffset, err := kfk.GetOffset(topic, partitionID,
-					sarama.OffsetOldest)
+				oldestOffset, err := kfk.GetOffset(topic, partitionID, sarama.OffsetOldest)
 				swallow(err)
 
 				this.Ui.Output(color.Red("\t%s Partition:%d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",

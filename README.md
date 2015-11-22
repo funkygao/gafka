@@ -85,8 +85,16 @@ Simplified multi-datacenter multi-kafka-clusters management console powered by g
 - [X] topics command shows replicas count 
 - [X] show offline partitions: leader broker id = -1 
 - [X] auto discover cluster
-- [ ] top consumers activities: but in zk consumer offset is update at 1m interval
+- [X] total messages of a broker
+- [X] prioritize kafka clusters
+- [X] broker ownership management, what if a broker crash? how to find it
+- [ ] visualize the p(host)->c(hosts) relationship
+- [ ] health check of kafka brokers
+- [ ] kdeploy
 - [ ] rebalance a kafka cluster
-- [ ] broker ownership management, what if a broker crash? how to find it
 - [ ] zk need batch request
 
+### Monitor
+
+- [ ] active controller switch
+- 

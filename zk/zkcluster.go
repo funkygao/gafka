@@ -2,19 +2,31 @@ package zk
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/Shopify/sarama"
 	log "github.com/funkygao/log4go"
+	"github.com/samuel/go-zookeeper/zk"
 )
+
+type BrokerInfo struct {
+	Id   int    `json:"id"`
+	Host string `json:"host"`
+	Port int    `json:"port"`
+}
 
 // ZkCluster is a kafka cluster that has a chroot path in Zookeeper.
 type ZkCluster struct {
 	zone *ZkZone
 	name string // cluster name
 	path string // cluster's kafka chroot path in zk cluster
+
+	BrokerInfos []BrokerInfo `json:"brokers"`
+	Replicas    int          `json:"replicas"`
+	Priority    int          `json:"priority"`
 }
 
 func (this *ZkCluster) Name() string {
@@ -31,6 +43,74 @@ func (this *ZkCluster) Topics() []string {
 		r = append(r, name)
 	}
 	return r
+}
+
+func (this *ZkCluster) cluserInfoPath() string {
+	return fmt.Sprintf("%s/%s", clusterInfoRoot, this.name)
+}
+
+func (this *ZkCluster) writeInfo(zc ZkCluster) error {
+	data, err := json.Marshal(zc)
+	this.zone.swallow(err)
+
+	_, err = this.zone.conn.Set(this.cluserInfoPath(), data, -1)
+	if err == zk.ErrNoNode {
+		// create the node
+		return this.zone.createZnode(this.cluserInfoPath(), data)
+	}
+
+	return err
+}
+
+func (this *ZkCluster) ClusterInfo() ZkCluster {
+	zdata, _, err := this.zone.conn.Get(this.cluserInfoPath())
+	if err != nil {
+		if err == zk.ErrNoNode {
+			this.writeInfo(*this)
+			return *this
+		} else {
+			this.zone.swallow(err)
+		}
+
+		return *this
+	}
+
+	var cluster ZkCluster
+	json.Unmarshal(zdata, &cluster)
+	return cluster
+}
+
+func (this *ZkCluster) SetPriority(priority int) {
+	c := this.ClusterInfo()
+	c.Priority = priority
+	data, _ := json.Marshal(c)
+	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
+}
+
+func (this *ZkCluster) SetReplicas(replicas int) {
+	c := this.ClusterInfo()
+	c.Replicas = replicas
+	data, _ := json.Marshal(c)
+	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
+}
+
+func (this *ZkCluster) AddBroker(id int, host string, port int) {
+	c := this.ClusterInfo()
+	for _, info := range c.BrokerInfos {
+		if id == info.Id {
+			panic("dup broker id in a cluster")
+		}
+
+		if info.Host == host && info.Port == port {
+			// dup broker adding
+			return
+		}
+	}
+
+	b := BrokerInfo{Id: id, Host: host, Port: port}
+	c.BrokerInfos = append(c.BrokerInfos, b)
+	data, _ := json.Marshal(c)
+	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
 }
 
 // Returns {groupName: {consumerId: consumer}}
@@ -99,8 +179,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 					panic(err)
 				}
 
-				producerOffset, err := kfk.GetOffset(topic, int32(pid),
-					sarama.OffsetNewest)
+				producerOffset, err := kfk.GetOffset(topic, int32(pid), sarama.OffsetNewest)
 				if err != nil {
 					switch err {
 					case sarama.ErrUnknownTopicOrPartition:
