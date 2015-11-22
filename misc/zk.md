@@ -20,10 +20,13 @@
 
 #### rebalance
 
+引起rebalance的条件：刚启动，partition变化，group内成员变化, zk session expire
+
     取得我订阅的topic {/consumers/$mygrp/ids/$myid: subscriptions}
     取得我组内所有成员 /consumers/$mygrp/ids/*，并取得每个成员的subscriptions
     取得我订阅的每个topic分区信息 {/brokers/topics/$topic: partitions}
 
+    # commit offset和释放owner的先后顺序保证了offset的一致性
     关闭我的fetchers，commit offset
     释放owner权限 delete /consumers/$mygrp/owners/$topic/$partition
 
@@ -36,4 +39,15 @@
 
     发布owner权，占领partition  # 可能失败
     启动fetchers
+
+race conditions
+
+- shutdown
+
+  多次shutdown, rebalance时shutdown
+
+- rebalance
+
+  保证同时只能有一个rebalance
+
 
