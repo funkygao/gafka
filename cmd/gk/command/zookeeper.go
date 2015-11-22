@@ -28,12 +28,12 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("zookeeper", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
-	cmdFlags.StringVar(&this.flw, "cmd", "", "")
+	cmdFlags.StringVar(&this.flw, "c", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
-	if validateArgs(this, this.Ui).require("-cmd").invalid(args) {
+	if validateArgs(this, this.Ui).require("-c").invalid(args) {
 		return 2
 	}
 
