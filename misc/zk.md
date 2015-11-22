@@ -1,5 +1,11 @@
 # ZK in kafka
 
+### timeout
+
+- session timeout
+
+  6s
+
 ### consumer group
 
     /consumers/$group/ids/$group_$hostname-$timestamp-$uuid -> 
