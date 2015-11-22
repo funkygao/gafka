@@ -132,6 +132,9 @@ func (this *ZkZone) RegisterCluster(name, path string) error {
 	flags := int32(0)
 	clusterZkPath := clusterPath(name)
 	_, err := this.conn.Create(clusterZkPath, []byte(path), flags, acl)
+	if err == nil {
+		return nil
+	}
 	return fmt.Errorf("%s: %s", clusterZkPath, err.Error())
 }
 
