@@ -12,6 +12,7 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/gofmt"
 )
 
 type Topology struct {
@@ -49,9 +50,10 @@ func (this *Topology) Run(args []string) (exitCode int) {
 }
 
 type brokerHostInfo struct {
-	ports    []int
-	leadingN int                // being leader of how many partitions
-	topics   map[string][]int32 // detailed leading topics info {topic: partitionIds}
+	ports             []int
+	leadingPartitions int                // being leader of how many partitions
+	topics            map[string][]int32 // detailed leading topics info {topic: partitionIds}
+	msgsInStock       int64
 }
 
 func newBrokerHostInfo() *brokerHostInfo {
@@ -119,7 +121,13 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 					continue
 				}
 
-				instances[host].leadingN++
+				latestOffset, err := kfk.GetOffset(topic, partitionID, sarama.OffsetNewest)
+				swallow(err)
+				oldestOffset, err := kfk.GetOffset(topic, partitionID, sarama.OffsetOldest)
+				swallow(err)
+
+				instances[host].msgsInStock += (latestOffset - oldestOffset)
+				instances[host].leadingPartitions++
 				instances[host].addTopicPartition(topic, partitionID)
 			}
 		}
@@ -133,10 +141,11 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 	sort.Strings(sortedHosts)
 
 	for _, host := range sortedHosts {
-		this.Ui.Output(fmt.Sprintf("    %s leading: %2dT %3dP ports %2d:%+v",
+		this.Ui.Output(fmt.Sprintf("  %s leading: %2dT %3dP %10sM ports %2d:%+v",
 			color.Green("%15s", host),
 			len(instances[host].topics),
-			instances[host].leadingN,
+			instances[host].leadingPartitions,
+			gofmt.Comma(instances[host].msgsInStock),
 			len(instances[host].ports),
 			instances[host].ports))
 
