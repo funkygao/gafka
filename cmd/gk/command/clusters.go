@@ -90,7 +90,9 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 			brokerId, err := strconv.Atoi(parts[0])
 			swallow(err)
 			port, err := strconv.Atoi(parts[2])
-			zkcluster.RegisterBroker(brokerId, parts[1], port)
+			swallow(err)
+			err = zkcluster.RegisterBroker(brokerId, parts[1], port)
+			swallow(err)
 
 		case delBroker != -1:
 			this.Ui.Error("not implemented yet")

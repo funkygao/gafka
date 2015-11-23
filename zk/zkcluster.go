@@ -99,16 +99,16 @@ func (this *ZkCluster) SetReplicas(replicas int) {
 	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
 }
 
-func (this *ZkCluster) RegisterBroker(id int, host string, port int) {
+func (this *ZkCluster) RegisterBroker(id int, host string, port int) error {
 	c := this.RegisteredInfo()
 	for _, info := range c.Roster {
 		if id == info.Id {
-			panic("dup broker id in a cluster")
+			return fmt.Errorf("dup broker id: %d", id)
 		}
 
 		if info.Host == host && info.Port == port {
 			// dup broker adding
-			return
+			return fmt.Errorf("dup host and port: %s:%d", host, port)
 		}
 	}
 
@@ -116,6 +116,7 @@ func (this *ZkCluster) RegisterBroker(id int, host string, port int) {
 	c.Roster = append(c.Roster, b)
 	data, _ := json.Marshal(c)
 	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
+	return nil
 }
 
 // Returns {groupName: {consumerId: consumer}}
