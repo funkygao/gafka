@@ -1,5 +1,5 @@
 %define name gafka
-%define version 0.1.0
+%define version 0.1.1
 %define release 1
 %define path usr/local
 %define group Database/Applications
@@ -24,7 +24,7 @@ https://github.com/funkygao/gafka
 %prep
 mkdir -p $RPM_BUILD_DIR/%{name}-%{version}-%{release}
 cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}
-git clone git@github.com:funkygao/gafka.git
+git clone https://github.com/funkygao/gafka
 
 %build
 cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
@@ -34,7 +34,11 @@ cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
 export DONT_STRIP=1
 rm -rf $RPM_BUILD_ROOT
 cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
-./build.sh -install
+mkdir -p $RPM_BUILD_ROOT/%{path}/bin
+mkdir -p $RPM_BUILD_ROOT/%{path}/etc
+install cmd/gk/gk $RPM_BUILD_ROOT/%{path}/bin
+install etc/gafka.cf $RPM_BUILD_ROOT/%{path}/etc
 
 %files
 /%{path}/bin/gk
+/%{path}/etc/gafka.cf
