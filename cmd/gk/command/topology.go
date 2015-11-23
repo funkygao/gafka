@@ -141,7 +141,7 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 	sort.Strings(sortedHosts)
 
 	for _, host := range sortedHosts {
-		this.Ui.Output(fmt.Sprintf("  %s leading: %2dT %3dP %10sM ports %2d:%+v",
+		this.Ui.Output(fmt.Sprintf("  %s leading: %2dT %3dP %15sM ports %2d:%+v",
 			color.Green("%15s", host),
 			len(instances[host].topics),
 			instances[host].leadingPartitions,
