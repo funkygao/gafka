@@ -133,7 +133,7 @@ func (this *Clusters) verifyBrokers(zkzone *zk.ZkZone) {
 	this.Ui.Output(zkzone.Name())
 	zkzone.WithinBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
 		zkcluster := zkzone.NewCluster(cluster)
-		registeredBrokers := zkcluster.ClusterInfo().Roster
+		registeredBrokers := zkcluster.RegisteredInfo().Roster
 
 		// find diff between registeredBrokers and liveBrokers
 		// loop1 find liveBrokers>registeredBrokers
@@ -228,7 +228,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 			partitionN += len(partitions)
 		}
 
-		info := zkcluster.ClusterInfo()
+		info := zkcluster.RegisteredInfo()
 		clusters = append(clusters, clusterInfo{
 			name:        name,
 			path:        path,

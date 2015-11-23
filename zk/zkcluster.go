@@ -67,7 +67,7 @@ func (this *ZkCluster) writeInfo(zc ZkCluster) error {
 }
 
 // Get registered cluster info from zk.
-func (this *ZkCluster) ClusterInfo() ZkCluster {
+func (this *ZkCluster) RegisteredInfo() ZkCluster {
 	zdata, _, err := this.zone.conn.Get(this.cluserInfoPath())
 	if err != nil {
 		if err == zk.ErrNoNode {
@@ -86,21 +86,21 @@ func (this *ZkCluster) ClusterInfo() ZkCluster {
 }
 
 func (this *ZkCluster) SetPriority(priority int) {
-	c := this.ClusterInfo()
+	c := this.RegisteredInfo()
 	c.Priority = priority
 	data, _ := json.Marshal(c)
 	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
 }
 
 func (this *ZkCluster) SetReplicas(replicas int) {
-	c := this.ClusterInfo()
+	c := this.RegisteredInfo()
 	c.Replicas = replicas
 	data, _ := json.Marshal(c)
 	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
 }
 
 func (this *ZkCluster) RegisterBroker(id int, host string, port int) {
-	c := this.ClusterInfo()
+	c := this.RegisteredInfo()
 	for _, info := range c.Roster {
 		if id == info.Id {
 			panic("dup broker id in a cluster")
