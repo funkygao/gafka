@@ -88,7 +88,7 @@ Simplified multi-datacenter multi-kafka-clusters management console powered by g
 - [X] total messages of a broker
 - [X] prioritize kafka clusters
 - [X] broker ownership management, what if a broker crash? how to find it
-- [ ] visualize the p(host)->c(hosts) relationship
+- [X] visualize the p(host)->c(hosts) relationship
 - [ ] health check of kafka brokers
 - [ ] kdeploy
 - [ ] rebalance a kafka cluster
@@ -97,4 +97,3 @@ Simplified multi-datacenter multi-kafka-clusters management console powered by g
 ### Monitor
 
 - [ ] active controller switch
-- 
