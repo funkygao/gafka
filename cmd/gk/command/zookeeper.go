@@ -13,12 +13,13 @@ import (
 )
 
 type Zookeeper struct {
-	Ui        cli.Ui
-	Cmd       string
-	flw       string // zk four letter word command
-	cmdHelp   string
-	zkHost    string
-	watchMode bool
+	Ui         cli.Ui
+	Cmd        string
+	flw        string // zk four letter word command
+	cmdHelp    string
+	zkHost     string
+	watchMode  bool
+	leaderOnly bool
 }
 
 func (this *Zookeeper) Run(args []string) (exitCode int) {
@@ -31,11 +32,12 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.flw, "c", "", "")
 	cmdFlags.StringVar(&this.zkHost, "host", "", "")
 	cmdFlags.BoolVar(&this.watchMode, "watch", false, "")
+	cmdFlags.BoolVar(&this.leaderOnly, "leader", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
-	if validateArgs(this, this.Ui).require("-c").invalid(args) {
+	if !this.leaderOnly && validateArgs(this, this.Ui).require("-c").invalid(args) {
 		return 2
 	}
 
@@ -62,7 +64,7 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 		}
 	}
 
-	if !foundCmd {
+	if !foundCmd && !this.leaderOnly {
 		this.Ui.Error(fmt.Sprintf("invalid command: %s", this.flw))
 		this.Ui.Info(this.Help())
 		return 2
@@ -74,17 +76,52 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 
 	if zone != "" {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-		this.printZkStats(zkzone)
+		if this.leaderOnly {
+			this.printLeader(zkzone)
+		} else {
+			this.printZkStats(zkzone)
+		}
 
 		return
 	}
 
 	// print all by default
 	forAllZones(func(zkzone *zk.ZkZone) {
-		this.printZkStats(zkzone)
+		if this.leaderOnly {
+			this.printLeader(zkzone)
+		} else {
+			this.printZkStats(zkzone)
+		}
 	})
 
 	return
+}
+
+func (this *Zookeeper) printLeader(zkzone *zk.ZkZone) {
+	// FIXME all zones will only show the 1st zone info because it blocks others
+	for {
+		this.Ui.Output(color.Blue(zkzone.Name()))
+		for zkhost, lines := range zkzone.RunZkFourLetterCommand("mntr") {
+			if this.zkHost != "" && !strings.HasPrefix(zkhost, this.zkHost+":") {
+				continue
+			}
+
+			parts := strings.Split(lines, "\n")
+			for _, l := range parts {
+				if strings.HasPrefix(l, "zk_server_state") && strings.HasSuffix(l, "leader") {
+					this.Ui.Output(color.Green("%28s", zkhost))
+					break
+				}
+			}
+		}
+
+		if this.watchMode {
+			time.Sleep(time.Second * 5)
+		} else {
+			break
+		}
+	}
+
 }
 
 func (this *Zookeeper) printZkStats(zkzone *zk.ZkZone) {
@@ -126,6 +163,9 @@ Options:
 
     -watch
       Watch mode.
+
+    -leader
+      Display zk leader only.
 
     -c zk four letter word command
       conf cons dump envi reqs ruok srvr stat wchs wchc wchp mntr
