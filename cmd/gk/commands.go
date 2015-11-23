@@ -12,7 +12,12 @@ import (
 var commands map[string]cli.CommandFactory
 
 func init() {
-	ui := &cli.BasicUi{Writer: os.Stdout}
+	ui := &cli.ColoredUi{
+		Ui:         &cli.BasicUi{Writer: os.Stdout},
+		InfoColor:  cli.UiColorGreen,
+		ErrorColor: cli.UiColorRed,
+		WarnColor:  cli.UiColorYellow,
+	}
 	cmd := os.Args[0]
 
 	commands = map[string]cli.CommandFactory{

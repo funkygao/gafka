@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -38,6 +39,12 @@ func main() {
 	c.Args = os.Args[1:]
 	c.Commands = commands
 	c.HelpFunc = cli.BasicHelpFunc(app)
+	c.HelpFunc = func(m map[string]cli.CommandFactory) string {
+		var buf bytes.Buffer
+		buf.WriteString(fmt.Sprintf("Simplified multi-datacenter multi-kafka-clusters management console\n\n"))
+		buf.WriteString(cli.BasicHelpFunc(app)(m))
+		return buf.String()
+	}
 
 	exitCode, err := c.Run()
 	if err != nil {
