@@ -13,6 +13,7 @@ Group:      %{group}
 Packager:   Funky Gao <funky.gao@gmail.com>
 License:    Apache
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}
+Prefix:     /usr/local
 AutoReqProv: no
 # we just assume you have go installed. You may or may not have an RPM to depend on.
 # BuildRequires: go

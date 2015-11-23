@@ -23,6 +23,7 @@ _testmain.go
 *.test
 *.prof
 
+.DS_Store
 cmd/gk/gk
 cmd/exchange/exchange
 cmd/pubsub/pubsub
