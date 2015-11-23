@@ -12,10 +12,6 @@ import (
 	"github.com/funkygao/golib/color"
 )
 
-const (
-	adminPasswd = "gAfKa"
-)
-
 type argsRule struct {
 	cmd           cli.Command
 	ui            cli.Ui
@@ -85,7 +81,7 @@ func (this *argsRule) invalid(args []string) bool {
 			this.ui.Error(err.Error())
 			return true
 		}
-		if pass != adminPasswd {
+		if !Authenticator("", pass) {
 			this.ui.Error("invalid admin password, bye!")
 			return true
 		}
