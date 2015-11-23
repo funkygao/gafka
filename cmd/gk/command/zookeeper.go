@@ -11,14 +11,11 @@ import (
 	"github.com/funkygao/golib/color"
 )
 
-const (
-	zk_cmd_help = "Accepted commands include: watchers, env, conns, conf, stat, dump"
-)
-
 type Zookeeper struct {
-	Ui  cli.Ui
-	Cmd string
-	flw string // zk four letter word command
+	Ui      cli.Ui
+	Cmd     string
+	flw     string // zk four letter word command
+	cmdHelp string
 }
 
 func (this *Zookeeper) Run(args []string) (exitCode int) {
@@ -34,6 +31,35 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 	}
 
 	if validateArgs(this, this.Ui).require("-c").invalid(args) {
+		return 2
+	}
+
+	validCmds := []string{
+		"conf",
+		"cons",
+		"dump",
+		"envi",
+		"reqs",
+		"ruok",
+		"srvr",
+		"stat",
+		"wchs",
+		"wchc",
+		"wchp",
+		"mntr",
+	}
+	foundCmd := false
+	for _, c := range validCmds {
+		this.cmdHelp += c + " "
+		if this.flw == c {
+			foundCmd = true
+			break
+		}
+	}
+
+	if !foundCmd {
+		this.Ui.Error(fmt.Sprintf("invalid command: %s", this.flw))
+		this.Ui.Info(this.Help())
 		return 2
 	}
 
@@ -53,42 +79,10 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 }
 
 func (this *Zookeeper) printZkStats(zkzone *zk.ZkZone) {
-	switch this.flw {
-	case "stat":
-		for server, line := range zkzone.ZkStats() {
-			this.Ui.Output(fmt.Sprintf("\t%s\n%s", color.Green(server), line))
-		}
-
-	case "watchers":
-		for server, line := range zkzone.ZkWatchers() {
-			this.Ui.Output(fmt.Sprintf("\t%s\n%s", color.Green(server), line))
-		}
-
-	case "dump":
-		for server, line := range zkzone.ZkDump() {
-			this.Ui.Output(fmt.Sprintf("\t%s\n%s", color.Green(server), line))
-		}
-
-	case "conf":
-		for server, line := range zkzone.ZkConf() {
-			this.Ui.Output(fmt.Sprintf("\t%s\n%s", color.Green(server), line))
-		}
-
-	case "env":
-		for server, line := range zkzone.ZkEnv() {
-			this.Ui.Output(fmt.Sprintf("\t%s\n%s", color.Green(server), line))
-		}
-
-	case "conns":
-		for server, line := range zkzone.ZkConnections() {
-			this.Ui.Output(fmt.Sprintf("\t%s\n%s", color.Green(server), line))
-		}
-
-	default:
-		this.Ui.Error("invalid command")
-		this.Ui.Info(zk_cmd_help)
+	this.Ui.Output(color.Blue(zkzone.Name()))
+	for zkhost, lines := range zkzone.RunZkFourLetterCommand(this.flw) {
+		this.Ui.Output(fmt.Sprintf("%s\n%s", color.Green("%28s", zkhost), lines))
 	}
-
 }
 
 func (*Zookeeper) Synopsis() string {
@@ -105,8 +99,8 @@ Options:
 
     -z zone
 
-    -c command
-      %s
-`, this.Cmd, zk_cmd_help)
+    -c zk four letter word command
+      conf cons dump envi reqs ruok srvr stat wchs wchc wchp mntr
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }
