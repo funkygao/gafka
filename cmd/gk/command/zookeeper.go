@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
@@ -12,10 +13,12 @@ import (
 )
 
 type Zookeeper struct {
-	Ui      cli.Ui
-	Cmd     string
-	flw     string // zk four letter word command
-	cmdHelp string
+	Ui        cli.Ui
+	Cmd       string
+	flw       string // zk four letter word command
+	cmdHelp   string
+	zkHost    string
+	watchMode bool
 }
 
 func (this *Zookeeper) Run(args []string) (exitCode int) {
@@ -26,6 +29,8 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&this.flw, "c", "", "")
+	cmdFlags.StringVar(&this.zkHost, "host", "", "")
+	cmdFlags.BoolVar(&this.watchMode, "watch", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -63,6 +68,10 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 		return 2
 	}
 
+	if this.watchMode {
+		refreshScreen()
+	}
+
 	if zone != "" {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 		this.printZkStats(zkzone)
@@ -79,10 +88,23 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 }
 
 func (this *Zookeeper) printZkStats(zkzone *zk.ZkZone) {
-	this.Ui.Output(color.Blue(zkzone.Name()))
-	for zkhost, lines := range zkzone.RunZkFourLetterCommand(this.flw) {
-		this.Ui.Output(fmt.Sprintf("%s\n%s", color.Green("%28s", zkhost), lines))
+	for {
+		this.Ui.Output(color.Blue(zkzone.Name()))
+		for zkhost, lines := range zkzone.RunZkFourLetterCommand(this.flw) {
+			if this.zkHost != "" && !strings.HasPrefix(zkhost, this.zkHost+":") {
+				continue
+			}
+
+			this.Ui.Output(fmt.Sprintf("%s\n%s", color.Green("%28s", zkhost), lines))
+		}
+
+		if this.watchMode {
+			time.Sleep(time.Second * 5)
+		} else {
+			break
+		}
 	}
+
 }
 
 func (*Zookeeper) Synopsis() string {
@@ -98,6 +120,12 @@ Usage: %s zookeeper [options]
 Options:
 
     -z zone
+
+    -host ip
+      Display the zk host only.
+
+    -watch
+      Watch mode.
 
     -c zk four letter word command
       conf cons dump envi reqs ruok srvr stat wchs wchc wchp mntr
