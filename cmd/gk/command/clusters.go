@@ -52,7 +52,9 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 
 	if validateArgs(this, this.Ui).
 		on("-a", "-n", "-z", "-p").
-		on("-s", "-z", "-n").invalid(args) {
+		on("-s", "-z", "-n").
+		requireAdminRights("-s", "-a").
+		invalid(args) {
 		return 2
 	}
 

@@ -13,18 +13,20 @@ import (
 )
 
 type argsRule struct {
-	cmd        cli.Command
-	ui         cli.Ui
-	requires   []string
-	conditions map[string][]string
+	cmd           cli.Command
+	ui            cli.Ui
+	requires      []string
+	adminRequires map[string]struct{} // need admin rights: prompt password
+	conditions    map[string][]string
 }
 
 func validateArgs(cmd cli.Command, ui cli.Ui) *argsRule {
 	return &argsRule{
-		cmd:        cmd,
-		ui:         ui,
-		requires:   make([]string, 0),
-		conditions: make(map[string][]string),
+		cmd:           cmd,
+		ui:            ui,
+		requires:      make([]string, 0),
+		adminRequires: make(map[string]struct{}),
+		conditions:    make(map[string][]string),
 	}
 }
 
@@ -42,6 +44,13 @@ func (this *argsRule) on(whenOption string, requiredOption ...string) *argsRule 
 	return this
 }
 
+func (this *argsRule) requireAdminRights(option ...string) *argsRule {
+	for _, opt := range option {
+		this.adminRequires[opt] = struct{}{}
+	}
+	return this
+}
+
 func (this *argsRule) invalid(args []string) bool {
 	argSet := make(map[string]struct{}, len(args))
 	for _, arg := range args {
@@ -53,6 +62,27 @@ func (this *argsRule) invalid(args []string) bool {
 		if _, present := argSet[req]; !present {
 			this.ui.Error(color.Red("%s required", req))
 			this.ui.Output(this.cmd.Help())
+			return true
+		}
+	}
+
+	// admin required
+	adminAuthRequired := false
+	for _, arg := range args {
+		if _, present := this.adminRequires[arg]; present {
+			adminAuthRequired = true
+			break
+		}
+	}
+	if adminAuthRequired {
+		pass, err := this.ui.AskSecret("password for admin: ")
+		this.ui.Output("")
+		if err != nil {
+			this.ui.Error(err.Error())
+			return true
+		}
+		if !Authenticator("", pass) {
+			this.ui.Error("invalid admin password, bye!")
 			return true
 		}
 	}

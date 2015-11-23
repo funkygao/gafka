@@ -45,7 +45,11 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if validateArgs(this, this.Ui).require("-z").on("-add", "-c").invalid(args) {
+	if validateArgs(this, this.Ui).
+		require("-z").
+		on("-add", "-c").
+		requireAdminRights("-add", "-config").
+		invalid(args) {
 		return 2
 	}
 
@@ -305,10 +309,10 @@ Options:
       Add a topic to a kafka cluster.
 
     -partitions n
-      Default 1.
+      Partition count when adding a new topic. Default 1.
 
     -replicas n
-      Default 2.
+      Replica factor when adding a new topic. Default 2.
 
     -l
       Use a long listing format.

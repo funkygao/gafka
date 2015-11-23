@@ -8,13 +8,22 @@ import (
 )
 
 type Rebalance struct {
-	Ui  cli.Ui
-	Cmd string
+	Ui   cli.Ui
+	Cmd  string
+	zone string
 }
 
 func (this *Rebalance) Run(args []string) (exitCode int) {
 	// bin/kafka-preferred-replica-election.sh
 	// bin/kafka-reassign-partitions.sh
+
+	if validateArgs(this, this.Ui).
+		require("-z").
+		requireAdminRights("-z").
+		invalid(args) {
+		return 2
+	}
+
 	return
 }
 

@@ -26,7 +26,9 @@ func (this *VerifyReplicas) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if validateArgs(this, this.Ui).require("-z", "-c").invalid(args) {
+	if validateArgs(this, this.Ui).
+		require("-z", "-c").
+		invalid(args) {
 		return 2
 	}
 
