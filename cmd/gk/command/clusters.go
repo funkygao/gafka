@@ -103,49 +103,15 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	}
 
 	if verifyMode {
-		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-		zkzone.WithinBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
-			zkcluster := zkzone.NewCluster(cluster)
-			registeredBrokers := zkcluster.ClusterInfo().Roster
-
-			// find diff between registeredBrokers and liveBrokers
-			// loop1 find liveBrokers>registeredBrokers
-			for _, broker := range liveBrokers {
-				foundInRoster := false
-				for _, b := range registeredBrokers {
-					bid := strconv.Itoa(b.Id)
-					if bid == broker.Id && broker.Addr() == b.Addr() {
-						foundInRoster = true
-						break
-					}
-				}
-
-				if !foundInRoster {
-					// should manually register the broker
-					this.Ui.Output(strings.Repeat(" ", 4) +
-						color.Magenta("gk clusters -z %s -s -n %s -addbroker %s:%s",
-							zone, cluster, broker.Id, broker.Addr()))
-				}
-			}
-
-			// loop2 find liveBrokers<registeredBrokers
-			for _, b := range registeredBrokers {
-				foundInLive := false
-				for _, broker := range liveBrokers {
-					bid := strconv.Itoa(b.Id)
-					if bid == broker.Id && broker.Addr() == b.Addr() {
-						foundInLive = true
-						break
-					}
-				}
-
-				if !foundInLive {
-					// the broker is dead
-					this.Ui.Output(strings.Repeat(" ", 4) +
-						color.Red("broker %d %s is dead", b.Id, b.Addr()))
-				}
-			}
-		})
+		if zone != "" {
+			zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+			this.verifyBrokers(zkzone)
+		} else {
+			// print all zones all clusters
+			forAllZones(func(zkzone *zk.ZkZone) {
+				this.verifyBrokers(zkzone)
+			})
+		}
 		return
 	}
 
@@ -161,6 +127,52 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Clusters) verifyBrokers(zkzone *zk.ZkZone) {
+	this.Ui.Output(zkzone.Name())
+	zkzone.WithinBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
+		zkcluster := zkzone.NewCluster(cluster)
+		registeredBrokers := zkcluster.ClusterInfo().Roster
+
+		// find diff between registeredBrokers and liveBrokers
+		// loop1 find liveBrokers>registeredBrokers
+		for _, broker := range liveBrokers {
+			foundInRoster := false
+			for _, b := range registeredBrokers {
+				bid := strconv.Itoa(b.Id)
+				if bid == broker.Id && broker.Addr() == b.Addr() {
+					foundInRoster = true
+					break
+				}
+			}
+
+			if !foundInRoster {
+				// should manually register the broker
+				this.Ui.Output(strings.Repeat(" ", 4) +
+					color.Magenta("gk clusters -z %s -s -n %s -addbroker %s:%s",
+						zkzone.Name(), cluster, broker.Id, broker.Addr()))
+			}
+		}
+
+		// loop2 find liveBrokers<registeredBrokers
+		for _, b := range registeredBrokers {
+			foundInLive := false
+			for _, broker := range liveBrokers {
+				bid := strconv.Itoa(b.Id)
+				if bid == broker.Id && broker.Addr() == b.Addr() {
+					foundInLive = true
+					break
+				}
+			}
+
+			if !foundInLive {
+				// the broker is dead
+				this.Ui.Output(strings.Repeat(" ", 4) +
+					color.Red("broker %d %s is dead", b.Id, b.Addr()))
+			}
+		}
+	})
 }
 
 func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
