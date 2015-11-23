@@ -43,6 +43,8 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%+v\n", err)
 		os.Exit(1)
+	} else if c.IsVersion() {
+		os.Exit(0)
 	}
 
 	os.Exit(exitCode)
