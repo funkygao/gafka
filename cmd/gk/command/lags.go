@@ -42,7 +42,9 @@ func (this *Lags) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if validateArgs(this, this.Ui).require("-z").invalid(args) {
+	if validateArgs(this, this.Ui).
+		require("-z").
+		invalid(args) {
 		return 2
 	}
 

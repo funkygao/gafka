@@ -35,7 +35,10 @@ func (this *Partition) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if validateArgs(this, this.Ui).require("-z", "-c", "-t", "-n").invalid(args) {
+	if validateArgs(this, this.Ui).
+		require("-z", "-c", "-t", "-n").
+		requireAdminRights("-z").
+		invalid(args) {
 		return 2
 	}
 
