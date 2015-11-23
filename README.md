@@ -48,7 +48,7 @@ Simplified multi-datacenter multi-kafka-clusters management console powered by g
 
 ### Configuration
 
-    /etc/gafka.cf
+    /usr/local/etc/gafka.cf
 
     {
         // a zone is groups of kafka cluster that share the same zookeeper ensemble.

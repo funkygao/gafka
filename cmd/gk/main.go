@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	ctx.LoadConfig("/etc/gafka.cf")
+	ctx.LoadConfig("/usr/local/etc/gafka.cf")
 	setupLogging()
 
 	app := os.Args[0]

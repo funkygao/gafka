@@ -2,7 +2,7 @@
 %define version 0.1.1
 %define release 1
 %define path usr/local
-%define group Database/Applications
+%define group Development/Tools
 %define __os_install_post %{nil}
 
 Summary:    gafka
