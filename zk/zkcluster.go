@@ -18,15 +18,19 @@ type BrokerInfo struct {
 	Port int    `json:"port"`
 }
 
+func (this *BrokerInfo) Addr() string {
+	return fmt.Sprintf("%s:%d", this.Host, this.Port)
+}
+
 // ZkCluster is a kafka cluster that has a chroot path in Zookeeper.
 type ZkCluster struct {
 	zone *ZkZone
 	name string // cluster name
 	path string // cluster's kafka chroot path in zk cluster
 
-	BrokerInfos []BrokerInfo `json:"brokers"`
-	Replicas    int          `json:"replicas"`
-	Priority    int          `json:"priority"`
+	Roster   []BrokerInfo `json:"brokers"` // manually registered brokers
+	Replicas int          `json:"replicas"`
+	Priority int          `json:"priority"`
 }
 
 func (this *ZkCluster) Name() string {
@@ -62,6 +66,7 @@ func (this *ZkCluster) writeInfo(zc ZkCluster) error {
 	return err
 }
 
+// Get registered cluster info from zk.
 func (this *ZkCluster) ClusterInfo() ZkCluster {
 	zdata, _, err := this.zone.conn.Get(this.cluserInfoPath())
 	if err != nil {
@@ -94,9 +99,9 @@ func (this *ZkCluster) SetReplicas(replicas int) {
 	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
 }
 
-func (this *ZkCluster) AddBroker(id int, host string, port int) {
+func (this *ZkCluster) RegisterBroker(id int, host string, port int) {
 	c := this.ClusterInfo()
-	for _, info := range c.BrokerInfos {
+	for _, info := range c.Roster {
 		if id == info.Id {
 			panic("dup broker id in a cluster")
 		}
@@ -108,7 +113,7 @@ func (this *ZkCluster) AddBroker(id int, host string, port int) {
 	}
 
 	b := BrokerInfo{Id: id, Host: host, Port: port}
-	c.BrokerInfos = append(c.BrokerInfos, b)
+	c.Roster = append(c.Roster, b)
 	data, _ := json.Marshal(c)
 	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
 }

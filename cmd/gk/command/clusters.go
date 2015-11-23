@@ -24,6 +24,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	var (
 		addMode     bool
 		setMode     bool
+		verifyMode  bool
 		clusterName string
 		clusterPath string
 		zone        string
@@ -44,6 +45,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&priority, "priority", -1, "")
 	cmdFlags.StringVar(&addBroker, "addbroker", "", "")
 	cmdFlags.IntVar(&delBroker, "delbroker", -1, "")
+	cmdFlags.BoolVar(&verifyMode, "verify", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -88,7 +90,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 			brokerId, err := strconv.Atoi(parts[0])
 			swallow(err)
 			port, err := strconv.Atoi(parts[2])
-			zkcluster.AddBroker(brokerId, parts[1], port)
+			zkcluster.RegisterBroker(brokerId, parts[1], port)
 
 		case delBroker != -1:
 			this.Ui.Error("not implemented yet")
@@ -97,6 +99,53 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 			this.Ui.Error("command not recognized")
 		}
 
+		return
+	}
+
+	if verifyMode {
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+		zkzone.WithinBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
+			zkcluster := zkzone.NewCluster(cluster)
+			registeredBrokers := zkcluster.ClusterInfo().Roster
+
+			// find diff between registeredBrokers and liveBrokers
+			// loop1 find liveBrokers>registeredBrokers
+			for _, broker := range liveBrokers {
+				foundInRoster := false
+				for _, b := range registeredBrokers {
+					bid := strconv.Itoa(b.Id)
+					if bid == broker.Id && broker.Addr() == b.Addr() {
+						foundInRoster = true
+						break
+					}
+				}
+
+				if !foundInRoster {
+					// should manually register the broker
+					this.Ui.Output(strings.Repeat(" ", 4) +
+						color.Magenta("gk clusters -z %s -s -n %s -addbroker %s:%s",
+							zone, cluster, broker.Id, broker.Addr()))
+				}
+			}
+
+			// loop2 find liveBrokers<registeredBrokers
+			for _, b := range registeredBrokers {
+				foundInLive := false
+				for _, broker := range liveBrokers {
+					bid := strconv.Itoa(b.Id)
+					if bid == broker.Id && broker.Addr() == b.Addr() {
+						foundInLive = true
+						break
+					}
+				}
+
+				if !foundInLive {
+					// the broker is dead
+					this.Ui.Output(strings.Repeat(" ", 4) +
+						color.Red("broker %d %s is dead", b.Id, b.Addr()))
+				}
+			}
+		})
 		return
 	}
 
@@ -175,7 +224,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 			partitionN:  partitionN,
 			replicas:    info.Replicas,
 			priority:    info.Priority,
-			brokerInfos: info.BrokerInfos,
+			brokerInfos: info.Roster,
 		})
 	})
 
@@ -200,7 +249,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 			this.Ui.Output(fmt.Sprintf("%30s: %s",
 				c.name, c.path))
 			this.Ui.Output(strings.Repeat(" ", 4) +
-				fmt.Sprintf("topics:%d partitions:%d replicas:%d priority:%d brokers:%+v",
+				color.Blue("topics:%d partitions:%d replicas:%d priority:%d brokers:%+v",
 					c.topicN, c.partitionN, c.replicas, c.priority, c.brokerInfos))
 		}
 
@@ -251,10 +300,13 @@ Options:
       Set the default replicas of a cluster.
 
     -addbroker id:host:port
-      Add a broker to a cluster.
+      Register a permanent broker to a cluster.
 
     -delbroker id TODO
       Delete a broker from a cluster.
+
+    -verify
+      Verify that the online brokers are consistent with the registered brokers.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
