@@ -17,11 +17,12 @@ Simplified multi-datacenter multi-kafka-clusters management console powered by g
 ### Install
 
     go get github.com/funkygao/gafka
-    sudo cp $GOPATH/src/github.com/funkygao/gafka/etc/gafka.cf /etc
 
 ### Usage
 
     $gk
+    
+    Simplified multi-datacenter multi-kafka-clusters management console
     
     usage: gk [--version] [--help] <command> [<args>]
     
@@ -44,11 +45,12 @@ Simplified multi-datacenter multi-kafka-clusters management console powered by g
         topology           Print server topology and balancing stats of kafka clusters
         underreplicated    Display under-replicated partitions
         verifyreplicas     Validate that all replicas for a set of topics have the same data TODO
-        zones              Print zones defined in /etc/gafka.cf
+        zones              Print zones defined in $HOME/.gafka.cf
+        zookeeper          Display zone Zookeeper status
 
 ### Configuration
 
-    /usr/local/etc/gafka.cf
+    $HOME/gafka.cf
 
     {
         // a zone is groups of kafka cluster that share the same zookeeper ensemble.

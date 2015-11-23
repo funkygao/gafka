@@ -4,7 +4,12 @@ package ctx
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"os/user"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	jsconf "github.com/funkygao/jsconf"
 )
@@ -95,4 +100,53 @@ func LoadConfig(fn string) {
 		conf.zones[z.name] = z.zk
 	}
 
+}
+
+func LoadFromHome() {
+	const defaultConfig = `
+{
+    zones: [
+        {
+            name: "sit"
+            zk: "10.77.144.87:10181,10.77.144.88:10181,10.77.144.89:10181"
+        }
+        {
+            name: "test"
+            zk: "10.77.144.101:10181,10.77.144.132:10181,10.77.144.182:10181"
+        }
+        {
+            name: "pre"
+            zk: ""
+        }
+        {
+            name: "prod"
+            zk: "10.209.33.69:2181,10.209.37.19:2181,10.209.37.68:2181"
+        }
+    ]
+
+    kafka_home: "/opt/kafka_2.10-0.8.1.1"
+    loglevel: "info"
+}
+`
+	var configFile string
+	if usr, err := user.Current(); err == nil {
+		configFile = filepath.Join(usr.HomeDir, ".gafka.cf")
+	} else {
+		panic(err)
+	}
+
+	_, err := os.Stat(configFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// create the config file on the fly
+			if e := ioutil.WriteFile(configFile,
+				[]byte(strings.TrimSpace(defaultConfig)), 0644); e != nil {
+				panic(e)
+			}
+		} else {
+			panic(err)
+		}
+	}
+
+	LoadConfig(configFile)
 }

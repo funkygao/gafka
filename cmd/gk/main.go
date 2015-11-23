@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	ctx.LoadConfig("/usr/local/etc/gafka.cf")
+	ctx.LoadFromHome()
 	setupLogging()
 
 	app := os.Args[0]
@@ -38,7 +38,6 @@ func main() {
 	c := cli.NewCLI(app, gafka.Version+"-"+gafka.BuildId)
 	c.Args = os.Args[1:]
 	c.Commands = commands
-	c.HelpFunc = cli.BasicHelpFunc(app)
 	c.HelpFunc = func(m map[string]cli.CommandFactory) string {
 		var buf bytes.Buffer
 		buf.WriteString(fmt.Sprintf("Simplified multi-datacenter multi-kafka-clusters management console\n\n"))

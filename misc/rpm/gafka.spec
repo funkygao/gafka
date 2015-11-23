@@ -36,13 +36,10 @@ export DONT_STRIP=1
 rm -rf $RPM_BUILD_ROOT
 cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
 mkdir -p $RPM_BUILD_ROOT/%{path}/bin
-mkdir -p $RPM_BUILD_ROOT/%{path}/etc
 mkdir -p $RPM_BUILD_ROOT/etc/bash_completion.d
 install cmd/gk/gk $RPM_BUILD_ROOT/%{path}/bin
-install etc/gafka.cf $RPM_BUILD_ROOT/%{path}/etc
 install misc/autocomplete/bash_autocomplete $RPM_BUILD_ROOT/etc/bash_completion.d/gk
 
 %files
 /%{path}/bin/gk
-/%{path}/etc/gafka.cf
 /etc/bash_completion.d/gk
