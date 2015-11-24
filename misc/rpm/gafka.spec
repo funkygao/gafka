@@ -1,11 +1,11 @@
 %define name gafka
 %define version 0.1.1
-%define release 1
+%define release 2
 %define path usr/local
 %define group Development/Tools
 %define __os_install_post %{nil}
 
-Summary:    gafka
+Summary:    Unified multi-datacenter multi-kafka-clusters central management console
 Name:       %{name}
 Version:    %{version}
 Release:    %{release}
@@ -19,7 +19,7 @@ AutoReqProv: no
 # BuildRequires: go
 
 %description 
-gafka - Simplified multi-datacenter multi-kafka-clusters management console powered by golang.
+Unified multi-datacenter multi-kafka-clusters central management console powered by golang.
 https://github.com/funkygao/gafka
 
 %prep

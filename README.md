@@ -1,5 +1,5 @@
 # gafka
-Simplified multi-datacenter multi-kafka-clusters management console powered by golang.
+Unified multi-datacenter multi-kafka-clusters central management console powered by golang.
 
 ### Features
 
