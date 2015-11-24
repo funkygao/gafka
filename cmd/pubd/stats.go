@@ -41,11 +41,11 @@ func runSysStats(startedAt time.Time, interval time.Duration) {
 		lastSysTime = sysTime
 
 		log.Info("uptime:%s, go:%d, gc:%dms/%d=%d, heap:{%s, %s, %s, %s %s} cpu:{%3.2f%%us, %3.2f%%sy}",
-			time.Since(startedAt),
+			gofmt.PrettySince(startedAt),
 			runtime.NumGoroutine(),
 			ms.PauseTotalNs/nsInMs,
 			ms.NumGC,
-			ms.PauseTotalNs/(nsInMs*uint64(ms.NumGC))+1,
+			ms.PauseTotalNs/(nsInMs*uint64(ms.NumGC)+1),
 			gofmt.ByteSize(ms.HeapSys),      // bytes it has asked the operating system for
 			gofmt.ByteSize(ms.HeapAlloc),    // bytes currently allocated in the heap
 			gofmt.ByteSize(ms.HeapIdle),     // bytes in the heap that are unused

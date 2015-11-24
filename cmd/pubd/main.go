@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"strings"
 	"syscall"
 	"time"
 
@@ -46,11 +47,15 @@ func main() {
 		defer profiler.Start(cf).Stop()
 	}
 
-	fmt.Fprintln(os.Stderr, `
-     ____      __      ____ 
-    ( ___)    /__\    ( ___)
-     )__)    /(__)\    )__) 
-    (__)    (__)(__)  (____)`)
+	fmt.Fprintln(os.Stderr, strings.TrimSpace(`
+                         _/_/  _/                  
+     _/_/_/    _/_/_/    _/      _/  _/      _/_/_/   
+  _/    _/  _/    _/  _/_/_/_/  _/_/      _/    _/    
+ _/    _/  _/    _/    _/      _/  _/    _/    _/     
+  _/_/_/    _/_/_/    _/      _/    _/    _/_/_/      
+     _/                                               
+_/_/                                                  
+	`))
 
 	setupLogging(options.logFile, options.logLevel, options.crashLogFile)
 	ctx.LoadConfig(options.configFile)
@@ -65,8 +70,6 @@ func main() {
 
 	gw := &PubGateway{}
 	gw.ServeForever()
-
-	log.Info("ha")
 
 	time.Sleep(time.Hour)
 }
