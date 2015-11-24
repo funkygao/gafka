@@ -7,7 +7,9 @@
 # 2. rm -rf /tmp/kafka*
 # 3. ./bin/kafka-topics.sh --zookeeper localhost:2181/kafka_pubsub --create --topic _bindings --replication-factor 1 --partitions 1
 #
-# 1. exchanged demo.sh
+# 1. zk create /_pubsub/bind
+# 2. invoke exchanged 
+# 3. run demo.sh
 
 ./pubsub 
 

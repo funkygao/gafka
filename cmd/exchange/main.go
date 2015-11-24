@@ -46,7 +46,7 @@ func loadBindings() {
 	conn := zk.Conn()
 	children, _, err := conn.Children(command.BindRoot)
 	if err != nil {
-		panic(err)
+		panic(command.BindRoot + ": " + err.Error())
 	}
 
 	for _, app := range children {

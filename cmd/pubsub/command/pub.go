@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gocli"
@@ -70,6 +71,9 @@ func (this *Pub) Run(args []string) (exitCode int) {
 				Topic: KafkaOutboxTopic(id, topic),
 				Value: sarama.StringEncoder(msg),
 			})
+			if false {
+				time.Sleep(time.Second * 5)
+			}
 
 			n++
 			if n%int64(step) == 0 {

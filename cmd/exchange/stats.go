@@ -26,6 +26,6 @@ func newExchangeStats() *exchangeStats {
 }
 
 func (this *exchangeStats) start() {
-	go metrics.Log(metrics.DefaultRegistry, time.Second*10,
+	go metrics.Log(metrics.DefaultRegistry, time.Second*600,
 		log.New(os.Stdout, "metrics: ", log.Lmicroseconds))
 }
