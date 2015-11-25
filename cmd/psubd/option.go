@@ -22,6 +22,7 @@ var (
 		memprof      bool
 		blockprof    bool
 		crashLogFile string
+		influxServer string
 	}
 )
 
@@ -39,6 +40,7 @@ func parseFlags() {
 	flag.BoolVar(&options.cpuprof, "cpuprof", false, "enable cpu profiling")
 	flag.BoolVar(&options.memprof, "memprof", false, "enable memory profiling")
 	flag.StringVar(&options.mode, "mode", "pub", "gateway mode: <pub|sub>")
+	flag.StringVar(&options.influxServer, "influxdb", "http://10.77.144.193:10036", "influxdb server address for the metrics reporter")
 	flag.BoolVar(&options.blockprof, "blockprof", false, "enable block profiling")
 
 	flag.Parse()

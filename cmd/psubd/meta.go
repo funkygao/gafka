@@ -1,6 +1,8 @@
 package main
 
 import (
+	"sync"
+
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 )
@@ -18,6 +20,7 @@ type MetaStore interface {
 type zkMetaStore struct {
 	brokerList []string
 	zkcluster  *zk.ZkCluster
+	mu         sync.Mutex
 }
 
 func newZkMetaStore(zone string, cluster string) MetaStore {

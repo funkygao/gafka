@@ -13,6 +13,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/funkygao/gafka"
+	"github.com/funkygao/golib/breaker"
 	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
@@ -30,6 +31,9 @@ type Gateway struct {
 	metrics             *pubMetrics
 	metaStore           MetaStore
 	metaRefreshInterval time.Duration
+
+	kpool   *kpool
+	breaker *breaker.Consecutive
 }
 
 func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
@@ -44,9 +48,16 @@ func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
 		Addr:    ":9090", // TODO
 		Handler: this.router,
 	}
+	this.breaker = &breaker.Consecutive{
+		FailureAllowance: 10,
+		RetryTimeout:     time.Second * 10,
+	}
 	switch mode {
-	case "pub":
+	case "pub", "pubsub":
 		this.metrics = newPubMetrics()
+
+	case "sub":
+
 	}
 	return this
 }
@@ -58,12 +69,14 @@ func (this *Gateway) Start() (err error) {
 
 	this.buildRouting()
 
+	this.metaStore.Start()
+	this.kpool = newKpool(this.metaStore.BrokerList())
+
 	this.listener, err = net.Listen("tcp", this.server.Addr)
 	if err != nil {
 		return
 	}
 
-	this.metaStore.Start()
 	go this.server.Serve(this.listener)
 
 	return nil
@@ -92,9 +105,32 @@ func (this *Gateway) showClusters(w http.ResponseWriter, req *http.Request) {
 	w.Write(b)
 }
 
+// TODO
+func (this *Gateway) authenticate(req *http.Request) (ok bool) {
+	switch this.mode {
+	case "pub":
+		pubkeyParam := req.Header["Pubkey"]
+		if len(pubkeyParam) > 0 && !this.metaStore.AuthPub(pubkeyParam[0]) {
+			log.Error("client:%s pubkey: %s", req.RemoteAddr, pubkeyParam[0])
+			return
+		}
+
+		return true
+
+	default:
+		return false
+	}
+
+}
+
 func (this *Gateway) writeAuthFailure(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusUnauthorized)
 	w.Write([]byte("invalid pubkey"))
+}
+
+func (this *Gateway) writeBreakerOpen(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusBadGateway)
+	w.Write([]byte("circuit broken"))
 }
 
 func (this *Gateway) ServeForever() {
@@ -110,6 +146,7 @@ func (this *Gateway) ServeForever() {
 
 		case <-meteRefreshTicker.C:
 			this.metaStore.Refresh()
+			this.kpool.RefreshBrokerList(this.metaStore.BrokerList())
 		}
 	}
 

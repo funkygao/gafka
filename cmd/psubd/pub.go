@@ -15,58 +15,70 @@ import (
 func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	req.Body = http.MaxBytesReader(w, req.Body, 1<<20) // TODO
 
-	this.metrics.PubLatency.Time(func() {
-		// authentication TODO
-		pubkeyParam := req.Header["Pubkey"]
-		if len(pubkeyParam) > 0 && !this.metaStore.AuthPub(pubkeyParam[0]) {
-			log.Debug("pubkey: %s", pubkeyParam[0])
-			this.writeAuthFailure(w)
-			return
-		}
+	if !this.authenticate(req) {
+		this.writeAuthFailure(w)
+		return
+	}
 
-		var (
-			ver   string
-			topic string
-			ack   int = 1
-		)
-		req.ParseForm()
+	if this.breaker.Open() {
+		this.writeBreakerOpen(w)
+		return
+	}
 
-		// kafka ack
-		ackParam := req.FormValue("ack")
-		if ackParam != "" {
-			ack, _ = strconv.Atoi(ackParam)
-		}
+	t1 := time.Now()
+	var (
+		ver   string
+		topic string
+		ack   int = 1
+	)
+	req.ParseForm()
 
-		vars := mux.Vars(req)
-		ver = vars["ver"]
-		topic = vars["topic"]
-		log.Debug("ver:%s topic:%s ack:%d", ver, topic, ack)
+	// kafka ack
+	ackParam := req.FormValue("ack")
+	if ackParam != "" {
+		ack, _ = strconv.Atoi(ackParam)
+	}
 
-		offset, err := this.doSendMessage(topic, req.FormValue("m"))
-		log.Debug("offset: %d err: %v", offset, err)
+	vars := mux.Vars(req)
+	ver = vars["ver"]
+	topic = vars["topic"]
+	log.Debug("ver:%s topic:%s ack:%d", ver, topic, ack)
 
-		w.Header().Set("Content-Type", "html/text")
-		w.WriteHeader(http.StatusOK)
-	})
+	offset, err := this.doSendMessage(topic, req.FormValue("m"))
+	log.Debug("offset: %d err: %v", offset, err)
 
+	w.Header().Set("Content-Type", "html/text")
+	w.WriteHeader(http.StatusOK)
+
+	this.metrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6)
 }
 
 func (this *Gateway) doSendMessage(topic string, msg string) (offset int64, err error) {
+	this.metrics.PubQps.Mark(1)
 	this.metrics.PubSize.Mark(int64(len(msg)))
+
 	cf := sarama.NewConfig()
 	cf.Producer.RequiredAcks = sarama.WaitForLocal
 	cf.Producer.Partitioner = sarama.NewHashPartitioner
 	cf.Producer.Timeout = time.Second
-	cf.Producer.Compression = sarama.CompressionSnappy
+	//cf.Producer.Compression = sarama.CompressionSnappy
 	cf.Producer.Retry.Max = 3
 	var producer sarama.SyncProducer
-	log.Debug("kafka connecting")
-	producer, err = sarama.NewSyncProducer([]string{"localhost:9092"}, cf)
+
+	client, e := this.kpool.Get()
+	if client != nil {
+		defer client.Recycle()
+	}
+	if e != nil {
+		return -1, e
+	}
+
+	producer, err = sarama.NewSyncProducerFromClient(client.Client)
 	if err != nil {
 		return
 	}
 
-	// add msg header
+	// TODO add msg header
 
 	log.Debug("sending %s msg: %s", topic, msg)
 	_, offset, err = producer.SendMessage(&sarama.ProducerMessage{
