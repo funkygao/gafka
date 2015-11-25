@@ -27,8 +27,6 @@ func init() {
 
 func main() {
 	defer func() {
-		shutdown()
-
 		if err := recover(); err != nil {
 			fmt.Println(err)
 			debug.PrintStack()
@@ -60,16 +58,21 @@ _/_/
 	setupLogging(options.logFile, options.logLevel, options.crashLogFile)
 	ctx.LoadConfig(options.configFile)
 
+	gw := NewGateway()
+
 	signal.RegisterSignalHandler(syscall.SIGINT, func(sig os.Signal) {
-		shutdown()
+		gw.Stop()
+
+		log.Info("Terminated")
+		os.Exit(0)
 	})
 
 	log.Info("pubd started")
 
 	go runSysStats(time.Now(), options.tick)
 
-	gw := &PubGateway{}
+	gw.BuildRouting()
+	gw.Start()
 	gw.ServeForever()
 
-	time.Sleep(time.Hour)
 }

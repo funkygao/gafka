@@ -24,6 +24,9 @@ _testmain.go
 *.prof
 
 .DS_Store
+*.swp
+cmd/pubd/pubd
+panic.dump
 cmd/gk/gk
 cmd/exchange/exchange
 cmd/pubsub/pubsub
