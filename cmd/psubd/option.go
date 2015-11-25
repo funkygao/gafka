@@ -49,11 +49,11 @@ func parseFlags() {
 	flag.Parse()
 
 	if options.tick < 0 {
-		fmt.Fprintf(os.Stderr, "tick must be possitive\n")
+		fmt.Fprintf(os.Stderr, "-tick must be possitive\n")
 		os.Exit(1)
 	}
 	if options.zone == "" || options.cluster == "" {
-		fmt.Fprintf(os.Stderr, "zone and cluster are required\n")
+		fmt.Fprintf(os.Stderr, "-zone and -cluster are required\n")
 		os.Exit(1)
 	}
 }

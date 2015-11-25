@@ -32,10 +32,12 @@ func (this *ZkCluster) controllerEpochPath() string {
 	return this.path + ControllerEpochPath
 }
 
+func (this *ZkCluster) partitionsPath(topic string) string {
+	return fmt.Sprintf("%s%s/%s/partitions", this.path, BrokerTopicsPath, topic)
+}
+
 func (this *ZkCluster) partitionStatePath(topic string, partitionId int32) string {
-	return fmt.Sprintf("%s%s/%s/partitions/%d/state",
-		this.path, BrokerTopicsPath, topic,
-		partitionId)
+	return fmt.Sprintf("%s/%d/state", this.partitionsPath(topic), partitionId)
 }
 
 func (this *ZkCluster) topicsRoot() string {

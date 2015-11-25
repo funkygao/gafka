@@ -61,7 +61,13 @@ func newKpool(brokerList []string) *kpool {
 
 		var err error
 		t1 := time.Now()
-		conn.Client, err = sarama.NewClient(brokerList, sarama.NewConfig())
+		cf := sarama.NewConfig()
+		cf.Producer.RequiredAcks = sarama.WaitForLocal
+		cf.Producer.Partitioner = sarama.NewHashPartitioner
+		cf.Producer.Timeout = time.Second
+		//cf.Producer.Compression = sarama.CompressionSnappy
+		cf.Producer.Retry.Max = 3
+		conn.Client, err = sarama.NewClient(brokerList, cf)
 		if err == nil {
 			log.Debug("kafka connected[%d]: %+v %s", conn.id, brokerList, time.Since(t1))
 		} else {

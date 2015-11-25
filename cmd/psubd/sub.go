@@ -12,6 +12,13 @@ import (
 // /{ver}/topics/{topic}?offset=n&limit=n&timeout=n
 func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 	req.Body = http.MaxBytesReader(w, req.Body, options.maxBodySize)
+	err := req.ParseForm()
+	if err != nil {
+		log.Error("%s: %v", req.RemoteAddr, err)
+
+		this.writeBadRequest(w)
+		return
+	}
 
 	if !this.authenticate(req) {
 		this.writeAuthFailure(w)
@@ -27,9 +34,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 		ver   string
 		topic string
 		limit int = 100
-		err   error
 	)
-	req.ParseForm()
 
 	limitParam := req.FormValue("limit")
 	if limitParam != "" {
@@ -49,10 +54,11 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	this.consume(ver, topic, w)
+	this.consume(ver, topic, w, req)
 }
 
-func (this *Gateway) consume(ver, topic string, w http.ResponseWriter) {
+func (this *Gateway) consume(ver, topic string, w http.ResponseWriter,
+	req *http.Request) {
 	client, err := this.kpool.Get()
 	if client != nil {
 		defer client.Recycle()
@@ -73,7 +79,7 @@ func (this *Gateway) consume(ver, topic string, w http.ResponseWriter) {
 	if err != nil {
 		this.breaker.Fail()
 
-		log.Error(err)
+		log.Error("%s: %v", req.RemoteAddr, err)
 		return
 	}
 
@@ -83,8 +89,10 @@ func (this *Gateway) consume(ver, topic string, w http.ResponseWriter) {
 		case msg = <-p.Messages():
 			_, err = w.Write(msg.Value)
 			if err != nil {
-				log.Error(err)
+				log.Error("%s: %v", req.RemoteAddr, err)
+				break
 			}
+
 			w.Write([]byte("\n"))
 
 		}

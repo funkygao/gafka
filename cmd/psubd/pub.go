@@ -1,8 +1,8 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -10,9 +10,21 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type pubResponse struct {
+	Partition int32 `json:"partition"`
+	Offset    int64 `json:"offset"`
+}
+
 // /{ver}/topics/{topic}?ack=n&retry=n&timeout=n
 func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	req.Body = http.MaxBytesReader(w, req.Body, options.maxBodySize)
+	err := req.ParseForm()
+	if err != nil {
+		log.Error("%s: %v", req.RemoteAddr, err)
+
+		this.writeBadRequest(w)
+		return
+	}
 
 	if !this.authenticate(req) {
 		this.writeAuthFailure(w)
@@ -28,58 +40,46 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	var (
 		ver   string
 		topic string
-		ack   int = 1
-		err   error
 	)
-	req.ParseForm()
-
-	// kafka ack
-	ackParam := req.FormValue("ack")
-	if ackParam != "" {
-		ack, err = strconv.Atoi(ackParam)
-		if err != nil {
-			this.writeBadRequest(w)
-
-			log.Error("ack %s: %v", ackParam, err)
-			return
-		}
-	}
 
 	vars := mux.Vars(req)
 	ver = vars["ver"]
 	topic = vars["topic"]
-	log.Debug("ver:%s topic:%s ack:%d", ver, topic, ack)
 
-	offset, err := this.doSendMessage(ver, topic, req.FormValue("m"))
-	log.Debug("offset: %d err: %v", offset, err)
+	// TODO how can get m in []byte?
+	partition, offset, err := this.produce(ver, topic, req.FormValue("m"))
+	if err != nil {
+		log.Error("%s: %v", req.RemoteAddr, err)
+		return
+	}
 
-	w.Header().Set("Content-Type", "html/text")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+
+	response := pubResponse{
+		Partition: partition,
+		Offset:    offset,
+	}
+	b, _ := json.Marshal(response)
+	if _, err := w.Write(b); err != nil {
+		log.Error("%s: %v", req.RemoteAddr, err)
+	}
 
 	this.metrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6)
 }
 
-func (this *Gateway) doSendMessage(ver, topic string, msg string) (offset int64, err error) {
+func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
+	offset int64, err error) {
 	this.metrics.PubQps.Mark(1)
 	this.metrics.PubSize.Mark(int64(len(msg)))
 
-	cf := sarama.NewConfig()
-	cf.Producer.RequiredAcks = sarama.WaitForLocal
-	cf.Producer.Partitioner = sarama.NewHashPartitioner
-	cf.Producer.Timeout = time.Second
-	//cf.Producer.Compression = sarama.CompressionSnappy
-	cf.Producer.Retry.Max = 3
-	var producer sarama.SyncProducer
-
 	client, e := this.kpool.Get()
-	if client != nil {
-		defer client.Recycle()
-	}
 	if e != nil {
-		log.Error(e)
-		return -1, e
+		return -1, -1, e
 	}
+	defer client.Recycle()
 
+	var producer sarama.SyncProducer
 	producer, err = sarama.NewSyncProducerFromClient(client.Client)
 	if err != nil {
 		this.breaker.Fail()
@@ -88,11 +88,9 @@ func (this *Gateway) doSendMessage(ver, topic string, msg string) (offset int64,
 
 	// TODO add msg header
 
-	log.Debug("sending %s msg: %s", topic, msg)
-	_, offset, err = producer.SendMessage(&sarama.ProducerMessage{
-		Topic:    topic,
-		Value:    sarama.StringEncoder(msg),
-		Metadata: "haha",
+	partition, offset, err = producer.SendMessage(&sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.StringEncoder(msg),
 	})
 	if err != nil {
 		this.breaker.Fail()

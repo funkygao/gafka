@@ -57,6 +57,16 @@ func (this *ZkCluster) Topics() []string {
 	return r
 }
 
+func (this *ZkCluster) Partitions(topic string) []int32 {
+	partitions := this.zone.children(this.partitionsPath(topic))
+	r := make([]int32, 0, len(partitions))
+	for _, p := range partitions {
+		id, _ := strconv.Atoi(p)
+		r = append(r, int32(id))
+	}
+	return r
+}
+
 func (this *ZkCluster) cluserInfoPath() string {
 	return fmt.Sprintf("%s/%s", clusterInfoRoot, this.name)
 }
