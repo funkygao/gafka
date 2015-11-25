@@ -15,40 +15,44 @@ import (
 func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	req.Body = http.MaxBytesReader(w, req.Body, 1<<20) // TODO
 
-	// authentication TODO
-	pubkeyParam := req.Header["Pubkey"]
-	if len(pubkeyParam) > 0 && !this.metaStore.AuthPub(pubkeyParam[0]) {
-		log.Debug("pubkey: %s", pubkeyParam[0])
-		this.writeAuthFailure(w)
-		return
-	}
+	this.metrics.PubLatency.Time(func() {
+		// authentication TODO
+		pubkeyParam := req.Header["Pubkey"]
+		if len(pubkeyParam) > 0 && !this.metaStore.AuthPub(pubkeyParam[0]) {
+			log.Debug("pubkey: %s", pubkeyParam[0])
+			this.writeAuthFailure(w)
+			return
+		}
 
-	var (
-		ver   string
-		topic string
-		ack   int = 1
-	)
-	req.ParseForm()
+		var (
+			ver   string
+			topic string
+			ack   int = 1
+		)
+		req.ParseForm()
 
-	// kafka ack
-	ackParam := req.FormValue("ack")
-	if ackParam != "" {
-		ack, _ = strconv.Atoi(ackParam)
-	}
+		// kafka ack
+		ackParam := req.FormValue("ack")
+		if ackParam != "" {
+			ack, _ = strconv.Atoi(ackParam)
+		}
 
-	vars := mux.Vars(req)
-	ver = vars["ver"]
-	topic = vars["topic"]
-	log.Debug("ver:%s topic:%s ack:%d", ver, topic, ack)
+		vars := mux.Vars(req)
+		ver = vars["ver"]
+		topic = vars["topic"]
+		log.Debug("ver:%s topic:%s ack:%d", ver, topic, ack)
 
-	offset, err := this.doSendMessage(topic, req.FormValue("m"))
-	log.Debug("offset: %d err: %v", offset, err)
+		offset, err := this.doSendMessage(topic, req.FormValue("m"))
+		log.Debug("offset: %d err: %v", offset, err)
 
-	w.Header().Set("Content-Type", "html/text")
-	w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "html/text")
+		w.WriteHeader(http.StatusOK)
+	})
+
 }
 
 func (this *Gateway) doSendMessage(topic string, msg string) (offset int64, err error) {
+	this.metrics.PubSize.Mark(int64(len(msg)))
 	cf := sarama.NewConfig()
 	cf.Producer.RequiredAcks = sarama.WaitForLocal
 	cf.Producer.Partitioner = sarama.NewHashPartitioner

@@ -32,7 +32,7 @@ func parseFlags() {
 
 	flag.StringVar(&options.logLevel, "level", "debug", "log level")
 	flag.StringVar(&options.logFile, "log", "stdout", "log file, default stdout")
-	flag.StringVar(&options.crashLogFile, "crashlog", "panic.dump", "crash log")
+	flag.StringVar(&options.crashLogFile, "crashlog", "", "crash log")
 	flag.StringVar(&options.configFile, "conf", "/etc/gafka.cf", "config file")
 	flag.BoolVar(&options.showVersion, "version", false, "show version and exit")
 	flag.DurationVar(&options.tick, "tick", time.Second*10, "system reporter ticker")

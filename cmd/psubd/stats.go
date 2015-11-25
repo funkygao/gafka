@@ -11,24 +11,31 @@ import (
 )
 
 type pubMetrics struct {
-	numGo     metrics.Gauge
-	gcNum     metrics.Gauge
-	gcPause   metrics.Gauge
-	heapAlloc metrics.Gauge
-	qps       metrics.Meter
-	latency   metrics.Timer
+	NumGo      metrics.Gauge
+	GcNum      metrics.Gauge
+	GcPause    metrics.Gauge
+	HeapAlloc  metrics.Gauge
+	PubSize    metrics.Meter
+	PubQps     metrics.Meter
+	PubLatency metrics.Timer
 }
 
 func newPubMetrics() *pubMetrics {
-	this := &pubMetrics{
-		numGo: metrics.NewGauge(),
-	}
+	this := new(pubMetrics)
+	this.NumGo = metrics.NewGauge()
+	this.GcNum = metrics.NewGauge()
+	this.GcPause = metrics.NewGauge()
+	this.HeapAlloc = metrics.NewGauge()
+	this.PubQps = metrics.NewMeter()
+	this.PubSize = metrics.NewMeter()
+	this.PubLatency = metrics.NewTimer()
 
-	metrics.Register("gc.num", this.gcNum)
-	metrics.Register("gc.pause", this.gcPause)
-	metrics.Register("gc.heap", this.heapAlloc)
-	metrics.Register("req.qps", this.qps)
-	metrics.Register("req.latency", this.latency)
+	metrics.Register("gc.num", this.GcNum)
+	metrics.Register("gc.pause", this.GcPause)
+	metrics.Register("gc.heap", this.HeapAlloc)
+	metrics.Register("pub.qps", this.PubQps)
+	metrics.Register("pub.size", this.PubSize)
+	metrics.Register("pub.latency", this.PubLatency)
 
 	// stdout reporter
 	go metrics.Log(metrics.DefaultRegistry, options.tick,
@@ -36,7 +43,7 @@ func newPubMetrics() *pubMetrics {
 	// influxdb reporter
 	if false {
 		go influxdb.InfluxDB(metrics.DefaultRegistry, options.tick,
-			"http://localhost:8086", "pubsub", "", "")
+			"http://localhost:8086", "psub", "", "")
 	}
 
 	//go this.mainLoop()
@@ -52,10 +59,10 @@ func (this *pubMetrics) mainLoop() {
 		case <-ticker.C:
 			runtime.ReadMemStats(mem)
 
-			this.numGo.Update(int64(runtime.NumGoroutine()))
-			this.gcNum.Update(int64(mem.NumGC))
-			this.heapAlloc.Update(int64(mem.HeapAlloc))
-			this.gcPause.Update(int64(mem.PauseTotalNs - lastTotalGcPause))
+			this.NumGo.Update(int64(runtime.NumGoroutine()))
+			this.GcNum.Update(int64(mem.NumGC))
+			this.HeapAlloc.Update(int64(mem.HeapAlloc))
+			this.GcPause.Update(int64(mem.PauseTotalNs - lastTotalGcPause))
 			lastTotalGcPause = mem.PauseTotalNs
 
 		}

@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"syscall"
 	"time"
 
 	_ "expvar"
 	_ "net/http/pprof"
 
 	"github.com/funkygao/gafka"
+	"github.com/funkygao/golib/signal"
+	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
 )
 
@@ -48,6 +52,10 @@ func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
 }
 
 func (this *Gateway) Start() (err error) {
+	signal.RegisterSignalHandler(syscall.SIGINT, func(sig os.Signal) {
+		this.Stop()
+	})
+
 	this.buildRouting()
 
 	this.listener, err = net.Listen("tcp", this.server.Addr)
@@ -91,10 +99,13 @@ func (this *Gateway) writeAuthFailure(w http.ResponseWriter) {
 
 func (this *Gateway) ServeForever() {
 	meteRefreshTicker := time.NewTicker(this.metaRefreshInterval)
-	for {
+	defer meteRefreshTicker.Stop()
+	ever := true
+	for ever {
 		select {
 		case <-this.shutdownCh:
-			meteRefreshTicker.Stop()
+			log.Info("gateway terminated")
+			ever = false
 			break
 
 		case <-meteRefreshTicker.C:

@@ -5,12 +5,10 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
-	"syscall"
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/profiler"
-	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
 )
 
@@ -58,17 +56,10 @@ _/_/
 	ctx.LoadConfig(options.configFile)
 
 	gw := NewGateway(options.mode, options.metaRefresh)
-
-	signal.RegisterSignalHandler(syscall.SIGINT, func(sig os.Signal) {
-		gw.Stop()
-
-		log.Info("Terminated")
-		os.Exit(0)
-	})
-
 	if err := gw.Start(); err != nil {
 		panic(err)
 	}
+
 	log.Info("gateway ready")
 	gw.ServeForever()
 
