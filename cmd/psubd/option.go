@@ -12,6 +12,7 @@ var (
 		logFile      string
 		logLevel     string
 		tick         time.Duration
+		mode         string
 		cpuprof      bool
 		memprof      bool
 		blockprof    bool
@@ -28,6 +29,7 @@ func parseFlags() {
 	flag.DurationVar(&options.tick, "tick", time.Minute, "system info watchdog ticker")
 	flag.BoolVar(&options.cpuprof, "cpuprof", false, "enable cpu profiling")
 	flag.BoolVar(&options.memprof, "memprof", false, "enable memory profiling")
+	flag.StringVar(&options.mode, "mode", "pub", "gateway mode: <pub|sub>")
 	flag.BoolVar(&options.blockprof, "blockprof", false, "enable block profiling")
 
 	flag.Parse()

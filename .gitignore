@@ -25,7 +25,7 @@ _testmain.go
 
 .DS_Store
 *.swp
-cmd/pubd/pubd
+cmd/pubd/psubd
 panic.dump
 cmd/gk/gk
 cmd/exchange/exchange

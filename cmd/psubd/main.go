@@ -58,7 +58,7 @@ _/_/
 	setupLogging(options.logFile, options.logLevel, options.crashLogFile)
 	ctx.LoadConfig(options.configFile)
 
-	gw := NewGateway()
+	gw := NewGateway(options.mode)
 
 	signal.RegisterSignalHandler(syscall.SIGINT, func(sig os.Signal) {
 		gw.Stop()
@@ -67,12 +67,12 @@ _/_/
 		os.Exit(0)
 	})
 
-	log.Info("pubd started")
-
 	go runSysStats(time.Now(), options.tick)
 
-	gw.BuildRouting()
-	gw.Start()
+	if err := gw.Start(); err != nil {
+		panic(err)
+	}
+	log.Info("gateway ready")
 	gw.ServeForever()
 
 }

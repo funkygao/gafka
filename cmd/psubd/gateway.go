@@ -12,7 +12,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type PubGateway struct {
+type Gateway struct {
+	mode string
+
 	listener net.Listener
 	server   *http.Server
 	router   *mux.Router
@@ -22,8 +24,9 @@ type PubGateway struct {
 	metacache MetaStore
 }
 
-func NewGateway() *PubGateway {
-	this := &PubGateway{
+func NewGateway(mode string) *Gateway {
+	this := &Gateway{
+		mode:       mode,
 		router:     mux.NewRouter(),
 		shutdownCh: make(chan struct{}),
 	}
@@ -34,41 +37,55 @@ func NewGateway() *PubGateway {
 	return this
 }
 
-func (this *PubGateway) Start() (err error) {
+func (this *Gateway) Start() (err error) {
+	this.buildRouting()
+
 	this.listener, err = net.Listen("tcp", this.server.Addr)
 	if err != nil {
 		return
 	}
 
+	//go this.metacache.Start()
 	go this.server.Serve(this.listener)
+
 	return nil
 }
 
-func (this *PubGateway) BuildRouting() {
-	this.router.HandleFunc("/{ver}/topics/{topic}", this.postTopic).Methods("POST")
+func (this *Gateway) buildRouting() {
 	this.router.HandleFunc("/ver", this.showVersion)
+
+	if this.mode == "pub" || this.mode == "pubsub" {
+		this.router.HandleFunc("/{ver}/topics/{topic}", this.pubHandler).Methods("POST")
+	}
+	if this.mode == "sub" || this.mode == "pubsub" {
+		this.router.HandleFunc("/topics/{topic}", this.subHandler).Methods("GET")
+	}
 }
 
-func (this *PubGateway) showVersion(w http.ResponseWriter, req *http.Request) {
+func (this *Gateway) showVersion(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte(fmt.Sprintf("%s-%s", gafka.Version, gafka.BuildId)))
 }
 
-func (this *PubGateway) postTopic(w http.ResponseWriter, req *http.Request) {
+func (this *Gateway) writeAuthFailure(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusUnauthorized)
+	w.Write([]byte("invalid pubkey"))
 }
 
-func (this *PubGateway) ServeForever() {
+func (this *Gateway) ServeForever() {
 	select {
 	case <-this.shutdownCh:
 		break
 	}
 }
 
-func (this *PubGateway) Stop() {
+func (this *Gateway) Stop() {
 	if this.listener != nil {
 		this.listener.Close()
 		this.listener = nil
 		this.server = nil
 		this.router = nil
+
+		this.metacache.Stop()
 
 		close(this.shutdownCh)
 	}
