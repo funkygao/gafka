@@ -6,7 +6,6 @@ import (
 	"runtime/debug"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
@@ -58,7 +57,7 @@ _/_/
 	setupLogging(options.logFile, options.logLevel, options.crashLogFile)
 	ctx.LoadConfig(options.configFile)
 
-	gw := NewGateway(options.mode)
+	gw := NewGateway(options.mode, options.metaRefresh)
 
 	signal.RegisterSignalHandler(syscall.SIGINT, func(sig os.Signal) {
 		gw.Stop()
@@ -66,8 +65,6 @@ _/_/
 		log.Info("Terminated")
 		os.Exit(0)
 	})
-
-	go runSysStats(time.Now(), options.tick)
 
 	if err := gw.Start(); err != nil {
 		panic(err)

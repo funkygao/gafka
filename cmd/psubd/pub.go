@@ -11,15 +11,22 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// /{ver}/topics/{topic}?ack=n&retry=n
+// /{ver}/topics/{topic}?ack=n&retry=n&timeout=n
 func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	req.Body = http.MaxBytesReader(w, req.Body, 1<<20) // TODO
 
+	// authentication TODO
+	pubkeyParam := req.Header["Pubkey"]
+	if len(pubkeyParam) > 0 && !this.metaStore.AuthPub(pubkeyParam[0]) {
+		log.Debug("pubkey: %s", pubkeyParam[0])
+		this.writeAuthFailure(w)
+		return
+	}
+
 	var (
-		ver    string
-		topic  string
-		pubkey string
-		ack    int = 1
+		ver   string
+		topic string
+		ack   int = 1
 	)
 	req.ParseForm()
 
@@ -32,27 +39,21 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	ver = vars["ver"]
 	topic = vars["topic"]
-	log.Debug("ver: %s ack: %d", ver, ack)
+	log.Debug("ver:%s topic:%s ack:%d", ver, topic, ack)
 
-	pubkeyParam := req.Header["Pubkey"]
-	if len(pubkeyParam) > 0 {
-		pubkey = pubkeyParam[0]
-	}
+	offset, err := this.doSendMessage(topic, req.FormValue("m"))
+	log.Debug("offset: %d err: %v", offset, err)
 
-	log.Debug("pubkey: %s", pubkey)
-
-	offset, err := this.singleSend(topic, req.FormValue("m"))
-	log.Info("offset: %d err: %v", offset, err)
-
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "html/text")
 	w.WriteHeader(http.StatusOK)
 }
 
-func (this *Gateway) singleSend(topic string, msg string) (offset int64, err error) {
+func (this *Gateway) doSendMessage(topic string, msg string) (offset int64, err error) {
 	cf := sarama.NewConfig()
 	cf.Producer.RequiredAcks = sarama.WaitForLocal
 	cf.Producer.Partitioner = sarama.NewHashPartitioner
 	cf.Producer.Timeout = time.Second
+	cf.Producer.Compression = sarama.CompressionSnappy
 	cf.Producer.Retry.Max = 3
 	var producer sarama.SyncProducer
 	log.Debug("kafka connecting")
@@ -60,6 +61,8 @@ func (this *Gateway) singleSend(topic string, msg string) (offset int64, err err
 	if err != nil {
 		return
 	}
+
+	// add msg header
 
 	log.Debug("sending %s msg: %s", topic, msg)
 	_, offset, err = producer.SendMessage(&sarama.ProducerMessage{

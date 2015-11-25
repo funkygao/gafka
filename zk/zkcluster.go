@@ -41,6 +41,14 @@ func (this *ZkCluster) ZkAddrs() string {
 	return this.zone.ZkAddrs() + this.path
 }
 
+func (this *ZkCluster) ZkZone() *ZkZone {
+	return this.zone
+}
+
+func (this *ZkCluster) Close() {
+	this.zone.Close()
+}
+
 func (this *ZkCluster) Topics() []string {
 	r := make([]string, 0)
 	for name, _ := range this.zone.childrenWithData(this.topicsRoot()) {
