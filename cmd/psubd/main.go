@@ -9,7 +9,6 @@ import (
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/profiler"
-	log "github.com/funkygao/log4go"
 )
 
 func init() {
@@ -60,7 +59,6 @@ _/_/
 		panic(err)
 	}
 
-	log.Info("gateway ready")
 	gw.ServeForever()
 
 }

@@ -79,6 +79,8 @@ func (this *Gateway) Start() (err error) {
 
 	go this.server.Serve(this.listener)
 
+	log.Info("gateway with mode=%s ready", this.mode)
+
 	return nil
 }
 
