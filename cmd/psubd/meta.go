@@ -12,6 +12,7 @@ type MetaStore interface {
 	Stop()
 	Refresh()
 	Clusters() []string
+	ZkAddrs() string
 	BrokerList() []string
 	AuthPub(pubkey string) bool
 	AuthSub(subkey string) bool
@@ -44,6 +45,10 @@ func (this *zkMetaStore) Refresh() {
 
 func (this *zkMetaStore) BrokerList() []string {
 	return this.brokerList
+}
+
+func (this *zkMetaStore) ZkAddrs() string {
+	return this.zkcluster.ZkAddrs()
 }
 
 func (this *zkMetaStore) Clusters() []string {

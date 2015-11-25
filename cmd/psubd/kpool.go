@@ -19,6 +19,7 @@ type kclient struct {
 }
 
 func (this *kclient) Close() {
+	log.Debug("closeing kclient: %d", this.id)
 	this.Client.Close()
 	//this.pool.pool.Put(nil)
 }
@@ -71,7 +72,7 @@ func newKpool(brokerList []string) *kpool {
 	}
 
 	this.pool = pool.NewResourcePool("kafka", factory,
-		50, 50, 0, time.Second*10, time.Second*5)
+		50, 50, 0, time.Second*10, time.Minute) // TODO
 
 	return this
 }

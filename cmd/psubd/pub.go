@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,7 +12,7 @@ import (
 
 // /{ver}/topics/{topic}?ack=n&retry=n&timeout=n
 func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
-	req.Body = http.MaxBytesReader(w, req.Body, 1<<20) // TODO
+	req.Body = http.MaxBytesReader(w, req.Body, options.maxBodySize)
 
 	if !this.authenticate(req) {
 		this.writeAuthFailure(w)
@@ -30,13 +29,20 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 		ver   string
 		topic string
 		ack   int = 1
+		err   error
 	)
 	req.ParseForm()
 
 	// kafka ack
 	ackParam := req.FormValue("ack")
 	if ackParam != "" {
-		ack, _ = strconv.Atoi(ackParam)
+		ack, err = strconv.Atoi(ackParam)
+		if err != nil {
+			this.writeBadRequest(w)
+
+			log.Error("ack %s: %v", ackParam, err)
+			return
+		}
 	}
 
 	vars := mux.Vars(req)
@@ -44,7 +50,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	topic = vars["topic"]
 	log.Debug("ver:%s topic:%s ack:%d", ver, topic, ack)
 
-	offset, err := this.doSendMessage(topic, req.FormValue("m"))
+	offset, err := this.doSendMessage(ver, topic, req.FormValue("m"))
 	log.Debug("offset: %d err: %v", offset, err)
 
 	w.Header().Set("Content-Type", "html/text")
@@ -53,7 +59,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	this.metrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6)
 }
 
-func (this *Gateway) doSendMessage(topic string, msg string) (offset int64, err error) {
+func (this *Gateway) doSendMessage(ver, topic string, msg string) (offset int64, err error) {
 	this.metrics.PubQps.Mark(1)
 	this.metrics.PubSize.Mark(int64(len(msg)))
 
@@ -70,11 +76,13 @@ func (this *Gateway) doSendMessage(topic string, msg string) (offset int64, err 
 		defer client.Recycle()
 	}
 	if e != nil {
+		log.Error(e)
 		return -1, e
 	}
 
 	producer, err = sarama.NewSyncProducerFromClient(client.Client)
 	if err != nil {
+		this.breaker.Fail()
 		return
 	}
 
@@ -86,7 +94,10 @@ func (this *Gateway) doSendMessage(topic string, msg string) (offset int64, err 
 		Value:    sarama.StringEncoder(msg),
 		Metadata: "haha",
 	})
+	if err != nil {
+		this.breaker.Fail()
+	}
 
-	producer.Close()
+	producer.Close() // TODO keep the conn open
 	return
 }

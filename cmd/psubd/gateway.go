@@ -45,7 +45,7 @@ func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
 		metaRefreshInterval: metaRefreshInterval,
 	}
 	this.server = &http.Server{
-		Addr:    ":9090", // TODO
+		Addr:    fmt.Sprintf(":%d", options.port),
 		Handler: this.router,
 	}
 	this.breaker = &breaker.Consecutive{
@@ -90,7 +90,7 @@ func (this *Gateway) buildRouting() {
 		this.router.HandleFunc("/{ver}/topics/{topic}", this.pubHandler).Methods("POST")
 	}
 	if this.mode == "sub" || this.mode == "pubsub" {
-		this.router.HandleFunc("/topics/{topic}", this.subHandler).Methods("GET")
+		this.router.HandleFunc("/{ver}/topics/{topic}", this.subHandler).Methods("GET")
 	}
 }
 
@@ -112,13 +112,13 @@ func (this *Gateway) authenticate(req *http.Request) (ok bool) {
 		pubkeyParam := req.Header["Pubkey"]
 		if len(pubkeyParam) > 0 && !this.metaStore.AuthPub(pubkeyParam[0]) {
 			log.Error("client:%s pubkey: %s", req.RemoteAddr, pubkeyParam[0])
-			return
+			return false
 		}
 
 		return true
 
 	default:
-		return false
+		return true
 	}
 
 }
@@ -131,6 +131,10 @@ func (this *Gateway) writeAuthFailure(w http.ResponseWriter) {
 func (this *Gateway) writeBreakerOpen(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusBadGateway)
 	w.Write([]byte("circuit broken"))
+}
+
+func (this *Gateway) writeBadRequest(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusBadRequest)
 }
 
 func (this *Gateway) ServeForever() {
