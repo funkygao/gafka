@@ -16,3 +16,10 @@ A REST Proxy for kafka that supports both Pub and Sub.
 
 - when producing/consuming, partition added
 - when producing/consuming, brokers added/died
+
+
+
+post("/{group}")  create group
+post("/{group}/instances/{instance}/offsets") 
+delete("/{group}/instances/{instance}")
+get("/{group}/instances/{instance}/topics/{topic}")
