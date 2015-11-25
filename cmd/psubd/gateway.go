@@ -79,7 +79,7 @@ func (this *Gateway) Start() (err error) {
 
 	go this.server.Serve(this.listener)
 
-	log.Info("gateway with mode=%s ready", this.mode)
+	log.Info("gateway[%s] ready on %s", this.mode, this.server.Addr)
 
 	return nil
 }

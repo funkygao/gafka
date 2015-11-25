@@ -47,9 +47,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	vars := mux.Vars(req)
-	ver = vars["ver"]
-	topic = vars["topic"]
+	params := mux.Vars(req)
+	ver = params["ver"]
+	topic = params["topic"]
 	log.Debug("ver:%s topic:%s limit:%d", ver, topic, limit)
 
 	w.Header().Set("Content-Type", "application/json")

@@ -42,9 +42,9 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 		topic string
 	)
 
-	vars := mux.Vars(req)
-	ver = vars["ver"]
-	topic = vars["topic"]
+	params := mux.Vars(req)
+	ver = params["ver"]
+	topic = params["topic"]
 
 	// TODO how can get m in []byte?
 	partition, offset, err := this.produce(ver, topic, req.FormValue("m"))
