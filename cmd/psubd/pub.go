@@ -110,3 +110,28 @@ func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
 	client.Recycle()
 	return
 }
+
+func (this *Gateway) produceWithoutPool(ver, topic string, msg string) (partition int32,
+	offset int64, err error) {
+	this.metrics.PubQps.Mark(1)
+	this.metrics.PubSize.Mark(int64(len(msg)))
+
+	var producer sarama.SyncProducer
+	cf := sarama.NewConfig()
+	cf.Producer.RequiredAcks = sarama.WaitForLocal
+	cf.Producer.Partitioner = sarama.NewHashPartitioner
+	cf.Producer.Timeout = time.Second
+	//cf.Producer.Compression = sarama.CompressionSnappy
+	cf.Producer.Retry.Max = 3
+	producer, err = sarama.NewSyncProducer(this.metaStore.BrokerList(), cf)
+	if err != nil {
+		return -1, -1, err
+	}
+
+	partition, offset, err = producer.SendMessage(&sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.StringEncoder(msg),
+	})
+	producer.Close()
+	return
+}
