@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -18,6 +19,8 @@ func init() {
 		fmt.Fprintf(os.Stderr, "%s-%s\n", gafka.Version, gafka.BuildId)
 		os.Exit(0)
 	}
+
+	log.SetFlags(log.LstdFlags | log.Llongfile)
 
 }
 

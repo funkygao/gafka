@@ -17,6 +17,9 @@ type pubResponse struct {
 
 // /{ver}/topics/{topic}?ack=n&retry=n&timeout=n
 func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
+	this.metrics.PubConcurrent.Inc(1)
+	defer this.metrics.PubConcurrent.Dec(1)
+
 	req.Body = http.MaxBytesReader(w, req.Body, options.maxBodySize)
 	err := req.ParseForm()
 	if err != nil {
@@ -75,6 +78,9 @@ func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
 
 	client, e := this.kpool.Get()
 	if e != nil {
+		if client != nil {
+			client.Recycle()
+		}
 		return -1, -1, e
 	}
 	defer client.Recycle()

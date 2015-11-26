@@ -78,7 +78,7 @@ func newKpool(brokerList []string) *kpool {
 	}
 
 	this.pool = pool.NewResourcePool("kafka", factory,
-		50, 50, 0, time.Second*10, time.Minute) // TODO
+		5, 10, 0, time.Second*10, time.Minute) // TODO
 
 	return this
 }
@@ -104,6 +104,7 @@ func (this *kpool) RefreshBrokerList(brokerList []string) {
 	for _, b := range brokerList {
 		setNew.Add(b)
 	}
+
 	if !setOld.Equal(setNew) {
 		log.Warn("brokers change: %+v -> %+v", this.brokerList, brokerList)
 		// TODO
