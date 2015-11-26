@@ -53,6 +53,11 @@ func newKpool(brokerList []string) *kpool {
 	this := &kpool{
 		brokerList: brokerList,
 	}
+	this.initPool()
+	return this
+}
+
+func (this *kpool) initPool() {
 	factory := func() (pool.Resource, error) {
 		conn := &kclient{
 			pool: this,
@@ -71,17 +76,13 @@ func newKpool(brokerList []string) *kpool {
 		if err == nil {
 			log.Debug("kafka connected[%d]: %+v %s", conn.id, this.brokerList,
 				time.Since(t1))
-		} else {
-			log.Error("kafka %+v: %v %s", this.brokerList, err, time.Since(t1))
 		}
 
 		return conn, err
 	}
 
 	this.pool = pool.NewResourcePool("kafka", factory,
-		100, 1000, 0, time.Second*10, time.Minute) // TODO
-
-	return this
+		1000, 1000, 0, time.Second*10, time.Minute) // TODO
 }
 
 func (this *kpool) Close() {
@@ -107,8 +108,12 @@ func (this *kpool) RefreshBrokerList(brokerList []string) {
 	}
 
 	if !setOld.Equal(setNew) {
-		log.Warn("brokers change: %+v -> %+v", this.brokerList, brokerList)
-		// TODO
+		log.Warn("brokers changed: %+v -> %+v", this.brokerList, brokerList)
+
+		// rebuild the kafka conn pool
+		this.brokerList = brokerList
+		this.pool.Close()
+		this.initPool()
 	}
 
 }
