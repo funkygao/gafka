@@ -17,11 +17,8 @@ type pubResponse struct {
 
 // /{ver}/topics/{topic}?ack=n&retry=n&timeout=n
 func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
-	this.metrics.PubConcurrent.Inc(1)
-	defer this.metrics.PubConcurrent.Dec(1)
-
 	req.Body = http.MaxBytesReader(w, req.Body, options.maxBodySize)
-	err := req.ParseForm()
+	err := req.ParseForm() // TODO
 	if err != nil {
 		log.Error("%s: %v", req.RemoteAddr, err)
 
@@ -39,6 +36,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	this.metrics.PubConcurrent.Inc(1)
+
 	t1 := time.Now()
 	var (
 		ver   string
@@ -53,6 +52,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	partition, offset, err := this.produce(ver, topic, req.FormValue("m"))
 	if err != nil {
 		this.breaker.Fail()
+		this.metrics.PubConcurrent.Dec(1)
 		this.metrics.PubFailure.Inc(1)
 		log.Error("%s: %v", req.RemoteAddr, err)
 
@@ -61,7 +61,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	this.metrics.PubSuccess.Inc(1)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
@@ -72,8 +71,11 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	b, _ := json.Marshal(response)
 	if _, err := w.Write(b); err != nil {
 		log.Error("%s: %v", req.RemoteAddr, err)
+		this.metrics.ClientError.Inc(1)
 	}
 
+	this.metrics.PubSuccess.Inc(1)
+	this.metrics.PubConcurrent.Dec(1)
 	this.metrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6)
 }
 
@@ -89,12 +91,11 @@ func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
 		}
 		return -1, -1, e
 	}
-	defer client.Recycle()
 
 	var producer sarama.SyncProducer
 	producer, err = sarama.NewSyncProducerFromClient(client.Client)
 	if err != nil {
-		this.breaker.Fail()
+		client.Recycle()
 		return
 	}
 
@@ -102,12 +103,10 @@ func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
 
 	partition, offset, err = producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic,
-		Value: sarama.StringEncoder(msg),
+		Value: sarama.StringEncoder(msg), // TODO
 	})
-	if err != nil {
-		this.breaker.Fail()
-	}
 
 	producer.Close() // TODO keep the conn open
+	client.Recycle()
 	return
 }

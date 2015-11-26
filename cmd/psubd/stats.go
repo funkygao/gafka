@@ -18,6 +18,7 @@ type pubMetrics struct {
 	HeapObjects   metrics.Gauge
 	PubSuccess    metrics.Counter
 	PubFailure    metrics.Counter
+	ClientError   metrics.Counter
 	PubConcurrent metrics.Counter
 	PubSize       metrics.Meter
 	PubQps        metrics.Meter
@@ -32,6 +33,7 @@ func newPubMetrics() *pubMetrics {
 	this.PubConcurrent = metrics.NewCounter()
 	this.PubFailure = metrics.NewCounter()
 	this.PubSuccess = metrics.NewCounter()
+	this.ClientError = metrics.NewCounter()
 	this.HeapAlloc = metrics.NewGauge()
 	this.HeapObjects = metrics.NewGauge()
 	this.PubQps = metrics.NewMeter()
@@ -44,6 +46,7 @@ func newPubMetrics() *pubMetrics {
 	metrics.Register("sys.gc.heap.objects", this.HeapObjects)
 	metrics.Register("sys.go.num", this.NumGo)
 	metrics.Register("pub.clients.num", this.PubConcurrent)
+	metrics.Register("pub.num.write", this.ClientError)
 	metrics.Register("pub.num.ok", this.PubSuccess)
 	metrics.Register("pub.num.fail", this.PubFailure)
 	metrics.Register("pub.qps", this.PubQps)
