@@ -9,17 +9,62 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Shopify/sarama"
 	"github.com/funkygao/golib/stress"
 )
 
+var (
+	mode  string
+	loops int
+)
+
 func main() {
+	flag.IntVar(&loops, "loops", 1000, "loops in each thread")
+	flag.StringVar(&mode, "mode", "gw", "<gw|kafka>")
 	flag.Parse()
 
-	http.DefaultClient.Timeout = time.Second * 30
-	stress.RunStress(pubLoop)
+	switch mode {
+	case "gw":
+		http.DefaultClient.Timeout = time.Second * 30
+		stress.RunStress(pubGatewayLoop)
+
+	case "kafka":
+		stress.RunStress(pubKafkaLoop)
+	}
+
 }
 
-func pubLoop(seq int) {
+func pubKafkaLoop(seq int) {
+	cf := sarama.NewConfig()
+	cf.Producer.RequiredAcks = sarama.WaitForLocal
+	cf.Producer.Partitioner = sarama.NewHashPartitioner
+	cf.Producer.Timeout = time.Second
+	//cf.Producer.Compression = sarama.CompressionSnappy
+	cf.Producer.Retry.Max = 3
+	producer, err := sarama.NewSyncProducer([]string{"localhost:9092"}, cf)
+	if err != nil {
+		stress.IncCounter("fail", 1)
+		log.Println(err)
+		return
+	}
+
+	defer producer.Close()
+	msg := "hello world"
+	for i := 0; i < loops; i++ {
+		_, _, err := producer.SendMessage(&sarama.ProducerMessage{
+			Topic: "foobar",
+			Value: sarama.StringEncoder(msg),
+		})
+		if err == nil {
+			stress.IncCounter("ok", 1)
+		} else {
+			stress.IncCounter("fail", 1)
+		}
+	}
+
+}
+
+func pubGatewayLoop(seq int) {
 	timeout := 3 * time.Second
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -32,12 +77,12 @@ func pubLoop(seq int) {
 		},
 	}
 
-	for i := 0; i < 1000; i++ {
-		pub(seq, i, httpClient)
+	for i := 0; i < loops; i++ {
+		pubGateway(seq, i, httpClient)
 	}
 }
 
-func pub(seq int, n int, httpClient *http.Client) {
+func pubGateway(seq int, n int, httpClient *http.Client) {
 	req, err := http.NewRequest("POST",
 		"http://localhost:9090/v1/topics/foobar?ack=2&timeout=1&retry=3",
 		bytes.NewBuffer([]byte("m=hello world")))
@@ -53,7 +98,7 @@ func pub(seq int, n int, httpClient *http.Client) {
 	response, err := httpClient.Do(req)
 	if err != nil && response == nil {
 		stress.IncCounter("fail", 1)
-		log.Printf("Error sending request to API endpoint. %+v\n", err)
+		log.Printf("Error sending request to API endpoint. %+v", err)
 	} else {
 		// Close the connection to reuse it
 		defer response.Body.Close()
@@ -70,7 +115,7 @@ func pub(seq int, n int, httpClient *http.Client) {
 			log.Fatalf("Couldn't parse response body. %+v", err)
 		}
 
-		stress.IncCounter("success", 1)
+		stress.IncCounter("ok", 1)
 
 		if false {
 			log.Println("Response Body:", string(body))
