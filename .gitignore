@@ -25,10 +25,9 @@ _testmain.go
 
 .DS_Store
 *.swp
-cmd/pubd/psubd
+cmd/psubd/psubd
 panic.dump
 cmd/gk/gk
 cmd/exchange/exchange
-cmd/pubsub/pubsub
+cmd/psubd/bench/bench
 misc/scripts
-cmd/pubsub/restart.sh

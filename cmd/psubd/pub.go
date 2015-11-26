@@ -52,10 +52,16 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	// TODO how can get m in []byte?
 	partition, offset, err := this.produce(ver, topic, req.FormValue("m"))
 	if err != nil {
+		this.breaker.Fail()
+		this.metrics.PubFailure.Inc(1)
 		log.Error("%s: %v", req.RemoteAddr, err)
+
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
 		return
 	}
 
+	this.metrics.PubSuccess.Inc(1)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 

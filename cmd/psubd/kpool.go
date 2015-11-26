@@ -67,18 +67,19 @@ func newKpool(brokerList []string) *kpool {
 		cf.Producer.Timeout = time.Second
 		//cf.Producer.Compression = sarama.CompressionSnappy
 		cf.Producer.Retry.Max = 3
-		conn.Client, err = sarama.NewClient(brokerList, cf)
+		conn.Client, err = sarama.NewClient(this.brokerList, cf)
 		if err == nil {
-			log.Debug("kafka connected[%d]: %+v %s", conn.id, brokerList, time.Since(t1))
+			log.Debug("kafka connected[%d]: %+v %s", conn.id, this.brokerList,
+				time.Since(t1))
 		} else {
-			log.Error("kafka %+v: %v %s", brokerList, err, time.Since(t1))
+			log.Error("kafka %+v: %v %s", this.brokerList, err, time.Since(t1))
 		}
 
 		return conn, err
 	}
 
 	this.pool = pool.NewResourcePool("kafka", factory,
-		5, 10, 0, time.Second*10, time.Minute) // TODO
+		100, 1000, 0, time.Second*10, time.Minute) // TODO
 
 	return this
 }

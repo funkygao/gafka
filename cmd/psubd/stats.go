@@ -16,6 +16,8 @@ type pubMetrics struct {
 	GcPause       metrics.Gauge
 	HeapAlloc     metrics.Gauge
 	HeapObjects   metrics.Gauge
+	PubSuccess    metrics.Counter
+	PubFailure    metrics.Counter
 	PubConcurrent metrics.Counter
 	PubSize       metrics.Meter
 	PubQps        metrics.Meter
@@ -28,6 +30,8 @@ func newPubMetrics() *pubMetrics {
 	this.GcNum = metrics.NewGauge()
 	this.GcPause = metrics.NewGauge()
 	this.PubConcurrent = metrics.NewCounter()
+	this.PubFailure = metrics.NewCounter()
+	this.PubSuccess = metrics.NewCounter()
 	this.HeapAlloc = metrics.NewGauge()
 	this.HeapObjects = metrics.NewGauge()
 	this.PubQps = metrics.NewMeter()
@@ -40,13 +44,15 @@ func newPubMetrics() *pubMetrics {
 	metrics.Register("sys.gc.heap.objects", this.HeapObjects)
 	metrics.Register("sys.go.num", this.NumGo)
 	metrics.Register("pub.clients.num", this.PubConcurrent)
+	metrics.Register("pub.num.ok", this.PubSuccess)
+	metrics.Register("pub.num.fail", this.PubFailure)
 	metrics.Register("pub.qps", this.PubQps)
 	metrics.Register("pub.size", this.PubSize)       // pub msg size
 	metrics.Register("pub.latency", this.PubLatency) // in ms
 
 	// stdout reporter
-	go metrics.Log(metrics.DefaultRegistry, time.Minute*5,
-		log.New(os.Stdout, "metrics: ", log.Lmicroseconds))
+	go metrics.Log(metrics.DefaultRegistry, time.Second*30,
+		log.New(os.Stdout, "", log.Lmicroseconds))
 	// influxdb reporter
 	if options.influxServer != "" {
 		go influxdb.InfluxDB(metrics.DefaultRegistry, options.tick,
