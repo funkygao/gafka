@@ -72,7 +72,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 		log.Error("client[%s] from %s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
 			client, req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
 
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError) // TODO
 		w.Write([]byte(err.Error()))
 	}
 }
@@ -80,7 +80,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 func (this *Gateway) consume(ver, topic string, limit int, group, client string,
 	timeout time.Duration,
 	w http.ResponseWriter, req *http.Request) error {
-	cg, err := this.subPool.pickConsumerGroup(topic, group, client)
+	cg, err := this.subPool.PickConsumerGroup(topic, group, client)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (this *Gateway) consume(ver, topic string, limit int, group, client string,
 			if _, err := w.Write(msg.Value); err != nil {
 				return err
 			}
-			this.subPool.trackOffset(topic, group, client, msg)
+			this.subPool.TrackOffset(topic, group, client, msg)
 
 			if limit >= 0 && n >= limit {
 				break

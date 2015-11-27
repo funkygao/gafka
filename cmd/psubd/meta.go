@@ -14,6 +14,7 @@ type MetaStore interface {
 	Refresh()
 	Clusters() []string
 	Partitions(topic string) []int32
+	Consumers(topic, group string) []string
 	ZkAddrs() []string
 	ZkChroot() string
 	BrokerList() []string
@@ -30,7 +31,12 @@ type zkMetaStore struct {
 }
 
 func newZkMetaStore(zone string, cluster string) MetaStore {
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	zkAddrs := ctx.ZoneZkAddrs(zone)
+	if len(zkAddrs) == 0 {
+		panic("empty zookeeper addr")
+	}
+
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, zkAddrs))
 	return &zkMetaStore{
 		zkcluster:     zkzone.NewCluster(cluster),
 		partitionsMap: make(map[string][]int32),
@@ -43,6 +49,10 @@ func (this *zkMetaStore) Start() {
 
 func (this *zkMetaStore) Stop() {
 	this.zkcluster.Close()
+}
+
+func (this *zkMetaStore) Consumers(topic, group string) []string {
+	return nil
 }
 
 func (this *zkMetaStore) Refresh() {

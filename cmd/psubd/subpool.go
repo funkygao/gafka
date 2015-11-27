@@ -35,7 +35,7 @@ func newSubPool(hostname string, metaStore MetaStore, shutdownCh chan struct{}) 
 }
 
 // TODO resume from last offset
-func (this *subPool) pickConsumerGroup(topic, group,
+func (this *subPool) PickConsumerGroup(topic, group,
 	clientId string) (cg *consumergroup.ConsumerGroup, err error) {
 	this.cgLock.Lock()
 	defer this.cgLock.Unlock()
@@ -63,37 +63,43 @@ func (this *subPool) pickConsumerGroup(topic, group,
 	// create the consumer group for this client
 	cf := consumergroup.NewConfig()
 	cf.Zookeeper.Chroot = this.metaStore.ZkChroot()
-	cf.ClientID = this.hostname
-	cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
-		this.metaStore.ZkAddrs(), cf)
-	if err == nil {
-		this.subPool[topic][group][clientId] = cg
+	for i := 0; i < 3; i++ {
+		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
+			this.metaStore.ZkAddrs(), cf)
+		if err == nil {
+			this.subPool[topic][group][clientId] = cg
+			break
+		}
 	}
 
 	return
 }
 
-// TODO
-func (this *subPool) trackOffset(topic, group, client string, message *sarama.ConsumerMessage) {
+func (this *subPool) TrackOffset(topic, group, client string, message *sarama.ConsumerMessage) {
 	this.offsetsLock.Lock()
-	defer this.offsetsLock.Unlock()
 
 	var present bool
 	if _, present = this.consumerOffsets[topic]; !present {
+		log.Info("new offset for {topic:%s}", topic)
 		this.consumerOffsets[topic] = make(map[string]map[string]map[int32]*sarama.ConsumerMessage)
 	}
 	if _, present = this.consumerOffsets[topic][group]; !present {
+		log.Info("new offset for {topic:%s, group:%s}", topic, group)
 		this.consumerOffsets[topic][group] = make(map[string]map[int32]*sarama.ConsumerMessage)
 	}
 	if _, present = this.consumerOffsets[topic][group][client]; !present {
+		log.Info("new offset for {topic:%s, group:%s, client:%s}", topic, group, client)
 		this.consumerOffsets[topic][group][client] = make(map[int32]*sarama.ConsumerMessage)
 	}
 
 	this.consumerOffsets[message.Topic][group][client][message.Partition] = message
+	this.offsetsLock.Unlock()
 }
 
-func (this *subPool) start() {
-	ticker := time.NewTicker(time.Minute)
+func (this *subPool) Start() {
+	ticker := time.NewTicker(time.Minute) // TODO
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-this.shutdownCh:
@@ -101,11 +107,14 @@ func (this *subPool) start() {
 
 		case <-ticker.C:
 			// TODO thundering herd
+			// TODO what if the offsets not changed since last commit?
 			for topic, ts := range this.consumerOffsets {
 				for group, gs := range ts {
 					for client, cs := range gs {
 						for _, msg := range cs {
 							this.subPool[topic][group][client].CommitUpto(msg)
+							log.Info("{topic:%s, group:%s, partition:%d} offset commit: %d",
+								topic, group, msg.Partition, msg.Offset)
 						}
 					}
 				}
@@ -114,4 +123,17 @@ func (this *subPool) start() {
 		}
 	}
 
+}
+
+func (this *subPool) Stop() {
+	for topic, ts := range this.subPool {
+		for group, gs := range ts {
+			for client, c := range gs {
+				if err := c.Close(); err != nil {
+					log.Error("{topic:%s, group:%s, client:%s}: %v", topic,
+						group, client, err)
+				}
+			}
+		}
+	}
 }

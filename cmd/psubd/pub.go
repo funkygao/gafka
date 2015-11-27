@@ -52,6 +52,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	partition, offset, err := this.produce(ver, topic, req.FormValue("m"))
 	if err != nil {
 		this.breaker.Fail()
+
 		this.pubMetrics.PubConcurrent.Dec(1)
 		this.pubMetrics.PubFailure.Inc(1)
 		log.Error("%s: %v", req.RemoteAddr, err)
@@ -76,7 +77,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 
 	this.pubMetrics.PubSuccess.Inc(1)
 	this.pubMetrics.PubConcurrent.Dec(1)
-	this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6)
+	this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 }
 
 func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
@@ -111,6 +112,7 @@ func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
 	return
 }
 
+// Deprecated, a throughput of only 1k/s
 func (this *Gateway) produceWithoutPool(ver, topic string, msg string) (partition int32,
 	offset int64, err error) {
 	this.pubMetrics.PubQps.Mark(1)

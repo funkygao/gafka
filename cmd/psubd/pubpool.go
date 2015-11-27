@@ -92,6 +92,10 @@ func (this *pubPool) Close() {
 	this.pool.Close()
 }
 
+func (this *pubPool) Stop() {
+	this.Close()
+}
+
 func (this *pubPool) Get() (*pubClient, error) {
 	k, err := this.pool.Get()
 	if err != nil {

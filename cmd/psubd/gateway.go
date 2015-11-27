@@ -91,14 +91,15 @@ func (this *Gateway) Start() (err error) {
 
 	case "sub":
 		this.subPool = newSubPool(this.hostname, this.metaStore, this.shutdownCh)
-		go this.subPool.start()
+		go this.subPool.Start()
 		log.Info("gateway[%s:%s] kafka Sub pool started", this.hostname, this.mode)
 
 	case "pubsub":
 		this.pubPool = newPubPool(this.hostname, this.metaStore.BrokerList(), this.shutdownCh)
 		log.Info("gateway[%s:%s] kafka pub pool started", this.hostname, this.mode)
+
 		this.subPool = newSubPool(this.hostname, this.metaStore, this.shutdownCh)
-		go this.subPool.start()
+		go this.subPool.Start()
 		log.Info("gateway[%s:%s] consumer groups started", this.hostname, this.mode)
 
 	}
@@ -208,6 +209,12 @@ func (this *Gateway) Stop() {
 		this.router = nil
 
 		this.metaStore.Stop()
+		if this.subPool != nil {
+			this.subPool.Stop()
+		}
+		if this.pubPool != nil {
+			this.pubPool.Stop()
+		}
 
 		close(this.shutdownCh)
 	}
