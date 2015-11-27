@@ -91,6 +91,7 @@ Unified multi-datacenter multi-kafka-clusters central management console powered
 - [X] prioritize kafka clusters
 - [X] broker ownership management, what if a broker crash? how to find it
 - [X] visualize the p(host)->c(hosts) relationship
+- [ ] add tag for InfluxDB metrics
 - [ ] health check of kafka brokers
 - [ ] kdeploy
 - [ ] rebalance a kafka cluster

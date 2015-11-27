@@ -10,6 +10,7 @@ import (
 	"github.com/vrischmann/go-metrics-influxdb"
 )
 
+// TODO add tag  hostname=this.hostname
 type pubMetrics struct {
 	NumGo         metrics.Gauge
 	GcNum         metrics.Gauge
