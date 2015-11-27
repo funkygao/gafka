@@ -53,7 +53,7 @@ A REST gateway for kafka that supports both Pub and Sub.
 - [ ] Update to glibc 2.20 or higher
 - [ ] pub/sub support config passed in
 - [ ] graceful shutdown
-- [ ] influxdb tag
+- [X] influxdb tag
 - [ ] /usr/local/go/src/net/http/server.go:1934: http: multiple response.WriteHeader calls
 
 ### EdgeCase

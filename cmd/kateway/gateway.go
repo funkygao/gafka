@@ -64,14 +64,14 @@ func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
 	this.hostname, _ = os.Hostname()
 	switch mode {
 	case "pub":
-		this.pubMetrics = newPubMetrics()
+		this.pubMetrics = newPubMetrics(this)
 
 	case "sub":
-		this.subMetrics = newSubMetrics()
+		this.subMetrics = newSubMetrics(this)
 
 	case "pubsub":
-		this.pubMetrics = newPubMetrics()
-		this.subMetrics = newSubMetrics()
+		this.pubMetrics = newPubMetrics(this)
+		this.subMetrics = newSubMetrics(this)
 	}
 	return this
 }
