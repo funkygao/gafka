@@ -243,7 +243,7 @@ func (this *Topics) addTopic(zkcluster *zk.ZkCluster, topic string, replicas,
 	partitions int) error {
 	this.Ui.Info(fmt.Sprintf("creating kafka topic: %s", topic))
 
-	zkAddrs := zkcluster.ZkAddrs()
+	zkAddrs := zkcluster.ZkConnectAddr()
 
 	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
 		fmt.Sprintf("--zookeeper %s", zkAddrs),

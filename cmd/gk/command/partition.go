@@ -44,7 +44,7 @@ func (this *Partition) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	zkcluster := zkzone.NewCluster(cluster)
-	this.addPartition(zkcluster.ZkAddrs(), topic, partitions)
+	this.addPartition(zkcluster.ZkConnectAddr(), topic, partitions)
 	return
 }
 

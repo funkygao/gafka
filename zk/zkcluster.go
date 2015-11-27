@@ -37,7 +37,12 @@ func (this *ZkCluster) Name() string {
 	return this.name
 }
 
-func (this *ZkCluster) ZkAddrs() string {
+func (this *ZkCluster) Chroot() string {
+	return this.path
+}
+
+// kafka servers.properties zookeeper.connect=
+func (this *ZkCluster) ZkConnectAddr() string {
 	return this.zone.ZkAddrs() + this.path
 }
 
@@ -249,6 +254,15 @@ func (this *ZkCluster) Brokers() map[string]*BrokerZnode {
 	}
 
 	return r
+}
+
+func (this *ZkCluster) WatchConsumerGroup(group string) ([]string, <-chan zk.Event, error) {
+	consumers, _, ch, err := this.zone.conn.ChildrenW(this.consumerGroupIdsPath(group))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return consumers, ch, err
 }
 
 func (this *ZkCluster) BrokerList() []string {
