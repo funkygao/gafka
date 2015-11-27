@@ -26,7 +26,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 		ver     string
 		topic   string
 		group   string
-		client  string
 		timeout time.Duration = time.Duration(time.Hour)
 		err     error
 		limit   int = 1
@@ -39,8 +38,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			this.writeBadRequest(w)
 
-			log.Error("client[%s] from %s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
-				client, req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
+			log.Error("%s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
+				req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
 			return
 		}
 	}
@@ -49,8 +48,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			this.writeBadRequest(w)
 
-			log.Error("client[%s] from %s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
-				client, req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
+			log.Error("%s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
+				req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
 			return
 		}
 
@@ -63,24 +62,23 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 	ver = params["ver"]
 	topic = params["topic"]
 	group = params["group"]
-	client = params["id"]
-	log.Info("client[%s] from %s Sub {topic:%s, group:%s, limit:%s, timeout:%s}",
-		client, req.RemoteAddr, topic, group, limitParam, timeoutParam)
+	log.Info("%s Sub {topic:%s, group:%s, limit:%s, timeout:%s}",
+		req.RemoteAddr, topic, group, limitParam, timeoutParam)
 
-	if err = this.consume(ver, topic, limit, group, client, timeout, w, req); err != nil {
+	if err = this.consume(ver, topic, limit, group, timeout, w, req); err != nil {
 		this.breaker.Fail()
-		log.Error("client[%s] from %s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
-			client, req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
+		log.Error("%s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
+			req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
 
 		w.WriteHeader(http.StatusInternalServerError) // TODO
 		w.Write([]byte(err.Error()))
 	}
 }
 
-func (this *Gateway) consume(ver, topic string, limit int, group, client string,
+func (this *Gateway) consume(ver, topic string, limit int, group string,
 	timeout time.Duration,
 	w http.ResponseWriter, req *http.Request) error {
-	cg, err := this.subPool.PickConsumerGroup(topic, group, client)
+	cg, err := this.subPool.PickConsumerGroup(topic, group, req.RemoteAddr)
 	if err != nil {
 		return err
 	}
@@ -105,7 +103,7 @@ func (this *Gateway) consume(ver, topic string, limit int, group, client string,
 			}
 
 		case err := <-cg.Errors():
-			log.Error("%s %s %s: %+v", topic, group, client, err)
+			log.Error("%s {topic:%s, group:%s}: %+v", req.RemoteAddr, topic, group, err)
 		}
 	}
 

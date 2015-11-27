@@ -54,6 +54,8 @@ A REST Proxy for kafka that supports both Pub and Sub.
 - [ ] consumer groups
 - [ ] profiler
 - [ ] Update to glibc 2.20 or higher
+- [ ] consumer id discard
+- [ ] bug: same consumer id get copy of messages. If client conn broken, stop the consumer group
 
 ### EdgeCase
 

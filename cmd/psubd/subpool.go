@@ -11,7 +11,7 @@ import (
 type subPool struct {
 	gw *Gateway
 
-	// {topic: {group: {clientId: consumerGroup}}}
+	// {topic: {group: {client: consumerGroup}}}
 	subPool map[string]map[string]map[string]*consumergroup.ConsumerGroup
 	cgLock  sync.RWMutex
 }
@@ -25,7 +25,7 @@ func newSubPool(gw *Gateway) *subPool {
 
 // TODO resume from last offset
 func (this *subPool) PickConsumerGroup(topic, group,
-	clientId string) (cg *consumergroup.ConsumerGroup, err error) {
+	client string) (cg *consumergroup.ConsumerGroup, err error) {
 	this.cgLock.Lock()
 	defer this.cgLock.Unlock()
 
@@ -36,14 +36,13 @@ func (this *subPool) PickConsumerGroup(topic, group,
 	if _, present = this.subPool[topic][group]; !present {
 		this.subPool[topic][group] = make(map[string]*consumergroup.ConsumerGroup)
 	}
-	cg, present = this.subPool[topic][group][clientId]
+	cg, present = this.subPool[topic][group][client]
 	if present {
 		return
 	}
 
 	if len(this.subPool[topic][group]) >= len(this.gw.metaStore.Partitions(topic)) {
 		err = ErrTooManyConsumers
-		log.Error("topic:%s group:%s client:%s %v", topic, group, clientId, err)
 
 		return
 	}
@@ -58,7 +57,7 @@ func (this *subPool) PickConsumerGroup(topic, group,
 		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
 			this.gw.metaStore.ZkAddrs(), cf)
 		if err == nil {
-			this.subPool[topic][group][clientId] = cg
+			this.subPool[topic][group][client] = cg
 			break
 		}
 	}
