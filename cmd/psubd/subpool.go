@@ -38,7 +38,6 @@ func (this *subPool) PickConsumerGroup(topic, group,
 	}
 	cg, present = this.subPool[topic][group][clientId]
 	if present {
-		log.Debug("found cg for %s:%s:%s", topic, group, clientId)
 		return
 	}
 
