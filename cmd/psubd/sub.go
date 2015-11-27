@@ -92,14 +92,16 @@ func (this *Gateway) consume(ver, topic string, limit int, group, client string,
 			return nil
 
 		case msg := <-cg.Messages():
-			n++
 			if _, err := w.Write(msg.Value); err != nil {
 				return err
 			}
 			this.subPool.TrackOffset(topic, group, client, msg)
 
-			if limit >= 0 && n >= limit {
-				break
+			if limit > 0 {
+				n++
+				if n >= limit {
+					return nil
+				}
 			}
 
 		case err := <-cg.Errors():

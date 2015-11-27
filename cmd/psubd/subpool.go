@@ -57,6 +57,7 @@ func (this *subPool) PickConsumerGroup(topic, group,
 
 	// create the consumer group for this client
 	cf := consumergroup.NewConfig()
+	//cf.Offsets.Initial = sarama.OffsetNewest // TODO
 	cf.Zookeeper.Chroot = this.gw.metaStore.ZkChroot()
 	for i := 0; i < 3; i++ {
 		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
