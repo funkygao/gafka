@@ -20,7 +20,7 @@ var (
 
 func main() {
 	flag.IntVar(&loops, "loops", 1000, "loops in each thread")
-	flag.StringVar(&mode, "mode", "gw", "<gw|kafka>")
+	flag.StringVar(&mode, "mode", "gw", "<gw|kafka|http>")
 	flag.Parse()
 
 	switch mode {
@@ -30,8 +30,29 @@ func main() {
 
 	case "kafka":
 		stress.RunStress(pubKafkaLoop)
+
+	case "http":
+		http.DefaultClient.Timeout = time.Second * 30
+		stress.RunStress(getHttpLoop)
 	}
 
+}
+
+func getHttpLoop(seq int) {
+	client := createHttpClient()
+	req, _ := http.NewRequest("GET", "http://localhost:9090/", nil)
+	for i := 0; i < loops; i++ {
+		response, err := client.Do(req)
+		if err == nil {
+			ioutil.ReadAll(response.Body)
+			response.Body.Close() // reuse the connection
+
+			stress.IncCounter("ok", 1)
+		} else {
+			stress.IncCounter("fail", 1)
+			//log.Println(err)
+		}
+	}
 }
 
 func pubKafkaLoop(seq int) {
@@ -64,7 +85,7 @@ func pubKafkaLoop(seq int) {
 
 }
 
-func pubGatewayLoop(seq int) {
+func createHttpClient() *http.Client {
 	timeout := 3 * time.Second
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -77,49 +98,50 @@ func pubGatewayLoop(seq int) {
 		},
 	}
 
-	for i := 0; i < loops; i++ {
-		pubGateway(seq, i, httpClient)
-	}
+	return httpClient
 }
 
-func pubGateway(seq int, n int, httpClient *http.Client) {
-	req, err := http.NewRequest("POST",
-		"http://localhost:9090/v1/topics/foobar?ack=2&timeout=1&retry=3",
-		bytes.NewBuffer([]byte("m=hello world")))
-	if err != nil {
-		log.Fatalf("Error Occured. %+v", err)
-		stress.IncCounter("fail", 1)
-		return
-	}
-	req.Header.Set("Pubkey", "mypubkey")
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	// use httpClient to send request
-	response, err := httpClient.Do(req)
-	if err != nil && response == nil {
-		stress.IncCounter("fail", 1)
-		log.Printf("Error sending request to API endpoint. %+v", err)
-	} else {
-		// Close the connection to reuse it
-		defer response.Body.Close()
-
-		if response.StatusCode != http.StatusOK {
+func pubGatewayLoop(seq int) {
+	httpClient := createHttpClient()
+	for n := 0; n < loops; n++ {
+		req, err := http.NewRequest("POST",
+			"http://localhost:9090/v1/topics/foobar?ack=2&timeout=1&retry=3",
+			bytes.NewBuffer([]byte("m=hello world")))
+		if err != nil {
+			log.Fatalf("Error Occured. %+v", err)
 			stress.IncCounter("fail", 1)
 			return
 		}
+		req.Header.Set("Pubkey", "mypubkey")
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		// Let's check if the work actually is done
-		// We have seen inconsistencies even when we get 200 OK response
-		body, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			log.Fatalf("Couldn't parse response body. %+v", err)
-		}
+		// use httpClient to send request
+		response, err := httpClient.Do(req)
+		if err != nil && response == nil {
+			stress.IncCounter("fail", 1)
+			log.Printf("Error sending request to API endpoint. %+v", err)
+		} else {
 
-		stress.IncCounter("ok", 1)
+			if response.StatusCode != http.StatusOK {
+				stress.IncCounter("fail", 1)
+				return
+			}
 
-		if false {
-			log.Println("Response Body:", string(body))
+			// Let's check if the work actually is done
+			// We have seen inconsistencies even when we get 200 OK response
+			body, err := ioutil.ReadAll(response.Body)
+			if err != nil {
+				log.Fatalf("Couldn't parse response body. %+v", err)
+			}
+
+			// Close the connection to reuse it
+			response.Body.Close()
+
+			stress.IncCounter("ok", 1)
+
+			if false {
+				log.Println("Response Body:", string(body))
+			}
 		}
 	}
-
 }

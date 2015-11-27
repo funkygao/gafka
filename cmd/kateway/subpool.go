@@ -68,6 +68,7 @@ func (this *subPool) PickConsumerGroup(topic, group,
 }
 
 func (this *subPool) KillClient(topic, group, client string) {
+	// TODO golang keep-alive max idle defaults 60s
 	this.cgs[topic][group][client].Close() // will flush offset
 	delete(this.cgs[topic][group], client)
 	log.Info("consumer %s{topic:%s, group:%s} closed", client, topic, group)
