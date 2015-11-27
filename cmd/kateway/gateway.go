@@ -87,13 +87,13 @@ func (this *Gateway) Start() (err error) {
 	switch this.mode {
 	case "pub":
 		this.pubPool = newPubPool(this, this.metaStore.BrokerList())
-		log.Info("gateway[%s:%s] kafka Pub pool started", this.hostname, this.mode)
+		log.Info("gateway[%s:%s] kafka pub pool started", this.hostname, this.mode)
 
 	case "sub":
 		this.subPool = newSubPool(this)
 		this.wg.Add(1)
 		go this.subPool.Start()
-		log.Info("gateway[%s:%s] kafka Sub pool started", this.hostname, this.mode)
+		log.Info("gateway[%s:%s] kafka consumer groups pool started", this.hostname, this.mode)
 
 	case "pubsub":
 		this.pubPool = newPubPool(this, this.metaStore.BrokerList())
@@ -102,8 +102,7 @@ func (this *Gateway) Start() (err error) {
 		this.subPool = newSubPool(this)
 		this.wg.Add(1)
 		go this.subPool.Start()
-
-		log.Info("gateway[%s:%s] consumer groups started", this.hostname, this.mode)
+		log.Info("gateway[%s:%s] kafka consumer groups pool started", this.hostname, this.mode)
 	}
 
 	this.listener, err = net.Listen("tcp", this.server.Addr)

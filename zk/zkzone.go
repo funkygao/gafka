@@ -98,14 +98,14 @@ func (this *ZkZone) Connect() (err error) {
 	defer this.mu.Unlock()
 
 	if this.conn != nil {
-		log.Warn("%s already connected", this.conf.ZkAddrs)
+		log.Warn("zk %s already connected", this.conf.ZkAddrs)
 		this.addError(ErrDupConnect)
 		return nil
 	}
 
 	var i int
 	for i = 1; i <= 3; i++ {
-		log.Debug("#%d try connecting %s", i, this.conf.ZkAddrs)
+		log.Debug("zk #%d try connecting %s", i, this.conf.ZkAddrs)
 		this.conn, this.evt, err = zk.Connect(strings.Split(this.conf.ZkAddrs, ","),
 			this.conf.Timeout)
 		if err == nil {
@@ -114,7 +114,7 @@ func (this *ZkZone) Connect() (err error) {
 		}
 
 		backoff := time.Millisecond * 200 * time.Duration(i)
-		log.Debug("connect backoff %s", backoff)
+		log.Debug("zk #%d connect backoff %s", i, backoff)
 		time.Sleep(backoff)
 	}
 
@@ -123,7 +123,7 @@ func (this *ZkZone) Connect() (err error) {
 		panic(this.conf.ZkAddrs + ":" + err.Error())
 	}
 
-	log.Debug("connected with %s after %d retries",
+	log.Debug("zk connected with %s after %d retries",
 		this.conf.ZkAddrs, i-1)
 
 	return
@@ -161,7 +161,7 @@ func (this *ZkZone) setZnode(path string, data []byte) error {
 func (this *ZkZone) children(path string) []string {
 	this.connectIfNeccessary()
 
-	log.Debug("get children: %s", path)
+	log.Debug("zk get children: %s", path)
 	children, _, err := this.conn.Children(path)
 	if err != nil {
 		if err != zk.ErrNoNode {

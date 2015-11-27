@@ -182,7 +182,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 	// TODO zk coupled with kafka, bad design
 	kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
 	if err != nil {
-		log.Error("%s %+v %v", this.name, brokerList, err)
+		log.Error("kafka[%s] %+v: %v", this.name, brokerList, err)
 		return r
 	}
 
@@ -199,7 +199,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 			for partitionId, offsetData := range this.zone.childrenWithData(this.consumerGroupOffsetOfTopicPath(group, topic)) {
 				consumerOffset, err := strconv.ParseInt(string(offsetData.data), 10, 64)
 				if err != nil {
-					log.Error("%s %s P:%s %v", this.name, topic, partitionId, err)
+					log.Error("kafka[%s] %s P:%s %v", this.name, topic, partitionId, err)
 					continue topicLoop
 				}
 
@@ -213,7 +213,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 					switch err {
 					case sarama.ErrUnknownTopicOrPartition:
 						// consumer is consuming a non-exist topic
-						log.Warn("%s %s invalid topic[%s] partition:%s",
+						log.Warn("kafka[%s] %s invalid topic[%s] partition:%s",
 							this.name, group, topic, partitionId)
 						continue topicLoop
 
