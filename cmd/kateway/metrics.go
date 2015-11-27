@@ -68,7 +68,7 @@ func newPubMetrics() *pubMetrics {
 	// influxdb reporter
 	if options.influxServer != "" {
 		go influxdb.InfluxDB(metrics.DefaultRegistry, options.reporterInterval,
-			options.influxServer, "psub", "", "")
+			options.influxServer, "kateway", "", "")
 	}
 
 	go this.mainLoop()

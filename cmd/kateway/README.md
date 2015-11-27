@@ -1,6 +1,6 @@
-# psubd
+# kateway
 
-A REST Proxy for kafka that supports both Pub and Sub.
+A REST gateway for kafka that supports both Pub and Sub.
 
 
 ### Architecture

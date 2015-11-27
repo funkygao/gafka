@@ -24,9 +24,9 @@ fi
 
 BUILD_PKG=cmd/gk
 BUILD_BIN=gk
-if [[ $1 = "gw" ]]; then
-    BUILD_PKG=cmd/psubd
-    BUILD_BIN=psubd
+if [[ $1 = "kw" ]]; then
+    BUILD_PKG=cmd/kateway
+    BUILD_BIN=kateway
 fi
 
 cd $BUILD_PKG

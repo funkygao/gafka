@@ -96,7 +96,6 @@ Unified multi-datacenter multi-kafka-clusters central management console powered
 - [ ] kdeploy
 - [ ] rebalance a kafka cluster
 - [ ] zk need batch request
-- [ ] rename psubd to kateway
 
 ### Monitor
 
