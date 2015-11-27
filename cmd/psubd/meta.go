@@ -14,7 +14,7 @@ type MetaStore interface {
 	Refresh()
 	Clusters() []string
 	Partitions(topic string) []int32
-	Consumers(topic, group string) []string
+	OnlineConsumersCount(topic, group string) int
 	ZkAddrs() []string
 	ZkChroot() string
 	BrokerList() []string
@@ -51,8 +51,8 @@ func (this *zkMetaStore) Stop() {
 	this.zkcluster.Close()
 }
 
-func (this *zkMetaStore) Consumers(topic, group string) []string {
-	return nil
+func (this *zkMetaStore) OnlineConsumersCount(topic, group string) int {
+	return this.zkcluster.OnlineConsumersCount(topic, group)
 }
 
 func (this *zkMetaStore) Refresh() {

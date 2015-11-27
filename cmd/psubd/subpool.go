@@ -41,7 +41,7 @@ func (this *subPool) PickConsumerGroup(topic, group,
 		return
 	}
 
-	if len(this.cgs[topic][group]) >= len(this.gw.metaStore.Partitions(topic)) {
+	if this.gw.metaStore.OnlineConsumersCount(topic, group) >= len(this.gw.metaStore.Partitions(topic)) {
 		err = ErrTooManyConsumers
 
 		return

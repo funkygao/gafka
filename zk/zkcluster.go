@@ -256,13 +256,13 @@ func (this *ZkCluster) Brokers() map[string]*BrokerZnode {
 	return r
 }
 
-func (this *ZkCluster) WatchConsumerGroup(group string) ([]string, <-chan zk.Event, error) {
-	consumers, _, ch, err := this.zone.conn.ChildrenW(this.consumerGroupIdsPath(group))
-	if err != nil {
-		return nil, nil, err
+// Returns distinct online consumers in group for a topic.
+func (this *ZkCluster) OnlineConsumersCount(topic, group string) int {
+	consumers := make(map[string]struct{})
+	for _, zkData := range this.zone.childrenWithData(this.consumerGroupOwnerOfTopicPath(group, topic)) {
+		consumers[string(zkData.data)] = struct{}{}
 	}
-
-	return consumers, ch, err
+	return len(consumers)
 }
 
 func (this *ZkCluster) BrokerList() []string {
