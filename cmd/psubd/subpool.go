@@ -12,36 +12,36 @@ type subPool struct {
 	gw *Gateway
 
 	// {topic: {group: {client: consumerGroup}}}
-	subPool map[string]map[string]map[string]*consumergroup.ConsumerGroup
-	cgLock  sync.RWMutex
+	cgs     map[string]map[string]map[string]*consumergroup.ConsumerGroup
+	cgsLock sync.RWMutex
 }
 
 func newSubPool(gw *Gateway) *subPool {
 	return &subPool{
-		gw:      gw,
-		subPool: make(map[string]map[string]map[string]*consumergroup.ConsumerGroup),
+		gw:  gw,
+		cgs: make(map[string]map[string]map[string]*consumergroup.ConsumerGroup),
 	}
 }
 
 // TODO resume from last offset
 func (this *subPool) PickConsumerGroup(topic, group,
 	client string) (cg *consumergroup.ConsumerGroup, err error) {
-	this.cgLock.Lock()
-	defer this.cgLock.Unlock()
+	this.cgsLock.Lock()
+	defer this.cgsLock.Unlock()
 
 	var present bool
-	if _, present = this.subPool[topic]; !present {
-		this.subPool[topic] = make(map[string]map[string]*consumergroup.ConsumerGroup)
+	if _, present = this.cgs[topic]; !present {
+		this.cgs[topic] = make(map[string]map[string]*consumergroup.ConsumerGroup)
 	}
-	if _, present = this.subPool[topic][group]; !present {
-		this.subPool[topic][group] = make(map[string]*consumergroup.ConsumerGroup)
+	if _, present = this.cgs[topic][group]; !present {
+		this.cgs[topic][group] = make(map[string]*consumergroup.ConsumerGroup)
 	}
-	cg, present = this.subPool[topic][group][client]
+	cg, present = this.cgs[topic][group][client]
 	if present {
 		return
 	}
 
-	if len(this.subPool[topic][group]) >= len(this.gw.metaStore.Partitions(topic)) {
+	if len(this.cgs[topic][group]) >= len(this.gw.metaStore.Partitions(topic)) {
 		err = ErrTooManyConsumers
 
 		return
@@ -57,12 +57,17 @@ func (this *subPool) PickConsumerGroup(topic, group,
 		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
 			this.gw.metaStore.ZkAddrs(), cf)
 		if err == nil {
-			this.subPool[topic][group][client] = cg
+			this.cgs[topic][group][client] = cg
 			break
 		}
 	}
 
 	return
+}
+
+func (this *subPool) KillClient(topic, group, client string) {
+	this.cgs[topic][group][client].Close() // will flush offset
+	delete(this.cgs[topic][group], client)
 }
 
 func (this *subPool) Start() {
@@ -81,7 +86,7 @@ func (this *subPool) Start() {
 
 func (this *subPool) Stop() {
 	// TODO flush the offsets
-	for topic, ts := range this.subPool {
+	for topic, ts := range this.cgs {
 		for group, gs := range ts {
 			for client, c := range gs {
 				if err := c.Close(); err != nil {
@@ -93,5 +98,5 @@ func (this *subPool) Stop() {
 	}
 
 	// reinit the vars
-	this.subPool = make(map[string]map[string]map[string]*consumergroup.ConsumerGroup)
+	this.cgs = make(map[string]map[string]map[string]*consumergroup.ConsumerGroup)
 }

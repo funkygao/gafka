@@ -91,8 +91,13 @@ func (this *Gateway) consume(ver, topic string, limit int, group string,
 
 		case msg := <-cg.Messages():
 			if _, err := w.Write(msg.Value); err != nil {
+				log.Warn("Sub killing consumer {topic:%s group:%s client:%s}",
+					topic, group, req.RemoteAddr)
+				go this.subPool.KillClient(topic, group, req.RemoteAddr)
 				return err
 			}
+
+			// client really got this msg, safe to commit
 			cg.CommitUpto(msg)
 
 			if limit > 0 {
