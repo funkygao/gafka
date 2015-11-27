@@ -25,9 +25,9 @@ _testmain.go
 
 .DS_Store
 *.swp
-cmd/psubd/psubd
+cmd/kateway/kateway
+cmd/kateway/bench/bench
 panic.dump
 cmd/gk/gk
-cmd/exchange/exchange
-cmd/psubd/bench/bench
 misc/scripts
+prof/
