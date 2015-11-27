@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"sync/atomic"
 	"time"
 
@@ -51,12 +50,12 @@ type kpool struct {
 	nextId     uint64
 }
 
-func newKpool(brokerList []string) *kpool {
+func newKpool(hostname string, brokerList []string) *kpool {
 	this := &kpool{
 		brokerList: brokerList,
+		hostname:   hostname,
 	}
 	this.initPool()
-	this.hostname, _ = os.Hostname()
 	return this
 }
 

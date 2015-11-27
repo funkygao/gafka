@@ -3,23 +3,15 @@ package main
 import (
 	"net/http"
 	"strconv"
+	"time"
 
-	"github.com/Shopify/sarama"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
 )
 
-// /{ver}/topics/{topic}?offset=n&limit=n&timeout=n
+// /{ver}/topics/{topic}/{group}/{id}?offset=n&limit=1&timeout=10m
+// TODO offset manager, flusher, partitions, join group
 func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
-	req.Body = http.MaxBytesReader(w, req.Body, options.maxBodySize)
-	err := req.ParseForm()
-	if err != nil {
-		log.Error("%s: %v", req.RemoteAddr, err)
-
-		this.writeBadRequest(w)
-		return
-	}
-
 	if !this.authenticate(req) {
 		this.writeAuthFailure(w)
 		return
@@ -31,71 +23,90 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var (
-		ver   string
-		topic string
-		limit int = 100
+		ver     string
+		topic   string
+		group   string
+		client  string
+		timeout time.Duration = time.Duration(time.Hour)
+		err     error
+		limit   int = 1
 	)
 
-	limitParam := req.FormValue("limit")
+	limitParam := req.URL.Query().Get("limit")
+	timeoutParam := req.URL.Query().Get("timeout")
 	if limitParam != "" {
 		limit, err = strconv.Atoi(limitParam)
 		if err != nil {
 			this.writeBadRequest(w)
 
-			log.Error("limit %s: %v", limitParam, err)
+			log.Error("client[%s] from %s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
+				client, req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
 			return
+		}
+	}
+	if timeoutParam != "" {
+		timeout, err = time.ParseDuration(timeoutParam)
+		if err != nil {
+			this.writeBadRequest(w)
+
+			log.Error("client[%s] from %s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
+				client, req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
+			return
+		}
+
+		if timeout.Nanoseconds() == 0 {
+			timeout = time.Duration(time.Hour * 24 * 3650) // TODO 10 years is enough?
 		}
 	}
 
 	params := mux.Vars(req)
 	ver = params["ver"]
 	topic = params["topic"]
-	log.Debug("ver:%s topic:%s limit:%d", ver, topic, limit)
+	group = params["group"]
+	client = params["id"]
+	log.Info("client[%s] from %s Sub {topic:%s, group:%s, limit:%s, timeout:%s}",
+		client, req.RemoteAddr, topic, group, limitParam, timeoutParam)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	this.consume(ver, topic, w, req)
+	if err = this.consume(ver, topic, limit, group, client, timeout, w, req); err != nil {
+		this.breaker.Fail()
+		log.Error("client[%s] from %s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
+			client, req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
+
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+	}
 }
 
-func (this *Gateway) consume(ver, topic string, w http.ResponseWriter,
-	req *http.Request) {
-	client, err := this.kpool.Get()
-	if client != nil {
-		defer client.Recycle()
-	}
+func (this *Gateway) consume(ver, topic string, limit int, group, client string,
+	timeout time.Duration,
+	w http.ResponseWriter, req *http.Request) error {
+	cg, err := this.pickConsumerGroup(topic, group, client)
 	if err != nil {
-		log.Error(err)
+		return err
 	}
 
-	consumer, err := sarama.NewConsumerFromClient(client.Client)
-	if err != nil {
-		this.breaker.Fail()
-
-		log.Error(err)
-		return
-	}
-
-	p, err := consumer.ConsumePartition(topic, 0, sarama.OffsetOldest)
-	if err != nil {
-		this.breaker.Fail()
-
-		log.Error("%s: %v", req.RemoteAddr, err)
-		return
-	}
-
-	var msg *sarama.ConsumerMessage
+	n := 0
 	for {
 		select {
-		case msg = <-p.Messages():
-			_, err = w.Write(msg.Value)
-			if err != nil {
-				log.Error("%s: %v", req.RemoteAddr, err)
+		case <-time.After(timeout):
+			return nil
+
+		case msg := <-cg.Messages():
+			n++
+			if _, err := w.Write(msg.Value); err != nil {
+				return err
+			}
+			this.trackOffset(msg)
+
+			if limit >= 0 && n >= limit {
 				break
 			}
 
-			w.Write([]byte("\n"))
-
+		case err := <-cg.Errors():
+			log.Error("%s %s %s: %+v", topic, group, client, err)
 		}
 	}
+
+	return nil
 
 }

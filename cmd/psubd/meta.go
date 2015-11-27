@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/funkygao/gafka/ctx"
@@ -13,7 +14,8 @@ type MetaStore interface {
 	Refresh()
 	Clusters() []string
 	Partitions(topic string) []int32
-	ZkAddrs() string
+	ZkAddrs() []string
+	ZkChroot() string
 	BrokerList() []string
 	AuthPub(pubkey string) bool
 	AuthSub(subkey string) bool
@@ -21,9 +23,10 @@ type MetaStore interface {
 
 type zkMetaStore struct {
 	brokerList    []string
-	zkcluster     *zk.ZkCluster
-	mu            sync.Mutex
 	partitionsMap map[string][]int32
+
+	zkcluster *zk.ZkCluster
+	mu        sync.Mutex
 }
 
 func newZkMetaStore(zone string, cluster string) MetaStore {
@@ -64,8 +67,12 @@ func (this *zkMetaStore) BrokerList() []string {
 	return this.brokerList
 }
 
-func (this *zkMetaStore) ZkAddrs() string {
-	return this.zkcluster.ZkAddrs()
+func (this *zkMetaStore) ZkAddrs() []string {
+	return strings.Split(this.zkcluster.ZkZone().ZkAddrs(), ",")
+}
+
+func (this *zkMetaStore) ZkChroot() string {
+	return this.zkcluster.Chroot()
 }
 
 func (this *zkMetaStore) Clusters() []string {

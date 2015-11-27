@@ -2,6 +2,49 @@
 
 A REST Proxy for kafka that supports both Pub and Sub.
 
+
+### Architecture
+
+                       +-----------------+          binding
+                       | maas manager UI |--------------------------->----------------------+
+                       +-----------------+                                                  |
+                               |                                                            |
+                               ^ register [application|topic|binding]                       |
+                               |                                                            |
+                       +-----------------+                                                  |
+                       |  Application    |                                                  |
+                       +-----------------+                                                  |
+                               |                                                            |
+                               V                                                            |
+            PUB                |               SUB                                          |
+            +-------------------------------------+                                         |
+            |                                     |                                         |
+       HTTP | pubkey                         HTTP | subkey                                  |
+       POST | secret                          GET |                                         | binding
+            |                                     |--+ batchSize                            | event
+            | Header: topic.id                    |  | Optional: topic                      |
+            | Header: key                         |  | Optional: offset                     |
+            | Header: acks                        |  | timeout                              |
+            | Body: payload                       |  | timeout                              |
+        +------------+                      +------------+          application border      |
+     ---| PubEndpoint|----------------------| SubEndpoint|----------------------------      |
+        +------------+                      +------------+                                  |
+        | stateless  |                      | stateful   |                                  V
+        +------------+                      +------------+                                  |
+        | monitor    |                      | monitor    |                                  |
+        +------------+                      +------------+                                  |
+            |                                     |     |                                   |
+            | Producer                   Consumer |     |                                   |
+            |                            Group    |     +---------------+                   |
+            |                                     |                     |                   |
+            |       +------------------+          |     +----------------------+            |
+            |       |  Storage Cluster |          |     | ZK or alike ensemble |-----<------+
+            +-------+------------------+----------+     +----------------------+
+                    |  kafka or else   |
+                    +------------------+        +---------------------+
+                    |     monitor      |--------| elastic partitioner |
+                    +------------------+        +---------------------+
+
 ### TODO
 
 - [ ] kafka conn pool

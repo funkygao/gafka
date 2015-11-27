@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync"
 	"syscall"
 	"time"
 
@@ -17,23 +18,29 @@ import (
 	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
+	"github.com/wvanbergen/kafka/consumergroup"
 )
 
 type Gateway struct {
-	mode string
+	mode     string
+	hostname string
 
 	listener net.Listener
 	server   *http.Server
 	router   *mux.Router
 
 	shutdownCh chan struct{}
+	breaker    *breaker.Consecutive
+	metrics    *pubMetrics
 
-	metrics             *pubMetrics
 	metaStore           MetaStore
 	metaRefreshInterval time.Duration
 
-	kpool   *kpool
-	breaker *breaker.Consecutive
+	kpool *kpool
+
+	// {topic: {group: {clientId: cg}}}
+	consumerGroups map[string]map[string]map[string]*consumergroup.ConsumerGroup
+	cgLock         sync.RWMutex
 }
 
 func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
@@ -43,6 +50,7 @@ func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
 		shutdownCh:          make(chan struct{}),
 		metaStore:           newZkMetaStore(options.zone, options.cluster),
 		metaRefreshInterval: metaRefreshInterval,
+		consumerGroups:      make(map[string]map[string]map[string]*consumergroup.ConsumerGroup),
 	}
 	this.server = &http.Server{
 		Addr:        fmt.Sprintf(":%d", options.port),
@@ -53,6 +61,7 @@ func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
 		FailureAllowance: 10,
 		RetryTimeout:     time.Second * 10,
 	}
+	this.hostname, _ = os.Hostname()
 	switch mode {
 	case "pub", "pubsub":
 		this.metrics = newPubMetrics()
@@ -71,7 +80,7 @@ func (this *Gateway) Start() (err error) {
 	this.buildRouting()
 
 	this.metaStore.Start()
-	this.kpool = newKpool(this.metaStore.BrokerList())
+	this.kpool = newKpool(this.hostname, this.metaStore.BrokerList())
 
 	this.listener, err = net.Listen("tcp", this.server.Addr)
 	if err != nil {
@@ -93,7 +102,8 @@ func (this *Gateway) buildRouting() {
 		this.router.HandleFunc("/{ver}/topics/{topic}", this.pubHandler).Methods("POST")
 	}
 	if this.mode == "sub" || this.mode == "pubsub" {
-		this.router.HandleFunc("/{ver}/topics/{topic}", this.subHandler).Methods("GET")
+		this.router.HandleFunc("/{ver}/topics/{topic}/{group}/{id}",
+			this.subHandler).Methods("GET")
 	}
 }
 
