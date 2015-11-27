@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync"
 	"syscall"
 	"time"
 
@@ -30,6 +31,7 @@ type Gateway struct {
 	router   *mux.Router
 
 	shutdownCh chan struct{}
+	wg         sync.WaitGroup
 
 	leakyBucket *ratelimiter.LeakyBucket // TODO
 	breaker     *breaker.Consecutive
@@ -86,22 +88,24 @@ func (this *Gateway) Start() (err error) {
 
 	switch this.mode {
 	case "pub":
-		this.pubPool = newPubPool(this.hostname, this.metaStore.BrokerList(), this.shutdownCh)
+		this.pubPool = newPubPool(this, this.metaStore.BrokerList())
 		log.Info("gateway[%s:%s] kafka Pub pool started", this.hostname, this.mode)
 
 	case "sub":
-		this.subPool = newSubPool(this.hostname, this.metaStore, this.shutdownCh)
+		this.subPool = newSubPool(this)
+		this.wg.Add(1)
 		go this.subPool.Start()
 		log.Info("gateway[%s:%s] kafka Sub pool started", this.hostname, this.mode)
 
 	case "pubsub":
-		this.pubPool = newPubPool(this.hostname, this.metaStore.BrokerList(), this.shutdownCh)
+		this.pubPool = newPubPool(this, this.metaStore.BrokerList())
 		log.Info("gateway[%s:%s] kafka pub pool started", this.hostname, this.mode)
 
-		this.subPool = newSubPool(this.hostname, this.metaStore, this.shutdownCh)
+		this.subPool = newSubPool(this)
+		this.wg.Add(1)
 		go this.subPool.Start()
-		log.Info("gateway[%s:%s] consumer groups started", this.hostname, this.mode)
 
+		log.Info("gateway[%s:%s] consumer groups started", this.hostname, this.mode)
 	}
 
 	this.listener, err = net.Listen("tcp", this.server.Addr)
@@ -195,7 +199,6 @@ func (this *Gateway) ServeForever() {
 			if this.pubPool != nil {
 				this.pubPool.RefreshBrokerList(this.metaStore.BrokerList())
 			}
-
 		}
 	}
 
@@ -203,19 +206,19 @@ func (this *Gateway) ServeForever() {
 
 func (this *Gateway) Stop() {
 	if this.listener != nil {
+		log.Info("gateway[%s:%s] shutting down", this.hostname, this.mode)
+
 		this.listener.Close()
 		this.listener = nil
 		this.server = nil
 		this.router = nil
 
 		this.metaStore.Stop()
-		if this.subPool != nil {
-			this.subPool.Stop()
-		}
-		if this.pubPool != nil {
-			this.pubPool.Stop()
-		}
 
+		// FIXME not able to shudown gracefully
 		close(this.shutdownCh)
+		this.wg.Wait()
+
+		log.Info("gateway[%s:%s] shutdown complete", this.hostname, this.mode)
 	}
 }

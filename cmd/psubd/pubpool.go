@@ -42,20 +42,30 @@ func (this *pubClient) Recycle() {
 }
 
 type pubPool struct {
+	gw *Gateway
+
 	brokerList []string
 	pool       *pool.ResourcePool
-	hostname   string
 	nextId     uint64
-	shutdownCh chan struct{}
 }
 
-func newPubPool(hostname string, brokerList []string, shutdownCh chan struct{}) *pubPool {
+func newPubPool(gw *Gateway, brokerList []string) *pubPool {
 	this := &pubPool{
 		brokerList: brokerList,
-		hostname:   hostname,
-		shutdownCh: shutdownCh,
+		gw:         gw,
 	}
 	this.initialize()
+	go func() {
+		for {
+			select {
+			case <-this.gw.shutdownCh:
+				log.Info("pub pool shutdown")
+				this.Stop()
+				this.gw.wg.Done()
+			}
+		}
+	}()
+
 	return this
 }
 
@@ -72,7 +82,7 @@ func (this *pubPool) initialize() {
 		cf.Producer.RequiredAcks = sarama.WaitForLocal
 		cf.Producer.Partitioner = sarama.NewHashPartitioner
 		cf.Producer.Timeout = time.Second
-		cf.ClientID = this.hostname
+		cf.ClientID = this.gw.hostname
 		//cf.Producer.Compression = sarama.CompressionSnappy
 		cf.Producer.Retry.Max = 3
 		conn.Client, err = sarama.NewClient(this.brokerList, cf)

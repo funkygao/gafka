@@ -10,10 +10,7 @@ import (
 )
 
 type subPool struct {
-	hostname  string
-	metaStore MetaStore
-
-	shutdownCh chan struct{}
+	gw *Gateway
 
 	// {topic: {group: {clientId: consumerGroup}}}
 	subPool map[string]map[string]map[string]*consumergroup.ConsumerGroup
@@ -24,11 +21,9 @@ type subPool struct {
 	offsetsLock     sync.Mutex
 }
 
-func newSubPool(hostname string, metaStore MetaStore, shutdownCh chan struct{}) *subPool {
+func newSubPool(gw *Gateway) *subPool {
 	return &subPool{
-		hostname:        hostname,
-		metaStore:       metaStore,
-		shutdownCh:      shutdownCh,
+		gw:              gw,
 		subPool:         make(map[string]map[string]map[string]*consumergroup.ConsumerGroup),
 		consumerOffsets: make(map[string]map[string]map[string]map[int32]*sarama.ConsumerMessage),
 	}
@@ -53,7 +48,7 @@ func (this *subPool) PickConsumerGroup(topic, group,
 		return
 	}
 
-	if len(this.subPool[topic][group]) >= len(this.metaStore.Partitions(topic)) {
+	if len(this.subPool[topic][group]) >= len(this.gw.metaStore.Partitions(topic)) {
 		err = ErrTooManyConsumers
 		log.Error("topic:%s group:%s client:%s %v", topic, group, clientId, err)
 
@@ -62,10 +57,10 @@ func (this *subPool) PickConsumerGroup(topic, group,
 
 	// create the consumer group for this client
 	cf := consumergroup.NewConfig()
-	cf.Zookeeper.Chroot = this.metaStore.ZkChroot()
+	cf.Zookeeper.Chroot = this.gw.metaStore.ZkChroot()
 	for i := 0; i < 3; i++ {
 		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
-			this.metaStore.ZkAddrs(), cf)
+			this.gw.metaStore.ZkAddrs(), cf)
 		if err == nil {
 			this.subPool[topic][group][clientId] = cg
 			break
@@ -102,7 +97,10 @@ func (this *subPool) Start() {
 
 	for {
 		select {
-		case <-this.shutdownCh:
+		case <-this.gw.shutdownCh:
+			log.Info("sub pool shutdown")
+			this.Stop()
+			this.gw.wg.Done()
 			break
 
 		case <-ticker.C:
@@ -136,4 +134,8 @@ func (this *subPool) Stop() {
 			}
 		}
 	}
+
+	// reinit the vars
+	this.subPool = make(map[string]map[string]map[string]*consumergroup.ConsumerGroup)
+	this.consumerOffsets = make(map[string]map[string]map[string]map[int32]*sarama.ConsumerMessage)
 }
