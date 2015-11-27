@@ -39,8 +39,8 @@ type Gateway struct {
 	metaStore           MetaStore
 	metaRefreshInterval time.Duration
 
-	kpool *kpool
-	cgs   *consumerGroups
+	pubPool *pubPool
+	subPool *subPool
 }
 
 func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
@@ -86,19 +86,19 @@ func (this *Gateway) Start() (err error) {
 
 	switch this.mode {
 	case "pub":
-		this.kpool = newKpool(this.hostname, this.metaStore.BrokerList(), this.shutdownCh)
+		this.pubPool = newPubPool(this.hostname, this.metaStore.BrokerList(), this.shutdownCh)
 		log.Info("gateway[%s:%s] kafka Pub pool started", this.hostname, this.mode)
 
 	case "sub":
-		this.cgs = newConsumerGroups(this.hostname, this.metaStore, this.shutdownCh)
-		go this.cgs.start()
+		this.subPool = newSubPool(this.hostname, this.metaStore, this.shutdownCh)
+		go this.subPool.start()
 		log.Info("gateway[%s:%s] kafka Sub pool started", this.hostname, this.mode)
 
 	case "pubsub":
-		this.kpool = newKpool(this.hostname, this.metaStore.BrokerList(), this.shutdownCh)
+		this.pubPool = newPubPool(this.hostname, this.metaStore.BrokerList(), this.shutdownCh)
 		log.Info("gateway[%s:%s] kafka pub pool started", this.hostname, this.mode)
-		this.cgs = newConsumerGroups(this.hostname, this.metaStore, this.shutdownCh)
-		go this.cgs.start()
+		this.subPool = newSubPool(this.hostname, this.metaStore, this.shutdownCh)
+		go this.subPool.start()
 		log.Info("gateway[%s:%s] consumer groups started", this.hostname, this.mode)
 
 	}
@@ -191,8 +191,8 @@ func (this *Gateway) ServeForever() {
 
 		case <-meteRefreshTicker.C:
 			this.metaStore.Refresh()
-			if this.kpool != nil {
-				this.kpool.RefreshBrokerList(this.metaStore.BrokerList())
+			if this.pubPool != nil {
+				this.pubPool.RefreshBrokerList(this.metaStore.BrokerList())
 			}
 
 		}

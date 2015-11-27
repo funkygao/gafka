@@ -10,29 +10,28 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-// kafka client
-type kclient struct {
+type pubClient struct {
 	id   uint64
-	pool *kpool
+	pool *pubPool
 
 	sarama.Client
 }
 
-func (this *kclient) Close() {
-	log.Debug("closeing kclient: %d", this.id)
+func (this *pubClient) Close() {
+	log.Debug("closeing pubClient: %d", this.id)
 	this.Client.Close()
 	//this.pool.pool.Put(nil)
 }
 
-func (this *kclient) Id() uint64 {
+func (this *pubClient) Id() uint64 {
 	return this.id
 }
 
-func (this *kclient) IsOpen() bool {
+func (this *pubClient) IsOpen() bool {
 	return !this.Client.Closed()
 }
 
-func (this *kclient) Recycle() {
+func (this *pubClient) Recycle() {
 	if this.Client.Closed() {
 		this.pool.pool.Kill(this)
 		this.pool.pool.Put(nil)
@@ -42,8 +41,7 @@ func (this *kclient) Recycle() {
 
 }
 
-// kafka client pool
-type kpool struct {
+type pubPool struct {
 	brokerList []string
 	pool       *pool.ResourcePool
 	hostname   string
@@ -51,19 +49,19 @@ type kpool struct {
 	shutdownCh chan struct{}
 }
 
-func newKpool(hostname string, brokerList []string, shutdownCh chan struct{}) *kpool {
-	this := &kpool{
+func newPubPool(hostname string, brokerList []string, shutdownCh chan struct{}) *pubPool {
+	this := &pubPool{
 		brokerList: brokerList,
 		hostname:   hostname,
 		shutdownCh: shutdownCh,
 	}
-	this.initPool()
+	this.initialize()
 	return this
 }
 
-func (this *kpool) initPool() {
+func (this *pubPool) initialize() {
 	factory := func() (pool.Resource, error) {
-		conn := &kclient{
+		conn := &pubClient{
 			pool: this,
 			id:   atomic.AddUint64(&this.nextId, 1),
 		}
@@ -90,20 +88,20 @@ func (this *kpool) initPool() {
 		1000, 1000, 0, time.Second*10, time.Minute) // TODO
 }
 
-func (this *kpool) Close() {
+func (this *pubPool) Close() {
 	this.pool.Close()
 }
 
-func (this *kpool) Get() (*kclient, error) {
+func (this *pubPool) Get() (*pubClient, error) {
 	k, err := this.pool.Get()
 	if err != nil {
 		return nil, err
 	}
 
-	return k.(*kclient), nil
+	return k.(*pubClient), nil
 }
 
-func (this *kpool) RefreshBrokerList(brokerList []string) {
+func (this *pubPool) RefreshBrokerList(brokerList []string) {
 	setOld, setNew := set.NewSet(), set.NewSet()
 	for _, b := range this.brokerList {
 		setOld.Add(b)
@@ -118,7 +116,7 @@ func (this *kpool) RefreshBrokerList(brokerList []string) {
 		// rebuild the kafka conn pool
 		this.brokerList = brokerList
 		this.pool.Close()
-		this.initPool()
+		this.initialize()
 	}
 
 }

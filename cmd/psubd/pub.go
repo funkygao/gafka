@@ -84,7 +84,7 @@ func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
 	this.pubMetrics.PubQps.Mark(1)
 	this.pubMetrics.PubSize.Mark(int64(len(msg)))
 
-	client, e := this.kpool.Get()
+	client, e := this.pubPool.Get()
 	if e != nil {
 		if client != nil {
 			client.Recycle()

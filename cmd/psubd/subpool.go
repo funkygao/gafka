@@ -9,51 +9,51 @@ import (
 	"github.com/wvanbergen/kafka/consumergroup"
 )
 
-type consumerGroups struct {
+type subPool struct {
 	hostname  string
 	metaStore MetaStore
 
 	shutdownCh chan struct{}
 
 	// {topic: {group: {clientId: consumerGroup}}}
-	consumerGroups map[string]map[string]map[string]*consumergroup.ConsumerGroup
-	cgLock         sync.RWMutex
+	subPool map[string]map[string]map[string]*consumergroup.ConsumerGroup
+	cgLock  sync.RWMutex
 
 	// {topic: {group: {clientId: {partitionId: message}}}}
 	consumerOffsets map[string]map[string]map[string]map[int32]*sarama.ConsumerMessage
 	offsetsLock     sync.Mutex
 }
 
-func newConsumerGroups(hostname string, metaStore MetaStore, shutdownCh chan struct{}) *consumerGroups {
-	return &consumerGroups{
+func newSubPool(hostname string, metaStore MetaStore, shutdownCh chan struct{}) *subPool {
+	return &subPool{
 		hostname:        hostname,
 		metaStore:       metaStore,
 		shutdownCh:      shutdownCh,
-		consumerGroups:  make(map[string]map[string]map[string]*consumergroup.ConsumerGroup),
+		subPool:         make(map[string]map[string]map[string]*consumergroup.ConsumerGroup),
 		consumerOffsets: make(map[string]map[string]map[string]map[int32]*sarama.ConsumerMessage),
 	}
 }
 
 // TODO resume from last offset
-func (this *consumerGroups) pickConsumerGroup(topic, group,
+func (this *subPool) pickConsumerGroup(topic, group,
 	clientId string) (cg *consumergroup.ConsumerGroup, err error) {
 	this.cgLock.Lock()
 	defer this.cgLock.Unlock()
 
 	var present bool
-	if _, present = this.consumerGroups[topic]; !present {
-		this.consumerGroups[topic] = make(map[string]map[string]*consumergroup.ConsumerGroup)
+	if _, present = this.subPool[topic]; !present {
+		this.subPool[topic] = make(map[string]map[string]*consumergroup.ConsumerGroup)
 	}
-	if _, present = this.consumerGroups[topic][group]; !present {
-		this.consumerGroups[topic][group] = make(map[string]*consumergroup.ConsumerGroup)
+	if _, present = this.subPool[topic][group]; !present {
+		this.subPool[topic][group] = make(map[string]*consumergroup.ConsumerGroup)
 	}
-	cg, present = this.consumerGroups[topic][group][clientId]
+	cg, present = this.subPool[topic][group][clientId]
 	if present {
 		log.Debug("found cg for %s:%s:%s", topic, group, clientId)
 		return
 	}
 
-	if len(this.consumerGroups[topic][group]) >= len(this.metaStore.Partitions(topic)) {
+	if len(this.subPool[topic][group]) >= len(this.metaStore.Partitions(topic)) {
 		err = ErrTooManyConsumers
 		log.Error("topic:%s group:%s client:%s %v", topic, group, clientId, err)
 
@@ -67,14 +67,14 @@ func (this *consumerGroups) pickConsumerGroup(topic, group,
 	cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
 		this.metaStore.ZkAddrs(), cf)
 	if err == nil {
-		this.consumerGroups[topic][group][clientId] = cg
+		this.subPool[topic][group][clientId] = cg
 	}
 
 	return
 }
 
 // TODO
-func (this *consumerGroups) trackOffset(topic, group, client string, message *sarama.ConsumerMessage) {
+func (this *subPool) trackOffset(topic, group, client string, message *sarama.ConsumerMessage) {
 	this.offsetsLock.Lock()
 	defer this.offsetsLock.Unlock()
 
@@ -92,7 +92,7 @@ func (this *consumerGroups) trackOffset(topic, group, client string, message *sa
 	this.consumerOffsets[message.Topic][group][client][message.Partition] = message
 }
 
-func (this *consumerGroups) start() {
+func (this *subPool) start() {
 	ticker := time.NewTicker(time.Minute)
 	for {
 		select {
@@ -105,7 +105,7 @@ func (this *consumerGroups) start() {
 				for group, gs := range ts {
 					for client, cs := range gs {
 						for _, msg := range cs {
-							this.consumerGroups[topic][group][client].CommitUpto(msg)
+							this.subPool[topic][group][client].CommitUpto(msg)
 						}
 					}
 				}
