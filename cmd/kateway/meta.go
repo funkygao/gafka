@@ -52,6 +52,7 @@ func (this *zkMetaStore) Stop() {
 }
 
 func (this *zkMetaStore) OnlineConsumersCount(topic, group string) int {
+	// without cache
 	return this.zkcluster.OnlineConsumersCount(topic, group)
 }
 
