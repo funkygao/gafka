@@ -47,7 +47,9 @@ func parseFlags() {
 	flag.Int64Var(&options.maxBodySize, "maxbody", 1<<20, "max POST body size")
 
 	flag.Parse()
+}
 
+func validateFlags() {
 	if options.tick < 0 {
 		fmt.Fprintf(os.Stderr, "-tick must be possitive\n")
 		os.Exit(1)

@@ -25,6 +25,7 @@ func init() {
 }
 
 func main() {
+	validateFlags()
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println(err)

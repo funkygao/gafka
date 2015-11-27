@@ -19,7 +19,6 @@ import (
 	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
-	"golang.org/x/net/netutil"
 )
 
 // Gateway is a kafka Pub/Sub HTTP endpoint.
@@ -113,7 +112,7 @@ func (this *Gateway) Start() (err error) {
 	if err != nil {
 		return
 	}
-	this.listener = netutil.LimitListener(this.listener, 10000) // TODO
+	this.listener = LimitListener(this.listener, 10000) // TODO
 
 	this.buildRouting()
 	go this.server.Serve(this.listener)
