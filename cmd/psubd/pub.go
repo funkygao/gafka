@@ -36,7 +36,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	this.metrics.PubConcurrent.Inc(1)
+	this.pubMetrics.PubConcurrent.Inc(1)
 
 	t1 := time.Now()
 	var (
@@ -52,8 +52,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	partition, offset, err := this.produce(ver, topic, req.FormValue("m"))
 	if err != nil {
 		this.breaker.Fail()
-		this.metrics.PubConcurrent.Dec(1)
-		this.metrics.PubFailure.Inc(1)
+		this.pubMetrics.PubConcurrent.Dec(1)
+		this.pubMetrics.PubFailure.Inc(1)
 		log.Error("%s: %v", req.RemoteAddr, err)
 
 		w.WriteHeader(http.StatusInternalServerError)
@@ -71,18 +71,18 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	b, _ := json.Marshal(response)
 	if _, err := w.Write(b); err != nil {
 		log.Error("%s: %v", req.RemoteAddr, err)
-		this.metrics.ClientError.Inc(1)
+		this.pubMetrics.ClientError.Inc(1)
 	}
 
-	this.metrics.PubSuccess.Inc(1)
-	this.metrics.PubConcurrent.Dec(1)
-	this.metrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6)
+	this.pubMetrics.PubSuccess.Inc(1)
+	this.pubMetrics.PubConcurrent.Dec(1)
+	this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6)
 }
 
 func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
 	offset int64, err error) {
-	this.metrics.PubQps.Mark(1)
-	this.metrics.PubSize.Mark(int64(len(msg)))
+	this.pubMetrics.PubQps.Mark(1)
+	this.pubMetrics.PubSize.Mark(int64(len(msg)))
 
 	client, e := this.kpool.Get()
 	if e != nil {
@@ -113,8 +113,8 @@ func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
 
 func (this *Gateway) produceWithoutPool(ver, topic string, msg string) (partition int32,
 	offset int64, err error) {
-	this.metrics.PubQps.Mark(1)
-	this.metrics.PubSize.Mark(int64(len(msg)))
+	this.pubMetrics.PubQps.Mark(1)
+	this.pubMetrics.PubSize.Mark(int64(len(msg)))
 
 	var producer sarama.SyncProducer
 	cf := sarama.NewConfig()

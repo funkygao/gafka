@@ -48,12 +48,14 @@ type kpool struct {
 	pool       *pool.ResourcePool
 	hostname   string
 	nextId     uint64
+	shutdownCh chan struct{}
 }
 
-func newKpool(hostname string, brokerList []string) *kpool {
+func newKpool(hostname string, brokerList []string, shutdownCh chan struct{}) *kpool {
 	this := &kpool{
 		brokerList: brokerList,
 		hostname:   hostname,
+		shutdownCh: shutdownCh,
 	}
 	this.initPool()
 	return this

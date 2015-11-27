@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"sync"
 	"syscall"
 	"time"
 
@@ -15,12 +14,13 @@ import (
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/golib/breaker"
+	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
-	"github.com/wvanbergen/kafka/consumergroup"
 )
 
+// Gateway is a kafka Pub/Sub HTTP endpoint.
 type Gateway struct {
 	mode     string
 	hostname string
@@ -30,17 +30,17 @@ type Gateway struct {
 	router   *mux.Router
 
 	shutdownCh chan struct{}
-	breaker    *breaker.Consecutive
-	metrics    *pubMetrics
+
+	leakyBucket *ratelimiter.LeakyBucket // TODO
+	breaker     *breaker.Consecutive
+	pubMetrics  *pubMetrics
+	subMetrics  *subMetrics
 
 	metaStore           MetaStore
 	metaRefreshInterval time.Duration
 
 	kpool *kpool
-
-	// {topic: {group: {clientId: cg}}}
-	consumerGroups map[string]map[string]map[string]*consumergroup.ConsumerGroup
-	cgLock         sync.RWMutex
+	cgs   *consumerGroups
 }
 
 func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
@@ -49,8 +49,8 @@ func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
 		router:              mux.NewRouter(),
 		shutdownCh:          make(chan struct{}),
 		metaStore:           newZkMetaStore(options.zone, options.cluster),
+		leakyBucket:         ratelimiter.NewLeakyBucket(1000*60, time.Minute),
 		metaRefreshInterval: metaRefreshInterval,
-		consumerGroups:      make(map[string]map[string]map[string]*consumergroup.ConsumerGroup),
 	}
 	this.server = &http.Server{
 		Addr:        fmt.Sprintf(":%d", options.port),
@@ -63,11 +63,15 @@ func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
 	}
 	this.hostname, _ = os.Hostname()
 	switch mode {
-	case "pub", "pubsub":
-		this.metrics = newPubMetrics()
+	case "pub":
+		this.pubMetrics = newPubMetrics()
 
 	case "sub":
+		this.subMetrics = newSubMetrics()
 
+	case "pubsub":
+		this.pubMetrics = newPubMetrics()
+		this.subMetrics = newSubMetrics()
 	}
 	return this
 }
@@ -77,19 +81,37 @@ func (this *Gateway) Start() (err error) {
 		this.Stop()
 	})
 
-	this.buildRouting()
-
 	this.metaStore.Start()
-	this.kpool = newKpool(this.hostname, this.metaStore.BrokerList())
+	log.Info("gateway[%s:%s] meta store started", this.hostname, this.mode)
+
+	switch this.mode {
+	case "pub":
+		this.kpool = newKpool(this.hostname, this.metaStore.BrokerList(), this.shutdownCh)
+		log.Info("gateway[%s:%s] kafka Pub pool started", this.hostname, this.mode)
+
+	case "sub":
+		this.cgs = newConsumerGroups(this.hostname, this.metaStore, this.shutdownCh)
+		go this.cgs.start()
+		log.Info("gateway[%s:%s] kafka Sub pool started", this.hostname, this.mode)
+
+	case "pubsub":
+		this.kpool = newKpool(this.hostname, this.metaStore.BrokerList(), this.shutdownCh)
+		log.Info("gateway[%s:%s] kafka pub pool started", this.hostname, this.mode)
+		this.cgs = newConsumerGroups(this.hostname, this.metaStore, this.shutdownCh)
+		go this.cgs.start()
+		log.Info("gateway[%s:%s] consumer groups started", this.hostname, this.mode)
+
+	}
 
 	this.listener, err = net.Listen("tcp", this.server.Addr)
 	if err != nil {
 		return
 	}
 
+	this.buildRouting()
 	go this.server.Serve(this.listener)
 
-	log.Info("gateway[%s] ready on %s", this.mode, this.server.Addr)
+	log.Info("gateway[%s:%s] http ready on %s", this.hostname, this.mode, this.server.Addr)
 
 	return nil
 }
@@ -98,10 +120,16 @@ func (this *Gateway) buildRouting() {
 	this.router.HandleFunc("/ver", this.showVersion)
 	this.router.HandleFunc("/clusters", this.showClusters)
 
-	if this.mode == "pub" || this.mode == "pubsub" {
+	switch this.mode {
+	case "pub":
 		this.router.HandleFunc("/{ver}/topics/{topic}", this.pubHandler).Methods("POST")
-	}
-	if this.mode == "sub" || this.mode == "pubsub" {
+
+	case "sub":
+		this.router.HandleFunc("/{ver}/topics/{topic}/{group}/{id}",
+			this.subHandler).Methods("GET")
+
+	case "pubsub":
+		this.router.HandleFunc("/{ver}/topics/{topic}", this.pubHandler).Methods("POST")
 		this.router.HandleFunc("/{ver}/topics/{topic}/{group}/{id}",
 			this.subHandler).Methods("GET")
 	}
@@ -157,13 +185,16 @@ func (this *Gateway) ServeForever() {
 	for ever {
 		select {
 		case <-this.shutdownCh:
-			log.Info("gateway terminated")
+			log.Info("gateway[%s:%s] terminated", this.hostname, this.mode)
 			ever = false
 			break
 
 		case <-meteRefreshTicker.C:
 			this.metaStore.Refresh()
-			this.kpool.RefreshBrokerList(this.metaStore.BrokerList())
+			if this.kpool != nil {
+				this.kpool.RefreshBrokerList(this.metaStore.BrokerList())
+			}
+
 		}
 	}
 

@@ -10,6 +10,14 @@ import (
 	"github.com/vrischmann/go-metrics-influxdb"
 )
 
+type subMetrics struct {
+}
+
+func newSubMetrics() *subMetrics {
+	this := new(subMetrics)
+	return this
+}
+
 // TODO add tag  hostname=this.hostname
 type pubMetrics struct {
 	NumGo         metrics.Gauge
