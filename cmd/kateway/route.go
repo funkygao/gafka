@@ -32,8 +32,8 @@ func (this *Gateway) buildRouting() {
 func (this *Gateway) showHelp(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/text")
 	txt := strings.TrimSpace(fmt.Sprintf(`
-POST /{ver}/topics/{topic}
-GET  /{ver}/topics/{topic}/{group}
+POST /{ver}/topics/{topic}?ack=1
+GET  /{ver}/topics/{topic}/{group}?limit=1
 GET  /clusters
 GET  /ver
 GET  /help
