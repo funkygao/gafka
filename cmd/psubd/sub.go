@@ -95,7 +95,7 @@ func (this *Gateway) consume(ver, topic string, limit int, group, client string,
 			if _, err := w.Write(msg.Value); err != nil {
 				return err
 			}
-			this.subPool.TrackOffset(topic, group, client, msg)
+			cg.CommitUpto(msg)
 
 			if limit > 0 {
 				n++
