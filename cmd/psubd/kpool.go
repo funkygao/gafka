@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -46,6 +47,7 @@ func (this *kclient) Recycle() {
 type kpool struct {
 	brokerList []string
 	pool       *pool.ResourcePool
+	hostname   string
 	nextId     uint64
 }
 
@@ -54,6 +56,7 @@ func newKpool(brokerList []string) *kpool {
 		brokerList: brokerList,
 	}
 	this.initPool()
+	this.hostname, _ = os.Hostname()
 	return this
 }
 
@@ -70,6 +73,7 @@ func (this *kpool) initPool() {
 		cf.Producer.RequiredAcks = sarama.WaitForLocal
 		cf.Producer.Partitioner = sarama.NewHashPartitioner
 		cf.Producer.Timeout = time.Second
+		cf.ClientID = this.hostname
 		//cf.Producer.Compression = sarama.CompressionSnappy
 		cf.Producer.Retry.Max = 3
 		conn.Client, err = sarama.NewClient(this.brokerList, cf)
