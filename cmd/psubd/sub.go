@@ -3,14 +3,13 @@ package main
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
+	"github.com/wvanbergen/kafka/consumergroup"
 )
 
-// /{ver}/topics/{topic}/{group}/{id}?offset=n&limit=1&timeout=10m
-// TODO offset manager, flusher, partitions, join group
+// /{ver}/topics/{topic}/{group}/{id}?offset=n&limit=1
 func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 	if !this.authenticate(req) {
 		this.writeAuthFailure(w)
@@ -23,38 +22,22 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var (
-		ver     string
-		topic   string
-		group   string
-		timeout time.Duration = time.Duration(time.Hour)
-		err     error
-		limit   int = 1
+		ver   string
+		topic string
+		group string
+		err   error
+		limit int = 1
 	)
 
 	limitParam := req.URL.Query().Get("limit")
-	timeoutParam := req.URL.Query().Get("timeout")
 	if limitParam != "" {
 		limit, err = strconv.Atoi(limitParam)
 		if err != nil {
 			this.writeBadRequest(w)
 
-			log.Error("%s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
-				req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
+			log.Error("consumer %s{topic:%s, group:%s, limit:%s} %v",
+				req.RemoteAddr, topic, group, limitParam, err)
 			return
-		}
-	}
-	if timeoutParam != "" {
-		timeout, err = time.ParseDuration(timeoutParam)
-		if err != nil {
-			this.writeBadRequest(w)
-
-			log.Error("%s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
-				req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
-			return
-		}
-
-		if timeout.Nanoseconds() == 0 {
-			timeout = time.Duration(time.Hour * 24 * 3650) // TODO 10 years is enough?
 		}
 	}
 
@@ -62,38 +45,39 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 	ver = params["ver"]
 	topic = params["topic"]
 	group = params["group"]
-	log.Info("%s Sub {topic:%s, group:%s, limit:%s, timeout:%s}",
-		req.RemoteAddr, topic, group, limitParam, timeoutParam)
+	log.Info("consumer %s{topic:%s, group:%s, limit:%s}",
+		req.RemoteAddr, topic, group, limitParam)
 
-	if err = this.consume(ver, topic, limit, group, timeout, w, req); err != nil {
-		this.breaker.Fail()
-		log.Error("%s Sub {topic:%s, group:%s, limit:%s, timeout:%s} %v",
-			req.RemoteAddr, topic, group, limitParam, timeoutParam, err)
+	// pick a consumer from the consumer group
+	cg, err := this.subPool.PickConsumerGroup(topic, group, req.RemoteAddr)
+	if err != nil {
+		log.Error("consumer %s{topic:%s, group:%s, limit:%s} %v",
+			req.RemoteAddr, topic, group, limitParam, err)
 
-		w.WriteHeader(http.StatusInternalServerError) // TODO
+		this.writeBadRequest(w)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	if err = this.consume(ver, topic, limit, group, w, req, cg); err != nil {
+		log.Error("consumer %s{topic:%s, group:%s, limit:%s} get killed: %v",
+			req.RemoteAddr, topic, group, limitParam, err)
+		go this.subPool.KillClient(topic, group, req.RemoteAddr)
+
+		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 	}
 }
 
 func (this *Gateway) consume(ver, topic string, limit int, group string,
-	timeout time.Duration,
-	w http.ResponseWriter, req *http.Request) error {
-	cg, err := this.subPool.PickConsumerGroup(topic, group, req.RemoteAddr)
-	if err != nil {
-		return err
-	}
-
+	w http.ResponseWriter, req *http.Request, cg *consumergroup.ConsumerGroup) error {
 	n := 0
 	for {
 		select {
-		case <-time.After(timeout):
-			return nil
-
 		case msg := <-cg.Messages():
 			if _, err := w.Write(msg.Value); err != nil {
-				log.Warn("Sub killing consumer {topic:%s group:%s client:%s}",
-					topic, group, req.RemoteAddr)
-				go this.subPool.KillClient(topic, group, req.RemoteAddr)
+				// if cf.ChannelBufferSize > 0, client may lose message
+				// got message in chan, client not recv it but offset commited.
 				return err
 			}
 
@@ -108,7 +92,8 @@ func (this *Gateway) consume(ver, topic string, limit int, group string,
 			}
 
 		case err := <-cg.Errors():
-			log.Error("%s {topic:%s, group:%s}: %+v", req.RemoteAddr, topic, group, err)
+			// TODO how to handle the errors
+			log.Error("consumer %s{topic:%s, group:%s}: %+v", req.RemoteAddr, topic, group, err)
 		}
 	}
 

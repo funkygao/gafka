@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Shopify/sarama"
 	log "github.com/funkygao/log4go"
 	"github.com/wvanbergen/kafka/consumergroup"
 )
@@ -23,7 +24,6 @@ func newSubPool(gw *Gateway) *subPool {
 	}
 }
 
-// TODO resume from last offset
 func (this *subPool) PickConsumerGroup(topic, group,
 	client string) (cg *consumergroup.ConsumerGroup, err error) {
 	this.cgsLock.Lock()
@@ -49,9 +49,11 @@ func (this *subPool) PickConsumerGroup(topic, group,
 
 	// create the consumer group for this client
 	cf := consumergroup.NewConfig()
-	//cf.Offsets.Initial = sarama.OffsetNewest // TODO
-	cf.Offsets.CommitInterval = time.Minute // TODO
-	cf.Offsets.ProcessingTimeout = time.Minute
+	cf.ChannelBufferSize = 0
+	cf.Offsets.Initial = sarama.OffsetOldest
+	cf.Offsets.CommitInterval = options.offsetCommitInterval
+	// time to wait for all the offsets for a partition to be processed after stopping to consume from it.
+	cf.Offsets.ProcessingTimeout = time.Second * 10
 	cf.Zookeeper.Chroot = this.gw.metaStore.ZkChroot()
 	for i := 0; i < 3; i++ {
 		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
@@ -68,6 +70,7 @@ func (this *subPool) PickConsumerGroup(topic, group,
 func (this *subPool) KillClient(topic, group, client string) {
 	this.cgs[topic][group][client].Close() // will flush offset
 	delete(this.cgs[topic][group], client)
+	log.Info("consumer %s{topic:%s, group:%s} closed", client, topic, group)
 }
 
 func (this *subPool) Start() {
@@ -85,17 +88,26 @@ func (this *subPool) Start() {
 }
 
 func (this *subPool) Stop() {
-	// TODO flush the offsets
+	var wg sync.WaitGroup
 	for topic, ts := range this.cgs {
 		for group, gs := range ts {
 			for client, c := range gs {
-				if err := c.Close(); err != nil {
-					log.Error("{topic:%s, group:%s, client:%s}: %v", topic,
-						group, client, err)
-				}
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+
+					if err := c.Close(); err != nil {
+						// will commit the offset
+						log.Error("{topic:%s, group:%s, client:%s}: %v", topic,
+							group, client, err)
+					}
+				}()
 			}
 		}
 	}
+
+	// wait for all consumers commit offset
+	wg.Wait()
 
 	// reinit the vars
 	this.cgs = make(map[string]map[string]map[string]*consumergroup.ConsumerGroup)

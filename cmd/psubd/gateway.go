@@ -112,7 +112,7 @@ func (this *Gateway) Start() (err error) {
 	if err != nil {
 		return
 	}
-	this.listener = LimitListener(this.listener, 10000) // TODO
+	this.listener = LimitListener(this.listener, options.maxClients)
 
 	this.buildRouting()
 	go this.server.Serve(this.listener)
@@ -152,7 +152,7 @@ func (this *Gateway) showClusters(w http.ResponseWriter, req *http.Request) {
 	w.Write(b)
 }
 
-// TODO
+// TODO auth
 func (this *Gateway) authenticate(req *http.Request) (ok bool) {
 	switch this.mode {
 	case "pub":

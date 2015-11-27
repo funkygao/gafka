@@ -17,7 +17,7 @@ type pubResponse struct {
 
 // /{ver}/topics/{topic}?ack=n&retry=n&timeout=n
 func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
-	req.Body = http.MaxBytesReader(w, req.Body, options.maxBodySize)
+	req.Body = http.MaxBytesReader(w, req.Body, options.maxPubSize)
 	err := req.ParseForm() // TODO
 	if err != nil {
 		log.Error("%s: %v", req.RemoteAddr, err)

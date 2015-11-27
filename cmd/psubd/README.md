@@ -47,15 +47,13 @@ A REST Proxy for kafka that supports both Pub and Sub.
 
 ### TODO
 
-- [ ] kafka conn pool
-- [ ] rate limit
-- [ ] metrics report
+- [ ] sub metrics report
 - [ ] mem pool 
-- [ ] consumer groups
 - [ ] profiler
 - [ ] Update to glibc 2.20 or higher
-- [ ] consumer id discard
-- [ ] bug: same consumer id get copy of messages. If client conn broken, stop the consumer group
+- [ ] pub/sub support config passed in
+- [ ] graceful shutdown
+- [ ] influxdb tag
 
 ### EdgeCase
 

@@ -67,7 +67,7 @@ func newPubMetrics() *pubMetrics {
 		log.New(os.Stdout, "", log.Lmicroseconds))
 	// influxdb reporter
 	if options.influxServer != "" {
-		go influxdb.InfluxDB(metrics.DefaultRegistry, options.tick,
+		go influxdb.InfluxDB(metrics.DefaultRegistry, options.reporterInterval,
 			options.influxServer, "psub", "", "")
 	}
 
@@ -76,7 +76,7 @@ func newPubMetrics() *pubMetrics {
 }
 
 func (this *pubMetrics) mainLoop() {
-	ticker := time.NewTicker(options.tick)
+	ticker := time.NewTicker(options.reporterInterval)
 	mem := new(runtime.MemStats)
 	var lastTotalGcPause uint64
 	for {
