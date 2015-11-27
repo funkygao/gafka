@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,7 +12,6 @@ import (
 	_ "expvar"
 	_ "net/http/pprof"
 
-	"github.com/funkygao/gafka"
 	"github.com/funkygao/golib/breaker"
 	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/signal"
@@ -120,68 +118,6 @@ func (this *Gateway) Start() (err error) {
 	log.Info("gateway[%s:%s] http ready on %s", this.hostname, this.mode, this.server.Addr)
 
 	return nil
-}
-
-func (this *Gateway) buildRouting() {
-	this.router.HandleFunc("/ver", this.showVersion)
-	this.router.HandleFunc("/clusters", this.showClusters)
-
-	switch this.mode {
-	case "pub":
-		this.router.HandleFunc("/{ver}/topics/{topic}", this.pubHandler).Methods("POST")
-
-	case "sub":
-		this.router.HandleFunc("/{ver}/topics/{topic}/{group}",
-			this.subHandler).Methods("GET")
-
-	case "pubsub":
-		this.router.HandleFunc("/{ver}/topics/{topic}", this.pubHandler).Methods("POST")
-		this.router.HandleFunc("/{ver}/topics/{topic}/{group}",
-			this.subHandler).Methods("GET")
-	}
-}
-
-func (this *Gateway) showVersion(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte(fmt.Sprintf("%s-%s", gafka.Version, gafka.BuildId)))
-}
-
-func (this *Gateway) showClusters(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	b, _ := json.Marshal(this.metaStore.Clusters())
-	w.Write(b)
-}
-
-// TODO auth
-func (this *Gateway) authenticate(req *http.Request) (ok bool) {
-	switch this.mode {
-	case "pub":
-		pubkeyParam := req.Header["Pubkey"]
-		if len(pubkeyParam) > 0 && !this.metaStore.AuthPub(pubkeyParam[0]) {
-			log.Error("client:%s pubkey: %s", req.RemoteAddr, pubkeyParam[0])
-			return false
-		}
-
-		return true
-
-	default:
-		return true
-	}
-
-}
-
-func (this *Gateway) writeAuthFailure(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusUnauthorized)
-	w.Write([]byte("invalid pubkey"))
-}
-
-func (this *Gateway) writeBreakerOpen(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusBadGateway)
-	w.Write([]byte("circuit broken"))
-}
-
-func (this *Gateway) writeBadRequest(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusBadRequest)
 }
 
 func (this *Gateway) ServeForever() {

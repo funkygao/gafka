@@ -22,23 +22,15 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Error("%s: %v", req.RemoteAddr, err)
 
-		this.writeBadRequest(w)
-		return
-	}
-
-	if !this.authenticate(req) {
-		this.writeAuthFailure(w)
+		writeBadRequest(w)
 		return
 	}
 
 	if this.breaker.Open() {
-		this.writeBreakerOpen(w)
+		writeBreakerOpen(w)
 		return
 	}
 
-	this.pubMetrics.PubConcurrent.Inc(1)
-
-	t1 := time.Now()
 	var (
 		ver   string
 		topic string
@@ -47,6 +39,14 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 	ver = params["ver"]
 	topic = params["topic"]
+
+	if !this.authPub(req.Header.Get("Pubkey"), topic) {
+		writeAuthFailure(w)
+		return
+	}
+
+	t1 := time.Now()
+	this.pubMetrics.PubConcurrent.Inc(1)
 
 	// TODO how can get m in []byte?
 	partition, offset, err := this.produce(ver, topic, req.FormValue("m"))

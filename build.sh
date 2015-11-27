@@ -22,7 +22,14 @@ if [[ $1 = "-gc" ]]; then
     BUILD_FLAGS="$BUILD_FLAGS -gcflags '-m=1'"
 fi
 
-cd cmd/gk/
+BUILD_PKG=cmd/gk
+BUILD_BIN=gk
+if [[ $1 = "gw" ]]; then
+    BUILD_PKG=cmd/psubd
+    BUILD_BIN=psubd
+fi
+
+cd $BUILD_PKG
 if [ $GOVER -gt 4 ]; then
     go build $BUILD_FLAGS -tags release -ldflags "-X github.com/funkygao/gafka.Version=$VER -X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
 else
@@ -36,4 +43,4 @@ fi
 #---------
 # show ver
 #---------
-./gk -version
+./$BUILD_BIN -version

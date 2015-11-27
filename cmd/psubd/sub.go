@@ -11,13 +11,8 @@ import (
 
 // /{ver}/topics/{topic}/{group}/{id}?offset=n&limit=1
 func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
-	if !this.authenticate(req) {
-		this.writeAuthFailure(w)
-		return
-	}
-
 	if this.breaker.Open() {
-		this.writeBreakerOpen(w)
+		writeBreakerOpen(w)
 		return
 	}
 
@@ -33,7 +28,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 	if limitParam != "" {
 		limit, err = strconv.Atoi(limitParam)
 		if err != nil {
-			this.writeBadRequest(w)
+			writeBadRequest(w)
 
 			log.Error("consumer %s{topic:%s, group:%s, limit:%s} %v",
 				req.RemoteAddr, topic, group, limitParam, err)
@@ -45,16 +40,27 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 	ver = params["ver"]
 	topic = params["topic"]
 	group = params["group"]
+
+	if !this.authSub(req.Header.Get("Subkey"), topic) {
+		writeAuthFailure(w)
+		return
+	}
+
 	log.Info("consumer %s{topic:%s, group:%s, limit:%s}",
 		req.RemoteAddr, topic, group, limitParam)
 
 	// pick a consumer from the consumer group
 	cg, err := this.subPool.PickConsumerGroup(topic, group, req.RemoteAddr)
 	if err != nil {
+		if err != ErrTooManyConsumers {
+			// broker error
+			this.breaker.Fail()
+		}
+
 		log.Error("consumer %s{topic:%s, group:%s, limit:%s} %v",
 			req.RemoteAddr, topic, group, limitParam, err)
 
-		this.writeBadRequest(w)
+		writeBadRequest(w)
 		w.Write([]byte(err.Error()))
 		return
 	}
@@ -62,7 +68,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 	if err = this.consume(ver, topic, limit, group, w, req, cg); err != nil {
 		log.Error("consumer %s{topic:%s, group:%s, limit:%s} get killed: %v",
 			req.RemoteAddr, topic, group, limitParam, err)
-		go this.subPool.KillClient(topic, group, req.RemoteAddr)
+		go this.subPool.KillClient(topic, group, req.RemoteAddr) // wait cf.ProcessingTimeout
 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
