@@ -21,3 +21,11 @@ func writeBreakerOpen(w http.ResponseWriter) {
 func writeBadRequest(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusBadRequest)
 }
+
+func isBreakeableError(err error) bool {
+	if err != ErrTooManyConsumers && err != ErrRebalancing {
+		return true
+	}
+
+	return false
+}

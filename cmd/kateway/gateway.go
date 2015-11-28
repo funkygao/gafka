@@ -55,9 +55,11 @@ func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
 		metaRefreshInterval: metaRefreshInterval,
 	}
 	this.server = &http.Server{
-		Addr:        fmt.Sprintf(":%d", options.port),
-		Handler:     this.router,
-		ReadTimeout: 60 * time.Second,
+		Addr:           fmt.Sprintf(":%d", options.port),
+		Handler:        this.router,
+		ReadTimeout:    options.httpReadTimeout,  // FIXME will kill the consumer
+		WriteTimeout:   options.httpWriteTimeout, // FIXME will kill the producer
+		MaxHeaderBytes: 4 << 10,
 	}
 	this.breaker = &breaker.Consecutive{
 		FailureAllowance: 10,
