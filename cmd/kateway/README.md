@@ -56,6 +56,7 @@ A REST gateway for kafka that supports both Pub and Sub.
 
 ### TODO
 
+- [ ] websocket for pub/sub
 - [ ] sub metrics report
 - [ ] mem pool 
 - [ ] profiler
