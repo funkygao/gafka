@@ -45,6 +45,15 @@ A REST gateway for kafka that supports both Pub and Sub.
                     |     monitor      |--------| elastic partitioner |
                     +------------------+        +---------------------+
 
+
+### Usage
+
+    pub:
+    curl -i -XPOST -H "Pubkey: mypubkey" -d 'm=hello world' "http://localhost:9090/v1/topics/foobar?ack=2&timeout=1&retry=3"
+
+    sub:
+    curl -i http://localhost:9090/v1/topics/foobar/group1?limit=10000000
+
 ### TODO
 
 - [ ] sub metrics report
