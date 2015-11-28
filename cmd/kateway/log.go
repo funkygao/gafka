@@ -36,7 +36,7 @@ func setupLogging(logFile, logLevel, crashLogFile string) {
 		filter.Level = level
 	}
 
-	log.LogBufferLength = 1 << 10 // default 32, chan cap
+	log.LogBufferLength = 32 // default 32, chan cap
 
 	if logFile == "stdout" {
 		log.AddFilter("stdout", level, log.NewConsoleLogWriter())

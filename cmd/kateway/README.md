@@ -74,6 +74,7 @@ A REST gateway for kafka that supports both Pub and Sub.
 - [ ] client can query lag
 - [ ] websocket for pub/sub
 - [ ] sub metrics report
+- [ ] sub lock more precise 
 - [ ] mem pool 
 - [ ] profiler
 - [ ] Update to glibc 2.20 or higher

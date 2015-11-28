@@ -55,18 +55,24 @@ func newPubPool(gw *Gateway, brokerList []string) *pubPool {
 		gw:         gw,
 	}
 	this.initialize()
-	go func() {
-		for {
-			select {
-			case <-this.gw.shutdownCh:
-				log.Info("pub pool shutdown")
-				this.Stop()
-				this.gw.wg.Done()
-			}
-		}
-	}()
 
 	return this
+}
+
+func (this *pubPool) Start() {
+	this.gw.wg.Add(1)
+	defer this.gw.wg.Done()
+
+	ever := true
+	for ever {
+		select {
+		case <-this.gw.shutdownCh:
+			log.Info("pub pool shutdown")
+			this.Stop()
+			ever = false
+
+		}
+	}
 }
 
 func (this *pubPool) initialize() {

@@ -20,8 +20,7 @@ func init() {
 		os.Exit(0)
 	}
 
-	log.SetFlags(log.LstdFlags | log.Llongfile)
-
+	log.SetFlags(log.LstdFlags | log.Llongfile) // TODO zk sdk uses this
 }
 
 func main() {

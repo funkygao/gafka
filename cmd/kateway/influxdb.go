@@ -61,7 +61,8 @@ func (r *reporter) makeClient() (err error) {
 
 func (r *reporter) run() {
 	intervalTicker := time.Tick(r.interval)
-	pingTicker := time.Tick(time.Second * 5)
+	//pingTicker := time.Tick(time.Second * 5)
+	pingTicker := time.Tick(r.interval / 2)
 
 	for {
 		select {

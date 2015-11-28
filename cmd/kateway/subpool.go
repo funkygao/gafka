@@ -91,14 +91,16 @@ func (this *subPool) KillClient(topic, group, client string) {
 }
 
 func (this *subPool) Start() {
-	for {
+	this.gw.wg.Add(1)
+	defer this.gw.wg.Done()
+
+	ever := true
+	for ever {
 		select {
 		case <-this.gw.shutdownCh:
 			log.Info("sub pool shutdown")
 			this.Stop()
-			this.gw.wg.Done()
-			break
-
+			ever = false
 		}
 	}
 

@@ -84,6 +84,9 @@ func (this *Gateway) Start() (err error) {
 	signal.RegisterSignalHandler(syscall.SIGINT, func(sig os.Signal) {
 		this.Stop()
 	})
+	signal.RegisterSignalHandler(syscall.SIGUSR2, func(sig os.Signal) {
+		this.Stop()
+	})
 
 	this.metaStore.Start()
 	log.Info("gateway[%s:%s] meta store started", this.hostname, this.mode)
@@ -91,20 +94,20 @@ func (this *Gateway) Start() (err error) {
 	switch this.mode {
 	case "pub":
 		this.pubPool = newPubPool(this, this.metaStore.BrokerList())
+		go this.pubPool.Start()
 		log.Info("gateway[%s:%s] kafka pub pool started", this.hostname, this.mode)
 
 	case "sub":
 		this.subPool = newSubPool(this)
-		this.wg.Add(1)
 		go this.subPool.Start()
 		log.Info("gateway[%s:%s] kafka consumer groups pool started", this.hostname, this.mode)
 
 	case "pubsub":
 		this.pubPool = newPubPool(this, this.metaStore.BrokerList())
+		go this.pubPool.Start()
 		log.Info("gateway[%s:%s] kafka pub pool started", this.hostname, this.mode)
 
 		this.subPool = newSubPool(this)
-		this.wg.Add(1)
 		go this.subPool.Start()
 		log.Info("gateway[%s:%s] kafka consumer groups pool started", this.hostname, this.mode)
 	}
@@ -153,11 +156,12 @@ func (this *Gateway) Stop() {
 		this.server = nil
 		this.router = nil
 
-		this.metaStore.Stop()
-
 		// FIXME not able to shudown gracefully
 		close(this.shutdownCh)
+		// wait for all components shutdown
 		this.wg.Wait()
+
+		this.metaStore.Stop()
 
 		log.Info("gateway[%s:%s] shutdown complete", this.hostname, this.mode)
 	}
