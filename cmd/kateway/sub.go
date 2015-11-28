@@ -46,13 +46,13 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Info("consumer %s{topic:%s, group:%s, limit:%s}",
+	log.Trace("consumer %s{topic:%s, group:%s, limit:%s}",
 		req.RemoteAddr, topic, group, limitParam)
 
 	// pick a consumer from the consumer group
 	cg, err := this.subPool.PickConsumerGroup(topic, group, req.RemoteAddr)
 	if err != nil {
-		if err != ErrTooManyConsumers {
+		if isBreakeableError(err) {
 			// broker error
 			this.breaker.Fail()
 		}
@@ -90,6 +90,7 @@ func (this *Gateway) consume(ver, topic string, limit int, group string,
 			// client really got this msg, safe to commit
 			cg.CommitUpto(msg)
 
+			// FIXME if client reached this limit and disconnects, leave the consumer garbage
 			if limit > 0 {
 				n++
 				if n >= limit {

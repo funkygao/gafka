@@ -86,14 +86,20 @@ A REST gateway for kafka that supports both Pub and Sub.
 
 - [ ] /usr/local/go/src/net/http/server.go:1934: http: multiple response.WriteHeader calls
 - [ ] panic: sync: negative WaitGroup counter
+- [ ] ErrTooManyConsumers not triggered
 
 ### EdgeCase
 
 - when producing/consuming, partition added
 - when producing/consuming, brokers added/died
 
+    1. a sub client -> kateway
+    2. consumes msg 1-10
+    3. client disconnects 
+    4. kateway fails to write(msg 11), and kills this client record(10s)
+    5. will commit offset to 10
 
-post("/{group}")  create group
-post("/{group}/instances/{instance}/offsets") 
-delete("/{group}/instances/{instance}")
-get("/{group}/instances/{instance}/topics/{topic}")
+    1. a sub client -> kateway
+    2. no msgs and reach idle max timeout, kateway closes the client
+    3. we MUST handle this case
+

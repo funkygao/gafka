@@ -13,8 +13,9 @@ type subPool struct {
 	gw *Gateway
 
 	// {topic: {group: {client: consumerGroup}}}
-	cgs     map[string]map[string]map[string]*consumergroup.ConsumerGroup
-	cgsLock sync.RWMutex
+	cgs         map[string]map[string]map[string]*consumergroup.ConsumerGroup
+	cgsLock     sync.RWMutex
+	rebalancing bool
 }
 
 func newSubPool(gw *Gateway) *subPool {
@@ -41,9 +42,14 @@ func (this *subPool) PickConsumerGroup(topic, group,
 		return
 	}
 
+	if this.rebalancing {
+		err = ErrRebalancing
+		return
+	}
+
+	// FIXME 2 partition, if 3 client concurrently connects, got 3 consumer
 	if this.gw.metaStore.OnlineConsumersCount(topic, group) >= len(this.gw.metaStore.Partitions(topic)) {
 		err = ErrTooManyConsumers
-
 		return
 	}
 
@@ -53,7 +59,7 @@ func (this *subPool) PickConsumerGroup(topic, group,
 	cf.Offsets.Initial = sarama.OffsetOldest
 	cf.Offsets.CommitInterval = options.offsetCommitInterval
 	// time to wait for all the offsets for a partition to be processed after stopping to consume from it.
-	cf.Offsets.ProcessingTimeout = time.Second * 10
+	cf.Offsets.ProcessingTimeout = time.Second * 10 // TODO
 	cf.Zookeeper.Chroot = this.gw.metaStore.ZkChroot()
 	for i := 0; i < 3; i++ {
 		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
@@ -69,9 +75,16 @@ func (this *subPool) PickConsumerGroup(topic, group,
 
 func (this *subPool) KillClient(topic, group, client string) {
 	// TODO golang keep-alive max idle defaults 60s
+	this.rebalancing = true
 	this.cgs[topic][group][client].Close() // will flush offset
+
+	this.cgsLock.Lock()
 	delete(this.cgs[topic][group], client)
-	log.Info("consumer %s{topic:%s, group:%s} closed", client, topic, group)
+	this.cgsLock.Unlock()
+
+	this.rebalancing = false
+
+	log.Info("consumer %s{topic:%s, group:%s} closed, rebalanced ok", client, topic, group)
 }
 
 func (this *subPool) Start() {
@@ -89,6 +102,9 @@ func (this *subPool) Start() {
 }
 
 func (this *subPool) Stop() {
+	this.cgsLock.Lock()
+	defer this.cgsLock.Unlock()
+
 	var wg sync.WaitGroup
 	for topic, ts := range this.cgs {
 		for group, gs := range ts {
