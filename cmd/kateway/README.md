@@ -2,6 +2,21 @@
 
 A REST gateway for kafka that supports both Pub and Sub.
 
+### Features
+
+- RESTful API for kafka Pub/Sub
+- Quotas and rate limit
+- Plugable Authentication and Authorization
+- Analytics
+- Monitor Performance
+- Service Discovery
+- Circuit breakers
+- Multiple versioning topic
+- Hot reload without downtime
+- Transforms on the fly
+- Audit
+- Distributed load balancing
+- Health checks
 
 ### Architecture
 
@@ -65,6 +80,7 @@ A REST gateway for kafka that supports both Pub and Sub.
 - [ ] pub/sub support config passed in
 - [ ] graceful shutdown
 - [X] influxdb tag
+- [ ] compression in kafka
 
 ### Bugs
 

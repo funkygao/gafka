@@ -27,6 +27,8 @@ var (
 		offsetCommitInterval time.Duration
 		reporterInterval     time.Duration
 		metaRefresh          time.Duration
+		httpReadTimeout      time.Duration
+		httpWriteTimeout     time.Duration
 	}
 )
 
@@ -49,6 +51,8 @@ func parseFlags() {
 	flag.Int64Var(&options.maxPubSize, "maxpub", 1<<20, "max Pub message size")
 	flag.IntVar(&options.maxClients, "maxclient", 10000, "max concurrent connections")
 	flag.DurationVar(&options.offsetCommitInterval, "offsetcommit", time.Minute, "consumer offset commit interval")
+	flag.DurationVar(&options.httpReadTimeout, "httprtimeout", time.Second*60, "http server read timeout")
+	flag.DurationVar(&options.httpWriteTimeout, "httpwtimeout", time.Second*60, "http server write timeout")
 
 	flag.Parse()
 }
