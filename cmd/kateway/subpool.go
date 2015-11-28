@@ -62,6 +62,9 @@ func (this *subPool) PickConsumerGroup(topic, group,
 	cf.Offsets.ProcessingTimeout = time.Second * 10 // TODO
 	cf.Zookeeper.Chroot = this.gw.metaStore.ZkChroot()
 	for i := 0; i < 3; i++ {
+		// join group will async register zk owners znodes
+		// so, if many client concurrently connects to kateway, will not
+		// strictly throw ErrTooManyConsumers
 		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
 			this.gw.metaStore.ZkAddrs(), cf)
 		if err == nil {
