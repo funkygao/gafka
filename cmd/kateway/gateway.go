@@ -27,6 +27,7 @@ type Gateway struct {
 	listener net.Listener
 	server   *http.Server
 	router   *mux.Router
+	routes   []route
 
 	shutdownCh chan struct{}
 	wg         sync.WaitGroup
@@ -48,6 +49,7 @@ func NewGateway(mode string, metaRefreshInterval time.Duration) *Gateway {
 		mode:                mode,
 		router:              mux.NewRouter(),
 		shutdownCh:          make(chan struct{}),
+		routes:              make([]route, 0),
 		metaStore:           newZkMetaStore(options.zone, options.cluster),
 		leakyBucket:         ratelimiter.NewLeakyBucket(1000*60, time.Minute),
 		metaRefreshInterval: metaRefreshInterval,

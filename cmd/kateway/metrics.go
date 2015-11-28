@@ -75,7 +75,7 @@ func newPubMetrics(gw *Gateway) *pubMetrics {
 	metrics.Register("pub.latency", this.PubLatency)          // in ms
 
 	// stdout reporter
-	go metrics.Log(metrics.DefaultRegistry, options.reporterInterval,
+	go metrics.Log(metrics.DefaultRegistry, options.reporterInterval*60,
 		log.New(os.Stdout, "", log.Lmicroseconds))
 
 	// influxdb reporter

@@ -1,9 +1,17 @@
 package main
 
 import (
-	"code.google.com/p/go.net/websocket"
+	"net/http"
+
+	log "github.com/funkygao/log4go"
 )
 
-func (this *Gateway) subWsHandler(ws *websocket.Conn) {
+func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request) {
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Error("%s: %v", r.RemoteAddr, err)
+		return
+	}
+
 	defer ws.Close()
 }

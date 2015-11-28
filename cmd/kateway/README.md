@@ -56,6 +56,7 @@ A REST gateway for kafka that supports both Pub and Sub.
 
 ### TODO
 
+- [ ] client can query lag
 - [ ] websocket for pub/sub
 - [ ] sub metrics report
 - [ ] mem pool 
@@ -64,13 +65,16 @@ A REST gateway for kafka that supports both Pub and Sub.
 - [ ] pub/sub support config passed in
 - [ ] graceful shutdown
 - [X] influxdb tag
+
+### Bugs
+
 - [ ] /usr/local/go/src/net/http/server.go:1934: http: multiple response.WriteHeader calls
+- [ ] panic: sync: negative WaitGroup counter
 
 ### EdgeCase
 
 - when producing/consuming, partition added
 - when producing/consuming, brokers added/died
-
 
 
 post("/{group}")  create group
