@@ -84,7 +84,7 @@ A REST gateway for kafka that supports both Pub and Sub.
 
 ### Bugs
 
-- [ ] /usr/local/go/src/net/http/server.go:1934: http: multiple response.WriteHeader calls
+- [X] /usr/local/go/src/net/http/server.go:1934: http: multiple response.WriteHeader calls
 - [ ] panic: sync: negative WaitGroup counter
 - [ ] ErrTooManyConsumers not triggered
 

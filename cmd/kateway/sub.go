@@ -66,12 +66,10 @@ func (this *Gateway) subHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if err = this.consume(ver, topic, limit, group, w, req, cg); err != nil {
+		// broken pipe, io timeout
 		log.Error("consumer %s{topic:%s, group:%s, limit:%s} get killed: %v",
 			req.RemoteAddr, topic, group, limitParam, err)
 		go this.subPool.KillClient(topic, group, req.RemoteAddr) // wait cf.ProcessingTimeout
-
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
 	}
 }
 
