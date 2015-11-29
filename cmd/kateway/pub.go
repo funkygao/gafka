@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -16,16 +18,7 @@ type pubResponse struct {
 }
 
 // /{ver}/topics/{topic}?ack=n&retry=n&timeout=n
-func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
-	req.Body = http.MaxBytesReader(w, req.Body, options.maxPubSize)
-	err := req.ParseForm() // TODO
-	if err != nil {
-		log.Error("%s: %v", req.RemoteAddr, err)
-
-		writeBadRequest(w)
-		return
-	}
-
+func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	if this.breaker.Open() {
 		writeBreakerOpen(w)
 		return
@@ -36,26 +29,35 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 		topic string
 	)
 
-	params := mux.Vars(req)
+	params := mux.Vars(r)
 	ver = params["ver"]
 	topic = params["topic"]
 
-	if !this.authPub(req.Header.Get("Pubkey"), topic) {
+	if !this.authPub(r.Header.Get("Pubkey"), topic) {
 		writeAuthFailure(w)
+		return
+	}
+
+	// get the raw POST message
+	pr := io.LimitReader(r.Body, options.maxPubSize+1)
+	rawMsg, err := ioutil.ReadAll(pr) // TODO optimize
+	if err != nil {
+		writeBadRequest(w)
 		return
 	}
 
 	t1 := time.Now()
 	this.pubMetrics.PubConcurrent.Inc(1)
 
-	// TODO how can get m in []byte?
-	partition, offset, err := this.produce(ver, topic, req.FormValue("m"))
+	partition, offset, err := this.produce(ver, topic, rawMsg)
 	if err != nil {
-		this.breaker.Fail()
+		if isBrokerError(err) {
+			this.breaker.Fail()
+		}
 
 		this.pubMetrics.PubConcurrent.Dec(1)
 		this.pubMetrics.PubFailure.Inc(1)
-		log.Error("%s: %v", req.RemoteAddr, err)
+		log.Error("%s: %v", r.RemoteAddr, err)
 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
@@ -71,7 +73,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	b, _ := json.Marshal(response)
 	if _, err := w.Write(b); err != nil {
-		log.Error("%s: %v", req.RemoteAddr, err)
+		log.Error("%s: %v", r.RemoteAddr, err)
 		this.pubMetrics.ClientError.Inc(1)
 	}
 
@@ -80,7 +82,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, req *http.Request) {
 	this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 }
 
-func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
+func (this *Gateway) produce(ver, topic string, msg []byte) (partition int32,
 	offset int64, err error) {
 	this.pubMetrics.PubQps.Mark(1)
 	this.pubMetrics.PubSize.Mark(int64(len(msg)))
@@ -104,7 +106,7 @@ func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
 
 	partition, offset, err = producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic,
-		Value: sarama.StringEncoder(msg), // TODO
+		Value: sarama.ByteEncoder(msg),
 	})
 
 	producer.Close() // TODO keep the conn open
@@ -112,8 +114,8 @@ func (this *Gateway) produce(ver, topic string, msg string) (partition int32,
 	return
 }
 
-// Deprecated, a throughput of only 1k/s
-func (this *Gateway) produceWithoutPool(ver, topic string, msg string) (partition int32,
+// Just for testing, a throughput of only 1k/s
+func (this *Gateway) produceWithoutPool(ver, topic string, msg []byte) (partition int32,
 	offset int64, err error) {
 	this.pubMetrics.PubQps.Mark(1)
 	this.pubMetrics.PubSize.Mark(int64(len(msg)))
@@ -132,7 +134,7 @@ func (this *Gateway) produceWithoutPool(ver, topic string, msg string) (partitio
 
 	partition, offset, err = producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic,
-		Value: sarama.StringEncoder(msg),
+		Value: sarama.ByteEncoder(msg),
 	})
 	producer.Close()
 	return

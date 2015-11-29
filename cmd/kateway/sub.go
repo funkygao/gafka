@@ -39,10 +39,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		log.Warn("consumer %s{topic:%s, group:%s, limit:%d} auth fail",
 			r.RemoteAddr, topic, group, limit)
 
-		// close the suspicous http connection  TODO test case
-		conn, _, _ := w.(http.Hijacker).Hijack()
-		conn.Write([]byte("auth fail"))
-		conn.Close()
 		return
 	}
 

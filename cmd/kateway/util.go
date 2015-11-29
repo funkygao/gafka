@@ -12,6 +12,11 @@ func diff(l1, l2 []string) (added []string, deleted []string) {
 func writeAuthFailure(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusUnauthorized)
 	w.Write([]byte("invalid pubkey"))
+
+	// close the suspicous http connection  TODO test case
+	if conn, _, err := w.(http.Hijacker).Hijack(); err == nil {
+		conn.Close()
+	}
 }
 
 func writeBreakerOpen(w http.ResponseWriter) {
