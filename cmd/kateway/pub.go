@@ -17,7 +17,7 @@ type pubResponse struct {
 	Offset    int64 `json:"offset"`
 }
 
-// /{ver}/topics/{topic}?ack=n&retry=n&timeout=n
+// /{ver}/topics/{topic}?key=xxx
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	if this.breaker.Open() {
 		writeBreakerOpen(w)
@@ -27,11 +27,13 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		ver   string
 		topic string
+		key   string
 	)
 
 	params := mux.Vars(r)
 	ver = params["ver"]
 	topic = params["topic"]
+	key = params["key"] // if key given, batched msg must belong to same key
 
 	if !this.authPub(r.Header.Get("Pubkey"), topic) {
 		writeAuthFailure(w)
@@ -49,7 +51,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	t1 := time.Now()
 	this.pubMetrics.PubConcurrent.Inc(1)
 
-	partition, offset, err := this.produce(ver, topic, rawMsg)
+	partition, offset, err := this.produce(ver, topic, key, rawMsg)
 	if err != nil {
 		if isBrokerError(err) {
 			this.breaker.Fail()
@@ -82,7 +84,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 }
 
-func (this *Gateway) produce(ver, topic string, msg []byte) (partition int32,
+func (this *Gateway) produce(ver, topic string, key string, msg []byte) (partition int32,
 	offset int64, err error) {
 	this.pubMetrics.PubQps.Mark(1)
 	this.pubMetrics.PubSize.Mark(int64(len(msg)))
@@ -104,8 +106,13 @@ func (this *Gateway) produce(ver, topic string, msg []byte) (partition int32,
 
 	// TODO add msg header
 
+	var keyEncoder sarama.Encoder = nil // will use random partitioner
+	if key != "" {
+		keyEncoder = sarama.StringEncoder(key) // will use hash partition
+	}
 	partition, offset, err = producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic,
+		Key:   keyEncoder,
 		Value: sarama.ByteEncoder(msg),
 	})
 
