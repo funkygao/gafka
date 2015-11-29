@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func diff(l1, l2 []string) (added []string, deleted []string) {
@@ -43,4 +44,14 @@ func getHttpQueryInt(r *http.Request, key string, defaultVal int) (int, error) {
 	}
 
 	return strconv.Atoi(valStr)
+}
+
+func getIp(r *http.Request) string {
+	ip := r.Header.Get("X-Forward-For") // client_ip,proxy_ip,proxy_ip,...
+	if ip == "" {
+		return r.RemoteAddr
+	}
+
+	p := strings.SplitN(ip, ",", 1)
+	return p[0]
 }
