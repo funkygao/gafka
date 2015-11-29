@@ -96,7 +96,6 @@ func (this *Gateway) consumeSingle(w http.ResponseWriter, cg *consumergroup.Cons
 }
 
 func (this *Gateway) consumeMulti(w http.ResponseWriter, cg *consumergroup.ConsumerGroup, limit int) error {
-	flusher := w.(http.Flusher)
 	n := 0
 	for {
 		select {
@@ -108,7 +107,8 @@ func (this *Gateway) consumeMulti(w http.ResponseWriter, cg *consumergroup.Consu
 			}
 
 			// http chunked: len in hex
-			flusher.Flush()
+			// curl CURLOPT_HTTP_TRANSFER_DECODING will auto unchunk
+			w.(http.Flusher).Flush()
 
 			// client really got this msg, safe to commit
 			cg.CommitUpto(msg)
