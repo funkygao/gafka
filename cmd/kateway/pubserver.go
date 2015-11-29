@@ -19,14 +19,10 @@ type pubServer struct {
 	tlsListener net.Listener
 
 	router *mux.Router
-
-	exitCh <-chan struct{}
 }
 
-func newPubServer(httpAddr, httpsAddr string, maxClients int,
-	gw *Gateway, exitCh <-chan struct{}) *pubServer {
+func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubServer {
 	this := &pubServer{
-		exitCh:     exitCh,
 		router:     mux.NewRouter(),
 		gw:         gw,
 		maxClients: maxClients,
@@ -100,7 +96,7 @@ func (this *pubServer) Router() *mux.Router {
 func (this *pubServer) waitExit() {
 	for {
 		select {
-		case <-this.exitCh:
+		case <-this.gw.shutdownCh:
 			// TODO https server
 
 			// HTTP response will have "Connection: close"

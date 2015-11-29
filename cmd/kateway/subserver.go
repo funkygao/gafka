@@ -26,14 +26,10 @@ type subServer struct {
 	idleConns     map[string]net.Conn // in keep-alive state http connections
 	closedConnCh  chan string         // channel of remote addr
 	idleConnsLock sync.Mutex
-
-	exitCh <-chan struct{}
 }
 
-func newSubServer(httpAddr, httpsAddr string, maxClients int,
-	gw *Gateway, exitCh <-chan struct{}) *subServer {
+func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subServer {
 	this := &subServer{
-		exitCh:       exitCh,
 		gw:           gw,
 		maxClients:   maxClients,
 		router:       mux.NewRouter(),
@@ -64,7 +60,7 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int,
 
 			case http.StateIdle:
 				select {
-				case <-this.exitCh:
+				case <-this.gw.shutdownCh:
 					// actively close the client safely because IO is all done
 					c.Close()
 
@@ -140,7 +136,7 @@ func (this *subServer) Router() *mux.Router {
 func (this *subServer) waitExit() {
 	for {
 		select {
-		case <-this.exitCh:
+		case <-this.gw.shutdownCh:
 			// TODO https server
 
 			// HTTP response will have "Connection: close"

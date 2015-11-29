@@ -65,14 +65,14 @@ func NewGateway(metaRefreshInterval time.Duration) *Gateway {
 	}
 	this.hostname, _ = os.Hostname()
 
-	if options.pubHttpAddr != "" {
+	if options.pubHttpAddr != "" || options.pubHttpsAddr != "" {
 		this.pubServer = newPubServer(options.pubHttpAddr, options.pubHttpsAddr,
-			options.maxClients, this, this.shutdownCh)
+			options.maxClients, this)
 		this.pubMetrics = newPubMetrics(this)
 	}
-	if options.subHttpAddr != "" {
+	if options.subHttpAddr != "" || options.subHttpsAddr != "" {
 		this.subServer = newSubServer(options.subHttpAddr, options.subHttpsAddr,
-			options.maxClients, this, this.shutdownCh)
+			options.maxClients, this)
 		this.subMetrics = newSubMetrics(this)
 	}
 
@@ -134,7 +134,6 @@ func (this *Gateway) ServeForever() {
 	for ever {
 		select {
 		case <-this.shutdownCh:
-			log.Info("gateway[%s] terminated", this.hostname)
 			ever = false
 
 		case <-meteRefreshTicker.C:

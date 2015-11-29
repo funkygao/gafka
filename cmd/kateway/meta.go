@@ -24,8 +24,8 @@ type MetaStore interface {
 }
 
 type zkMetaStore struct {
-	brokerList    []string
-	partitionsMap map[string][]int32
+	brokerList    []string           // cache
+	partitionsMap map[string][]int32 // cache
 
 	zkcluster *zk.ZkCluster
 	mu        sync.Mutex
