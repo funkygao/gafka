@@ -78,24 +78,24 @@ func (this *Gateway) Start() (err error) {
 	})
 
 	this.metaStore.Start()
-	log.Info("gateway[%s] meta store started", this.hostname)
+	log.Info("meta store started")
 
 	this.buildRouting()
 
 	if options.pubPort > 0 {
 		this.pubPool = newPubPool(this, this.metaStore.BrokerList())
 		go this.pubPool.Start()
-		log.Info("gateway[%s] kafka pub pool started", this.hostname)
 
 		this.pubServer.Start()
 	}
 	if options.subPort > 0 {
 		this.subPool = newSubPool(this)
 		go this.subPool.Start()
-		log.Info("gateway[%s] kafka consumer groups pool started", this.hostname)
 
 		this.subServer.Start()
 	}
+
+	log.Info("gateway[%s] ready", this.hostname)
 
 	return nil
 }
