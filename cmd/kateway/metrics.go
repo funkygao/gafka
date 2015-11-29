@@ -89,7 +89,7 @@ func newPubMetrics(gw *Gateway) *pubMetrics {
 }
 
 func (this *pubMetrics) mainLoop() {
-	log4go.Info("gateway[%s:%s] metrics reporter started", this.gw.hostname, this.gw.mode)
+	log4go.Info("gateway[%s] metrics reporter started", this.gw.hostname)
 
 	ticker := time.NewTicker(options.reporterInterval)
 	mem := new(runtime.MemStats)

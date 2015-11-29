@@ -25,7 +25,7 @@ func newSubPool(gw *Gateway) *subPool {
 	}
 }
 
-func (this *subPool) PickConsumerGroup(topic, group,
+func (this *subPool) PickConsumerGroup(ver, topic, group,
 	client string) (cg *consumergroup.ConsumerGroup, err error) {
 	this.cgsLock.Lock()
 	defer this.cgsLock.Unlock()
@@ -71,6 +71,9 @@ func (this *subPool) PickConsumerGroup(topic, group,
 			this.cgs[topic][group][client] = cg
 			break
 		}
+
+		// backoff
+		time.Sleep(time.Millisecond * 100)
 	}
 
 	return
@@ -91,14 +94,19 @@ func (this *subPool) KillClient(topic, group, client string) {
 }
 
 func (this *subPool) Start() {
-	for {
+	this.gw.wg.Add(1)
+	defer this.gw.wg.Done()
+
+	ever := true
+	for ever {
 		select {
 		case <-this.gw.shutdownCh:
 			log.Info("sub pool shutdown")
 			this.Stop()
-			this.gw.wg.Done()
-			break
+			ever = false
 
+		case remoteAddr := <-this.gw.subServer.closedConnCh: // TODO
+			log.Info("sub client %s closed", remoteAddr)
 		}
 	}
 

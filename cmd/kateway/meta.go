@@ -6,6 +6,7 @@ import (
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
+	log "github.com/funkygao/log4go"
 )
 
 type MetaStore interface {
@@ -49,6 +50,7 @@ func (this *zkMetaStore) Start() {
 
 func (this *zkMetaStore) Stop() {
 	this.zkcluster.Close()
+	log.Info("meta store closed")
 }
 
 func (this *zkMetaStore) OnlineConsumersCount(topic, group string) int {

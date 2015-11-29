@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 )
 
 func diff(l1, l2 []string) (added []string, deleted []string) {
@@ -11,6 +12,11 @@ func diff(l1, l2 []string) (added []string, deleted []string) {
 func writeAuthFailure(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusUnauthorized)
 	w.Write([]byte("invalid pubkey"))
+
+	// close the suspicous http connection  TODO test case
+	if conn, _, err := w.(http.Hijacker).Hijack(); err == nil {
+		conn.Close()
+	}
 }
 
 func writeBreakerOpen(w http.ResponseWriter) {
@@ -22,10 +28,19 @@ func writeBadRequest(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusBadRequest)
 }
 
-func isBreakeableError(err error) bool {
+func isBrokerError(err error) bool {
 	if err != ErrTooManyConsumers && err != ErrRebalancing {
 		return true
 	}
 
 	return false
+}
+
+func getHttpQueryInt(r *http.Request, key string, defaultVal int) (int, error) {
+	valStr := r.URL.Query().Get(key)
+	if valStr == "" {
+		return defaultVal, nil
+	}
+
+	return strconv.Atoi(valStr)
 }
