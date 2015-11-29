@@ -26,7 +26,7 @@ func (this *Gateway) registerRoute(router *mux.Router, path, method string,
 }
 
 func (this *Gateway) buildRouting() {
-	if options.pubPort > 0 {
+	if options.pubHttpAddr != "" {
 		this.registerRoute(this.pubServer.Router(),
 			"/ver", "GET", this.showVersion)
 		this.registerRoute(this.pubServer.Router(),
@@ -40,7 +40,7 @@ func (this *Gateway) buildRouting() {
 			"/ws/{ver}/topics/{topic}", "POST", this.pubWsHandler)
 	}
 
-	if options.subPort > 0 {
+	if options.subHttpAddr != "" {
 		this.registerRoute(this.subServer.Router(),
 			"/ver", "GET", this.showVersion)
 		this.registerRoute(this.subServer.Router(),

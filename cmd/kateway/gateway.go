@@ -55,14 +55,14 @@ func NewGateway(metaRefreshInterval time.Duration) *Gateway {
 	}
 	this.hostname, _ = os.Hostname()
 
-	if options.pubPort > 0 {
-		this.pubServer = newPubServer(options.pubPort, options.maxClients,
-			&this.wg, this.shutdownCh)
+	if options.pubHttpAddr != "" {
+		this.pubServer = newPubServer(options.pubHttpAddr, options.pubHttpsAddr,
+			options.maxClients, &this.wg, this.shutdownCh)
 		this.pubMetrics = newPubMetrics(this)
 	}
-	if options.subPort > 0 {
-		this.subServer = newSubServer(options.subPort, options.maxClients,
-			&this.wg, this.shutdownCh)
+	if options.subHttpAddr != "" {
+		this.subServer = newSubServer(options.subHttpAddr, options.subHttpsAddr,
+			options.maxClients, &this.wg, this.shutdownCh)
 		this.subMetrics = newSubMetrics(this)
 	}
 
@@ -82,13 +82,13 @@ func (this *Gateway) Start() (err error) {
 
 	this.buildRouting()
 
-	if options.pubPort > 0 {
+	if options.pubHttpAddr != "" {
 		this.pubPool = newPubPool(this, this.metaStore.BrokerList())
 		go this.pubPool.Start()
 
 		this.pubServer.Start()
 	}
-	if options.subPort > 0 {
+	if options.subHttpAddr != "" {
 		this.subPool = newSubPool(this)
 		go this.subPool.Start()
 

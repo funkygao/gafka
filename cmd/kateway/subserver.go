@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -27,7 +26,8 @@ type subServer struct {
 	exitCh <-chan struct{}
 }
 
-func newSubServer(port int, maxClients int, wg *sync.WaitGroup, exitCh <-chan struct{}) *subServer {
+func newSubServer(httpAddr, httpsAddr string, maxClients int,
+	wg *sync.WaitGroup, exitCh <-chan struct{}) *subServer {
 	this := &subServer{
 		exitCh:       exitCh,
 		wg:           wg,
@@ -37,7 +37,7 @@ func newSubServer(port int, maxClients int, wg *sync.WaitGroup, exitCh <-chan st
 		idleConns:    make(map[string]net.Conn, 10000),
 	}
 	this.server = &http.Server{
-		Addr:           fmt.Sprintf(":%d", port),
+		Addr:           httpAddr,
 		Handler:        this.router,
 		ReadTimeout:    0,       // FIXME
 		WriteTimeout:   0,       // FIXME
@@ -90,7 +90,7 @@ func (this *subServer) Start() {
 	go this.waitExit()
 
 	this.wg.Add(1)
-	log.Info("sub http server ready on :%s", this.server.Addr)
+	log.Info("sub http server ready on %s", this.server.Addr)
 }
 
 func (this *subServer) Router() *mux.Router {
@@ -124,7 +124,6 @@ func (this *subServer) waitExit() {
 			this.router = nil
 
 			this.wg.Done()
-
 		}
 	}
 }

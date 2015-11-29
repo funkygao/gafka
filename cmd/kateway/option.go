@@ -12,6 +12,10 @@ var (
 		zone                 string
 		cluster              string
 		configFile           string
+		pubHttpAddr          string
+		pubHttpsAddr         string
+		subHttpAddr          string
+		subHttpsAddr         string
 		logFile              string
 		logLevel             string
 		crashLogFile         string
@@ -20,8 +24,6 @@ var (
 		showVersion          bool
 		memprof              bool
 		blockprof            bool
-		pubPort              int
-		subPort              int
 		maxPubSize           int64
 		maxClients           int
 		offsetCommitInterval time.Duration
@@ -36,8 +38,10 @@ func parseFlags() {
 	flag.StringVar(&options.zone, "zone", "", "kafka zone name")
 	flag.StringVar(&options.cluster, "cluster", "", "kafka cluster name")
 	flag.DurationVar(&options.metaRefresh, "metarefresh", time.Minute, "meta data refresh interval")
-	flag.IntVar(&options.pubPort, "pubport", 0, "pub http bind port")
-	flag.IntVar(&options.subPort, "subport", 0, "sub http bind port")
+	flag.StringVar(&options.pubHttpAddr, "pubhttp", "", "pub http bind addr")
+	flag.StringVar(&options.pubHttpsAddr, "pubhttps", "", "pub https bind addr")
+	flag.StringVar(&options.subHttpAddr, "subhttp", "", "sub http bind addr")
+	flag.StringVar(&options.subHttpsAddr, "subhttps", "", "sub https bind addr")
 	flag.StringVar(&options.logLevel, "level", "debug", "log level")
 	flag.StringVar(&options.logFile, "log", "stdout", "log file, default stdout")
 	flag.StringVar(&options.crashLogFile, "crashlog", "", "crash log")

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -21,7 +20,8 @@ type pubServer struct {
 	exitCh <-chan struct{}
 }
 
-func newPubServer(port int, maxClients int, wg *sync.WaitGroup, exitCh <-chan struct{}) *pubServer {
+func newPubServer(httpAddr, httpsAddr string, maxClients int,
+	wg *sync.WaitGroup, exitCh <-chan struct{}) *pubServer {
 	this := &pubServer{
 		exitCh:     exitCh,
 		router:     mux.NewRouter(),
@@ -29,7 +29,7 @@ func newPubServer(port int, maxClients int, wg *sync.WaitGroup, exitCh <-chan st
 		maxClients: maxClients,
 	}
 	this.server = &http.Server{
-		Addr:           fmt.Sprintf(":%d", port),
+		Addr:           httpAddr,
 		Handler:        this.router,
 		ReadTimeout:    0,       // FIXME
 		WriteTimeout:   0,       // FIXME
@@ -51,7 +51,7 @@ func (this *pubServer) Start() {
 	go this.waitExit()
 
 	this.wg.Add(1)
-	log.Info("pub http server ready on :%s", this.server.Addr)
+	log.Info("pub http server ready on %s", this.server.Addr)
 }
 
 func (this *pubServer) Router() *mux.Router {
