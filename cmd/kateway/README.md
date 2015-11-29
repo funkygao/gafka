@@ -89,7 +89,7 @@ A REST gateway for kafka that supports both Pub and Sub.
 - [ ] mem pool 
 - [ ] logging
 - [ ] async producer
-- [ ] pub gateway accepts IoT senso messages
+- [ ] pub gateway accepts IoT sensor messages
 - [ ] blacklist
 - [ ] profiler
 - [ ] http response compression
