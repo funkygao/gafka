@@ -13,8 +13,7 @@ type route struct {
 	method string
 }
 
-func (this *Gateway) registerRoute(path, method string,
-	handler func(http.ResponseWriter, *http.Request)) {
+func (this *Gateway) registerRoute(path, method string, handler http.HandlerFunc) {
 	this.routes = append(this.routes, route{
 		path:   path,
 		method: method,
