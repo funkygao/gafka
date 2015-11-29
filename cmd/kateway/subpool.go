@@ -71,6 +71,9 @@ func (this *subPool) PickConsumerGroup(ver, topic, group,
 			this.cgs[topic][group][client] = cg
 			break
 		}
+
+		// backoff
+		time.Sleep(time.Millisecond * 100)
 	}
 
 	return
