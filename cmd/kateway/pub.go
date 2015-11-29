@@ -100,6 +100,14 @@ func (this *Gateway) asyncProduce(ver, topic string, key string, msg []byte) (er
 		return
 	}
 
+	// TODO pool up the error collector goroutines
+	// messages will only be returned here after all retry attempts are exhausted.
+	go func() {
+		for err := range producer.Errors() {
+			log.Error("async producer:", err)
+		}
+	}()
+
 	var keyEncoder sarama.Encoder = nil // will use random partitioner
 	if key != "" {
 		keyEncoder = sarama.StringEncoder(key) // will use hash partition
