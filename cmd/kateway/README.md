@@ -88,6 +88,8 @@ A REST gateway for kafka that supports both Pub and Sub.
 - [ ] plugin
 - [ ] mem pool 
 - [ ] logging
+- [ ] async producer
+- [ ] blacklist
 - [ ] profiler
 - [ ] http response compression
 - [ ] Update to glibc 2.20 or higher

@@ -51,7 +51,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	t1 := time.Now()
 	this.pubMetrics.PubConcurrent.Inc(1)
 
-	partition, offset, err := this.produce(ver, topic, key, rawMsg)
+	partition, offset, err := this.syncProduce(ver, topic, key, rawMsg)
 	if err != nil {
 		if isBrokerError(err) {
 			this.breaker.Fail()
@@ -84,7 +84,36 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 }
 
-func (this *Gateway) produce(ver, topic string, key string, msg []byte) (partition int32,
+func (this *Gateway) asyncProduce(ver, topic string, key string, msg []byte) (err error) {
+	client, e := this.pubPool.Get()
+	if e != nil {
+		if client != nil {
+			client.Recycle()
+		}
+		return e
+	}
+
+	var producer sarama.AsyncProducer
+	producer, err = sarama.NewAsyncProducerFromClient(client.Client)
+	if err != nil {
+		client.Recycle()
+		return
+	}
+
+	var keyEncoder sarama.Encoder = nil // will use random partitioner
+	if key != "" {
+		keyEncoder = sarama.StringEncoder(key) // will use hash partition
+		log.Debug("keyed message: %s", key)
+	}
+	producer.Input() <- &sarama.ProducerMessage{
+		Topic: topic,
+		Key:   keyEncoder,
+		Value: sarama.ByteEncoder(msg),
+	}
+	return
+}
+
+func (this *Gateway) syncProduce(ver, topic string, key string, msg []byte) (partition int32,
 	offset int64, err error) {
 	this.pubMetrics.PubQps.Mark(1)
 	this.pubMetrics.PubSize.Mark(int64(len(msg)))

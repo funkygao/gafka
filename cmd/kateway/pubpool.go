@@ -75,32 +75,32 @@ func (this *pubPool) Start() {
 	}
 }
 
-func (this *pubPool) initialize() {
-	factory := func() (pool.Resource, error) {
-		conn := &pubClient{
-			pool: this,
-			id:   atomic.AddUint64(&this.nextId, 1),
-		}
-
-		var err error
-		t1 := time.Now()
-		cf := sarama.NewConfig()
-		cf.Producer.RequiredAcks = sarama.WaitForLocal
-		cf.Producer.Partitioner = sarama.NewHashPartitioner
-		cf.Producer.Timeout = time.Second
-		cf.ClientID = this.gw.hostname
-		//cf.Producer.Compression = sarama.CompressionSnappy
-		cf.Producer.Retry.Max = 3
-		conn.Client, err = sarama.NewClient(this.brokerList, cf)
-		if err == nil {
-			log.Debug("kafka connected[%d]: %+v %s", conn.id, this.brokerList,
-				time.Since(t1))
-		}
-
-		return conn, err
+func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
+	conn := &pubClient{
+		pool: this,
+		id:   atomic.AddUint64(&this.nextId, 1),
 	}
 
-	this.pool = pool.NewResourcePool("kafka", factory,
+	var err error
+	t1 := time.Now()
+	cf := sarama.NewConfig()
+	cf.Producer.RequiredAcks = sarama.WaitForLocal
+	cf.Producer.Partitioner = sarama.NewHashPartitioner
+	cf.Producer.Timeout = time.Second
+	cf.ClientID = this.gw.hostname
+	//cf.Producer.Compression = sarama.CompressionSnappy
+	cf.Producer.Retry.Max = 3
+	conn.Client, err = sarama.NewClient(this.brokerList, cf)
+	if err == nil {
+		log.Debug("kafka connected[%d]: %+v %s", conn.id, this.brokerList,
+			time.Since(t1))
+	}
+
+	return conn, err
+}
+
+func (this *pubPool) initialize() {
+	this.pool = pool.NewResourcePool("kafka", this.syncProducerFactory,
 		1000, 1000, 0, time.Second*10, time.Minute) // TODO
 }
 
