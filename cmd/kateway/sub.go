@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/binary"
 	"net/http"
 
 	log "github.com/funkygao/log4go"
@@ -98,23 +97,17 @@ func (this *Gateway) consumeSingle(w http.ResponseWriter, cg *consumergroup.Cons
 
 func (this *Gateway) consumeMulti(w http.ResponseWriter, cg *consumergroup.ConsumerGroup, limit int) error {
 	flusher := w.(http.Flusher)
-	n, lenbuf := 0, make([]byte, 4) // int32 is 4 bytes
+	n := 0
 	for {
 		select {
 		case msg := <-cg.Messages():
-			binary.BigEndian.PutUint32(lenbuf, uint32(len(msg.Value)))
-			// msg len
-			if _, err := w.Write(lenbuf); err != nil {
-				return err
-			}
-			// msg body
 			if _, err := w.Write(msg.Value); err != nil {
 				// TODO if cf.ChannelBufferSize > 0, client may lose message
 				// got message in chan, client not recv it but offset commited.
 				return err
 			}
 
-			// http chunked
+			// http chunked: len in hex
 			flusher.Flush()
 
 			// client really got this msg, safe to commit
