@@ -105,7 +105,7 @@ func (this *subPool) Start() {
 			this.Stop()
 			ever = false
 
-		case remoteAddr := <-this.gw.closedConnCh: // TODO
+		case remoteAddr := <-this.gw.subServer.closedConnCh: // TODO
 			log.Info("sub client %s closed", remoteAddr)
 		}
 	}

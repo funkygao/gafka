@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/funkygao/gafka"
+	"github.com/funkygao/golib/set"
+	"github.com/gorilla/mux"
 )
 
 type route struct {
@@ -13,41 +15,56 @@ type route struct {
 	method string
 }
 
-func (this *Gateway) registerRoute(path, method string, handler http.HandlerFunc) {
+func (this *Gateway) registerRoute(router *mux.Router, path, method string,
+	handler http.HandlerFunc) {
 	this.routes = append(this.routes, route{
 		path:   path,
 		method: method,
 	})
 
-	this.router.HandleFunc(path, handler).Methods(method)
+	router.HandleFunc(path, handler).Methods(method)
 }
 
 func (this *Gateway) buildRouting() {
-	this.registerRoute("/ver", "GET", this.showVersion)
-	this.registerRoute("/clusters", "GET", this.showClusters)
-	this.registerRoute("/help", "GET", this.showHelp)
+	if options.pubPort > 0 {
+		this.registerRoute(this.pubServer.Router(),
+			"/ver", "GET", this.showVersion)
+		this.registerRoute(this.pubServer.Router(),
+			"/clusters", "GET", this.showClusters)
+		this.registerRoute(this.pubServer.Router(),
+			"/help", "GET", this.showHelp)
 
-	switch this.mode {
-	case "pub":
-		this.registerRoute("/{ver}/topics/{topic}", "POST", this.pubHandler)
-		this.registerRoute("/ws/{ver}/topics/{topic}", "POST", this.pubWsHandler)
-
-	case "sub":
-		this.registerRoute("/{ver}/topics/{topic}/{group}", "GET", this.subHandler)
-		this.registerRoute("/ws/{ver}/topics/{topic}/{group}", "GET", this.subWsHandler)
-
-	case "pubsub":
-		this.registerRoute("/{ver}/topics/{topic}", "POST", this.pubHandler)
-		this.registerRoute("/ws/{ver}/topics/{topic}", "POST", this.pubWsHandler)
-
-		this.registerRoute("/{ver}/topics/{topic}/{group}", "GET", this.subHandler)
-		this.registerRoute("/ws/{ver}/topics/{topic}/{group}", "GET", this.subWsHandler)
+		this.registerRoute(this.pubServer.Router(),
+			"/{ver}/topics/{topic}", "POST", this.pubHandler)
+		this.registerRoute(this.pubServer.Router(),
+			"/ws/{ver}/topics/{topic}", "POST", this.pubWsHandler)
 	}
+
+	if options.subPort > 0 {
+		this.registerRoute(this.subServer.Router(),
+			"/ver", "GET", this.showVersion)
+		this.registerRoute(this.subServer.Router(),
+			"/clusters", "GET", this.showClusters)
+		this.registerRoute(this.subServer.Router(),
+			"/help", "GET", this.showHelp)
+
+		this.registerRoute(this.subServer.Router(),
+			"/{ver}/topics/{topic}/{group}", "GET", this.subHandler)
+		this.registerRoute(this.subServer.Router(),
+			"/ws/{ver}/topics/{topic}/{group}", "GET", this.subWsHandler)
+	}
+
 }
 
 func (this *Gateway) showHelp(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/text")
+	paths := set.NewSet()
 	for _, route := range this.routes {
+		if paths.Contains(route.path) {
+			continue
+		}
+
+		paths.Add(route.path)
 		w.Write([]byte(fmt.Sprintf("%4s %s\n", route.method, route.path)))
 	}
 }

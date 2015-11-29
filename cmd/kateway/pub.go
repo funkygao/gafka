@@ -33,7 +33,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	ver = params["ver"]
 	topic = params["topic"]
-	key = params["key"] // if key given, batched msg must belong to same key
+	key = r.URL.Query().Get("key") // if key given, batched msg must belong to same key
 
 	if !this.authPub(r.Header.Get("Pubkey"), topic) {
 		writeAuthFailure(w)
@@ -109,6 +109,7 @@ func (this *Gateway) produce(ver, topic string, key string, msg []byte) (partiti
 	var keyEncoder sarama.Encoder = nil // will use random partitioner
 	if key != "" {
 		keyEncoder = sarama.StringEncoder(key) // will use hash partition
+		log.Debug("keyed message: %s", key)
 	}
 	partition, offset, err = producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic,

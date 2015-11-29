@@ -69,17 +69,31 @@ A REST gateway for kafka that supports both Pub and Sub.
     sub:
     curl -i http://localhost:9090/v1/topics/foobar/group1?limit=10000000
 
+### FAQ
+
+- how to batch messages in Pub?
+
+  It is http client's job to put the variant length data into json array
+
+- how to consume multiple messages in Sub?
+
+  kateway uses chunked transfer encoding
+
 ### TODO
 
 - [ ] client can query lag
 - [ ] websocket for pub/sub
 - [ ] sub metrics report
 - [ ] sub lock more precise 
+- [ ] plugin
 - [ ] mem pool 
+- [ ] logging
 - [ ] profiler
+- [ ] http response compression
 - [ ] Update to glibc 2.20 or higher
 - [ ] pub/sub support config passed in
 - [ ] graceful shutdown
+- [ ] idle timeout instead of rw timeout
 - [X] influxdb tag
 - [ ] compression in kafka
 
