@@ -12,11 +12,15 @@ import (
 
 type subServer struct {
 	maxClients int
-	wg         *sync.WaitGroup
+	gw         *Gateway
 
 	listener net.Listener
 	server   *http.Server
-	router   *mux.Router
+
+	tlsListener net.Listener
+	httpsServer *http.Server
+
+	router *mux.Router
 
 	idleConnsWg   sync.WaitGroup      // wait for all inflight http connections done
 	idleConns     map[string]net.Conn // in keep-alive state http connections
@@ -27,51 +31,64 @@ type subServer struct {
 }
 
 func newSubServer(httpAddr, httpsAddr string, maxClients int,
-	wg *sync.WaitGroup, exitCh <-chan struct{}) *subServer {
+	gw *Gateway, exitCh <-chan struct{}) *subServer {
 	this := &subServer{
 		exitCh:       exitCh,
-		wg:           wg,
+		gw:           gw,
 		maxClients:   maxClients,
 		router:       mux.NewRouter(),
 		closedConnCh: make(chan string, 1<<10),
 		idleConns:    make(map[string]net.Conn, 10000),
 	}
-	this.server = &http.Server{
-		Addr:           httpAddr,
-		Handler:        this.router,
-		ReadTimeout:    0,       // FIXME
-		WriteTimeout:   0,       // FIXME
-		MaxHeaderBytes: 4 << 10, // should be enough
+
+	if httpAddr != "" {
+		this.server = &http.Server{
+			Addr:           httpAddr,
+			Handler:        this.router,
+			ReadTimeout:    0,       // FIXME
+			WriteTimeout:   0,       // FIXME
+			MaxHeaderBytes: 4 << 10, // should be enough
+		}
+
+		// register the http conn state machine hook
+		// FIXME should distinguish pub from sub client
+		this.server.ConnState = func(c net.Conn, cs http.ConnState) {
+			switch cs {
+			case http.StateNew:
+				this.idleConnsWg.Add(1)
+
+			case http.StateActive:
+				this.idleConnsLock.Lock()
+				delete(this.idleConns, c.RemoteAddr().String())
+				this.idleConnsLock.Unlock()
+
+			case http.StateIdle:
+				select {
+				case <-this.exitCh:
+					// actively close the client safely because IO is all done
+					c.Close()
+
+				default:
+					this.idleConnsLock.Lock()
+					this.idleConns[c.RemoteAddr().String()] = c
+					this.idleConnsLock.Unlock()
+				}
+
+			case http.StateClosed:
+				log.Debug("http client[%s] closed", c.RemoteAddr())
+				this.closedConnCh <- c.RemoteAddr().String()
+				this.idleConnsWg.Done()
+			}
+		}
 	}
 
-	// register the http conn state machine hook
-	// FIXME should distinguish pub from sub client
-	this.server.ConnState = func(c net.Conn, cs http.ConnState) {
-		switch cs {
-		case http.StateNew:
-			this.idleConnsWg.Add(1)
-
-		case http.StateActive:
-			this.idleConnsLock.Lock()
-			delete(this.idleConns, c.RemoteAddr().String())
-			this.idleConnsLock.Unlock()
-
-		case http.StateIdle:
-			select {
-			case <-this.exitCh:
-				// actively close the client safely because IO is all done
-				c.Close()
-
-			default:
-				this.idleConnsLock.Lock()
-				this.idleConns[c.RemoteAddr().String()] = c
-				this.idleConnsLock.Unlock()
-			}
-
-		case http.StateClosed:
-			log.Debug("http client[%s] closed", c.RemoteAddr())
-			this.closedConnCh <- c.RemoteAddr().String()
-			this.idleConnsWg.Done()
+	if httpsAddr != "" {
+		this.httpsServer = &http.Server{
+			Addr:           httpAddr,
+			Handler:        this.router,
+			ReadTimeout:    0,       // FIXME
+			WriteTimeout:   0,       // FIXME
+			MaxHeaderBytes: 4 << 10, // should be enough
 		}
 	}
 
@@ -80,17 +97,40 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int,
 
 func (this *subServer) Start() {
 	var err error
-	this.listener, err = net.Listen("tcp", this.server.Addr)
-	if err != nil {
-		return
+	waited := false
+	if this.server != nil {
+		this.listener, err = net.Listen("tcp", this.server.Addr)
+		if err != nil {
+			panic(err)
+		}
+
+		this.listener = LimitListener(this.listener, this.maxClients)
+		go this.server.Serve(this.listener)
+
+		go this.waitExit()
+		waited = true
+
+		this.gw.wg.Add(1)
+		log.Info("sub http server ready on %s", this.server.Addr)
 	}
 
-	this.listener = LimitListener(this.listener, this.maxClients)
-	go this.server.Serve(this.listener)
-	go this.waitExit()
+	if this.httpsServer != nil {
+		this.tlsListener, err = this.gw.setupHttpsServer(this.httpsServer,
+			this.gw.certFile, this.gw.keyFile)
+		if err != nil {
+			panic(err)
+		}
 
-	this.wg.Add(1)
-	log.Info("sub http server ready on %s", this.server.Addr)
+		this.tlsListener = LimitListener(this.tlsListener, this.maxClients)
+		go this.httpsServer.Serve(this.tlsListener)
+		if !waited {
+			go this.waitExit()
+		}
+
+		this.gw.wg.Add(1)
+		log.Info("sub https server ready on %s", this.server.Addr)
+	}
+
 }
 
 func (this *subServer) Router() *mux.Router {
@@ -101,6 +141,8 @@ func (this *subServer) waitExit() {
 	for {
 		select {
 		case <-this.exitCh:
+			// TODO https server
+
 			// HTTP response will have "Connection: close"
 			this.server.SetKeepAlivesEnabled(false)
 
@@ -123,7 +165,7 @@ func (this *subServer) waitExit() {
 			this.server = nil
 			this.router = nil
 
-			this.wg.Done()
+			this.gw.wg.Done()
 		}
 	}
 }

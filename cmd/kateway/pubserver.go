@@ -3,7 +3,6 @@ package main
 import (
 	"net"
 	"net/http"
-	"sync"
 
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
@@ -11,29 +10,46 @@ import (
 
 type pubServer struct {
 	maxClients int
-	wg         *sync.WaitGroup
+	gw         *Gateway
 
 	listener net.Listener
 	server   *http.Server
-	router   *mux.Router
+
+	httpsServer *http.Server
+	tlsListener net.Listener
+
+	router *mux.Router
 
 	exitCh <-chan struct{}
 }
 
 func newPubServer(httpAddr, httpsAddr string, maxClients int,
-	wg *sync.WaitGroup, exitCh <-chan struct{}) *pubServer {
+	gw *Gateway, exitCh <-chan struct{}) *pubServer {
 	this := &pubServer{
 		exitCh:     exitCh,
 		router:     mux.NewRouter(),
-		wg:         wg,
+		gw:         gw,
 		maxClients: maxClients,
 	}
-	this.server = &http.Server{
-		Addr:           httpAddr,
-		Handler:        this.router,
-		ReadTimeout:    0,       // FIXME
-		WriteTimeout:   0,       // FIXME
-		MaxHeaderBytes: 4 << 10, // should be enough
+
+	if httpAddr != "" {
+		this.server = &http.Server{
+			Addr:           httpAddr,
+			Handler:        this.router,
+			ReadTimeout:    0,       // FIXME
+			WriteTimeout:   0,       // FIXME
+			MaxHeaderBytes: 4 << 10, // should be enough
+		}
+	}
+
+	if httpsAddr != "" {
+		this.httpsServer = &http.Server{
+			Addr:           httpAddr,
+			Handler:        this.router,
+			ReadTimeout:    0,       // FIXME
+			WriteTimeout:   0,       // FIXME
+			MaxHeaderBytes: 4 << 10, // should be enough
+		}
 	}
 
 	return this
@@ -41,17 +57,40 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int,
 
 func (this *pubServer) Start() {
 	var err error
-	this.listener, err = net.Listen("tcp", this.server.Addr)
-	if err != nil {
-		return
+	waited := false
+	if this.server != nil {
+		this.listener, err = net.Listen("tcp", this.server.Addr)
+		if err != nil {
+			panic(err)
+		}
+
+		this.listener = LimitListener(this.listener, this.maxClients)
+		go this.server.Serve(this.listener)
+
+		go this.waitExit()
+		waited = true
+
+		this.gw.wg.Add(1)
+		log.Info("pub http server ready on %s", this.server.Addr)
 	}
 
-	this.listener = LimitListener(this.listener, this.maxClients)
-	go this.server.Serve(this.listener)
-	go this.waitExit()
+	if this.httpsServer != nil {
+		this.tlsListener, err = this.gw.setupHttpsServer(this.httpsServer,
+			this.gw.certFile, this.gw.keyFile)
+		if err != nil {
+			panic(err)
+		}
 
-	this.wg.Add(1)
-	log.Info("pub http server ready on %s", this.server.Addr)
+		this.tlsListener = LimitListener(this.tlsListener, this.maxClients)
+		go this.httpsServer.Serve(this.tlsListener)
+		if !waited {
+			go this.waitExit()
+		}
+
+		this.gw.wg.Add(1)
+		log.Info("pub https server ready on %s", this.server.Addr)
+	}
+
 }
 
 func (this *pubServer) Router() *mux.Router {
@@ -62,6 +101,8 @@ func (this *pubServer) waitExit() {
 	for {
 		select {
 		case <-this.exitCh:
+			// TODO https server
+
 			// HTTP response will have "Connection: close"
 			this.server.SetKeepAlivesEnabled(false)
 
@@ -74,8 +115,7 @@ func (this *pubServer) waitExit() {
 			this.server = nil
 			this.router = nil
 
-			this.wg.Done()
-
+			this.gw.wg.Done()
 		}
 	}
 }

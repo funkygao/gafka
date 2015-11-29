@@ -16,6 +16,8 @@ var (
 		pubHttpsAddr         string
 		subHttpAddr          string
 		subHttpsAddr         string
+		certFile             string
+		keyFile              string
 		logFile              string
 		logLevel             string
 		crashLogFile         string
@@ -45,6 +47,8 @@ func parseFlags() {
 	flag.StringVar(&options.logLevel, "level", "debug", "log level")
 	flag.StringVar(&options.logFile, "log", "stdout", "log file, default stdout")
 	flag.StringVar(&options.crashLogFile, "crashlog", "", "crash log")
+	flag.StringVar(&options.certFile, "certfile", "", "cert file path")
+	flag.StringVar(&options.keyFile, "keyfile", "", "key file path")
 	flag.StringVar(&options.configFile, "conf", "/etc/gafka.cf", "config file")
 	flag.BoolVar(&options.showVersion, "version", false, "show version and exit")
 	flag.DurationVar(&options.reporterInterval, "report", time.Second*10, "reporter flush interval")

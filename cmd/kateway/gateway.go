@@ -1,6 +1,9 @@
 package main
 
 import (
+	"crypto/tls"
+	"net"
+	"net/http"
 	"os"
 	"sync"
 	"syscall"
@@ -18,6 +21,11 @@ import (
 // Gateway is a distributed kafka Pub/Sub HTTP endpoint.
 type Gateway struct {
 	hostname string
+
+	// openssl genrsa -out key.pem 2048
+	// openssl req -new -x509 -key key.pem -out cert.pem -days 3650
+	certFile string
+	keyFile  string
 
 	pubServer *pubServer
 	subServer *subServer
@@ -47,6 +55,8 @@ func NewGateway(metaRefreshInterval time.Duration) *Gateway {
 		metaStore:           newZkMetaStore(options.zone, options.cluster),
 		leakyBucket:         ratelimiter.NewLeakyBucket(1000*60, time.Minute),
 		metaRefreshInterval: metaRefreshInterval,
+		certFile:            options.certFile,
+		keyFile:             options.keyFile,
 	}
 
 	this.breaker = &breaker.Consecutive{
@@ -57,12 +67,12 @@ func NewGateway(metaRefreshInterval time.Duration) *Gateway {
 
 	if options.pubHttpAddr != "" {
 		this.pubServer = newPubServer(options.pubHttpAddr, options.pubHttpsAddr,
-			options.maxClients, &this.wg, this.shutdownCh)
+			options.maxClients, this, this.shutdownCh)
 		this.pubMetrics = newPubMetrics(this)
 	}
 	if options.subHttpAddr != "" {
 		this.subServer = newSubServer(options.subHttpAddr, options.subHttpsAddr,
-			options.maxClients, &this.wg, this.shutdownCh)
+			options.maxClients, this, this.shutdownCh)
 		this.subMetrics = newSubMetrics(this)
 	}
 
@@ -135,4 +145,22 @@ func (this *Gateway) ServeForever() {
 		}
 	}
 
+}
+
+func (this *Gateway) setupHttpsServer(server *http.Server, certFile, keyFile string) (net.Listener, error) {
+	listener, err := net.Listen("tcp", server.Addr)
+	if err != nil {
+		return nil, err
+	}
+
+	config := &tls.Config{}
+	config.NextProtos = []string{"http/1.1"}
+	config.Certificates = make([]tls.Certificate, 1)
+	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, err
+	}
+
+	tlsListener := tls.NewListener(listener, config)
+	return tlsListener, nil
 }
