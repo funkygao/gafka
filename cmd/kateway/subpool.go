@@ -12,35 +12,23 @@ import (
 type subPool struct {
 	gw *Gateway
 
-	// {topic: {group: {client: consumerGroup}}}
-	cgs         map[string]map[string]map[string]*consumergroup.ConsumerGroup
-	cgsLock     sync.RWMutex
+	clientMap     map[string]*consumergroup.ConsumerGroup // a client can only sub 1 topic
+	clientMapLock sync.RWMutex                            // TODO the lock is too big
+
 	rebalancing bool
 }
 
 func newSubPool(gw *Gateway) *subPool {
 	return &subPool{
-		gw:  gw,
-		cgs: make(map[string]map[string]map[string]*consumergroup.ConsumerGroup),
+		gw:        gw,
+		clientMap: make(map[string]*consumergroup.ConsumerGroup),
 	}
 }
 
 func (this *subPool) PickConsumerGroup(ver, topic, group,
 	client string) (cg *consumergroup.ConsumerGroup, err error) {
-	this.cgsLock.Lock()
-	defer this.cgsLock.Unlock()
-
-	var present bool
-	if _, present = this.cgs[topic]; !present {
-		this.cgs[topic] = make(map[string]map[string]*consumergroup.ConsumerGroup)
-	}
-	if _, present = this.cgs[topic][group]; !present {
-		this.cgs[topic][group] = make(map[string]*consumergroup.ConsumerGroup)
-	}
-	cg, present = this.cgs[topic][group][client]
-	if present {
-		return
-	}
+	this.clientMapLock.Lock()
+	defer this.clientMapLock.Unlock()
 
 	if this.rebalancing {
 		err = ErrRebalancing
@@ -53,7 +41,13 @@ func (this *subPool) PickConsumerGroup(ver, topic, group,
 		return
 	}
 
-	// create the consumer group for this client
+	var present bool
+	cg, present = this.clientMap[client]
+	if present {
+		return
+	}
+
+	// cache miss, create the consumer group for this client
 	cf := consumergroup.NewConfig()
 	cf.ChannelBufferSize = 0
 	cf.Offsets.Initial = sarama.OffsetOldest
@@ -68,7 +62,7 @@ func (this *subPool) PickConsumerGroup(ver, topic, group,
 		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
 			this.gw.metaStore.ZkAddrs(), cf)
 		if err == nil {
-			this.cgs[topic][group][client] = cg
+			this.clientMap[client] = cg
 			break
 		}
 
@@ -79,18 +73,27 @@ func (this *subPool) PickConsumerGroup(ver, topic, group,
 	return
 }
 
-func (this *subPool) KillClient(topic, group, client string) {
+func (this *subPool) KillClient(client string) {
+	this.clientMapLock.Lock()
+	defer this.clientMapLock.Unlock()
+
 	// TODO golang keep-alive max idle defaults 60s
 	this.rebalancing = true
-	this.cgs[topic][group][client].Close() // will flush offset
+	if c, present := this.clientMap[client]; present {
+		c.Close() // will flush offset, must wait, otherwise offset is not guanranteed
+	} else {
+		// should never happen
+		this.rebalancing = false
+		log.Warn("consumer %s never consumed", client)
 
-	this.cgsLock.Lock()
-	delete(this.cgs[topic][group], client)
-	this.cgsLock.Unlock()
+		return
+	}
+
+	delete(this.clientMap, client)
 
 	this.rebalancing = false
 
-	log.Info("consumer %s{topic:%s, group:%s} closed, rebalanced ok", client, topic, group)
+	log.Info("consumer %s closed, rebalanced ok", client)
 }
 
 func (this *subPool) Start() {
@@ -106,37 +109,26 @@ func (this *subPool) Start() {
 			ever = false
 
 		case remoteAddr := <-this.gw.subServer.closedConnCh: // TODO
-			log.Info("sub client %s closed", remoteAddr)
+			this.KillClient(remoteAddr)
 		}
 	}
 
 }
 
 func (this *subPool) Stop() {
-	this.cgsLock.Lock()
-	defer this.cgsLock.Unlock()
+	this.clientMapLock.Lock()
+	defer this.clientMapLock.Unlock()
 
 	var wg sync.WaitGroup
-	for topic, ts := range this.cgs {
-		for group, gs := range ts {
-			for client, c := range gs {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-
-					if err := c.Close(); err != nil {
-						// will commit the offset
-						log.Error("{topic:%s, group:%s, client:%s}: %v", topic,
-							group, client, err)
-					}
-				}()
-			}
-		}
+	for _, c := range this.clientMap {
+		wg.Add(1)
+		go func() {
+			c.Close()
+			wg.Done()
+		}()
 	}
 
 	// wait for all consumers commit offset
 	wg.Wait()
 
-	// reinit the vars
-	this.cgs = make(map[string]map[string]map[string]*consumergroup.ConsumerGroup)
 }

@@ -7,10 +7,6 @@ function rest_call($url, $timeout = 4) {
     }
 
     curl_setopt($handle, CURLOPT_URL, $url);
-    curl_setopt($handle, CURLOPT_HTTPHEADER, array(
-        'Accept: application/json',
-        'Content-Type: application/json',
-    ));
     curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($handle, CURLOPT_SSL_VERIFYHOST, false);
     curl_setopt($handle, CURLOPT_SSL_VERIFYPEER, false);
@@ -30,6 +26,6 @@ function rest_call($url, $timeout = 4) {
 
 // sub
 for ($i=0; $i<5; $i++) {
-	$ret = rest_call("http://localhost:9192/topics/v1/foobar/mygroup1?limit=5");
-	echo $i, " ", $ret, "\n";
+	$ret = rest_call("http://localhost:9192/topics/v1/foobar/mygroup1?limit=5000000");
+	echo $i+1, ". ", $ret, "\n";
 }
