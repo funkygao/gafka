@@ -10,12 +10,14 @@ import (
 )
 
 var (
-	addr string
-	n    int
+	addr  string
+	n     int
+	group string
 )
 
 func init() {
 	flag.StringVar(&addr, "addr", "http://localhost:9192", "sub kateway addr")
+	flag.StringVar(&group, "g", "mygroup1", "consumer group name")
 	flag.IntVar(&n, "n", 10, "run sub how many times")
 	flag.Parse()
 
@@ -36,7 +38,8 @@ func main() {
 	}
 
 	for i := 0; i < n; i++ {
-		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/v1/topics/foobar", addr), nil)
+		req, _ := http.NewRequest("GET",
+			fmt.Sprintf("%s/topics/v1/foobar/%s", addr, group), nil)
 		req.Header.Set("Subkey", "mysubkey")
 		response, err := client.Do(req)
 		if err != nil {

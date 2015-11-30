@@ -45,7 +45,7 @@ func main() {
 		b.Reset()
 		b.WriteString(fmt.Sprintf("hello@%s  %d", time.Now(), i))
 		req, _ := http.NewRequest("POST",
-			fmt.Sprintf("%s/v1/topics/foobar?key=%s", addr, msgKey),
+			fmt.Sprintf("%s/topics/v1/foobar?key=%s", addr, msgKey),
 			strings.NewReader(b.String()))
 		req.Header.Set("Pubkey", "mypubkey")
 		response, err := client.Do(req)
