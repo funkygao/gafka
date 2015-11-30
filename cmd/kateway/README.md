@@ -64,10 +64,10 @@ A REST gateway for kafka that supports both Pub and Sub.
 ### Usage
 
     pub:
-    curl -i -XPOST -H "Pubkey: mypubkey" -d 'm=hello world' "http://localhost:9090/v1/topics/foobar?ack=2&timeout=1&retry=3"
+    curl -i -XPOST -H "Pubkey: mypubkey" -d '{"orderId":56, "uid": 89}' "http://localhost:9191/topics/v2/foobar?key=56"
 
     sub:
-    curl -i http://localhost:9090/v1/topics/foobar/group1?limit=10000000
+    curl -i XGET -H "Subkey: mysubkey" http://localhost:9192/topics/v2/foobar/mygroup1?limit=100
 
 ### FAQ
 

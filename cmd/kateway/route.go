@@ -37,9 +37,9 @@ func (this *Gateway) buildRouting() {
 			"/stat", "GET", this.statHandler)
 
 		this.registerRoute(this.pubServer.Router(),
-			"/{ver}/topics/{topic}", "POST", this.pubHandler)
+			"/topics/{ver}/{topic}", "POST", this.pubHandler)
 		this.registerRoute(this.pubServer.Router(),
-			"/ws/{ver}/topics/{topic}", "POST", this.pubWsHandler)
+			"/ws/topics/{ver}/{topic}", "POST", this.pubWsHandler)
 	}
 
 	if options.subHttpAddr != "" || options.subHttpsAddr != "" {
@@ -53,9 +53,9 @@ func (this *Gateway) buildRouting() {
 			"/stat", "GET", this.statHandler)
 
 		this.registerRoute(this.subServer.Router(),
-			"/{ver}/topics/{topic}/{group}", "GET", this.subHandler)
+			"/topics/{ver}/{topic}/{group}", "GET", this.subHandler)
 		this.registerRoute(this.subServer.Router(),
-			"/ws/{ver}/topics/{topic}/{group}", "GET", this.subWsHandler)
+			"/ws/topics/{ver}/{topic}/{group}", "GET", this.subWsHandler)
 	}
 
 }

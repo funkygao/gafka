@@ -146,7 +146,6 @@ func (this *Gateway) syncProduce(ver, topic string, key string, msg []byte) (par
 	var keyEncoder sarama.Encoder = nil // will use random partitioner
 	if key != "" {
 		keyEncoder = sarama.StringEncoder(key) // will use hash partition
-		log.Debug("keyed message: %s", key)
 	}
 	partition, offset, err = producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic,
