@@ -122,6 +122,19 @@ func (this *ZkCluster) SetReplicas(replicas int) {
 	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
 }
 
+func (this *ZkCluster) RegisterKatewayNode(zone, cluster, hostname, pubHttpAddr,
+	pubHttpsAddr, subHttpAddr, subHttpsAddr string) error {
+	parent := fmt.Sprintf("/kateway/ids/%s/%s", zone, cluster)
+	if err := this.zone.mkdirRecursive(parent); err != nil {
+		return err
+	}
+
+	path := fmt.Sprintf("%s/%s", parent, hostname)
+	data := []byte(fmt.Sprintf("pub_http:%s,pub_https:%s,sub_http:%s,sub_https:%s",
+		pubHttpAddr, pubHttpsAddr, subHttpAddr, subHttpsAddr))
+	return this.zone.createEphemeralZnode(path, data)
+}
+
 func (this *ZkCluster) RegisterBroker(id int, host string, port int) error {
 	c := this.RegisteredInfo()
 	for _, info := range c.Roster {

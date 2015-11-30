@@ -13,6 +13,8 @@ type MetaStore interface {
 	Start()
 	Stop()
 	Refresh()
+	RegisterKateway(zone, cluster, hostname, pubHttpAddr,
+		pubHttpsAddr, subHttpAddr, subHttpsAddr string) error
 	Clusters() []string
 	Partitions(topic string) []int32
 	OnlineConsumersCount(topic, group string) int
@@ -38,7 +40,7 @@ func newZkMetaStore(zone string, cluster string) MetaStore {
 		panic("empty zookeeper addr")
 	}
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, zkAddrs))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, zkAddrs)) // TODO session timeout
 	return &zkMetaStore{
 		zkcluster:     zkzone.NewCluster(cluster),
 		partitionsMap: make(map[string][]int32),
@@ -57,6 +59,12 @@ func (this *zkMetaStore) Stop() {
 func (this *zkMetaStore) OnlineConsumersCount(topic, group string) int {
 	// without cache
 	return this.zkcluster.OnlineConsumersCount(topic, group)
+}
+
+func (this *zkMetaStore) RegisterKateway(zone, cluster, hostname, pubHttpAddr,
+	pubHttpsAddr, subHttpAddr, subHttpsAddr string) error {
+	return this.zkcluster.RegisterKatewayNode(zone, cluster, hostname, pubHttpAddr,
+		pubHttpsAddr, subHttpAddr, subHttpsAddr)
 }
 
 func (this *zkMetaStore) Refresh() {

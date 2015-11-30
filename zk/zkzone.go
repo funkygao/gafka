@@ -153,6 +153,13 @@ func (this *ZkZone) createZnode(path string, data []byte) error {
 	return err
 }
 
+func (this *ZkZone) createEphemeralZnode(path string, data []byte) error {
+	acl := zk.WorldACL(zk.PermAll)
+	flags := int32(zk.FlagEphemeral)
+	_, err := this.conn.Create(path, data, flags, acl)
+	return err
+}
+
 func (this *ZkZone) setZnode(path string, data []byte) error {
 	_, err := this.conn.Set(path, data, -1)
 	return err

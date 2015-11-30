@@ -90,6 +90,8 @@ func (this *Gateway) Start() (err error) {
 
 	this.startedAt = time.Now()
 
+	this.registerInZk()
+
 	this.metaStore.Start()
 	log.Info("meta store started")
 
