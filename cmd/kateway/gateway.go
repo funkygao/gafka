@@ -31,6 +31,11 @@ type Gateway struct {
 	pubServer *pubServer
 	subServer *subServer
 
+	pubPool *pubPool
+	subPool *subPool
+
+	executor *executor
+
 	routes []route
 
 	shutdownOnce sync.Once
@@ -44,9 +49,6 @@ type Gateway struct {
 
 	metaStore           MetaStore
 	metaRefreshInterval time.Duration
-
-	pubPool *pubPool
-	subPool *subPool
 }
 
 func NewGateway(metaRefreshInterval time.Duration) *Gateway {
@@ -60,6 +62,7 @@ func NewGateway(metaRefreshInterval time.Duration) *Gateway {
 		keyFile:             options.keyFile,
 	}
 
+	this.executor = newExecutor(this)
 	this.breaker = &breaker.Consecutive{
 		FailureAllowance: 10,
 		RetryTimeout:     time.Second * 10,
@@ -90,10 +93,11 @@ func (this *Gateway) Start() (err error) {
 
 	this.startedAt = time.Now()
 
-	this.registerInZk()
-
 	this.metaStore.Start()
 	log.Info("meta store started")
+
+	this.executor.Start()
+	log.Info("executor started")
 
 	this.buildRouting()
 
@@ -109,6 +113,8 @@ func (this *Gateway) Start() (err error) {
 
 		this.subServer.Start()
 	}
+
+	this.registerInZk()
 
 	log.Info("gateway[%s] ready", this.hostname)
 
