@@ -38,9 +38,14 @@ func main() {
 	}
 
 	for i := 0; i < n; i++ {
-		req, _ := http.NewRequest("GET",
+		req, err := http.NewRequest("GET",
 			fmt.Sprintf("%s/topics/v1/foobar/%s", addr, group), nil)
+		if err != nil {
+			panic(err)
+		}
+
 		req.Header.Set("Subkey", "mysubkey")
+		fmt.Printf("try #%2d %s\n", i+1, req.URL.String())
 		response, err := client.Do(req)
 		if err != nil {
 			panic(err)
@@ -51,7 +56,7 @@ func main() {
 			panic(err)
 		}
 
-		fmt.Sprintf("got: %s\n", string(b))
+		fmt.Printf("%s: %s\n\n", response.Status, string(b))
 		response.Body.Close() // reuse the connection
 	}
 
