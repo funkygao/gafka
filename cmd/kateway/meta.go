@@ -24,11 +24,12 @@ type MetaStore interface {
 }
 
 type zkMetaStore struct {
-	brokerList    []string           // cache
+	brokerList []string // cache
+
 	partitionsMap map[string][]int32 // cache
+	pmapLock      sync.RWMutex
 
 	zkcluster *zk.ZkCluster
-	mu        sync.Mutex
 }
 
 func newZkMetaStore(zone string, cluster string) MetaStore {
@@ -60,19 +61,25 @@ func (this *zkMetaStore) OnlineConsumersCount(topic, group string) int {
 
 func (this *zkMetaStore) Refresh() {
 	this.brokerList = this.zkcluster.BrokerList()
+
+	this.pmapLock.Lock()
 	this.partitionsMap = make(map[string][]int32, len(this.partitionsMap))
+	this.pmapLock.Unlock()
 }
 
 func (this *zkMetaStore) Partitions(topic string) []int32 {
-	if partitions, present := this.partitionsMap[topic]; present {
+	this.pmapLock.RLock()
+	partitions, present := this.partitionsMap[topic]
+	this.pmapLock.RUnlock()
+	if present {
 		return partitions
 	}
 
 	// cache miss
-	this.mu.Lock()
-	partitions := this.zkcluster.Partitions(topic)
+	partitions = this.zkcluster.Partitions(topic)
+	this.pmapLock.Lock()
 	this.partitionsMap[topic] = partitions
-	this.mu.Unlock()
+	this.pmapLock.Unlock()
 	return partitions
 }
 
