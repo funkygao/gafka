@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 	"net/http"
+	"sync"
 
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
@@ -19,6 +20,8 @@ type pubServer struct {
 	tlsListener net.Listener
 
 	router *mux.Router
+
+	once sync.Once
 }
 
 func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubServer {
@@ -53,7 +56,6 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 
 func (this *pubServer) Start() {
 	var err error
-	waited := false
 	if this.server != nil {
 		this.listener, err = net.Listen("tcp", this.server.Addr)
 		if err != nil {
@@ -63,8 +65,9 @@ func (this *pubServer) Start() {
 		this.listener = LimitListener(this.listener, this.maxClients)
 		go this.server.Serve(this.listener)
 
-		go this.waitExit()
-		waited = true
+		this.once.Do(func() {
+			go this.waitExit()
+		})
 
 		this.gw.wg.Add(1)
 		log.Info("pub http server ready on %s", this.server.Addr)
@@ -79,9 +82,10 @@ func (this *pubServer) Start() {
 
 		this.tlsListener = LimitListener(this.tlsListener, this.maxClients)
 		go this.httpsServer.Serve(this.tlsListener)
-		if !waited {
+
+		this.once.Do(func() {
 			go this.waitExit()
-		}
+		})
 
 		this.gw.wg.Add(1)
 		log.Info("pub https server ready on %s", this.server.Addr)
@@ -94,24 +98,29 @@ func (this *pubServer) Router() *mux.Router {
 }
 
 func (this *pubServer) waitExit() {
-	for {
-		select {
-		case <-this.gw.shutdownCh:
-			// TODO https server
+	select {
+	case <-this.gw.shutdownCh:
+		// TODO https server
 
-			// HTTP response will have "Connection: close"
-			this.server.SetKeepAlivesEnabled(false)
+		// HTTP response will have "Connection: close"
+		this.server.SetKeepAlivesEnabled(false)
 
-			// avoid new connections
-			if err := this.listener.Close(); err != nil {
-				log.Error("listener close: %v", err)
-			}
+		// avoid new connections
+		if err := this.listener.Close(); err != nil {
+			log.Error("listener close: %v", err)
+		}
 
-			this.listener = nil
-			this.server = nil
-			this.router = nil
+		this.listener = nil
+		this.server = nil
+		this.router = nil
 
+		if this.server != nil {
 			this.gw.wg.Done()
 		}
+		if this.httpsServer != nil {
+			this.gw.wg.Done()
+		}
+
 	}
+
 }

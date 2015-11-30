@@ -26,6 +26,8 @@ type subServer struct {
 	idleConns     map[string]net.Conn // in keep-alive state http connections
 	closedConnCh  chan string         // channel of remote addr
 	idleConnsLock sync.Mutex
+
+	once sync.Once
 }
 
 func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subServer {
@@ -93,7 +95,6 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 
 func (this *subServer) Start() {
 	var err error
-	waited := false
 	if this.server != nil {
 		this.listener, err = net.Listen("tcp", this.server.Addr)
 		if err != nil {
@@ -103,8 +104,9 @@ func (this *subServer) Start() {
 		this.listener = LimitListener(this.listener, this.maxClients)
 		go this.server.Serve(this.listener)
 
-		go this.waitExit()
-		waited = true
+		this.once.Do(func() {
+			go this.waitExit()
+		})
 
 		this.gw.wg.Add(1)
 		log.Info("sub http server ready on %s", this.server.Addr)
@@ -119,9 +121,10 @@ func (this *subServer) Start() {
 
 		this.tlsListener = LimitListener(this.tlsListener, this.maxClients)
 		go this.httpsServer.Serve(this.tlsListener)
-		if !waited {
+
+		this.once.Do(func() {
 			go this.waitExit()
-		}
+		})
 
 		this.gw.wg.Add(1)
 		log.Info("sub https server ready on %s", this.server.Addr)
@@ -134,34 +137,39 @@ func (this *subServer) Router() *mux.Router {
 }
 
 func (this *subServer) waitExit() {
-	for {
-		select {
-		case <-this.gw.shutdownCh:
-			// TODO https server
+	select {
+	case <-this.gw.shutdownCh:
+		// TODO https server
 
-			// HTTP response will have "Connection: close"
-			this.server.SetKeepAlivesEnabled(false)
+		// HTTP response will have "Connection: close"
+		this.server.SetKeepAlivesEnabled(false)
 
-			// avoid new connections
-			if err := this.listener.Close(); err != nil {
-				log.Error("listener close: %v", err)
-			}
+		// avoid new connections
+		if err := this.listener.Close(); err != nil {
+			log.Error("listener close: %v", err)
+		}
 
-			this.idleConnsLock.Lock()
-			t := time.Now().Add(time.Millisecond * 100)
-			for _, c := range this.idleConns {
-				c.SetReadDeadline(t)
-			}
-			this.idleConnsLock.Unlock()
+		this.idleConnsLock.Lock()
+		t := time.Now().Add(time.Millisecond * 100)
+		for _, c := range this.idleConns {
+			c.SetReadDeadline(t)
+		}
+		this.idleConnsLock.Unlock()
 
-			// wait for all connected http client close
-			this.idleConnsWg.Wait()
+		// wait for all connected http client close
+		this.idleConnsWg.Wait()
 
-			this.listener = nil
-			this.server = nil
-			this.router = nil
+		this.listener = nil
+		this.server = nil
+		this.router = nil
 
+		if this.server != nil {
 			this.gw.wg.Done()
 		}
+		if this.httpsServer != nil {
+			this.gw.wg.Done()
+		}
+
 	}
+
 }
