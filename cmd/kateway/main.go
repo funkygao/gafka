@@ -2,13 +2,16 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"runtime/debug"
 	"strings"
 
+	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/profiler"
 )
 
@@ -20,7 +23,16 @@ func init() {
 		os.Exit(0)
 	}
 
-	log.SetFlags(log.LstdFlags | log.Llongfile) // TODO zk sdk uses this
+	if options.debug {
+		log.SetFlags(log.LstdFlags | log.Llongfile) // TODO zk sdk uses this
+		log.SetPrefix(color.Magenta("[log]"))
+
+		sarama.Logger = log.New(os.Stdout, color.Green("[Sarama]"),
+			log.LstdFlags|log.Lshortfile)
+	} else {
+		log.SetOutput(ioutil.Discard)
+	}
+
 }
 
 func main() {

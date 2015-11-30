@@ -124,7 +124,7 @@ func (this *ZkCluster) SetReplicas(replicas int) {
 
 func (this *ZkCluster) RegisterKatewayNode(zone, cluster, hostname, pubHttpAddr,
 	pubHttpsAddr, subHttpAddr, subHttpsAddr string) error {
-	parent := fmt.Sprintf("/kateway/ids/%s/%s", zone, cluster)
+	parent := fmt.Sprintf("/_kateway/ids/%s/%s", zone, cluster)
 	if err := this.zone.mkdirRecursive(parent); err != nil {
 		return err
 	}

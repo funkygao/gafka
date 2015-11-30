@@ -80,6 +80,10 @@ A REST gateway for kafka that supports Pub and Sub.
 
   kateway uses chunked transfer encoding
 
+- how to load balance the Sub?
+
+  haproxy MUST enable session sticky
+
 ### TODO
 
 - [ ] client can query lag

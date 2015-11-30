@@ -26,6 +26,7 @@ var (
 		showVersion          bool
 		memprof              bool
 		blockprof            bool
+		debug                bool
 		maxPubSize           int64
 		maxClients           int
 		offsetCommitInterval time.Duration
@@ -50,6 +51,7 @@ func parseFlags() {
 	flag.StringVar(&options.certFile, "certfile", "", "cert file path")
 	flag.StringVar(&options.keyFile, "keyfile", "", "key file path")
 	flag.StringVar(&options.configFile, "conf", "/etc/gafka.cf", "config file")
+	flag.BoolVar(&options.debug, "debug", false, "enable debug mode")
 	flag.BoolVar(&options.showVersion, "version", false, "show version and exit")
 	flag.DurationVar(&options.reporterInterval, "report", time.Second*10, "reporter flush interval")
 	flag.BoolVar(&options.cpuprof, "cpuprof", false, "enable cpu profiling")
