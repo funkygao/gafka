@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/golib/set"
@@ -35,6 +36,8 @@ func (this *Gateway) buildRouting() {
 			"/help", "GET", this.helpHandler)
 		this.registerRoute(this.pubServer.Router(),
 			"/stat", "GET", this.statHandler)
+		this.registerRoute(this.pubServer.Router(),
+			"/ping", "GET", this.pingHandler)
 
 		this.registerRoute(this.pubServer.Router(),
 			"/topics/{ver}/{topic}", "POST", this.pubHandler)
@@ -49,8 +52,10 @@ func (this *Gateway) buildRouting() {
 			"/clusters", "GET", this.clustersHandler)
 		this.registerRoute(this.subServer.Router(),
 			"/help", "GET", this.helpHandler)
-		this.registerRoute(this.pubServer.Router(),
+		this.registerRoute(this.subServer.Router(),
 			"/stat", "GET", this.statHandler)
+		this.registerRoute(this.subServer.Router(),
+			"/ping", "GET", this.pingHandler)
 
 		this.registerRoute(this.subServer.Router(),
 			"/topics/{ver}/{topic}/{group}", "GET", this.subHandler)
@@ -61,6 +66,7 @@ func (this *Gateway) buildRouting() {
 }
 
 func (this *Gateway) helpHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Server", "kateway")
 	w.Header().Set("Content-Type", "text/text")
 	paths := set.NewSet()
 	for _, route := range this.routes {
@@ -73,12 +79,20 @@ func (this *Gateway) helpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (this *Gateway) pingHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Server", "kateway")
+	w.Write([]byte(fmt.Sprintf("ver:%s, build:%s, uptime:%s",
+		gafka.Version, gafka.BuildId, time.Since(this.startedAt))))
+}
+
 func (this *Gateway) versionHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Server", "kateway")
 	w.Header().Set("Content-Type", "text/text")
 	w.Write([]byte(fmt.Sprintf("%s-%s", gafka.Version, gafka.BuildId)))
 }
 
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Server", "kateway")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	b, _ := json.Marshal(this.metaStore.Clusters())
@@ -87,5 +101,5 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request) {
 
 // TODO
 func (this *Gateway) statHandler(w http.ResponseWriter, r *http.Request) {
-
+	w.Header().Set("Server", "kateway")
 }

@@ -20,7 +20,8 @@ import (
 
 // Gateway is a distributed kafka Pub/Sub HTTP endpoint.
 type Gateway struct {
-	hostname string
+	hostname  string
+	startedAt time.Time
 
 	// openssl genrsa -out key.pem 2048
 	// openssl req -new -x509 -key key.pem -out cert.pem -days 3650
@@ -86,6 +87,8 @@ func (this *Gateway) Start() (err error) {
 	signal.RegisterSignalHandler(syscall.SIGUSR2, func(sig os.Signal) {
 		this.Stop()
 	})
+
+	this.startedAt = time.Now()
 
 	this.metaStore.Start()
 	log.Info("meta store started")

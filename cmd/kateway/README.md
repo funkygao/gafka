@@ -1,10 +1,11 @@
 # kateway
 
-A REST gateway for kafka that supports both Pub and Sub.
+A REST gateway for kafka that supports Pub and Sub.
 
 ### Features
 
 - RESTful API for kafka Pub/Sub
+- http/https and websocket supported
 - Quotas and rate limit
 - Plugable Authentication and Authorization
 - Analytics
@@ -88,6 +89,7 @@ A REST gateway for kafka that supports both Pub and Sub.
 - [ ] plugin
 - [ ] mem pool 
 - [ ] logging
+- [ ] anti spoof
 - [ ] async producer
 - [ ] pub gateway accepts IoT sensor messages
 - [ ] blacklist
@@ -105,6 +107,7 @@ A REST gateway for kafka that supports both Pub and Sub.
 - [X] /usr/local/go/src/net/http/server.go:1934: http: multiple response.WriteHeader calls
 - [ ] panic: sync: negative WaitGroup counter
 - [ ] ErrTooManyConsumers not triggered
+- [ ] race conditions
 
 ### EdgeCase
 
