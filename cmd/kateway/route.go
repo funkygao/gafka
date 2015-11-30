@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"syscall"
 	"time"
 
 	"github.com/funkygao/gafka"
@@ -99,7 +100,21 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-// TODO
 func (this *Gateway) statHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Server", "kateway")
+	rusage := &syscall.Rusage{}
+	var interval time.Duration
+	if this.lastStatExec.Nanosecond() == 0 {
+		interval = time.Since(this.startedAt)
+	} else {
+		interval = time.Since(this.lastStatExec)
+	}
+	this.lastStatExec = time.Now()
+	syscall.Getrusage(syscall.RUSAGE_SELF, rusage)
+	syscall.Getrusage(syscall.RUSAGE_SELF, rusage)
+	userTime := rusage.Utime.Sec*1000000000 + int64(rusage.Utime.Usec)
+	sysTime := rusage.Stime.Sec*1000000000 + int64(rusage.Stime.Usec)
+	userCpuUtil := float64(userTime-this.lastUserTime) * 100 / float64(interval)
+	sysCpuUtil := float64(sysTime-this.lastSysTime) * 100 / float64(interval)
+	w.Write([]byte(fmt.Sprintf("us:%3.2f%% sy:%3.2f%%", userCpuUtil, sysCpuUtil)))
 }

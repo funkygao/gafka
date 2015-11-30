@@ -20,8 +20,11 @@ import (
 
 // Gateway is a distributed kafka Pub/Sub HTTP endpoint.
 type Gateway struct {
-	hostname  string
-	startedAt time.Time
+	hostname     string
+	startedAt    time.Time
+	lastUserTime int64
+	lastSysTime  int64
+	lastStatExec time.Time
 
 	// openssl genrsa -out key.pem 2048
 	// openssl req -new -x509 -key key.pem -out cert.pem -days 3650
