@@ -73,7 +73,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		// broken pipe, io timeout
 		log.Error("consumer %s{topic:%s, group:%s, limit:%d} get killed: %v",
 			r.RemoteAddr, topic, group, limit, err)
-		go this.subPool.KillClient(topic, group, r.RemoteAddr) // wait cf.ProcessingTimeout
+		go this.subPool.KillClient(r.RemoteAddr) // wait cf.ProcessingTimeout
 	}
 
 }

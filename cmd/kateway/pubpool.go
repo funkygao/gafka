@@ -84,6 +84,8 @@ func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
 	var err error
 	t1 := time.Now()
 	cf := sarama.NewConfig()
+	cf.Metadata.RefreshFrequency = time.Minute * 10
+	cf.Metadata.Retry.Max = 3
 	cf.Producer.RequiredAcks = sarama.WaitForLocal
 	cf.Producer.Partitioner = sarama.NewHashPartitioner
 	cf.Producer.Timeout = time.Second
@@ -101,7 +103,7 @@ func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
 
 func (this *pubPool) initialize() {
 	this.pool = pool.NewResourcePool("kafka", this.syncProducerFactory,
-		1000, 1000, 0, time.Second*10, time.Minute) // TODO
+		2, 2, 0, time.Second*10, time.Minute) // TODO
 }
 
 func (this *pubPool) Close() {
