@@ -111,8 +111,6 @@ A REST gateway for kafka that supports Pub and Sub.
 
 ### TODO
 
-- [ ] client can query lag
-- [ ] websocket for pub/sub
 - [ ] sub metrics report
 - [ ] sub lock more precise 
 - [ ] plugin
@@ -123,18 +121,14 @@ A REST gateway for kafka that supports Pub and Sub.
 - [ ] pub gateway accepts IoT sensor messages
 - [ ] blacklist
 - [ ] profiler
-- [ ] http response compression
 - [ ] Update to glibc 2.20 or higher
-- [ ] pub/sub support config passed in
 - [ ] graceful shutdown
-- [ ] idle timeout instead of rw timeout
-- [X] influxdb tag
 - [ ] compression in kafka
 
 ### Bugs
 
 - [X] /usr/local/go/src/net/http/server.go:1934: http: multiple response.WriteHeader calls
-- [ ] panic: sync: negative WaitGroup counter
+- [X] panic: sync: negative WaitGroup counter
 - [ ] ErrTooManyConsumers not triggered
 - [ ] race conditions
 

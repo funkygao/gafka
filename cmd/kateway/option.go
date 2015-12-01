@@ -9,6 +9,7 @@ import (
 
 var (
 	options struct {
+		id                   string
 		zone                 string
 		cluster              string
 		configFile           string
@@ -39,6 +40,7 @@ var (
 )
 
 func parseFlags() {
+	flag.StringVar(&options.id, "id", "", "kateway id, the id must be unique within a host")
 	flag.StringVar(&options.zone, "zone", "", "kafka zone name")
 	flag.StringVar(&options.cluster, "cluster", "", "kafka cluster name")
 	flag.DurationVar(&options.metaRefresh, "metarefresh", time.Minute*10, "meta data refresh interval")

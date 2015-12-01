@@ -65,7 +65,7 @@ _/    _/    _/_/_/      _/_/    _/_/_/      _/      _/        _/_/_/    _/_/_/
 	setupLogging(options.logFile, options.logLevel, options.crashLogFile)
 	ctx.LoadConfig(options.configFile)
 
-	gw := NewGateway(options.metaRefresh)
+	gw := NewGateway(options.id, options.metaRefresh)
 	if err := gw.Start(); err != nil {
 		panic(err)
 	}

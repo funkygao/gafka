@@ -10,6 +10,8 @@ import (
 
 // /{ver}/topics/{topic}/{group}/{id}?offset=n&limit=1
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
+	writeKatewayHeader(w)
+
 	if this.breaker.Open() {
 		writeBreakerOpen(w)
 		return
@@ -32,7 +34,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	topic = params["topic"]
 	group = params["group"]
 
-	if !this.authSub(r.Header.Get("Subkey"), topic) {
+	if !this.meta.AuthSub(r.Header.Get("Appid"), r.Header.Get("Subkey"), topic) {
 		writeAuthFailure(w)
 		log.Warn("consumer %s{topic:%s, group:%s, limit:%d} auth fail",
 			r.RemoteAddr, topic, group, limit)

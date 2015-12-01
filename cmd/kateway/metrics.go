@@ -90,9 +90,10 @@ func newPubMetrics(gw *Gateway) *pubMetrics {
 }
 
 func (this *pubMetrics) mainLoop() {
-	log4go.Info("metrics reporter started")
+	log4go.Trace("metrics reporter started")
 
 	ticker := time.NewTicker(options.reporterInterval)
+	defer ticker.Stop()
 	mem := new(runtime.MemStats)
 	var lastTotalGcPause uint64
 	for {
@@ -108,8 +109,8 @@ func (this *pubMetrics) mainLoop() {
 			lastTotalGcPause = mem.PauseTotalNs
 
 		case <-this.gw.shutdownCh:
-			ticker.Stop()
-
+			log4go.Trace("metrics reporter stopped")
+			return
 		}
 	}
 }

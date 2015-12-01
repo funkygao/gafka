@@ -13,7 +13,6 @@ import (
 type MetaStore interface {
 	Start()
 	Stop()
-	Refresh()
 	RefreshInterval() time.Duration
 
 	Clusters() []string
@@ -26,12 +25,13 @@ type MetaStore interface {
 	RegisterKateway(zone, cluster, hostname, pubHttpAddr,
 		pubHttpsAddr, subHttpAddr, subHttpsAddr string) error
 
-	AuthPub(pubkey string) bool
-	AuthSub(subkey string) bool
+	AuthPub(appid, pubkey, topic string) bool
+	AuthSub(appid, subkey, topic string) bool
 }
 
 type zkMetaStore struct {
-	refresh time.Duration
+	shutdownCh chan struct{}
+	refresh    time.Duration
 
 	brokerList []string // cache
 
@@ -52,16 +52,33 @@ func NewZkMetaStore(zone string, cluster string, refresh time.Duration) MetaStor
 		zkcluster:     zkzone.NewCluster(cluster),
 		partitionsMap: make(map[string][]int32),
 		refresh:       refresh,
+		shutdownCh:    make(chan struct{}),
 	}
 }
 
 func (this *zkMetaStore) Start() {
 	this.brokerList = this.zkcluster.BrokerList()
+
+	go func() {
+		ticker := time.NewTicker(this.refresh)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				this.Refresh()
+
+			case <-this.shutdownCh:
+				log.Trace("meta store closed")
+				return
+			}
+		}
+	}()
 }
 
 func (this *zkMetaStore) Stop() {
+	close(this.shutdownCh)
 	this.zkcluster.Close()
-	log.Info("meta store closed")
 }
 
 func (this *zkMetaStore) OnlineConsumersCount(topic, group string) int {
@@ -123,10 +140,10 @@ func (this *zkMetaStore) Clusters() []string {
 	return r
 }
 
-func (this *zkMetaStore) AuthPub(pubkey string) (ok bool) {
+func (this *zkMetaStore) AuthPub(appid, pubkey, topic string) (ok bool) {
 	return true
 }
 
-func (this *zkMetaStore) AuthSub(subkey string) (ok bool) {
+func (this *zkMetaStore) AuthSub(appid, subkey, topic string) (ok bool) {
 	return true
 }

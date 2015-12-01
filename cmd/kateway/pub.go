@@ -18,6 +18,8 @@ type pubResponse struct {
 
 // /{ver}/topics/{topic}?key=xxx
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
+	writeKatewayHeader(w)
+
 	if this.breaker.Open() {
 		writeBreakerOpen(w)
 		return
@@ -33,7 +35,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	topic = params["topic"]
 	key = r.URL.Query().Get("key") // if key given, batched msg must belong to same key
 
-	if !this.authPub(r.Header.Get("Pubkey"), topic) {
+	if !this.meta.AuthPub(r.Header.Get("Appid"), r.Header.Get("Pubkey"), topic) {
 		writeAuthFailure(w)
 		return
 	}

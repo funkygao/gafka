@@ -111,16 +111,18 @@ func (this *pubServer) waitExit() {
 			log.Error("listener close: %v", err)
 		}
 
-		this.listener = nil
-		this.server = nil
-		this.router = nil
-
 		if this.server != nil {
 			this.gw.wg.Done()
+			log.Trace("pubserver http stopped")
 		}
 		if this.httpsServer != nil {
 			this.gw.wg.Done()
+			log.Trace("pubserver https stopped")
 		}
+
+		this.listener = nil
+		this.server = nil
+		this.router = nil
 
 	}
 

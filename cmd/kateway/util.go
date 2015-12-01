@@ -10,6 +10,10 @@ func diff(l1, l2 []string) (added []string, deleted []string) {
 	return
 }
 
+func writeKatewayHeader(w http.ResponseWriter) {
+	w.Header().Set("Server", "kateway")
+}
+
 func writeAuthFailure(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusUnauthorized)
 	w.Write([]byte("invalid pubkey"))

@@ -52,8 +52,8 @@ func (this *pubStore) Start() (err error) {
 			this.pubPool.RefreshBrokerList(this.meta.BrokerList())
 
 		case <-this.shutdownCh:
-			log.Info("kafka pub store stopped")
 			this.pubPool.Stop()
+			log.Trace("kafka pub store stopped")
 			return
 
 		}

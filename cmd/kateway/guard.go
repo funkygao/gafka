@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/funkygao/golib/window"
+	log "github.com/funkygao/log4go"
 	"github.com/shirou/gopsutil/cpu"
 )
 
@@ -26,6 +27,9 @@ func newGuard(gw *Gateway) *guard {
 }
 
 func (this *guard) Start() {
+	this.gw.wg.Add(1)
+	defer this.gw.wg.Done()
+
 	interval := time.Minute
 	refreshTicker := time.NewTicker(interval)
 	defer refreshTicker.Stop()
@@ -43,6 +47,7 @@ func (this *guard) Start() {
 	for {
 		select {
 		case <-this.gw.shutdownCh:
+			log.Trace("guard stopped")
 			return
 
 		case <-this.refreshCh:

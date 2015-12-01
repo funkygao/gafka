@@ -104,11 +104,11 @@ func (this *subServer) Start() {
 		this.listener = LimitListener(this.listener, this.maxClients)
 		go this.server.Serve(this.listener)
 
+		this.gw.wg.Add(1)
 		this.once.Do(func() {
 			go this.waitExit()
 		})
 
-		this.gw.wg.Add(1)
 		log.Info("sub http server ready on %s", this.server.Addr)
 	}
 
@@ -122,11 +122,11 @@ func (this *subServer) Start() {
 		this.tlsListener = LimitListener(this.tlsListener, this.maxClients)
 		go this.httpsServer.Serve(this.tlsListener)
 
+		this.gw.wg.Add(1)
 		this.once.Do(func() {
 			go this.waitExit()
 		})
 
-		this.gw.wg.Add(1)
 		log.Info("sub https server ready on %s", this.server.Addr)
 	}
 
@@ -156,20 +156,21 @@ func (this *subServer) waitExit() {
 		}
 		this.idleConnsLock.Unlock()
 
-		// wait for all connected http client close
+		log.Trace("waiting for all connected http client close")
 		this.idleConnsWg.Wait()
+
+		if this.server != nil {
+			this.gw.wg.Done()
+			log.Trace("subserver http stopped")
+		}
+		if this.httpsServer != nil {
+			this.gw.wg.Done()
+			log.Trace("subserver https stopped")
+		}
 
 		this.listener = nil
 		this.server = nil
 		this.router = nil
-
-		if this.server != nil {
-			this.gw.wg.Done()
-		}
-		if this.httpsServer != nil {
-			this.gw.wg.Done()
-		}
-
 	}
 
 }

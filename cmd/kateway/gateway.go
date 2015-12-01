@@ -24,6 +24,7 @@ import (
 
 // Gateway is a distributed kafka Pub/Sub HTTP endpoint.
 type Gateway struct {
+	id        string
 	hostname  string
 	startedAt time.Time
 
@@ -55,8 +56,9 @@ type Gateway struct {
 	subMetrics  *subMetrics
 }
 
-func NewGateway(metaRefreshInterval time.Duration) *Gateway {
+func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this := &Gateway{
+		id:          id,
 		shutdownCh:  make(chan struct{}),
 		routes:      make([]route, 0),
 		leakyBucket: ratelimiter.NewLeakyBucket(1000*60, time.Minute),
@@ -118,11 +120,11 @@ func (this *Gateway) Start() (err error) {
 	this.startedAt = time.Now()
 
 	this.meta.Start()
-	log.Info("meta store started")
+	log.Trace("meta store started")
 
 	go this.guard.Start()
 	this.executor.Start()
-	log.Info("executor started")
+	log.Trace("executor started")
 
 	this.buildRouting()
 
@@ -139,41 +141,30 @@ func (this *Gateway) Start() (err error) {
 
 	this.registerInZk()
 
-	log.Info("gateway[%s] ready", this.hostname)
+	log.Info("gateway[%s:%s] ready", this.hostname, this.id)
 
 	return nil
 }
 
 func (this *Gateway) Stop() {
 	this.shutdownOnce.Do(func() {
-		log.Info("gateway[%s] shutting down", this.hostname)
-
 		close(this.shutdownCh)
-
-		// wait for all components shutdown
-		this.wg.Wait()
-
-		this.meta.Stop()
-
-		log.Info("gateway[%s] shutdown complete", this.hostname)
 	})
 
 }
 
 func (this *Gateway) ServeForever() {
-	meteRefreshTicker := time.NewTicker(this.meta.RefreshInterval())
-	defer meteRefreshTicker.Stop()
+	select {
+	case <-this.shutdownCh:
 
-	ever := true
-	for ever {
-		select {
-		case <-this.shutdownCh:
-			ever = false
+		// wait for all components shutdown
+		log.Trace("waiting for all components shutdown...")
+		this.wg.Wait()
+		log.Trace("all components shutdown complete")
 
-		case <-meteRefreshTicker.C:
-			this.meta.Refresh()
+		this.meta.Stop()
 
-		}
+		log.Info("gateway[%s:%s] shutdown complete", this.hostname, this.id)
 	}
 
 }

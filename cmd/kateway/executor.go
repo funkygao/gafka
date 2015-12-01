@@ -1,6 +1,7 @@
 package main
 
 import (
+	log "github.com/funkygao/log4go"
 	"github.com/wvanbergen/kafka/consumergroup"
 )
 
@@ -29,6 +30,7 @@ func (this *executor) Start() {
 func (this *executor) waitExit() {
 	select {
 	case <-this.gw.shutdownCh:
+		log.Trace("executor stopped")
 		this.gw.wg.Done()
 
 	}
