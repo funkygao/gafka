@@ -1,4 +1,4 @@
-package main
+package kafka
 
 import (
 	"sync/atomic"
@@ -42,40 +42,24 @@ func (this *pubClient) Recycle() {
 }
 
 type pubPool struct {
-	gw *Gateway
+	store *pubStore
 
 	brokerList []string
 	pool       *pool.ResourcePool
 	nextId     uint64
 }
 
-func newPubPool(gw *Gateway, brokerList []string) *pubPool {
+func newPubPool(store *pubStore, brokerList []string) *pubPool {
 	this := &pubPool{
+		store:      store,
 		brokerList: brokerList,
-		gw:         gw,
 	}
 	this.initialize()
 
 	return this
 }
 
-func (this *pubPool) Start() {
-	this.gw.wg.Add(1)
-	defer this.gw.wg.Done()
-
-	ever := true
-	for ever {
-		select {
-		case <-this.gw.shutdownCh:
-			log.Info("pub pool shutdown")
-			this.Stop()
-			ever = false
-
-		}
-	}
-}
-
-func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
+func (this *pubPool) kafkaClientFactory() (pool.Resource, error) {
 	conn := &pubClient{
 		pool: this,
 		id:   atomic.AddUint64(&this.nextId, 1),
@@ -89,7 +73,7 @@ func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
 	cf.Producer.RequiredAcks = sarama.WaitForLocal
 	cf.Producer.Partitioner = sarama.NewHashPartitioner
 	cf.Producer.Timeout = time.Second
-	cf.ClientID = this.gw.hostname
+	cf.ClientID = this.store.hostname
 	//cf.Producer.Compression = sarama.CompressionSnappy
 	cf.Producer.Retry.Max = 3
 	conn.Client, err = sarama.NewClient(this.brokerList, cf)
@@ -102,7 +86,7 @@ func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
 }
 
 func (this *pubPool) initialize() {
-	this.pool = pool.NewResourcePool("kafka", this.syncProducerFactory,
+	this.pool = pool.NewResourcePool("kafka", this.kafkaClientFactory,
 		2, 2, 0, time.Second*10, time.Minute) // TODO
 }
 

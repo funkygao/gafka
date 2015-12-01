@@ -62,6 +62,16 @@ A REST gateway for kafka that supports Pub and Sub.
                     +------------------+        +---------------------+
 
 
+### Deployment
+
+
+                                    +--------------+
+                                    | LoadBalancer |
+                                    +--------------+
+                                           |
+                                           | HTTP/1.1 keep-alive
+                                           |
+
 ### Usage
 
     pub:

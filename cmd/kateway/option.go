@@ -16,6 +16,7 @@ var (
 		pubHttpsAddr         string
 		subHttpAddr          string
 		subHttpsAddr         string
+		store                string
 		certFile             string
 		keyFile              string
 		logFile              string
@@ -50,6 +51,7 @@ func parseFlags() {
 	flag.StringVar(&options.crashLogFile, "crashlog", "", "crash log")
 	flag.StringVar(&options.certFile, "certfile", "", "cert file path")
 	flag.StringVar(&options.keyFile, "keyfile", "", "key file path")
+	flag.StringVar(&options.store, "store", "kafka", "backend store")
 	flag.StringVar(&options.configFile, "conf", "/etc/gafka.cf", "config file")
 	flag.BoolVar(&options.debug, "debug", false, "enable debug mode")
 	flag.BoolVar(&options.showVersion, "version", false, "show version and exit")

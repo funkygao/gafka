@@ -105,7 +105,7 @@ func pubGatewayLoop(seq int) {
 	httpClient := createHttpClient()
 	for n := 0; n < loops; n++ {
 		req, err := http.NewRequest("POST",
-			"http://localhost:9090/v1/topics/foobar?ack=2&timeout=1&retry=3",
+			"http://localhost:9191/topics/v1/foobar?ack=2&timeout=1&retry=3",
 			bytes.NewBuffer([]byte("m=hello world")))
 		if err != nil {
 			log.Fatalf("Error Occured. %+v", err)

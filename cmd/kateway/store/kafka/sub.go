@@ -1,0 +1,83 @@
+package kafka
+
+import (
+	l "log"
+	"os"
+	"sync"
+
+	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/cmd/kateway/store"
+	"github.com/funkygao/golib/color"
+	log "github.com/funkygao/log4go"
+	"github.com/wvanbergen/kafka/consumergroup"
+)
+
+type consumerFetcher struct {
+	*consumergroup.ConsumerGroup
+}
+
+type subStore struct {
+	shutdownCh   <-chan struct{}
+	closedConnCh <-chan string
+	wg           *sync.WaitGroup
+	hostname     string
+
+	meta meta.MetaStore
+
+	subPool *subPool
+}
+
+func NewSubStore(meta meta.MetaStore, hostname string, wg *sync.WaitGroup,
+	shutdownCh <-chan struct{}, closedConnCh <-chan string, debug bool) *subStore {
+	if debug {
+		sarama.Logger = l.New(os.Stdout, color.Blue("[Sarama]"),
+			l.LstdFlags|l.Lshortfile)
+	}
+
+	return &subStore{
+		meta:         meta,
+		hostname:     hostname,
+		wg:           wg,
+		shutdownCh:   shutdownCh,
+		closedConnCh: closedConnCh,
+	}
+}
+
+func (this *subStore) Start() (err error) {
+	this.wg.Add(1)
+	defer this.wg.Done()
+
+	this.subPool = newSubPool(this)
+
+	var remoteAddr string
+	for {
+		select {
+		case <-this.shutdownCh:
+			log.Info("kafka sub store stopped")
+			this.subPool.Stop()
+			return
+
+		case remoteAddr = <-this.closedConnCh:
+			this.subPool.killClient(remoteAddr)
+
+		}
+	}
+
+	return
+}
+
+func (this *subStore) KillClient(remoteAddr string) {
+	this.subPool.killClient(remoteAddr)
+}
+
+func (this *subStore) Fetch(cluster, topic, group, remoteAddr string) (store.Fetcher, error) {
+	cg, err := this.subPool.PickConsumerGroup("", topic, group, remoteAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &consumerFetcher{
+		ConsumerGroup: cg,
+	}, nil
+}
