@@ -44,7 +44,7 @@ func (this *subPool) PickConsumerGroup(ver, topic, group,
 	}
 
 	// FIXME 2 partition, if 3 client concurrently connects, got 3 consumer
-	if this.gw.metaStore.OnlineConsumersCount(topic, group) >= len(this.gw.metaStore.Partitions(topic)) {
+	if this.gw.meta.OnlineConsumersCount(topic, group) >= len(this.gw.meta.Partitions(topic)) {
 		err = ErrTooManyConsumers
 		return
 	}
@@ -62,13 +62,13 @@ func (this *subPool) PickConsumerGroup(ver, topic, group,
 	cf.Offsets.CommitInterval = options.offsetCommitInterval
 	// time to wait for all the offsets for a partition to be processed after stopping to consume from it.
 	cf.Offsets.ProcessingTimeout = time.Second * 10 // TODO
-	cf.Zookeeper.Chroot = this.gw.metaStore.ZkChroot()
+	cf.Zookeeper.Chroot = this.gw.meta.ZkChroot()
 	for i := 0; i < 3; i++ {
 		// join group will async register zk owners znodes
 		// so, if many client concurrently connects to kateway, will not
 		// strictly throw ErrTooManyConsumers
 		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
-			this.gw.metaStore.ZkAddrs(), cf)
+			this.gw.meta.ZkAddrs(), cf)
 		if err == nil {
 			this.clientMap[client] = cg
 			break

@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Shopify/sarama"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
 )
@@ -25,13 +24,12 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		ver   string
 		topic string
 		key   string
 	)
 
 	params := mux.Vars(r)
-	ver = params["ver"]
+	//ver := params["ver"] // TODO
 	topic = params["topic"]
 	key = r.URL.Query().Get("key") // if key given, batched msg must belong to same key
 
@@ -51,7 +49,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	t1 := time.Now()
 	this.pubMetrics.PubConcurrent.Inc(1)
 
-	partition, offset, err := this.syncProduce(ver, topic, key, rawMsg)
+	// TODO some topics use async put
+	partition, offset, err := this.pubStore.SyncPub(options.cluster, topic, key, rawMsg) // FIXME
 	if err != nil {
 		if isBrokerError(err) {
 			this.breaker.Fail()
@@ -82,104 +81,4 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	this.pubMetrics.PubSuccess.Inc(1)
 	this.pubMetrics.PubConcurrent.Dec(1)
 	this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
-}
-
-func (this *Gateway) asyncProduce(ver, topic string, key string, msg []byte) (err error) {
-	client, e := this.pubPool.Get()
-	if e != nil {
-		if client != nil {
-			client.Recycle()
-		}
-		return e
-	}
-
-	var producer sarama.AsyncProducer
-	producer, err = sarama.NewAsyncProducerFromClient(client.Client)
-	if err != nil {
-		client.Recycle()
-		return
-	}
-
-	// TODO pool up the error collector goroutines
-	// messages will only be returned here after all retry attempts are exhausted.
-	go func() {
-		for err := range producer.Errors() {
-			log.Error("async producer:", err)
-		}
-	}()
-
-	var keyEncoder sarama.Encoder = nil // will use random partitioner
-	if key != "" {
-		keyEncoder = sarama.StringEncoder(key) // will use hash partition
-		log.Debug("keyed message: %s", key)
-	}
-	producer.Input() <- &sarama.ProducerMessage{
-		Topic: topic,
-		Key:   keyEncoder,
-		Value: sarama.ByteEncoder(msg),
-	}
-	return
-}
-
-func (this *Gateway) syncProduce(ver, topic string, key string, msg []byte) (partition int32,
-	offset int64, err error) {
-	this.pubMetrics.PubQps.Mark(1)
-	this.pubMetrics.PubSize.Mark(int64(len(msg)))
-
-	client, e := this.pubPool.Get()
-	if e != nil {
-		if client != nil {
-			client.Recycle()
-		}
-		return -1, -1, e
-	}
-
-	var producer sarama.SyncProducer
-	producer, err = sarama.NewSyncProducerFromClient(client.Client)
-	if err != nil {
-		client.Recycle()
-		return
-	}
-
-	// TODO add msg header
-
-	var keyEncoder sarama.Encoder = nil // will use random partitioner
-	if key != "" {
-		keyEncoder = sarama.StringEncoder(key) // will use hash partition
-	}
-	partition, offset, err = producer.SendMessage(&sarama.ProducerMessage{
-		Topic: topic,
-		Key:   keyEncoder,
-		Value: sarama.ByteEncoder(msg),
-	})
-
-	producer.Close() // TODO keep the conn open
-	client.Recycle()
-	return
-}
-
-// Just for testing, a throughput of only 1k/s
-func (this *Gateway) produceWithoutPool(ver, topic string, msg []byte) (partition int32,
-	offset int64, err error) {
-	this.pubMetrics.PubQps.Mark(1)
-	this.pubMetrics.PubSize.Mark(int64(len(msg)))
-
-	var producer sarama.SyncProducer
-	cf := sarama.NewConfig()
-	cf.Producer.RequiredAcks = sarama.WaitForLocal
-	cf.Producer.Partitioner = sarama.NewHashPartitioner
-	cf.Producer.Timeout = time.Second
-	//cf.Producer.Compression = sarama.CompressionSnappy
-	cf.Producer.Retry.Max = 3
-	producer, err = sarama.NewSyncProducer(this.metaStore.BrokerList(), cf)
-	if err != nil {
-		return -1, -1, err
-	}
-
-	partition, offset, err = producer.SendMessage(&sarama.ProducerMessage{
-		Topic: topic,
-		Value: sarama.ByteEncoder(msg),
-	})
-	producer.Close()
-	return
 }

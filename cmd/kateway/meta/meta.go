@@ -1,8 +1,9 @@
-package main
+package meta
 
 import (
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
@@ -13,19 +14,25 @@ type MetaStore interface {
 	Start()
 	Stop()
 	Refresh()
-	RegisterKateway(zone, cluster, hostname, pubHttpAddr,
-		pubHttpsAddr, subHttpAddr, subHttpsAddr string) error
+	RefreshInterval() time.Duration
+
 	Clusters() []string
 	Partitions(topic string) []int32
 	OnlineConsumersCount(topic, group string) int
 	ZkAddrs() []string
 	ZkChroot() string
 	BrokerList() []string
+
+	RegisterKateway(zone, cluster, hostname, pubHttpAddr,
+		pubHttpsAddr, subHttpAddr, subHttpsAddr string) error
+
 	AuthPub(pubkey string) bool
 	AuthSub(subkey string) bool
 }
 
 type zkMetaStore struct {
+	refresh time.Duration
+
 	brokerList []string // cache
 
 	partitionsMap map[string][]int32 // cache
@@ -34,7 +41,7 @@ type zkMetaStore struct {
 	zkcluster *zk.ZkCluster
 }
 
-func newZkMetaStore(zone string, cluster string) MetaStore {
+func NewZkMetaStore(zone string, cluster string, refresh time.Duration) MetaStore {
 	zkAddrs := ctx.ZoneZkAddrs(zone)
 	if len(zkAddrs) == 0 {
 		panic("empty zookeeper addr")
@@ -44,6 +51,7 @@ func newZkMetaStore(zone string, cluster string) MetaStore {
 	return &zkMetaStore{
 		zkcluster:     zkzone.NewCluster(cluster),
 		partitionsMap: make(map[string][]int32),
+		refresh:       refresh,
 	}
 }
 
@@ -65,6 +73,10 @@ func (this *zkMetaStore) RegisterKateway(zone, cluster, hostname, pubHttpAddr,
 	pubHttpsAddr, subHttpAddr, subHttpsAddr string) error {
 	return this.zkcluster.RegisterKatewayNode(zone, cluster, hostname, pubHttpAddr,
 		pubHttpsAddr, subHttpAddr, subHttpsAddr)
+}
+
+func (this *zkMetaStore) RefreshInterval() time.Duration {
+	return this.refresh
 }
 
 func (this *zkMetaStore) Refresh() {

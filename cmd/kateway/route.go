@@ -27,7 +27,7 @@ func (this *Gateway) registerRoute(router *mux.Router, path, method string,
 }
 
 func (this *Gateway) buildRouting() {
-	if options.pubHttpAddr != "" || options.pubHttpsAddr != "" {
+	if this.pubServer != nil {
 		this.registerRoute(this.pubServer.Router(),
 			"/ver", "GET", this.versionHandler)
 		this.registerRoute(this.pubServer.Router(),
@@ -45,7 +45,7 @@ func (this *Gateway) buildRouting() {
 			"/ws/topics/{ver}/{topic}", "POST", this.pubWsHandler)
 	}
 
-	if options.subHttpAddr != "" || options.subHttpsAddr != "" {
+	if this.subServer != nil {
 		this.registerRoute(this.subServer.Router(),
 			"/ver", "GET", this.versionHandler)
 		this.registerRoute(this.subServer.Router(),
@@ -95,7 +95,7 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Server", "kateway")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	b, _ := json.Marshal(this.metaStore.Clusters())
+	b, _ := json.Marshal(this.meta.Clusters())
 	w.Write(b)
 }
 
