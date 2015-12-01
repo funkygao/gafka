@@ -8,7 +8,6 @@ Unified multi-datacenter multi-kafka-clusters central management console powered
 - kafka topic/partition routine OPS on a central console
 - display global kafka brokers topology and check kafka balancing status
 - peek ongoing messages at data center level
-- elastic scaling
 - explicit kafka clusters management
 - bash-autocomplete supported
 - monitor consumer lags

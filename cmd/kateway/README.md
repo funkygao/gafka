@@ -7,59 +7,61 @@ A REST gateway for kafka that supports Pub and Sub.
 - RESTful API for kafka Pub/Sub
 - http/https and websocket supported
 - Quotas and rate limit
-- Plugable Authentication and Authorization
+- Plugins
+  - authentication and authorization
+  - transform
+- Elastic scales
 - Analytics
 - Monitor Performance
 - Service Discovery
 - Circuit breakers
-- Multiple versioning topic
 - Hot reload without downtime
-- Transforms on the fly
 - Audit
 - Distributed load balancing
 - Health checks
 
 ### Architecture
 
-                       +-----------------+          binding
-                       | maas manager UI |--------------------------->----------------------+
-                       +-----------------+                                                  |
-                               |                                                            |
-                               ^ register [application|topic|binding]                       |
-                               |                                                            |
-                       +-----------------+                                                  |
-                       |  Application    |                                                  |
-                       +-----------------+                                                  |
-                               |                                                            |
-                               V                                                            |
-            PUB                |               SUB                                          |
-            +-------------------------------------+                                         |
-            |                                     |                                         |
-       HTTP | pubkey                         HTTP | subkey                                  |
-       POST | secret                          GET |                                         | binding
-            |                                     |--+ batchSize                            | event
-            | Header: topic.id                    |  | Optional: topic                      |
-            | Header: key                         |  | Optional: offset                     |
-            | Header: acks                        |  | timeout                              |
-            | Body: payload                       |  | timeout                              |
-        +------------+                      +------------+          application border      |
-     ---| PubEndpoint|----------------------| SubEndpoint|----------------------------      |
-        +------------+                      +------------+                                  |
-        | stateless  |                      | stateful   |                                  V
-        +------------+                      +------------+                                  |
-        | monitor    |                      | monitor    |                                  |
-        +------------+                      +------------+                                  |
-            |                                     |     |                                   |
-            | Producer                   Consumer |     |                                   |
-            |                            Group    |     +---------------+                   |
-            |                                     |                     |                   |
-            |       +------------------+          |     +----------------------+            |
-            |       |  Storage Cluster |          |     | ZK or alike ensemble |-----<------+
-            +-------+------------------+----------+     +----------------------+
+           +----+      +-----------------+          
+           | DB |------|   manager UI    |
+           +----+      +-----------------+                                                  
+                               |                                                           
+                               ^ register [application|topic|binding]                       
+                               |                                                          
+                       +-----------------+                                                 
+                       |  Application    |                                                
+                       +-----------------+                                               
+                               |                                                        
+                               V                                                       
+            PUB                |               SUB                                    
+            +-------------------------------------+                                  
+            |                                     |                                         
+       HTTP |                                HTTP |                                        
+       POST |                                 GET |                                       
+            |                                     |                                      
+        +------------+                      +------------+          application border  
+     ---| PubEndpoint|----------------------| SubEndpoint|---------------------------- 
+        +------------+           |          +------------+                            
+        | stateless  |        Plugins       | stateful   |                           
+        +------------+  +----------------+  +------------+                          
+        | monitor    |  | Authentication |  | monitor    |                         
+        +------------+  +----------------+  +------------+                        
+        | guard      |                      | guard      |                       
+        +------------+                      +------------+                      
+            |                                     |    
+            |    +----------------------+         |  
+            |----| ZK or other ensemble |---------| 
+            |    +----------------------+         |
+            |                                     |    
+            | Pub                                 | Fetch
+            |                                     |                     
+            |       +------------------+          |     
+            |       |      Store       |          |    
+            +-------+------------------+----------+   
                     |  kafka or else   |
-                    +------------------+        +---------------------+
-                    |     monitor      |--------| elastic partitioner |
-                    +------------------+        +---------------------+
+                    +------------------+        +-----------------------------+
+                    |     monitor      |--------| elastic partitioner/monitor |
+                    +------------------+        +-----------------------------+
 
 
 ### Deployment
@@ -69,8 +71,21 @@ A REST gateway for kafka that supports Pub and Sub.
                                     | LoadBalancer |
                                     +--------------+
                                            |
-                                           | HTTP/1.1 keep-alive
-                                           |
+                                           | HTTP/1.1 keep-alive             +----------+
+                                           |      session sticky             | guard    |
+                       +-----------------------------------------+           +----------+
+                       |              |            |             |      
+                  +---------+   +---------+   +---------+   +---------+      +----------+
+                  | Kateway |   | Kateway |   | Kateway |   | Kateway |      | ensemble |
+                  +---------+   +---------+   +---------+   +---------+      +----------+
+                       |              |            |             |
+                       +-----------------------------------------+           +----------+
+                                            |                                | metrics  |
+                             +---------------------------+                   +----------+
+                             |              |            |             
+                         +---------+   +---------+   +---------+   
+                         | Store   |   | Store   |   | Store   |
+                         +---------+   +---------+   +---------+   
 
 ### Usage
 

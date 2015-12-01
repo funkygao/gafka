@@ -43,9 +43,9 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 		this.server = &http.Server{
 			Addr:           httpAddr,
 			Handler:        this.router,
-			ReadTimeout:    0,       // FIXME
-			WriteTimeout:   0,       // FIXME
-			MaxHeaderBytes: 4 << 10, // should be enough
+			ReadTimeout:    0,           // FIXME
+			WriteTimeout:   time.Minute, // FIXME
+			MaxHeaderBytes: 4 << 10,     // should be enough
 		}
 
 		// register the http conn state machine hook
