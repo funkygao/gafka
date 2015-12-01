@@ -101,6 +101,8 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request) {
 
 func (this *Gateway) statHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Server", "kateway")
-	u, s := this.guard.CpuUsage()
-	w.Write([]byte(fmt.Sprintf("us:%3.2f%% sy:%3.2f%%", u, s)))
+	w.Header().Set("Content-Type", "application/json")
+	this.guard.Refresh()
+	b, _ := json.Marshal(this.guard.cpuStat)
+	w.Write(b)
 }

@@ -29,11 +29,12 @@ func newSubMetrics(gw *Gateway) *subMetrics {
 type pubMetrics struct {
 	gw *Gateway
 
-	NumGo         metrics.Gauge
-	GcNum         metrics.Gauge
-	GcPause       metrics.Gauge
-	HeapAlloc     metrics.Gauge
-	HeapObjects   metrics.Gauge
+	NumGo       metrics.Gauge
+	GcNum       metrics.Gauge
+	GcPause     metrics.Gauge
+	HeapAlloc   metrics.Gauge
+	HeapObjects metrics.Gauge
+
 	PubSuccess    metrics.Counter
 	PubFailure    metrics.Counter
 	ClientError   metrics.Counter

@@ -1,57 +1,74 @@
 package main
 
 import (
-	"syscall"
 	"time"
+
+	"github.com/funkygao/golib/window"
+	"github.com/shirou/gopsutil/cpu"
 )
 
 type guard struct {
 	gw *Gateway
 
-	usrCpuUtil float64
-	sysCpuUtil float64
+	refreshCh chan struct{}
+
+	cpuStat cpu.CPUTimesStat
+
+	win *window.MovingWindow
 }
 
 func newGuard(gw *Gateway) *guard {
 	return &guard{
-		gw: gw,
+		gw:        gw,
+		refreshCh: make(chan struct{}),
+		win:       window.New(10, 1),
 	}
 }
 
 func (this *guard) Start() {
 	interval := time.Minute
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	refreshTicker := time.NewTicker(interval)
+	defer refreshTicker.Stop()
+	alarmTicker := time.NewTicker(interval * 10)
+	defer alarmTicker.Stop()
 
-	var (
-		rusage       = &syscall.Rusage{}
-		lastUserTime int64
-		lastSysTime  int64
-		userTime     int64
-		sysTime      int64
-	)
+	refresh := func() {
+		if v, err := cpu.CPUTimes(false); err == nil {
+			this.cpuStat = v[0]
+		}
+
+		this.win.PushBack(this.cpuStat.User)
+	}
+
 	for {
 		select {
 		case <-this.gw.shutdownCh:
 			return
 
-		case <-ticker.C:
-			syscall.Getrusage(syscall.RUSAGE_SELF, rusage)
-			syscall.Getrusage(syscall.RUSAGE_SELF, rusage)
-			userTime = rusage.Utime.Sec*1000000000 + int64(rusage.Utime.Usec)
-			sysTime = rusage.Stime.Sec*1000000000 + int64(rusage.Stime.Usec)
-			this.usrCpuUtil = float64(userTime-lastUserTime) * 100 / float64(interval)
-			this.sysCpuUtil = float64(sysTime-lastSysTime) * 100 / float64(interval)
+		case <-this.refreshCh:
+			refresh()
 
-			lastUserTime = userTime
-			lastSysTime = sysTime
+		case <-refreshTicker.C:
+			refresh()
 
-			// TODO in high load, should trigger elastic scaling event
+		case <-alarmTicker.C:
+			loadTooHigh := true
+			for _, load := range this.win.Slice() {
+				if load < 0.9 {
+					loadTooHigh = false
+					break
+				}
+			}
+
+			if loadTooHigh {
+				// TODO in high load, should trigger elastic scaling event
+			}
+
 		}
 	}
 
 }
 
-func (this *guard) CpuUsage() (float64, float64) {
-	return this.usrCpuUtil, this.sysCpuUtil
+func (this *guard) Refresh() {
+	this.refreshCh <- struct{}{}
 }
