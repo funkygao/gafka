@@ -20,11 +20,8 @@ import (
 
 // Gateway is a distributed kafka Pub/Sub HTTP endpoint.
 type Gateway struct {
-	hostname     string
-	startedAt    time.Time
-	lastUserTime int64
-	lastSysTime  int64
-	lastStatExec time.Time
+	hostname  string
+	startedAt time.Time
 
 	// openssl genrsa -out key.pem 2048
 	// openssl req -new -x509 -key key.pem -out cert.pem -days 3650
@@ -37,6 +34,7 @@ type Gateway struct {
 	pubPool *pubPool
 	subPool *subPool
 
+	guard    *guard
 	executor *executor
 
 	routes []route
@@ -65,6 +63,7 @@ func NewGateway(metaRefreshInterval time.Duration) *Gateway {
 		keyFile:             options.keyFile,
 	}
 
+	this.guard = newGuard(this)
 	this.executor = newExecutor(this)
 	this.breaker = &breaker.Consecutive{
 		FailureAllowance: 10,
@@ -99,6 +98,7 @@ func (this *Gateway) Start() (err error) {
 	this.metaStore.Start()
 	log.Info("meta store started")
 
+	go this.guard.Start()
 	this.executor.Start()
 	log.Info("executor started")
 

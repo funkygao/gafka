@@ -15,7 +15,7 @@ type subPool struct {
 	clientMap     map[string]*consumergroup.ConsumerGroup // a client can only sub 1 topic
 	clientMapLock sync.RWMutex                            // TODO the lock is too big
 
-	rebalancing bool
+	rebalancing bool // FIXME 1 topic rebalance should not affect other topics
 }
 
 func newSubPool(gw *Gateway) *subPool {
@@ -29,6 +29,14 @@ func (this *subPool) PickConsumerGroup(ver, topic, group,
 	client string) (cg *consumergroup.ConsumerGroup, err error) {
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
+
+	for retries := 0; retries < 3; retries++ {
+		if this.rebalancing {
+			time.Sleep(time.Millisecond * 300)
+		} else {
+			break
+		}
+	}
 
 	if this.rebalancing {
 		err = ErrRebalancing
