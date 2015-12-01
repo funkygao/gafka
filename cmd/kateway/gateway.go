@@ -14,6 +14,7 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
+	"github.com/funkygao/gafka/cmd/kateway/store/dumb"
 	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
 	"github.com/funkygao/golib/breaker"
 	"github.com/funkygao/golib/ratelimiter"
@@ -76,15 +77,31 @@ func NewGateway(metaRefreshInterval time.Duration) *Gateway {
 		this.pubServer = newPubServer(options.pubHttpAddr, options.pubHttpsAddr,
 			options.maxClients, this)
 		this.pubMetrics = newPubMetrics(this)
-		this.pubStore = kafka.NewPubStore(this.meta, this.hostname,
-			&this.wg, this.shutdownCh, options.debug)
+
+		switch options.store {
+		case "kafka":
+			this.pubStore = kafka.NewPubStore(this.meta, this.hostname,
+				&this.wg, this.shutdownCh, options.debug)
+		case "dumb":
+			this.pubStore = dumb.NewPubStore(this.meta, this.hostname,
+				&this.wg, this.shutdownCh, options.debug)
+		}
+
 	}
 	if options.subHttpAddr != "" || options.subHttpsAddr != "" {
 		this.subServer = newSubServer(options.subHttpAddr, options.subHttpsAddr,
 			options.maxClients, this)
 		this.subMetrics = newSubMetrics(this)
-		this.subStore = kafka.NewSubStore(this.meta, this.hostname,
-			&this.wg, this.shutdownCh, this.subServer.closedConnCh, options.debug)
+
+		switch options.store {
+		case "kafka":
+			this.subStore = kafka.NewSubStore(this.meta, this.hostname,
+				&this.wg, this.shutdownCh, this.subServer.closedConnCh, options.debug)
+		case "dumb":
+			this.subStore = dumb.NewSubStore(this.meta, this.hostname,
+				&this.wg, this.shutdownCh, this.subServer.closedConnCh, options.debug)
+		}
+
 	}
 
 	return this
