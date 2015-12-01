@@ -1,6 +1,7 @@
 package zk
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -11,7 +12,7 @@ func (this *ZkZone) RunZkFourLetterCommand(cmd string) map[string]string {
 	for _, server := range servers {
 		b, err := zkFourLetterWord(server, cmd, time.Minute)
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 
 		r[server] = string(b)
