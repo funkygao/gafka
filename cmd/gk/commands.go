@@ -42,13 +42,6 @@ func init() {
 			}, nil
 		},
 
-		"verifyreplicas": func() (cli.Command, error) {
-			return &command.VerifyReplicas{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
 		"lags": func() (cli.Command, error) {
 			return &command.Lags{
 				Ui:  ui,
@@ -83,6 +76,13 @@ func init() {
 				Ui:   ui,
 				Cmd:  cmd,
 				Cmds: commands,
+			}, nil
+		},
+
+		"verifyreplicas": func() (cli.Command, error) {
+			return &command.VerifyReplicas{
+				Ui:  ui,
+				Cmd: cmd,
 			}, nil
 		},
 

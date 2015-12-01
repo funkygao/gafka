@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 )
 
 type Checkup struct {
@@ -13,21 +14,47 @@ type Checkup struct {
 }
 
 func (this *Checkup) Run(args []string) (exitCode int) {
-	// stale brokers
-	// zk down
-	// underreplicated
+	var cmd cli.Command
+	fmt.Println(color.Cyan("checking zookeepeer\n%s", strings.Repeat("-", 80)))
+	cmd = &Zookeeper{
+		Ui:  this.Ui,
+		Cmd: this.Cmd,
+	}
+	cmd.Run(append(args, "-c", "srvr"))
+
+	fmt.Println(color.Cyan("checking offline brokers\n%s", strings.Repeat("-", 80)))
+	cmd = &Brokers{
+		Ui:  this.Ui,
+		Cmd: this.Cmd,
+	}
+	cmd.Run(append(args, "-stale"))
+
+	fmt.Println(color.Cyan("checking under replicated brokers\n%s", strings.Repeat("-", 80)))
+	cmd = &UnderReplicated{
+		Ui:  this.Ui,
+		Cmd: this.Cmd,
+	}
+	cmd.Run(args)
+
+	fmt.Println(color.Cyan("checking controllers\n%s", strings.Repeat("-", 80)))
+	cmd = &Controllers{
+		Ui:  this.Ui,
+		Cmd: this.Cmd,
+	}
+	cmd.Run(args)
+
 	return
 }
 
 func (*Checkup) Synopsis() string {
-	return "Checkup of brokers and zookeepers"
+	return "Checkup of zookeepers and brokers"
 }
 
 func (this *Checkup) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s [options]
 
-    Checkup of brokers and zookeepers
+    Checkup of zookeepers and brokers
 
 Options:
 
