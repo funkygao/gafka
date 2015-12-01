@@ -1,4 +1,4 @@
-package main
+package kafka
 
 import (
 	"sync"
@@ -10,7 +10,7 @@ import (
 )
 
 type subPool struct {
-	gw *Gateway
+	store *subStore
 
 	clientMap     map[string]*consumergroup.ConsumerGroup // a client can only sub 1 topic
 	clientMapLock sync.RWMutex                            // TODO the lock is too big
@@ -18,21 +18,21 @@ type subPool struct {
 	rebalancing bool // FIXME 1 topic rebalance should not affect other topics
 }
 
-func newSubPool(gw *Gateway) *subPool {
+func newSubPool(store *subStore) *subPool {
 	return &subPool{
-		gw:        gw,
+		store:     store,
 		clientMap: make(map[string]*consumergroup.ConsumerGroup),
 	}
 }
 
-func (this *subPool) PickConsumerGroup(ver, topic, group,
-	client string) (cg *consumergroup.ConsumerGroup, err error) {
+func (this *subPool) PickConsumerGroup(cluster, topic, group,
+	remoteAddr string) (cg *consumergroup.ConsumerGroup, err error) {
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 
 	for retries := 0; retries < 3; retries++ {
 		if this.rebalancing {
-			time.Sleep(time.Millisecond * 300)
+			time.Sleep(time.Millisecond * 300) // TODO
 		} else {
 			break
 		}
@@ -44,13 +44,13 @@ func (this *subPool) PickConsumerGroup(ver, topic, group,
 	}
 
 	// FIXME 2 partition, if 3 client concurrently connects, got 3 consumer
-	if this.gw.meta.OnlineConsumersCount(topic, group) >= len(this.gw.meta.Partitions(topic)) {
+	if this.store.meta.OnlineConsumersCount(topic, group) >= len(this.store.meta.Partitions(topic)) {
 		err = ErrTooManyConsumers
 		return
 	}
 
 	var present bool
-	cg, present = this.clientMap[client]
+	cg, present = this.clientMap[remoteAddr]
 	if present {
 		return
 	}
@@ -59,18 +59,18 @@ func (this *subPool) PickConsumerGroup(ver, topic, group,
 	cf := consumergroup.NewConfig()
 	cf.ChannelBufferSize = 0
 	cf.Offsets.Initial = sarama.OffsetOldest
-	cf.Offsets.CommitInterval = options.offsetCommitInterval
+	cf.Offsets.CommitInterval = time.Minute // TODO
 	// time to wait for all the offsets for a partition to be processed after stopping to consume from it.
 	cf.Offsets.ProcessingTimeout = time.Second * 10 // TODO
-	cf.Zookeeper.Chroot = this.gw.meta.ZkChroot()
+	cf.Zookeeper.Chroot = this.store.meta.ZkChroot()
 	for i := 0; i < 3; i++ {
 		// join group will async register zk owners znodes
 		// so, if many client concurrently connects to kateway, will not
 		// strictly throw ErrTooManyConsumers
 		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
-			this.gw.meta.ZkAddrs(), cf)
+			this.store.meta.ZkAddrs(), cf)
 		if err == nil {
-			this.clientMap[client] = cg
+			this.clientMap[remoteAddr] = cg
 			break
 		}
 
@@ -81,46 +81,26 @@ func (this *subPool) PickConsumerGroup(ver, topic, group,
 	return
 }
 
-func (this *subPool) KillClient(client string) {
+func (this *subPool) killClient(remoteAddr string) {
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 
 	// TODO golang keep-alive max idle defaults 60s
 	this.rebalancing = true
-	if c, present := this.clientMap[client]; present {
+	if c, present := this.clientMap[remoteAddr]; present {
 		c.Close() // will flush offset, must wait, otherwise offset is not guanranteed
 	} else {
 		// should never happen
 		this.rebalancing = false
-		log.Warn("consumer %s never consumed", client)
+		log.Warn("consumer %s never consumed", remoteAddr)
 
 		return
 	}
 
-	delete(this.clientMap, client)
-
+	delete(this.clientMap, remoteAddr)
 	this.rebalancing = false
 
-	log.Info("consumer %s closed, rebalanced ok", client)
-}
-
-func (this *subPool) Start() {
-	this.gw.wg.Add(1)
-	defer this.gw.wg.Done()
-
-	ever := true
-	for ever {
-		select {
-		case <-this.gw.shutdownCh:
-			log.Info("sub pool shutdown")
-			this.Stop()
-			ever = false
-
-		case remoteAddr := <-this.gw.subServer.closedConnCh: // TODO
-			this.KillClient(remoteAddr)
-		}
-	}
-
+	log.Info("consumer %s closed, rebalanced ok", remoteAddr)
 }
 
 func (this *subPool) Stop() {
@@ -138,5 +118,4 @@ func (this *subPool) Stop() {
 
 	// wait for all consumers commit offset
 	wg.Wait()
-
 }

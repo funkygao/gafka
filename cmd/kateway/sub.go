@@ -3,9 +3,9 @@ package main
 import (
 	"net/http"
 
+	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
-	"github.com/wvanbergen/kafka/consumergroup"
 )
 
 // /{ver}/topics/{topic}/{group}/{id}?offset=n&limit=1
@@ -16,7 +16,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		ver   string
 		topic string
 		group string
 		err   error
@@ -29,7 +28,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := mux.Vars(r)
-	ver = params["ver"]
+	//ver := params["ver"] // TODO
 	topic = params["topic"]
 	group = params["group"]
 
@@ -45,7 +44,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		r.RemoteAddr, topic, group, limit)
 
 	// pick a consumer from the consumer group
-	cg, err := this.subPool.PickConsumerGroup(ver, topic, group, r.RemoteAddr)
+	cg, err := this.subStore.Fetch(options.cluster, topic, group, r.RemoteAddr)
 	if err != nil {
 		if isBrokerError(err) {
 			// broker error
@@ -73,12 +72,12 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		// broken pipe, io timeout
 		log.Error("consumer %s{topic:%s, group:%s, limit:%d} get killed: %v",
 			r.RemoteAddr, topic, group, limit, err)
-		go this.subPool.KillClient(r.RemoteAddr) // wait cf.ProcessingTimeout
+		go this.subStore.KillClient(r.RemoteAddr) // wait cf.ProcessingTimeout
 	}
 
 }
 
-func (this *Gateway) consumeSingle(w http.ResponseWriter, cg *consumergroup.ConsumerGroup) error {
+func (this *Gateway) consumeSingle(w http.ResponseWriter, cg store.Fetcher) error {
 	select {
 	case msg := <-cg.Messages():
 		if _, err := w.Write(msg.Value); err != nil {
@@ -95,7 +94,7 @@ func (this *Gateway) consumeSingle(w http.ResponseWriter, cg *consumergroup.Cons
 	return nil
 }
 
-func (this *Gateway) consumeMulti(w http.ResponseWriter, cg *consumergroup.ConsumerGroup, limit int) error {
+func (this *Gateway) consumeMulti(w http.ResponseWriter, cg store.Fetcher, limit int) error {
 	n := 0
 	for {
 		select {

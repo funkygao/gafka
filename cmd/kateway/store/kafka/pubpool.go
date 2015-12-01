@@ -42,14 +42,14 @@ func (this *pubClient) Recycle() {
 }
 
 type pubPool struct {
-	store *kafkaStore
+	store *pubStore
 
 	brokerList []string
 	pool       *pool.ResourcePool
 	nextId     uint64
 }
 
-func newPubPool(store *kafkaStore, brokerList []string) *pubPool {
+func newPubPool(store *pubStore, brokerList []string) *pubPool {
 	this := &pubPool{
 		store:      store,
 		brokerList: brokerList,

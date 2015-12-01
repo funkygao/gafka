@@ -37,7 +37,7 @@ type Gateway struct {
 	pubStore  store.PubStore
 
 	subServer *subServer
-	subPool   *subPool
+	subStore  store.SubStore
 
 	guard    *guard
 	executor *executor
@@ -83,7 +83,8 @@ func NewGateway(metaRefreshInterval time.Duration) *Gateway {
 		this.subServer = newSubServer(options.subHttpAddr, options.subHttpsAddr,
 			options.maxClients, this)
 		this.subMetrics = newSubMetrics(this)
-		this.subPool = newSubPool(this)
+		this.subStore = kafka.NewSubStore(this.meta, this.hostname,
+			&this.wg, this.shutdownCh, this.subServer.closedConnCh, options.debug)
 	}
 
 	return this
@@ -114,7 +115,7 @@ func (this *Gateway) Start() (err error) {
 		this.pubServer.Start()
 	}
 	if this.subServer != nil {
-		go this.subPool.Start()
+		go this.subStore.Start()
 
 		this.subServer.Start()
 	}

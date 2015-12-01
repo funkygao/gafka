@@ -12,7 +12,7 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-type kafkaStore struct {
+type pubStore struct {
 	shutdownCh <-chan struct{}
 	wg         *sync.WaitGroup
 	hostname   string
@@ -22,13 +22,13 @@ type kafkaStore struct {
 }
 
 func NewPubStore(meta meta.MetaStore, hostname string, wg *sync.WaitGroup,
-	shutdownCh <-chan struct{}, debug bool) *kafkaStore {
+	shutdownCh <-chan struct{}, debug bool) *pubStore {
 	if debug {
 		sarama.Logger = l.New(os.Stdout, color.Green("[Sarama]"),
 			l.LstdFlags|l.Lshortfile)
 	}
 
-	return &kafkaStore{
+	return &pubStore{
 		meta:       meta,
 		hostname:   hostname,
 		wg:         wg,
@@ -36,7 +36,7 @@ func NewPubStore(meta meta.MetaStore, hostname string, wg *sync.WaitGroup,
 	}
 }
 
-func (this *kafkaStore) Start() (err error) {
+func (this *pubStore) Start() (err error) {
 	this.wg.Add(1)
 	defer this.wg.Done()
 
@@ -62,7 +62,7 @@ func (this *kafkaStore) Start() (err error) {
 	return
 }
 
-func (this *kafkaStore) SyncPub(cluster string, topic, key string,
+func (this *pubStore) SyncPub(cluster string, topic, key string,
 	msg []byte) (partition int32, offset int64, err error) {
 	client, e := this.pubPool.Get()
 	if e != nil {
@@ -96,7 +96,7 @@ func (this *kafkaStore) SyncPub(cluster string, topic, key string,
 	return
 }
 
-func (this *kafkaStore) AsyncPub(cluster string, topic, key string,
+func (this *pubStore) AsyncPub(cluster string, topic, key string,
 	msg []byte) (err error) {
 	client, e := this.pubPool.Get()
 	if e != nil {
