@@ -50,6 +50,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	this.pubMetrics.PubConcurrent.Inc(1)
 
 	// TODO some topics use async put
+	this.pubMetrics.PubQps.Mark(1)
+	this.pubMetrics.PubSize.Mark(int64(len(rawMsg)))
 	partition, offset, err := this.pubStore.SyncPub(options.cluster, topic, key, rawMsg) // FIXME
 	if err != nil {
 		if isBrokerError(err) {
