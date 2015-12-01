@@ -1,8 +1,9 @@
 package zk
 
 import (
-	"fmt"
 	"time"
+
+	"github.com/funkygao/golib/color"
 )
 
 // Returns {zkHost: outputLines}
@@ -12,7 +13,7 @@ func (this *ZkZone) RunZkFourLetterCommand(cmd string) map[string]string {
 	for _, server := range servers {
 		b, err := zkFourLetterWord(server, cmd, time.Minute)
 		if err != nil {
-			fmt.Println(err)
+			color.Red("%s: %v", server, err)
 		}
 
 		r[server] = string(b)
