@@ -47,7 +47,6 @@ func zkFourLetterWord(server, command string, timeout time.Duration) ([]byte, er
 	conn.SetWriteDeadline(time.Now().Add(timeout))
 
 	_, err = conn.Write([]byte(command))
-
 	if err != nil {
 		return nil, err
 	}

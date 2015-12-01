@@ -13,10 +13,11 @@ func (this *ZkZone) RunZkFourLetterCommand(cmd string) map[string]string {
 	for _, server := range servers {
 		b, err := zkFourLetterWord(server, cmd, time.Minute)
 		if err != nil {
-			color.Red("%s: %v", server, err)
+			r[server] = color.Red(err.Error())
+		} else {
+			r[server] = string(b)
 		}
 
-		r[server] = string(b)
 	}
 
 	return r

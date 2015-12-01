@@ -35,30 +35,15 @@ func init() {
 			}, nil
 		},
 
+		"checkup": func() (cli.Command, error) {
+			return &command.Checkup{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"verifyreplicas": func() (cli.Command, error) {
 			return &command.VerifyReplicas{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
-		"offlines": func() (cli.Command, error) {
-			return &command.Offlines{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
-		"console": func() (cli.Command, error) {
-			return &command.Console{
-				Ui:   ui,
-				Cmd:  cmd,
-				Cmds: commands,
-			}, nil
-		},
-
-		"producers": func() (cli.Command, error) {
-			return &command.Producers{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
@@ -78,12 +63,35 @@ func init() {
 			}, nil
 		},
 
+		/* TODOs
 		"rebalance": func() (cli.Command, error) {
 			return &command.Rebalance{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
 		},
+
+		"producers": func() (cli.Command, error) {
+			return &command.Producers{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"console": func() (cli.Command, error) {
+			return &command.Console{
+				Ui:   ui,
+				Cmd:  cmd,
+				Cmds: commands,
+			}, nil
+		},
+
+		"audit": func() (cli.Command, error) {
+			return &command.Audit{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		}, */
 
 		"zookeeper": func() (cli.Command, error) {
 			return &command.Zookeeper{
@@ -122,13 +130,6 @@ func init() {
 
 		"underreplicated": func() (cli.Command, error) {
 			return &command.UnderReplicated{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
-		"audit": func() (cli.Command, error) {
-			return &command.Audit{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
