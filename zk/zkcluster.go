@@ -208,6 +208,11 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 		topics := this.zone.children(this.consumerGroupOffsetPath(group))
 		for _, topic := range topics {
 			consumerInstances := this.ownersOfGroupByTopic(group, topic)
+			if len(consumerInstances) == 0 {
+				// no online consumers running
+				continue
+			}
+
 		topicLoop:
 			for partitionId, offsetData := range this.zone.childrenWithData(this.consumerGroupOffsetOfTopicPath(group, topic)) {
 				consumerOffset, err := strconv.ParseInt(string(offsetData.data), 10, 64)

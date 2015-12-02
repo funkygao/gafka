@@ -92,7 +92,7 @@ func (this *subPool) killClient(remoteAddr string) {
 	} else {
 		// should never happen
 		this.rebalancing = false
-		log.Warn("consumer %s never consumed", remoteAddr)
+		log.Warn("consumer %s never consumed", remoteAddr) // FIXME
 
 		return
 	}

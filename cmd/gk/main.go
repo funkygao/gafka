@@ -40,7 +40,7 @@ func main() {
 	c.Commands = commands
 	c.HelpFunc = func(m map[string]cli.CommandFactory) string {
 		var buf bytes.Buffer
-		buf.WriteString(fmt.Sprintf("Simplified multi-datacenter multi-kafka-clusters management console\n\n"))
+		buf.WriteString(fmt.Sprintf("Unified multi-datacenter multi-kafka-clusters management console\n\n"))
 		buf.WriteString(cli.BasicHelpFunc(app)(m))
 		return buf.String()
 	}
