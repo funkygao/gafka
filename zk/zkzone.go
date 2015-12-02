@@ -210,7 +210,7 @@ func (this *ZkZone) Clusters() map[string]string {
 	return r
 }
 
-func (this *ZkZone) WithinClusters(fn func(name string, path string)) {
+func (this *ZkZone) WithinClusters(fn func(zkcluster *ZkCluster)) {
 	clusters := this.Clusters()
 	sortedNames := make([]string, 0, len(clusters))
 	for name, _ := range clusters {
@@ -218,7 +218,8 @@ func (this *ZkZone) WithinClusters(fn func(name string, path string)) {
 	}
 	sort.Strings(sortedNames)
 	for _, name := range sortedNames {
-		fn(name, clusters[name])
+		c := this.NewclusterWithPath(name, clusters[name])
+		fn(c)
 	}
 }
 
