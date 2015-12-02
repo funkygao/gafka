@@ -93,13 +93,14 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	for {
 		select {
 		case msg = <-msgChan:
-			stats.MsgCountPerSecond.Mark(1)
-			stats.MsgBytesPerSecond.Mark(int64(len(msg.Value)))
-
-			if !neat {
+			if neat {
+				stats.MsgCountPerSecond.Mark(1)
+				stats.MsgBytesPerSecond.Mark(int64(len(msg.Value)))
+			} else {
 				this.Ui.Output(fmt.Sprintf("%s %s  %s", color.Green(msg.Topic),
 					gofmt.Comma(msg.Offset), string(msg.Value)))
 			}
+
 		}
 	}
 
