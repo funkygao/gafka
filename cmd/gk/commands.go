@@ -13,7 +13,11 @@ var commands map[string]cli.CommandFactory
 
 func init() {
 	ui := &cli.ColoredUi{
-		Ui:         &cli.BasicUi{Writer: os.Stdout},
+		Ui: &cli.BasicUi{
+			Writer:      os.Stdout,
+			Reader:      os.Stdin,
+			ErrorWriter: os.Stderr,
+		},
 		InfoColor:  cli.UiColorGreen,
 		ErrorColor: cli.UiColorRed,
 		WarnColor:  cli.UiColorYellow,
