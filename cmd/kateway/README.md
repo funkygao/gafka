@@ -111,6 +111,7 @@ A REST gateway for kafka that supports Pub and Sub.
 
 ### TODO
 
+- [ ] refactor pubserver/subserver, zk
 - [ ] sub metrics report
 - [ ] sub lock more precise 
 - [ ] plugin

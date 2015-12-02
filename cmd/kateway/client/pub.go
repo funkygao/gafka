@@ -1,14 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"net"
-	"net/http"
-	"strings"
-	"time"
+
+	"github.com/funkygao/gafka/cmd/kateway/api"
 )
 
 var (
@@ -24,41 +20,13 @@ func init() {
 
 	flag.Parse()
 
-	http.DefaultClient.Timeout = time.Second * 30
 }
 
 func main() {
-	timeout := 3 * time.Second
-	client := &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			Dial: (&net.Dialer{
-				Timeout:   timeout,
-				KeepAlive: 60 * time.Second,
-			}).Dial,
-			TLSHandshakeTimeout: timeout,
-		},
-	}
-
-	var b bytes.Buffer
+	c := api.NewClient(nil)
+	c.Connect(addr)
 	for i := 0; i < n; i++ {
-		b.Reset()
-		b.WriteString(fmt.Sprintf("hello@%s  %d", time.Now(), i))
-		req, _ := http.NewRequest("POST",
-			fmt.Sprintf("%s/topics/v1/foobar?key=%s", addr, msgKey),
-			strings.NewReader(b.String()))
-		req.Header.Set("Pubkey", "mypubkey")
-		response, err := client.Do(req)
-		if err != nil {
-			panic(err)
-		}
-
-		b, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(string(b))
-		response.Body.Close() // reuse the connection
+		p, o, e := c.Publish("v1", "foobar", "", []byte("hello world"))
+		fmt.Println(p, o, e)
 	}
-
 }
