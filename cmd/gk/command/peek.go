@@ -73,8 +73,10 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	stats := newPeekStats()
-	go stats.start()
+	if neat {
+		stats := newPeekStats()
+		go stats.start()
+	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	msgChan := make(chan *sarama.ConsumerMessage, 20000) // msg aggerator channel
@@ -196,6 +198,8 @@ Options:
 
     -p partition id
       -1 will peek all partitions of a topic
+
+    -from-beginning
 
     -n
       Neat mode, only display statastics instead of message content
