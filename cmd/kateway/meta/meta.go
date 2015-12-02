@@ -134,8 +134,8 @@ func (this *zkMetaStore) ZkChroot() string {
 
 func (this *zkMetaStore) Clusters() []string {
 	r := make([]string, 0)
-	this.zkcluster.ZkZone().WithinClusters(func(name, path string) {
-		r = append(r, name)
+	this.zkcluster.ZkZone().WithinClusters(func(zkcluster *zk.ZkCluster) {
+		r = append(r, zkcluster.Name())
 	})
 	return r
 }

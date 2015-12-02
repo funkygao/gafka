@@ -45,6 +45,8 @@ func (this *peekStats) start() {
 type Peek struct {
 	Ui  cli.Ui
 	Cmd string
+
+	fromBeginning bool
 }
 
 func (this *Peek) Run(args []string) (exitCode int) {
@@ -61,6 +63,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.StringVar(&topic, "t", "", "")
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
+	cmdFlags.BoolVar(&this.fromBeginning, "from-beginning", false, "")
 	cmdFlags.BoolVar(&neat, "n", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -76,8 +79,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	msgChan := make(chan *sarama.ConsumerMessage, 20000) // msg aggerator channel
 	if cluster == "" {
-		zkzone.WithinClusters(func(name string, path string) {
-			zkcluster := zkzone.NewCluster(name)
+		zkzone.WithinClusters(func(zkcluster *zk.ZkCluster) {
 			this.consumeCluster(zkcluster, topic, partitionId, msgChan)
 		})
 	} else {
@@ -158,7 +160,11 @@ func (this *Peek) consumeTopic(kfk sarama.Client, topic string, partitionId int3
 
 func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
 	topic string, partitionId int32, msgCh chan *sarama.ConsumerMessage) {
-	p, err := consumer.ConsumePartition(topic, partitionId, sarama.OffsetNewest)
+	offset := sarama.OffsetNewest
+	if this.fromBeginning {
+		offset = sarama.OffsetOldest
+	}
+	p, err := consumer.ConsumePartition(topic, partitionId, offset)
 	if err != nil {
 		panic(err)
 	}

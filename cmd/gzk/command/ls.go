@@ -49,7 +49,7 @@ func (this *Ls) Run(args []string) (exitCode int) {
 
 func (this *Ls) printCluster(zkcluster *zk.ZkCluster) {
 	this.Ui.Output(color.Green(zkcluster.Name()))
-	children, err := zkcluster.ListChildren(zkcluster.Chroot(), this.recursive)
+	children, err := zkcluster.ListChildren(this.recursive)
 	if err != nil {
 		this.Ui.Error(fmt.Sprintf("%s%s", strings.Repeat(" ", 4), err))
 		return

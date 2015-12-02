@@ -1,7 +1,9 @@
 package zk
 
 import (
+	"container/list"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -311,4 +313,50 @@ func (this *ZkCluster) Broker(id int) (b *BrokerZnode) {
 	b = newBrokerZnode(strconv.Itoa(id))
 	b.from(zkData)
 	return
+}
+
+func (this *ZkCluster) ListChildren(recursive bool) ([]string, error) {
+	excludedPaths := map[string]struct{}{
+		"/zookeeper": struct{}{},
+	}
+	result := make([]string, 0, 100)
+	queue := list.New()
+	queue.PushBack(this.path)
+MAIN_LOOP:
+	for {
+		if queue.Len() == 0 {
+			break
+		}
+
+		element := queue.Back()
+		path := element.Value.(string)
+		queue.Remove(element)
+
+		children, _, err := this.zone.conn.Children(path)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("path[%s]: %v", path, err))
+		}
+
+		for _, child := range children {
+			var p string
+			if path == "/" {
+				p = path + child
+			} else {
+				p = path + "/" + child
+			}
+
+			if _, present := excludedPaths[p]; present {
+				continue
+			}
+
+			result = append(result, p)
+			queue.PushBack(p)
+		}
+
+		if !recursive {
+			break MAIN_LOOP
+		}
+	}
+
+	return result, nil
 }

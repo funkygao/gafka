@@ -56,9 +56,8 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	bar := progress.New(secondsInMinute)
 	if cluster == "" {
 		for {
-			zkzone.WithinClusters(func(cluster, path string) {
-				this.Ui.Output(cluster)
-				zkcluster := zkzone.NewCluster(cluster)
+			zkzone.WithinClusters(func(zkcluster *zk.ZkCluster) {
+				this.Ui.Output(zkcluster.Name())
 				this.printConsumersLag(zkcluster)
 			})
 

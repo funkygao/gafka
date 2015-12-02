@@ -189,10 +189,10 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 		brokerInfos        []zk.BrokerInfo
 	}
 	clusters := make([]clusterInfo, 0)
-	zkzone.WithinClusters(func(name, path string) {
+	zkzone.WithinClusters(func(zkcluster *zk.ZkCluster) {
 		ci := clusterInfo{
-			name: name,
-			path: path,
+			name: zkcluster.Name(),
+			path: zkcluster.Chroot(),
 		}
 		if !this.verbose {
 			clusters = append(clusters, ci)
@@ -200,7 +200,6 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 		}
 
 		// verbose mode, will calculate topics and partition count
-		zkcluster := zkzone.NewclusterWithPath(name, path)
 		brokerList := zkcluster.BrokerList()
 		if len(brokerList) == 0 {
 			ci.err = "no live brokers"
@@ -234,8 +233,8 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 
 		info := zkcluster.RegisteredInfo()
 		clusters = append(clusters, clusterInfo{
-			name:        name,
-			path:        path,
+			name:        zkcluster.Name(),
+			path:        zkcluster.Chroot(),
 			topicN:      len(topics),
 			partitionN:  partitionN,
 			replicas:    info.Replicas,

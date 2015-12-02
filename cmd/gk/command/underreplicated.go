@@ -28,8 +28,7 @@ func (this *UnderReplicated) Run(args []string) (exitCode int) {
 
 	if this.zone == "" {
 		forAllZones(func(zkzone *zk.ZkZone) {
-			zkzone.WithinClusters(func(cluster string, path string) {
-				zkcluster := zkzone.NewCluster(cluster)
+			zkzone.WithinClusters(func(zkcluster *zk.ZkCluster) {
 				this.displayUnderReplicatedPartitionsOfCluster(zkcluster)
 			})
 		})
@@ -40,8 +39,7 @@ func (this *UnderReplicated) Run(args []string) (exitCode int) {
 	// a single zone
 	ensureZoneValid(this.zone)
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
-	zkzone.WithinClusters(func(cluster string, path string) {
-		zkcluster := zkzone.NewCluster(cluster)
+	zkzone.WithinClusters(func(zkcluster *zk.ZkCluster) {
 		this.displayUnderReplicatedPartitionsOfCluster(zkcluster)
 	})
 
