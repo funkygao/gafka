@@ -121,6 +121,7 @@ func (this *Gateway) Start() (err error) {
 	log.Trace("meta store started")
 
 	go this.guard.Start()
+	log.Trace("guard started")
 
 	this.buildRouting()
 
