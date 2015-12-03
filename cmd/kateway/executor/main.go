@@ -3,12 +3,12 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"log"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/api"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/ctx"
-	log "github.com/funkygao/log4go"
 )
 
 var (
@@ -37,31 +37,36 @@ func main() {
 	m := meta.NewZkMetaStore(zone, cluster, 0)
 	c := api.NewClient(nil)
 	c.Connect("http://localhost:9192")
-	c.Subscribe("v1", "_kateway", "_addtopic", func(cmd []byte) (err error) {
-		log.Trace("recv cmd: %s", string(cmd))
+	for {
+		err := c.Subscribe("v1", "_kateway", "_addtopic", func(cmd []byte) (err error) {
+			log.Printf("recv cmd: %s", string(cmd))
 
-		v := make(map[string]interface{})
-		err = json.Unmarshal(cmd, &v)
-		if err != nil {
-			log.Error("%s: %v", string(cmd), err)
-			time.Sleep(time.Second * 10)
+			v := make(map[string]interface{})
+			err = json.Unmarshal(cmd, &v)
+			if err != nil {
+				log.Printf("%s: %v", string(cmd), err)
+				time.Sleep(time.Second * 10)
+				return nil
+			}
+
+			topic := v["topic"].(string)
+			var lines []string
+			lines, err = m.ZkCluster().AddTopic(topic, 1, 1) // TODO
+			if err != nil {
+				log.Printf("add: %v", err)
+				time.Sleep(time.Second * 10)
+				return nil
+			}
+
+			for _, l := range lines {
+				log.Printf("add topic[%s]: %s", topic, l)
+			}
+
 			return nil
-		}
+		})
+		log.Println(err)
 
-		topic := v["topic"].(string)
-		var lines []string
-		lines, err = m.ZkCluster().AddTopic(topic, 1, 1) // TODO
-		if err != nil {
-			log.Error("add: %v", err)
-			time.Sleep(time.Second * 10)
-			return nil
-		}
-
-		for _, l := range lines {
-			log.Info("add topic[%s]: %s", topic, l)
-		}
-
-		return nil
-	})
+		time.Sleep(time.Second * 10)
+	}
 
 }
