@@ -41,8 +41,7 @@ type Gateway struct {
 	subServer *subServer
 	subStore  store.SubStore
 
-	guard    *guard
-	executor *executor
+	guard *guard
 
 	routes []route
 
@@ -68,7 +67,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 	this.meta = meta.NewZkMetaStore(options.zone, options.cluster, metaRefreshInterval)
 	this.guard = newGuard(this)
-	this.executor = newExecutor(this)
 	this.breaker = &breaker.Consecutive{
 		FailureAllowance: 10,
 		RetryTimeout:     time.Second * 10,
@@ -123,8 +121,6 @@ func (this *Gateway) Start() (err error) {
 	log.Trace("meta store started")
 
 	go this.guard.Start()
-	this.executor.Start()
-	log.Trace("executor started")
 
 	this.buildRouting()
 
