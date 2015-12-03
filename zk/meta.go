@@ -62,7 +62,7 @@ func newConsumerZnode(id string) *ConsumerZnode {
 
 func (c *ConsumerZnode) from(zkData []byte) {
 	if err := json.Unmarshal(zkData, c); err != nil {
-		panic(err)
+		panic(string(zkData) + ": " + err.Error())
 	}
 }
 
@@ -129,7 +129,7 @@ func (b *BrokerZnode) Uptime() time.Time {
 
 func (b *BrokerZnode) from(zkData []byte) {
 	if err := json.Unmarshal(zkData, b); err != nil {
-		panic(err)
+		panic(string(zkData) + ": " + err.Error())
 	}
 }
 
