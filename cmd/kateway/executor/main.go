@@ -28,6 +28,8 @@ func init() {
 	if zone == "" || cluster == "" {
 		panic("-z and -c required")
 	}
+
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
 func main() {

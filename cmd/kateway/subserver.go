@@ -43,7 +43,7 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 		this.server = &http.Server{
 			Addr:           httpAddr,
 			Handler:        this.router,
-			ReadTimeout:    0,           // FIXME
+			ReadTimeout:    time.Minute, // FIXME
 			WriteTimeout:   time.Minute, // FIXME
 			MaxHeaderBytes: 4 << 10,     // should be enough
 		}

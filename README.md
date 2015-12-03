@@ -80,6 +80,7 @@ Unified multi-datacenter multi-kafka-clusters central management console powered
 
 ### TODO
 
+- [ ] github.com/wvanbergen/kazoo-go bug
 - [X] bash autocomplete
 - [X] display consumer lags
 - [X] add partitions on broker
