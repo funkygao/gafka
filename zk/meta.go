@@ -3,7 +3,6 @@ package zk
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/funkygao/golib/gofmt"
@@ -68,34 +67,7 @@ func (c *ConsumerZnode) from(zkData []byte) {
 }
 
 func (c *ConsumerZnode) Host() string {
-	// consumer id
-	// java: $group_$hostname-$timestamp-$uuidSignificantBits
-	//   go: $hostname:$uuidFull
-
-	if strings.Contains(c.Id, ":") {
-		return c.hostInGoClientFmt()
-	}
-
-	dashN := 0
-	var lo, hi int
-	for hi = len(c.Id) - 1; hi >= 0; hi-- {
-		if c.Id[hi] == '-' {
-			dashN++
-			if dashN == 2 {
-				break
-			}
-		}
-	}
-
-	for lo = hi; c.Id[lo] != '_'; lo-- {
-	}
-
-	return c.Id[lo+1 : hi]
-}
-
-func (c *ConsumerZnode) hostInGoClientFmt() string {
-	p := strings.SplitN(c.Id, ":", 2)
-	return p[0]
+	return hostOfConsumer(c.Id)
 }
 
 func (c *ConsumerZnode) Topics() []string {

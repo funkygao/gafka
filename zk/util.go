@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -29,6 +30,34 @@ func withRecover(fn func()) {
 	}()
 
 	fn()
+}
+
+func hostOfConsumer(consumerId string) string {
+	// consumer id
+	// java: $group_$hostname-$timestamp-$uuidSignificantBits
+	//   go: $hostname:$uuidFull
+
+	if strings.Contains(consumerId, ":") {
+		// golang client
+		p := strings.SplitN(consumerId, ":", 2)
+		return p[0]
+	}
+
+	dashN := 0
+	var lo, hi int
+	for hi = len(consumerId) - 1; hi >= 0; hi-- {
+		if consumerId[hi] == '-' {
+			dashN++
+			if dashN == 2 {
+				break
+			}
+		}
+	}
+
+	for lo = hi; lo >= 0 && consumerId[lo] != '_'; lo-- {
+	}
+
+	return consumerId[lo+1 : hi]
 }
 
 // zkFourLetterWord execute ZooKeeper Commands: The Four Letter Words
