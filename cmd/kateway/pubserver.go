@@ -22,14 +22,14 @@ func (this *pubServer) waitExit(exit <-chan struct{}) {
 	case <-exit:
 
 		// HTTP response will have "Connection: close"
-		this.server.SetKeepAlivesEnabled(false)
+		this.httpServer.SetKeepAlivesEnabled(false)
 
 		// avoid new connections
-		if err := this.listener.Close(); err != nil {
-			log.Error("listener close: %v", err)
+		if err := this.httpListener.Close(); err != nil {
+			log.Error("pub http listener close: %v", err)
 		}
 
-		if this.server != nil {
+		if this.httpServer != nil {
 			this.gw.wg.Done()
 			log.Trace("%s http server stopped", this.name)
 		}
@@ -38,8 +38,10 @@ func (this *pubServer) waitExit(exit <-chan struct{}) {
 			log.Trace("%s https server stopped", this.name)
 		}
 
-		this.listener = nil
-		this.server = nil
+		this.httpListener = nil
+		this.tlsListener = nil
+		this.httpServer = nil
+		this.httpsServer = nil
 		this.router = nil
 	}
 

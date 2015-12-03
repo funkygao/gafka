@@ -26,10 +26,11 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 	}
 	this.waitExitFunc = this.waitExit
 
-	if this.server != nil {
+	if this.httpServer != nil {
+		// TODO https
 		// register the http conn state machine hook
 		// FIXME should distinguish pub from sub client
-		this.server.ConnState = func(c net.Conn, cs http.ConnState) {
+		this.httpServer.ConnState = func(c net.Conn, cs http.ConnState) {
 			switch cs {
 			case http.StateNew:
 				this.idleConnsWg.Add(1)
@@ -68,11 +69,11 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 		// TODO https server
 
 		// HTTP response will have "Connection: close"
-		this.server.SetKeepAlivesEnabled(false)
+		this.httpServer.SetKeepAlivesEnabled(false)
 
 		// avoid new connections
-		if err := this.listener.Close(); err != nil {
-			log.Error("listener close: %v", err)
+		if err := this.httpListener.Close(); err != nil {
+			log.Error("sub listener close: %v", err)
 		}
 
 		this.idleConnsLock.Lock()
@@ -85,7 +86,7 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 		log.Trace("waiting for all connected http client close")
 		this.idleConnsWg.Wait()
 
-		if this.server != nil {
+		if this.httpServer != nil {
 			this.gw.wg.Done()
 			log.Trace("subserver http stopped")
 		}
@@ -94,8 +95,10 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 			log.Trace("subserver https stopped")
 		}
 
-		this.listener = nil
-		this.server = nil
+		this.httpListener = nil
+		this.tlsListener = nil
+		this.httpServer = nil
+		this.httpsServer = nil
 		this.router = nil
 	}
 

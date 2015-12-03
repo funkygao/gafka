@@ -18,8 +18,8 @@ type webServer struct {
 	maxClients int
 	gw         *Gateway
 
-	listener net.Listener
-	server   *http.Server
+	httpListener net.Listener
+	httpServer   *http.Server
 
 	httpsServer *http.Server
 	tlsListener net.Listener
@@ -41,7 +41,7 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 	}
 
 	if httpAddr != "" {
-		this.server = &http.Server{
+		this.httpServer = &http.Server{
 			Addr:           httpAddr,
 			Handler:        this.router,
 			ReadTimeout:    time.Minute, // FIXME
@@ -65,21 +65,21 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 
 func (this *webServer) Start() {
 	var err error
-	if this.server != nil {
-		this.listener, err = net.Listen("tcp", this.server.Addr)
+	if this.httpServer != nil {
+		this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
 		if err != nil {
 			panic(err)
 		}
 
-		this.listener = LimitListener(this.listener, this.maxClients)
-		go this.server.Serve(this.listener)
+		this.httpListener = LimitListener(this.httpListener, this.maxClients)
+		go this.httpServer.Serve(this.httpListener)
 
 		this.once.Do(func() {
 			go this.waitExitFunc(this.gw.shutdownCh)
 		})
 
 		this.gw.wg.Add(1)
-		log.Info("%s http server ready on %s", this.name, this.server.Addr)
+		log.Info("%s http server ready on %s", this.name, this.httpServer.Addr)
 	}
 
 	if this.httpsServer != nil {
@@ -97,7 +97,7 @@ func (this *webServer) Start() {
 		})
 
 		this.gw.wg.Add(1)
-		log.Info("%s https server ready on %s", this.name, this.server.Addr)
+		log.Info("%s https server ready on %s", this.name, this.httpsServer.Addr)
 	}
 
 }
