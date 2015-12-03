@@ -1,7 +1,6 @@
 package command
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"sort"
@@ -12,7 +11,6 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
-	"github.com/funkygao/golib/pipestream"
 )
 
 type Topics struct {
@@ -242,43 +240,15 @@ func (this *Topics) addTopic(zkcluster *zk.ZkCluster, topic string, replicas,
 	partitions int) error {
 	this.Ui.Info(fmt.Sprintf("creating kafka topic: %s", topic))
 
-	zkAddrs := zkcluster.ZkConnectAddr()
-
-	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
-		fmt.Sprintf("--zookeeper %s", zkAddrs),
-		fmt.Sprintf("--create"),
-		fmt.Sprintf("--topic %s", topic),
-		fmt.Sprintf("--partitions %d", partitions),
-		fmt.Sprintf("--replication-factor %d", replicas),
-	)
-	err := cmd.Open()
+	lines, err := zkcluster.AddTopic(topic, replicas, partitions)
 	if err != nil {
 		return err
 	}
 
-	scanner := bufio.NewScanner(cmd.Reader())
-	scanner.Split(bufio.ScanLines)
-	var errmsg string
-	var line string
-	for scanner.Scan() {
-		line = scanner.Text()
-
-		this.Ui.Info(line)
-		if strings.HasPrefix(line, "Error") {
-			errmsg = line
-		}
+	for _, l := range lines {
+		this.Ui.Info(l)
 	}
-	err = scanner.Err()
-	if err != nil {
-		return err
-	}
-	cmd.Close()
-
-	if errmsg != "" {
-		return fmt.Errorf("%s", errmsg)
-	}
-
-	this.Ui.Output(fmt.Sprintf("\tzookeeper.connect: %s", zkAddrs))
+	this.Ui.Output(fmt.Sprintf("\tzookeeper.connect: %s", zkcluster.ZkConnectAddr()))
 	this.Ui.Output(fmt.Sprintf("\t      broker list: %s",
 		strings.Join(zkcluster.BrokerList(), ",")))
 	return nil
