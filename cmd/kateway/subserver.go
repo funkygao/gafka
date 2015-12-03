@@ -7,47 +7,26 @@ import (
 	"time"
 
 	log "github.com/funkygao/log4go"
-	"github.com/gorilla/mux"
 )
 
 type subServer struct {
-	maxClients int
-	gw         *Gateway
-
-	listener net.Listener
-	server   *http.Server
-
-	tlsListener net.Listener
-	httpsServer *http.Server
-
-	router *mux.Router
+	*webServer
 
 	idleConnsWg   sync.WaitGroup      // wait for all inflight http connections done
 	idleConns     map[string]net.Conn // in keep-alive state http connections
 	closedConnCh  chan string         // channel of remote addr
 	idleConnsLock sync.Mutex
-
-	once sync.Once
 }
 
 func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subServer {
 	this := &subServer{
-		gw:           gw,
-		maxClients:   maxClients,
-		router:       mux.NewRouter(),
+		webServer:    newWebServer("sub", httpAddr, httpsAddr, maxClients, gw),
 		closedConnCh: make(chan string, 1<<10),
 		idleConns:    make(map[string]net.Conn, 10000),
 	}
+	this.waitExitFunc = this.waitExit
 
-	if httpAddr != "" {
-		this.server = &http.Server{
-			Addr:           httpAddr,
-			Handler:        this.router,
-			ReadTimeout:    time.Minute, // FIXME
-			WriteTimeout:   time.Minute, // FIXME
-			MaxHeaderBytes: 4 << 10,     // should be enough
-		}
-
+	if this.server != nil {
 		// register the http conn state machine hook
 		// FIXME should distinguish pub from sub client
 		this.server.ConnState = func(c net.Conn, cs http.ConnState) {
@@ -80,65 +59,12 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 		}
 	}
 
-	if httpsAddr != "" {
-		this.httpsServer = &http.Server{
-			Addr:           httpAddr,
-			Handler:        this.router,
-			ReadTimeout:    0,       // FIXME
-			WriteTimeout:   0,       // FIXME
-			MaxHeaderBytes: 4 << 10, // should be enough
-		}
-	}
-
 	return this
 }
 
-func (this *subServer) Start() {
-	var err error
-	if this.server != nil {
-		this.listener, err = net.Listen("tcp", this.server.Addr)
-		if err != nil {
-			panic(err)
-		}
-
-		this.listener = LimitListener(this.listener, this.maxClients)
-		go this.server.Serve(this.listener)
-
-		this.gw.wg.Add(1)
-		this.once.Do(func() {
-			go this.waitExit()
-		})
-
-		log.Info("sub http server ready on %s", this.server.Addr)
-	}
-
-	if this.httpsServer != nil {
-		this.tlsListener, err = this.gw.setupHttpsServer(this.httpsServer,
-			this.gw.certFile, this.gw.keyFile)
-		if err != nil {
-			panic(err)
-		}
-
-		this.tlsListener = LimitListener(this.tlsListener, this.maxClients)
-		go this.httpsServer.Serve(this.tlsListener)
-
-		this.gw.wg.Add(1)
-		this.once.Do(func() {
-			go this.waitExit()
-		})
-
-		log.Info("sub https server ready on %s", this.server.Addr)
-	}
-
-}
-
-func (this *subServer) Router() *mux.Router {
-	return this.router
-}
-
-func (this *subServer) waitExit() {
+func (this *subServer) waitExit(exit <-chan struct{}) {
 	select {
-	case <-this.gw.shutdownCh:
+	case <-exit:
 		// TODO https server
 
 		// HTTP response will have "Connection: close"
