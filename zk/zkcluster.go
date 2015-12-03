@@ -1,6 +1,7 @@
 package zk
 
 import (
+	"bufio"
 	"container/list"
 	"encoding/json"
 	"errors"
@@ -10,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/golib/pipestream"
 	log "github.com/funkygao/log4go"
 	"github.com/samuel/go-zookeeper/zk"
 )
@@ -312,6 +315,37 @@ func (this *ZkCluster) Broker(id int) (b *BrokerZnode) {
 	zkData, _, _ := this.zone.conn.Get(this.brokerPath(id))
 	b = newBrokerZnode(strconv.Itoa(id))
 	b.from(zkData)
+	return
+}
+
+func (this *ZkCluster) AddTopic(topic string, replicas,
+	partitions int) (output []string, err error) {
+	zkAddrs := this.ZkConnectAddr()
+	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
+		fmt.Sprintf("--zookeeper %s", zkAddrs),
+		fmt.Sprintf("--create"),
+		fmt.Sprintf("--topic %s", topic),
+		fmt.Sprintf("--partitions %d", partitions),
+		fmt.Sprintf("--replication-factor %d", replicas),
+	)
+	err = cmd.Open()
+	if err != nil {
+		return
+	}
+	defer cmd.Close()
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+
+	output = make([]string, 0)
+	for scanner.Scan() {
+		output = append(output, scanner.Text())
+	}
+	err = scanner.Err()
+	if err != nil {
+		return
+	}
+
 	return
 }
 
