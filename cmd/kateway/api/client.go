@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 )
 
-type SubHandler func(msg []byte) error
+type SubHandler func(statusCode int, msg []byte) error
 
 type pubResponse struct {
 	Partition int   `json:"partition"`
@@ -37,8 +38,8 @@ func (this *Client) Connect(addr string) {
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			Dial: (&net.Dialer{
-				Timeout:   this.cf.Timeout,
-				KeepAlive: this.cf.KeepAlive,
+				Timeout: this.cf.Timeout,
+				//KeepAlive: this.cf.KeepAlive, TODO
 			}).Dial,
 			DisableKeepAlives:   false,
 			TLSHandshakeTimeout: this.cf.Timeout,
@@ -58,14 +59,19 @@ func (this *Client) Publish(ver, topic, key string, msg []byte) (partition int,
 	buf.Reset()
 	buf.Write(msg)
 	var req *http.Request
-	req, err = http.NewRequest("POST",
-		fmt.Sprintf("%s/topics/%s/%s?key=%s", this.addr, ver, topic, key),
-		buf)
+	url := fmt.Sprintf("%s/topics/%s/%s?key=%s", this.addr, ver, topic, key)
+	req, err = http.NewRequest("POST", url, buf)
 	if err != nil {
 		return
 	}
 
+	if this.cf.Debug {
+		log.Printf("pub: %s", url)
+	}
+
+	req.Header.Set("AppId", this.cf.AppId)
 	req.Header.Set("Pubkey", this.cf.Secret)
+
 	var response *http.Response
 	response, err = this.conn.Do(req)
 	if err != nil {
@@ -80,6 +86,9 @@ func (this *Client) Publish(ver, topic, key string, msg []byte) (partition int,
 	// reuse the connection
 	response.Body.Close()
 
+	if this.cf.Debug {
+		log.Printf("got: %s", string(b))
+	}
 	var v pubResponse
 	err = json.Unmarshal(b, &v)
 	if err != nil {
@@ -90,14 +99,19 @@ func (this *Client) Publish(ver, topic, key string, msg []byte) (partition int,
 }
 
 func (this *Client) Subscribe(ver, topic, group string, h SubHandler) error {
-	req, err := http.NewRequest("GET",
-		fmt.Sprintf("%s/topics/%s/%s/%s?limit=", this.addr, ver, topic, group), nil)
+	url := fmt.Sprintf("%s/topics/%s/%s/%s?limit=", this.addr, ver, topic, group)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err
 	}
 
+	req.Header.Set("AppId", this.cf.AppId)
 	req.Header.Set("Subkey", this.cf.Secret)
 	for {
+		if this.cf.Debug {
+			log.Printf("sub: %s", url)
+		}
+
 		response, err := this.conn.Do(req)
 		if err != nil {
 			return err
@@ -108,10 +122,14 @@ func (this *Client) Subscribe(ver, topic, group string, h SubHandler) error {
 			return err
 		}
 
+		if this.cf.Debug {
+			log.Printf("got: [%s] %s", response.Status, string(b))
+		}
+
 		// reuse the connection
 		response.Body.Close()
 
-		if err = h(b); err != nil {
+		if err = h(response.StatusCode, b); err != nil {
 			return err
 		}
 	}
