@@ -66,33 +66,33 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 func (this *subServer) waitExit(exit <-chan struct{}) {
 	select {
 	case <-exit:
-		// TODO https server
-
-		// HTTP response will have "Connection: close"
-		this.httpServer.SetKeepAlivesEnabled(false)
-
-		// avoid new connections
-		if err := this.httpListener.Close(); err != nil {
-			log.Error("sub listener close: %v", err)
-		}
-
-		this.idleConnsLock.Lock()
-		t := time.Now().Add(time.Millisecond * 100)
-		for _, c := range this.idleConns {
-			c.SetReadDeadline(t)
-		}
-		this.idleConnsLock.Unlock()
-
-		log.Trace("waiting for all connected http client close")
-		this.idleConnsWg.Wait()
-
 		if this.httpServer != nil {
+			// HTTP response will have "Connection: close"
+			this.httpServer.SetKeepAlivesEnabled(false)
+
+			// avoid new connections
+			if err := this.httpListener.Close(); err != nil {
+				log.Error("sub listener close: %v", err)
+			}
+
+			this.idleConnsLock.Lock()
+			t := time.Now().Add(time.Millisecond * 100)
+			for _, c := range this.idleConns {
+				c.SetReadDeadline(t)
+			}
+			this.idleConnsLock.Unlock()
+
+			log.Trace("sub waiting for all connected http client close")
+			this.idleConnsWg.Wait()
+
 			this.gw.wg.Done()
-			log.Trace("subserver http stopped")
+			log.Trace("sub http server stopped")
 		}
+
 		if this.httpsServer != nil {
+			// TODO
 			this.gw.wg.Done()
-			log.Trace("subserver https stopped")
+			log.Trace("sub https server stopped")
 		}
 
 		this.httpListener = nil

@@ -20,19 +20,19 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 func (this *pubServer) waitExit(exit <-chan struct{}) {
 	select {
 	case <-exit:
-
-		// HTTP response will have "Connection: close"
-		this.httpServer.SetKeepAlivesEnabled(false)
-
-		// avoid new connections
-		if err := this.httpListener.Close(); err != nil {
-			log.Error("pub http listener close: %v", err)
-		}
-
 		if this.httpServer != nil {
+			// HTTP response will have "Connection: close"
+			this.httpServer.SetKeepAlivesEnabled(false)
+
+			// avoid new connections
+			if err := this.httpListener.Close(); err != nil {
+				log.Error("pub http listener close: %v", err)
+			}
+
 			this.gw.wg.Done()
 			log.Trace("%s http server stopped", this.name)
 		}
+
 		if this.httpsServer != nil {
 			this.gw.wg.Done()
 			log.Trace("%s https server stopped", this.name)
