@@ -3,6 +3,7 @@ package zk
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/funkygao/golib/gofmt"
@@ -62,12 +63,19 @@ func newConsumerZnode(id string) *ConsumerZnode {
 
 func (c *ConsumerZnode) from(zkData []byte) {
 	if err := json.Unmarshal(zkData, c); err != nil {
-		panic(err)
+		panic(string(zkData) + ": " + err.Error())
 	}
 }
 
 func (c *ConsumerZnode) Host() string {
-	// consumerId: $group_$hostname-$timestamp-$uuid
+	// consumer id
+	// java: $group_$hostname-$timestamp-$uuidSignificantBits
+	//   go: $hostname:$uuidFull
+
+	if strings.Contains(c.Id, ":") {
+		return c.hostInGoClientFmt()
+	}
+
 	dashN := 0
 	var lo, hi int
 	for hi = len(c.Id) - 1; hi >= 0; hi-- {
@@ -83,6 +91,11 @@ func (c *ConsumerZnode) Host() string {
 	}
 
 	return c.Id[lo+1 : hi]
+}
+
+func (c *ConsumerZnode) hostInGoClientFmt() string {
+	p := strings.SplitN(c.Id, ":", 2)
+	return p[0]
 }
 
 func (c *ConsumerZnode) Topics() []string {
@@ -129,7 +142,7 @@ func (b *BrokerZnode) Uptime() time.Time {
 
 func (b *BrokerZnode) from(zkData []byte) {
 	if err := json.Unmarshal(zkData, b); err != nil {
-		panic(err)
+		panic(string(zkData) + ": " + err.Error())
 	}
 }
 

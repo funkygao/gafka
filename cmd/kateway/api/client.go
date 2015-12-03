@@ -80,8 +80,6 @@ func (this *Client) Publish(ver, topic, key string, msg []byte) (partition int,
 	// reuse the connection
 	response.Body.Close()
 
-	fmt.Println(string(b))
-
 	var v pubResponse
 	err = json.Unmarshal(b, &v)
 	if err != nil {
@@ -93,7 +91,7 @@ func (this *Client) Publish(ver, topic, key string, msg []byte) (partition int,
 
 func (this *Client) Subscribe(ver, topic, group string, h SubHandler) error {
 	req, err := http.NewRequest("GET",
-		fmt.Sprintf("%s/topics/%s/%s/%s", this.addr, ver, topic, group), nil)
+		fmt.Sprintf("%s/topics/%s/%s/%s?limit=", this.addr, ver, topic, group), nil)
 	if err != nil {
 		return err
 	}

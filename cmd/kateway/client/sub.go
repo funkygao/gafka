@@ -16,7 +16,7 @@ var (
 func init() {
 	flag.StringVar(&addr, "addr", "http://localhost:9192", "sub kateway addr")
 	flag.StringVar(&group, "g", "mygroup1", "consumer group name")
-	flag.IntVar(&n, "n", 2, "run sub how many times")
+	flag.IntVar(&n, "n", 20, "run sub how many times")
 	flag.Parse()
 }
 

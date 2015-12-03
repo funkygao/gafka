@@ -15,6 +15,8 @@ type MetaStore interface {
 	Stop()
 	RefreshInterval() time.Duration
 
+	ZkCluster() *zk.ZkCluster
+
 	Clusters() []string
 	Partitions(topic string) []int32
 	OnlineConsumersCount(topic, group string) int
@@ -138,6 +140,10 @@ func (this *zkMetaStore) Clusters() []string {
 		r = append(r, zkcluster.Name())
 	})
 	return r
+}
+
+func (this *zkMetaStore) ZkCluster() *zk.ZkCluster {
+	return this.zkcluster
 }
 
 func (this *zkMetaStore) AuthPub(appid, pubkey, topic string) (ok bool) {
