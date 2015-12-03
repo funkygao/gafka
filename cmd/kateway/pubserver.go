@@ -42,6 +42,7 @@ func (this *pubServer) waitExit(exit <-chan struct{}) {
 		this.tlsListener = nil
 		this.httpServer = nil
 		this.httpsServer = nil
+
 		this.router = nil
 	}
 

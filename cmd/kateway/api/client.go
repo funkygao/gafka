@@ -41,7 +41,7 @@ func (this *Client) Connect(addr string) {
 				Timeout: this.cf.Timeout,
 				//KeepAlive: this.cf.KeepAlive, TODO
 			}).Dial,
-			DisableKeepAlives:   false,
+			DisableKeepAlives:   false, // enable http conn reuse
 			TLSHandshakeTimeout: this.cf.Timeout,
 		},
 	}

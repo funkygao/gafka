@@ -67,6 +67,7 @@ func (this *guard) Start() {
 
 			if loadTooHigh {
 				// TODO in high load, should trigger elastic scaling event
+				// send alarm email, sms
 			}
 
 		}

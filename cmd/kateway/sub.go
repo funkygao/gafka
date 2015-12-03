@@ -82,6 +82,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 func (this *Gateway) consumeSingle(w http.ResponseWriter, cg store.Fetcher) error {
 	select {
 	case msg := <-cg.Messages():
+		// TODO when remote close silently, the write still ok
+		// which will lead to msg losing for sub
 		if _, err := w.Write(msg.Value); err != nil {
 			return err
 		}

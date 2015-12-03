@@ -26,21 +26,33 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 	}
 	this.waitExitFunc = this.waitExit
 
+	if this.httpsServer != nil {
+		// TODO
+	}
+
 	if this.httpServer != nil {
-		// TODO https
-		// register the http conn state machine hook
-		// FIXME should distinguish pub from sub client
 		this.httpServer.ConnState = func(c net.Conn, cs http.ConnState) {
 			switch cs {
 			case http.StateNew:
+				// Connections begin at StateNew and then
+				// transition to either StateActive or StateClosed
 				this.idleConnsWg.Add(1)
 
 			case http.StateActive:
+				// StateActive fires before the request has entered a handler
+				// and doesn't fire again until the request has been
+				// handled.
+				// After the request is handled, the state
+				// transitions to StateClosed, StateHijacked, or StateIdle.
 				this.idleConnsLock.Lock()
 				delete(this.idleConns, c.RemoteAddr().String())
 				this.idleConnsLock.Unlock()
 
 			case http.StateIdle:
+				// StateIdle represents a connection that has finished
+				// handling a request and is in the keep-alive state, waiting
+				// for a new request. Connections transition from StateIdle
+				// to either StateActive or StateClosed.
 				select {
 				case <-this.gw.shutdownCh:
 					// actively close the client safely because IO is all done
@@ -53,7 +65,6 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 				}
 
 			case http.StateClosed:
-				log.Debug("http client[%s] closed", c.RemoteAddr())
 				this.closedConnCh <- c.RemoteAddr().String()
 				this.idleConnsWg.Done()
 			}
@@ -99,6 +110,7 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 		this.tlsListener = nil
 		this.httpServer = nil
 		this.httpsServer = nil
+
 		this.router = nil
 	}
 
