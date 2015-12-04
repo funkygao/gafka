@@ -25,10 +25,17 @@ fi
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 KATEWAY_HOME=/opt/app/kateway
+ID=1
+STORE=kafka
+ZONE=local
+CLUSTER=test
+PUBHTTP=:10091
+SUBHTTP=:10092
 DAEMON=$KATEWAY_HOME/sbin/kateway
 PIDFILE=$KATEWAY_HOME/var/kateway.pid
 CONFIGFILE=$KATEWAY_HOME/etc/gafka.cf
 LOGFILE=$KATEWAY_HOME/var/kateway.log
+LOGLEVEL=debug
 CRASHLOG=$KATEWAY_HOME/panic.dump
 LOCKFILE=$KATEWAY_HOME/var/kateway.lock
 
@@ -46,7 +53,7 @@ start() {
     ulimit -n 40960
     ulimit -c unlimited
     ulimit -l unlimited
-    daemon --pidfile PIDFILE "/usr/sbin/daemonize $DAEMON -conf $CONFIGFILE -level trace -crashlog $CRASHLOG -log $LOGFILE"
+    daemon --pidfile PIDFILE "/usr/sbin/daemonize $DAEMON -conf $CONFIGFILE -level $LOGLEVEL -zone $ZONE -cluster $CLUSTER -pubhttp $PUBHTTP -subhttp $SUBHTTP -id $ID -store $STORE -crashlog $CRASHLOG -log $LOGFILE"
     errcode=$?
     return $errcode
 }
