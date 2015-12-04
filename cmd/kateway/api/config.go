@@ -14,7 +14,7 @@ type Config struct {
 	Debug bool
 }
 
-func NewDefaultConfig() *Config {
+func DefaultConfig() *Config {
 	return &Config{
 		Timeout:   time.Second * 10,
 		KeepAlive: time.Minute,

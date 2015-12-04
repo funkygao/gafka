@@ -46,7 +46,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		r.RemoteAddr, topic, group, limit)
 
 	// pick a consumer from the consumer group
-	cg, err := this.subStore.Fetch(options.cluster, topic, group, r.RemoteAddr)
+	fetcher, err := this.subStore.Fetch(options.cluster, topic, group, r.RemoteAddr)
 	if err != nil {
 		if isBrokerError(err) {
 			// broker error
@@ -65,9 +65,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if limit > 1 {
-		err = this.consumeMulti(w, cg, limit)
+		err = this.consumeMulti(w, fetcher, limit)
 	} else {
-		err = this.consumeSingle(w, cg)
+		err = this.consumeSingle(w, fetcher)
 	}
 
 	if err != nil {

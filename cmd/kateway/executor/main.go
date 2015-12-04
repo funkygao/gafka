@@ -39,7 +39,7 @@ func main() {
 	// curl -i -XPOST -H "Pubkey: mypubkey" -d '{"cmd":"createTopic", "topic": "hello"}' "http://10.1.82.201:9191/topics/v1/_kateway"
 	m := meta.NewZkMetaStore(zone, cluster, 0)
 
-	cf := api.NewDefaultConfig()
+	cf := api.DefaultConfig()
 	cf.Debug = true
 	c := api.NewClient(cf)
 	c.Connect("http://localhost:9192")

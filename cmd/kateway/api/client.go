@@ -25,7 +25,7 @@ type Client struct {
 
 func NewClient(cf *Config) *Client {
 	if cf == nil {
-		cf = NewDefaultConfig()
+		cf = DefaultConfig()
 	}
 	return &Client{
 		cf: cf,
