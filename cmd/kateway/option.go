@@ -18,12 +18,14 @@ var (
 		subHttpAddr          string
 		subHttpsAddr         string
 		store                string
+		pidFile              string
 		certFile             string
 		keyFile              string
 		logFile              string
 		logLevel             string
 		crashLogFile         string
 		influxServer         string
+		killFile             string
 		cpuprof              bool
 		showVersion          bool
 		memprof              bool
@@ -52,10 +54,12 @@ func parseFlags() {
 	flag.StringVar(&options.logFile, "log", "stdout", "log file, default stdout")
 	flag.StringVar(&options.crashLogFile, "crashlog", "", "crash log")
 	flag.StringVar(&options.certFile, "certfile", "", "cert file path")
+	flag.StringVar(&options.pidFile, "pid", "", "pid file")
 	flag.StringVar(&options.keyFile, "keyfile", "", "key file path")
 	flag.StringVar(&options.store, "store", "kafka", "backend store")
 	flag.StringVar(&options.configFile, "conf", "/etc/gafka.cf", "config file")
 	flag.BoolVar(&options.debug, "debug", false, "enable debug mode")
+	flag.StringVar(&options.killFile, "kill", "", "kill running kateway by pid file")
 	flag.BoolVar(&options.showVersion, "version", false, "show version and exit")
 	flag.DurationVar(&options.reporterInterval, "report", time.Second*10, "reporter flush interval")
 	flag.BoolVar(&options.cpuprof, "cpuprof", false, "enable cpu profiling")
@@ -72,6 +76,10 @@ func parseFlags() {
 }
 
 func validateFlags() {
+	if options.killFile != "" {
+		return
+	}
+
 	if options.zone == "" || options.cluster == "" {
 		fmt.Fprintf(os.Stderr, "-zone and -cluster are required\n")
 		os.Exit(1)

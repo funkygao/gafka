@@ -7,11 +7,13 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
+	"syscall"
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/profiler"
+	"github.com/funkygao/golib/signal"
 )
 
 func init() {
@@ -40,6 +42,15 @@ func main() {
 		}
 	}()
 
+	if options.killFile != "" {
+		if err := signal.SignalProcessByPidFile(options.killFile, syscall.SIGUSR2); err != nil {
+			panic(err)
+		}
+
+		fmt.Println("kateway killed")
+		os.Exit(0)
+	}
+
 	if options.cpuprof || options.memprof {
 		cf := &profiler.Config{
 			Quiet:        true,
@@ -62,6 +73,14 @@ _/    _/    _/_/_/      _/_/    _/_/_/      _/      _/        _/_/_/    _/_/_/
                                                                       _/_/          
 	`))
 
+	if options.pidFile != "" {
+		pid := os.Getpid()
+		if err := ioutil.WriteFile(options.pidFile, []byte(fmt.Sprintf("%d", pid)), 0644); err != nil {
+			panic(err)
+		}
+	}
+
+	// FIXME logLevel dup with ctx
 	setupLogging(options.logFile, options.logLevel, options.crashLogFile)
 	ctx.LoadConfig(options.configFile)
 
@@ -71,4 +90,8 @@ _/    _/    _/_/_/      _/_/    _/_/_/      _/      _/        _/_/_/    _/_/_/
 	}
 
 	gw.ServeForever()
+
+	if options.pidFile != "" {
+		syscall.Unlink(options.pidFile)
+	}
 }
