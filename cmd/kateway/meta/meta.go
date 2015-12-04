@@ -79,8 +79,9 @@ func (this *zkMetaStore) Start() {
 }
 
 func (this *zkMetaStore) Stop() {
-	close(this.shutdownCh)
 	this.zkcluster.Close()
+	close(this.shutdownCh)
+
 }
 
 func (this *zkMetaStore) OnlineConsumersCount(topic, group string) int {

@@ -151,15 +151,10 @@ func (this *Gateway) Stop() {
 func (this *Gateway) ServeForever() {
 	select {
 	case <-this.shutdownCh:
-
-		// wait for all components shutdown
-		log.Trace("waiting for all components shutdown...")
 		this.wg.Wait()
 		log.Trace("all components shutdown complete")
 
 		this.meta.Stop()
-
-		log.Info("gateway[%s:%s] shutdown complete", this.hostname, this.id)
 	}
 
 }
