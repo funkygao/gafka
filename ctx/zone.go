@@ -7,7 +7,7 @@ import (
 type zone struct {
 	name   string
 	zk     string
-	tunnel string
+	tunnel string // user@host
 }
 
 func (this *zone) loadConfig(section *ljconf.Conf) {

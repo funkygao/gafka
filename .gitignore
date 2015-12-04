@@ -27,6 +27,7 @@ _testmain.go
 *.swp
 cmd/kateway/kateway
 cmd/kateway/bench/bench
+cmd/kateway/executor/executor
 panic.dump
 cmd/gk/gk
 misc/scripts

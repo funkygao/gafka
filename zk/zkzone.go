@@ -41,6 +41,10 @@ func (this *ZkZone) ZkAddrs() string {
 	return this.conf.ZkAddrs
 }
 
+func (this *ZkZone) ZkAddrList() []string {
+	return strings.Split(this.conf.ZkAddrs, ",")
+}
+
 func (this *ZkZone) Close() {
 	this.conn.Close()
 }
@@ -106,8 +110,7 @@ func (this *ZkZone) Connect() (err error) {
 	var i int
 	for i = 1; i <= 3; i++ {
 		log.Debug("zk #%d try connecting %s", i, this.conf.ZkAddrs)
-		this.conn, this.evt, err = zk.Connect(strings.Split(this.conf.ZkAddrs, ","),
-			this.conf.Timeout)
+		this.conn, this.evt, err = zk.Connect(this.ZkAddrList(), this.conf.Timeout)
 		if err == nil {
 			// connected ok
 			break
