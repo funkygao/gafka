@@ -32,7 +32,7 @@ func (this *Discover) Run(args []string) (exitCode int) {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 		this.discoverClusters(zkzone)
 	} else {
-		forAllZones(func(zkzone *zk.ZkZone) {
+		forSortedZones(func(zkzone *zk.ZkZone) {
 			this.discoverClusters(zkzone)
 		})
 	}

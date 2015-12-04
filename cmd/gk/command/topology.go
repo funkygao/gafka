@@ -34,7 +34,7 @@ func (this *Topology) Run(args []string) (exitCode int) {
 	}
 
 	if this.zone == "" {
-		forAllZones(func(zkzone *zk.ZkZone) {
+		forSortedZones(func(zkzone *zk.ZkZone) {
 			this.displayZoneTopology(zkzone)
 		})
 

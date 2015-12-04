@@ -37,7 +37,7 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	}
 
 	if zone == "" {
-		forAllZones(func(zkzone *zk.ZkZone) {
+		forSortedZones(func(zkzone *zk.ZkZone) {
 			if this.byHost {
 				this.printConsumersByHost(zkzone, cluster)
 			} else {

@@ -19,6 +19,7 @@ A REST gateway for kafka that supports Pub and Sub.
 - Audit
 - Distributed load balancing
 - Health checks
+- Web UI to monitor lag
 
 ### Architecture
 

@@ -126,7 +126,7 @@ func ensureZoneValid(zone string) {
 	ctx.ZoneZkAddrs(zone) // will panic if zone not found
 }
 
-func forAllZones(fn func(zkzone *zk.ZkZone)) {
+func forSortedZones(fn func(zkzone *zk.ZkZone)) {
 	for _, zone := range ctx.SortedZones() {
 		zkAddrs := ctx.ZoneZkAddrs(zone)
 		if strings.TrimSpace(zkAddrs) == "" {

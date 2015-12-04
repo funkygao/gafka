@@ -112,7 +112,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 			this.verifyBrokers(zkzone)
 		} else {
 			// print all zones all clusters
-			forAllZones(func(zkzone *zk.ZkZone) {
+			forSortedZones(func(zkzone *zk.ZkZone) {
 				this.verifyBrokers(zkzone)
 			})
 		}
@@ -125,7 +125,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		this.printClusters(zkzone)
 	} else {
 		// print all zones all clusters
-		forAllZones(func(zkzone *zk.ZkZone) {
+		forSortedZones(func(zkzone *zk.ZkZone) {
 			this.printClusters(zkzone)
 		})
 	}

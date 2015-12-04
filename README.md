@@ -9,10 +9,11 @@ Unified multi-datacenter multi-kafka-clusters central management console powered
 - display global kafka brokers topology and check kafka balancing status
 - peek ongoing messages at data center level
 - explicit kafka clusters management
-- bash-autocomplete supported
 - monitor consumer lags
 - automatically discovery of kafka clusters
 - list under-replicated/offline brokers
+- zookeeper management console included
+- bash-autocomplete supported
 
 ### Install
 

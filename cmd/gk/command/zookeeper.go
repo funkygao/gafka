@@ -86,7 +86,7 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 	}
 
 	// print all by default
-	forAllZones(func(zkzone *zk.ZkZone) {
+	forSortedZones(func(zkzone *zk.ZkZone) {
 		if this.leaderOnly {
 			this.printLeader(zkzone)
 		} else {

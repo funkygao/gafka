@@ -53,7 +53,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	}
 
 	// print all brokers on all zones by default
-	forAllZones(func(zkzone *zk.ZkZone) {
+	forSortedZones(func(zkzone *zk.ZkZone) {
 		this.displayZoneBrokers(zkzone)
 	})
 

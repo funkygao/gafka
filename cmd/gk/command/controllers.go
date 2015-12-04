@@ -30,7 +30,7 @@ func (this *Controllers) Run(args []string) (exitCode int) {
 	}
 
 	if zone == "" {
-		forAllZones(func(zkzone *zk.ZkZone) {
+		forSortedZones(func(zkzone *zk.ZkZone) {
 			this.printControllers(zkzone)
 		})
 

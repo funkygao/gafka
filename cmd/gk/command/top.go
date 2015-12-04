@@ -235,14 +235,14 @@ func (this *Top) clusterTopProducers(zkcluster *zk.ZkCluster) {
 }
 
 func (*Top) Synopsis() string {
-	return "Display top kafka cluster activities"
+	return "Unix “top” like utility for kafka"
 }
 
 func (this *Top) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s top [options]
 
-    Display top kafka cluster activities
+    Unix “top” like utility for kafka
 
 Options:
 

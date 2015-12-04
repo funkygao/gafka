@@ -27,7 +27,7 @@ func (this *UnderReplicated) Run(args []string) (exitCode int) {
 	}
 
 	if this.zone == "" {
-		forAllZones(func(zkzone *zk.ZkZone) {
+		forSortedZones(func(zkzone *zk.ZkZone) {
 			zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 				this.displayUnderReplicatedPartitionsOfCluster(zkcluster)
 			})
