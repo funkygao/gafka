@@ -73,8 +73,8 @@ func main() {
 
 			return nil
 		})
-		log.Println(err)
 
+		log.Printf("backoff 10s for: %s", err)
 		time.Sleep(time.Second * 10)
 	}
 

@@ -16,7 +16,7 @@ type Config struct {
 
 func DefaultConfig() *Config {
 	return &Config{
-		Timeout:   time.Second * 10,
+		Timeout:   time.Second * 120, // FIXME
 		KeepAlive: time.Minute,
 		Debug:     false,
 	}

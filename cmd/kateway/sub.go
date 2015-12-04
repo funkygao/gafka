@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
@@ -74,11 +75,14 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (this *Gateway) fetchMessages(w http.ResponseWriter, cg store.Fetcher, limit int) error {
+func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher, limit int) error {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
 	n := 0
 	for {
 		select {
-		case msg := <-cg.Messages():
+		case msg := <-fetcher.Messages():
 			// TODO when remote close silently, the write still ok
 			// which will lead to msg losing for sub
 			if _, err := w.Write(msg.Value); err != nil {
@@ -88,7 +92,8 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, cg store.Fetcher, limi
 			}
 
 			// client really got this msg, safe to commit
-			cg.CommitUpto(msg)
+			log.Debug("commit offset: {T:%s, P:%d, O:%d}", msg.Topic, msg.Partition, msg.Offset)
+			fetcher.CommitUpto(msg)
 
 			n++
 			if n >= limit {
@@ -99,8 +104,16 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, cg store.Fetcher, limi
 			// curl CURLOPT_HTTP_TRANSFER_DECODING will auto unchunk
 			w.(http.Flusher).Flush()
 
-		case err := <-cg.Errors():
+		case <-ticker.C:
+			log.Debug("recv msg timeout")
+			w.WriteHeader(http.StatusNoContent)
+			// TODO write might fail, remote client might have died
+			w.Write([]byte{}) // without this, client cant get response
+			return nil
+
+		case err := <-fetcher.Errors():
 			return err
+
 		}
 	}
 

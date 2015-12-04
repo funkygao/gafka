@@ -35,14 +35,17 @@ func NewClient(cf *Config) *Client {
 func (this *Client) Connect(addr string) {
 	this.addr = addr
 	this.conn = &http.Client{
+		Timeout: this.cf.Timeout,
 		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
+			MaxIdleConnsPerHost: 1,
+			Proxy:               http.ProxyFromEnvironment,
 			Dial: (&net.Dialer{
 				Timeout: this.cf.Timeout,
 				//KeepAlive: this.cf.KeepAlive, TODO
 			}).Dial,
-			DisableKeepAlives:   false, // enable http conn reuse
-			TLSHandshakeTimeout: this.cf.Timeout,
+			DisableKeepAlives:     false, // enable http conn reuse
+			ResponseHeaderTimeout: this.cf.Timeout,
+			TLSHandshakeTimeout:   this.cf.Timeout,
 		},
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
+	//"time"
 
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
@@ -42,11 +42,11 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 
 	if httpAddr != "" {
 		this.httpServer = &http.Server{
-			Addr:           httpAddr,
-			Handler:        this.router,
-			ReadTimeout:    time.Minute, // FIXME
-			WriteTimeout:   time.Minute, // FIXME
-			MaxHeaderBytes: 4 << 10,     // should be enough
+			Addr:    httpAddr,
+			Handler: this.router,
+			//ReadTimeout:    time.Minute, // FIXME
+			//WriteTimeout:   time.Minute, // FIXME
+			MaxHeaderBytes: 4 << 10, // should be enough
 		}
 	}
 
