@@ -64,12 +64,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if limit > 1 {
-		err = this.consumeMulti(w, fetcher, limit)
-	} else {
-		err = this.consumeSingle(w, fetcher)
-	}
-
+	err = this.fetchMessages(w, fetcher, limit)
 	if err != nil {
 		// broken pipe, io timeout
 		log.Error("consumer %s{topic:%s, group:%s, limit:%d} get killed: %v",
@@ -79,39 +74,18 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (this *Gateway) consumeSingle(w http.ResponseWriter, cg store.Fetcher) error {
-	select {
-	case msg := <-cg.Messages():
-		// TODO when remote close silently, the write still ok
-		// which will lead to msg losing for sub
-		if _, err := w.Write(msg.Value); err != nil {
-			return err
-		}
-
-		// client really got this msg, safe to commit
-		cg.CommitUpto(msg)
-
-	case err := <-cg.Errors():
-		return err
-	}
-
-	return nil
-}
-
-func (this *Gateway) consumeMulti(w http.ResponseWriter, cg store.Fetcher, limit int) error {
+func (this *Gateway) fetchMessages(w http.ResponseWriter, cg store.Fetcher, limit int) error {
 	n := 0
 	for {
 		select {
 		case msg := <-cg.Messages():
+			// TODO when remote close silently, the write still ok
+			// which will lead to msg losing for sub
 			if _, err := w.Write(msg.Value); err != nil {
 				// TODO if cf.ChannelBufferSize > 0, client may lose message
 				// got message in chan, client not recv it but offset commited.
 				return err
 			}
-
-			// http chunked: len in hex
-			// curl CURLOPT_HTTP_TRANSFER_DECODING will auto unchunk
-			w.(http.Flusher).Flush()
 
 			// client really got this msg, safe to commit
 			cg.CommitUpto(msg)
@@ -120,6 +94,10 @@ func (this *Gateway) consumeMulti(w http.ResponseWriter, cg store.Fetcher, limit
 			if n >= limit {
 				return nil
 			}
+
+			// http chunked: len in hex
+			// curl CURLOPT_HTTP_TRANSFER_DECODING will auto unchunk
+			w.(http.Flusher).Flush()
 
 		case err := <-cg.Errors():
 			return err
