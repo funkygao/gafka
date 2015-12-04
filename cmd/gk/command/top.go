@@ -18,16 +18,13 @@ import (
 	"github.com/funkygao/golib/progress"
 )
 
-const (
-	topInterval = 5
-)
-
 type Top struct {
 	Ui  cli.Ui
 	Cmd string
 
 	mu             sync.Mutex
 	limit          int
+	topInterval    int
 	batchMode      bool
 	topicPattern   string
 	clusterPattern string
@@ -45,6 +42,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
+	cmdFlags.IntVar(&this.topInterval, "interval", 5, "refresh interval")
 	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
 	cmdFlags.IntVar(&this.limit, "n", 34, "")
 	cmdFlags.StringVar(&who, "who", "producer", "")
@@ -80,7 +78,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 		}
 	})
 
-	bar := progress.New(topInterval)
+	bar := progress.New(this.topInterval)
 	for {
 		if this.batchMode {
 			this.Ui.Output(bjtime.TimeToString(bjtime.NowBj()))
@@ -98,7 +96,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 		if !this.batchMode {
 			this.showRefreshBar(bar)
 		} else {
-			time.Sleep(topInterval * time.Second)
+			time.Sleep(time.Duration(this.topInterval) * time.Second)
 		}
 
 	}
@@ -109,7 +107,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 
 func (this *Top) showRefreshBar(bar *progress.Progress) {
 	this.Ui.Output("")
-	for i := 1; i <= topInterval; i++ {
+	for i := 1; i <= this.topInterval; i++ {
 		bar.ShowProgress(i)
 		time.Sleep(time.Second)
 	}
@@ -140,12 +138,12 @@ func (this *Top) showAndResetCounters() {
 	totalMps := 0.
 	limitReached := false
 	for i := len(sortedNum) - 1; i >= 0; i-- {
-		if !limitReached && len(sortedNum)-i > this.limit {
+		if !limitReached && this.limit > 0 && len(sortedNum)-i > this.limit {
 			limitReached = true
 		}
 
 		num := sortedNum[i]
-		mps := float64(num-this.lastCounters[counterFlip[num]]) / float64(topInterval) // msg per sec
+		mps := float64(num-this.lastCounters[counterFlip[num]]) / float64(this.topInterval) // msg per sec
 		totalNum += num
 		totalMps += mps
 		if limitReached {
@@ -253,6 +251,9 @@ Options:
     -c cluster pattern
 
     -t topic pattern    
+
+    -interval interval
+      Refresh interval in seconds.
 
     -n limit
 
