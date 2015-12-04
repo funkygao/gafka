@@ -1,6 +1,6 @@
 package gafka
 
 var (
-	Version string = "0.1.1stable"
+	Version string = "0.2.1rc"
 	BuildId string
 )

@@ -53,13 +53,13 @@ start() {
     ulimit -n 40960
     ulimit -c unlimited
     ulimit -l unlimited
-    daemon --pidfile PIDFILE "/usr/sbin/daemonize $DAEMON -conf $CONFIGFILE -level $LOGLEVEL -zone $ZONE -cluster $CLUSTER -pubhttp $PUBHTTP -subhttp $SUBHTTP -id $ID -store $STORE -crashlog $CRASHLOG -log $LOGFILE"
+    daemon "/usr/sbin/daemonize $DAEMON -conf $CONFIGFILE -pid $PIDFILE -level $LOGLEVEL -zone $ZONE -cluster $CLUSTER -pubhttp $PUBHTTP -subhttp $SUBHTTP -id $ID -store $STORE -crashlog $CRASHLOG -log $LOGFILE"
     errcode=$?
     return $errcode
 }
 
 stop() {
-    daemon "$DAEMON -k -lockfile $LOCKFILE -level trace -conf $CONFIGFILE"
+    daemon "$DAEMON -kill $PIDFILE"
     errcode=$?
     return $errcode
 }
