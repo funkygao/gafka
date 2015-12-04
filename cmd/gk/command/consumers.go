@@ -64,7 +64,7 @@ func (this *Consumers) printConsumersByHost(zkzone *zk.ZkZone, clusterFilter str
 
 	this.Ui.Output(color.Blue(zkzone.Name()))
 
-	zkzone.WithinClusters(func(zkcluster *zk.ZkCluster) {
+	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		if clusterFilter != "" && clusterFilter != zkcluster.Name() {
 			return
 		}
@@ -102,7 +102,7 @@ func (this *Consumers) printConsumersByHost(zkzone *zk.ZkZone, clusterFilter str
 // Print all controllers of all clusters within a zone.
 func (this *Consumers) printConsumersByGroup(zkzone *zk.ZkZone, clusterFilter string) {
 	this.Ui.Output(color.Blue(zkzone.Name()))
-	zkzone.WithinClusters(func(zkcluster *zk.ZkCluster) {
+	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		if clusterFilter != "" && clusterFilter != zkcluster.Name() {
 			return
 		}

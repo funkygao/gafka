@@ -79,7 +79,7 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 	this.Ui.Output(zkzone.Name())
 
 	instances := make(map[string]*brokerHostInfo)
-	zkzone.WithinBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
+	zkzone.ForSortedBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
 		if len(brokers) == 0 {
 			return
 		}

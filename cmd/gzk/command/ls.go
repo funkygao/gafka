@@ -39,7 +39,7 @@ func (this *Ls) Run(args []string) (exitCode int) {
 		zkcluster := zkzone.NewCluster(this.cluster)
 		this.printCluster(zkcluster)
 	} else {
-		zkzone.WithinClusters(func(zkcluster *zk.ZkCluster) {
+		zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 			this.printCluster(zkcluster)
 		})
 	}

@@ -76,7 +76,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	}
 
 	// all clusters
-	zkzone.WithinClusters(func(zkcluster *zk.ZkCluster) {
+	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		this.displayTopicsOfCluster(zkcluster)
 	})
 
