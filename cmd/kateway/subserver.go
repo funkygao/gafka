@@ -107,12 +107,6 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 			log.Trace("sub https server stopped")
 		}
 
-		this.httpListener = nil
-		this.tlsListener = nil
-		this.httpServer = nil
-		this.httpsServer = nil
-
-		this.router = nil
 	}
 
 }

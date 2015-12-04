@@ -50,20 +50,22 @@ func (this *subStore) Start() (err error) {
 
 	this.subPool = newSubPool(this)
 
-	var remoteAddr string
-	for {
-		select {
-		case <-this.shutdownCh:
-			this.subPool.Stop()
-			log.Trace("kafka sub store stopped")
-			return
+	go func() {
+		var remoteAddr string
+		for {
+			select {
+			case <-this.shutdownCh:
+				this.subPool.Stop()
+				log.Trace("kafka sub store stopped")
+				return
 
-		case remoteAddr = <-this.closedConnCh:
-			log.Trace("%s closed, killing sub", remoteAddr)
-			this.subPool.killClient(remoteAddr)
+			case remoteAddr = <-this.closedConnCh:
+				log.Trace("%s closed, killing sub", remoteAddr)
+				this.subPool.killClient(remoteAddr)
 
+			}
 		}
-	}
+	}()
 
 	return
 }

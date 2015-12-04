@@ -117,18 +117,18 @@ func (this *Gateway) Start() (err error) {
 	this.meta.Start()
 	log.Trace("meta store started")
 
-	go this.guard.Start()
+	this.guard.Start()
 	log.Trace("guard started")
 
 	this.buildRouting()
 
 	if this.pubServer != nil {
-		go this.pubStore.Start()
+		this.pubStore.Start()
 
 		this.pubServer.Start()
 	}
 	if this.subServer != nil {
-		go this.subStore.Start()
+		this.subStore.Start()
 
 		this.subServer.Start()
 	}
@@ -142,6 +142,7 @@ func (this *Gateway) Start() (err error) {
 
 func (this *Gateway) Stop() {
 	this.shutdownOnce.Do(func() {
+		log.Info("stopping kateway...")
 		close(this.shutdownCh)
 	})
 

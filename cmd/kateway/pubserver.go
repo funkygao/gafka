@@ -38,12 +38,6 @@ func (this *pubServer) waitExit(exit <-chan struct{}) {
 			log.Trace("%s https server stopped", this.name)
 		}
 
-		this.httpListener = nil
-		this.tlsListener = nil
-		this.httpServer = nil
-		this.httpsServer = nil
-
-		this.router = nil
 	}
 
 }

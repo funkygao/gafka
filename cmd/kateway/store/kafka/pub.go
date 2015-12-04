@@ -45,19 +45,21 @@ func (this *pubStore) Start() (err error) {
 	ticker := time.NewTicker(this.meta.RefreshInterval())
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			// main thread triggers the refresh, child threads just get fed
-			this.pubPool.RefreshBrokerList(this.meta.BrokerList())
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				// main thread triggers the refresh, child threads just get fed
+				this.pubPool.RefreshBrokerList(this.meta.BrokerList())
 
-		case <-this.shutdownCh:
-			this.pubPool.Stop()
-			log.Trace("kafka pub store stopped")
-			return
+			case <-this.shutdownCh:
+				this.pubPool.Stop()
+				log.Trace("kafka pub store stopped")
+				return
 
+			}
 		}
-	}
+	}()
 
 	return
 }

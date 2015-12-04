@@ -30,6 +30,10 @@ func (this *guard) Start() {
 	this.gw.wg.Add(1)
 	defer this.gw.wg.Done()
 
+	go this.mainLoop()
+}
+
+func (this *guard) mainLoop() {
 	interval := time.Minute
 	refreshTicker := time.NewTicker(interval)
 	defer refreshTicker.Stop()
@@ -72,7 +76,6 @@ func (this *guard) Start() {
 
 		}
 	}
-
 }
 
 func (this *guard) Refresh() {
