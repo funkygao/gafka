@@ -42,7 +42,7 @@ func main() {
 	cf := api.DefaultConfig()
 	cf.Debug = true
 	c := api.NewClient(cf)
-	c.Connect("http://localhost:9192")
+	c.Connect(addr)
 	for {
 		err := c.Subscribe("v1", "_kateway", "_addtopic", func(statusCode int, cmd []byte) (err error) {
 			if statusCode != http.StatusOK {
