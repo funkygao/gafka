@@ -11,7 +11,7 @@ import (
 	"github.com/funkygao/golib/color"
 )
 
-type Ls struct {
+type LsZk struct {
 	Ui  cli.Ui
 	Cmd string
 
@@ -20,8 +20,8 @@ type Ls struct {
 	recursive bool
 }
 
-func (this *Ls) Run(args []string) (exitCode int) {
-	cmdFlags := flag.NewFlagSet("ls", flag.ContinueOnError)
+func (this *LsZk) Run(args []string) (exitCode int) {
+	cmdFlags := flag.NewFlagSet("lszk", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
@@ -47,7 +47,7 @@ func (this *Ls) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Ls) printCluster(zkcluster *zk.ZkCluster) {
+func (this *LsZk) printCluster(zkcluster *zk.ZkCluster) {
 	this.Ui.Output(color.Green(zkcluster.Name()))
 	children, err := zkcluster.ListChildren(this.recursive)
 	if err != nil {
@@ -60,13 +60,15 @@ func (this *Ls) printCluster(zkcluster *zk.ZkCluster) {
 	}
 }
 
-func (*Ls) Synopsis() string {
-	return "list znode children"
+func (*LsZk) Synopsis() string {
+	return "List zookeepeer znode children"
 }
 
-func (this *Ls) Help() string {
+func (this *LsZk) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s ls -z zone [-R] [options] <path>
+Usage: %s lszk -z zone [-R] [options] <path>
+
+    List zookeepeer znode children
 
 Options:
 

@@ -32,6 +32,13 @@ func init() {
 			}, nil
 		},
 
+		"lszk": func() (cli.Command, error) {
+			return &command.LsZk{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"discover": func() (cli.Command, error) {
 			return &command.Discover{
 				Ui:  ui,
