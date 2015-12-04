@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"math"
 	"net"
 	"strings"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/termui"
+	"github.com/nsf/termbox-go"
 )
 
 type Zktop struct {
@@ -19,12 +22,31 @@ type Zktop struct {
 }
 
 func (this *Zktop) Run(args []string) (exitCode int) {
-	var zone string
+	var (
+		zone  string
+		graph bool
+	)
 	cmdFlags := flag.NewFlagSet("zktop", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.BoolVar(&graph, "g", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
+	}
+
+	if graph {
+		var zkzones = make([]*zk.ZkZone, 0)
+		if zone == "" {
+			forSortedZones(func(zkzone *zk.ZkZone) {
+				zkzones = append(zkzones, zkzone)
+			})
+		} else {
+			zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+			zkzones = append(zkzones, zkzone)
+		}
+
+		this.draw(zkzones)
+		return
 	}
 
 	for {
@@ -68,6 +90,38 @@ func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 			stat.latency,
 		))
 	}
+}
+
+func (this *Zktop) draw(zkzones []*zk.ZkZone) {
+	err := termui.Init()
+	if err != nil {
+		panic(err)
+	}
+	defer termui.Close()
+
+	termui.UseTheme("helloworld")
+
+	sinps := (func() []float64 {
+		n := 220
+		ps := make([]float64, n)
+		for i := range ps {
+			ps[i] = 1 + math.Sin(float64(i)/5)
+		}
+		return ps
+	})()
+
+	lc0 := termui.NewLineChart()
+	lc0.Border.Label = "zk"
+	lc0.Data = sinps
+	lc0.Width = 50
+	lc0.Height = 12
+	lc0.X = 0
+	lc0.Y = 0
+	lc0.AxesColor = termui.ColorWhite
+	lc0.LineColor = termui.ColorGreen | termui.AttrBold
+
+	termui.Render(lc0)
+	termbox.PollEvent()
 }
 
 type zkStat struct {
@@ -127,6 +181,9 @@ Usage: %s zktop [options]
 Options:
 
     -z zone   
+
+    -g
+      Draws zk connections in graph. TODO
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
