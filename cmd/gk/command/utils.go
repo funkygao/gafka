@@ -75,7 +75,11 @@ func (this *argsRule) invalid(args []string) bool {
 		}
 	}
 	if adminAuthRequired {
-		pass, err := this.ui.AskSecret("password for admin: ")
+		if pass := os.Getenv("GK_PASS"); Authenticator("", pass) {
+			return false
+		}
+
+		pass, err := this.ui.AskSecret("password for admin(or GK_PASS): ")
 		this.ui.Output("")
 		if err != nil {
 			this.ui.Error(err.Error())
