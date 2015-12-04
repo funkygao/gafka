@@ -79,8 +79,9 @@ func (this *zkMetaStore) Start() {
 }
 
 func (this *zkMetaStore) Stop() {
-	close(this.shutdownCh)
 	this.zkcluster.Close()
+	close(this.shutdownCh)
+
 }
 
 func (this *zkMetaStore) OnlineConsumersCount(topic, group string) int {
@@ -136,7 +137,7 @@ func (this *zkMetaStore) ZkChroot() string {
 
 func (this *zkMetaStore) Clusters() []string {
 	r := make([]string, 0)
-	this.zkcluster.ZkZone().WithinClusters(func(zkcluster *zk.ZkCluster) {
+	this.zkcluster.ZkZone().ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		r = append(r, zkcluster.Name())
 	})
 	return r

@@ -81,7 +81,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	msgChan := make(chan *sarama.ConsumerMessage, 20000) // msg aggerator channel
 	if cluster == "" {
-		zkzone.WithinClusters(func(zkcluster *zk.ZkCluster) {
+		zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 			this.consumeCluster(zkcluster, topic, partitionId, msgChan)
 		})
 	} else {

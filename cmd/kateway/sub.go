@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
@@ -46,7 +47,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		r.RemoteAddr, topic, group, limit)
 
 	// pick a consumer from the consumer group
-	cg, err := this.subStore.Fetch(options.cluster, topic, group, r.RemoteAddr)
+	fetcher, err := this.subStore.Fetch(options.cluster, topic, group, r.RemoteAddr)
 	if err != nil {
 		if isBrokerError(err) {
 			// broker error
@@ -64,12 +65,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if limit > 1 {
-		err = this.consumeMulti(w, cg, limit)
-	} else {
-		err = this.consumeSingle(w, cg)
-	}
-
+	err = this.fetchMessages(w, fetcher, limit)
 	if err != nil {
 		// broken pipe, io timeout
 		log.Error("consumer %s{topic:%s, group:%s, limit:%d} get killed: %v",
@@ -79,48 +75,45 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (this *Gateway) consumeSingle(w http.ResponseWriter, cg store.Fetcher) error {
-	select {
-	case msg := <-cg.Messages():
-		if _, err := w.Write(msg.Value); err != nil {
-			return err
-		}
+func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher, limit int) error {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
 
-		// client really got this msg, safe to commit
-		cg.CommitUpto(msg)
-
-	case err := <-cg.Errors():
-		return err
-	}
-
-	return nil
-}
-
-func (this *Gateway) consumeMulti(w http.ResponseWriter, cg store.Fetcher, limit int) error {
 	n := 0
 	for {
 		select {
-		case msg := <-cg.Messages():
+		case msg := <-fetcher.Messages():
+			// TODO when remote close silently, the write still ok
+			// which will lead to msg losing for sub
 			if _, err := w.Write(msg.Value); err != nil {
 				// TODO if cf.ChannelBufferSize > 0, client may lose message
 				// got message in chan, client not recv it but offset commited.
 				return err
 			}
 
-			// http chunked: len in hex
-			// curl CURLOPT_HTTP_TRANSFER_DECODING will auto unchunk
-			w.(http.Flusher).Flush()
-
 			// client really got this msg, safe to commit
-			cg.CommitUpto(msg)
+			log.Debug("commit offset: {T:%s, P:%d, O:%d}", msg.Topic, msg.Partition, msg.Offset)
+			fetcher.CommitUpto(msg)
 
 			n++
 			if n >= limit {
 				return nil
 			}
 
-		case err := <-cg.Errors():
+			// http chunked: len in hex
+			// curl CURLOPT_HTTP_TRANSFER_DECODING will auto unchunk
+			w.(http.Flusher).Flush()
+
+		case <-ticker.C:
+			log.Debug("recv msg timeout")
+			w.WriteHeader(http.StatusNoContent)
+			// TODO write might fail, remote client might have died
+			w.Write([]byte{}) // without this, client cant get response
+			return nil
+
+		case err := <-fetcher.Errors():
 			return err
+
 		}
 	}
 

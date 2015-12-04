@@ -135,7 +135,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 
 func (this *Clusters) verifyBrokers(zkzone *zk.ZkZone) {
 	this.Ui.Output(zkzone.Name())
-	zkzone.WithinBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
+	zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
 		zkcluster := zkzone.NewCluster(cluster)
 		registeredBrokers := zkcluster.RegisteredInfo().Roster
 
@@ -189,7 +189,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 		brokerInfos        []zk.BrokerInfo
 	}
 	clusters := make([]clusterInfo, 0)
-	zkzone.WithinClusters(func(zkcluster *zk.ZkCluster) {
+	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		ci := clusterInfo{
 			name: zkcluster.Name(),
 			path: zkcluster.Chroot(),

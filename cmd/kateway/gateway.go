@@ -1,9 +1,6 @@
 package main
 
 import (
-	"crypto/tls"
-	"net"
-	"net/http"
 	"os"
 	"sync"
 	"syscall"
@@ -120,18 +117,18 @@ func (this *Gateway) Start() (err error) {
 	this.meta.Start()
 	log.Trace("meta store started")
 
-	go this.guard.Start()
+	this.guard.Start()
 	log.Trace("guard started")
 
 	this.buildRouting()
 
 	if this.pubServer != nil {
-		go this.pubStore.Start()
+		this.pubStore.Start()
 
 		this.pubServer.Start()
 	}
 	if this.subServer != nil {
-		go this.subStore.Start()
+		this.subStore.Start()
 
 		this.subServer.Start()
 	}
@@ -145,6 +142,7 @@ func (this *Gateway) Start() (err error) {
 
 func (this *Gateway) Stop() {
 	this.shutdownOnce.Do(func() {
+		log.Info("stopping kateway...")
 		close(this.shutdownCh)
 	})
 
@@ -153,33 +151,10 @@ func (this *Gateway) Stop() {
 func (this *Gateway) ServeForever() {
 	select {
 	case <-this.shutdownCh:
-
-		// wait for all components shutdown
-		log.Trace("waiting for all components shutdown...")
 		this.wg.Wait()
 		log.Trace("all components shutdown complete")
 
 		this.meta.Stop()
-
-		log.Info("gateway[%s:%s] shutdown complete", this.hostname, this.id)
 	}
 
-}
-
-func (this *Gateway) setupHttpsServer(server *http.Server, certFile, keyFile string) (net.Listener, error) {
-	listener, err := net.Listen("tcp", server.Addr)
-	if err != nil {
-		return nil, err
-	}
-
-	config := &tls.Config{}
-	config.NextProtos = []string{"http/1.1"}
-	config.Certificates = make([]tls.Certificate, 1)
-	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		return nil, err
-	}
-
-	tlsListener := tls.NewListener(listener, config)
-	return tlsListener, nil
 }

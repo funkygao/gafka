@@ -63,7 +63,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	this.lastCounters = make(map[string]float64)
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-	zkzone.WithinClusters(func(zkcluster *zk.ZkCluster) {
+	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		if !patternMatched(zkcluster.Name(), this.clusterPattern) {
 			return
 		}

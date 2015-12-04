@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 	"github.com/wvanbergen/kafka/consumergroup"
 )
@@ -39,7 +40,7 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	}
 
 	if this.rebalancing {
-		err = ErrRebalancing
+		err = store.ErrRebalancing
 		return
 	}
 
@@ -52,7 +53,7 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	// FIXME 2 partition, if 3 client concurrently connects, got 3 consumer
 	if this.store.meta.OnlineConsumersCount(topic, group) >= len(this.store.meta.Partitions(topic)) {
 		log.Debug("client map: %+v, new client: %s", this.clientMap, remoteAddr)
-		err = ErrTooManyConsumers
+		err = store.ErrTooManyConsumers
 		return
 	}
 
@@ -60,6 +61,7 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	cf := consumergroup.NewConfig()
 	cf.ChannelBufferSize = 0
 	cf.Offsets.Initial = sarama.OffsetOldest
+	cf.Consumer.Return.Errors = true
 	cf.Offsets.CommitInterval = time.Minute // TODO
 	// time to wait for all the offsets for a partition to be processed after stopping to consume from it.
 	cf.Offsets.ProcessingTimeout = time.Second * 10 // TODO

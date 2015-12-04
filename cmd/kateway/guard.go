@@ -30,6 +30,10 @@ func (this *guard) Start() {
 	this.gw.wg.Add(1)
 	defer this.gw.wg.Done()
 
+	go this.mainLoop()
+}
+
+func (this *guard) mainLoop() {
 	interval := time.Minute
 	refreshTicker := time.NewTicker(interval)
 	defer refreshTicker.Stop()
@@ -67,11 +71,11 @@ func (this *guard) Start() {
 
 			if loadTooHigh {
 				// TODO in high load, should trigger elastic scaling event
+				// send alarm email, sms
 			}
 
 		}
 	}
-
 }
 
 func (this *guard) Refresh() {

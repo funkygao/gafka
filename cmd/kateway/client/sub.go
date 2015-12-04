@@ -24,7 +24,7 @@ func main() {
 	c := api.NewClient(nil)
 	c.Connect(addr)
 	i := 0
-	err := c.Subscribe("ver", "foobar", group, func(msg []byte) error {
+	err := c.Subscribe("ver", "foobar", group, func(statusCode int, msg []byte) error {
 		fmt.Printf("%10d: %s\n", i+1, string(msg))
 
 		i++

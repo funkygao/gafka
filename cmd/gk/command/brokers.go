@@ -63,7 +63,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 func (this *Brokers) displayZoneBrokers(zkzone *zk.ZkZone) {
 	lines := make([]string, 0)
 	n := 0
-	zkzone.WithinBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
+	zkzone.ForSortedBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
 		outputs, count := this.clusterBrokers(cluster, brokers)
 		lines = append(lines, outputs...)
 		n += count

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/api"
@@ -37,17 +38,23 @@ func main() {
 
 	// curl -i -XPOST -H "Pubkey: mypubkey" -d '{"cmd":"createTopic", "topic": "hello"}' "http://10.1.82.201:9191/topics/v1/_kateway"
 	m := meta.NewZkMetaStore(zone, cluster, 0)
-	c := api.NewClient(nil)
+
+	cf := api.DefaultConfig()
+	cf.Debug = true
+	c := api.NewClient(cf)
 	c.Connect("http://localhost:9192")
 	for {
-		err := c.Subscribe("v1", "_kateway", "_addtopic", func(cmd []byte) (err error) {
-			log.Printf("recv cmd: %s", string(cmd))
+		err := c.Subscribe("v1", "_kateway", "_addtopic", func(statusCode int, cmd []byte) (err error) {
+			if statusCode != http.StatusOK {
+				log.Printf("err[%d] backoff 10s: %s", statusCode, string(cmd))
+				time.Sleep(time.Second * 10)
+				return nil
+			}
 
 			v := make(map[string]interface{})
 			err = json.Unmarshal(cmd, &v)
 			if err != nil {
 				log.Printf("%s: %v", string(cmd), err)
-				time.Sleep(time.Second * 10)
 				return nil
 			}
 
@@ -66,8 +73,8 @@ func main() {
 
 			return nil
 		})
-		log.Println(err)
 
+		log.Printf("backoff 10s for: %s", err)
 		time.Sleep(time.Second * 10)
 	}
 

@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/funkygao/gafka/cmd/kateway/store"
 )
 
 func diff(l1, l2 []string) (added []string, deleted []string) {
@@ -15,8 +17,7 @@ func writeKatewayHeader(w http.ResponseWriter) {
 }
 
 func writeAuthFailure(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusUnauthorized)
-	w.Write([]byte("invalid pubkey"))
+	http.Error(w, "invalid secret", http.StatusUnauthorized)
 
 	// close the suspicous http connection  TODO test case
 	if conn, _, err := w.(http.Hijacker).Hijack(); err == nil {
@@ -25,16 +26,15 @@ func writeAuthFailure(w http.ResponseWriter) {
 }
 
 func writeBreakerOpen(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusBadGateway)
-	w.Write([]byte("circuit broken"))
+	http.Error(w, "circuit broken", http.StatusBadGateway)
 }
 
 func writeBadRequest(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusBadRequest)
+	http.Error(w, "bad request", http.StatusBadRequest)
 }
 
 func isBrokerError(err error) bool {
-	if err != ErrTooManyConsumers && err != ErrRebalancing {
+	if err != store.ErrTooManyConsumers && err != store.ErrRebalancing {
 		return true
 	}
 

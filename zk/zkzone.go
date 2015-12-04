@@ -210,7 +210,7 @@ func (this *ZkZone) Clusters() map[string]string {
 	return r
 }
 
-func (this *ZkZone) WithinClusters(fn func(zkcluster *ZkCluster)) {
+func (this *ZkZone) ForSortedClusters(fn func(zkcluster *ZkCluster)) {
 	clusters := this.Clusters()
 	sortedNames := make([]string, 0, len(clusters))
 	for name, _ := range clusters {
@@ -309,7 +309,7 @@ func (this *ZkZone) controllers() map[string]*ControllerMeta {
 	return r
 }
 
-func (this *ZkZone) WithinControllers(fn func(cluster string, controller *ControllerMeta)) {
+func (this *ZkZone) ForSortedControllers(fn func(cluster string, controller *ControllerMeta)) {
 	controllers := this.controllers()
 	sortedClusters := make([]string, 0, len(controllers))
 	for cluster, _ := range controllers {
@@ -345,7 +345,7 @@ func (this *ZkZone) brokers() map[string]map[string]*BrokerZnode {
 	return r
 }
 
-func (this *ZkZone) WithinBrokers(fn func(cluster string, brokers map[string]*BrokerZnode)) {
+func (this *ZkZone) ForSortedBrokers(fn func(cluster string, brokers map[string]*BrokerZnode)) {
 	// sort by cluster name
 	brokersOfClusters := this.brokers()
 	sortedClusters := make([]string, 0, len(brokersOfClusters))
