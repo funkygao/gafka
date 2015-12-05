@@ -93,9 +93,10 @@ func (this *subPool) killClient(remoteAddr string) {
 	if c, present := this.clientMap[remoteAddr]; present {
 		c.Close() // will flush offset, must wait, otherwise offset is not guanranteed
 	} else {
-		// should never happen
+		// client quit before getting the chance to consume
+		// e,g. 1 partition, 2 clients, the 2nd will not get consume chance, then quit
 		this.rebalancing = false
-		log.Warn("consumer %s never consumed", remoteAddr) // FIXME
+		log.Debug("consumer %s never consumed", remoteAddr)
 
 		return
 	}
