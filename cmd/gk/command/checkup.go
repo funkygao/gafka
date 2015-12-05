@@ -54,14 +54,14 @@ func (this *Checkup) Run(args []string) (exitCode int) {
 }
 
 func (*Checkup) Synopsis() string {
-	return "Health checkup of zookeepers and brokers"
+	return "Health checkup of runtime"
 }
 
 func (this *Checkup) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s [options]
 
-    Health checkup of zookeepers and brokers
+    Health checkup of runtime
 
 Options:
 
