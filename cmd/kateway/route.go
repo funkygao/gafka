@@ -58,6 +58,8 @@ func (this *Gateway) buildRouting() {
 			"/ping", "GET", this.pingHandler)
 
 		this.registerRoute(this.subServer.Router(),
+			"/topics/{ver}/{topic}/store", "GET", this.subStoreHandler)
+		this.registerRoute(this.subServer.Router(),
 			"/topics/{ver}/{topic}/{group}", "GET", this.subHandler)
 		this.registerRoute(this.subServer.Router(),
 			"/ws/topics/{ver}/{topic}/{group}", "GET", this.subWsHandler)

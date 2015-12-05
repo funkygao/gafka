@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -8,6 +9,36 @@ import (
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
 )
+
+// /topics/{ver}/{topic}/store
+func (this *Gateway) subStoreHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		topic string
+		ver   string
+		appid string
+	)
+
+	params := mux.Vars(r)
+	ver = params["ver"]
+	topic = params["topic"]
+	appid = r.Header.Get("Appid")
+
+	if !this.meta.AuthSub(appid, r.Header.Get("Subkey"), topic) {
+
+		this.writeAuthFailure(w)
+		return
+	}
+
+	topic = kafkaTopic(appid, topic, ver)
+	this.writeKatewayHeader(w)
+	var out = map[string]string{
+		"store": "kafka",
+		"zk":    this.meta.ZkCluster().ZkConnectAddr(),
+	}
+	b, _ := json.Marshal(out)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(b)
+}
 
 // /topics/{ver}/{topic}/{group}?offset=n&limit=1
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {

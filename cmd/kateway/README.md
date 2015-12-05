@@ -127,6 +127,7 @@ A REST gateway for kafka that supports Pub and Sub.
 - [ ] logging
 - [ ] offset testing
 - [ ] metrics by topic
+- [ ] https://github.com/gin-gonic/gin
 - [ ] anti spoof
 - [ ] async producer
 - [ ] pub gateway accepts IoT sensor messages
