@@ -11,10 +11,8 @@ import (
 
 // /topics/{ver}/{topic}/{group}?offset=n&limit=1
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
-	writeKatewayHeader(w)
-
 	if this.breaker.Open() {
-		writeBreakerOpen(w)
+		this.writeBreakerOpen(w)
 		return
 	}
 
@@ -28,7 +26,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 
 	limit, err := getHttpQueryInt(r, "limit", 1)
 	if err != nil {
-		writeBadRequest(w)
+		this.writeBadRequest(w, err)
 		return
 	}
 
@@ -39,10 +37,10 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	appid = r.Header.Get("Appid")
 
 	if !this.meta.AuthSub(appid, r.Header.Get("Subkey"), topic) {
-		writeAuthFailure(w)
 		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} auth fail",
 			r.RemoteAddr, topic, ver, group, limit)
 
+		this.writeAuthFailure(w)
 		return
 	}
 
@@ -61,11 +59,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		log.Error("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} %v",
 			r.RemoteAddr, topic, ver, group, limit, err)
 
-		writeBadRequest(w)
-		if _, err = w.Write([]byte(err.Error())); err != nil {
-			log.Error("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} %v",
-				r.RemoteAddr, topic, ver, group, limit, err)
-		}
+		this.writeBadRequest(w, err)
 		return
 	}
 

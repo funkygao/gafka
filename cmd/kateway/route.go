@@ -66,8 +66,8 @@ func (this *Gateway) buildRouting() {
 }
 
 func (this *Gateway) helpHandler(w http.ResponseWriter, r *http.Request) {
-	writeKatewayHeader(w)
-	w.Header().Set("Content-Type", "text/text")
+	this.writeKatewayHeader(w)
+	w.Header().Set("Content-Type", "text/plain")
 	paths := set.NewSet()
 	for _, route := range this.routes {
 		if paths.Contains(route.path) {
@@ -80,19 +80,19 @@ func (this *Gateway) helpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *Gateway) pingHandler(w http.ResponseWriter, r *http.Request) {
-	writeKatewayHeader(w)
+	this.writeKatewayHeader(w)
 	w.Write([]byte(fmt.Sprintf("ver:%s, build:%s, uptime:%s",
 		gafka.Version, gafka.BuildId, time.Since(this.startedAt))))
 }
 
 func (this *Gateway) versionHandler(w http.ResponseWriter, r *http.Request) {
-	writeKatewayHeader(w)
-	w.Header().Set("Content-Type", "text/text")
+	this.writeKatewayHeader(w)
+	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte(fmt.Sprintf("%s-%s", gafka.Version, gafka.BuildId)))
 }
 
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request) {
-	writeKatewayHeader(w)
+	this.writeKatewayHeader(w)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	b, _ := json.Marshal(this.meta.Clusters())
@@ -100,7 +100,7 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *Gateway) statHandler(w http.ResponseWriter, r *http.Request) {
-	writeKatewayHeader(w)
+	this.writeKatewayHeader(w)
 	w.Header().Set("Content-Type", "application/json")
 	this.guard.Refresh()
 	b, _ := json.Marshal(this.guard.cpuStat)

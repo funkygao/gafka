@@ -18,10 +18,8 @@ type pubResponse struct {
 
 // /topics/{ver}/{topic}?key=xxx
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
-	writeKatewayHeader(w)
-
 	if this.breaker.Open() {
-		writeBreakerOpen(w)
+		this.writeBreakerOpen(w)
 		return
 	}
 
@@ -40,7 +38,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	key = r.URL.Query().Get("key") // if key given, batched msg must belong to same key
 
 	if !this.meta.AuthPub(appid, r.Header.Get("Pubkey"), topic) {
-		writeAuthFailure(w)
+		this.writeAuthFailure(w)
 		return
 	}
 
@@ -48,7 +46,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	pr := io.LimitReader(r.Body, options.maxPubSize+1)
 	rawMsg, err := ioutil.ReadAll(pr) // TODO optimize
 	if err != nil {
-		writeBadRequest(w)
+		this.writeBadRequest(w, ErrTooBigPubMessage)
 		return
 	}
 
@@ -69,13 +67,11 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 		this.pubMetrics.PubFailure.Inc(1)
 		log.Error("%s: %v", r.RemoteAddr, err)
 
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 
 	response := pubResponse{
 		Partition: partition,
