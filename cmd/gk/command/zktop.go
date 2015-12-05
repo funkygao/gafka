@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"sort"
 	"strings"
 	"time"
 
@@ -23,12 +24,14 @@ type Zktop struct {
 
 func (this *Zktop) Run(args []string) (exitCode int) {
 	var (
-		zone  string
-		graph bool
+		zone            string
+		graph           bool
+		refreshInterval time.Duration
 	)
 	cmdFlags := flag.NewFlagSet("zktop", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.DurationVar(&refreshInterval, "r", time.Second*5, "")
 	cmdFlags.BoolVar(&graph, "g", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
@@ -61,7 +64,7 @@ func (this *Zktop) Run(args []string) (exitCode int) {
 			this.displayZoneTop(zkzone)
 		}
 
-		time.Sleep(time.Second * 3)
+		time.Sleep(refreshInterval)
 	}
 
 	return
@@ -72,13 +75,20 @@ func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 	header := "SERVER           PORT M      OUTST        RECVD         SENT CONNS ZNODES LAT(MIN/AVG/MAX)"
 	this.Ui.Output(header)
 
-	for hostPort, lines := range zkzone.RunZkFourLetterCommand("stat") {
+	stats := zkzone.RunZkFourLetterCommand("stat")
+	sortedHosts := make([]string, 0, len(stats))
+	for hp, _ := range stats {
+		sortedHosts = append(sortedHosts, hp)
+	}
+	sort.Strings(sortedHosts)
+
+	for _, hostPort := range sortedHosts {
 		host, port, err := net.SplitHostPort(hostPort)
 		if err != nil {
 			panic(err)
 		}
 
-		stat := this.parsedStat(lines)
+		stat := this.parsedStat(stats[hostPort])
 		this.Ui.Output(fmt.Sprintf("%-15s %5s %1s %10s %12s %12s %5s %6s %s",
 			host, port,
 			stat.mode,
@@ -184,6 +194,9 @@ Options:
 
     -g
       Draws zk connections in graph. TODO
+
+    -r refresh duration
+      e,g. 5s
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
