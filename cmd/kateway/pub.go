@@ -16,27 +16,29 @@ type pubResponse struct {
 	Offset    int64 `json:"offset"`
 }
 
-// /{ver}/topics/{topic}?key=xxx
+// /topics/{ver}/{topic}?key=xxx
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
-	writeKatewayHeader(w)
-
 	if this.breaker.Open() {
-		writeBreakerOpen(w)
+		this.writeBreakerOpen(w)
 		return
 	}
 
 	var (
 		topic string
+		ver   string
 		key   string
+		appid string
 	)
 
 	params := mux.Vars(r)
 	//ver := params["ver"] // TODO
 	topic = params["topic"]
+	ver = params["ver"]
+	appid = r.Header.Get("Appid")
 	key = r.URL.Query().Get("key") // if key given, batched msg must belong to same key
 
-	if !this.meta.AuthPub(r.Header.Get("Appid"), r.Header.Get("Pubkey"), topic) {
-		writeAuthFailure(w)
+	if !this.meta.AuthPub(appid, r.Header.Get("Pubkey"), topic) {
+		this.writeAuthFailure(w)
 		return
 	}
 
@@ -44,7 +46,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	pr := io.LimitReader(r.Body, options.maxPubSize+1)
 	rawMsg, err := ioutil.ReadAll(pr) // TODO optimize
 	if err != nil {
-		writeBadRequest(w)
+		this.writeBadRequest(w, ErrTooBigPubMessage)
 		return
 	}
 
@@ -54,6 +56,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO some topics use async put
 	this.pubMetrics.PubQps.Mark(1)
 	this.pubMetrics.PubSize.Mark(int64(len(rawMsg)))
+	topic = kafkaTopic(appid, topic, ver)
 	partition, offset, err := this.pubStore.SyncPub(options.cluster, topic, key, rawMsg) // FIXME
 	if err != nil {
 		if isBrokerError(err) {
@@ -64,13 +67,11 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 		this.pubMetrics.PubFailure.Inc(1)
 		log.Error("%s: %v", r.RemoteAddr, err)
 
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 
 	response := pubResponse{
 		Partition: partition,
