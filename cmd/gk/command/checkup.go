@@ -43,18 +43,25 @@ func (this *Checkup) Run(args []string) (exitCode int) {
 	}
 	cmd.Run(args)
 
+	fmt.Println(color.Cyan("checking problematic lag consumers\n%s", strings.Repeat("-", 80)))
+	cmd = &Lags{
+		Ui:  this.Ui,
+		Cmd: this.Cmd,
+	}
+	cmd.Run(append(args, "-p"))
+
 	return
 }
 
 func (*Checkup) Synopsis() string {
-	return "Checkup of zookeepers and brokers"
+	return "Health checkup of zookeepers and brokers"
 }
 
 func (this *Checkup) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s [options]
 
-    Checkup of zookeepers and brokers
+    Health checkup of zookeepers and brokers
 
 Options:
 

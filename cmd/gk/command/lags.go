@@ -16,12 +16,13 @@ import (
 )
 
 type Lags struct {
-	Ui           cli.Ui
-	Cmd          string
-	onlineOnly   bool
-	groupPattern string
-	topicPattern string
-	watchMode    bool
+	Ui              cli.Ui
+	Cmd             string
+	onlineOnly      bool
+	groupPattern    string
+	topicPattern    string
+	watchMode       bool
+	problematicMode bool
 }
 
 func (this *Lags) Run(args []string) (exitCode int) {
@@ -35,6 +36,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.onlineOnly, "l", false, "")
+	cmdFlags.BoolVar(&this.problematicMode, "p", false, "")
 	cmdFlags.StringVar(&this.groupPattern, "g", "", "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
 	cmdFlags.BoolVar(&this.watchMode, "w", false, "")
@@ -50,6 +52,10 @@ func (this *Lags) Run(args []string) (exitCode int) {
 
 	if this.watchMode {
 		refreshScreen()
+	}
+
+	if this.problematicMode {
+		this.onlineOnly = true
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
@@ -113,7 +119,10 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 				}
 
 				var lagOutput string
-				if consumer.Lag > 1000 {
+				if this.problematicMode && consumer.Lag <= 1000 {
+					continue
+				}
+				if consumer.Lag > 1000 { // TODO
 					lagOutput = color.Red("%15s", gofmt.Comma(consumer.Lag))
 				} else {
 					lagOutput = color.Magenta("%15s", gofmt.Comma(consumer.Lag))
@@ -175,6 +184,9 @@ Options:
 
     -l
       Only show online consumers lag.
+
+    -p
+      Only show problematic consumers.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
