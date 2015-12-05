@@ -61,7 +61,7 @@ interact
 	f.Close()
 	defer os.Remove(fname)
 
-	err = ioutil.WriteFile(fname, []byte(expectScript), 0666)
+	err = ioutil.WriteFile(fname, []byte(strings.TrimSpace(expectScript)), 0666)
 	if err != nil {
 		panic(err)
 	}

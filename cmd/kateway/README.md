@@ -125,6 +125,7 @@ A REST gateway for kafka that supports Pub and Sub.
 - [ ] plugin
 - [ ] mem pool 
 - [ ] logging
+- [ ] offset testing
 - [ ] anti spoof
 - [ ] async producer
 - [ ] pub gateway accepts IoT sensor messages
