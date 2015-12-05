@@ -20,17 +20,11 @@ func (this *Gateway) writeKatewayHeader(w http.ResponseWriter) {
 	w.Header().Set("Server", "kateway")
 }
 
-func (this *Gateway) closeClient(w http.ResponseWriter) {
-	w.Header().Set("Connection", "close")
-}
-
 func (this *Gateway) writeAuthFailure(w http.ResponseWriter) {
-	this.writeErrorResponse(w, "invalid secret", http.StatusUnauthorized)
+	// close the suspicous http connection
+	w.Header().Set("Connection", "close")
 
-	// close the suspicous http connection  TODO test case
-	if conn, _, err := w.(http.Hijacker).Hijack(); err == nil {
-		conn.Close()
-	}
+	this.writeErrorResponse(w, "invalid secret", http.StatusUnauthorized)
 }
 
 func (this *Gateway) writeBreakerOpen(w http.ResponseWriter) {
