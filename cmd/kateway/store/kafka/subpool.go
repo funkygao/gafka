@@ -50,9 +50,12 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 		return
 	}
 
-	// FIXME 2 partition, if 3 client concurrently connects, got 3 consumer
-	if this.store.meta.OnlineConsumersCount(topic, group) >= len(this.store.meta.Partitions(topic)) {
-		log.Debug("client map: %+v, new client: %s", this.clientMap, remoteAddr)
+	// FIXME what if client wants to consumer a non-existent topic?
+	onlineN := this.store.meta.OnlineConsumersCount(topic, group)
+	partitionN := len(this.store.meta.Partitions(topic))
+	if onlineN >= partitionN {
+		log.Debug("online:%d>=partitions:%d, current clients: %+v, remote addr: %s",
+			onlineN, partitionN, this.clientMap, remoteAddr)
 		err = store.ErrTooManyConsumers
 		return
 	}

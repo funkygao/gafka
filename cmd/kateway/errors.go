@@ -5,6 +5,6 @@ import (
 )
 
 var (
-	ErrRemoteInterrupt  = errors.New("remote client interrupted")
+	ErrClientGone       = errors.New("remote client gone")
 	ErrTooBigPubMessage = errors.New("too big message")
 )

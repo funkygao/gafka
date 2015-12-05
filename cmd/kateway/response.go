@@ -11,12 +11,17 @@ func (this *Gateway) writeErrorResponse(w http.ResponseWriter, err string, code 
 	}
 	b, _ := json.Marshal(out)
 
+	w.Header().Set("Content-Type", "application/json")
 	this.writeKatewayHeader(w)
 	http.Error(w, string(b), code)
 }
 
 func (this *Gateway) writeKatewayHeader(w http.ResponseWriter) {
 	w.Header().Set("Server", "kateway")
+}
+
+func (this *Gateway) closeClient(w http.ResponseWriter) {
+	w.Header().Set("Connection", "close")
 }
 
 func (this *Gateway) writeAuthFailure(w http.ResponseWriter) {

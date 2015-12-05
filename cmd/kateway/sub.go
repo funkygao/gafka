@@ -77,12 +77,12 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
-	remoteCloseNotify := w.(http.CloseNotifier).CloseNotify()
+	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 	n := 0
 	for {
 		select {
-		case <-remoteCloseNotify:
-			return ErrRemoteInterrupt
+		case <-clientGoneCh:
+			return ErrClientGone
 
 		case msg := <-fetcher.Messages():
 			// TODO when remote close silently, the write still ok
