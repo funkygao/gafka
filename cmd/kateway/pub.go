@@ -40,7 +40,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	key = r.URL.Query().Get("key") // if key given, batched msg must belong to same key
 	async = r.URL.Query().Get("async") == "1"
 
-	if !this.meta.AuthPub(appid, r.Header.Get("Pubkey"), topic) {
+	if !meta.Default.AuthPub(appid, r.Header.Get("Pubkey"), topic) {
 		this.writeAuthFailure(w)
 		return
 	}

@@ -18,19 +18,16 @@ type pubStore struct {
 	wg         *sync.WaitGroup
 	hostname   string
 
-	meta    meta.MetaStore
 	pubPool *pubPool // FIXME maybe we should have another pool for async
 }
 
-func NewPubStore(meta meta.MetaStore, wg *sync.WaitGroup,
-	shutdownCh <-chan struct{}, debug bool) *pubStore {
+func NewPubStore(wg *sync.WaitGroup, shutdownCh <-chan struct{}, debug bool) *pubStore {
 	if debug {
 		sarama.Logger = l.New(os.Stdout, color.Green("[Sarama]"),
 			l.LstdFlags|l.Lshortfile)
 	}
 
 	return &pubStore{
-		meta:       meta,
 		hostname:   ctx.Hostname(),
 		wg:         wg,
 		shutdownCh: shutdownCh,
@@ -41,17 +38,18 @@ func (this *pubStore) Start() (err error) {
 	this.wg.Add(1)
 	defer this.wg.Done()
 
-	this.pubPool = newPubPool(this, this.meta.BrokerList())
+	this.pubPool = newPubPool(this, meta.Default.BrokerList())
 
-	ticker := time.NewTicker(this.meta.RefreshInterval())
+	ticker := time.NewTicker(meta.Default.RefreshInterval())
 	defer ticker.Stop()
 
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
+				// TODO maybe this is not neccessary
 				// main thread triggers the refresh, child threads just get fed
-				this.pubPool.RefreshBrokerList(this.meta.BrokerList())
+				this.pubPool.RefreshBrokerList(meta.Default.BrokerList())
 
 			case <-this.shutdownCh:
 				this.pubPool.Stop()

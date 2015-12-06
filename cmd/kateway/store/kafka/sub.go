@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/Shopify/sarama"
-	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
@@ -24,20 +23,17 @@ type subStore struct {
 	wg           *sync.WaitGroup
 	hostname     string
 
-	meta meta.MetaStore
-
 	subPool *subPool
 }
 
-func NewSubStore(meta meta.MetaStore, wg *sync.WaitGroup,
-	shutdownCh <-chan struct{}, closedConnCh <-chan string, debug bool) *subStore {
+func NewSubStore(wg *sync.WaitGroup, shutdownCh <-chan struct{},
+	closedConnCh <-chan string, debug bool) *subStore {
 	if debug {
 		sarama.Logger = l.New(os.Stdout, color.Blue("[Sarama]"),
 			l.LstdFlags|l.Lshortfile)
 	}
 
 	return &subStore{
-		meta:         meta,
 		hostname:     ctx.Hostname(),
 		wg:           wg,
 		shutdownCh:   shutdownCh,
@@ -49,7 +45,7 @@ func (this *subStore) Start() (err error) {
 	this.wg.Add(1)
 	defer this.wg.Done()
 
-	this.subPool = newSubPool(this)
+	this.subPool = newSubPool()
 
 	go func() {
 		var remoteAddr string

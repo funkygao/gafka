@@ -25,7 +25,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request) {
 	topic = params["topic"]
 	appid = r.Header.Get("Appid")
 
-	if !this.meta.AuthSub(appid, r.Header.Get("Subkey"), topic) {
+	if !meta.Default.AuthSub(appid, r.Header.Get("Subkey"), topic) {
 
 		this.writeAuthFailure(w)
 		return
@@ -34,7 +34,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request) {
 	this.writeKatewayHeader(w)
 	var out = map[string]string{
 		"store": "kafka",
-		"zk":    this.meta.ZkCluster().ZkConnectAddr(),
+		"zk":    meta.Default.ZkCluster().ZkConnectAddr(),
 		"topic": meta.KafkaTopic(appid, topic, ver),
 	}
 	b, _ := json.Marshal(out)
@@ -71,7 +71,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	reset = params["reset"]
 	appid = r.Header.Get("Appid")
 
-	if !this.meta.AuthSub(appid, r.Header.Get("Subkey"), topic) {
+	if !meta.Default.AuthSub(appid, r.Header.Get("Subkey"), topic) {
 		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} auth fail",
 			r.RemoteAddr, topic, ver, group, limit)
 

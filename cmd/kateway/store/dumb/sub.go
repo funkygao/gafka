@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/Shopify/sarama"
-	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 )
 
@@ -28,8 +27,8 @@ type subStore struct {
 	fetcher *consumerFetcher
 }
 
-func NewSubStore(meta meta.MetaStore, wg *sync.WaitGroup,
-	shutdownCh <-chan struct{}, closedConnCh <-chan string, debug bool) *subStore {
+func NewSubStore(wg *sync.WaitGroup, shutdownCh <-chan struct{},
+	closedConnCh <-chan string, debug bool) *subStore {
 	return &subStore{
 		fetcher: &consumerFetcher{
 			ch: make(chan *sarama.ConsumerMessage, 1000),

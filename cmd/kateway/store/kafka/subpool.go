@@ -5,23 +5,21 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 	"github.com/wvanbergen/kafka/consumergroup"
 )
 
 type subPool struct {
-	store *subStore
-
 	clientMap     map[string]*consumergroup.ConsumerGroup // a client can only sub 1 topic
 	clientMapLock sync.RWMutex                            // TODO the lock is too big
 
 	rebalancing bool // FIXME 1 topic rebalance should not affect other topics
 }
 
-func newSubPool(store *subStore) *subPool {
+func newSubPool() *subPool {
 	return &subPool{
-		store:     store,
 		clientMap: make(map[string]*consumergroup.ConsumerGroup),
 	}
 }
@@ -51,8 +49,8 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	}
 
 	// FIXME what if client wants to consumer a non-existent topic?
-	onlineN := this.store.meta.OnlineConsumersCount(topic, group)
-	partitionN := len(this.store.meta.Partitions(topic))
+	onlineN := meta.Default.OnlineConsumersCount(topic, group)
+	partitionN := len(meta.Default.Partitions(topic))
 	if onlineN >= partitionN {
 		log.Debug("online:%d>=partitions:%d, current clients: %+v, remote addr: %s",
 			onlineN, partitionN, this.clientMap, remoteAddr)
@@ -78,13 +76,13 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	cf.Consumer.Return.Errors = true
 	// time to wait for all the offsets for a partition to be processed after stopping to consume from it.
 	cf.Offsets.ProcessingTimeout = time.Second * 10 // TODO
-	cf.Zookeeper.Chroot = this.store.meta.ZkChroot()
+	cf.Zookeeper.Chroot = meta.Default.ZkChroot()
 	for i := 0; i < 3; i++ {
 		// join group will async register zk owners znodes
 		// so, if many client concurrently connects to kateway, will not
 		// strictly throw ErrTooManyConsumers
 		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
-			this.store.meta.ZkAddrs(), cf)
+			meta.Default.ZkAddrs(), cf)
 		if err == nil {
 			this.clientMap[remoteAddr] = cg
 			break

@@ -10,6 +10,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/cmd/kateway/store/dumb"
 	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
@@ -29,8 +30,6 @@ type Gateway struct {
 	// openssl req -new -x509 -key key.pem -out cert.pem -days 3650
 	certFile string
 	keyFile  string
-
-	meta meta.MetaStore
 
 	pubServer *pubServer
 	subServer *subServer
@@ -59,7 +58,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		keyFile:     options.keyFile,
 	}
 
-	this.meta = meta.NewZkMetaStore(options.zone, options.cluster, metaRefreshInterval)
+	meta.Default = zkmeta.NewZkMetaStore(options.zone, options.cluster, metaRefreshInterval)
 	this.guard = newGuard(this)
 	this.breaker = &breaker.Consecutive{
 		FailureAllowance: 10,
@@ -73,12 +72,12 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 		switch options.store {
 		case "kafka":
-			store.DefaultPubStore = kafka.NewPubStore(this.meta,
-				&this.wg, this.shutdownCh, options.debug)
+			store.DefaultPubStore = kafka.NewPubStore(&this.wg, this.shutdownCh,
+				options.debug)
 
 		case "dumb":
-			store.DefaultPubStore = dumb.NewPubStore(this.meta,
-				&this.wg, this.shutdownCh, options.debug)
+			store.DefaultPubStore = dumb.NewPubStore(&this.wg, this.shutdownCh,
+				options.debug)
 		}
 
 	}
@@ -89,12 +88,12 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 		switch options.store {
 		case "kafka":
-			store.DefaultSubStore = kafka.NewSubStore(this.meta,
-				&this.wg, this.shutdownCh, this.subServer.closedConnCh, options.debug)
+			store.DefaultSubStore = kafka.NewSubStore(&this.wg, this.shutdownCh,
+				this.subServer.closedConnCh, options.debug)
 
 		case "dumb":
-			store.DefaultSubStore = dumb.NewSubStore(this.meta,
-				&this.wg, this.shutdownCh, this.subServer.closedConnCh, options.debug)
+			store.DefaultSubStore = dumb.NewSubStore(&this.wg, this.shutdownCh,
+				this.subServer.closedConnCh, options.debug)
 
 		}
 
@@ -113,7 +112,7 @@ func (this *Gateway) Start() (err error) {
 
 	this.startedAt = time.Now()
 
-	this.meta.Start()
+	meta.Default.Start()
 	log.Trace("meta store started")
 
 	this.guard.Start()
@@ -151,7 +150,7 @@ func (this *Gateway) ServeForever() {
 		this.wg.Wait()
 		log.Trace("all components shutdown complete")
 
-		this.meta.Stop()
+		meta.Default.Stop()
 	}
 
 }

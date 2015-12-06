@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka"
+	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/golib/set"
 	"github.com/gorilla/mux"
 )
@@ -97,7 +98,7 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request) {
 	this.writeKatewayHeader(w)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	b, _ := json.Marshal(this.meta.Clusters())
+	b, _ := json.Marshal(meta.Default.Clusters())
 	w.Write(b)
 }
 

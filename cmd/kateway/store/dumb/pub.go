@@ -2,15 +2,12 @@ package dumb
 
 import (
 	"sync"
-
-	"github.com/funkygao/gafka/cmd/kateway/meta"
 )
 
 type pubStore struct {
 }
 
-func NewPubStore(meta meta.MetaStore, wg *sync.WaitGroup,
-	shutdownCh <-chan struct{}, debug bool) *pubStore {
+func NewPubStore(wg *sync.WaitGroup, shutdownCh <-chan struct{}, debug bool) *pubStore {
 	return &pubStore{}
 }
 
