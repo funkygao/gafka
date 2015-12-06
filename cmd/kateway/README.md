@@ -145,6 +145,7 @@ A REST gateway for kafka that supports Pub and Sub.
 - [X] panic: sync: negative WaitGroup counter
 - [ ] ErrTooManyConsumers not triggered
 - [ ] race conditions
+- [ ] pub listener closes silently in high load case
 
 ### EdgeCase
 

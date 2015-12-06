@@ -6,6 +6,9 @@ deps:
 build:
 	@go build
 
+bench:build
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -cluster me -pubhttp :9191 -subhttp :9192 -level info -store kafka -id 1 
+
 kafka:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -cluster me -pubhttp :9191 -subhttp :9192 -level debug -debug -store kafka -id 1 
 
@@ -23,3 +26,4 @@ consul:build
 prof:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -cluster me -pubhttp :9191 -subhttp :9192 -level debug -debug -store kafka -id 1 -memprof -cpuprof -blockprof
 	go tool pprof kateway prof/cpu.pprof
+

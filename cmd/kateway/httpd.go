@@ -2,10 +2,12 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"sync"
 	//"time"
+	"os"
 
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
@@ -68,7 +70,8 @@ func (this *webServer) Start() {
 	if this.httpServer != nil {
 		this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, err.Error())
+			os.Exit(1)
 		}
 
 		this.httpListener = LimitListener(this.httpListener, this.maxClients)
