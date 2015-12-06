@@ -16,11 +16,13 @@ import (
 var (
 	mode  string
 	loops int
+	async bool
 )
 
 func main() {
 	flag.IntVar(&loops, "loops", 1000, "loops in each thread")
 	flag.StringVar(&mode, "mode", "gw", "<gw|kafka|http>")
+	flag.BoolVar(&async, "async", false, "async pub")
 	flag.Parse()
 
 	switch mode {
@@ -29,7 +31,11 @@ func main() {
 		stress.RunStress(pubGatewayLoop)
 
 	case "kafka":
-		stress.RunStress(pubKafkaLoop)
+		if async {
+			stress.RunStress(pubKafkaAsyncLoop)
+		} else {
+			stress.RunStress(pubKafkaLoop)
+		}
 
 	case "http":
 		http.DefaultClient.Timeout = time.Second * 30
@@ -85,6 +91,32 @@ func pubKafkaLoop(seq int) {
 
 }
 
+func pubKafkaAsyncLoop(seq int) {
+	cf := sarama.NewConfig()
+	cf.Producer.RequiredAcks = sarama.WaitForLocal
+	cf.Producer.Partitioner = sarama.NewHashPartitioner
+	cf.Producer.Timeout = time.Second
+	//cf.Producer.Compression = sarama.CompressionSnappy
+	cf.Producer.Retry.Max = 3
+	producer, err := sarama.NewAsyncProducer([]string{"localhost:9092"}, cf)
+	if err != nil {
+		stress.IncCounter("fail", 1)
+		log.Println(err)
+		return
+	}
+
+	defer producer.Close()
+	msg := "hello world"
+	for i := 0; i < loops; i++ {
+		producer.Input() <- &sarama.ProducerMessage{
+			Topic: "foobar",
+			Value: sarama.StringEncoder(msg),
+		}
+		stress.IncCounter("ok", 1)
+	}
+
+}
+
 func createHttpClient() *http.Client {
 	timeout := 3 * time.Second
 	httpClient := &http.Client{
@@ -103,9 +135,12 @@ func createHttpClient() *http.Client {
 
 func pubGatewayLoop(seq int) {
 	httpClient := createHttpClient()
+	url := "http://localhost:9191/topics/v1/foobar?"
+	if async {
+		url += "async=1"
+	}
 	for n := 0; n < loops; n++ {
-		req, err := http.NewRequest("POST",
-			"http://localhost:9191/topics/v1/foobar?ack=2&timeout=1&retry=3",
+		req, err := http.NewRequest("POST", url,
 			bytes.NewBuffer([]byte("m=hello world")))
 		if err != nil {
 			log.Fatalf("Error Occured. %+v", err)
