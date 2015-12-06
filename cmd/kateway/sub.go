@@ -40,7 +40,7 @@ func (this *Gateway) subStoreHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-// /topics/{ver}/{topic}/{group}?offset=n&limit=1
+// /topics/{ver}/{topic}/{group}?offset=n&limit=1&reset=newest
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	if this.breaker.Open() {
 		this.writeBreakerOpen(w)
@@ -51,6 +51,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		topic string
 		ver   string
 		appid string
+		reset string
 		group string
 		err   error
 	)
@@ -65,6 +66,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	ver = params["ver"]
 	topic = params["topic"]
 	group = params["group"]
+	reset = params["reset"]
 	appid = r.Header.Get("Appid")
 
 	if !this.meta.AuthSub(appid, r.Header.Get("Subkey"), topic) {
@@ -80,7 +82,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 
 	topic = kafkaTopic(appid, topic, ver)
 	// pick a consumer from the consumer group
-	fetcher, err := this.subStore.Fetch(options.cluster, topic, group, r.RemoteAddr)
+	fetcher, err := this.subStore.Fetch(options.cluster, topic, group, r.RemoteAddr, reset)
 	if err != nil {
 		if isBrokerError(err) {
 			// broker error

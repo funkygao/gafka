@@ -31,7 +31,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	params := mux.Vars(r)
-	//ver := params["ver"] // TODO
 	topic = params["topic"]
 	ver = params["ver"]
 	appid = r.Header.Get("Appid")

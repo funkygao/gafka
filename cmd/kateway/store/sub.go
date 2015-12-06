@@ -14,5 +14,5 @@ type SubStore interface {
 	Start() error
 
 	KillClient(remoteAddr string)
-	Fetch(cluster, topic, group, remoteAddr string) (Fetcher, error)
+	Fetch(cluster, topic, group, remoteAddr, reset string) (Fetcher, error)
 }

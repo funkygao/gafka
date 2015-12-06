@@ -27,7 +27,7 @@ func newSubPool(store *subStore) *subPool {
 }
 
 func (this *subPool) PickConsumerGroup(cluster, topic, group,
-	remoteAddr string) (cg *consumergroup.ConsumerGroup, err error) {
+	remoteAddr, reset string) (cg *consumergroup.ConsumerGroup, err error) {
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 
@@ -63,9 +63,19 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	// cache miss, create the consumer group for this client
 	cf := consumergroup.NewConfig()
 	cf.ChannelBufferSize = 0
-	cf.Offsets.Initial = sarama.OffsetOldest
-	cf.Consumer.Return.Errors = true
+	switch reset {
+	case "newest":
+		cf.Offsets.ResetOffsets = true
+		cf.Offsets.Initial = sarama.OffsetNewest
+	case "oldest":
+		cf.Offsets.ResetOffsets = true
+		cf.Offsets.Initial = sarama.OffsetOldest
+	default:
+		cf.Offsets.Initial = sarama.OffsetOldest
+	}
+
 	cf.Offsets.CommitInterval = time.Minute // TODO
+	cf.Consumer.Return.Errors = true
 	// time to wait for all the offsets for a partition to be processed after stopping to consume from it.
 	cf.Offsets.ProcessingTimeout = time.Second * 10 // TODO
 	cf.Zookeeper.Chroot = this.store.meta.ZkChroot()

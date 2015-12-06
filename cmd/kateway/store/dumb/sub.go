@@ -54,6 +54,6 @@ func (this *subStore) Start() (err error) {
 func (this *subStore) KillClient(remoteAddr string) {
 
 }
-func (this *subStore) Fetch(cluster, topic, group, remoteAddr string) (store.Fetcher, error) {
+func (this *subStore) Fetch(cluster, topic, group, remoteAddr, reset string) (store.Fetcher, error) {
 	return this.fetcher, nil
 }
