@@ -93,6 +93,9 @@ func pubKafkaLoop(seq int) {
 
 func pubKafkaAsyncLoop(seq int) {
 	cf := sarama.NewConfig()
+	cf.Producer.Flush.Frequency = time.Second * 10
+	cf.Producer.Flush.Messages = 1000
+	cf.Producer.Flush.MaxMessages = 1000
 	cf.Producer.RequiredAcks = sarama.WaitForLocal
 	cf.Producer.Partitioner = sarama.NewHashPartitioner
 	cf.Producer.Timeout = time.Second
