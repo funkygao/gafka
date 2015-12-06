@@ -11,6 +11,8 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
+	"github.com/funkygao/gafka/cmd/kateway/registry"
+	"github.com/funkygao/gafka/cmd/kateway/registry/consul"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/cmd/kateway/store/dumb"
 	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
@@ -56,6 +58,19 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		leakyBucket: ratelimiter.NewLeakyBucket(1000*60, time.Minute),
 		certFile:    options.certFile,
 		keyFile:     options.keyFile,
+	}
+
+	if options.consulAddr != "" {
+		var err error
+		registry.Default, err = consul.NewBackend(&ctx.Consul{
+			Addr:          options.consulAddr,
+			ServiceName:   "kateway",
+			CheckInterval: time.Second * 10,
+			CheckTimeout:  time.Second * 30,
+		}, "myaddr") // TODO multiple service addr
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	meta.Default = zkmeta.NewZkMetaStore(options.zone, options.cluster, metaRefreshInterval)
@@ -131,6 +146,12 @@ func (this *Gateway) Start() (err error) {
 		this.subServer.Start()
 	}
 
+	if options.consulAddr != "" {
+		if err := registry.Default.Register(); err != nil {
+			panic(err)
+		}
+	}
+
 	log.Info("gateway[%s:%s] ready", ctx.Hostname(), this.id)
 
 	return nil
@@ -147,6 +168,10 @@ func (this *Gateway) Stop() {
 func (this *Gateway) ServeForever() {
 	select {
 	case <-this.shutdownCh:
+		if options.consulAddr != "" {
+			registry.Default.Deregister()
+		}
+
 		this.wg.Wait()
 		log.Trace("all components shutdown complete")
 
