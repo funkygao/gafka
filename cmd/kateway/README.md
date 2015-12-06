@@ -125,7 +125,9 @@ A REST gateway for kafka that supports Pub and Sub.
 - [ ] plugin
 - [ ] mem pool 
 - [ ] logging
+- [ ] add more benchmark tests
 - [ ] offset testing
+- [ ] simulate bad network environment for testing
 - [ ] metrics by topic
 - [ ] https://github.com/gin-gonic/gin
 - [ ] registers itself in consul

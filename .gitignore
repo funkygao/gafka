@@ -26,6 +26,8 @@ _testmain.go
 .DS_Store
 *.swp
 cmd/kateway/kateway
+cmd/kateway/prof.cpu
+cmd/kateway/prof.mem
 cmd/kateway/bench/bench
 cmd/kateway/executor/executor
 panic.dump
