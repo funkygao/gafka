@@ -21,7 +21,7 @@ func init() {
 }
 
 func main() {
-	c := api.NewClient(nil)
+	c := api.NewClient("demo", nil)
 	c.Connect(addr)
 	i := 0
 	err := c.Subscribe("ver", "foobar", group, func(statusCode int, msg []byte) error {

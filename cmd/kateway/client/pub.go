@@ -23,7 +23,7 @@ func init() {
 }
 
 func main() {
-	c := api.NewClient(nil)
+	c := api.NewClient("demo", nil)
 	c.Connect(addr)
 	for i := 0; i < n; i++ {
 		p, o, e := c.Publish("v1", "foobar", "", []byte("hello world"))
