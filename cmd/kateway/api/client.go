@@ -23,10 +23,11 @@ type Client struct {
 	addr string
 }
 
-func NewClient(cf *Config) *Client {
+func NewClient(appId string, cf *Config) *Client {
 	if cf == nil {
 		cf = DefaultConfig()
 	}
+	cf.AppId = appId
 	return &Client{
 		cf: cf,
 	}

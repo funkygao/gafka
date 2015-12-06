@@ -33,46 +33,52 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
+// gk topics -z local -c me -add _executor._kateway.v1 -replicas 1
+// curl -i -XPOST -H "Pubkey: mypubkey" -d '{"cmd":"createTopic", "topic": "hello", "appid": "xx", "ver": "v1"}' "http://localhost:9191/topics/v1/_kateway"
+
 func main() {
 	ctx.LoadConfig(cf)
 
-	// curl -i -XPOST -H "Pubkey: mypubkey" -d '{"cmd":"createTopic", "topic": "hello"}' "http://10.1.82.201:9191/topics/v1/_kateway"
 	m := meta.NewZkMetaStore(zone, cluster, 0)
 
 	cf := api.DefaultConfig()
 	cf.Debug = true
-	c := api.NewClient(cf)
+	c := api.NewClient("_executor", cf)
 	c.Connect(addr)
 	for {
-		err := c.Subscribe("v1", "_kateway", "_addtopic", func(statusCode int, cmd []byte) (err error) {
-			if statusCode != http.StatusOK {
-				log.Printf("err[%d] backoff 10s: %s", statusCode, string(cmd))
-				time.Sleep(time.Second * 10)
+		err := c.Subscribe("v1", "_kateway", "_addtopic",
+			func(statusCode int, cmd []byte) (err error) {
+				if statusCode != http.StatusOK {
+					log.Printf("err[%d] backoff 10s: %s", statusCode, string(cmd))
+					time.Sleep(time.Second * 10)
+					return nil
+				}
+
+				v := make(map[string]interface{})
+				err = json.Unmarshal(cmd, &v)
+				if err != nil {
+					log.Printf("%s: %v", string(cmd), err)
+					return nil
+				}
+
+				topic := v["topic"].(string)
+				appid := v["appid"].(string)
+				ver := v["ver"].(string)
+				topic = meta.KafkaTopic(appid, topic, ver)
+				var lines []string
+				lines, err = m.ZkCluster().AddTopic(topic, 1, 1) // TODO
+				if err != nil {
+					log.Printf("add: %v", err)
+					time.Sleep(time.Second * 10)
+					return nil
+				}
+
+				for _, l := range lines {
+					log.Printf("add topic[%s]: %s", topic, l)
+				}
+
 				return nil
-			}
-
-			v := make(map[string]interface{})
-			err = json.Unmarshal(cmd, &v)
-			if err != nil {
-				log.Printf("%s: %v", string(cmd), err)
-				return nil
-			}
-
-			topic := v["topic"].(string)
-			var lines []string
-			lines, err = m.ZkCluster().AddTopic(topic, 1, 1) // TODO
-			if err != nil {
-				log.Printf("add: %v", err)
-				time.Sleep(time.Second * 10)
-				return nil
-			}
-
-			for _, l := range lines {
-				log.Printf("add topic[%s]: %s", topic, l)
-			}
-
-			return nil
-		})
+			})
 
 		log.Printf("backoff 10s for: %s", err)
 		time.Sleep(time.Second * 10)

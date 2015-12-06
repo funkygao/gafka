@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
@@ -29,7 +30,7 @@ func (this *Gateway) subStoreHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	topic = kafkaTopic(appid, topic, ver)
+	topic = meta.KafkaTopic(appid, topic, ver)
 	this.writeKatewayHeader(w)
 	var out = map[string]string{
 		"store": "kafka",
@@ -80,7 +81,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	log.Trace("consumer %s{topic:%s, ver:%s, group:%s, limit:%d}",
 		r.RemoteAddr, topic, ver, group, limit)
 
-	topic = kafkaTopic(appid, topic, ver)
+	topic = meta.KafkaTopic(appid, topic, ver)
 	// pick a consumer from the consumer group
 	fetcher, err := this.subStore.Fetch(options.cluster, topic, group, r.RemoteAddr, reset)
 	if err != nil {
