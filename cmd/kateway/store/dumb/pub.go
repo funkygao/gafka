@@ -9,7 +9,7 @@ import (
 type pubStore struct {
 }
 
-func NewPubStore(meta meta.MetaStore, hostname string, wg *sync.WaitGroup,
+func NewPubStore(meta meta.MetaStore, wg *sync.WaitGroup,
 	shutdownCh <-chan struct{}, debug bool) *pubStore {
 	return &pubStore{}
 }

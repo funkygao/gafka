@@ -2,92 +2,13 @@ package ctx
 
 import (
 	"fmt"
-	"io/ioutil"
+	"net"
 	"os"
-	"os/user"
-	"path/filepath"
-	"strings"
-
-	jsconf "github.com/funkygao/jsconf"
 )
 
-func LoadConfig(fn string) {
-	cf, err := jsconf.Load(fn)
-	if err != nil {
-		panic(err)
-	}
-
-	conf = new(config)
-	conf.kafkaHome = cf.String("kafka_home", "")
-	conf.logLevel = cf.String("loglevel", "info")
-	conf.influxdbHost = cf.String("influxdb_host", "")
-	conf.zones = make(map[string]string)
-	conf.tunnels = make(map[string]string)
-	for i := 0; i < len(cf.List("zones", nil)); i++ {
-		section, err := cf.Section(fmt.Sprintf("zones[%d]", i))
-		if err != nil {
-			panic(err)
-		}
-
-		z := new(zone)
-		z.loadConfig(section)
-		conf.zones[z.name] = z.zk
-		conf.tunnels[z.name] = z.tunnel
-	}
-
-}
-
-func LoadFromHome() {
-	const defaultConfig = `
-{
-    zones: [
-        {
-            name: "sit"
-            zk: "10.77.144.87:10181,10.77.144.88:10181,10.77.144.89:10181"
-            tunnel: "gaopeng27@10.77.130.14"
-        }
-        {
-            name: "test"
-            zk: "10.77.144.101:10181,10.77.144.132:10181,10.77.144.182:10181"
-            tunnel: "gaopeng27@10.77.130.14"
-        }      
-        {
-            name: "pre"
-            zk: "10.213.33.154:2181,10.213.42.48:2181,10.213.42.49:2181"
-            tunnel: "gaopeng27@10.209.11.11"
-        }  
-        {
-            name: "prod"
-            zk: "10.209.33.69:2181,10.209.37.19:2181,10.209.37.68:2181"
-            tunnel: "gaopeng27@10.209.11.11"
-        }
-    ]
-
-    kafka_home: "/opt/kafka_2.10-0.8.1.1"
-    loglevel: "info"
-}
-`
-	var configFile string
-	if usr, err := user.Current(); err == nil {
-		configFile = filepath.Join(usr.HomeDir, ".gafka.cf")
-	} else {
-		panic(err)
-	}
-
-	_, err := os.Stat(configFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// create the config file on the fly
-			if e := ioutil.WriteFile(configFile,
-				[]byte(strings.TrimSpace(defaultConfig)), 0644); e != nil {
-				panic(e)
-			}
-		} else {
-			panic(err)
-		}
-	}
-
-	LoadConfig(configFile)
+func Hostname() string {
+	ensureLogLoaded()
+	return conf.hostname
 }
 
 func LogLevel() string {
@@ -131,4 +52,20 @@ func ZoneZkAddrs(zone string) (zkAddrs string) {
 	fmt.Printf("zone[%s] undefined", zone)
 	os.Exit(1)
 	return ""
+}
+
+// LocalIP tries to determine a non-loopback address for the local machine
+func LocalIP() (net.IP, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil, err
+	}
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && ipnet.IP.IsGlobalUnicast() {
+			if ipnet.IP.To4() != nil || ipnet.IP.To16() != nil {
+				return ipnet.IP, nil
+			}
+		}
+	}
+	return nil, nil
 }

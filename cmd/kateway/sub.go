@@ -84,7 +84,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 
 	rawTopic := meta.KafkaTopic(appid, topic, ver)
 	// pick a consumer from the consumer group
-	fetcher, err := this.subStore.Fetch(options.cluster, rawTopic, group, r.RemoteAddr, reset)
+	fetcher, err := store.DefaultSubStore.Fetch(options.cluster, rawTopic, group, r.RemoteAddr, reset)
 	if err != nil {
 		if isBrokerError(err) {
 			// broker error
@@ -103,7 +103,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		// broken pipe, io timeout
 		log.Error("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} get killed: %v",
 			r.RemoteAddr, topic, ver, group, limit, err)
-		go this.subStore.KillClient(r.RemoteAddr) // wait cf.ProcessingTimeout
+		go store.DefaultSubStore.KillClient(r.RemoteAddr) // wait cf.ProcessingTimeout
 	}
 
 }

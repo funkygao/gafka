@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/cmd/kateway/store/dumb"
 	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/breaker"
 	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/signal"
@@ -22,7 +23,6 @@ import (
 // Gateway is a distributed kafka Pub/Sub HTTP endpoint.
 type Gateway struct {
 	id        string
-	hostname  string
 	startedAt time.Time
 
 	// openssl genrsa -out key.pem 2048
@@ -33,10 +33,7 @@ type Gateway struct {
 	meta meta.MetaStore
 
 	pubServer *pubServer
-	pubStore  store.PubStore
-
 	subServer *subServer
-	subStore  store.SubStore
 
 	guard *guard
 
@@ -68,7 +65,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		FailureAllowance: 10,
 		RetryTimeout:     time.Second * 10,
 	}
-	this.hostname, _ = os.Hostname()
 
 	if options.pubHttpAddr != "" || options.pubHttpsAddr != "" {
 		this.pubServer = newPubServer(options.pubHttpAddr, options.pubHttpsAddr,
@@ -77,10 +73,11 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 		switch options.store {
 		case "kafka":
-			this.pubStore = kafka.NewPubStore(this.meta, this.hostname,
+			store.DefaultPubStore = kafka.NewPubStore(this.meta,
 				&this.wg, this.shutdownCh, options.debug)
+
 		case "dumb":
-			this.pubStore = dumb.NewPubStore(this.meta, this.hostname,
+			store.DefaultPubStore = dumb.NewPubStore(this.meta,
 				&this.wg, this.shutdownCh, options.debug)
 		}
 
@@ -92,11 +89,13 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 		switch options.store {
 		case "kafka":
-			this.subStore = kafka.NewSubStore(this.meta, this.hostname,
+			store.DefaultSubStore = kafka.NewSubStore(this.meta,
 				&this.wg, this.shutdownCh, this.subServer.closedConnCh, options.debug)
+
 		case "dumb":
-			this.subStore = dumb.NewSubStore(this.meta, this.hostname,
+			store.DefaultSubStore = dumb.NewSubStore(this.meta,
 				&this.wg, this.shutdownCh, this.subServer.closedConnCh, options.debug)
+
 		}
 
 	}
@@ -123,19 +122,17 @@ func (this *Gateway) Start() (err error) {
 	this.buildRouting()
 
 	if this.pubServer != nil {
-		this.pubStore.Start()
+		store.DefaultPubStore.Start()
 
 		this.pubServer.Start()
 	}
 	if this.subServer != nil {
-		this.subStore.Start()
+		store.DefaultSubStore.Start()
 
 		this.subServer.Start()
 	}
 
-	this.registerInZk()
-
-	log.Info("gateway[%s:%s] ready", this.hostname, this.id)
+	log.Info("gateway[%s:%s] ready", ctx.Hostname(), this.id)
 
 	return nil
 }

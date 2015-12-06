@@ -16,3 +16,5 @@ type SubStore interface {
 	KillClient(remoteAddr string)
 	Fetch(cluster, topic, group, remoteAddr, reset string) (Fetcher, error)
 }
+
+var DefaultSubStore SubStore

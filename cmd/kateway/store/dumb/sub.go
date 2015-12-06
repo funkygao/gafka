@@ -28,7 +28,7 @@ type subStore struct {
 	fetcher *consumerFetcher
 }
 
-func NewSubStore(meta meta.MetaStore, hostname string, wg *sync.WaitGroup,
+func NewSubStore(meta meta.MetaStore, wg *sync.WaitGroup,
 	shutdownCh <-chan struct{}, closedConnCh <-chan string, debug bool) *subStore {
 	return &subStore{
 		fetcher: &consumerFetcher{

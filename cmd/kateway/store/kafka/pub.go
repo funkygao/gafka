@@ -8,6 +8,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
 	log "github.com/funkygao/log4go"
 )
@@ -21,7 +22,7 @@ type pubStore struct {
 	pubPool *pubPool // FIXME maybe we should have another pool for async
 }
 
-func NewPubStore(meta meta.MetaStore, hostname string, wg *sync.WaitGroup,
+func NewPubStore(meta meta.MetaStore, wg *sync.WaitGroup,
 	shutdownCh <-chan struct{}, debug bool) *pubStore {
 	if debug {
 		sarama.Logger = l.New(os.Stdout, color.Green("[Sarama]"),
@@ -30,7 +31,7 @@ func NewPubStore(meta meta.MetaStore, hostname string, wg *sync.WaitGroup,
 
 	return &pubStore{
 		meta:       meta,
-		hostname:   hostname,
+		hostname:   ctx.Hostname(),
 		wg:         wg,
 		shutdownCh: shutdownCh,
 	}

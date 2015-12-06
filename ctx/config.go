@@ -13,6 +13,8 @@ var (
 )
 
 type config struct {
+	hostname string // not config, but runtime
+
 	kafkaHome    string
 	logLevel     string
 	influxdbHost string

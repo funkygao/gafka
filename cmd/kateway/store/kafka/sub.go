@@ -8,6 +8,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
 	log "github.com/funkygao/log4go"
 	"github.com/wvanbergen/kafka/consumergroup"
@@ -28,7 +29,7 @@ type subStore struct {
 	subPool *subPool
 }
 
-func NewSubStore(meta meta.MetaStore, hostname string, wg *sync.WaitGroup,
+func NewSubStore(meta meta.MetaStore, wg *sync.WaitGroup,
 	shutdownCh <-chan struct{}, closedConnCh <-chan string, debug bool) *subStore {
 	if debug {
 		sarama.Logger = l.New(os.Stdout, color.Blue("[Sarama]"),
@@ -37,7 +38,7 @@ func NewSubStore(meta meta.MetaStore, hostname string, wg *sync.WaitGroup,
 
 	return &subStore{
 		meta:         meta,
-		hostname:     hostname,
+		hostname:     ctx.Hostname(),
 		wg:           wg,
 		shutdownCh:   shutdownCh,
 		closedConnCh: closedConnCh,

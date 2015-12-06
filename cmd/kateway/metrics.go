@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/log4go"
 	"github.com/rcrowley/go-metrics"
 )
@@ -81,7 +82,7 @@ func newPubMetrics(gw *Gateway) *pubMetrics {
 
 	// influxdb reporter
 	if options.influxServer != "" {
-		go InfluxDB(this.gw.hostname, metrics.DefaultRegistry, options.reporterInterval,
+		go InfluxDB(ctx.Hostname(), metrics.DefaultRegistry, options.reporterInterval,
 			options.influxServer, "kateway", "", "")
 	}
 

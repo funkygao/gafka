@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
 )
@@ -59,9 +60,9 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	this.pubMetrics.PubQps.Mark(1)
 	this.pubMetrics.PubSize.Mark(int64(len(rawMsg)))
 	rawTopic := meta.KafkaTopic(appid, topic, ver)
-	pubMethod := this.pubStore.SyncPub
+	pubMethod := store.DefaultPubStore.SyncPub
 	if async {
-		pubMethod = this.pubStore.AsyncPub
+		pubMethod = store.DefaultPubStore.AsyncPub
 	}
 	partition, offset, err := pubMethod(options.cluster, rawTopic, key, rawMsg) // FIXME
 	if err != nil {
