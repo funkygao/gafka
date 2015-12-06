@@ -67,7 +67,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 			ServiceName:   "kateway",
 			CheckInterval: time.Second * 10,
 			CheckTimeout:  time.Second * 30,
-		}, "myaddr") // TODO multiple service addr
+		}, ":9191") // TODO multiple service addr
 		if err != nil {
 			panic(err)
 		}

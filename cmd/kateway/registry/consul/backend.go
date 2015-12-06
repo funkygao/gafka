@@ -45,13 +45,13 @@ func (b *be) Register() error {
 		return err
 	}
 
-	log.Printf("[INFO] consul: Registered fabio as %q", service.ID)
+	log.Printf("[INFO] consul: Registered kateway as %q", service.ID)
 	b.serviceID = service.ID
 	return nil
 }
 
 func (b *be) Deregister() error {
-	log.Printf("[INFO] consul: Deregistering fabio")
+	log.Printf("[INFO] consul: Deregistering kateway")
 	return b.c.Agent().ServiceDeregister(b.serviceID)
 }
 
