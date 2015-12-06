@@ -7,6 +7,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+
+	"github.com/funkygao/gafka/mpool"
 )
 
 type SubHandler func(statusCode int, msg []byte) error
@@ -58,8 +60,8 @@ func (this *Client) Close() {
 // TODO async
 func (this *Client) Publish(ver, topic, key string, msg []byte) (partition int,
 	offset int64, err error) {
-	buf := mpoolGet()
-	defer mpoolPut(buf)
+	buf := mpool.BytesBufferGet()
+	defer mpool.BytesBufferPut(buf)
 
 	buf.Reset()
 	buf.Write(msg)
