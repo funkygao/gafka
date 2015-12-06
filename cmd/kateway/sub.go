@@ -31,11 +31,11 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	topic = meta.KafkaTopic(appid, topic, ver)
 	this.writeKatewayHeader(w)
 	var out = map[string]string{
 		"store": "kafka",
 		"zk":    this.meta.ZkCluster().ZkConnectAddr(),
+		"topic": meta.KafkaTopic(appid, topic, ver),
 	}
 	b, _ := json.Marshal(out)
 	w.Header().Set("Content-Type", "application/json")
@@ -82,9 +82,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	log.Trace("consumer %s{topic:%s, ver:%s, group:%s, limit:%d}",
 		r.RemoteAddr, topic, ver, group, limit)
 
-	topic = meta.KafkaTopic(appid, topic, ver)
+	rawTopic := meta.KafkaTopic(appid, topic, ver)
 	// pick a consumer from the consumer group
-	fetcher, err := this.subStore.Fetch(options.cluster, topic, group, r.RemoteAddr, reset)
+	fetcher, err := this.subStore.Fetch(options.cluster, rawTopic, group, r.RemoteAddr, reset)
 	if err != nil {
 		if isBrokerError(err) {
 			// broker error
