@@ -11,8 +11,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// /topics/{ver}/{topic}/store
-func (this *Gateway) subStoreHandler(w http.ResponseWriter, r *http.Request) {
+// /topics/{ver}/{topic}/raw
+// tells client how to sub in raw mode: how to connect kafka
+func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		topic string
 		ver   string
