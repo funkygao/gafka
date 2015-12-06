@@ -77,10 +77,6 @@ func (this *ZkCluster) Partitions(topic string) []int32 {
 	return r
 }
 
-func (this *ZkCluster) cluserInfoPath() string {
-	return fmt.Sprintf("%s/%s", clusterInfoRoot, this.name)
-}
-
 func (this *ZkCluster) writeInfo(zc ZkCluster) error {
 	data, err := json.Marshal(zc)
 	this.zone.swallow(err)

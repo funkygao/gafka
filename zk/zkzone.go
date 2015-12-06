@@ -135,6 +135,9 @@ func (this *ZkZone) Connect() (err error) {
 func (this *ZkZone) RegisterCluster(name, path string) error {
 	this.connectIfNeccessary()
 
+	// ensure cluster root exists
+	this.createZnode(clusterRoot, []byte(""))
+
 	clusterZkPath := clusterPath(name)
 	err := this.createZnode(clusterPath(name), []byte(path))
 	if err == nil {

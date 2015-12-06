@@ -28,6 +28,10 @@ func (this *ZkCluster) controllerPath() string {
 	return this.path + ControllerPath
 }
 
+func (this *ZkCluster) cluserInfoPath() string {
+	return fmt.Sprintf("%s/%s", clusterInfoRoot, this.name)
+}
+
 func (this *ZkCluster) controllerEpochPath() string {
 	return this.path + ControllerEpochPath
 }
