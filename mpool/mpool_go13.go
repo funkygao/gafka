@@ -9,7 +9,6 @@ import (
 
 var (
 	bsb sync.Pool
-	bs  sync.Pool
 )
 
 func init() {
@@ -17,10 +16,6 @@ func init() {
 		return &bytes.Buffer{}
 	}
 
-	bs.New = func() interface{} {
-		b := make([]byte, 32<<10) // FIXME what if Pub > 32K
-		return &b
-	}
 }
 
 func BytesBufferGet() *bytes.Buffer {
@@ -29,12 +24,4 @@ func BytesBufferGet() *bytes.Buffer {
 
 func BytesBufferPut(b *bytes.Buffer) {
 	bsb.Put(b)
-}
-
-func BytesGet() *[]byte {
-	return bs.Get().(*[]byte)
-}
-
-func BytesPut(b *[]byte) {
-	bs.Put(b)
 }

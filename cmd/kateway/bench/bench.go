@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -14,15 +15,19 @@ import (
 )
 
 var (
-	mode  string
-	loops int
-	async bool
+	mode          string
+	loops         int
+	suppressError bool
+	sz            int
+	async         bool
 )
 
 func main() {
 	flag.IntVar(&loops, "loops", 1000, "loops in each thread")
+	flag.IntVar(&loops, "size", 200, "each pub message size")
 	flag.StringVar(&mode, "mode", "gw", "<gw|kafka|http>")
 	flag.BoolVar(&async, "async", false, "async pub")
+	flag.BoolVar(&suppressError, "noerr", true, "suppress error output")
 	flag.Parse()
 
 	switch mode {
@@ -76,7 +81,7 @@ func pubKafkaLoop(seq int) {
 	}
 
 	defer producer.Close()
-	msg := "hello world"
+	msg := strings.Repeat("X", sz)
 	for i := 0; i < loops; i++ {
 		_, _, err := producer.SendMessage(&sarama.ProducerMessage{
 			Topic: "foobar",
@@ -109,7 +114,7 @@ func pubKafkaAsyncLoop(seq int) {
 	}
 
 	defer producer.Close()
-	msg := "hello world"
+	msg := strings.Repeat("X", sz)
 	for i := 0; i < loops; i++ {
 		producer.Input() <- &sarama.ProducerMessage{
 			Topic: "foobar",
@@ -144,7 +149,7 @@ func pubGatewayLoop(seq int) {
 	}
 	for n := 0; n < loops; n++ {
 		req, err := http.NewRequest("POST", url,
-			bytes.NewBuffer([]byte("m=hello world")))
+			bytes.NewBuffer([]byte(strings.Repeat("X", sz))))
 		if err != nil {
 			log.Fatalf("Error Occured. %+v", err)
 			stress.IncCounter("fail", 1)
@@ -157,9 +162,10 @@ func pubGatewayLoop(seq int) {
 		response, err := httpClient.Do(req)
 		if err != nil && response == nil {
 			stress.IncCounter("fail", 1)
-			log.Printf("Error sending request to API endpoint. %+v", err)
+			if !suppressError {
+				log.Printf("Error sending request to API endpoint. %+v", err)
+			}
 		} else {
-
 			if response.StatusCode != http.StatusOK {
 				stress.IncCounter("fail", 1)
 				return

@@ -9,6 +9,7 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
+	"github.com/funkygao/gafka/mpool"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
 )
@@ -46,17 +47,34 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the raw POST message
-	pr := io.LimitReader(r.Body, options.maxPubSize+1)
-	rawMsg, err := ioutil.ReadAll(pr) // TODO optimize
-	if err != nil {
-		this.writeBadRequest(w, ErrTooBigPubMessage)
-		return
+	lbr := io.LimitReader(r.Body, options.maxPubSize+1)
+	var (
+		rawMsg []byte
+		err    error
+	)
+	if false {
+		bufp := mpool.BytesBufferGet()
+		defer mpool.BytesBufferPut(bufp) // TODO defer is heavy
+
+		bufp.Reset()
+		if _, err = io.Copy(bufp, lbr); err != nil {
+			log.Error(err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		rawMsg = bufp.Bytes()
+	} else {
+		rawMsg, err = ioutil.ReadAll(lbr) // TODO optimize
+		if err != nil {
+			this.writeBadRequest(w, ErrTooBigPubMessage)
+			return
+		}
 	}
 
 	t1 := time.Now()
 	this.pubMetrics.PubConcurrent.Inc(1)
 
-	// TODO some topics use async put
 	this.pubMetrics.PubQps.Mark(1)
 	this.pubMetrics.PubSize.Mark(int64(len(rawMsg)))
 	rawTopic := meta.KafkaTopic(appid, topic, ver)
