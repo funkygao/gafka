@@ -5,5 +5,6 @@ type PubStore interface {
 
 	SyncPub(cluster string, topic, key string, data []byte) (partition int32,
 		offset int64, err error)
-	AsyncPub(cluster string, topic, key string, data []byte) (err error)
+	AsyncPub(cluster string, topic, key string, data []byte) (partition int32,
+		offset int64, err error)
 }

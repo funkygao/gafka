@@ -18,7 +18,7 @@ type pubStore struct {
 	hostname   string
 
 	meta    meta.MetaStore
-	pubPool *pubPool
+	pubPool *pubPool // FIXME maybe we should have another pool for async
 }
 
 func NewPubStore(meta meta.MetaStore, hostname string, wg *sync.WaitGroup,
@@ -99,13 +99,13 @@ func (this *pubStore) SyncPub(cluster string, topic, key string,
 }
 
 func (this *pubStore) AsyncPub(cluster string, topic, key string,
-	msg []byte) (err error) {
+	msg []byte) (partition int32, offset int64, err error) {
 	client, e := this.pubPool.Get()
 	if e != nil {
 		if client != nil {
 			client.Recycle()
 		}
-		return e
+		return 0, 0, e
 	}
 
 	var producer sarama.AsyncProducer

@@ -87,7 +87,7 @@ func (this *pubPool) kafkaClientFactory() (pool.Resource, error) {
 
 func (this *pubPool) initialize() {
 	this.pool = pool.NewResourcePool("kafka", this.kafkaClientFactory,
-		2, 2, 0, time.Second*10, time.Minute) // TODO
+		1000, 1000, 0, time.Second*10, time.Minute) // TODO
 }
 
 func (this *pubPool) Close() {

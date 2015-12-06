@@ -44,10 +44,12 @@ func (this *subStore) Start() (err error) {
 		Value: []byte("hello from dumb fetcher"),
 	}
 
-	for {
-		this.fetcher.ch <- msg
+	go func() {
+		for {
+			this.fetcher.ch <- msg
+		}
+	}()
 
-	}
 	return
 }
 

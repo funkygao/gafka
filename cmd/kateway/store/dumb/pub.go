@@ -24,7 +24,7 @@ func (this *pubStore) SyncPub(cluster string, topic, key string,
 }
 
 func (this *pubStore) AsyncPub(cluster string, topic, key string,
-	msg []byte) (err error) {
+	msg []byte) (partition int32, offset int64, err error) {
 
 	return
 }

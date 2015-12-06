@@ -55,6 +55,7 @@ func (this *Client) Close() {
 	//	this.conn.Transport.RoundTrip().Close() TODO
 }
 
+// TODO async
 func (this *Client) Publish(ver, topic, key string, msg []byte) (partition int,
 	offset int64, err error) {
 	buf := mpoolGet()

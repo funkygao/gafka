@@ -17,7 +17,7 @@ type pubResponse struct {
 	Offset    int64 `json:"offset"`
 }
 
-// /topics/{ver}/{topic}?key=xxx
+// /topics/{ver}/{topic}?key=xxx&async=1
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	if this.breaker.Open() {
 		this.writeBreakerOpen(w)
@@ -29,6 +29,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 		ver   string
 		key   string
 		appid string
+		async bool
 	)
 
 	params := mux.Vars(r)
@@ -36,6 +37,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	ver = params["ver"]
 	appid = r.Header.Get("Appid")
 	key = r.URL.Query().Get("key") // if key given, batched msg must belong to same key
+	async = r.URL.Query().Get("async") == "1"
 
 	if !this.meta.AuthPub(appid, r.Header.Get("Pubkey"), topic) {
 		this.writeAuthFailure(w)
@@ -57,7 +59,11 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	this.pubMetrics.PubQps.Mark(1)
 	this.pubMetrics.PubSize.Mark(int64(len(rawMsg)))
 	rawTopic := meta.KafkaTopic(appid, topic, ver)
-	partition, offset, err := this.pubStore.SyncPub(options.cluster, rawTopic, key, rawMsg) // FIXME
+	pubMethod := this.pubStore.SyncPub
+	if async {
+		pubMethod = this.pubStore.AsyncPub
+	}
+	partition, offset, err := pubMethod(options.cluster, rawTopic, key, rawMsg) // FIXME
 	if err != nil {
 		if isBrokerError(err) {
 			this.breaker.Fail()
