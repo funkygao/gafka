@@ -24,7 +24,7 @@ func init() {
 	flag.StringVar(&addr, "addr", "http://localhost:9192", "sub kateway addr")
 	flag.StringVar(&zone, "z", "", "zone name")
 	flag.StringVar(&cluster, "c", "", "cluster name")
-	flag.StringVar(&cf, "cf", "/etc/gafka.cf", "config file")
+	flag.StringVar(&cf, "cf", "/etc/kateway.cf", "config file")
 	flag.Parse()
 
 	if zone == "" || cluster == "" {

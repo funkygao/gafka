@@ -11,7 +11,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/mpool"
 	log "github.com/funkygao/log4go"
-	"github.com/gorilla/mux"
+	"github.com/julienschmidt/httprouter"
 )
 
 type pubResponse struct {
@@ -19,8 +19,9 @@ type pubResponse struct {
 	Offset    int64 `json:"offset"`
 }
 
-// /topics/{topic}/{ver}?key=mykey&async=1
-func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
+// /topics/:topic/:ver?key=mykey&async=1
+func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
 	if this.breaker.Open() {
 		this.writeBreakerOpen(w)
 		return
@@ -34,9 +35,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 		async bool
 	)
 
-	params := mux.Vars(r)
-	topic = params["topic"]
-	ver = params["ver"]
+	topic = params.ByName("topic")
+	ver = params.ByName("ver")
 	appid = r.Header.Get("Appid")
 	key = r.URL.Query().Get("key") // if key given, batched msg must belong to same key
 	async = r.URL.Query().Get("async") == "1"
