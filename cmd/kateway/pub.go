@@ -19,7 +19,7 @@ type pubResponse struct {
 	Offset    int64 `json:"offset"`
 }
 
-// /topics/{ver}/{topic}?key=xxx&async=1
+// /topics/{topic}/{ver}?key=mykey&async=1
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 	if this.breaker.Open() {
 		this.writeBreakerOpen(w)
@@ -71,6 +71,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	log.Debug("pub[%s] %s %+v %s", appid, r.RemoteAddr, params, string(rawMsg))
 
 	t1 := time.Now()
 	this.pubMetrics.PubConcurrent.Inc(1)

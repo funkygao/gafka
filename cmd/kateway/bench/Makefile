@@ -1,10 +1,10 @@
 bench:sync
 
 sync:bench.go
-	go run bench.go -neat
+	go run bench.go -neat -mode gw
 
 async:bench.go
-	go run bench.go -async -neat
+	go run bench.go -async -neat -mode gw
 
 kafka:bench.go
 	go run bench.go -neat -mode kafka

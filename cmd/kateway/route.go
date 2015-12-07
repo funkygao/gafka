@@ -41,9 +41,9 @@ func (this *Gateway) buildRouting() {
 			"/ping", "GET", this.pingHandler)
 
 		this.registerRoute(this.pubServer.Router(),
-			"/topics/{ver}/{topic}", "POST", this.pubHandler)
+			"/topics/{topic}/{ver}", "POST", this.pubHandler)
 		this.registerRoute(this.pubServer.Router(),
-			"/ws/topics/{ver}/{topic}", "POST", this.pubWsHandler)
+			"/ws/topics/{topic}/{ver}", "POST", this.pubWsHandler)
 	}
 
 	if this.subServer != nil {
@@ -59,11 +59,11 @@ func (this *Gateway) buildRouting() {
 			"/ping", "GET", this.pingHandler)
 
 		this.registerRoute(this.subServer.Router(),
-			"/topics/{ver}/{topic}/raw", "GET", this.subRawHandler)
+			"/topics/{appid}/{topic}/{ver}/_raw_", "GET", this.subRawHandler)
 		this.registerRoute(this.subServer.Router(),
-			"/topics/{ver}/{topic}/{group}", "GET", this.subHandler)
+			"/topics/{appid}/{topic}/{ver}/{group}", "GET", this.subHandler)
 		this.registerRoute(this.subServer.Router(),
-			"/ws/topics/{ver}/{topic}/{group}", "GET", this.subWsHandler)
+			"/ws/topics/{appid}/{topic}/{ver}/{group}", "GET", this.subWsHandler)
 	}
 
 }

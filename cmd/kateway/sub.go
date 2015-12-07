@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// /topics/{ver}/{topic}/raw
+// /topics/{appid}/{topic}/{ver}/_raw_
 // tells client how to sub in raw mode: how to connect kafka
 func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request) {
 	var (
@@ -42,7 +42,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-// /topics/{ver}/{topic}/{group}?offset=n&limit=1&reset=newest
+// /topics/{appid}/{topic}/{ver}/{group}?limit=1&reset=newest
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	if this.breaker.Open() {
 		this.writeBreakerOpen(w)
@@ -50,12 +50,13 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		topic string
-		ver   string
-		appid string
-		reset string
-		group string
-		err   error
+		topic    string
+		ver      string
+		myAppid  string
+		hisAppid string
+		reset    string
+		group    string
+		err      error
 	)
 
 	limit, err := getHttpQueryInt(r, "limit", 1)
@@ -69,9 +70,10 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	topic = params["topic"]
 	group = params["group"]
 	reset = params["reset"]
-	appid = r.Header.Get("Appid")
+	hisAppid = params["appid"]
+	myAppid = r.Header.Get("Appid")
 
-	if !meta.Default.AuthSub(appid, r.Header.Get("Subkey"), topic) {
+	if !meta.Default.AuthSub(myAppid, r.Header.Get("Subkey"), topic) {
 		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} auth fail",
 			r.RemoteAddr, topic, ver, group, limit)
 
@@ -79,10 +81,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Trace("consumer %s{topic:%s, ver:%s, group:%s, limit:%d}",
-		r.RemoteAddr, topic, ver, group, limit)
+	log.Trace("sub[%s] %s: %+v", myAppid, r.RemoteAddr, params)
 
-	rawTopic := meta.KafkaTopic(appid, topic, ver)
+	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
 	// pick a consumer from the consumer group
 	fetcher, err := store.DefaultSubStore.Fetch(options.cluster, rawTopic, group, r.RemoteAddr, reset)
 	if err != nil {
@@ -91,8 +92,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 			this.breaker.Fail()
 		}
 
-		log.Error("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} %v",
-			r.RemoteAddr, topic, ver, group, limit, err)
+		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 
 		this.writeBadRequest(w, err)
 		return
@@ -101,8 +101,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 	err = this.fetchMessages(w, fetcher, limit)
 	if err != nil {
 		// broken pipe, io timeout
-		log.Error("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} get killed: %v",
-			r.RemoteAddr, topic, ver, group, limit, err)
+		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
+
 		go store.DefaultSubStore.KillClient(r.RemoteAddr) // wait cf.ProcessingTimeout
 	}
 
@@ -142,7 +142,7 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			w.(http.Flusher).Flush()
 
 		case <-ticker.C:
-			log.Debug("recv msg timeout")
+			log.Debug("recv msg timeout, writing empty data")
 			w.WriteHeader(http.StatusNoContent)
 			// TODO write might fail, remote client might have died
 			w.Write([]byte{}) // without this, client cant get response
