@@ -11,6 +11,7 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/gofmt"
 )
 
 type Topics struct {
@@ -157,6 +158,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		return
 	}
 
+	topicsCtime := zkcluster.TopicsCtime()
 	hasTopicMatched := false
 	for _, topic := range topics {
 		if this.topicPattern != "" && !strings.Contains(topic, this.topicPattern) {
@@ -182,10 +184,11 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		swallow(err)
 
 		if !this.verbose {
-			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%30s %s %3dP %dR",
+			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%30s %s %3dP %dR %s",
 				zkcluster.Name(),
 				color.Blue("%50s", topic),
-				len(partions), len(replicas)), linesInTopicMode)
+				len(partions), len(replicas),
+				gofmt.PrettySince(topicsCtime[topic])), linesInTopicMode)
 			continue
 		}
 

@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/ctx"
@@ -59,10 +60,10 @@ func (this *ZkCluster) Close() {
 	this.zone.Close()
 }
 
-func (this *ZkCluster) Topics() []string {
-	r := make([]string, 0)
-	for name, _ := range this.zone.childrenWithData(this.topicsRoot()) {
-		r = append(r, name)
+func (this *ZkCluster) TopicsCtime() map[string]time.Time {
+	r := make(map[string]time.Time)
+	for name, data := range this.zone.childrenWithData(this.topicsRoot()) {
+		r[name] = data.ctime.Time()
 	}
 	return r
 }

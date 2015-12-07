@@ -17,6 +17,7 @@ func (this zkTimestamp) Time() time.Time {
 type zkData struct {
 	data  []byte
 	mtime zkTimestamp
+	ctime zkTimestamp
 }
 
 type ConsumerMeta struct {
