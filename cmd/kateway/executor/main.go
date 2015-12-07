@@ -47,7 +47,7 @@ func main() {
 	c := api.NewClient("_executor", cf)
 	c.Connect(addr)
 	for {
-		err := c.Subscribe("v1", "_kateway", "_addtopic",
+		err := c.Subscribe("_executor", "_kateway", "v1", "_addtopic",
 			func(statusCode int, cmd []byte) (err error) {
 				if statusCode != http.StatusOK {
 					log.Printf("err[%d] backoff 10s: %s", statusCode, string(cmd))

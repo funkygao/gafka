@@ -58,7 +58,7 @@ func (this *Client) Close() {
 }
 
 // TODO async
-func (this *Client) Publish(ver, topic, key string, msg []byte) (partition int,
+func (this *Client) Publish(topic, ver, key string, msg []byte) (partition int,
 	offset int64, err error) {
 	buf := mpool.BytesBufferGet()
 	defer mpool.BytesBufferPut(buf)
@@ -105,8 +105,9 @@ func (this *Client) Publish(ver, topic, key string, msg []byte) (partition int,
 	return v.Partition, v.Offset, nil
 }
 
-func (this *Client) Subscribe(ver, topic, group string, h SubHandler) error {
-	url := fmt.Sprintf("%s/topics/%s/%s/%s?limit=", this.addr, ver, topic, group)
+func (this *Client) Subscribe(appid, topic, ver, group string, h SubHandler) error {
+	url := fmt.Sprintf("%s/topics/%s/%s/%s/%s?limit=", this.addr,
+		appid, topic, ver, group)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err

@@ -29,7 +29,7 @@ race:
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -cluster me -pubhttp :9191 -subhttp :9192 -level debug -debug -store kafka -id 1 
 
 dumb:build
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -cluster me -pubhttp :9191 -subhttp :9192 -level debug -debug -store dumb -id 1 
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -cluster me -pubhttp :9191 -subhttp :9192 -level info -store dumb -id 1 
 
 consul:build 
 	consul agent -data-dir /tmp/consul &

@@ -26,7 +26,7 @@ func main() {
 	c := api.NewClient("demo", nil)
 	c.Connect(addr)
 	for i := 0; i < n; i++ {
-		p, o, e := c.Publish("v1", "foobar", "", []byte("hello world"))
+		p, o, e := c.Publish("foobar", "v1", "", []byte("hello world"))
 		fmt.Println(p, o, e)
 	}
 }
