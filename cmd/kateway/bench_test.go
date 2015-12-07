@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/ctx"
+	"github.com/gorilla/mux"
+	"github.com/julienschmidt/httprouter"
 )
 
 type neverEnding byte
@@ -98,4 +100,38 @@ func BenchmarkPubKafka(b *testing.B) {
 
 func BenchmarkPubDumb(b *testing.B) {
 	runBenchmarkPub(b, "dumb")
+}
+
+func BenchmarkGorillaMux(b *testing.B) {
+	router := mux.NewRouter()
+	handler := func(w http.ResponseWriter, r *http.Request) {}
+	router.HandleFunc("/topics/{topic}/{ver}", handler)
+	router.HandleFunc("/ws/topics/{topic}/{ver}", handler)
+	router.HandleFunc("/ver", handler)
+	router.HandleFunc("/help", handler)
+	router.HandleFunc("/stat", handler)
+	router.HandleFunc("/ping", handler)
+	router.HandleFunc("/clusters", handler)
+
+	request, _ := http.NewRequest("GET", "/topics/anything/v1", nil)
+	for i := 0; i < b.N; i++ {
+		router.ServeHTTP(nil, request)
+	}
+}
+
+func BenchmarkHttpRouter(b *testing.B) {
+	router := httprouter.New()
+	handler := func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {}
+	router.POST("/topics/:topic/:ver", handler)
+	router.POST("/ws/topics/:topic/:ver", handler)
+	router.GET("/ver", handler)
+	router.GET("/help", handler)
+	router.GET("/stat", handler)
+	router.GET("/ping", handler)
+	router.GET("/clusters", handler)
+
+	request, _ := http.NewRequest("POST", "/topics/anything/v1", nil)
+	for i := 0; i < b.N; i++ {
+		router.ServeHTTP(nil, request)
+	}
 }
