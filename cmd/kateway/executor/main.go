@@ -9,6 +9,7 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kateway/api"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
 	"github.com/funkygao/gafka/ctx"
 )
 
@@ -39,7 +40,7 @@ func init() {
 func main() {
 	ctx.LoadConfig(cf)
 
-	m := meta.NewZkMetaStore(zone, cluster, 0)
+	m := zkmeta.NewZkMetaStore(zone, cluster, 0)
 
 	cf := api.DefaultConfig()
 	cf.Debug = true
