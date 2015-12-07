@@ -39,3 +39,5 @@ prof:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -cluster me -pubhttp :9191 -subhttp :9192 -level debug -debug -store kafka -id 1 -memprof -cpuprof -blockprof
 	go tool pprof kateway prof/cpu.pprof
 
+clean:
+	rm -f kateway.test kateway

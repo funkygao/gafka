@@ -10,7 +10,7 @@ import (
 	"os"
 
 	log "github.com/funkygao/log4go"
-	"github.com/gorilla/mux"
+	"github.com/julienschmidt/httprouter"
 )
 
 type waitExitFunc func(exit <-chan struct{})
@@ -26,7 +26,7 @@ type webServer struct {
 	httpsServer *http.Server
 	tlsListener net.Listener
 
-	router *mux.Router
+	router *httprouter.Router
 
 	waitExitFunc waitExitFunc
 
@@ -37,7 +37,7 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 	gw *Gateway) *webServer {
 	this := &webServer{
 		name:       name,
-		router:     mux.NewRouter(),
+		router:     httprouter.New(),
 		gw:         gw,
 		maxClients: maxClients,
 	}
@@ -105,7 +105,7 @@ func (this *webServer) Start() {
 
 }
 
-func (this *webServer) Router() *mux.Router {
+func (this *webServer) Router() *httprouter.Router {
 	return this.router
 }
 

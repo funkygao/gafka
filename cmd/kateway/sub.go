@@ -8,25 +8,26 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
-	"github.com/gorilla/mux"
+	"github.com/julienschmidt/httprouter"
 )
 
-// /topics/{appid}/{topic}/{ver}/_raw_
+// /raw/topics/:appid/:topic/:ver
 // tells client how to sub in raw mode: how to connect kafka
-func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request) {
+func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
 	var (
-		topic string
-		ver   string
-		appid string
+		topic    string
+		ver      string
+		hisAppid string
+		myAppid  string
 	)
 
-	params := mux.Vars(r)
-	ver = params["ver"]
-	topic = params["topic"]
-	appid = r.Header.Get("Appid")
+	ver = params.ByName("ver")
+	topic = params.ByName("topic")
+	hisAppid = params.ByName("appid")
+	myAppid = r.Header.Get("Appid")
 
-	if !meta.Default.AuthSub(appid, r.Header.Get("Subkey"), topic) {
-
+	if !meta.Default.AuthSub(myAppid, r.Header.Get("Subkey"), topic) {
 		this.writeAuthFailure(w)
 		return
 	}
@@ -35,15 +36,16 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request) {
 	var out = map[string]string{
 		"store": "kafka",
 		"zk":    meta.Default.ZkCluster().ZkConnectAddr(),
-		"topic": meta.KafkaTopic(appid, topic, ver),
+		"topic": meta.KafkaTopic(hisAppid, topic, ver),
 	}
 	b, _ := json.Marshal(out)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(b)
 }
 
-// /topics/{appid}/{topic}/{ver}/{group}?limit=1&reset=newest
-func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
+// /topics/:appid/:topic/:ver/:group?limit=1&reset=newest
+func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
 	if this.breaker.Open() {
 		this.writeBreakerOpen(w)
 		return
@@ -65,12 +67,11 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := mux.Vars(r)
-	ver = params["ver"]
-	topic = params["topic"]
-	group = params["group"]
-	reset = params["reset"]
-	hisAppid = params["appid"]
+	ver = params.ByName("ver")
+	topic = params.ByName("topic")
+	group = params.ByName("group")
+	reset = params.ByName("reset")
+	hisAppid = params.ByName("appid")
 	myAppid = r.Header.Get("Appid")
 
 	if !meta.Default.AuthSub(myAppid, r.Header.Get("Subkey"), topic) {

@@ -1,15 +1,19 @@
 bench:sync
 
 sync:bench.go
+	@echo bench against kateway in sync pub mode
 	go run bench.go -neat -mode gw
 
 async:bench.go
+	@echo bench against kateway in async pub mode
 	go run bench.go -async -neat -mode gw
 
 kafka:bench.go
+	@echo bench against kafka directly in sync pub mode
 	go run bench.go -neat -mode kafka
 
 ak:bench.go
+	@echo bench against kafka directly in async pub mode
 	go run bench.go -neat -mode kafka -async
 
 http:httpd.go 

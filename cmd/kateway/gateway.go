@@ -38,8 +38,6 @@ type Gateway struct {
 
 	guard *guard
 
-	routes []route
-
 	shutdownOnce sync.Once
 	shutdownCh   chan struct{}
 	wg           sync.WaitGroup
@@ -54,7 +52,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this := &Gateway{
 		id:          id,
 		shutdownCh:  make(chan struct{}),
-		routes:      make([]route, 0),
 		leakyBucket: ratelimiter.NewLeakyBucket(1000*60, time.Minute),
 		certFile:    options.certFile,
 		keyFile:     options.keyFile,
