@@ -63,6 +63,14 @@ func (this *pubStore) Start() (err error) {
 	return
 }
 
+func (this *pubStore) Stop() {
+
+}
+
+func (this *pubStore) Name() string {
+	return "kafka"
+}
+
 func (this *pubStore) SyncPub(cluster string, topic, key string,
 	msg []byte) (partition int32, offset int64, err error) {
 	client, e := this.pubPool.Get()

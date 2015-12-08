@@ -67,6 +67,14 @@ func (this *subStore) Start() (err error) {
 	return
 }
 
+func (this *subStore) Stop() {
+	// TODO
+}
+
+func (this *subStore) Name() string {
+	return "kafka"
+}
+
 func (this *subStore) KillClient(remoteAddr string) {
 	this.subPool.killClient(remoteAddr)
 }

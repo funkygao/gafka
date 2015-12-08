@@ -7,22 +7,6 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/store"
 )
 
-type consumerFetcher struct {
-	ch chan *sarama.ConsumerMessage
-}
-
-func (this *consumerFetcher) Messages() <-chan *sarama.ConsumerMessage {
-	return this.ch
-}
-
-func (this *consumerFetcher) Errors() <-chan *sarama.ConsumerError {
-	return nil
-}
-
-func (this *consumerFetcher) CommitUpto(*sarama.ConsumerMessage) error {
-	return nil
-}
-
 type subStore struct {
 	fetcher *consumerFetcher
 }
@@ -50,6 +34,12 @@ func (this *subStore) Start() (err error) {
 	}()
 
 	return
+}
+
+func (this *subStore) Stop() {}
+
+func (this *subStore) Name() string {
+	return "dumb"
 }
 
 func (this *subStore) KillClient(remoteAddr string) {
