@@ -115,11 +115,21 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 	defer ticker.Stop()
 
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
+
+	chunkedBeforeTimeout := false
+	chunkedEver := false
 	n := 0
 	for {
 		select {
 		case <-clientGoneCh:
 			return ErrClientGone
+
+		case <-this.shutdownCh:
+			if !chunkedEver {
+				w.WriteHeader(http.StatusNoContent)
+				w.Write([]byte{})
+			}
+			return nil
 
 		case msg := <-fetcher.Messages():
 			// TODO when remote close silently, the write still ok
@@ -143,8 +153,25 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			// curl CURLOPT_HTTP_TRANSFER_DECODING will auto unchunk
 			w.(http.Flusher).Flush()
 
+			chunkedBeforeTimeout = true
+			chunkedEver = true
+
 		case <-ticker.C:
-			log.Debug("recv msg timeout, writing empty data")
+			if chunkedBeforeTimeout {
+				log.Debug("await message timeout, chunked to next round")
+
+				chunkedBeforeTimeout = false
+				continue
+			}
+
+			if chunkedEver {
+				// response already sent in chunk
+				log.Debug("await message timeout, chunk finished")
+				return nil
+			}
+
+			// never chunked, so send empty data
+			log.Debug("await message timeout, writing empty data")
 			w.WriteHeader(http.StatusNoContent)
 			// TODO write might fail, remote client might have died
 			w.Write([]byte{}) // without this, client cant get response

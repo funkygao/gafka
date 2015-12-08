@@ -26,7 +26,6 @@ func newSubMetrics(gw *Gateway) *subMetrics {
 	return this
 }
 
-// TODO add tag  hostname=this.hostname
 type pubMetrics struct {
 	gw *Gateway
 

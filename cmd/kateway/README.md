@@ -129,6 +129,7 @@ A REST gateway for kafka that supports Pub and Sub.
 - [ ] offset testing
 - [ ] simulate bad network environment for testing
 - [ ] metrics by topic
+- [ ] Under high load presure, mpool pkg might become a burden
 - [ ] https://github.com/gin-gonic/gin
 - [ ] registers itself in consul
 - [ ] async pub not fully tested
