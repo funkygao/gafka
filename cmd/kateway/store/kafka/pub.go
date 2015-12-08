@@ -40,10 +40,10 @@ func (this *pubStore) Start() (err error) {
 
 	this.pubPool = newPubPool(this, meta.Default.BrokerList())
 
-	ticker := time.NewTicker(meta.Default.RefreshInterval())
-	defer ticker.Stop()
-
 	go func() {
+		ticker := time.NewTicker(meta.Default.RefreshInterval())
+		defer ticker.Stop()
+
 		for {
 			select {
 			case <-ticker.C:
