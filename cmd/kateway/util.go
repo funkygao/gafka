@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -16,8 +17,8 @@ func isBrokerError(err error) bool {
 	return false
 }
 
-func getHttpQueryInt(r *http.Request, key string, defaultVal int) (int, error) {
-	valStr := r.URL.Query().Get(key)
+func getHttpQueryInt(query *url.Values, key string, defaultVal int) (int, error) {
+	valStr := query.Get(key)
 	if valStr == "" {
 		return defaultVal, nil
 	}

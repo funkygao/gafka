@@ -22,7 +22,7 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 	this := &subServer{
 		webServer:    newWebServer("sub", httpAddr, httpsAddr, maxClients, gw),
 		closedConnCh: make(chan string, 1<<10),
-		idleConns:    make(map[string]net.Conn, 10000),
+		idleConns:    make(map[string]net.Conn, 10000), // TODO
 	}
 	this.waitExitFunc = this.waitExit
 

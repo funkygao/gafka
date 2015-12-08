@@ -22,6 +22,7 @@ func (l *limitListener) release() { <-l.sem }
 func (l *limitListener) Accept() (net.Conn, error) {
 	l.acquire()
 	c, err := l.Listener.Accept()
+	// TODO metrics
 	if err != nil {
 		l.release()
 		return nil, err
@@ -37,6 +38,7 @@ type limitListenerConn struct {
 
 func (l *limitListenerConn) Close() error {
 	err := l.Conn.Close()
+	// TODO log debug
 	l.releaseOnce.Do(l.release)
 	return err
 }

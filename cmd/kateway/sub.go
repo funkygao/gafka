@@ -61,7 +61,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		err      error
 	)
 
-	limit, err := getHttpQueryInt(r, "limit", 1)
+	query := r.URL.Query()
+	reset = query.Get("reset")
+	limit, err := getHttpQueryInt(&query, "limit", 1)
 	if err != nil {
 		this.writeBadRequest(w, err)
 		return
@@ -70,7 +72,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	ver = params.ByName("ver")
 	topic = params.ByName("topic")
 	group = params.ByName("group")
-	reset = params.ByName("reset")
 	hisAppid = params.ByName("appid")
 	myAppid = r.Header.Get("Appid")
 

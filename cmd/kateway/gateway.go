@@ -134,11 +134,13 @@ func (this *Gateway) Start() (err error) {
 
 	if this.pubServer != nil {
 		store.DefaultPubStore.Start()
+		log.Info("pub store[%s] started", store.DefaultPubStore.Name())
 
 		this.pubServer.Start()
 	}
 	if this.subServer != nil {
 		store.DefaultSubStore.Start()
+		log.Info("sub store[%s] started", store.DefaultSubStore.Name())
 
 		this.subServer.Start()
 	}

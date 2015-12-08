@@ -9,17 +9,11 @@ build:
 bench:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -cluster me -pubhttp :9191 -subhttp :9192 -level info -store kafka -id 1 
 
-benchmark-cpu-kafka:build
-	go test -v -benchmem -bench=^BenchmarkPubKafka -benchtime=20s -cpuprofile=prof.cpu; go tool pprof kateway.test prof.cpu
-
-benchmark-mem-kafka:build
-	go test -v -benchmem -bench=^BenchmarkPubKafka -benchtime=20s -memprofile=prof.mem; go tool pprof kateway.test prof.mem
-
 benchmark-cpu-dumb:build
-	go test -v -benchmem -bench=^BenchmarkPubDumb -benchtime=20s -cpuprofile=prof.cpu; go tool pprof kateway.test prof.cpu
+	go test -v -benchmem -bench=^BenchmarkKatewayPubDumb1K -benchtime=20s -cpuprofile=prof.cpu; go tool pprof kateway.test prof.cpu
 
 benchmark-mem-dumb:build
-	go test -v -benchmem -bench=^BenchmarkPubDumb -benchtime=20s -memprofile=prof.mem; go tool pprof kateway.test prof.mem
+	go test -v -benchmem -bench=^BenchmarkKatewayPubDumb1K -benchtime=20s -memprofile=prof.mem; go tool pprof kateway.test prof.mem
 
 kafka:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -cluster me -pubhttp :9191 -subhttp :9192 -level debug -debug -store kafka -id 1 
@@ -27,6 +21,8 @@ kafka:build
 race:
 	@go build -race -gcflags '-m=1'
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -cluster me -pubhttp :9191 -subhttp :9192 -level debug -debug -store kafka -id 1 
+
+dryrun:dumb
 
 dumb:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -cluster me -pubhttp :9191 -subhttp :9192 -level info -store dumb -id 1 

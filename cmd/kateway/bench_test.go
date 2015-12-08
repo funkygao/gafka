@@ -2,16 +2,25 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
+	"github.com/funkygao/gafka/cmd/kateway/store"
+	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/mpool"
+	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
 	"github.com/julienschmidt/httprouter"
 )
@@ -19,6 +28,10 @@ import (
 type neverEnding byte
 
 var gw *Gateway
+
+func init() {
+	log.AddFilter("stdout", log.ERROR, log.NewConsoleLogWriter())
+}
 
 func (b neverEnding) Read(p []byte) (n int, err error) {
 	if len(p) < 16 {
@@ -59,16 +72,15 @@ func newGatewayForTest(b *testing.B, store string) *Gateway {
 	return gw
 }
 
-func runBenchmarkPub(b *testing.B, store string) {
+func runBenchmarkPub(b *testing.B, store string, msgSize int64) {
 	if gw == nil {
 		gw = newGatewayForTest(b, store)
 	}
 
 	b.ReportAllocs()
-	const msgSize = 1 << 10
-	b.SetBytes(msgSize)
+
 	httpReqRaw := strings.TrimSpace(fmt.Sprintf(`
-POST /topics/v1/foobar HTTP/1.1
+POST /topics/foobar/v1 HTTP/1.1
 Host: localhost:9191
 User-Agent: Go-http-client/1.1
 Content-Length: %d
@@ -76,6 +88,7 @@ Content-Type: application/x-www-form-urlencoded
 Appid: myappid
 Pubkey: mypubkey
 Accept-Encoding: gzip`, msgSize)) + "\r\n\r\n"
+	b.SetBytes(msgSize + int64(len(httpReqRaw)))
 
 	req, err := http.ReadRequest(bufio.NewReader(strings.NewReader(httpReqRaw)))
 	if err != nil {
@@ -86,23 +99,55 @@ Accept-Encoding: gzip`, msgSize)) + "\r\n\r\n"
 	lr := io.LimitReader(neverEnding('a'), msgSize)
 	body := ioutil.NopCloser(lr)
 
+	param := httprouter.Params{
+		httprouter.Param{Key: "topic", Value: "foobar"},
+		httprouter.Param{Key: "ver", Value: "v1"},
+	}
+
 	for i := 0; i < b.N; i++ {
 		rw.Body.Reset()
 		lr.(*io.LimitedReader).N = msgSize
 		req.Body = body
-		gw.pubHandler(rw, req)
+		gw.pubHandler(rw, req, param)
 	}
 }
 
-func BenchmarkPubKafka(b *testing.B) {
-	runBenchmarkPub(b, "kafka")
+func BenchmarkDirectKafkaProduce1K(b *testing.B) {
+	b.Skip("skipped")
+
+	msgSize := 1 << 10
+	b.ReportAllocs()
+	b.SetBytes(int64(msgSize))
+
+	ctx.LoadConfig("/etc/kateway.cf")
+	meta.Default = zkmeta.NewZkMetaStore("local", "me", time.Hour)
+	meta.Default.Start()
+	var wg sync.WaitGroup
+	exitCh := make(chan struct{})
+	store.DefaultPubStore = kafka.NewPubStore(&wg, exitCh, false)
+	store.DefaultPubStore.Start()
+
+	data := []byte(strings.Repeat("X", msgSize))
+	for i := 0; i < b.N; i++ {
+		store.DefaultPubStore.SyncPub("me", "foobar", "", data)
+	}
+
+	close(exitCh)
 }
 
-func BenchmarkPubDumb(b *testing.B) {
-	runBenchmarkPub(b, "dumb")
+func BenchmarkKatewayPubKafka(b *testing.B) {
+	b.Skip("skipped")
+
+	runBenchmarkPub(b, "kafka", 1<<10)
+}
+
+func BenchmarkKatewayPubDumb1K(b *testing.B) {
+	runBenchmarkPub(b, "dumb", 1<<10)
 }
 
 func BenchmarkGorillaMux(b *testing.B) {
+	b.Skip("skip for now")
+
 	router := mux.NewRouter()
 	handler := func(w http.ResponseWriter, r *http.Request) {}
 	router.HandleFunc("/topics/{topic}/{ver}", handler)
@@ -120,6 +165,8 @@ func BenchmarkGorillaMux(b *testing.B) {
 }
 
 func BenchmarkHttpRouter(b *testing.B) {
+	b.Skip("skip for now")
+
 	router := httprouter.New()
 	handler := func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {}
 	router.POST("/topics/:topic/:ver", handler)
@@ -133,5 +180,36 @@ func BenchmarkHttpRouter(b *testing.B) {
 	request, _ := http.NewRequest("POST", "/topics/anything/v1", nil)
 	for i := 0; i < b.N; i++ {
 		router.ServeHTTP(nil, request)
+	}
+}
+
+func BenchmxarkPubJsonResponse(b *testing.B) {
+	response := pubResponse{
+		Partition: 5,
+		Offset:    32,
+	}
+	for i := 0; i < b.N; i++ {
+		json.Marshal(response)
+	}
+}
+
+func BenchmarkPubManualJsonResponse(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		fmt.Sprintf(`{"partition":%d,"offset:%d"}`, 5, 32)
+	}
+}
+
+func BenchmarkManualCreateJson(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		buffer := mpool.BytesBufferGet()
+
+		buffer.Reset()
+		buffer.WriteString(`{"partition":`)
+		buffer.WriteString(strconv.Itoa(int(6)))
+		buffer.WriteString(`,"offset":`)
+		buffer.WriteString(strconv.Itoa(int(7)))
+		buffer.WriteString(`}`)
+
+		mpool.BytesBufferPut(buffer)
 	}
 }

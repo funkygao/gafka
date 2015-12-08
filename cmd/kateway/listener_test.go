@@ -16,7 +16,7 @@ import (
 func TestLimitListener(t *testing.T) {
 	const (
 		max = 5
-		num = 200
+		num = 100
 	)
 
 	l, err := net.Listen("tcp", "127.0.0.1:0")
@@ -38,6 +38,7 @@ func TestLimitListener(t *testing.T) {
 
 	var wg sync.WaitGroup
 	var failed int32
+	time.Sleep(time.Second)
 	for i := 0; i < num; i++ {
 		wg.Add(1)
 		go func() {
