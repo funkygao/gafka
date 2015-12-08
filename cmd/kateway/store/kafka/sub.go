@@ -18,7 +18,7 @@ type consumerFetcher struct {
 }
 
 type subStore struct {
-	shutdownCh   <-chan struct{}
+	shutdownCh   chan struct{}
 	closedConnCh <-chan string
 	wg           *sync.WaitGroup
 	hostname     string
@@ -26,8 +26,7 @@ type subStore struct {
 	subPool *subPool
 }
 
-func NewSubStore(wg *sync.WaitGroup, shutdownCh <-chan struct{},
-	closedConnCh <-chan string, debug bool) *subStore {
+func NewSubStore(wg *sync.WaitGroup, closedConnCh <-chan string, debug bool) *subStore {
 	if debug {
 		sarama.Logger = l.New(os.Stdout, color.Blue("[Sarama]"),
 			l.LstdFlags|l.Lshortfile)
@@ -36,7 +35,7 @@ func NewSubStore(wg *sync.WaitGroup, shutdownCh <-chan struct{},
 	return &subStore{
 		hostname:     ctx.Hostname(),
 		wg:           wg,
-		shutdownCh:   shutdownCh,
+		shutdownCh:   make(chan struct{}),
 		closedConnCh: closedConnCh,
 	}
 }
@@ -52,7 +51,6 @@ func (this *subStore) Start() (err error) {
 		for {
 			select {
 			case <-this.shutdownCh:
-				this.subPool.Stop()
 				log.Trace("kafka sub store stopped")
 				return
 
@@ -68,7 +66,8 @@ func (this *subStore) Start() (err error) {
 }
 
 func (this *subStore) Stop() {
-	// TODO
+	this.subPool.Stop()
+	close(this.shutdownCh)
 }
 
 func (this *subStore) Name() string {

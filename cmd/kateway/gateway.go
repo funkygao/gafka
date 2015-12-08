@@ -84,12 +84,10 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 		switch options.store {
 		case "kafka":
-			store.DefaultPubStore = kafka.NewPubStore(&this.wg, this.shutdownCh,
-				options.debug)
+			store.DefaultPubStore = kafka.NewPubStore(&this.wg, options.debug)
 
 		case "dumb":
-			store.DefaultPubStore = dumb.NewPubStore(&this.wg, this.shutdownCh,
-				options.debug)
+			store.DefaultPubStore = dumb.NewPubStore(&this.wg, options.debug)
 		}
 
 	}
@@ -100,11 +98,11 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 		switch options.store {
 		case "kafka":
-			store.DefaultSubStore = kafka.NewSubStore(&this.wg, this.shutdownCh,
+			store.DefaultSubStore = kafka.NewSubStore(&this.wg,
 				this.subServer.closedConnCh, options.debug)
 
 		case "dumb":
-			store.DefaultSubStore = dumb.NewSubStore(&this.wg, this.shutdownCh,
+			store.DefaultSubStore = dumb.NewSubStore(&this.wg,
 				this.subServer.closedConnCh, options.debug)
 
 		}
@@ -159,6 +157,7 @@ func (this *Gateway) Start() (err error) {
 func (this *Gateway) Stop() {
 	this.shutdownOnce.Do(func() {
 		log.Info("stopping kateway...")
+
 		close(this.shutdownCh)
 	})
 
@@ -172,6 +171,14 @@ func (this *Gateway) ServeForever() {
 		}
 
 		this.wg.Wait()
+
+		if store.DefaultPubStore != nil {
+			store.DefaultPubStore.Stop()
+		}
+		if store.DefaultSubStore != nil {
+			store.DefaultSubStore.Stop()
+		}
+
 		log.Trace("all components shutdown complete")
 
 		meta.Default.Stop()

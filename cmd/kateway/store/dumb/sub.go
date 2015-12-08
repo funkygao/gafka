@@ -11,8 +11,7 @@ type subStore struct {
 	fetcher *consumerFetcher
 }
 
-func NewSubStore(wg *sync.WaitGroup, shutdownCh <-chan struct{},
-	closedConnCh <-chan string, debug bool) *subStore {
+func NewSubStore(wg *sync.WaitGroup, closedConnCh <-chan string, debug bool) *subStore {
 	return &subStore{
 		fetcher: &consumerFetcher{
 			ch: make(chan *sarama.ConsumerMessage, 1000),

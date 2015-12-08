@@ -7,7 +7,7 @@ import (
 type pubStore struct {
 }
 
-func NewPubStore(wg *sync.WaitGroup, shutdownCh <-chan struct{}, debug bool) *pubStore {
+func NewPubStore(wg *sync.WaitGroup, debug bool) *pubStore {
 	return &pubStore{}
 }
 

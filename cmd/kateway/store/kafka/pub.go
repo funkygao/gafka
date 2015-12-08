@@ -14,14 +14,14 @@ import (
 )
 
 type pubStore struct {
-	shutdownCh <-chan struct{}
+	shutdownCh chan struct{}
 	wg         *sync.WaitGroup
 	hostname   string
 
 	pubPool *pubPool // FIXME maybe we should have another pool for async
 }
 
-func NewPubStore(wg *sync.WaitGroup, shutdownCh <-chan struct{}, debug bool) *pubStore {
+func NewPubStore(wg *sync.WaitGroup, debug bool) *pubStore {
 	if debug {
 		sarama.Logger = l.New(os.Stdout, color.Green("[Sarama]"),
 			l.LstdFlags|l.Lshortfile)
@@ -30,7 +30,7 @@ func NewPubStore(wg *sync.WaitGroup, shutdownCh <-chan struct{}, debug bool) *pu
 	return &pubStore{
 		hostname:   ctx.Hostname(),
 		wg:         wg,
-		shutdownCh: shutdownCh,
+		shutdownCh: make(chan struct{}),
 	}
 }
 
@@ -52,7 +52,6 @@ func (this *pubStore) Start() (err error) {
 				this.pubPool.RefreshBrokerList(meta.Default.BrokerList())
 
 			case <-this.shutdownCh:
-				this.pubPool.Stop()
 				log.Trace("kafka pub store stopped")
 				return
 
@@ -64,7 +63,8 @@ func (this *pubStore) Start() (err error) {
 }
 
 func (this *pubStore) Stop() {
-
+	this.pubPool.Stop()
+	close(this.shutdownCh)
 }
 
 func (this *pubStore) Name() string {
