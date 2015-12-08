@@ -30,6 +30,7 @@ cmd/kateway/prof.cpu
 cmd/kateway/prof.mem
 cmd/kateway/bench/bench
 cmd/kateway/executor/executor
+cmd/kateway/bench/httpdserver
 panic.dump
 cmd/gk/gk
 misc/scripts
