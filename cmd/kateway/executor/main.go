@@ -14,21 +14,19 @@ import (
 )
 
 var (
-	addr    string
-	zone    string
-	cluster string
-	cf      string
+	addr string
+	zone string
+	cf   string
 )
 
 func init() {
 	flag.StringVar(&addr, "addr", "http://localhost:9192", "sub kateway addr")
 	flag.StringVar(&zone, "z", "", "zone name")
-	flag.StringVar(&cluster, "c", "", "cluster name")
 	flag.StringVar(&cf, "cf", "/etc/kateway.cf", "config file")
 	flag.Parse()
 
-	if zone == "" || cluster == "" {
-		panic("-z and -c required")
+	if zone == "" {
+		panic("-z required")
 	}
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -40,7 +38,7 @@ func init() {
 func main() {
 	ctx.LoadConfig(cf)
 
-	m := zkmeta.NewZkMetaStore(zone, cluster, 0)
+	m := zkmeta.New(zone, 0)
 
 	cf := api.DefaultConfig()
 	cf.Debug = true
@@ -67,7 +65,8 @@ func main() {
 				ver := v["ver"].(string)
 				topic = meta.KafkaTopic(appid, topic, ver)
 				var lines []string
-				lines, err = m.ZkCluster().AddTopic(topic, 1, 1) // TODO
+				cluster := meta.Default.LookupCluster(appid, topic)
+				lines, err = m.ZkCluster(cluster).AddTopic(topic, 1, 1) // TODO
 				if err != nil {
 					log.Printf("add: %v", err)
 					time.Sleep(time.Second * 10)

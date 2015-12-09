@@ -18,7 +18,9 @@ type pubStore struct {
 	wg         *sync.WaitGroup
 	hostname   string
 
-	pubPool *pubPool // FIXME maybe we should have another pool for async
+	// FIXME maybe we should have another pool for async
+	pubPools map[string]*pubPool // key is cluster
+	poolLock sync.RWMutex
 }
 
 func NewPubStore(wg *sync.WaitGroup, debug bool) *pubStore {
@@ -29,6 +31,7 @@ func NewPubStore(wg *sync.WaitGroup, debug bool) *pubStore {
 
 	return &pubStore{
 		hostname:   ctx.Hostname(),
+		pubPools:   make(map[string]*pubPool),
 		wg:         wg,
 		shutdownCh: make(chan struct{}),
 	}
@@ -38,18 +41,21 @@ func (this *pubStore) Start() (err error) {
 	this.wg.Add(1)
 	defer this.wg.Done()
 
-	this.pubPool = newPubPool(this, meta.Default.BrokerList())
+	for _, cluster := range meta.Default.ClusterNames() {
+		this.pubPools[cluster] = newPubPool(this, meta.Default.BrokerList(cluster))
+	}
 
 	go func() {
+		// 5 seconds after meta store refresh
+		time.Sleep(time.Second * 5)
+
 		ticker := time.NewTicker(meta.Default.RefreshInterval())
 		defer ticker.Stop()
 
 		for {
 			select {
 			case <-ticker.C:
-				// TODO maybe this is not neccessary
-				// main thread triggers the refresh, child threads just get fed
-				this.pubPool.RefreshBrokerList(meta.Default.BrokerList())
+				this.doRefresh()
 
 			case <-this.shutdownCh:
 				log.Trace("kafka pub store stopped")
@@ -63,7 +69,12 @@ func (this *pubStore) Start() (err error) {
 }
 
 func (this *pubStore) Stop() {
-	this.pubPool.Stop()
+	this.poolLock.Lock()
+	for _, p := range this.pubPools {
+		p.Stop()
+	}
+	this.poolLock.Unlock()
+
 	close(this.shutdownCh)
 }
 
@@ -71,9 +82,23 @@ func (this *pubStore) Name() string {
 	return "kafka"
 }
 
+func (this *pubStore) doRefresh() {
+	// TODO maybe this is not neccessary
+	// main thread triggers the refresh, child threads just get fed
+	this.poolLock.Lock()
+	for _, cluster := range meta.Default.ClusterNames() {
+		this.pubPools[cluster].RefreshBrokerList(meta.Default.BrokerList(cluster))
+	}
+	this.poolLock.Unlock()
+}
+
 func (this *pubStore) SyncPub(cluster string, topic, key string,
 	msg []byte) (partition int32, offset int64, err error) {
-	client, e := this.pubPool.Get()
+	this.poolLock.RLock()
+	pool := this.pubPools[cluster] // FIXME what if not found?
+	this.poolLock.RUnlock()
+
+	client, e := pool.Get()
 	if e != nil {
 		if client != nil {
 			client.Recycle()
@@ -107,7 +132,11 @@ func (this *pubStore) SyncPub(cluster string, topic, key string,
 
 func (this *pubStore) AsyncPub(cluster string, topic, key string,
 	msg []byte) (partition int32, offset int64, err error) {
-	client, e := this.pubPool.Get()
+	this.poolLock.RLock()
+	pool := this.pubPools[cluster]
+	this.poolLock.RUnlock()
+
+	client, e := pool.Get()
 	if e != nil {
 		if client != nil {
 			client.Recycle()

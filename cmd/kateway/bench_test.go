@@ -55,7 +55,6 @@ func BenchmarkNeverending(b *testing.B) {
 
 func newGatewayForTest(b *testing.B, store string) *Gateway {
 	options.zone = "local"
-	options.cluster = "me"
 	options.pubHttpAddr = ":9191"
 	options.subHttpAddr = ":9192"
 	options.store = store
@@ -120,19 +119,16 @@ func BenchmarkDirectKafkaProduce1K(b *testing.B) {
 	b.SetBytes(int64(msgSize))
 
 	ctx.LoadConfig("/etc/kateway.cf")
-	meta.Default = zkmeta.NewZkMetaStore("local", "me", time.Hour)
+	meta.Default = zkmeta.New("local", time.Hour)
 	meta.Default.Start()
 	var wg sync.WaitGroup
-	exitCh := make(chan struct{})
-	store.DefaultPubStore = kafka.NewPubStore(&wg, exitCh, false)
+	store.DefaultPubStore = kafka.NewPubStore(&wg, false)
 	store.DefaultPubStore.Start()
 
 	data := []byte(strings.Repeat("X", msgSize))
 	for i := 0; i < b.N; i++ {
 		store.DefaultPubStore.SyncPub("me", "foobar", "", data)
 	}
-
-	close(exitCh)
 }
 
 func BenchmarkKatewayPubKafka(b *testing.B) {

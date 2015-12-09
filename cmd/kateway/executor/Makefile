@@ -1,2 +1,2 @@
 run:
-	go run main.go -z local -c me
+	go run main.go -z local 

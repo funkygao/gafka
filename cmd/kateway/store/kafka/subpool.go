@@ -49,8 +49,8 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	}
 
 	// FIXME what if client wants to consumer a non-existent topic?
-	onlineN := meta.Default.OnlineConsumersCount(topic, group)
-	partitionN := len(meta.Default.Partitions(topic))
+	onlineN := meta.Default.OnlineConsumersCount(cluster, topic, group)
+	partitionN := len(meta.Default.Partitions(cluster, topic))
 	if onlineN >= partitionN {
 		log.Debug("online:%d>=partitions:%d, current clients: %+v, remote addr: %s",
 			onlineN, partitionN, this.clientMap, remoteAddr)
@@ -76,7 +76,7 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	cf.Consumer.Return.Errors = true
 	// time to wait for all the offsets for a partition to be processed after stopping to consume from it.
 	cf.Offsets.ProcessingTimeout = time.Second * 10 // TODO
-	cf.Zookeeper.Chroot = meta.Default.ZkChroot()
+	cf.Zookeeper.Chroot = meta.Default.ZkChroot(cluster)
 	for i := 0; i < 3; i++ {
 		// join group will async register zk owners znodes
 		// so, if many client concurrently connects to kateway, will not

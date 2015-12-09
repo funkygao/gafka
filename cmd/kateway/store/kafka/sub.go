@@ -79,7 +79,7 @@ func (this *subStore) KillClient(remoteAddr string) {
 }
 
 func (this *subStore) Fetch(cluster, topic, group, remoteAddr, reset string) (store.Fetcher, error) {
-	cg, err := this.subPool.PickConsumerGroup("", topic, group, remoteAddr, reset)
+	cg, err := this.subPool.PickConsumerGroup(cluster, topic, group, remoteAddr, reset)
 	if err != nil {
 		return nil, err
 	}
