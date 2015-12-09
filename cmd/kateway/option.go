@@ -34,6 +34,7 @@ var (
 		debug                bool
 		maxPubSize           int64
 		maxClients           int
+		subTimeout           time.Duration
 		offsetCommitInterval time.Duration
 		reporterInterval     time.Duration
 		metaRefresh          time.Duration
@@ -73,6 +74,7 @@ func parseFlags() {
 	flag.DurationVar(&options.offsetCommitInterval, "offsetcommit", time.Minute, "consumer offset commit interval")
 	flag.DurationVar(&options.httpReadTimeout, "httprtimeout", time.Second*60, "http server read timeout")
 	flag.DurationVar(&options.httpWriteTimeout, "httpwtimeout", time.Second*60, "http server write timeout")
+	flag.DurationVar(&options.subTimeout, "subtimeout", time.Minute, "sub timeout before send http 204")
 
 	flag.Parse()
 }

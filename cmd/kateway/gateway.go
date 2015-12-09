@@ -20,6 +20,7 @@ import (
 	"github.com/funkygao/golib/breaker"
 	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/signal"
+	"github.com/funkygao/golib/timewheel"
 	log "github.com/funkygao/log4go"
 )
 
@@ -37,6 +38,7 @@ type Gateway struct {
 	subServer *subServer
 
 	guard *guard
+	timer *timewheel.TimeWheel
 
 	shutdownOnce sync.Once
 	shutdownCh   chan struct{}
@@ -72,6 +74,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 	meta.Default = zkmeta.NewZkMetaStore(options.zone, options.cluster, metaRefreshInterval)
 	this.guard = newGuard(this)
+	this.timer = timewheel.NewTimeWheel(time.Second, 120)
 	this.breaker = &breaker.Consecutive{
 		FailureAllowance: 10,
 		RetryTimeout:     time.Second * 10,
@@ -182,6 +185,7 @@ func (this *Gateway) ServeForever() {
 		log.Trace("all components shutdown complete")
 
 		meta.Default.Stop()
+		this.timer.Stop()
 	}
 
 }

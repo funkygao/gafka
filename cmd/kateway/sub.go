@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
@@ -110,10 +109,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 }
 
-func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher, limit int) error {
-	ticker := time.NewTicker(time.Minute)
-	defer ticker.Stop()
-
+func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
+	limit int) error {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
 	chunkedBeforeTimeout := false
@@ -141,6 +138,7 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			}
 
 			// client really got this msg, safe to commit
+			// TODO test case: client got chunk 2, then killed. should server commit offset?
 			log.Debug("commit offset: {T:%s, P:%d, O:%d}", msg.Topic, msg.Partition, msg.Offset)
 			fetcher.CommitUpto(msg)
 
@@ -156,7 +154,7 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			chunkedBeforeTimeout = true
 			chunkedEver = true
 
-		case <-ticker.C:
+		case <-this.timer.After(options.subTimeout):
 			if chunkedBeforeTimeout {
 				log.Debug("await message timeout, chunked to next round")
 
