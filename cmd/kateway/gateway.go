@@ -34,8 +34,9 @@ type Gateway struct {
 	certFile string
 	keyFile  string
 
-	pubServer *pubServer
-	subServer *subServer
+	dispatcher *dispatcher
+	pubServer  *pubServer
+	subServer  *subServer
 
 	guard *guard
 	timer *timewheel.TimeWheel
@@ -54,6 +55,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this := &Gateway{
 		id:          id,
 		shutdownCh:  make(chan struct{}),
+		dispatcher:  newDispatcher(),
 		leakyBucket: ratelimiter.NewLeakyBucket(1000*60, time.Minute),
 		certFile:    options.certFile,
 		keyFile:     options.keyFile,

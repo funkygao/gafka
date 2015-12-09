@@ -86,7 +86,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
 	// pick a consumer from the consumer group
-	fetcher, err := store.DefaultSubStore.Fetch(options.cluster, rawTopic, group, r.RemoteAddr, reset)
+	fetcher, err := store.DefaultSubStore.Fetch(this.dispatcher.lookup(hisAppid, topic),
+		rawTopic, group, r.RemoteAddr, reset)
 	if err != nil {
 		if isBrokerError(err) {
 			// broker error
