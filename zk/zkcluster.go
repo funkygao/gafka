@@ -101,6 +101,9 @@ func (this *ZkCluster) RegisteredInfo() ZkCluster {
 
 	var cluster ZkCluster
 	json.Unmarshal(zdata, &cluster)
+	cluster.name = this.name
+	cluster.path = this.path
+	cluster.zone = this.zone
 	return cluster
 }
 
