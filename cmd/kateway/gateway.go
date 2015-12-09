@@ -34,9 +34,8 @@ type Gateway struct {
 	certFile string
 	keyFile  string
 
-	dispatcher *dispatcher
-	pubServer  *pubServer
-	subServer  *subServer
+	pubServer *pubServer
+	subServer *subServer
 
 	guard *guard
 	timer *timewheel.TimeWheel
@@ -55,7 +54,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this := &Gateway{
 		id:          id,
 		shutdownCh:  make(chan struct{}),
-		dispatcher:  newDispatcher(),
 		leakyBucket: ratelimiter.NewLeakyBucket(1000*60, time.Minute),
 		certFile:    options.certFile,
 		keyFile:     options.keyFile,
@@ -74,7 +72,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		}
 	}
 
-	meta.Default = zkmeta.NewZkMetaStore(options.zone, options.cluster, metaRefreshInterval)
+	meta.Default = zkmeta.New(options.zone, metaRefreshInterval)
 	this.guard = newGuard(this)
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
 	this.breaker = &breaker.Consecutive{

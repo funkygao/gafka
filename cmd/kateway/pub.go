@@ -62,7 +62,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	if query.Get(UrlQueryAsync) == "1" {
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
-	partition, offset, err := pubMethod(this.dispatcher.lookup(appid, topic),
+	partition, offset, err := pubMethod(meta.Default.LookupCluster(appid, topic),
 		appid+"."+topic+"."+params.ByName(UrlParamVersion),
 		//meta.KafkaTopic(appid, topic, params.ByName(UrlParamVersion)),
 		query.Get(UrlQueryKey), msgBytes)

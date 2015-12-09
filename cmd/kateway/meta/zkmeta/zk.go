@@ -14,32 +14,52 @@ import (
 type zkMetaStore struct {
 	shutdownCh chan struct{}
 	refresh    time.Duration
+	mu         sync.RWMutex
 
-	brokerList []string // cache
+	zkzone *zk.ZkZone
 
-	partitionsMap map[string][]int32 // cache
+	// cache
+	brokerList map[string][]string      // key is cluster name
+	clusters   map[string]*zk.ZkCluster // key is cluster name
+
+	// cache
+	partitionsMap map[string]map[string][]int32 // {cluster: {topic: partitions}}
 	pmapLock      sync.RWMutex
-
-	zkcluster *zk.ZkCluster
 }
 
-func NewZkMetaStore(zone string, cluster string, refresh time.Duration) meta.MetaStore {
+func New(zone string, refresh time.Duration) meta.MetaStore {
 	zkAddrs := ctx.ZoneZkAddrs(zone)
 	if len(zkAddrs) == 0 {
 		panic("empty zookeeper addr")
 	}
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, zkAddrs)) // TODO session timeout
 	return &zkMetaStore{
-		zkcluster:     zkzone.NewCluster(cluster),
-		partitionsMap: make(map[string][]int32),
-		refresh:       refresh,
-		shutdownCh:    make(chan struct{}),
+		zkzone:     zk.NewZkZone(zk.DefaultConfig(zone, zkAddrs)), // TODO session timeout
+		refresh:    refresh,
+		shutdownCh: make(chan struct{}),
+
+		brokerList:    make(map[string][]string),
+		clusters:      make(map[string]*zk.ZkCluster),
+		partitionsMap: make(map[string]map[string][]int32),
 	}
 }
 
+func (this *zkMetaStore) fillBrokerList() {
+	this.mu.Lock()
+	for cluster, path := range this.zkzone.Clusters() {
+		// FIXME don't work when cluster is deleted
+		if _, present := this.clusters[cluster]; !present {
+			this.clusters[cluster] = this.zkzone.NewclusterWithPath(cluster, path)
+		}
+
+		this.brokerList[cluster] = this.clusters[cluster].BrokerList()
+	}
+
+	this.mu.Unlock()
+}
+
 func (this *zkMetaStore) Start() {
-	this.brokerList = this.zkcluster.BrokerList()
+	this.fillBrokerList()
 
 	go func() {
 		ticker := time.NewTicker(this.refresh)
@@ -48,7 +68,7 @@ func (this *zkMetaStore) Start() {
 		for {
 			select {
 			case <-ticker.C:
-				this.Refresh()
+				this.doRefresh()
 
 			case <-this.shutdownCh:
 				log.Trace("meta store closed")
@@ -59,70 +79,136 @@ func (this *zkMetaStore) Start() {
 }
 
 func (this *zkMetaStore) Stop() {
-	this.zkcluster.Close()
-	close(this.shutdownCh)
+	this.mu.Lock()
+	for _, c := range this.clusters {
+		c.Close()
+	}
+	this.mu.Unlock()
 
+	close(this.shutdownCh)
 }
 
-func (this *zkMetaStore) OnlineConsumersCount(topic, group string) int {
+func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) int {
 	// without cache
-	return this.zkcluster.OnlineConsumersCount(topic, group)
+	this.mu.Lock()
+	c, present := this.clusters[cluster]
+	this.mu.Unlock()
+
+	if !present {
+		log.Warn("invalid cluster: %s", cluster)
+		return 0
+	}
+
+	return c.OnlineConsumersCount(topic, group)
 }
 
 func (this *zkMetaStore) RefreshInterval() time.Duration {
 	return this.refresh
 }
 
-func (this *zkMetaStore) Refresh() {
-	this.brokerList = this.zkcluster.BrokerList()
+func (this *zkMetaStore) doRefresh() {
+	log.Debug("refreshing meta")
 
+	this.fillBrokerList()
+
+	// clear the partition cache
 	this.pmapLock.Lock()
-	this.partitionsMap = make(map[string][]int32, len(this.partitionsMap))
+	this.partitionsMap = make(map[string]map[string][]int32, len(this.partitionsMap))
 	this.pmapLock.Unlock()
 }
 
-func (this *zkMetaStore) Partitions(topic string) []int32 {
+func (this *zkMetaStore) Partitions(cluster, topic string) []int32 {
+	clusterNotPresent := true
+
 	this.pmapLock.RLock()
-	partitions, present := this.partitionsMap[topic]
-	this.pmapLock.RUnlock()
-	if present {
-		return partitions
+	if c, present := this.partitionsMap[cluster]; present {
+		clusterNotPresent = false
+		if p, present := c[topic]; present {
+			this.pmapLock.RUnlock()
+			return p
+		}
 	}
+	this.pmapLock.RUnlock()
 
 	// cache miss
-	partitions = this.zkcluster.Partitions(topic)
+	this.mu.RLock()
+	c, ok := this.clusters[cluster]
+	this.mu.RUnlock()
+	if !ok {
+		log.Warn("invalid cluster: %s", cluster)
+		return nil
+	}
+
+	p := c.Partitions(topic)
+
 	this.pmapLock.Lock()
-	this.partitionsMap[topic] = partitions
+	if clusterNotPresent {
+		this.partitionsMap[cluster] = make(map[string][]int32)
+	}
+	this.partitionsMap[cluster][topic] = p
 	this.pmapLock.Unlock()
-	return partitions
+
+	return p
 }
 
-func (this *zkMetaStore) BrokerList() []string {
-	return this.brokerList
+func (this *zkMetaStore) BrokerList(cluster string) []string {
+	this.mu.RLock()
+	r := this.brokerList[cluster]
+	this.mu.RUnlock()
+	return r
 }
 
 func (this *zkMetaStore) ZkAddrs() []string {
-	return strings.Split(this.zkcluster.ZkZone().ZkAddrs(), ",")
+	return strings.Split(this.zkzone.ZkAddrs(), ",")
 }
 
-func (this *zkMetaStore) ZkChroot() string {
-	return this.zkcluster.Chroot()
+func (this *zkMetaStore) ZkChroot(cluster string) string {
+	this.mu.RLock()
+	c, ok := this.clusters[cluster]
+	this.mu.RUnlock()
+
+	if ok {
+		return c.Chroot()
+	} else {
+		return ""
+	}
 }
 
 func (this *zkMetaStore) Clusters() []map[string]string {
 	r := make([]map[string]string, 0)
-	this.zkcluster.ZkZone().ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+	this.mu.RLock()
+	this.zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		info := zkcluster.RegisteredInfo()
 		c := make(map[string]string)
 		c["name"] = info.Name()
 		c["nickname"] = info.Nickname
 		r = append(r, c)
 	})
+	this.mu.RUnlock()
 	return r
 }
 
-func (this *zkMetaStore) ZkCluster() *zk.ZkCluster {
-	return this.zkcluster
+func (this *zkMetaStore) ClusterNames() []string {
+	this.mu.RLock()
+	r := make([]string, 0, len(this.clusters))
+	for name, _ := range this.clusters {
+		r = append(r, name)
+	}
+	this.mu.RUnlock()
+	return r
+}
+
+func (this *zkMetaStore) ZkCluster(cluster string) *zk.ZkCluster {
+	this.mu.RLock()
+	r, ok := this.clusters[cluster]
+	this.mu.RUnlock()
+
+	if !ok {
+		log.Warn("invalid cluster: %s", cluster)
+		return nil
+	}
+
+	return r
 }
 
 func (this *zkMetaStore) AuthPub(appid, pubkey, topic string) (ok bool) {
@@ -131,4 +217,8 @@ func (this *zkMetaStore) AuthPub(appid, pubkey, topic string) (ok bool) {
 
 func (this *zkMetaStore) AuthSub(appid, subkey, topic string) (ok bool) {
 	return true
+}
+
+func (this *zkMetaStore) LookupCluster(appid, topic string) (cluster string) {
+	return "me" // TODO
 }

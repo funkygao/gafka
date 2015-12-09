@@ -11,17 +11,21 @@ type MetaStore interface {
 	Stop()
 	RefreshInterval() time.Duration
 
-	ZkCluster() *zk.ZkCluster
+	ZkCluster(cluster string) *zk.ZkCluster
 
+	ClusterNames() []string
 	Clusters() []map[string]string
-	Partitions(topic string) []int32
-	OnlineConsumersCount(topic, group string) int
+
+	Partitions(cluster, topic string) []int32
+	OnlineConsumersCount(cluster, topic, group string) int
 	ZkAddrs() []string
-	ZkChroot() string
-	BrokerList() []string
+	ZkChroot(cluster string) string
+	BrokerList(cluster string) []string
 
 	AuthPub(appid, pubkey, topic string) bool
 	AuthSub(appid, subkey, topic string) bool
+
+	LookupCluster(appid, topic string) string
 }
 
 var Default MetaStore

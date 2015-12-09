@@ -11,7 +11,6 @@ var (
 	options struct {
 		id                   string
 		zone                 string
-		cluster              string
 		configFile           string
 		pubHttpAddr          string
 		pubHttpsAddr         string
@@ -46,7 +45,6 @@ var (
 func parseFlags() {
 	flag.StringVar(&options.id, "id", "", "kateway id, the id must be unique within a host")
 	flag.StringVar(&options.zone, "zone", "", "kafka zone name")
-	flag.StringVar(&options.cluster, "cluster", "", "kafka cluster name")
 	flag.DurationVar(&options.metaRefresh, "metarefresh", time.Minute*10, "meta data refresh interval")
 	flag.StringVar(&options.pubHttpAddr, "pubhttp", ":9191", "pub http bind addr")
 	flag.StringVar(&options.pubHttpsAddr, "pubhttps", "", "pub https bind addr")
@@ -84,8 +82,8 @@ func validateFlags() {
 		return
 	}
 
-	if options.zone == "" || options.cluster == "" {
-		fmt.Fprintf(os.Stderr, "-zone and -cluster are required\n")
+	if options.zone == "" {
+		fmt.Fprintf(os.Stderr, "-zone are required\n")
 		os.Exit(1)
 	}
 }
