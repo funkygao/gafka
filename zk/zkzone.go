@@ -50,13 +50,7 @@ func (this *ZkZone) Close() {
 }
 
 func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
-	return &ZkCluster{
-		zone:     this,
-		name:     cluster,
-		path:     this.ClusterPath(cluster),
-		Replicas: 2,
-		Priority: 1,
-	}
+	return this.NewclusterWithPath(cluster, this.ClusterPath(cluster))
 }
 
 func (this *ZkZone) NewclusterWithPath(cluster, path string) *ZkCluster {
@@ -64,6 +58,7 @@ func (this *ZkZone) NewclusterWithPath(cluster, path string) *ZkCluster {
 		zone:     this,
 		name:     cluster,
 		path:     path,
+		Roster:   make([]BrokerInfo, 0),
 		Replicas: 2,
 		Priority: 1,
 	}

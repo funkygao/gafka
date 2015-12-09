@@ -122,3 +122,13 @@ func (b *BrokerZnode) from(zkData []byte) {
 func (b *BrokerZnode) Addr() string {
 	return fmt.Sprintf("%s:%d", b.Host, b.Port)
 }
+
+type BrokerInfo struct {
+	Id   int    `json:"id"`
+	Host string `json:"host"`
+	Port int    `json:"port"`
+}
+
+func (this *BrokerInfo) Addr() string {
+	return fmt.Sprintf("%s:%d", this.Host, this.Port)
+}

@@ -18,23 +18,14 @@ import (
 	"github.com/samuel/go-zookeeper/zk"
 )
 
-type BrokerInfo struct {
-	Id   int    `json:"id"`
-	Host string `json:"host"`
-	Port int    `json:"port"`
-}
-
-func (this *BrokerInfo) Addr() string {
-	return fmt.Sprintf("%s:%d", this.Host, this.Port)
-}
-
 // ZkCluster is a kafka cluster that has a chroot path in Zookeeper.
 type ZkCluster struct {
 	zone *ZkZone
 	name string // cluster name
 	path string // cluster's kafka chroot path in zk cluster
 
-	Roster   []BrokerInfo `json:"brokers"` // manually registered brokers
+	Nickname string       `json:"nickname"`
+	Roster   []BrokerInfo `json:"roster"` // manually registered brokers
 	Replicas int          `json:"replicas"`
 	Priority int          `json:"priority"`
 }
@@ -79,6 +70,9 @@ func (this *ZkCluster) Partitions(topic string) []int32 {
 }
 
 func (this *ZkCluster) writeInfo(zc ZkCluster) error {
+	// ensure parent path exists
+	this.zone.createZnode(clusterInfoRoot, []byte(""))
+
 	data, err := json.Marshal(zc)
 	this.zone.swallow(err)
 
@@ -110,6 +104,13 @@ func (this *ZkCluster) RegisteredInfo() ZkCluster {
 	return cluster
 }
 
+func (this *ZkCluster) SetNickname(name string) {
+	c := this.RegisteredInfo()
+	c.Nickname = name
+	data, _ := json.Marshal(c)
+	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
+}
+
 func (this *ZkCluster) SetPriority(priority int) {
 	c := this.RegisteredInfo()
 	c.Priority = priority
@@ -122,19 +123,6 @@ func (this *ZkCluster) SetReplicas(replicas int) {
 	c.Replicas = replicas
 	data, _ := json.Marshal(c)
 	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
-}
-
-func (this *ZkCluster) RegisterKatewayNode(zone, cluster, hostname, pubHttpAddr,
-	pubHttpsAddr, subHttpAddr, subHttpsAddr string) error {
-	parent := fmt.Sprintf("/_kateway/ids/%s/%s", zone, cluster)
-	if err := this.zone.mkdirRecursive(parent); err != nil {
-		return err
-	}
-
-	path := fmt.Sprintf("%s/%s", parent, hostname)
-	data := []byte(fmt.Sprintf("pub_http:%s,pub_https:%s,sub_http:%s,sub_https:%s",
-		pubHttpAddr, pubHttpsAddr, subHttpAddr, subHttpsAddr))
-	return this.zone.createEphemeralZnode(path, data)
 }
 
 func (this *ZkCluster) RegisterBroker(id int, host string, port int) error {
@@ -153,8 +141,7 @@ func (this *ZkCluster) RegisterBroker(id int, host string, port int) error {
 	b := BrokerInfo{Id: id, Host: host, Port: port}
 	c.Roster = append(c.Roster, b)
 	data, _ := json.Marshal(c)
-	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
-	return nil
+	return this.zone.setZnode(this.cluserInfoPath(), data)
 }
 
 // Returns {groupName: {consumerId: consumer}}
