@@ -109,10 +109,14 @@ func (this *zkMetaStore) ZkChroot() string {
 	return this.zkcluster.Chroot()
 }
 
-func (this *zkMetaStore) Clusters() []string {
-	r := make([]string, 0)
+func (this *zkMetaStore) Clusters() []map[string]string {
+	r := make([]map[string]string, 0)
 	this.zkcluster.ZkZone().ForSortedClusters(func(zkcluster *zk.ZkCluster) {
-		r = append(r, zkcluster.Name())
+		info := zkcluster.RegisteredInfo()
+		c := make(map[string]string)
+		c["name"] = info.Name()
+		c["nickname"] = info.Nickname
+		r = append(r, c)
 	})
 	return r
 }

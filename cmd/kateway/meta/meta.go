@@ -13,7 +13,7 @@ type MetaStore interface {
 
 	ZkCluster() *zk.ZkCluster
 
-	Clusters() []string
+	Clusters() []map[string]string
 	Partitions(topic string) []int32
 	OnlineConsumersCount(topic, group string) int
 	ZkAddrs() []string
