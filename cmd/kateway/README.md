@@ -119,34 +119,26 @@ A REST gateway for kafka that supports Pub and Sub.
 
 ### TODO
 
-- [ ] refactor pubserver/subserver, zk
-- [ ] sub metrics report
+- [ ] multi-cluster
+- [ ] sub metrics report, metrics in topic
+- [ ] meta get cluster from appid:topic
+- [ ] pool benchmark
 - [ ] sub lock more precise 
 - [ ] plugin
-- [ ] mem pool 
 - [ ] logging
-- [ ] add more benchmark tests
 - [ ] offset testing
 - [ ] simulate bad network environment for testing
-- [ ] metrics by topic
 - [ ] Under high load presure, mpool pkg might become a burden
-- [ ] https://github.com/gin-gonic/gin
 - [ ] registers itself in consul
 - [ ] async pub not fully tested
-- [ ] anti spoof
-- [ ] async producer
 - [ ] pub gateway accepts IoT sensor messages
 - [ ] blacklist
 - [ ] profiler
 - [ ] Update to glibc 2.20 or higher
-- [ ] graceful shutdown
 - [ ] compression in kafka
 
 ### Bugs
 
-- [X] /usr/local/go/src/net/http/server.go:1934: http: multiple response.WriteHeader calls
-- [X] panic: sync: negative WaitGroup counter
-- [ ] ErrTooManyConsumers not triggered
 - [ ] race conditions
 - [ ] pub listener closes silently in high load case
 
