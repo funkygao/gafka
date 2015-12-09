@@ -121,12 +121,9 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 }
 
 func (this *Gateway) Start() (err error) {
-	signal.RegisterSignalHandler(syscall.SIGINT, func(sig os.Signal) {
+	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		this.Stop()
-	})
-	signal.RegisterSignalHandler(syscall.SIGUSR2, func(sig os.Signal) {
-		this.Stop()
-	})
+	}, syscall.SIGINT, syscall.SIGUSR2)
 
 	this.startedAt = time.Now()
 
