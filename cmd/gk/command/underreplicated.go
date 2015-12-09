@@ -72,17 +72,26 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 	for _, topic := range topics {
 		// get partitions and check if some dead
 		alivePartitions, err := kfk.WritablePartitions(topic)
-		swallow(err)
+		if err != nil {
+			this.Ui.Error(color.Red("topic[%s] cannot fetch writable partitions: %v", topic, err))
+			continue
+		}
 		partions, err := kfk.Partitions(topic)
-		swallow(err)
+		if err != nil {
+			this.Ui.Error(color.Red("topic[%s] cannot fetch partitions: %v", topic, err))
+			continue
+		}
 		if len(alivePartitions) != len(partions) {
-			this.Ui.Output(fmt.Sprintf("topic[%s] has %s partitions: %+v/%+v",
-				alivePartitions, color.Red("dead"), partions))
+			this.Ui.Error(fmt.Sprintf("topic[%s] has %s partitions: %+v/%+v",
+				topic, color.Red("dead"), alivePartitions, partions))
 		}
 
 		for _, partitionID := range alivePartitions {
 			replicas, err := kfk.Replicas(topic, partitionID)
-			swallow(err)
+			if err != nil {
+				this.Ui.Error(color.Red("topic[%s] P:%d: %v", topic, partitionID, err))
+				continue
+			}
 
 			isr := zkcluster.Isr(topic, partitionID)
 
