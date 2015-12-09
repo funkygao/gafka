@@ -140,7 +140,7 @@ A REST gateway for kafka that supports Pub and Sub.
 ### Bugs
 
 - [ ] race conditions
-- [ ] pub listener closes silently in high load case
+- [X] pub listener closes silently in high load case
 
 ### EdgeCase
 

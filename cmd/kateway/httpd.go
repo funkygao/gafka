@@ -75,7 +75,13 @@ func (this *webServer) Start() {
 		}
 
 		this.httpListener = LimitListener(this.httpListener, this.maxClients)
-		go this.httpServer.Serve(this.httpListener)
+		go func() {
+			err := this.httpServer.Serve(this.httpListener)
+
+			// non temporary net error, I have to die
+			log.Error("http server: %s", err.Error())
+			this.gw.Stop()
+		}()
 
 		this.once.Do(func() {
 			go this.waitExitFunc(this.gw.shutdownCh)
@@ -93,7 +99,13 @@ func (this *webServer) Start() {
 		}
 
 		this.tlsListener = LimitListener(this.tlsListener, this.maxClients)
-		go this.httpsServer.Serve(this.tlsListener)
+		go func() {
+			err := this.httpsServer.Serve(this.tlsListener)
+
+			// non temporary net error, I have to die
+			log.Error("http server: %s", err.Error())
+			this.gw.Stop()
+		}()
 
 		this.once.Do(func() {
 			go this.waitExitFunc(this.gw.shutdownCh)
