@@ -36,6 +36,7 @@ type Gateway struct {
 
 	pubServer *pubServer
 	subServer *subServer
+	manServer *manServer
 
 	guard *guard
 	timer *timewheel.TimeWheel
@@ -82,6 +83,9 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		RetryTimeout:     time.Second * 10,
 	}
 
+	this.manServer = newManServer(options.manHttpAddr, options.manHttpsAddr,
+		options.maxClients, this)
+
 	if options.pubHttpAddr != "" || options.pubHttpsAddr != "" {
 		this.pubServer = newPubServer(options.pubHttpAddr, options.pubHttpsAddr,
 			options.maxClients, this)
@@ -94,8 +98,8 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		case "dumb":
 			store.DefaultPubStore = dumb.NewPubStore(&this.wg, options.debug)
 		}
-
 	}
+
 	if options.subHttpAddr != "" || options.subHttpsAddr != "" {
 		this.subServer = newSubServer(options.subHttpAddr, options.subHttpsAddr,
 			options.maxClients, this)
@@ -111,7 +115,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 				this.subServer.closedConnCh, options.debug)
 
 		}
-
 	}
 
 	return this
@@ -134,6 +137,7 @@ func (this *Gateway) Start() (err error) {
 	log.Trace("guard started")
 
 	this.buildRouting()
+	this.manServer.Start()
 
 	if this.pubServer != nil {
 		store.DefaultPubStore.Start()

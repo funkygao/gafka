@@ -84,7 +84,7 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 
 			// avoid new connections
 			if err := this.httpListener.Close(); err != nil {
-				log.Error("sub listener close: %v", err)
+				log.Error(err.Error())
 			}
 
 			this.idleConnsLock.Lock()
@@ -94,17 +94,17 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 			}
 			this.idleConnsLock.Unlock()
 
-			log.Trace("sub waiting for all connected http client close")
+			log.Trace("%s waiting for all connected http client close", this.name)
 			this.idleConnsWg.Wait()
 
 			this.gw.wg.Done()
-			log.Trace("sub http server stopped")
+			log.Trace("%s http server stopped", this.name)
 		}
 
 		if this.httpsServer != nil {
 			// TODO
 			this.gw.wg.Done()
-			log.Trace("sub https server stopped")
+			log.Trace("%s https server stopped", this.name)
 		}
 
 	}

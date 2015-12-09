@@ -4,20 +4,20 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-type pubServer struct {
+type manServer struct {
 	*webServer
 }
 
-func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubServer {
-	this := &pubServer{
-		webServer: newWebServer("pub", httpAddr, httpsAddr, maxClients, gw),
+func newManServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *manServer {
+	this := &manServer{
+		webServer: newWebServer("management", httpAddr, httpsAddr, maxClients, gw),
 	}
 	this.waitExitFunc = this.waitExit
 
 	return this
 }
 
-func (this *pubServer) waitExit(exit <-chan struct{}) {
+func (this *manServer) waitExit(exit <-chan struct{}) {
 	select {
 	case <-exit:
 		if this.httpServer != nil {

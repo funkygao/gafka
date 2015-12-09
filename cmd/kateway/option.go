@@ -16,6 +16,8 @@ var (
 		pubHttpsAddr         string
 		subHttpAddr          string
 		subHttpsAddr         string
+		manHttpAddr          string
+		manHttpsAddr         string
 		consulAddr           string
 		store                string
 		pidFile              string
@@ -51,6 +53,8 @@ func parseFlags() {
 	flag.StringVar(&options.pubHttpsAddr, "pubhttps", "", "pub https bind addr")
 	flag.StringVar(&options.subHttpAddr, "subhttp", ":9192", "sub http bind addr")
 	flag.StringVar(&options.subHttpsAddr, "subhttps", "", "sub https bind addr")
+	flag.StringVar(&options.manHttpAddr, "manhttp", ":9193", "management http bind addr")
+	flag.StringVar(&options.manHttpsAddr, "manhttps", "", "management https bind addr")
 	flag.StringVar(&options.logLevel, "level", "debug", "log level")
 	flag.StringVar(&options.consulAddr, "consul", "", "consul addr")
 	flag.StringVar(&options.logFile, "log", "stdout", "log file, default stdout")
@@ -85,7 +89,11 @@ func validateFlags() {
 	}
 
 	if options.zone == "" {
-		fmt.Fprintf(os.Stderr, "-zone are required\n")
+		fmt.Fprintf(os.Stderr, "-zone required\n")
 		os.Exit(1)
+	}
+
+	if options.manHttpsAddr == "" && options.manHttpAddr == "" {
+		fmt.Fprintf(os.Stderr, "-manhttp or -manhttps required\n")
 	}
 }
