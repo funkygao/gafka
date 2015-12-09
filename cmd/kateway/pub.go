@@ -26,6 +26,11 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	if options.ratelimit && !this.leakyBuckets.Pour(r.RemoteAddr, 1) {
+		this.writeQuotaExceeded(w)
+		return
+	}
+
 	topic := params.ByName(UrlParamTopic)
 	appid := r.Header.Get(HttpHeaderAppid)
 	if !meta.Default.AuthPub(appid, r.Header.Get(HttpHeaderPubkey), topic) {

@@ -27,6 +27,12 @@ func (this *Gateway) writeAuthFailure(w http.ResponseWriter) {
 	this.writeErrorResponse(w, "invalid secret", http.StatusUnauthorized)
 }
 
+func (this *Gateway) writeQuotaExceeded(w http.ResponseWriter) {
+	w.Header().Set("Connection", "close")
+
+	this.writeErrorResponse(w, "quota exceeded", http.StatusNotAcceptable)
+}
+
 func (this *Gateway) writeBreakerOpen(w http.ResponseWriter) {
 	this.writeErrorResponse(w, "backend busy", http.StatusBadGateway)
 }

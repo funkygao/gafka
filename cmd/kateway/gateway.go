@@ -44,19 +44,19 @@ type Gateway struct {
 	shutdownCh   chan struct{}
 	wg           sync.WaitGroup
 
-	leakyBucket *ratelimiter.LeakyBucket // TODO
-	breaker     *breaker.Consecutive
-	pubMetrics  *pubMetrics
-	subMetrics  *subMetrics
+	leakyBuckets *ratelimiter.LeakyBuckets // TODO
+	breaker      *breaker.Consecutive
+	pubMetrics   *pubMetrics
+	subMetrics   *subMetrics
 }
 
 func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this := &Gateway{
-		id:          id,
-		shutdownCh:  make(chan struct{}),
-		leakyBucket: ratelimiter.NewLeakyBucket(1000*60, time.Minute),
-		certFile:    options.certFile,
-		keyFile:     options.keyFile,
+		id:           id,
+		shutdownCh:   make(chan struct{}),
+		leakyBuckets: ratelimiter.NewLeakyBuckets(1000*60, time.Minute),
+		certFile:     options.certFile,
+		keyFile:      options.keyFile,
 	}
 
 	if options.consulAddr != "" {
