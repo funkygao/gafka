@@ -12,8 +12,8 @@ import (
 )
 
 type zkMetaStore struct {
+	cf         *config
 	shutdownCh chan struct{}
-	refresh    time.Duration
 	mu         sync.RWMutex
 
 	zkzone *zk.ZkZone
@@ -27,15 +27,18 @@ type zkMetaStore struct {
 	pmapLock      sync.RWMutex
 }
 
-func New(zone string, refresh time.Duration) meta.MetaStore {
-	zkAddrs := ctx.ZoneZkAddrs(zone)
+func New(cf *config) meta.MetaStore {
+	if cf.Zone == "" {
+		panic("empty zone")
+	}
+	zkAddrs := ctx.ZoneZkAddrs(cf.Zone)
 	if len(zkAddrs) == 0 {
 		panic("empty zookeeper addr")
 	}
 
 	return &zkMetaStore{
-		zkzone:     zk.NewZkZone(zk.DefaultConfig(zone, zkAddrs)), // TODO session timeout
-		refresh:    refresh,
+		cf:         cf,
+		zkzone:     zk.NewZkZone(zk.DefaultConfig(cf.Zone, zkAddrs)), // TODO session timeout
 		shutdownCh: make(chan struct{}),
 
 		brokerList:    make(map[string][]string),
@@ -62,7 +65,7 @@ func (this *zkMetaStore) Start() {
 	this.fillBrokerList()
 
 	go func() {
-		ticker := time.NewTicker(this.refresh)
+		ticker := time.NewTicker(this.cf.Refresh)
 		defer ticker.Stop()
 
 		for {
@@ -103,7 +106,7 @@ func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) int 
 }
 
 func (this *zkMetaStore) RefreshInterval() time.Duration {
-	return this.refresh
+	return this.cf.Refresh
 }
 
 func (this *zkMetaStore) doRefresh() {

@@ -72,7 +72,9 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		}
 	}
 
-	meta.Default = zkmeta.New(options.zone, metaRefreshInterval)
+	metaConf := zkmeta.DefaultConfig(options.zone)
+	metaConf.Refresh = metaRefreshInterval
+	meta.Default = zkmeta.New(metaConf)
 	this.guard = newGuard(this)
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
 	this.breaker = &breaker.Consecutive{
