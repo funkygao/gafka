@@ -109,8 +109,15 @@ func (this *argsRule) invalid(args []string) bool {
 }
 
 func patternMatched(s, pattern string) bool {
-	if pattern != "" && !strings.Contains(s, pattern) {
-		return false
+	if pattern != "" {
+		// NOT
+		if pattern[0] == '!' && strings.Contains(s, pattern[1:]) {
+			return false
+		}
+
+		if !strings.Contains(s, pattern) {
+			return false
+		}
 	}
 
 	return true
