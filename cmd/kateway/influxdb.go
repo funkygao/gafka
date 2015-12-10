@@ -87,8 +87,26 @@ func (r *reporter) run() {
 func (r *reporter) send() error {
 	var pts []client.Point
 
+	var (
+		appid, topic, ver string
+		tags              map[string]string
+	)
 	r.reg.Each(func(name string, i interface{}) {
 		now := time.Now()
+		appid, topic, ver, name = extractFromMetricsName(name)
+
+		if appid == "" {
+			tags = map[string]string{
+				"host": r.hostname,
+			}
+		} else {
+			tags = map[string]string{
+				"host":  r.hostname,
+				"appid": appid,
+				"topic": topic,
+				"ver":   ver,
+			}
+		}
 
 		switch m := i.(type) {
 		case metrics.Counter:
@@ -97,9 +115,7 @@ func (r *reporter) send() error {
 				Fields: map[string]interface{}{
 					"value": m.Count(),
 				},
-				Tags: map[string]string{
-					"host": r.hostname,
-				},
+				Tags: tags,
 				Time: now,
 			})
 
@@ -109,9 +125,7 @@ func (r *reporter) send() error {
 				Fields: map[string]interface{}{
 					"value": m.Value(),
 				},
-				Tags: map[string]string{
-					"host": r.hostname,
-				},
+				Tags: tags,
 				Time: now,
 			})
 
@@ -121,9 +135,7 @@ func (r *reporter) send() error {
 				Fields: map[string]interface{}{
 					"value": m.Value(),
 				},
-				Tags: map[string]string{
-					"host": r.hostname,
-				},
+				Tags: tags,
 				Time: now,
 			})
 
@@ -145,9 +157,7 @@ func (r *reporter) send() error {
 					"p999":     ps[4],
 					"p9999":    ps[5],
 				},
-				Tags: map[string]string{
-					"host": r.hostname,
-				},
+				Tags: tags,
 				Time: now,
 			})
 
@@ -161,9 +171,7 @@ func (r *reporter) send() error {
 					"m15":   m.Rate15(),
 					"mean":  m.RateMean(),
 				},
-				Tags: map[string]string{
-					"host": r.hostname,
-				},
+				Tags: tags,
 				Time: now,
 			})
 
@@ -189,9 +197,7 @@ func (r *reporter) send() error {
 					"m15":      m.Rate15(),
 					"meanrate": m.RateMean(),
 				},
-				Tags: map[string]string{
-					"host": r.hostname,
-				},
+				Tags: tags,
 				Time: now,
 			})
 		}

@@ -66,8 +66,9 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	if query.Get(UrlQueryAsync) == "1" {
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
+	ver := params.ByName(UrlParamVersion)
 	partition, offset, err := pubMethod(meta.Default.LookupCluster(appid, topic),
-		appid+"."+topic+"."+params.ByName(UrlParamVersion),
+		appid+"."+topic+"."+ver,
 		//meta.KafkaTopic(appid, topic, params.ByName(UrlParamVersion)),
 		query.Get(UrlQueryKey), msgBytes)
 	if err != nil {
@@ -77,7 +78,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			this.breaker.Fail()
 		}
 
-		this.pubMetrics.PubFailure.Inc(1)
+		this.pubMetrics.pubFail(appid, topic, ver)
 		log.Error("%s: %v", r.RemoteAddr, err)
 
 		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
@@ -100,6 +101,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 	mpool.BytesBufferPut(buffer) // defer is costly
 
-	this.pubMetrics.PubSuccess.Inc(1)
+	// TODO so many metrics, are to be put into anther thread via chan
+	// DONT block the main handler thread
+	this.pubMetrics.pubOk(appid, topic, params.ByName(UrlParamVersion))
 	this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 }

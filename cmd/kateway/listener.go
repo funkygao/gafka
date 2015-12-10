@@ -23,8 +23,11 @@ func (l *limitListener) release() { <-l.sem }
 func (l *limitListener) Accept() (net.Conn, error) {
 	l.acquire()
 	c, err := l.Listener.Accept()
-	l.gw.pubMetrics.ConnAccept.Inc(1)
-	l.gw.pubMetrics.PubConcurrent.Inc(1)
+	if l.gw != nil {
+		l.gw.pubMetrics.ConnAccept.Inc(1)
+		l.gw.pubMetrics.PubConcurrent.Inc(1)
+	}
+
 	if err != nil {
 		l.release()
 		return nil, err
@@ -41,7 +44,9 @@ type limitListenerConn struct {
 
 func (l *limitListenerConn) Close() error {
 	err := l.Conn.Close()
-	l.gw.pubMetrics.PubConcurrent.Dec(1)
+	if l.gw != nil {
+		l.gw.pubMetrics.PubConcurrent.Dec(1)
+	}
 	l.releaseOnce.Do(l.release)
 	return err
 }
