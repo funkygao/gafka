@@ -19,6 +19,6 @@ func TestSortMap(t *testing.T) {
 
 func TestPatternMatched(t *testing.T) {
 	assert.Equal(t, true, patternMatched("orderstatus", "order"))
-	assert.Equal(t, false, patternMatched("orderstatus", "!order"))
+	assert.Equal(t, false, patternMatched("orderstatus", "~order"))
 
 }
