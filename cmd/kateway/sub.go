@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
@@ -9,39 +8,6 @@ import (
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
-
-// /raw/topics/:appid/:topic/:ver
-// tells client how to sub in raw mode: how to connect kafka
-func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	var (
-		topic    string
-		ver      string
-		hisAppid string
-		myAppid  string
-	)
-
-	ver = params.ByName("ver")
-	topic = params.ByName("topic")
-	hisAppid = params.ByName("appid")
-	myAppid = r.Header.Get("Appid")
-
-	if !meta.Default.AuthSub(myAppid, r.Header.Get("Subkey"), topic) {
-		this.writeAuthFailure(w)
-		return
-	}
-
-	cluster := meta.Default.LookupCluster(hisAppid, topic)
-	this.writeKatewayHeader(w)
-	var out = map[string]string{
-		"store": "kafka",
-		"zk":    meta.Default.ZkCluster(cluster).ZkConnectAddr(),
-		"topic": meta.KafkaTopic(hisAppid, topic, ver),
-	}
-	b, _ := json.Marshal(out)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(b)
-}
 
 // /topics/:appid/:topic/:ver/:group?limit=1&reset=newest
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
@@ -69,13 +35,13 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	ver = params.ByName("ver")
-	topic = params.ByName("topic")
-	group = params.ByName("group")
-	hisAppid = params.ByName("appid")
-	myAppid = r.Header.Get("Appid")
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	hisAppid = params.ByName(UrlParamAppid)
+	myAppid = r.Header.Get(HttpHeaderAppid)
+	group = params.ByName(UrlParamGroup)
 
-	if !meta.Default.AuthSub(myAppid, r.Header.Get("Subkey"), topic) {
+	if !meta.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic) {
 		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} auth fail",
 			r.RemoteAddr, topic, ver, group, limit)
 
