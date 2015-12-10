@@ -8,6 +8,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
 	log "github.com/funkygao/log4go"
@@ -95,8 +96,13 @@ func (this *pubStore) doRefresh() {
 func (this *pubStore) SyncPub(cluster string, topic, key string,
 	msg []byte) (partition int32, offset int64, err error) {
 	this.poolLock.RLock()
-	pool := this.pubPools[cluster] // FIXME what if not found?
+	pool, present := this.pubPools[cluster]
 	this.poolLock.RUnlock()
+
+	if !present {
+		err = store.ErrInvalidCluster
+		return
+	}
 
 	client, e := pool.Get()
 	if e != nil {
