@@ -119,13 +119,16 @@ A REST gateway for kafka that supports Pub and Sub.
 
 ### TODO
 
-- [ ] multi-cluster
+- [X] multi-cluster
+- [ ] elastic scale
+- [ ] flume
+- [ ] logging
+- [ ] curl pub a big gif
 - [ ] sub metrics report, metrics in topic
 - [ ] meta get cluster from appid:topic
 - [ ] pool benchmark
 - [ ] sub lock more precise 
 - [ ] plugin
-- [ ] logging
 - [ ] offset testing
 - [ ] simulate bad network environment for testing
 - [ ] Under high load presure, mpool pkg might become a burden

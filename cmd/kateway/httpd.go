@@ -84,9 +84,7 @@ func (this *webServer) Start() {
 					continue
 				}
 
-				this.httpListener = LimitListener(this.httpListener, this.maxClients)
-
-				// non temporary net error, I have to die
+				this.httpListener = LimitListener(this.gw, this.httpListener, this.maxClients)
 				log.Error(this.httpServer.Serve(this.httpListener))
 			}
 		}()
@@ -106,13 +104,27 @@ func (this *webServer) Start() {
 			panic(err)
 		}
 
-		this.tlsListener = LimitListener(this.tlsListener, this.maxClients)
 		go func() {
-			err := this.httpsServer.Serve(this.tlsListener)
+			var retryDelay time.Duration
+			for {
+				this.tlsListener, err = net.Listen("tcp", this.httpsServer.Addr)
+				if err != nil {
+					if retryDelay == 0 {
+						retryDelay = 5 * time.Millisecond
+					} else {
+						retryDelay = 2 * retryDelay
+					}
+					if maxDelay := time.Second; retryDelay > maxDelay {
+						retryDelay = maxDelay
+					}
+					log.Error("%v, retry in %v", err, retryDelay)
+					time.Sleep(retryDelay)
+					continue
+				}
 
-			// non temporary net error, I have to die
-			log.Error("http server: %s", err.Error())
-			this.gw.Stop()
+				this.tlsListener = LimitListener(this.gw, this.tlsListener, this.maxClients)
+				log.Error(this.httpsServer.Serve(this.tlsListener))
+			}
 		}()
 
 		this.once.Do(func() {
@@ -123,32 +135,6 @@ func (this *webServer) Start() {
 		log.Info("%s https server ready on %s", this.name, this.httpsServer.Addr)
 	}
 
-}
-
-func (this *webServer) startWebServer(l net.Listener, s *http.Server) {
-	var retryDelay time.Duration
-	var err error
-	for {
-		l, err = net.Listen("tcp", s.Addr)
-		if err != nil {
-			if retryDelay == 0 {
-				retryDelay = 5 * time.Millisecond
-			} else {
-				retryDelay = 2 * retryDelay
-			}
-			if maxDelay := time.Second; retryDelay > maxDelay {
-				retryDelay = maxDelay
-			}
-			log.Error("%v, retry in %v", err, retryDelay)
-			time.Sleep(retryDelay)
-			continue
-		}
-
-		l = LimitListener(l, this.maxClients)
-
-		// non temporary net error, I have to die
-		log.Error(s.Serve(l))
-	}
 }
 
 func (this *webServer) Router() *httprouter.Router {

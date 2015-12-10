@@ -57,7 +57,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	t1 := time.Now()
-	this.pubMetrics.PubConcurrent.Inc(1)
 	this.pubMetrics.PubQps.Mark(1)
 	this.pubMetrics.PubMsgSize.Update(int64(len(msgBytes)))
 
@@ -78,7 +77,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			this.breaker.Fail()
 		}
 
-		this.pubMetrics.PubConcurrent.Dec(1)
 		this.pubMetrics.PubFailure.Inc(1)
 		log.Error("%s: %v", r.RemoteAddr, err)
 
@@ -103,6 +101,5 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	mpool.BytesBufferPut(buffer) // defer is costly
 
 	this.pubMetrics.PubSuccess.Inc(1)
-	this.pubMetrics.PubConcurrent.Dec(1)
 	this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 }

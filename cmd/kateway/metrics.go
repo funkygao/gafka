@@ -30,21 +30,23 @@ func newSubMetrics(interval time.Duration) *subMetrics {
 
 type pubMetrics struct {
 	// BytesInPerSec, BytesOutPerSec, FailedMessagesPerSec
+	ConnAccept    metrics.Counter
 	PubSuccess    metrics.Counter
 	PubFailure    metrics.Counter
 	ClientError   metrics.Counter
 	PubConcurrent metrics.Counter
 	PubQps        metrics.Meter
 	PubLatency    metrics.Histogram
-	PubMsgSize    metrics.Histogram
+	PubMsgSize    metrics.Histogram // FIXME
 }
 
 func newPubMetrics(interval time.Duration) *pubMetrics {
 	this := &pubMetrics{
-		PubConcurrent: metrics.NewRegisteredCounter("pub.concurrent.count", metrics.DefaultRegistry),
-		PubFailure:    metrics.NewRegisteredCounter("pub.fail.count", metrics.DefaultRegistry),
-		PubSuccess:    metrics.NewRegisteredCounter("pub.ok.count", metrics.DefaultRegistry),
-		ClientError:   metrics.NewRegisteredCounter("pub.clienterr.count", metrics.DefaultRegistry),
+		ConnAccept:    metrics.NewRegisteredCounter("pub.accept", metrics.DefaultRegistry),
+		PubConcurrent: metrics.NewRegisteredCounter("pub.concurrent", metrics.DefaultRegistry),
+		PubFailure:    metrics.NewRegisteredCounter("pub.fail", metrics.DefaultRegistry),
+		PubSuccess:    metrics.NewRegisteredCounter("pub.ok", metrics.DefaultRegistry),
+		ClientError:   metrics.NewRegisteredCounter("pub.clienterr", metrics.DefaultRegistry),
 		PubQps:        metrics.NewRegisteredMeter("pub.qps", metrics.DefaultRegistry),
 		PubMsgSize:    metrics.NewRegisteredHistogram("pub.msgsize", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015)),
 		PubLatency:    metrics.NewRegisteredHistogram("pub.latency", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015)),
