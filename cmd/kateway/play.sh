@@ -17,6 +17,7 @@ curl -XGET http://localhost:9192/raw/topics/app1/foobar/v1
 
 # pub a topic
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hello world!' 'http://localhost:9191/topics/foobar/v1'
+curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d '@/Users/funky/gopkg/src/github.com/funkygao/fae/contrib/resources/dashboard.png' 'http://localhost:9191/topics/foobar/v1'
 
 
 
