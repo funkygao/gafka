@@ -9,10 +9,14 @@ build:
 bench:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -level info -store kafka -id 1 
 
-benchmark-cpu-dumb:build
+benchmark-metrics:
+	go test -v -benchmem -bench=^BenchmarkMetrics 
+	go test -v -benchmem -bench=^BenchmarkExtractFromMetricsName
+
+benchmark-cpu-dumb:
 	go test -v -benchmem -bench=^BenchmarkKatewayPubDumb1K -benchtime=20s -cpuprofile=prof.cpu; go tool pprof kateway.test prof.cpu
 
-benchmark-mem-dumb:build
+benchmark-mem-dumb:
 	go test -v -benchmem -bench=^BenchmarkKatewayPubDumb1K -benchtime=20s -memprofile=prof.mem; go tool pprof kateway.test prof.mem
 
 kafka:build

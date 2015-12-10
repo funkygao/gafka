@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/funkygao/gafka/ctx"
@@ -29,10 +31,13 @@ func newSubMetrics(interval time.Duration) *subMetrics {
 }
 
 type pubMetrics struct {
+	PubOks    map[string]metrics.Counter
+	pubOkMu   sync.RWMutex
+	PubFails  map[string]metrics.Counter
+	pubFailMu sync.RWMutex
+
 	// BytesInPerSec, BytesOutPerSec, FailedMessagesPerSec
 	ConnAccept    metrics.Counter
-	PubSuccess    metrics.Counter
-	PubFailure    metrics.Counter
 	ClientError   metrics.Counter
 	PubConcurrent metrics.Counter
 	PubQps        metrics.Meter
@@ -42,10 +47,11 @@ type pubMetrics struct {
 
 func newPubMetrics(interval time.Duration) *pubMetrics {
 	this := &pubMetrics{
+		PubOks:   make(map[string]metrics.Counter),
+		PubFails: make(map[string]metrics.Counter),
+
 		ConnAccept:    metrics.NewRegisteredCounter("pub.accept", metrics.DefaultRegistry),
 		PubConcurrent: metrics.NewRegisteredCounter("pub.concurrent", metrics.DefaultRegistry),
-		PubFailure:    metrics.NewRegisteredCounter("pub.fail", metrics.DefaultRegistry),
-		PubSuccess:    metrics.NewRegisteredCounter("pub.ok", metrics.DefaultRegistry),
 		ClientError:   metrics.NewRegisteredCounter("pub.clienterr", metrics.DefaultRegistry),
 		PubQps:        metrics.NewRegisteredMeter("pub.qps", metrics.DefaultRegistry),
 		PubMsgSize:    metrics.NewRegisteredHistogram("pub.msgsize", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015)),
@@ -63,4 +69,31 @@ func newPubMetrics(interval time.Duration) *pubMetrics {
 	}
 
 	return this
+}
+
+func (this *pubMetrics) recordForApp(appid, topic, ver, name string,
+	mu *sync.RWMutex, m map[string]metrics.Counter) {
+	tag := fmt.Sprintf("{%s.%s.%s}", appid, topic, ver)
+	mu.RLock()
+	counter, present := m[tag]
+	mu.RUnlock()
+
+	if present {
+		counter.Inc(1)
+		return
+	}
+
+	mu.Lock()
+	m[tag] = metrics.NewRegisteredCounter(tag+name, metrics.DefaultRegistry)
+	mu.Unlock()
+
+	m[tag].Inc(1)
+}
+
+func (this *pubMetrics) pubFail(appid, topic, ver string) {
+	this.recordForApp(appid, topic, ver, "pub.fail", &this.pubFailMu, this.PubFails)
+}
+
+func (this *pubMetrics) pubOk(appid, topic, ver string) {
+	this.recordForApp(appid, topic, ver, "pub.ok", &this.pubOkMu, this.PubOks)
 }

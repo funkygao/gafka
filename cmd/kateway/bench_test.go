@@ -119,7 +119,9 @@ func BenchmarkDirectKafkaProduce1K(b *testing.B) {
 	b.SetBytes(int64(msgSize))
 
 	ctx.LoadConfig("/etc/kateway.cf")
-	meta.Default = zkmeta.New("local", time.Hour)
+	cf := zkmeta.DefaultConfig("local")
+	cf.Refresh = time.Hour
+	meta.Default = zkmeta.New(cf)
 	meta.Default.Start()
 	var wg sync.WaitGroup
 	store.DefaultPubStore = kafka.NewPubStore(&wg, false)
