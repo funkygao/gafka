@@ -111,7 +111,7 @@ func (this *Consumers) printConsumersByGroup(zkzone *zk.ZkZone, clusterFilter st
 		consumerGroups := zkcluster.ConsumerGroups()
 		sortedGroups := make([]string, 0, len(consumerGroups))
 		for group, _ := range consumerGroups {
-			if this.groupPattern != "" && !strings.Contains(group, this.groupPattern) {
+			if !patternMatched(group, this.groupPattern) {
 				continue
 			}
 

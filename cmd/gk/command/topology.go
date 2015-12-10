@@ -85,7 +85,7 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 		}
 
 		for _, broker := range brokers {
-			if this.hostPattern != "" && !strings.Contains(broker.Host, this.hostPattern) {
+			if !patternMatched(broker.Host, this.hostPattern) {
 				continue
 			}
 
@@ -117,7 +117,7 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 				swallow(err)
 				host, _, err := net.SplitHostPort(leader.Addr())
 				swallow(err)
-				if this.hostPattern != "" && !strings.Contains(host, this.hostPattern) {
+				if !patternMatched(host, this.hostPattern) {
 					continue
 				}
 

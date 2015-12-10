@@ -114,7 +114,7 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 		for _, consumer := range consumersByGroup[group] {
 			// TODO sort by partitionId
 			if consumer.Online {
-				if this.topicPattern != "" && !strings.Contains(consumer.Topic, this.topicPattern) {
+				if !patternMatched(consumer.Topic, this.topicPattern) {
 					continue
 				}
 
@@ -138,7 +138,7 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					color.Green("%90s", consumer.ConsumerZnode.Host()),
 					gofmt.PrettySince(consumer.ConsumerZnode.Uptime())))
 			} else if !this.onlineOnly {
-				if this.topicPattern != "" && !strings.Contains(consumer.Topic, this.topicPattern) {
+				if !patternMatched(consumer.Topic, this.topicPattern) {
 					continue
 				}
 

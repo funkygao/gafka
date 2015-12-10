@@ -161,7 +161,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 	topicsCtime := zkcluster.TopicsCtime()
 	hasTopicMatched := false
 	for _, topic := range topics {
-		if this.topicPattern != "" && !strings.Contains(topic, this.topicPattern) {
+		if !patternMatched(topic, this.topicPattern) {
 			continue
 		}
 
