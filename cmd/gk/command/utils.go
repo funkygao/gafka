@@ -110,9 +110,9 @@ func (this *argsRule) invalid(args []string) bool {
 
 func patternMatched(s, pattern string) bool {
 	if pattern != "" {
-		// NOT
-		if pattern[0] == '~' && strings.Contains(s, pattern[1:]) {
-			return false
+		if pattern[0] == '~' {
+			// NOT
+			return !strings.Contains(s, pattern[1:])
 		}
 
 		if !strings.Contains(s, pattern) {
