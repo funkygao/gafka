@@ -123,24 +123,22 @@ A REST gateway for kafka that supports Pub and Sub.
 
 - [X] multi-cluster
 - [ ] elastic scale
-- [ ] flume
-- [ ] logging
-- [ ] curl pub a big gif
-- [ ] sub metrics report, metrics in topic
-- [ ] meta get cluster from appid:topic
+- [ ] Under high load presure, mpool pkg might become a burden
 - [ ] pool benchmark
 - [ ] sub lock more precise 
-- [ ] plugin
-- [ ] offset testing
-- [ ] simulate bad network environment for testing
-- [ ] Under high load presure, mpool pkg might become a burden
 - [ ] registers itself in consul
 - [ ] async pub not fully tested
-- [ ] pub gateway accepts IoT sensor messages
-- [ ] blacklist
-- [ ] profiler
 - [ ] Update to glibc 2.20 or higher
 - [ ] compression in kafka
+- [ ] plugin
+
+### Test
+
+- [ ] stress test and leakage test
+- [ ] simulate bad network environment for testing
+- [ ] message never get lost
+- [ ] post a BIG msg
+- [ ] logging
 
 ### Bugs
 

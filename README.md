@@ -49,9 +49,7 @@ Unified multi-datacenter multi-kafka-clusters central management console powered
     
 ### TODO
 
-- [ ] gk top -z prod -c !fobar
 - [ ] github.com/wvanbergen/kazoo-go bug
-- [ ] https://github.com/julienschmidt/httprouter
 - [ ] rebalance a kafka cluster
 - [ ] active controller switch history
 
