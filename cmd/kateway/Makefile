@@ -29,7 +29,7 @@ race:
 dryrun:dumb
 
 dumb:build
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -level info -store dumb -id 1 
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -level info -store dumb -id 1 -cpuprof -metricsoff=true -breakeron=false
 
 consul:build 
 	consul agent -data-dir /tmp/consul &

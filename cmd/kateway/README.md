@@ -117,6 +117,8 @@ A REST gateway for kafka that supports Pub and Sub.
 
   haproxy MUST enable session sticky
 
+- how to scale kateway?
+
 ### TODO
 
 - [X] multi-cluster

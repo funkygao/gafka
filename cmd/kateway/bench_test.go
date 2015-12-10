@@ -59,7 +59,8 @@ func newGatewayForTest(b *testing.B, store string) *Gateway {
 	options.subHttpAddr = ":9192"
 	options.store = store
 	options.debug = false
-	options.logLevel = "info"
+	options.disableMetrics = true
+	options.enableBreaker = false
 
 	ctx.LoadConfig("/etc/kateway.cf")
 

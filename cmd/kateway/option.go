@@ -31,7 +31,9 @@ var (
 		cpuprof              bool
 		showVersion          bool
 		memprof              bool
+		enableBreaker        bool
 		ratelimit            bool
+		disableMetrics       bool
 		blockprof            bool
 		debug                bool
 		maxPubSize           int64
@@ -68,7 +70,9 @@ func parseFlags() {
 	flag.StringVar(&options.killFile, "kill", "", "kill running kateway by pid file")
 	flag.BoolVar(&options.showVersion, "version", false, "show version and exit")
 	flag.BoolVar(&options.ratelimit, "raltelimit", false, "enable rate limit")
+	flag.BoolVar(&options.enableBreaker, "breakeron", true, "enable circuit breaker")
 	flag.BoolVar(&options.cpuprof, "cpuprof", false, "enable cpu profiling")
+	flag.BoolVar(&options.disableMetrics, "metricsoff", false, "disable metrics reporter")
 	flag.BoolVar(&options.memprof, "memprof", false, "enable memory profiling")
 	flag.StringVar(&options.influxServer, "influxdb", "http://10.77.144.193:10036", "influxdb server address for the metrics reporter")
 	flag.DurationVar(&options.reporterInterval, "report", time.Second*10, "reporter flush interval")

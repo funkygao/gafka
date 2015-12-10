@@ -21,7 +21,7 @@ type pubResponse struct {
 // /topics/:topic/:ver?key=mykey&async=1
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	if this.breaker.Open() {
+	if options.enableBreaker && this.breaker.Open() {
 		this.writeBreakerOpen(w)
 		return
 	}
@@ -39,10 +39,10 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	// get the raw POST message
-	lbr := io.LimitReader(r.Body, options.maxPubSize+1)
+	//lbr := io.LimitReader(r.Body, options.maxPubSize+1)
 	buffer := mpool.BytesBufferGet() // TODO pass the r.Body directly to PubStore
 	buffer.Reset()
-	if _, err := io.Copy(buffer, lbr); err != nil {
+	if _, err := io.Copy(buffer, r.Body); err != nil {
 		// e,g. remote client connection broken
 		mpool.BytesBufferPut(buffer)
 
@@ -56,9 +56,12 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Debug("pub[%s] %s %+v %s", appid, r.RemoteAddr, params, string(msgBytes))
 	}
 
-	t1 := time.Now()
-	this.pubMetrics.PubQps.Mark(1)
-	this.pubMetrics.PubMsgSize.Update(int64(len(msgBytes)))
+	var t1 time.Time
+	if !options.disableMetrics {
+		t1 = time.Now()
+		this.pubMetrics.PubQps.Mark(1)
+		this.pubMetrics.PubMsgSize.Update(int64(len(msgBytes)))
+	}
 
 	query := r.URL.Query() // reuse the query will save 100ns
 
@@ -74,18 +77,21 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		mpool.BytesBufferPut(buffer) // defer is costly
 
-		if isBrokerError(err) {
+		if options.enableBreaker && isBrokerError(err) {
 			this.breaker.Fail()
 		}
 
-		this.pubMetrics.pubFail(appid, topic, ver)
+		if !options.disableMetrics {
+			this.pubMetrics.pubFail(appid, topic, ver)
+		}
+
 		log.Error("%s: %v", r.RemoteAddr, err)
 
 		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
+	//w.Header().Set(ContentTypeHeader, ContentTypeJson)
 
 	// manually create the json for performance
 	// use encoding/json will cost 800ns
@@ -103,6 +109,9 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 
 	// TODO so many metrics, are to be put into anther thread via chan
 	// DONT block the main handler thread
-	this.pubMetrics.pubOk(appid, topic, params.ByName(UrlParamVersion))
-	this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
+	if !options.disableMetrics {
+		this.pubMetrics.pubOk(appid, topic, params.ByName(UrlParamVersion))
+		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
+	}
+
 }
