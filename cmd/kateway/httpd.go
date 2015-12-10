@@ -2,12 +2,10 @@ package main
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 	"net/http"
 	"sync"
-	//"time"
-	"os"
+	"time"
 
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
@@ -23,8 +21,8 @@ type webServer struct {
 	httpListener net.Listener
 	httpServer   *http.Server
 
-	httpsServer *http.Server
 	tlsListener net.Listener
+	httpsServer *http.Server
 
 	router *httprouter.Router
 
@@ -68,19 +66,29 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 func (this *webServer) Start() {
 	var err error
 	if this.httpServer != nil {
-		this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
-			os.Exit(1)
-		}
-
-		this.httpListener = LimitListener(this.httpListener, this.maxClients)
 		go func() {
-			err := this.httpServer.Serve(this.httpListener)
+			var retryDelay time.Duration
+			for {
+				this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
+				if err != nil {
+					if retryDelay == 0 {
+						retryDelay = 5 * time.Millisecond
+					} else {
+						retryDelay = 2 * retryDelay
+					}
+					if maxDelay := time.Second; retryDelay > maxDelay {
+						retryDelay = maxDelay
+					}
+					log.Error("%v, retry in %v", err, retryDelay)
+					time.Sleep(retryDelay)
+					continue
+				}
 
-			// non temporary net error, I have to die
-			log.Error("http server: %s", err.Error())
-			this.gw.Stop()
+				this.httpListener = LimitListener(this.httpListener, this.maxClients)
+
+				// non temporary net error, I have to die
+				log.Error(this.httpServer.Serve(this.httpListener))
+			}
 		}()
 
 		this.once.Do(func() {
@@ -115,6 +123,32 @@ func (this *webServer) Start() {
 		log.Info("%s https server ready on %s", this.name, this.httpsServer.Addr)
 	}
 
+}
+
+func (this *webServer) startWebServer(l net.Listener, s *http.Server) {
+	var retryDelay time.Duration
+	var err error
+	for {
+		l, err = net.Listen("tcp", s.Addr)
+		if err != nil {
+			if retryDelay == 0 {
+				retryDelay = 5 * time.Millisecond
+			} else {
+				retryDelay = 2 * retryDelay
+			}
+			if maxDelay := time.Second; retryDelay > maxDelay {
+				retryDelay = maxDelay
+			}
+			log.Error("%v, retry in %v", err, retryDelay)
+			time.Sleep(retryDelay)
+			continue
+		}
+
+		l = LimitListener(l, this.maxClients)
+
+		// non temporary net error, I have to die
+		log.Error(s.Serve(l))
+	}
 }
 
 func (this *webServer) Router() *httprouter.Router {
