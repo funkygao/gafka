@@ -81,6 +81,14 @@ func init() {
 			}, nil
 		},
 
+		"console": func() (cli.Command, error) {
+			return &command.Console{
+				Ui:   ui,
+				Cmd:  cmd,
+				Cmds: commands,
+			}, nil
+		},
+
 		/* TODOs
 		"rebalance": func() (cli.Command, error) {
 			return &command.Rebalance{
@@ -93,14 +101,6 @@ func init() {
 			return &command.Producers{
 				Ui:  ui,
 				Cmd: cmd,
-			}, nil
-		},
-
-		"console": func() (cli.Command, error) {
-			return &command.Console{
-				Ui:   ui,
-				Cmd:  cmd,
-				Cmds: commands,
 			}, nil
 		},
 
