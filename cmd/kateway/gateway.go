@@ -47,8 +47,9 @@ type Gateway struct {
 
 	leakyBuckets *ratelimiter.LeakyBuckets // TODO
 	breaker      *breaker.Consecutive
-	pubMetrics   *pubMetrics
-	subMetrics   *subMetrics
+
+	pubMetrics *pubMetrics
+	subMetrics *subMetrics
 }
 
 func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
@@ -89,7 +90,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	if options.pubHttpAddr != "" || options.pubHttpsAddr != "" {
 		this.pubServer = newPubServer(options.pubHttpAddr, options.pubHttpsAddr,
 			options.maxClients, this)
-		this.pubMetrics = newPubMetrics(this)
+		this.pubMetrics = newPubMetrics(options.reporterInterval)
 
 		switch options.store {
 		case "kafka":
@@ -103,7 +104,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	if options.subHttpAddr != "" || options.subHttpsAddr != "" {
 		this.subServer = newSubServer(options.subHttpAddr, options.subHttpsAddr,
 			options.maxClients, this)
-		this.subMetrics = newSubMetrics(this)
+		this.subMetrics = newSubMetrics(options.reporterInterval)
 
 		switch options.store {
 		case "kafka":
@@ -126,6 +127,8 @@ func (this *Gateway) Start() (err error) {
 	}, syscall.SIGINT, syscall.SIGUSR2)
 
 	this.startedAt = time.Now()
+
+	startRuntimeMetrics(options.reporterInterval)
 
 	meta.Default.Start()
 	log.Trace("meta store started")

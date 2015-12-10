@@ -59,7 +59,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	t1 := time.Now()
 	this.pubMetrics.PubConcurrent.Inc(1)
 	this.pubMetrics.PubQps.Mark(1)
-	this.pubMetrics.PubSize.Mark(int64(len(msgBytes)))
+	this.pubMetrics.PubMsgSize.Update(int64(len(msgBytes)))
 
 	query := r.URL.Query() // reuse the query will save 100ns
 
