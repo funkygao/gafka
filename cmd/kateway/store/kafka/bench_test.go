@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -56,4 +57,28 @@ func BenchmarkDumbPool(b *testing.B) {
 		p.Put(r)
 	}
 
+}
+
+func BenchmarkRWMutexRLock(b *testing.B) {
+	var l sync.RWMutex
+	for i := 0; i < b.N; i++ {
+		l.RLock()
+		l.RUnlock()
+	}
+}
+
+func BenchmarkRWMutexLock(b *testing.B) {
+	var l sync.RWMutex
+	for i := 0; i < b.N; i++ {
+		l.Lock()
+		l.Unlock()
+	}
+}
+
+func BenchmarkMutex(b *testing.B) {
+	var l sync.Mutex
+	for i := 0; i < b.N; i++ {
+		l.Lock()
+		l.Unlock()
+	}
 }
