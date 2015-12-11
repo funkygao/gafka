@@ -18,7 +18,7 @@ ak:bench.go
 
 http:httpd.go 
 	go build -o httpdserver httpd.go
-	./httpdserver -mode standalone&
+	GOGC=800 GODEBUG=gctrace=1 ./httpdserver -mode standalone&
 	go run bench.go -neat -mode http
 
 httpgateway:httpd.go 
