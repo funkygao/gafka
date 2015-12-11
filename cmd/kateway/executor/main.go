@@ -38,7 +38,9 @@ func init() {
 func main() {
 	ctx.LoadConfig(cf)
 
-	m := zkmeta.New(zone, 0)
+	metaConf := zkmeta.DefaultConfig(zone)
+	metaConf.Refresh = 0
+	m := zkmeta.New(metaConf)
 
 	cf := api.DefaultConfig()
 	cf.Debug = true
