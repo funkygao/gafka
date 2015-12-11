@@ -42,7 +42,10 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	//lbr := io.LimitReader(r.Body, options.maxPubSize+1)
 	buffer := mpool.BytesBufferGet() // TODO pass the r.Body directly to PubStore
 	buffer.Reset()
-	if _, err := io.Copy(buffer, r.Body); err != nil {
+	ioBuf := this.bufferPool.Get()
+	_, err := io.CopyBuffer(buffer, r.Body, ioBuf)
+	this.bufferPool.Put(ioBuf)
+	if err != nil {
 		// e,g. remote client connection broken
 		mpool.BytesBufferPut(buffer)
 
