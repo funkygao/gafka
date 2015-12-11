@@ -44,14 +44,16 @@ func (this *pubClient) Recycle() {
 type pubPool struct {
 	store *pubStore
 
+	size       int
 	brokerList []string
 	pool       *pool.ResourcePool
 	nextId     uint64
 }
 
-func newPubPool(store *pubStore, brokerList []string) *pubPool {
+func newPubPool(store *pubStore, brokerList []string, size int) *pubPool {
 	this := &pubPool{
 		store:      store,
+		size:       size,
 		brokerList: brokerList,
 	}
 	this.initialize()
@@ -87,7 +89,7 @@ func (this *pubPool) kafkaClientFactory() (pool.Resource, error) {
 
 func (this *pubPool) initialize() {
 	this.pool = pool.NewResourcePool("kafka", this.kafkaClientFactory,
-		1000, 1000, 0, time.Second*10, time.Minute) // TODO
+		this.size, this.size, 0, time.Second*10, time.Minute) // TODO
 }
 
 func (this *pubPool) Close() {
