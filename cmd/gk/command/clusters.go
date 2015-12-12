@@ -178,7 +178,7 @@ func (this *Clusters) verifyBrokers(zkzone *zk.ZkZone) {
 			if !foundInRoster {
 				// should manually register the broker
 				this.Ui.Output(strings.Repeat(" ", 4) +
-					color.Green("+ gk clusters -z %s -s -n %s -addbroker %s:%s",
+					color.Green("+ gk clusters -z %s -s -c %s -addbroker %s:%s",
 						zkzone.Name(), cluster, broker.Id, broker.Addr()))
 			}
 		}
