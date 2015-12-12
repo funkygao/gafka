@@ -1,5 +1,10 @@
 #!/bin/bash -e
 
+if [[ $1 = "-h" ]]; then
+    echo "build.sh [-gc|-loc|-install|kw|-race]"
+    exit
+fi
+
 if [[ $1 = "-loc" ]]; then
     find . -name '*.go' | xargs wc -l | sort -n | tail -1
     exit
