@@ -21,7 +21,16 @@ http:httpd.go
 	GOGC=800 GODEBUG=gctrace=1 ./httpdserver -mode standalone&
 	go run bench.go -neat -mode http
 
-httpgateway:httpd.go 
+sub:sub.go
+	go run sub.go -n 200000
+
+goproxy:httpd.go 
+	go build -o httpdserver httpd.go
+	./httpdserver -p 9080&
+	./httpdserver -mode goproxy&
+	go run bench.go -neat -mode http
+
+proxy:httpd.go 
 	go build -o httpdserver httpd.go
 	./httpdserver -p 9080&
 	./httpdserver -mode proxy&

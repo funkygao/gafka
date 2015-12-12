@@ -43,7 +43,7 @@ func (this *pubStore) Start() (err error) {
 	defer this.wg.Done()
 
 	for _, cluster := range meta.Default.ClusterNames() {
-		this.pubPools[cluster] = newPubPool(this, meta.Default.BrokerList(cluster))
+		this.pubPools[cluster] = newPubPool(this, meta.Default.BrokerList(cluster), 500)
 	}
 
 	go func() {

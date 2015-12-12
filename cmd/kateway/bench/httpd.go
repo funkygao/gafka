@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -23,9 +25,33 @@ var (
 	hpool = newHttpPool()
 )
 
+type reverseProxyPool struct {
+	i  int64
+	ps []*httputil.ReverseProxy
+}
+
+func newReverseProxyPool(n int) *reverseProxyPool {
+	this := &reverseProxyPool{}
+	this.ps = make([]*httputil.ReverseProxy, n)
+	u, err := url.Parse("http://localhost:9080")
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < n; i++ {
+		this.ps[i] = httputil.NewSingleHostReverseProxy(u)
+	}
+	return this
+}
+
+func (this *reverseProxyPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	atomic.AddInt64(&this.i, 1)
+	p := this.ps[int(this.i)%len(this.ps)]
+	p.ServeHTTP(w, r)
+}
+
 func init() {
 	flag.IntVar(&port, "p", 9090, "http port to bind")
-	flag.StringVar(&mode, "mode", "standalone", "<standalone|proxy>")
+	flag.StringVar(&mode, "mode", "standalone", "<standalone|proxy|goproxy>")
 	flag.Parse()
 }
 
@@ -103,8 +129,8 @@ func (this *httpPool) Get() (*httpClient, error) {
 	return k.(*httpClient), nil
 }
 
-func hello(rw http.ResponseWriter, r *http.Request) {
-	io.WriteString(rw, "hello world")
+func hello(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "hello world")
 	if mode == "standalone" {
 		return
 	}
@@ -135,9 +161,17 @@ func hello(rw http.ResponseWriter, r *http.Request) {
 func main() {
 	syscall.Dup2(1, 2)
 
-	http.HandleFunc("/", hello)
 	listen := fmt.Sprintf(":%d", port)
 	fmt.Printf("listening on %s\n", listen)
+
+	if mode == "goproxy" {
+		p := newReverseProxyPool(100)
+		http.Handle("/", p)
+		fmt.Println(http.ListenAndServe(listen, nil))
+		return
+	}
+
+	http.HandleFunc("/", hello)
 	if err := http.ListenAndServe(listen, nil); err != nil {
 		panic(err)
 	}

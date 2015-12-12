@@ -3,6 +3,9 @@
 # play with kateway
 #----------------------
 
+# register the demo cluster 'me'
+gk clusters -z local -add me -p /kafka_pubsub
+
 # initialize executor reserved topic
 gk topics -z local -c me -add _executor._kateway.v1 -replicas 1
 
@@ -19,6 +22,8 @@ curl -XGET http://localhost:9192/raw/topics/app1/foobar/v1
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hello world!' 'http://localhost:9191/topics/foobar/v1'
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d '@/Users/funky/gopkg/src/github.com/funkygao/fae/contrib/resources/dashboard.png' 'http://localhost:9191/topics/foobar/v1'
 
+# raw pub
+curl -XGET -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9191/raw/topics/foobar/v1'
 
 
 #----------------------

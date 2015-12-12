@@ -20,7 +20,7 @@ benchmark-mem-dumb:
 	go test -v -benchmem -bench=^BenchmarkKatewayPubDumb1K -benchtime=20s -memprofile=prof.mem; go tool pprof kateway.test prof.mem
 
 kafka:build
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -level debug -store kafka -id 1 
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -store kafka -id 1 -level info
 
 race:
 	@go build -race -gcflags '-m=1'

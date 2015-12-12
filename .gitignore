@@ -25,6 +25,8 @@ _testmain.go
 
 .DS_Store
 *.swp
+prof.cpu
+*.test
 cmd/kateway/kateway
 cmd/kateway/prof.cpu
 cmd/kateway/prof.mem

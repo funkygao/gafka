@@ -91,7 +91,7 @@ func pubKafkaLoop(seq int) {
 	msg := strings.Repeat("X", sz)
 	for i := 0; i < loops; i++ {
 		_, _, err := producer.SendMessage(&sarama.ProducerMessage{
-			Topic: "foobar",
+			Topic: topic,
 			Value: sarama.StringEncoder(msg),
 		})
 		if err == nil {
@@ -124,7 +124,7 @@ func pubKafkaAsyncLoop(seq int) {
 	msg := strings.Repeat("X", sz)
 	for i := 0; i < loops; i++ {
 		producer.Input() <- &sarama.ProducerMessage{
-			Topic: "foobar",
+			Topic: topic,
 			Value: sarama.StringEncoder(msg),
 		}
 		stress.IncCounter("ok", 1)

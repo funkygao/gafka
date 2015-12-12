@@ -8,6 +8,7 @@ func (this *Gateway) buildRouting() {
 	this.manServer.Router().GET("/ping", this.pingHandler)
 
 	if this.pubServer != nil {
+		this.pubServer.Router().GET("/raw/topics/:topic/:ver", this.pubRawHandler)
 		this.pubServer.Router().POST("/topics/:topic/:ver", this.pubHandler)
 		this.pubServer.Router().POST("/ws/topics/:topic/:ver", this.pubWsHandler)
 	}

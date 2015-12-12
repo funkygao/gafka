@@ -38,7 +38,10 @@ func init() {
 func main() {
 	ctx.LoadConfig(cf)
 
-	m := zkmeta.New(zone, 0)
+	metaConf := zkmeta.DefaultConfig(zone)
+	metaConf.Refresh = time.Hour
+	meta.Default = zkmeta.New(metaConf)
+	meta.Default.Start()
 
 	cf := api.DefaultConfig()
 	cf.Debug = true
@@ -66,7 +69,7 @@ func main() {
 				topic = meta.KafkaTopic(appid, topic, ver)
 				var lines []string
 				cluster := meta.Default.LookupCluster(appid, topic)
-				lines, err = m.ZkCluster(cluster).AddTopic(topic, 1, 1) // TODO
+				lines, err = meta.Default.ZkCluster(cluster).AddTopic(topic, 1, 1) // TODO
 				if err != nil {
 					log.Printf("add: %v", err)
 					time.Sleep(time.Second * 10)

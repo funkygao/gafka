@@ -23,6 +23,7 @@ func (this *Gateway) helpHandler(w http.ResponseWriter, r *http.Request,
  GET /ping
  GET /clusters
 
+ GET /raw/topics/:topic/:ver
 POST /topics/:topic/:ver?key=mykey&async=1
  GET /raw/topics/:appid/:topic/:ver
  GET /topics/:appid/:topic/:ver/:group?limit=1&reset=newest
