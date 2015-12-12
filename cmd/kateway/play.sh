@@ -3,6 +3,9 @@
 # play with kateway
 #----------------------
 
+# register the demo cluster 'me'
+gk clusters -z local -add me -p /kafka_pubsub
+
 # initialize executor reserved topic
 gk topics -z local -c me -add _executor._kateway.v1 -replicas 1
 
