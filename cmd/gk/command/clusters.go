@@ -48,7 +48,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&addBroker, "addbroker", "", "")
 	cmdFlags.StringVar(&nickname, "nickname", "", "")
 	cmdFlags.IntVar(&delBroker, "delbroker", -1, "")
-	cmdFlags.BoolVar(&this.registeredBrokers, "registered", false, "")
+	cmdFlags.BoolVar(&this.registeredBrokers, "r", false, "")
 	cmdFlags.BoolVar(&verifyMode, "verify", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -144,11 +144,16 @@ func (this *Clusters) printRegisteredBrokers(zkzone *zk.ZkZone) {
 	this.Ui.Output(zkzone.Name())
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		info := zkcluster.RegisteredInfo()
-		this.Ui.Output(fmt.Sprintf("    %s %s", info.Name(), info.Nickname))
+		this.Ui.Output(fmt.Sprintf("    %s(%s)", info.Name(), info.Nickname))
 		registeredBrokers := info.Roster
-		for _, b := range registeredBrokers {
-			this.Ui.Output(fmt.Sprintf("        %2d %s", b.Id, b.Addr()))
+		if len(registeredBrokers) == 0 {
+			this.Ui.Warn("        brokers not defined")
+		} else {
+			for _, b := range registeredBrokers {
+				this.Ui.Output(fmt.Sprintf("        %2d %s", b.Id, b.Addr()))
+			}
 		}
+
 	})
 }
 
@@ -349,7 +354,7 @@ Options:
     -delbroker id TODO
       Delete a broker from a cluster.
 
-    -registered
+    -r
       Display registered permanent brokers info.
 
     -verify
