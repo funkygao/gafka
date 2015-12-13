@@ -40,28 +40,32 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 
 	// get the raw POST message
 	//lbr := io.LimitReader(r.Body, options.maxPubSize+1)
-	buffer := mpool.BytesBufferGet() // TODO pass the r.Body directly to PubStore
-	buffer.Reset()
-	_, err := io.Copy(buffer, r.Body)
-	if err != nil {
-		// e,g. remote client connection broken
-		mpool.BytesBufferPut(buffer)
+	msgLen := int(r.ContentLength)
+	if msgLen == -1 {
+		this.writeInvalidContentLength(w)
+		log.Warn("pub[%s] %s %+v invalid content length", appid, r.RemoteAddr, params)
+		return
+	}
+
+	msg := mpool.NewMessage(msgLen)
+	msg.Body = msg.Body[0:msgLen]
+	if _, err := io.ReadAtLeast(r.Body, msg.Body, msgLen); err != nil {
+		msg.Free()
 
 		log.Warn("%s %+v: %s", r.RemoteAddr, params, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	msgBytes := buffer.Bytes()
 	if options.debug {
-		log.Debug("pub[%s] %s %+v %s", appid, r.RemoteAddr, params, string(msgBytes))
+		log.Debug("pub[%s] %s %+v %s", appid, r.RemoteAddr, params, string(msg.Body))
 	}
 
 	var t1 time.Time
 	if !options.disableMetrics {
 		t1 = time.Now()
 		this.pubMetrics.PubQps.Mark(1)
-		this.pubMetrics.PubMsgSize.Update(int64(len(msgBytes)))
+		this.pubMetrics.PubMsgSize.Update(int64(len(msg.Body)))
 	}
 
 	query := r.URL.Query() // reuse the query will save 100ns
@@ -74,9 +78,9 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	partition, offset, err := pubMethod(meta.Default.LookupCluster(appid, topic),
 		appid+"."+topic+"."+ver,
 		//meta.KafkaTopic(appid, topic, params.ByName(UrlParamVersion)),
-		query.Get(UrlQueryKey), msgBytes)
+		query.Get(UrlQueryKey), msg.Body)
 	if err != nil {
-		mpool.BytesBufferPut(buffer) // defer is costly
+		msg.Free() // defer is costly
 
 		if options.enableBreaker && isBrokerError(err) {
 			this.breaker.Fail()
@@ -96,17 +100,19 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 
 	// manually create the json for performance
 	// use encoding/json will cost 800ns
-	buffer.Reset()
-	buffer.WriteString(`{"partition":`)
-	buffer.WriteString(strconv.Itoa(int(partition)))
-	buffer.WriteString(`,"offset":`)
-	buffer.WriteString(strconv.Itoa(int(offset)))
-	buffer.WriteString(`}`)
-	if _, err = w.Write(buffer.Bytes()); err != nil {
+
+	msg.Reset()
+	msg.WriteString(`{"partition":`)
+	msg.WriteString(strconv.Itoa(int(partition)))
+	msg.WriteString(`,"offset":`)
+	msg.WriteString(strconv.Itoa(int(offset)))
+	msg.WriteString(`}`)
+	if _, err = w.Write(msg.Bytes()); err != nil {
 		log.Error("%s: %v", r.RemoteAddr, err)
 		this.pubMetrics.ClientError.Inc(1)
 	}
-	mpool.BytesBufferPut(buffer) // defer is costly
+
+	msg.Free()
 
 	// TODO so many metrics, are to be put into anther thread via chan
 	// DONT block the main handler thread
