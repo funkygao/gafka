@@ -1,11 +1,18 @@
 package mpool
 
+import (
+	"errors"
+)
+
+var ErrorMessageOverflow = errors.New("message overflow")
+
 // Message encapsulates the messages that we exchange back and forth.
 type Message struct {
 	Body    []byte
 	bodyBuf []byte
 
 	slabSize int
+	off      int
 }
 
 type messageSlab struct {
@@ -14,10 +21,10 @@ type messageSlab struct {
 }
 
 var messagePool = []messageSlab{
-	{maxBody: 256, ch: make(chan *Message, 1024)},  // 128K
-	{maxBody: 1024, ch: make(chan *Message, 1024)}, // 1 MB
-	{maxBody: 8192, ch: make(chan *Message, 256)},  // 2 MB
-	{maxBody: 65536, ch: make(chan *Message, 64)},  // 4 MB
+	{maxBody: 256, ch: make(chan *Message, 1<<10)},      // 256K
+	{maxBody: 2 << 10, ch: make(chan *Message, 20<<10)}, // 40 MB
+	{maxBody: 8 << 10, ch: make(chan *Message, 1<<10)},  // 8 MB
+	{maxBody: 64 << 10, ch: make(chan *Message, 1<<8)},  // 16 MB
 }
 
 // Free decrements the reference count on a message, and releases its
@@ -40,6 +47,29 @@ func (this *Message) Free() (recycled bool) {
 		// message pool is full, silently drop
 	}
 	return true
+}
+
+func (this *Message) Reset() {
+	this.off = 0
+}
+
+func (this *Message) WriteString(s string) error {
+	if len(s)+this.off > cap(this.bodyBuf) {
+		return ErrorMessageOverflow
+	}
+
+	this.Body = this.Body[0 : this.off+len(s)]
+	copy(this.Body[this.off:], s)
+	this.off += len(s)
+	return nil
+}
+
+func (this *Message) Bytes() []byte {
+	return this.Body[0:]
+}
+
+func (this *Message) String() string {
+	return string(this.Body)
 }
 
 // NewMessage is the supported way to obtain a new Message.  This makes
