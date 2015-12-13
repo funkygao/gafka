@@ -16,36 +16,44 @@ import (
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/golib/progress"
+	"github.com/funkygao/termui"
+	"github.com/nsf/termbox-go"
 )
 
 type Top struct {
 	Ui  cli.Ui
 	Cmd string
 
-	mu             sync.Mutex
+	zone           string
+	clusterPattern string
+
+	mu sync.Mutex
+
+	round int
+
+	who            string
 	limit          int
 	topInterval    int
 	batchMode      bool
+	dashboardGraph bool
 	topicPattern   string
-	clusterPattern string
 
 	counters     map[string]float64 // key is cluster:topic
 	lastCounters map[string]float64
+
+	totalMps []float64 // for the dashboard graph
 }
 
 func (this *Top) Run(args []string) (exitCode int) {
-	var (
-		zone string
-		who  string
-	)
 	cmdFlags := flag.NewFlagSet("top", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
-	cmdFlags.IntVar(&this.topInterval, "interval", 5, "refresh interval")
+	cmdFlags.IntVar(&this.topInterval, "interval", 3, "refresh interval")
 	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
 	cmdFlags.IntVar(&this.limit, "n", 34, "")
-	cmdFlags.StringVar(&who, "who", "producer", "")
+	cmdFlags.StringVar(&this.who, "who", "producer", "")
+	cmdFlags.BoolVar(&this.dashboardGraph, "d", false, "")
 	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -59,14 +67,15 @@ func (this *Top) Run(args []string) (exitCode int) {
 
 	this.counters = make(map[string]float64)
 	this.lastCounters = make(map[string]float64)
+	this.totalMps = make([]float64, 0, 1000)
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		if !patternMatched(zkcluster.Name(), this.clusterPattern) {
 			return
 		}
 
-		switch who {
+		switch this.who {
 		case "p", "producer":
 			go this.clusterTopProducers(zkcluster)
 
@@ -74,9 +83,14 @@ func (this *Top) Run(args []string) (exitCode int) {
 			go this.clusterTopConsumers(zkcluster)
 
 		default:
-			this.Ui.Error(fmt.Sprintf("unknown type: %s", who))
+			this.Ui.Error(fmt.Sprintf("unknown type: %s", this.who))
 		}
 	})
+
+	if this.dashboardGraph {
+		this.drawDashboard()
+		return
+	}
 
 	bar := progress.New(this.topInterval)
 	for {
@@ -102,7 +116,61 @@ func (this *Top) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
 
+func (this *Top) drawDashboard() {
+	err := termui.Init()
+	if err != nil {
+		panic(err)
+	}
+	defer termui.Close()
+
+	termui.UseTheme("helloworld")
+
+	refreshData := func() []float64 {
+		this.showAndResetCounters()
+		return this.totalMps
+	}
+
+	lc0 := termui.NewLineChart()
+	lc0.Border.Label = fmt.Sprintf("%s mps totals: %s %s %s", this.who,
+		this.zone, this.clusterPattern, this.topicPattern)
+	lc0.Data = refreshData()
+	lc0.Width = termui.TermWidth()
+	lc0.Height = termui.TermHeight()
+	lc0.X = 0
+	lc0.Y = 0
+	lc0.AxesColor = termui.ColorWhite
+	lc0.LineColor = termui.ColorGreen | termui.AttrBold
+
+	evt := make(chan termbox.Event)
+	go func() {
+		for {
+			evt <- termbox.PollEvent()
+		}
+	}()
+
+	termui.Render(lc0)
+	tick := time.NewTicker(time.Duration(this.topInterval) * time.Second)
+	defer tick.Stop()
+	rounds := 0
+	for {
+		select {
+		case e := <-evt:
+			if e.Type == termbox.EventKey && e.Ch == 'q' {
+				return
+			}
+
+		case <-tick.C:
+			// refresh data, and skip the first 2 rounds
+			rounds++
+			if rounds > 1 {
+				lc0.Data = refreshData()
+				termui.Render(lc0)
+			}
+
+		}
+	}
 }
 
 func (this *Top) showRefreshBar(bar *progress.Progress) {
@@ -144,12 +212,15 @@ func (this *Top) showAndResetCounters() {
 
 		num := sortedNum[i]
 		mps := float64(num-this.lastCounters[counterFlip[num]]) / float64(this.topInterval) // msg per sec
-		totalNum += num
-		totalMps += mps
+		if this.round > 1 {
+			totalNum += num
+			totalMps += mps
+		}
+
 		if limitReached {
 			othersNum += num
 			othersMps += mps
-		} else {
+		} else if !this.dashboardGraph {
 			clusterAndTopic := strings.SplitN(counterFlip[num], ":", 2)
 			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
 				clusterAndTopic[0], clusterAndTopic[1],
@@ -158,7 +229,16 @@ func (this *Top) showAndResetCounters() {
 		}
 	}
 
-	if limitReached {
+	// display the summary footer
+	this.round++
+	if this.dashboardGraph {
+		if len(this.totalMps) > 5000 {
+			// too long, so reset
+			this.totalMps = make([]float64, 0, 1000)
+		}
+
+		this.totalMps = append(this.totalMps, totalNum)
+	} else {
 		// the catchall row
 		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
 			"-OTHERS-", "-OTHERS-",
@@ -256,6 +336,9 @@ Options:
       Refresh interval in seconds.
 
     -n limit
+
+    -d
+      Draw dashboard in graph.
 
     -b 
       Batch mode operation. 
