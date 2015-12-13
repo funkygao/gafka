@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"sync"
 	"time"
 
@@ -58,9 +56,7 @@ func newPubMetrics(interval time.Duration) *pubMetrics {
 		PubLatency:    metrics.NewRegisteredHistogram("pub.latency", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015)),
 	}
 
-	// stdout reporter
-	go metrics.Log(metrics.DefaultRegistry, interval*60,
-		log.New(os.Stdout, "", log.Lmicroseconds))
+	go runMetricsReporter(metrics.DefaultRegistry, interval*60)
 
 	// influxdb reporter
 	if options.influxServer != "" {
