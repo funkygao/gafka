@@ -61,7 +61,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Debug("pub[%s] %s %+v %s", appid, r.RemoteAddr, params, string(msg.Body))
 	}
 
-	var t1 time.Time
+	var t1 time.Time // FIXME should be placed at beginning of handler
 	if !options.disableMetrics {
 		t1 = time.Now()
 		this.pubMetrics.PubQps.Mark(1)

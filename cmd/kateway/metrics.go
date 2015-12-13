@@ -29,10 +29,10 @@ func newSubMetrics(interval time.Duration) *subMetrics {
 }
 
 type pubMetrics struct {
-	PubOks    map[string]metrics.Counter
-	pubOkMu   sync.RWMutex
-	PubFails  map[string]metrics.Counter
-	pubFailMu sync.RWMutex
+	PubOkMap   map[string]metrics.Counter
+	pubOkMu    sync.RWMutex
+	PubFailMap map[string]metrics.Counter
+	pubFailMu  sync.RWMutex
 
 	// BytesInPerSec, BytesOutPerSec, FailedMessagesPerSec
 	ConnAccept    metrics.Counter
@@ -45,8 +45,8 @@ type pubMetrics struct {
 
 func newPubMetrics(interval time.Duration) *pubMetrics {
 	this := &pubMetrics{
-		PubOks:   make(map[string]metrics.Counter),
-		PubFails: make(map[string]metrics.Counter),
+		PubOkMap:   make(map[string]metrics.Counter),
+		PubFailMap: make(map[string]metrics.Counter),
 
 		ConnAccept:    metrics.NewRegisteredCounter("pub.accept", metrics.DefaultRegistry),
 		PubConcurrent: metrics.NewRegisteredCounter("pub.concurrent", metrics.DefaultRegistry),
@@ -87,9 +87,9 @@ func (this *pubMetrics) recordForApp(appid, topic, ver, name string,
 }
 
 func (this *pubMetrics) pubFail(appid, topic, ver string) {
-	this.recordForApp(appid, topic, ver, "pub.fail", &this.pubFailMu, this.PubFails)
+	this.recordForApp(appid, topic, ver, "pub.fail", &this.pubFailMu, this.PubFailMap)
 }
 
 func (this *pubMetrics) pubOk(appid, topic, ver string) {
-	this.recordForApp(appid, topic, ver, "pub.ok", &this.pubOkMu, this.PubOks)
+	this.recordForApp(appid, topic, ver, "pub.ok", &this.pubOkMu, this.PubOkMap)
 }
