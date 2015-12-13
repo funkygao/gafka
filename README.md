@@ -49,6 +49,7 @@ Unified multi-datacenter multi-kafka-clusters central management console powered
     
 ### TODO
 
+- [ ] gk top -who consumer
 - [ ] github.com/wvanbergen/kazoo-go bug
 - [ ] rebalance a kafka cluster
 - [ ] active controller switch history

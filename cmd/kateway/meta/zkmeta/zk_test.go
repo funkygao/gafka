@@ -2,7 +2,6 @@ package zkmeta
 
 import (
 	"testing"
-	"time"
 
 	"github.com/funkygao/assert"
 	"github.com/funkygao/gafka/ctx"
@@ -13,7 +12,8 @@ func init() {
 }
 
 func TestAll(t *testing.T) {
-	z := New("local", time.Second*10)
+	cf := DefaultConfig("local")
+	z := New(cf)
 	z.Start()
 
 	assert.Equal(t, "/kafka_pubsub", z.ZkChroot("me"))

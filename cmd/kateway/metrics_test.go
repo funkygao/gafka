@@ -11,6 +11,13 @@ func init() {
 	ctx.LoadConfig("/etc/kateway.cf")
 }
 
+func BenchmarkMetricsCounterWithoutLock(b *testing.B) {
+	p := newPubMetrics(time.Hour)
+	for i := 0; i < b.N; i++ {
+		p.ConnAccept.Inc(1)
+	}
+}
+
 func BenchmarkMetricsCountersWithLock(b *testing.B) {
 	p := newPubMetrics(time.Hour)
 	for i := 0; i < b.N; i++ {
