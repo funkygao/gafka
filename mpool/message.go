@@ -1,16 +1,11 @@
 package mpool
 
-import (
-	"sync/atomic"
-)
-
 // Message encapsulates the messages that we exchange back and forth.
 type Message struct {
 	Body    []byte
 	bodyBuf []byte
 
 	slabSize int
-	refCount int32
 }
 
 type messageSlab struct {
@@ -31,15 +26,6 @@ var messagePool = []messageSlab{
 // be recycled without engaging GC.  This can have rather substantial
 // benefits for performance.
 func (this *Message) Free() (recycled bool) {
-	refCount := atomic.AddInt32(&this.refCount, -1)
-	if refCount > 0 {
-		return false
-	} else if refCount < 0 {
-		// should never happen
-		return true
-	}
-
-	// safe to put back message pool for later reuse
 	var ch chan *Message
 	for _, slab := range messagePool {
 		if this.slabSize == slab.maxBody {
@@ -54,11 +40,6 @@ func (this *Message) Free() (recycled bool) {
 		// message pool is full, silently drop
 	}
 	return true
-}
-
-func (this *Message) Clone() *Message {
-	atomic.AddInt32(&this.refCount, 1)
-	return this
 }
 
 // NewMessage is the supported way to obtain a new Message.  This makes
@@ -84,7 +65,6 @@ func NewMessage(sz int) *Message {
 		msg.bodyBuf = make([]byte, 0, msg.slabSize)
 	}
 
-	msg.refCount = 1
 	msg.Body = msg.bodyBuf
 	return msg
 }
