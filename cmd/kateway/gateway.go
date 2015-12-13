@@ -41,9 +41,6 @@ type Gateway struct {
 	guard *guard
 	timer *timewheel.TimeWheel
 
-	// BufferPool avoiding 32 KB of io.Copy garbage per request
-	bufferPool BufferPool
-
 	shutdownOnce sync.Once
 	shutdownCh   chan struct{}
 	wg           sync.WaitGroup
@@ -62,7 +59,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		leakyBuckets: ratelimiter.NewLeakyBuckets(1000*60, time.Minute),
 		certFile:     options.certFile,
 		keyFile:      options.keyFile,
-		bufferPool:   newBufferPool(),
 	}
 
 	if options.consulAddr != "" {
