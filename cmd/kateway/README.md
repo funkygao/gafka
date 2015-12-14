@@ -122,6 +122,7 @@ A REST gateway for kafka that supports Pub and Sub.
 ### TODO
 
 - [X] multi-cluster
+- [ ] warmup
 - [ ] elastic scale
 - [ ] Under high load presure, mpool pkg might become a burden
 - [ ] pool benchmark
