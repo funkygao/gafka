@@ -43,7 +43,8 @@ func (this *pubStore) Start() (err error) {
 	defer this.wg.Done()
 
 	for _, cluster := range meta.Default.ClusterNames() {
-		this.pubPools[cluster] = newPubPool(this, meta.Default.BrokerList(cluster), 500)
+		this.pubPools[cluster] = newPubPool(this,
+			meta.Default.BrokerList(cluster), 500) // TODO
 	}
 
 	go func() {
@@ -98,25 +99,18 @@ func (this *pubStore) SyncPub(cluster string, topic, key string,
 	this.poolLock.RLock()
 	pool, present := this.pubPools[cluster]
 	this.poolLock.RUnlock()
-
 	if !present {
 		err = store.ErrInvalidCluster
 		return
 	}
 
-	client, e := pool.Get()
+	producer, e := pool.GetSyncProducer()
 	if e != nil {
-		if client != nil {
-			client.Recycle()
+		if producer != nil {
+			producer.Recycle()
 		}
-		return -1, -1, e
-	}
 
-	var producer sarama.SyncProducer
-	producer, err = sarama.NewSyncProducerFromClient(client.Client)
-	if err != nil {
-		client.Recycle()
-		return
+		return -1, -1, e
 	}
 
 	// TODO add msg header
@@ -131,52 +125,38 @@ func (this *pubStore) SyncPub(cluster string, topic, key string,
 		Value: sarama.ByteEncoder(msg),
 	})
 
-	producer.Close() // TODO keep the conn open
-	client.Recycle()
+	producer.Recycle()
 	return
 }
 
 func (this *pubStore) AsyncPub(cluster string, topic, key string,
 	msg []byte) (partition int32, offset int64, err error) {
 	this.poolLock.RLock()
-	pool := this.pubPools[cluster]
+	pool, present := this.pubPools[cluster]
 	this.poolLock.RUnlock()
-
-	client, e := pool.Get()
-	if e != nil {
-		if client != nil {
-			client.Recycle()
-		}
-		return 0, 0, e
-	}
-
-	var producer sarama.AsyncProducer
-	producer, err = sarama.NewAsyncProducerFromClient(client.Client)
-	if err != nil {
-		client.Recycle()
+	if !present {
+		err = store.ErrInvalidCluster
 		return
 	}
 
-	// TODO pool up the error collector goroutines
-	// messages will only be returned here after all retry attempts are exhausted.
-	if false {
-		go func() {
-			for err := range producer.Errors() {
-				log.Error("async producer:", err)
-			}
-		}()
+	producer, e := pool.GetAsyncProducer()
+	if e != nil {
+		if producer != nil {
+			producer.Recycle()
+		}
+
+		return 0, 0, e
 	}
 
 	var keyEncoder sarama.Encoder = nil // will use random partitioner
 	if key != "" {
 		keyEncoder = sarama.StringEncoder(key) // will use hash partition
-		log.Debug("keyed message: %s", key)
 	}
 	producer.Input() <- &sarama.ProducerMessage{
 		Topic: topic,
 		Key:   keyEncoder,
 		Value: sarama.ByteEncoder(msg),
 	}
-	client.Recycle()
+	producer.Recycle()
 	return
 }

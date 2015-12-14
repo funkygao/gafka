@@ -69,6 +69,13 @@ func (this *webServer) Start() {
 		go func() {
 			var retryDelay time.Duration
 			for {
+				select {
+				case <-this.gw.shutdownCh:
+					return
+
+				default:
+				}
+
 				this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
 				if err != nil {
 					if retryDelay == 0 {
@@ -107,6 +114,13 @@ func (this *webServer) Start() {
 		go func() {
 			var retryDelay time.Duration
 			for {
+				select {
+				case <-this.gw.shutdownCh:
+					return
+
+				default:
+				}
+
 				this.tlsListener, err = net.Listen("tcp", this.httpsServer.Addr)
 				if err != nil {
 					if retryDelay == 0 {
