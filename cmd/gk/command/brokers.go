@@ -44,10 +44,13 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 				this.Ui.Output(l)
 			}
 
+			printSwallowedErrors(this.Ui, zkzone)
+
 			return
 		}
 
 		this.displayZoneBrokers(zkzone)
+		printSwallowedErrors(this.Ui, zkzone)
 
 		return
 	}
@@ -55,6 +58,8 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	// print all brokers on all zones by default
 	forSortedZones(func(zkzone *zk.ZkZone) {
 		this.displayZoneBrokers(zkzone)
+
+		printSwallowedErrors(this.Ui, zkzone)
 	})
 
 	return

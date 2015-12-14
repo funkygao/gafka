@@ -76,6 +76,8 @@ func (this *Lags) Run(args []string) (exitCode int) {
 			} else {
 				break
 			}
+
+			printSwallowedErrors(this.Ui, zkzone)
 		}
 
 		return
@@ -95,6 +97,8 @@ func (this *Lags) Run(args []string) (exitCode int) {
 		} else {
 			break
 		}
+
+		printSwallowedErrors(this.Ui, zkzone)
 	}
 
 	return

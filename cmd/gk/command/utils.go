@@ -174,3 +174,14 @@ func sortStrMap(m map[string]int) sortedStrMap {
 
 	return r
 }
+
+func printSwallowedErrors(ui cli.Ui, zkzone *zk.ZkZone) {
+	errs := zkzone.Errors()
+	if len(errs) == 0 {
+		return
+	}
+
+	for _, e := range errs {
+		ui.Error(color.Red("%v", e))
+	}
+}

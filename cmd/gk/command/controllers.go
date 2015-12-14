@@ -32,6 +32,7 @@ func (this *Controllers) Run(args []string) (exitCode int) {
 	if zone == "" {
 		forSortedZones(func(zkzone *zk.ZkZone) {
 			this.printControllers(zkzone)
+			printSwallowedErrors(this.Ui, zkzone)
 		})
 
 		return
@@ -39,6 +40,7 @@ func (this *Controllers) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	this.printControllers(zkzone)
+	printSwallowedErrors(this.Ui, zkzone)
 
 	return
 }

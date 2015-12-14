@@ -31,6 +31,8 @@ func (this *UnderReplicated) Run(args []string) (exitCode int) {
 			zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 				this.displayUnderReplicatedPartitionsOfCluster(zkcluster)
 			})
+
+			printSwallowedErrors(this.Ui, zkzone)
 		})
 
 		return
@@ -42,6 +44,8 @@ func (this *UnderReplicated) Run(args []string) (exitCode int) {
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		this.displayUnderReplicatedPartitionsOfCluster(zkcluster)
 	})
+
+	printSwallowedErrors(this.Ui, zkzone)
 
 	return
 }

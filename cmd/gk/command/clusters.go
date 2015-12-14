@@ -65,6 +65,8 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	if addCluster != "" {
 		// add cluster
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+		defer printSwallowedErrors(this.Ui, zkzone)
+
 		if err := zkzone.RegisterCluster(addCluster, clusterPath); err != nil {
 			this.Ui.Error(err.Error())
 			return 1
@@ -117,10 +119,14 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		if zone != "" {
 			zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 			this.verifyBrokers(zkzone)
+
+			printSwallowedErrors(this.Ui, zkzone)
 		} else {
 			// print all zones all clusters
 			forSortedZones(func(zkzone *zk.ZkZone) {
 				this.verifyBrokers(zkzone)
+
+				printSwallowedErrors(this.Ui, zkzone)
 			})
 		}
 		return
@@ -130,10 +136,14 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	if zone != "" {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 		this.printClusters(zkzone)
+
+		printSwallowedErrors(this.Ui, zkzone)
 	} else {
 		// print all zones all clusters
 		forSortedZones(func(zkzone *zk.ZkZone) {
 			this.printClusters(zkzone)
+
+			printSwallowedErrors(this.Ui, zkzone)
 		})
 	}
 

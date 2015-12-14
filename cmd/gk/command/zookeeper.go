@@ -76,6 +76,8 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 
 	if zone != "" {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+		defer printSwallowedErrors(this.Ui, zkzone)
+
 		if this.leaderOnly {
 			this.printLeader(zkzone)
 		} else {
@@ -92,6 +94,8 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 		} else {
 			this.printZkStats(zkzone)
 		}
+
+		printSwallowedErrors(this.Ui, zkzone)
 	})
 
 	return
