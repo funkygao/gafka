@@ -46,8 +46,8 @@ func init() {
 			}, nil
 		},
 
-		"shutdown": func() (cli.Command, error) {
-			return &command.Shutdown{
+		"host": func() (cli.Command, error) {
+			return &command.Host{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
