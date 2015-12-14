@@ -133,6 +133,7 @@ func (this *Top) drawDashboard() {
 	}
 
 	lc0 := termui.NewLineChart()
+	lc0.Mode = "dot"
 	lc0.Border.Label = fmt.Sprintf("%s mps totals: %s %s %s", this.who,
 		this.zone, this.clusterPattern, this.topicPattern)
 	lc0.Data = refreshData()
@@ -237,7 +238,7 @@ func (this *Top) showAndResetCounters() {
 			this.totalMps = make([]float64, 0, 1000)
 		}
 
-		this.totalMps = append(this.totalMps, totalNum)
+		this.totalMps = append(this.totalMps, totalMps)
 	} else {
 		// the catchall row
 		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",

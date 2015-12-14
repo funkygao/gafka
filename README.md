@@ -1,4 +1,4 @@
-# gafka
+# gafka [![Build Status](https://travis-ci.org/funkygao/gafka.png?branch=master)](https://travis-ci.org/funkygao/gafka)
 Unified multi-datacenter multi-kafka-clusters central management console powered by golang.
 
 ### Features
