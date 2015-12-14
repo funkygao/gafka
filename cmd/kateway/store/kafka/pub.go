@@ -159,11 +159,13 @@ func (this *pubStore) AsyncPub(cluster string, topic, key string,
 
 	// TODO pool up the error collector goroutines
 	// messages will only be returned here after all retry attempts are exhausted.
-	go func() {
-		for err := range producer.Errors() {
-			log.Error("async producer:", err)
-		}
-	}()
+	if false {
+		go func() {
+			for err := range producer.Errors() {
+				log.Error("async producer:", err)
+			}
+		}()
+	}
 
 	var keyEncoder sarama.Encoder = nil // will use random partitioner
 	if key != "" {
@@ -175,5 +177,6 @@ func (this *pubStore) AsyncPub(cluster string, topic, key string,
 		Key:   keyEncoder,
 		Value: sarama.ByteEncoder(msg),
 	}
+	client.Recycle()
 	return
 }
