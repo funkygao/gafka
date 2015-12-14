@@ -6,7 +6,7 @@ sync:bench.go
 
 async:bench.go
 	@echo bench against kateway in async pub mode
-	@go run bench.go -async -neat -mode gw
+	@go run bench.go -async -neat -mode gw -addr "localhost:9191"
 
 kafka:bench.go
 	@echo bench against kafka directly in sync pub mode

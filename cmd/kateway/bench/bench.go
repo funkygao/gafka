@@ -177,6 +177,9 @@ func pubGatewayLoop(seq int) {
 		} else {
 			if response.StatusCode != http.StatusOK {
 				stress.IncCounter("fail", 1)
+				if !suppressError {
+					log.Printf("Error sending request to API endpoint. %+v", response.Status)
+				}
 				return
 			}
 
