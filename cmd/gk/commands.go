@@ -46,6 +46,13 @@ func init() {
 			}, nil
 		},
 
+		"shutdown": func() (cli.Command, error) {
+			return &command.Shutdown{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"ssh": func() (cli.Command, error) {
 			return &command.Ssh{
 				Ui:  ui,
