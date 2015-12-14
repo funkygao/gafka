@@ -53,13 +53,6 @@ func init() {
 			}, nil
 		},
 
-		"ssh": func() (cli.Command, error) {
-			return &command.Ssh{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
 		"discover": func() (cli.Command, error) {
 			return &command.Discover{
 				Ui:  ui,
@@ -106,6 +99,13 @@ func init() {
 
 		"producers": func() (cli.Command, error) {
 			return &command.Producers{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"ssh": func() (cli.Command, error) {
+			return &command.Ssh{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
