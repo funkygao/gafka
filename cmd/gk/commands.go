@@ -46,13 +46,6 @@ func init() {
 			}, nil
 		},
 
-		"host": func() (cli.Command, error) {
-			return &command.Host{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
 		"discover": func() (cli.Command, error) {
 			return &command.Discover{
 				Ui:  ui,
