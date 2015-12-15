@@ -6,6 +6,7 @@ import (
 	"net"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/ctx"
@@ -21,6 +22,7 @@ type Topology struct {
 	zone        string
 	hostPattern string
 	verbose     bool
+	watchMode   bool
 }
 
 func (this *Topology) Run(args []string) (exitCode int) {
@@ -29,14 +31,22 @@ func (this *Topology) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.StringVar(&this.hostPattern, "host", "", "")
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
+	cmdFlags.BoolVar(&this.watchMode, "w", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	if this.zone == "" {
-		forSortedZones(func(zkzone *zk.ZkZone) {
-			this.displayZoneTopology(zkzone)
-		})
+		for {
+			forSortedZones(func(zkzone *zk.ZkZone) {
+				this.displayZoneTopology(zkzone)
+			})
+
+			if !this.watchMode {
+				return
+			}
+			time.Sleep(time.Second * 5)
+		}
 
 		return
 	}
@@ -44,7 +54,14 @@ func (this *Topology) Run(args []string) (exitCode int) {
 	// a single zone
 	ensureZoneValid(this.zone)
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
-	this.displayZoneTopology(zkzone)
+	for {
+		this.displayZoneTopology(zkzone)
+
+		if !this.watchMode {
+			return
+		}
+		time.Sleep(time.Second * 5)
+	}
 
 	return
 }
@@ -54,12 +71,14 @@ type brokerHostInfo struct {
 	leadingPartitions int                // being leader of how many partitions
 	topics            map[string][]int32 // detailed leading topics info {topic: partitionIds}
 	msgsInStock       int64
+	topicMsgs         map[string]int64
 }
 
 func newBrokerHostInfo() *brokerHostInfo {
 	return &brokerHostInfo{
-		ports:  make([]int, 0),
-		topics: make(map[string][]int32),
+		ports:     make([]int, 0),
+		topics:    make(map[string][]int32),
+		topicMsgs: make(map[string]int64),
 	}
 }
 
@@ -79,12 +98,12 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 	this.Ui.Output(zkzone.Name())
 
 	instances := make(map[string]*brokerHostInfo)
-	zkzone.ForSortedBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
-		if len(brokers) == 0 {
+	zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
+		if len(liveBrokers) == 0 {
 			return
 		}
 
-		for _, broker := range brokers {
+		for _, broker := range liveBrokers {
 			if !patternMatched(broker.Host, this.hostPattern) {
 				continue
 			}
@@ -127,6 +146,7 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 				swallow(err)
 
 				instances[host].msgsInStock += (latestOffset - oldestOffset)
+				instances[host].topicMsgs[topic] += (latestOffset - oldestOffset)
 				instances[host].leadingPartitions++
 				instances[host].addTopicPartition(topic, partitionID)
 			}
@@ -151,7 +171,10 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 
 		if this.verbose {
 			for topic, partitions := range instances[host].topics {
-				this.Ui.Output(fmt.Sprintf("%40s: P%+v", topic, partitions))
+				this.Ui.Output(fmt.Sprintf("%40s: %15sM P%2d %+v",
+					topic,
+					gofmt.Comma(instances[host].topicMsgs[topic]),
+					len(partitions), partitions))
 			}
 		}
 	}
@@ -173,6 +196,9 @@ Options:
 
     -host host pattern
       Display given hosts only.
+
+    -w
+      Run in watch mode: keep running till Ctrl^C.
 
     -l
       Use a long listing format.

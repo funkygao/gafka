@@ -86,6 +86,10 @@ func (this *ZkZone) Errors() []error {
 	return this.errs
 }
 
+func (this *ZkZone) ResetErrors() {
+	this.errs = make([]error, 0)
+}
+
 func (this *ZkZone) connectIfNeccessary() {
 	if this.conn == nil {
 		this.Connect()
@@ -416,4 +420,31 @@ func (this *ZkZone) DiscoverClusters(rootPath string) ([]string, error) {
 	}
 
 	return result, nil
+}
+
+func (this *ZkZone) HostBelongs(hostIp string) (liveClusters, registeredClusters []string) {
+	liveClusters = make([]string, 0)
+	registeredClusters = make([]string, 0)
+
+	// find in live brokers
+	this.ForSortedBrokers(func(cluster string, liveBrokers map[string]*BrokerZnode) {
+		zkcluster := this.NewCluster(cluster)
+
+		for _, broker := range liveBrokers {
+			if broker.Host == hostIp {
+				liveClusters = append(liveClusters, cluster)
+				break
+			}
+		}
+
+		registeredBrokers := zkcluster.RegisteredInfo().Roster
+		for _, broker := range registeredBrokers {
+			if broker.Host == hostIp {
+				registeredClusters = append(registeredClusters, cluster)
+				break
+			}
+		}
+	})
+
+	return
 }
