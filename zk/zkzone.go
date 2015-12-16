@@ -22,13 +22,16 @@ type ZkZone struct {
 	evt  <-chan zk.Event
 	mu   sync.Mutex
 	errs []error
+
+	zkclusters map[string]*ZkCluster
 }
 
 // NewZkZone creates a new ZkZone instance.
 func NewZkZone(config *Config) *ZkZone {
 	return &ZkZone{
-		conf: config,
-		errs: make([]error, 0),
+		conf:       config,
+		errs:       make([]error, 0),
+		zkclusters: make(map[string]*ZkCluster),
 	}
 }
 
@@ -50,10 +53,20 @@ func (this *ZkZone) Close() {
 }
 
 func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
-	return this.NewclusterWithPath(cluster, this.ClusterPath(cluster))
+	if c, present := this.zkclusters[cluster]; present {
+		return c
+	}
+
+	c := this.NewclusterWithPath(cluster, this.ClusterPath(cluster))
+	this.zkclusters[cluster] = c
+	return c
 }
 
 func (this *ZkZone) NewclusterWithPath(cluster, path string) *ZkCluster {
+	if c, present := this.zkclusters[cluster]; present {
+		return c
+	}
+
 	return &ZkCluster{
 		zone:     this,
 		name:     cluster,
