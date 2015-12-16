@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/user"
 )
 
 func Hostname() string {
@@ -68,4 +69,13 @@ func LocalIP() (net.IP, error) {
 		}
 	}
 	return nil, nil
+}
+
+func CurrentUserIsRoot() bool {
+	user, err := user.Current()
+	if err != nil {
+		return false
+	}
+
+	return user.Uid == "0"
 }
