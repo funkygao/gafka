@@ -24,6 +24,7 @@ type Topology struct {
 	hostPattern string
 	verbose     bool
 	watchMode   bool
+	maxPort     bool
 }
 
 func (this *Topology) Run(args []string) (exitCode int) {
@@ -33,6 +34,7 @@ func (this *Topology) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.hostPattern, "host", "", "")
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.BoolVar(&this.watchMode, "w", false, "")
+	cmdFlags.BoolVar(&this.maxPort, "maxport", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -40,7 +42,11 @@ func (this *Topology) Run(args []string) (exitCode int) {
 	if this.zone == "" {
 		for {
 			forSortedZones(func(zkzone *zk.ZkZone) {
-				this.displayZoneTopology(zkzone)
+				if this.maxPort {
+					this.displayZoneMaxPort(zkzone)
+				} else {
+					this.displayZoneTopology(zkzone)
+				}
 			})
 
 			if !this.watchMode {
@@ -57,7 +63,11 @@ func (this *Topology) Run(args []string) (exitCode int) {
 	ensureZoneValid(this.zone)
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	for {
-		this.displayZoneTopology(zkzone)
+		if this.maxPort {
+			this.displayZoneMaxPort(zkzone)
+		} else {
+			this.displayZoneTopology(zkzone)
+		}
 
 		if !this.watchMode {
 			return
@@ -112,6 +122,19 @@ func (this *brokerHostInfo) addTopicPartition(topic string, partitionId int32) {
 	} else {
 		this.topicPartitions[topic] = append(this.topicPartitions[topic], partitionId)
 	}
+}
+
+func (this *Topology) displayZoneMaxPort(zkzone *zk.ZkZone) {
+	maxPort := 0
+	zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
+		for _, broker := range liveBrokers {
+			if maxPort < broker.Port {
+				maxPort = broker.Port
+			}
+		}
+	})
+
+	this.Ui.Output(fmt.Sprintf("max port in zone[%s]: %d", zkzone.Name(), maxPort))
 }
 
 func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
@@ -274,6 +297,9 @@ Options:
 
     -l
       Use a long listing format.
+
+    -maxport
+      Display the max kafka broker tcp port in this zone.
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }
