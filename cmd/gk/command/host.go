@@ -15,8 +15,9 @@ import (
 )
 
 type Host struct {
-	Ui   cli.Ui
-	Cmd  string
+	Ui  cli.Ui
+	Cmd string
+
 	zone string
 	host string
 }
@@ -25,7 +26,7 @@ func (this *Host) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("host", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", "", "")
-	cmdFlags.StringVar(&this.host, "h", "", "")
+	cmdFlags.StringVar(&this.host, "ip", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -126,7 +127,7 @@ func (*Host) Synopsis() string {
 
 func (this *Host) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s host -z zone -h addr
+Usage: %s host -z zone -ip addr
 
     Diagnose a broker by ip
 

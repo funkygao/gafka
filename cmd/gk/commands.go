@@ -46,6 +46,13 @@ func init() {
 			}, nil
 		},
 
+		"ops": func() (cli.Command, error) {
+			return &command.Ops{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"discover": func() (cli.Command, error) {
 			return &command.Discover{
 				Ui:  ui,
