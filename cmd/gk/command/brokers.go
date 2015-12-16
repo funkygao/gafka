@@ -14,8 +14,9 @@ import (
 )
 
 type Brokers struct {
-	Ui        cli.Ui
-	Cmd       string
+	Ui  cli.Ui
+	Cmd string
+
 	staleOnly bool
 }
 
@@ -137,7 +138,7 @@ Options:
       Only print brokers of this cluster.
 
     -stale
-      Only print stale brokers: found in zk but not connectable
+      Only print stale brokers: found in zk but not connectable.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

@@ -9,8 +9,9 @@ import (
 )
 
 type VerifyReplicas struct {
-	Ui      cli.Ui
-	Cmd     string
+	Ui  cli.Ui
+	Cmd string
+
 	zone    string
 	cluster string
 	topic   string

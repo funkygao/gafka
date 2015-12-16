@@ -13,8 +13,9 @@ import (
 )
 
 type Zookeeper struct {
-	Ui         cli.Ui
-	Cmd        string
+	Ui  cli.Ui
+	Cmd string
+
 	flw        string // zk four letter word command
 	cmdHelp    string
 	zkHost     string
@@ -149,14 +150,14 @@ func (this *Zookeeper) printZkStats(zkzone *zk.ZkZone) {
 }
 
 func (*Zookeeper) Synopsis() string {
-	return "Display zone Zookeeper status"
+	return "Display zone Zookeeper status by four letter word command"
 }
 
 func (this *Zookeeper) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s zookeeper [options]
 
-    Display zone Zookeeper status
+    Display zone Zookeeper status by four letter word command
 
 Options:
 

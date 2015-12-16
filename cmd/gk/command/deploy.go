@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"os/user"
+	"os"
 	"strings"
 	"text/template"
 

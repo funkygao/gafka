@@ -182,14 +182,14 @@ func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
 }
 
 func (*Peek) Synopsis() string {
-	return "Peek kafka cluster messages ongoing"
+	return "Peek kafka cluster messages ongoing from newest offset"
 }
 
 func (this *Peek) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s peek -z zone [options]
 
-    Peek kafka cluster messages ongoing
+    Peek kafka cluster messages ongoing from newest offset
 
 Options:
 

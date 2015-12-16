@@ -13,8 +13,9 @@ import (
 )
 
 type Consumers struct {
-	Ui           cli.Ui
-	Cmd          string
+	Ui  cli.Ui
+	Cmd string
+
 	onlineOnly   bool
 	groupPattern string
 	byHost       bool

@@ -15,8 +15,9 @@ import (
 )
 
 type Topics struct {
-	Ui           cli.Ui
-	Cmd          string
+	Ui  cli.Ui
+	Cmd string
+
 	topicPattern string
 	verbose      bool
 }
@@ -258,14 +259,14 @@ func (this *Topics) addTopic(zkcluster *zk.ZkCluster, topic string, replicas,
 }
 
 func (*Topics) Synopsis() string {
-	return "Manage topics & partitions of a zone"
+	return "Manage kafka topics"
 }
 
 func (this *Topics) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s topics -z zone [options]
 
-    Manage topics & partitions of a zone
+    Manage kafka topics
 
 Options:
   

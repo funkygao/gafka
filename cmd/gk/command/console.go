@@ -13,8 +13,9 @@ import (
 )
 
 type Console struct {
-	Ui          cli.Ui
-	Cmd         string
+	Ui  cli.Ui
+	Cmd string
+
 	Cmds        map[string]cli.CommandFactory
 	Line        *liner.State
 	historyFile string

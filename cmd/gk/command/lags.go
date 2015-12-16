@@ -16,8 +16,9 @@ import (
 )
 
 type Lags struct {
-	Ui              cli.Ui
-	Cmd             string
+	Ui  cli.Ui
+	Cmd string
+
 	onlineOnly      bool
 	groupPattern    string
 	topicPattern    string
@@ -166,14 +167,14 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 }
 
 func (*Lags) Synopsis() string {
-	return "Display consumers lag for each topic each partition"
+	return "Display consumers lag for each topic and each partition"
 }
 
 func (this *Lags) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s lags -z zone [options]
 
-    Display consumers lag for each topic each partition
+    Display consumers lag for each topic and each partition
 
 Options:
 

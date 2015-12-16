@@ -14,8 +14,9 @@ import (
 )
 
 type Clusters struct {
-	Ui                cli.Ui
-	Cmd               string
+	Ui  cli.Ui
+	Cmd string
+
 	verbose           bool
 	registeredBrokers bool
 }
@@ -318,14 +319,14 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 }
 
 func (*Clusters) Synopsis() string {
-	return "Register kafka clusters to a zone"
+	return "Register or display kafka clusters"
 }
 
 func (this *Clusters) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s clusters [options]
 
-    Register kafka clusters to a zone
+    Register or display kafka clusters
 
 Options:
 

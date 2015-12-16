@@ -80,14 +80,14 @@ func (this *Partition) addPartition(zkAddrs string, topic string, partitions int
 }
 
 func (*Partition) Synopsis() string {
-	return "Add partition num to a topic"
+	return "Add partition num to a topic for better parallel"
 }
 
 func (this *Partition) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s partition -z zone -c cluster -t topic -n num
 
-    Add partition num to a topic
+    Add partition num to a topic for better parallel
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }

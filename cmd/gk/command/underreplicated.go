@@ -13,8 +13,9 @@ import (
 )
 
 type UnderReplicated struct {
-	Ui   cli.Ui
-	Cmd  string
+	Ui  cli.Ui
+	Cmd string
+
 	zone string
 }
 
