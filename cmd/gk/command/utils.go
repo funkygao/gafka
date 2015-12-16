@@ -66,6 +66,20 @@ func (this *argsRule) invalid(args []string) bool {
 		}
 	}
 
+	// conditions
+	for when, requires := range this.conditions {
+		if _, present := argSet[when]; present {
+			for _, req := range requires {
+				if _, found := argSet[req]; !found {
+					this.ui.Error(color.Red("%s required when %s present",
+						req, when))
+					this.ui.Output(this.cmd.Help())
+					return true
+				}
+			}
+		}
+	}
+
 	// admin required
 	adminAuthRequired := false
 	for _, arg := range args {
@@ -88,20 +102,6 @@ func (this *argsRule) invalid(args []string) bool {
 		if !Authenticator("", pass) {
 			this.ui.Error("invalid admin password, bye!")
 			return true
-		}
-	}
-
-	// conditions
-	for when, requires := range this.conditions {
-		if _, present := argSet[when]; present {
-			for _, req := range requires {
-				if _, found := argSet[req]; !found {
-					this.ui.Error(color.Red("%s required when %s present",
-						req, when))
-					this.ui.Output(this.cmd.Help())
-					return true
-				}
-			}
 		}
 	}
 
