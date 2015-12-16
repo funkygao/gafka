@@ -46,8 +46,8 @@ func init() {
 			}, nil
 		},
 
-		"ops": func() (cli.Command, error) {
-			return &command.Ops{
+		"deploy": func() (cli.Command, error) {
+			return &command.Deploy{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
