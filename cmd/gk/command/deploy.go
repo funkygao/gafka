@@ -54,7 +54,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	}
 
 	if validateArgs(this, this.Ui).
-		on("-demo", "-z", "-c").
+		require("-z", "-c").
 		invalid(args) {
 		return 2
 	}
@@ -74,7 +74,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	}
 
 	if validateArgs(this, this.Ui).
-		require("-z", "-c", "-broker.id", "-port", "-ip").
+		require("-broker.id", "-port", "-ip").
 		invalid(args) {
 		return 2
 	}
