@@ -29,6 +29,7 @@ func (this *UnderReplicated) Run(args []string) (exitCode int) {
 
 	if this.zone == "" {
 		forSortedZones(func(zkzone *zk.ZkZone) {
+			this.Ui.Output(zkzone.Name())
 			zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 				this.displayUnderReplicatedPartitionsOfCluster(zkcluster)
 			})
@@ -42,6 +43,7 @@ func (this *UnderReplicated) Run(args []string) (exitCode int) {
 	// a single zone
 	ensureZoneValid(this.zone)
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	this.Ui.Output(zkzone.Name())
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		this.displayUnderReplicatedPartitionsOfCluster(zkcluster)
 	})
@@ -52,7 +54,7 @@ func (this *UnderReplicated) Run(args []string) (exitCode int) {
 }
 
 func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster *zk.ZkCluster) {
-	this.Ui.Output(zkcluster.Name())
+	this.Ui.Output(fmt.Sprintf("%s %s", strings.Repeat(" ", 4), zkcluster.Name()))
 
 	brokerList := zkcluster.BrokerList()
 	if len(brokerList) == 0 {
