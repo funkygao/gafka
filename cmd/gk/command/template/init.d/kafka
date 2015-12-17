@@ -1,1 +1,142 @@
-nil
+#!/bin/sh
+#
+# chkconfig: 345 99 01
+# description: Kafka
+#
+# File : Kafka
+#
+# Description: Starts and stops the Kafka server
+#
+
+. /lib/lsb/init-functions
+
+SHUTDOWN_WAIT=30
+
+KAFKA_NAME=kfk_{{.Cluster}}
+KAFKA_USER={{.User}}
+INSTANCE_DIR={{.RootPath}}/$KAFKA_NAME
+
+start() {
+  isrunning
+
+  if [ "$?" = 0 ]; then
+    echo " already running"
+    return 0
+  fi
+
+  su $KAFKA_USER -c "$INSTANCE_DIR/bin/kafka-server-start.sh -daemon $INSTANCE_DIR/config/server.properties"
+
+}
+
+stop() {
+  isrunning
+
+  if [ "$?" = 1 ]; then
+    echo " already stopped"
+    rm -f $CATALINA_PID # remove pidfile if still around
+    return 0
+  fi
+
+  echo -n "Waiting for  to exit (${SHUTDOWN_WAIT} sec.): "
+
+  findpid
+  count=0
+  until [ "$pid" = "" ] || [ $count -gt $SHUTDOWN_WAIT ]; do
+    su sre -c "kill $pid" > /dev/null
+
+    echo -n "."
+    sleep 3
+    count=$((count+3))
+
+    findpid
+  done
+
+  echo ""
+
+  if [ "$count" -gt "$SHUTDOWN_WAIT" ]; then
+    echo "Forcing  to stop"
+    /bin/kill -9 $pid && sleep 5
+  fi
+
+  # check if kafka is still around, this will be our exit status
+  ! isrunning
+}
+
+findpid() {
+  pid=""
+  pid=$(pgrep -n -U sre -f "kafka.Kafka $INSTANCE_DIR/config/server.properties$")
+
+  # validate output of pgrep
+  if ! [ "$pid" = "" ] && ! [ "$pid" -gt 0 ]; then
+    log_failure_msg "Unable to determine if  is running"
+    exit 1
+  fi
+}
+
+isrunning() {
+  findpid
+
+  if [ "$pid" = "" ]; then
+    return 1
+  elif [ "$pid" -gt 0 ]; then
+    return 0
+  fi
+}
+
+# See how we were called.
+case "$1" in
+
+  start)
+    start
+    RETVAL=$?
+
+    if [ "$RETVAL" = 0 ]; then
+      log_success_msg "Started "
+    else
+      log_failure_msg "Not able to start "
+    fi
+    ;;
+
+  stop)
+    stop
+    RETVAL=$?
+
+    if [ "$RETVAL" = 0 ]; then
+      log_success_msg "Stopped "
+    else
+      log_failure_msg "Not able to stop "
+    fi
+  ;;
+
+  restart)
+    stop
+    sleep 5
+    start
+    RETVAL=$?
+
+    if [ "$RETVAL" = 0 ]; then
+      log_success_msg "Restarted "
+    else
+      log_failure_msg "Not able to restart "
+    fi
+  ;;
+
+  status)
+    isrunning
+    RETVAL=$?
+
+    if [ "$RETVAL" = 0 ]; then
+      echo " (pid $pid) is running..."
+    else
+      echo " is stopped"
+      RETVAL=3
+    fi
+  ;;
+
+  *)
+    echo "Usage: $0 {start|stop|restart|status}."
+  ;;
+
+esac
+
+exit $RETVAL
