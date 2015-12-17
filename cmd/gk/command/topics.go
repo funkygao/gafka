@@ -87,12 +87,11 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	// all clusters
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		this.displayTopicsOfCluster(zkcluster)
-
-		this.Ui.Output(fmt.Sprintf("-TOTAL Topics- %d", this.topicN))
-		if this.verbose {
-			this.Ui.Output(fmt.Sprintf("-TOTAL Partitions- %d", this.partitionN))
-		}
 	})
+	this.Ui.Output(fmt.Sprintf("%s -TOTAL Topics- %d", strings.Repeat(" ", 60), this.topicN))
+	if this.verbose {
+		this.Ui.Output(fmt.Sprintf("%s -TOTAL Partitions- %d", strings.Repeat(" ", 60), this.partitionN))
+	}
 
 	return
 }
