@@ -50,7 +50,7 @@ func ZoneZkAddrs(zone string) (zkAddrs string) {
 	}
 
 	// should never happen
-	fmt.Printf("zone[%s] undefined", zone)
+	fmt.Printf("zone[%s] undefined\n", zone)
 	os.Exit(1)
 	return ""
 }
