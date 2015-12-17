@@ -13,7 +13,7 @@ fi
 PREFIX=$GOPATH
 BINDIR=${PREFIX}/bin
 
-VER=0.2.1rc
+VER=0.2.2stable
 GOVER=$(go version | cut -d' ' -f3 | cut -d'.' -f2)
 # get the git commit
 GIT_ID=$(git rev-parse HEAD | cut -c1-7)
