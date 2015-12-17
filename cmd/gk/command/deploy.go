@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/user"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -26,6 +28,7 @@ type Deploy struct {
 	zone, cluster string
 	rootPah       string
 	user          string
+	userInfo      *user.User
 	brokerId      string
 	tcpPort       string
 	ip            string
@@ -61,14 +64,18 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if !ctx.CurrentUserIsRoot() && false {
+	if !ctx.CurrentUserIsRoot() {
 		this.Ui.Error("requires root priviledges!")
 		return 1
 	}
 
+	var err error
+	this.userInfo, err = user.Lookup(this.user)
+	swallow(err)
+
 	// prepare the root directory
 	this.rootPah = strings.TrimSuffix(this.rootPah, "/")
-	err := os.MkdirAll(fmt.Sprintf("%s/bin", this.instanceDir()), 0755)
+	err = os.MkdirAll(fmt.Sprintf("%s/bin", this.instanceDir()), 0755)
 	swallow(err)
 	err = os.MkdirAll(fmt.Sprintf("%s/config", this.instanceDir()), 0755)
 	swallow(err)
@@ -110,22 +117,21 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 
 	// bin
 	this.writeFileFromTemplate("template/bin/kafka-run-class.sh",
-		fmt.Sprintf("%s/bin/kafka-run-class.sh", this.instanceDir()), 0755, data)
+		fmt.Sprintf("%s/bin/kafka-run-class.sh", this.instanceDir()), 0755, data, true)
 	this.writeFileFromTemplate("template/bin/kafka-server-start.sh",
-		fmt.Sprintf("%s/bin/kafka-server-start.sh", this.instanceDir()), 0755, data)
+		fmt.Sprintf("%s/bin/kafka-server-start.sh", this.instanceDir()), 0755, data, true)
 	this.writeFileFromTemplate("template/bin/setenv.sh",
-		fmt.Sprintf("%s/bin/setenv.sh", this.instanceDir()), 0755, data)
+		fmt.Sprintf("%s/bin/setenv.sh", this.instanceDir()), 0755, data, true)
 
 	// /etc/init.d/
 	this.writeFileFromTemplate("template/init.d/kafka",
-		//fmt.Sprintf("/etc/init.d/kfk_%s", this.cluster), 0644, data) // TODO root
-		fmt.Sprintf("%s/%s", this.instanceDir(), this.clusterName()), 0755, data)
+		fmt.Sprintf("/etc/init.d/%s", this.clusterName()), 0755, data, false)
 
 	// config
 	this.writeFileFromTemplate("template/config/server.properties",
-		fmt.Sprintf("%s/config/server.properties", this.instanceDir()), 0644, data)
+		fmt.Sprintf("%s/config/server.properties", this.instanceDir()), 0644, data, true)
 	this.writeFileFromTemplate("template/config/log4j.properties",
-		fmt.Sprintf("%s/config/log4j.properties", this.instanceDir()), 0644, data)
+		fmt.Sprintf("%s/config/log4j.properties", this.instanceDir()), 0644, data, true)
 
 	this.Ui.Warn(fmt.Sprintf("deployed! REMEMBER to add monitor for this new broker!"))
 	this.Ui.Warn(fmt.Sprintf("NOW, please run the following command:"))
@@ -148,21 +154,56 @@ func (this *Deploy) clusterName() string {
 }
 
 func (this *Deploy) installKafka() {
-
+	this.Ui.Output("installing kafka runtime...")
+	jars := []string{
+		"jopt-simple-3.2.jar",
+		"kafka_2.10-0.8.1.1.jar",
+		"log4j-1.2.15.jar",
+		"metrics-core-2.2.0.jar",
+		"scala-library-2.10.1.jar",
+		"slf4j-api-1.7.2.jar",
+		"snappy-java-1.0.5.jar",
+		"zkclient-0.3.jar",
+		"zookeeper-3.3.4.jar",
+	}
+	for _, jar := range jars {
+		this.writeFileFromTemplate(
+			fmt.Sprintf("template/kafkalibs/%s", jar),
+			fmt.Sprintf("%s/libs/%s", this.kafkaBaseDir, jar),
+			0644, nil, false)
+	}
+	this.Ui.Output("kafka runtime installed")
 }
 
 func (this *Deploy) writeFileFromTemplate(tplSrc, dst string, perm os.FileMode,
-	data interface{}) {
+	data interface{}, chown bool) {
 	b, err := Asset(tplSrc)
 	swallow(err)
-	wr := &bytes.Buffer{}
-	t := template.Must(template.New(tplSrc).Parse(string(b)))
-	err = t.Execute(wr, data)
+	if data != nil {
+		wr := &bytes.Buffer{}
+		t := template.Must(template.New(tplSrc).Parse(string(b)))
+		err = t.Execute(wr, data)
+		swallow(err)
+
+		err = ioutil.WriteFile(dst, wr.Bytes(), perm)
+		swallow(err)
+
+		return
+	}
+
+	// no template, just file copy
+	err = ioutil.WriteFile(dst, b, perm)
 	swallow(err)
 
-	// TODO chown
-	err = ioutil.WriteFile(dst, wr.Bytes(), perm)
-	swallow(err)
+	if chown {
+		this.chown(dst)
+	}
+}
+
+func (this *Deploy) chown(fp string) {
+	uid, _ := strconv.Atoi(this.userInfo.Uid)
+	gid, _ := strconv.Atoi(this.userInfo.Gid)
+	swallow(os.Chown(fp, uid, gid))
 }
 
 func (*Deploy) Synopsis() string {
@@ -189,6 +230,10 @@ Options:
       run 'gk topology -z %s -maxport' to get the max port currently in use.
 
     -broker.id id
+
+    -user runAsUser
+      The deployed kafka broker will run as this user.
+      Defaults to sre
 
     -kafka.base dir
       Kafka installation prefix dir.
