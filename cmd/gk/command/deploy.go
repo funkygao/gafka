@@ -77,10 +77,13 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	this.rootPah = strings.TrimSuffix(this.rootPah, "/")
 	err = os.MkdirAll(fmt.Sprintf("%s/bin", this.instanceDir()), 0755)
 	swallow(err)
+	this.chown(fmt.Sprintf("%s/bin", this.instanceDir()))
 	err = os.MkdirAll(fmt.Sprintf("%s/config", this.instanceDir()), 0755)
 	swallow(err)
+	this.chown(fmt.Sprintf("%s/config", this.instanceDir()))
 	err = os.MkdirAll(fmt.Sprintf("%s/logs", this.instanceDir()), 0755)
 	swallow(err)
+	this.chown(fmt.Sprintf("%s/logs", this.instanceDir()))
 
 	type templateVar struct {
 		KafkaBase   string
