@@ -77,7 +77,7 @@ func (this *Migrate) Run(args []string) (exitCode int) {
 	//this.ensureBrokersAreAlive()
 	data := this.generateReassignFile()
 	this.Ui.Output(data)
-	yes, _ := this.Ui.Ask("Are you sure to go ahead? Y/N")
+	yes, _ := this.Ui.Ask("Are you sure to execute the migration? [Y/N]")
 	if yes == "Y" {
 		this.executeReassignment()
 	} else {
