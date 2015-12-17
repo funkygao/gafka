@@ -12,6 +12,7 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/gofmt"
 )
 
 type Brokers struct {
@@ -130,10 +131,14 @@ func (this *Brokers) clusterBrokers(cluster string, brokers map[string]*zk.Broke
 	sort.Strings(sortedBrokerIds)
 
 	for _, brokerId := range sortedBrokerIds {
-		lines = append(lines, fmt.Sprintf("\t%8s %s", brokerId, brokers[brokerId]))
+		b := brokers[brokerId]
+		lines = append(lines, fmt.Sprintf("\t%8s %24s jmx:%-2d ver:%-2s uptime:%s",
+			brokerId,
+			b.Addr(),
+			b.JmxPort,
+			b.Version, gofmt.PrettySince(b.Uptime())))
 	}
 	return lines, len(brokers)
-
 }
 
 func (*Brokers) Synopsis() string {
