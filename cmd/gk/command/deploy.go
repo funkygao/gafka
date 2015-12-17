@@ -15,6 +15,7 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	gio "github.com/funkygao/golib/io"
 )
 
 // go get -u github.com/jteeuwen/go-bindata
@@ -24,6 +25,7 @@ type Deploy struct {
 	Ui  cli.Ui
 	Cmd string
 
+	zkzone        *zk.ZkZone
 	kafkaBaseDir  string
 	zone, cluster string
 	rootPah       string
@@ -32,6 +34,7 @@ type Deploy struct {
 	brokerId      string
 	tcpPort       string
 	ip            string
+	demoMode      bool
 }
 
 func (this *Deploy) Run(args []string) (exitCode int) {
@@ -39,29 +42,41 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
-	cmdFlags.StringVar(&this.kafkaBaseDir, "kafka.base", "/opt/kafka_2.10-0.8.1.1/", "")
+	cmdFlags.StringVar(&this.kafkaBaseDir, "kafka.base", ctx.KafkaHome(), "")
 	cmdFlags.StringVar(&this.brokerId, "broker.id", "", "")
 	cmdFlags.StringVar(&this.tcpPort, "port", "", "")
 	cmdFlags.StringVar(&this.rootPah, "root", "/var/wd", "")
 	cmdFlags.StringVar(&this.ip, "ip", "", "")
 	cmdFlags.StringVar(&this.user, "user", "sre", "")
+	cmdFlags.BoolVar(&this.demoMode, "demo", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	if validateArgs(this, this.Ui).
+		on("-demo", "-z", "-c").
+		invalid(args) {
+		return 2
+	}
+
+	this.zkzone = zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	clusers := this.zkzone.Clusters()
+	zkchroot, present := clusers[this.cluster]
+	if !present {
+		this.Ui.Error(fmt.Sprintf("run 'gk clusters -z %s -add %s -p $zkchroot' first!",
+			this.zone, this.cluster))
+		return 1
+	}
+
+	if this.demoMode {
+		this.demo()
+		return
 	}
 
 	if validateArgs(this, this.Ui).
 		require("-z", "-c", "-broker.id", "-port", "-ip").
 		invalid(args) {
 		return 2
-	}
-
-	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
-	clusers := zkzone.Clusters()
-	zkchroot, present := clusers[this.cluster]
-	if !present {
-		this.Ui.Error(fmt.Sprintf("run 'gk clusters -z %s -add %s -p $zkchroot' first!",
-			this.zone, this.cluster))
-		return 1
 	}
 
 	if !ctx.CurrentUserIsRoot() {
@@ -103,18 +118,12 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		InstanceDir: this.instanceDir(),
 		User:        this.user,
 		TcpPort:     this.tcpPort,
-		ZkAddrs:     zkzone.ZkAddrs(),
+		ZkAddrs:     this.zkzone.ZkAddrs(),
 	}
 
 	// package the kafka runtime together
-	err = os.MkdirAll(this.kafkaLibDir(), 0755)
-	if err != nil {
-		if !os.IsExist(err) {
-			swallow(err)
-		} else {
-			// ok, kafka already installed
-		}
-	} else {
+	if !gio.DirExists(this.kafkaLibDir()) {
+		swallow(os.MkdirAll(this.kafkaLibDir(), 0755))
 		this.installKafka()
 	}
 
@@ -203,6 +212,34 @@ func (this *Deploy) writeFileFromTemplate(tplSrc, dst string, perm os.FileMode,
 	}
 }
 
+func (this *Deploy) demo() {
+	var (
+		maxPort     int
+		maxBrokerId int
+	)
+
+	this.zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
+		for _, broker := range liveBrokers {
+			if maxPort < broker.Port {
+				maxPort = broker.Port
+			}
+		}
+	})
+
+	brokers := &Brokers{
+		Ui:  this.Ui,
+		Cmd: this.Cmd,
+	}
+	maxBrokerId = brokers.maxBrokerId(this.zkzone, this.cluster)
+
+	ip, err := ctx.LocalIP()
+	swallow(err)
+
+	this.Ui.Output(fmt.Sprintf("gk deploy -z %s -c %s -broker.id %d -port %d -ip %s",
+		this.zone, this.cluster, maxBrokerId+1, maxPort+1, ip.String()))
+
+}
+
 func (this *Deploy) chown(fp string) {
 	uid, _ := strconv.Atoi(this.userInfo.Uid)
 	gid, _ := strconv.Atoi(this.userInfo.Gid)
@@ -221,6 +258,9 @@ Usage: %s deploy -z zone -c cluster [options]
 
 Options:
 
+    -demo
+      Demonstrate how to use this command.
+
     -root dir
       Root directory of the kafka broker.
       Defaults to /var/wd
@@ -228,9 +268,8 @@ Options:
     -ip addr
       Advertised host name of this new broker.	
 
-    -port
+    -port port
       Tcp port the broker will listen on.
-      run 'gk topology -z %s -maxport' to get the max port currently in use.
 
     -broker.id id
 
@@ -240,8 +279,8 @@ Options:
 
     -kafka.base dir
       Kafka installation prefix dir.
-      Defaults to /opt/kafka_2.10-0.8.1.1/
+      Defaults to %s
 
-`, this.Cmd, this.zone)
+`, this.Cmd, ctx.KafkaHome())
 	return strings.TrimSpace(help)
 }

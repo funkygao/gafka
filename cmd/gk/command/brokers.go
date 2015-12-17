@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/Shopify/sarama"
@@ -64,6 +65,22 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	})
 
 	return
+}
+
+func (this *Brokers) maxBrokerId(zkzone *zk.ZkZone, clusterName string) int {
+	var maxBrokerId int
+	zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
+		if cluster == clusterName {
+			for _, b := range liveBrokers {
+				id, _ := strconv.Atoi(b.Id)
+				if id > maxBrokerId {
+					maxBrokerId = id
+				}
+			}
+		}
+	})
+
+	return maxBrokerId
 }
 
 func (this *Brokers) displayZoneBrokers(zkzone *zk.ZkZone) {
