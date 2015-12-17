@@ -20,6 +20,8 @@ type Topics struct {
 
 	topicPattern string
 	verbose      bool
+	topicN       int
+	partitionN   int
 }
 
 func (this *Topics) Run(args []string) (exitCode int) {
@@ -74,12 +76,22 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	if cluster != "" {
 		zkcluster := zkzone.NewCluster(cluster)
 		this.displayTopicsOfCluster(zkcluster)
+
+		this.Ui.Output(fmt.Sprintf("-TOTAL Topics- %d", this.topicN))
+		if this.verbose {
+			this.Ui.Output(fmt.Sprintf("-TOTAL Partitions- %d", this.partitionN))
+		}
 		return
 	}
 
 	// all clusters
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		this.displayTopicsOfCluster(zkcluster)
+
+		this.Ui.Output(fmt.Sprintf("-TOTAL Topics- %d", this.topicN))
+		if this.verbose {
+			this.Ui.Output(fmt.Sprintf("-TOTAL Partitions- %d", this.partitionN))
+		}
 	})
 
 	return
@@ -166,6 +178,8 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 			continue
 		}
 
+		this.topicN++
+
 		hasTopicMatched = true
 		if this.verbose {
 			linesInTopicMode = this.echoOrBuffer(strings.Repeat(" ", 4)+color.Blue(topic), linesInTopicMode)
@@ -193,6 +207,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 			continue
 		}
 
+		this.partitionN += len(alivePartitions)
 		for _, partitionID := range alivePartitions {
 			leader, err := kfk.Leader(topic, partitionID)
 			swallow(err)
