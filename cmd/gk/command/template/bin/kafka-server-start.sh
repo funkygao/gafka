@@ -21,7 +21,7 @@ then
 fi
 
 base_dir={{.KafkaBase}}
-INSTANCE_DIR={{.RootPath}}/kfk_{{.Cluster}}
+INSTANCE_DIR={{.InstanceDir}}
 source $INSTANCE_DIR/bin/setenv.sh
 export KAFKA_LOG4J_OPTS="-Dlog4j.configuration=file:$INSTANCE_DIR/config/log4j.properties"
 

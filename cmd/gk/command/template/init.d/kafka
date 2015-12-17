@@ -12,9 +12,8 @@
 
 SHUTDOWN_WAIT=30
 
-KAFKA_NAME=kfk_{{.Cluster}}
+INSTANCE_DIR={{.InstanceDir}}
 KAFKA_USER={{.User}}
-INSTANCE_DIR={{.RootPath}}/$KAFKA_NAME
 
 start() {
   isrunning

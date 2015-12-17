@@ -21,7 +21,7 @@ then
 fi
 
 base_dir={{.KafkaBase}}
-INSTANCE_DIR={{.RootPath}}/kfk_{{.Cluster}}
+INSTANCE_DIR={{.InstanceDir}}
 
 # create logs directory
 LOG_DIR=$INSTANCE_DIR/logs
