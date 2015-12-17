@@ -128,6 +128,13 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	}
 
 	// bin
+	this.writeFileFromTemplate("template/bin/kafka-topics.sh",
+		fmt.Sprintf("%s/bin/kafka-topics.sh", this.instanceDir()), 0755, nil, true)
+	this.writeFileFromTemplate("template/bin/kafka-reassign-partitions.sh",
+		fmt.Sprintf("%s/bin/kafka-reassign-partitions.sh", this.instanceDir()), 0755, nil, true)
+	this.writeFileFromTemplate("template/bin/kafka-preferred-replica-election.sh",
+		fmt.Sprintf("%s/bin/kafka-preferred-replica-election.sh", this.instanceDir()), 0755, nil, true)
+
 	this.writeFileFromTemplate("template/bin/kafka-run-class.sh",
 		fmt.Sprintf("%s/bin/kafka-run-class.sh", this.instanceDir()), 0755, data, true)
 	this.writeFileFromTemplate("template/bin/kafka-server-start.sh",
