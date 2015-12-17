@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/ctx"
@@ -19,7 +20,8 @@ type Brokers struct {
 	Ui  cli.Ui
 	Cmd string
 
-	staleOnly bool
+	staleOnly     bool
+	maxBrokerMode bool
 }
 
 func (this *Brokers) Run(args []string) (exitCode int) {
@@ -32,6 +34,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.staleOnly, "stale", false, "")
+	cmdFlags.BoolVar(&this.maxBrokerMode, "maxbroker", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -41,6 +44,12 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 		if cluster != "" {
+			if this.maxBrokerMode {
+				maxBrokerId := this.maxBrokerId(zkzone, cluster)
+				this.Ui.Output(fmt.Sprintf("%d", maxBrokerId))
+				return
+			}
+
 			zkcluster := zkzone.NewCluster(cluster)
 			lines, _ := this.clusterBrokers(cluster, zkcluster.Brokers())
 			for _, l := range lines {
@@ -87,8 +96,25 @@ func (this *Brokers) maxBrokerId(zkzone *zk.ZkZone, clusterName string) int {
 func (this *Brokers) displayZoneBrokers(zkzone *zk.ZkZone) {
 	lines := make([]string, 0)
 	n := 0
-	zkzone.ForSortedBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
-		outputs, count := this.clusterBrokers(cluster, brokers)
+	zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
+		if this.maxBrokerMode {
+			maxBrokerId := 0
+			maxPort := 0
+			for _, b := range liveBrokers {
+				id, _ := strconv.Atoi(b.Id)
+				if id > maxBrokerId {
+					maxBrokerId = id
+				}
+				if b.Port > maxPort {
+					maxPort = b.Port
+				}
+			}
+			lines = append(lines, fmt.Sprintf("%40s max.broker.id:%-2d max.port:%d",
+				color.Blue(cluster), maxBrokerId, maxPort))
+			return
+		}
+
+		outputs, count := this.clusterBrokers(cluster, liveBrokers)
 		lines = append(lines, outputs...)
 		n += count
 	})
@@ -132,11 +158,15 @@ func (this *Brokers) clusterBrokers(cluster string, brokers map[string]*zk.Broke
 
 	for _, brokerId := range sortedBrokerIds {
 		b := brokers[brokerId]
-		lines = append(lines, fmt.Sprintf("\t%8s %24s jmx:%-2d ver:%-2s uptime:%s",
+		uptime := gofmt.PrettySince(b.Uptime())
+		if time.Since(b.Uptime()) < time.Hour*24*7 {
+			uptime = color.Green(uptime)
+		}
+		lines = append(lines, fmt.Sprintf("\t%8s %21s jmx:%-2d ver:%-2d uptime:%s",
 			brokerId,
 			b.Addr(),
 			b.JmxPort,
-			b.Version, gofmt.PrettySince(b.Uptime())))
+			b.Version, uptime))
 	}
 	return lines, len(brokers)
 }
@@ -149,18 +179,21 @@ func (this *Brokers) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s brokers [options]
 
-    Print online brokers from Zookeeper.
+    Print online brokers from Zookeeper
 
 Options:
 
     -z zone
-      Only print brokers within a zone.
+      Only print brokers within a zone
 
     -c cluster name
-      Only print brokers of this cluster.
+      Only print brokers of this cluster
+
+    -maxbroker
+      Display max broker.id and max port
 
     -stale
-      Only print stale brokers: found in zk but not connectable.
+      Only print stale brokers: found in zk but not connectable
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
