@@ -4,11 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/gofmt"
 )
 
 type Controllers struct {
@@ -53,7 +55,16 @@ func (this *Controllers) printControllers(zkzone *zk.ZkZone) {
 		if controller == nil {
 			this.Ui.Output(fmt.Sprintf("\t%s", color.Red("empty")))
 		} else {
-			this.Ui.Output(fmt.Sprintf("\t%s", controller))
+			epochSince := time.Since(controller.Mtime.Time())
+			epochSinceStr := gofmt.PrettySince(controller.Mtime.Time())
+			if epochSince < time.Hour*2*24 {
+				epochSinceStr = color.Red(epochSinceStr)
+			}
+			this.Ui.Output(fmt.Sprintf("\t%-2s %21s epoch:%2s/%-20s uptime:%s",
+				controller.Broker.Id, controller.Broker.Addr(),
+				controller.Epoch,
+				epochSinceStr,
+				gofmt.PrettySince(controller.Broker.Uptime())))
 		}
 	})
 
