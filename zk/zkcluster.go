@@ -253,7 +253,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 	return r
 }
 
-// returns {brokerId: broker}
+// Returns online {brokerId: broker}.
 func (this *ZkCluster) Brokers() map[string]*BrokerZnode {
 	r := make(map[string]*BrokerZnode)
 	for brokerId, brokerInfo := range this.zone.childrenWithData(this.brokerIdsRoot()) {

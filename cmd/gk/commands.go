@@ -39,6 +39,13 @@ func init() {
 			}, nil
 		},
 
+		"migrate": func() (cli.Command, error) {
+			return &command.Migrate{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"zktop": func() (cli.Command, error) {
 			return &command.Zktop{
 				Ui:  ui,
