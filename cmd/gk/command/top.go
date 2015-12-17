@@ -49,7 +49,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
-	cmdFlags.IntVar(&this.topInterval, "interval", 3, "refresh interval")
+	cmdFlags.IntVar(&this.topInterval, "interval", 5, "refresh interval")
 	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
 	cmdFlags.IntVar(&this.limit, "n", 34, "")
 	cmdFlags.StringVar(&this.who, "who", "producer", "")
