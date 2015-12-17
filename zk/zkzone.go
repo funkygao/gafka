@@ -150,12 +150,19 @@ func (this *ZkZone) RegisterCluster(name, path string) error {
 	// ensure cluster root exists
 	this.createZnode(clusterRoot, []byte(""))
 
+	// create the cluster meta znode
 	clusterZkPath := clusterPath(name)
 	err := this.createZnode(clusterPath(name), []byte(path))
-	if err == nil {
+	if err != nil {
+		return fmt.Errorf("%s: %s", clusterZkPath, err.Error())
+	}
+
+	// create the cluster kafka znode
+	err = this.createZnode(path, []byte(""))
+	if err == zk.ErrNodeExists {
 		return nil
 	}
-	return fmt.Errorf("%s: %s", clusterZkPath, err.Error())
+	return err
 }
 
 func (this *ZkZone) UnregisterCluster(name string) error {
