@@ -1,1 +1,1 @@
-export KAFKA_HEAP_OPTS="-Xmx1G -Xms1G"
+export KAFKA_HEAP_OPTS="-Xmx3G -Xms3G"
