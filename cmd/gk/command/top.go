@@ -111,9 +111,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 		this.showAndResetCounters()
 
 		if !this.batchMode {
-			if this.showProgressBar {
-				this.showRefreshBar(bar)
-			}
+			this.showRefreshBar(bar)
 		} else {
 			time.Sleep(time.Duration(this.topInterval) * time.Second)
 		}
@@ -182,7 +180,10 @@ func (this *Top) drawDashboard() {
 func (this *Top) showRefreshBar(bar *progress.Progress) {
 	this.Ui.Output("")
 	for i := 1; i <= this.topInterval; i++ {
-		bar.ShowProgress(i)
+		if this.showProgressBar {
+			bar.ShowProgress(i)
+		}
+
 		time.Sleep(time.Second)
 	}
 }
