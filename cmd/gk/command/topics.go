@@ -22,6 +22,7 @@ type Topics struct {
 	verbose      bool
 	topicN       int
 	partitionN   int
+	totalMsgs    int64
 }
 
 func (this *Topics) Run(args []string) (exitCode int) {
@@ -79,6 +80,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 		this.Ui.Output(fmt.Sprintf("-TOTAL Topics- %d", this.topicN))
 		this.Ui.Output(fmt.Sprintf("-TOTAL Partitions- %d", this.partitionN))
+		if this.verbose {
+			this.Ui.Output(fmt.Sprintf("-TOTAL Messages- %s", gofmt.Comma(this.totalMsgs)))
+		}
 		return
 	}
 
@@ -88,6 +92,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	})
 	this.Ui.Output(fmt.Sprintf("%s -TOTAL Topics- %d", strings.Repeat(" ", 60), this.topicN))
 	this.Ui.Output(fmt.Sprintf("%s -TOTAL Partitions- %d", strings.Repeat(" ", 60), this.partitionN))
+	if this.verbose {
+		this.Ui.Output(fmt.Sprintf("-TOTAL Messages- %s", gofmt.Comma(this.totalMsgs)))
+	}
 
 	return
 }
@@ -230,6 +237,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 				linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",
 					partitionID, leader.ID(), replicas, isr,
 					latestOffset, latestOffset-oldestOffset), linesInTopicMode)
+				this.totalMsgs += latestOffset - oldestOffset
 			} else {
 				// use red for alert
 				linesInTopicMode = this.echoOrBuffer(color.Red("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",
