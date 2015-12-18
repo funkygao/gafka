@@ -16,17 +16,18 @@ import (
 type Controllers struct {
 	Ui  cli.Ui
 	Cmd string
+
+	cluster string
 }
 
 func (this *Controllers) Run(args []string) (exitCode int) {
 	var (
-		cluster string
-		zone    string
+		zone string
 	)
 	cmdFlags := flag.NewFlagSet("controllers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
-	cmdFlags.StringVar(&cluster, "c", "", "") // TODO not used
+	cmdFlags.StringVar(&this.cluster, "c", "", "") // TODO not used
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -51,6 +52,10 @@ func (this *Controllers) Run(args []string) (exitCode int) {
 func (this *Controllers) printControllers(zkzone *zk.ZkZone) {
 	this.Ui.Output(zkzone.Name())
 	zkzone.ForSortedControllers(func(cluster string, controller *zk.ControllerMeta) {
+		if !patternMatched(cluster, this.cluster) {
+			return
+		}
+
 		this.Ui.Output(strings.Repeat(" ", 4) + cluster)
 		if controller == nil {
 			this.Ui.Output(fmt.Sprintf("\t%s", color.Red("empty")))
