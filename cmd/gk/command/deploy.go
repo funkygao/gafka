@@ -37,6 +37,9 @@ type Deploy struct {
 	demoMode      bool
 }
 
+// TODO
+// 1. broker id assignment
+// 2. port assignment
 func (this *Deploy) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("deploy", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
