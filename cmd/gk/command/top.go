@@ -39,11 +39,13 @@ type Top struct {
 	dashboardGraph  bool
 	topicPattern    string
 
-	counters     map[string]float64 // key is cluster:topic
-	lastCounters map[string]float64
+	counters         map[string]float64 // key is cluster:topic
+	lastCounters     map[string]float64
+	consumerCounters map[string]float64
 
-	totalMps []float64 // for the dashboard graph
-	maxMps   float64
+	totalConsumerMps []float64
+	totalMps         []float64 // for the dashboard graph
+	maxMps           float64
 }
 
 func (this *Top) Run(args []string) (exitCode int) {
@@ -68,13 +70,21 @@ func (this *Top) Run(args []string) (exitCode int) {
 		return 2
 	}
 
+	if this.dashboardGraph {
+		this.topInterval = 20
+		this.who = "both"
+		go this.clusterOffsetSummary()
+	}
+
 	if this.who == "c" || this.who == "consumer" {
 		this.topInterval = 20 // consumer groups only refresh offset per minute
 	}
 
 	this.counters = make(map[string]float64)
 	this.lastCounters = make(map[string]float64)
+	this.consumerCounters = make(map[string]float64)
 	this.totalMps = make([]float64, 0, 1000)
+	this.totalConsumerMps = make([]float64, 0, 1000)
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
@@ -88,6 +98,10 @@ func (this *Top) Run(args []string) (exitCode int) {
 
 		case "c", "consumer":
 			go this.clusterTopConsumers(zkcluster)
+
+		case "both":
+			go this.clusterTopConsumers(zkcluster)
+			go this.clusterTopProducers(zkcluster)
 
 		default:
 			this.Ui.Error(fmt.Sprintf("unknown type: %s", this.who))
@@ -134,22 +148,38 @@ func (this *Top) drawDashboard() {
 
 	termui.UseTheme("helloworld")
 
-	refreshData := func() []float64 {
+	refreshProducerData := func() []float64 {
 		this.showAndResetCounters()
 		return this.totalMps
 	}
 
-	lc0 := termui.NewLineChart()
-	lc0.Mode = "dot"
-	lc0.Border.Label = fmt.Sprintf("%s mps totals: %s %s %s", this.who,
+	refreshConsumerData := func() []float64 {
+		return this.totalConsumerMps
+	}
+
+	producerChart := termui.NewLineChart()
+	producerChart.Mode = "dot"
+	producerChart.Border.Label = fmt.Sprintf("producer mps totals: %s %s %s",
 		this.zone, this.clusterPattern, this.topicPattern)
-	lc0.Data = refreshData()
-	lc0.Width = termui.TermWidth()
-	lc0.Height = termui.TermHeight()
-	lc0.X = 0
-	lc0.Y = 0
-	lc0.AxesColor = termui.ColorWhite
-	lc0.LineColor = termui.ColorGreen | termui.AttrBold
+	producerChart.Data = refreshProducerData()
+	producerChart.Width = termui.TermWidth()
+	producerChart.Height = termui.TermHeight() / 2
+	producerChart.X = 0
+	producerChart.Y = 0
+	producerChart.AxesColor = termui.ColorWhite
+	producerChart.LineColor = termui.ColorGreen | termui.AttrBold
+
+	consumerChart := termui.NewLineChart()
+	consumerChart.Mode = "dot"
+	consumerChart.Border.Label = fmt.Sprintf("consumer mps totals: %s %s %s",
+		this.zone, this.clusterPattern, this.topicPattern)
+	consumerChart.Data = refreshConsumerData()
+	consumerChart.Width = termui.TermWidth()
+	consumerChart.Height = termui.TermHeight() / 2
+	consumerChart.X = 0
+	consumerChart.Y = termui.TermHeight() / 2
+	consumerChart.AxesColor = termui.ColorWhite
+	consumerChart.LineColor = termui.ColorRed | termui.AttrBold
 
 	evt := make(chan termbox.Event)
 	go func() {
@@ -158,7 +188,7 @@ func (this *Top) drawDashboard() {
 		}
 	}()
 
-	termui.Render(lc0)
+	termui.Render(producerChart, consumerChart)
 	tick := time.NewTicker(time.Duration(this.topInterval) * time.Second)
 	defer tick.Stop()
 	rounds := 0
@@ -173,8 +203,9 @@ func (this *Top) drawDashboard() {
 			// refresh data, and skip the first 2 rounds
 			rounds++
 			if rounds > 1 {
-				lc0.Data = refreshData()
-				termui.Render(lc0)
+				producerChart.Data = refreshProducerData()
+				consumerChart.Data = refreshConsumerData()
+				termui.Render(producerChart, consumerChart)
 			}
 
 		}
@@ -279,6 +310,28 @@ func (this *Top) showAndResetCounters() {
 	this.counters = make(map[string]float64)
 }
 
+func (this *Top) clusterOffsetSummary() {
+	var lastOffsets float64
+	var total float64
+	for {
+		total = 0.
+		this.mu.Lock()
+		for _, n := range this.consumerCounters {
+			total += n
+		}
+		this.mu.Unlock()
+
+		if lastOffsets > 1 {
+			this.totalConsumerMps = append(this.totalConsumerMps,
+				float64(total)-lastOffsets)
+		}
+
+		lastOffsets = float64(total)
+
+		time.Sleep(time.Second * time.Duration(this.topInterval))
+	}
+}
+
 func (this *Top) clusterTopConsumers(zkcluster *zk.ZkCluster) {
 	var topic string
 	for {
@@ -289,9 +342,17 @@ func (this *Top) clusterTopConsumers(zkcluster *zk.ZkCluster) {
 			topic = "-all-"
 		}
 
+		key := zkcluster.Name() + ":" + topic
+
 		this.mu.Lock()
-		this.counters[zkcluster.Name()+":"+topic] = float64(total)
+		this.consumerCounters[key] = float64(total)
 		this.mu.Unlock()
+
+		if !this.dashboardGraph {
+			this.mu.Lock()
+			this.counters[key] = float64(total)
+			this.mu.Unlock()
+		}
 
 		time.Sleep(time.Second * time.Duration(this.topInterval))
 	}
