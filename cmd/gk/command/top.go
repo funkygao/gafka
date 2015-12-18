@@ -68,6 +68,10 @@ func (this *Top) Run(args []string) (exitCode int) {
 		return 2
 	}
 
+	if this.who == "c" || this.who == "consumer" {
+		this.topInterval = 20 // consumer groups only refresh offset per minute
+	}
+
 	this.counters = make(map[string]float64)
 	this.lastCounters = make(map[string]float64)
 	this.totalMps = make([]float64, 0, 1000)
@@ -276,7 +280,6 @@ func (this *Top) showAndResetCounters() {
 }
 
 func (this *Top) clusterTopConsumers(zkcluster *zk.ZkCluster) {
-	this.topInterval = 30 // consumer groups only refresh offset per minute
 	var topic string
 	for {
 		total := zkcluster.TotalConsumerOffsets(this.topicPattern)
