@@ -77,7 +77,10 @@ func (this *Top) Run(args []string) (exitCode int) {
 	}
 
 	if this.who == "c" || this.who == "consumer" {
-		this.topInterval = 20 // consumer groups only refresh offset per minute
+		if this.topInterval < 20 {
+			this.topInterval = 20 // consumer groups only refresh offset per minute
+		}
+
 	}
 
 	this.counters = make(map[string]float64)
@@ -323,7 +326,7 @@ func (this *Top) clusterOffsetSummary() {
 
 		if lastOffsets > 1 {
 			this.totalConsumerMps = append(this.totalConsumerMps,
-				float64(total)-lastOffsets)
+				(float64(total)-lastOffsets)/float64(this.topInterval))
 		}
 
 		lastOffsets = float64(total)
