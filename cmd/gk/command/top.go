@@ -165,8 +165,8 @@ func (this *Top) drawDashboard() {
 	producerChart.Border.Label = fmt.Sprintf("producer mps totals: %s %s %s",
 		this.zone, this.clusterPattern, this.topicPattern)
 	producerChart.Data = refreshProducerData()
-	producerChart.Width = termui.TermWidth()
-	producerChart.Height = termui.TermHeight() / 2
+	producerChart.Width = termui.TermWidth() / 2
+	producerChart.Height = termui.TermHeight()
 	producerChart.X = 0
 	producerChart.Y = 0
 	producerChart.AxesColor = termui.ColorWhite
@@ -177,10 +177,10 @@ func (this *Top) drawDashboard() {
 	consumerChart.Border.Label = fmt.Sprintf("consumer mps totals: %s %s %s",
 		this.zone, this.clusterPattern, this.topicPattern)
 	consumerChart.Data = refreshConsumerData()
-	consumerChart.Width = termui.TermWidth()
-	consumerChart.Height = termui.TermHeight() / 2
-	consumerChart.X = 0
-	consumerChart.Y = termui.TermHeight() / 2
+	consumerChart.Width = termui.TermWidth() / 2
+	consumerChart.Height = termui.TermHeight()
+	consumerChart.X = termui.TermWidth() / 2
+	consumerChart.Y = 0
 	consumerChart.AxesColor = termui.ColorWhite
 	consumerChart.LineColor = termui.ColorRed | termui.AttrBold
 
