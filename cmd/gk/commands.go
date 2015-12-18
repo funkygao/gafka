@@ -32,6 +32,13 @@ func init() {
 			}, nil
 		},
 
+		"ping": func() (cli.Command, error) {
+			return &command.Ping{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"lszk": func() (cli.Command, error) {
 			return &command.LsZk{
 				Ui:  ui,
