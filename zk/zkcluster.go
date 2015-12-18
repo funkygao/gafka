@@ -336,6 +336,26 @@ func (this *ZkCluster) AddTopic(topic string, replicas,
 	return
 }
 
+func (this *ZkCluster) TotalConsumerOffsets(topicPattern string) (total int64) {
+	root := this.consumerGroupsRoot()
+	groups := this.zone.children(root)
+	for _, group := range groups {
+		topics := this.zone.children(fmt.Sprintf("%s/%s/offsets", root, group))
+		for _, topic := range topics {
+			if topicPattern != "" && !strings.Contains(topic, topicPattern) {
+				continue
+			}
+
+			offsets := this.zone.childrenWithData(fmt.Sprintf("%s/offsets/%s", root, topic))
+			for _, zdata := range offsets {
+				offset, _ := strconv.Atoi(string(zdata.data))
+				total += int64(offset)
+			}
+		}
+	}
+	return
+}
+
 func (this *ZkCluster) ListChildren(recursive bool) ([]string, error) {
 	excludedPaths := map[string]struct{}{
 		"/zookeeper": struct{}{},

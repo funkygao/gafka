@@ -276,6 +276,15 @@ func (this *Top) showAndResetCounters() {
 }
 
 func (this *Top) clusterTopConsumers(zkcluster *zk.ZkCluster) {
+	this.topInterval = 60 // consumer groups only refresh offset per minute
+	for {
+		total := zkcluster.TotalConsumerOffsets(this.topicPattern)
+		this.mu.Lock()
+		this.counters[zkcluster.Name()] = float64(total)
+		this.mu.Unlock()
+
+		time.Sleep(time.Second * time.Duration(this.topInterval))
+	}
 
 }
 
