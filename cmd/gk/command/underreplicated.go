@@ -16,13 +16,15 @@ type UnderReplicated struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone string
+	zone    string
+	cluster string
 }
 
 func (this *UnderReplicated) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("underreplicated", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", "", "")
+	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
