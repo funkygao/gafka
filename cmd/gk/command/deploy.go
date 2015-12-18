@@ -152,7 +152,6 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	this.writeFileFromTemplate("template/config/log4j.properties",
 		fmt.Sprintf("%s/config/log4j.properties", this.instanceDir()), 0644, data, true)
 
-	this.Ui.Warn(fmt.Sprintf("deployed! REMEMBER to add monitor for this new broker!"))
 	this.Ui.Warn(fmt.Sprintf("NOW, please run the following command:"))
 	this.Ui.Output(color.Red("chkconfig --add %s", this.clusterName()))
 	this.Ui.Output(color.Red("/etc/init.d/%s start", this.clusterName()))

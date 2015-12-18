@@ -12,6 +12,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/pipestream"
 )
 
@@ -61,7 +62,7 @@ func (this *Migrate) Run(args []string) (exitCode int) {
 		for {
 			this.verify()
 
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * 2)
 		}
 
 		return
@@ -136,7 +137,7 @@ func (this *Migrate) executeReassignment() {
 	scanner := bufio.NewScanner(cmd.Reader())
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
-		this.Ui.Output(scanner.Text())
+		this.Ui.Output(color.Yellow(scanner.Text()))
 	}
 }
 
@@ -155,7 +156,7 @@ func (this *Migrate) verify() {
 	scanner := bufio.NewScanner(cmd.Reader())
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
-		this.Ui.Output(scanner.Text())
+		this.Ui.Output(color.Yellow(scanner.Text()))
 	}
 
 }
