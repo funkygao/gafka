@@ -31,17 +31,19 @@ type Top struct {
 
 	round int
 
-	who            string
-	limit          int
-	topInterval    int
-	batchMode      bool
-	dashboardGraph bool
-	topicPattern   string
+	showProgressBar bool
+	who             string
+	limit           int
+	topInterval     int
+	batchMode       bool
+	dashboardGraph  bool
+	topicPattern    string
 
 	counters     map[string]float64 // key is cluster:topic
 	lastCounters map[string]float64
 
 	totalMps []float64 // for the dashboard graph
+	maxMps   float64
 }
 
 func (this *Top) Run(args []string) (exitCode int) {
@@ -53,6 +55,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
 	cmdFlags.IntVar(&this.limit, "n", 34, "")
 	cmdFlags.StringVar(&this.who, "who", "producer", "")
+	cmdFlags.BoolVar(&this.showProgressBar, "bar", false, "")
 	cmdFlags.BoolVar(&this.dashboardGraph, "d", false, "")
 	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -108,7 +111,9 @@ func (this *Top) Run(args []string) (exitCode int) {
 		this.showAndResetCounters()
 
 		if !this.batchMode {
-			this.showRefreshBar(bar)
+			if this.showProgressBar {
+				this.showRefreshBar(bar)
+			}
 		} else {
 			time.Sleep(time.Duration(this.topInterval) * time.Second)
 		}
@@ -251,6 +256,15 @@ func (this *Top) showAndResetCounters() {
 			"--TOTAL--", "--TOTAL--",
 			gofmt.Comma(int64(totalNum)),
 			totalMps))
+
+		// max
+		if this.maxMps < totalMps {
+			this.maxMps = totalMps
+		}
+		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
+			"--MAX--", "--MAX--",
+			"-",
+			this.maxMps))
 	}
 
 	// record last counters and reset current counters
@@ -340,6 +354,9 @@ Options:
 
     -d
       Draw dashboard in graph.
+
+    -bar
+      Show progress bar.
 
     -b 
       Batch mode operation. 
