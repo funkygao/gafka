@@ -49,7 +49,7 @@ Unified multi-datacenter multi-kafka-clusters central management console powered
     
 ### TODO
 
-- [ ] gk top -who consumer
+- [ ] sms/email alarm when any node of kafka/zk is down
 - [ ] github.com/wvanbergen/kazoo-go bug
 - [ ] active controller switch history
 
