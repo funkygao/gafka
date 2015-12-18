@@ -78,9 +78,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		this.displayTopicsOfCluster(zkcluster)
 
 		this.Ui.Output(fmt.Sprintf("-TOTAL Topics- %d", this.topicN))
-		if this.verbose {
-			this.Ui.Output(fmt.Sprintf("-TOTAL Partitions- %d", this.partitionN))
-		}
+		this.Ui.Output(fmt.Sprintf("-TOTAL Partitions- %d", this.partitionN))
 		return
 	}
 
@@ -89,9 +87,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		this.displayTopicsOfCluster(zkcluster)
 	})
 	this.Ui.Output(fmt.Sprintf("%s -TOTAL Topics- %d", strings.Repeat(" ", 60), this.topicN))
-	if this.verbose {
-		this.Ui.Output(fmt.Sprintf("%s -TOTAL Partitions- %d", strings.Repeat(" ", 60), this.partitionN))
-	}
+	this.Ui.Output(fmt.Sprintf("%s -TOTAL Partitions- %d", strings.Repeat(" ", 60), this.partitionN))
 
 	return
 }
@@ -197,6 +193,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		replicas, err := kfk.Replicas(topic, partions[0])
 		swallow(err)
 
+		this.partitionN += len(partions)
 		if !this.verbose {
 			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%30s %s %3dP %dR %s",
 				zkcluster.Name(),
@@ -206,7 +203,6 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 			continue
 		}
 
-		this.partitionN += len(alivePartitions)
 		for _, partitionID := range alivePartitions {
 			leader, err := kfk.Leader(topic, partitionID)
 			swallow(err)
