@@ -104,8 +104,8 @@ func (this *Top) Run(args []string) (exitCode int) {
 		}
 
 		// header
-		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15s",
-			"cluster", "topic", "num", "mps")) // mps=msg per second
+		this.Ui.Output(fmt.Sprintf("%-9s %20s %50s %20s %15s",
+			this.who, "cluster", "topic", "num", "mps")) // mps=msg per second
 		this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 118)))
 
 		this.showAndResetCounters()
@@ -276,11 +276,18 @@ func (this *Top) showAndResetCounters() {
 }
 
 func (this *Top) clusterTopConsumers(zkcluster *zk.ZkCluster) {
-	this.topInterval = 60 // consumer groups only refresh offset per minute
+	this.topInterval = 30 // consumer groups only refresh offset per minute
+	var topic string
 	for {
 		total := zkcluster.TotalConsumerOffsets(this.topicPattern)
+		if this.topicPattern != "" {
+			topic = this.topicPattern
+		} else {
+			topic = "-all-"
+		}
+
 		this.mu.Lock()
-		this.counters[zkcluster.Name()] = float64(total)
+		this.counters[zkcluster.Name()+":"+topic] = float64(total)
 		this.mu.Unlock()
 
 		time.Sleep(time.Second * time.Duration(this.topInterval))

@@ -337,16 +337,19 @@ func (this *ZkCluster) AddTopic(topic string, replicas,
 }
 
 func (this *ZkCluster) TotalConsumerOffsets(topicPattern string) (total int64) {
+	// /$cluster/consumers/$group/offsets/$topic/0
 	root := this.consumerGroupsRoot()
 	groups := this.zone.children(root)
 	for _, group := range groups {
-		topics := this.zone.children(fmt.Sprintf("%s/%s/offsets", root, group))
+		topicsPath := fmt.Sprintf("%s/%s/offsets", root, group)
+		topics := this.zone.children(topicsPath)
 		for _, topic := range topics {
 			if topicPattern != "" && !strings.Contains(topic, topicPattern) {
 				continue
 			}
 
-			offsets := this.zone.childrenWithData(fmt.Sprintf("%s/offsets/%s", root, topic))
+			offsetsPath := fmt.Sprintf("%s/%s", topicsPath, topic)
+			offsets := this.zone.childrenWithData(offsetsPath)
 			for _, zdata := range offsets {
 				offset, _ := strconv.Atoi(string(zdata.data))
 				total += int64(offset)
