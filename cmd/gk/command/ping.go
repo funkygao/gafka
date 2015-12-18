@@ -22,6 +22,8 @@ type Ping struct {
 	interval time.Duration
 }
 
+// TODO run 3 nodes in a zone to monitor as daemon
+// register the 3 nodes as host service tag.
 func (this *Ping) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("ping", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
