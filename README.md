@@ -54,3 +54,17 @@ Unified multi-datacenter multi-kafka-clusters central management console powered
 - [ ] github.com/wvanbergen/kazoo-go bug
 - [ ] active controller switch history
 
+### ServiceDiscovery
+
+- Register
+  - ip:port
+  - version
+  - tags
+  - auth
+  - protocol
+  - env
+  - lang
+  - runtime dependency
+
+- Discovery
+
