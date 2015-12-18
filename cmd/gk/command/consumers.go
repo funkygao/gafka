@@ -146,14 +146,14 @@ func (this *Consumers) printConsumersByGroup(zkzone *zk.ZkZone, clusterFilter st
 }
 
 func (*Consumers) Synopsis() string {
-	return "Print consumer groups from Zookeeper"
+	return "Print high level consumer groups from Zookeeper"
 }
 
 func (this *Consumers) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s consumers [options]
 
-    Print consumer groups from Zookeeper
+    Print high level consumer groups from Zookeeper
 
 Options:
 

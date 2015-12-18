@@ -61,14 +61,14 @@ func (this *LsZk) printCluster(zkcluster *zk.ZkCluster) {
 }
 
 func (*LsZk) Synopsis() string {
-	return "List zookeepeer znode children"
+	return "List kafka related zookeepeer znode children"
 }
 
 func (this *LsZk) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s lszk -z zone [-R] [options] <path>
 
-    List zookeepeer znode children
+    List kafka related zookeepeer znode children
 
 Options:
 

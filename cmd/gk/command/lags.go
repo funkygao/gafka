@@ -167,14 +167,14 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 }
 
 func (*Lags) Synopsis() string {
-	return "Display consumers lag for each topic and each partition"
+	return "Display high level consumers lag for each topic/partition"
 }
 
 func (this *Lags) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s lags -z zone [options]
 
-    Display consumers lag for each topic and each partition
+    Display high level consumers lag for each topic/partition
 
 Options:
 
