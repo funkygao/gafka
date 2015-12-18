@@ -9,6 +9,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/pipestream"
 	log "github.com/funkygao/log4go"
 )
@@ -64,10 +65,8 @@ func (this *Partition) addPartition(zkAddrs string, topic string, partitions int
 
 	scanner := bufio.NewScanner(cmd.Reader())
 	scanner.Split(bufio.ScanLines)
-	var line string
 	for scanner.Scan() {
-		line = scanner.Text()
-		log.Info(line)
+		this.Ui.Output(color.Yellow(scanner.Text()))
 	}
 	err = scanner.Err()
 	if err != nil {
