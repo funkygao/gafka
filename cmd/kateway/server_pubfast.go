@@ -1,0 +1,3 @@
+// +build fasthttpd
+
+package main

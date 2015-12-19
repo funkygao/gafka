@@ -1,3 +1,5 @@
+// +build !fasthttpd
+
 package main
 
 import (

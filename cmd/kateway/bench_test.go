@@ -183,6 +183,11 @@ func BenchmarkHttpRouter(b *testing.B) {
 }
 
 func BenchmxarkPubJsonResponse(b *testing.B) {
+	type pubResponse struct {
+		Partition int32 `json:"partition"`
+		Offset    int64 `json:"offset"`
+	}
+
 	response := pubResponse{
 		Partition: 5,
 		Offset:    32,

@@ -11,7 +11,7 @@ func (this *Gateway) writeErrorResponse(w http.ResponseWriter, err string, code 
 	}
 	b, _ := json.Marshal(out)
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	this.writeKatewayHeader(w)
 	http.Error(w, string(b), code)
 }

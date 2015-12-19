@@ -1,9 +1,13 @@
+// +build !fasthttpd
+
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
@@ -12,11 +16,6 @@ import (
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
-
-type pubResponse struct {
-	Partition int32 `json:"partition"`
-	Offset    int64 `json:"offset"`
-}
 
 // /topics/:topic/:ver?key=mykey&async=1
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
@@ -121,4 +120,46 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 	}
 
+}
+
+// /raw/topics/:topic/:ver
+func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	var (
+		topic string
+		ver   string
+		appid string
+	)
+
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	appid = r.Header.Get(HttpHeaderAppid)
+
+	if !meta.Default.AuthSub(appid, r.Header.Get(HttpHeaderPubkey), topic) {
+		this.writeAuthFailure(w)
+		return
+	}
+
+	cluster := meta.Default.LookupCluster(appid, topic)
+	this.writeKatewayHeader(w)
+	var out = map[string]string{
+		"store":       "kafka",
+		"broker.list": strings.Join(meta.Default.BrokerList(cluster), ","),
+		"topic":       meta.KafkaTopic(appid, topic, ver),
+	}
+
+	b, _ := json.Marshal(out)
+	w.Header().Set(ContentTypeText, ContentTypeJson)
+	w.Write(b)
+}
+
+func (this *Gateway) pubWsHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Error("%s: %v", r.RemoteAddr, err)
+		return
+	}
+
+	defer ws.Close()
 }
