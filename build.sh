@@ -37,9 +37,9 @@ fi
 cd $BUILD_PKG
 go generate ./...
 if [ $GOVER -gt 4 ]; then
-    go build $BUILD_FLAGS -tags release -ldflags "-X github.com/funkygao/gafka.Version=$VER -X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
+    go build $BUILD_FLAGS -tags fasthttp -ldflags "-X github.com/funkygao/gafka.Version=$VER -X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
 else
-    go build $BUILD_FLAGS -tags release -ldflags "-X github.com/funkygao/gafka.Version $VER -X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
+    go build $BUILD_FLAGS -tags fasthttp -ldflags "-X github.com/funkygao/gafka.Version $VER -X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
 fi
 
 if [[ $1 = "-install" ]]; then

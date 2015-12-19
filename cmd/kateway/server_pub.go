@@ -1,4 +1,4 @@
-// +build !fasthttpd
+// +build !fasthttp
 
 package main
 

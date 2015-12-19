@@ -1,4 +1,4 @@
-// +build fasthttpd
+// +build fasthttp
 
 package main
 
@@ -21,7 +21,7 @@ type webServer struct {
 	gw         *Gateway
 
 	httpListener net.Listener
-	webServer   *fasthttp.Server
+	httpServer   *fasthttp.Server
 
 	tlsListener net.Listener
 	httpsServer *fasthttp.Server
@@ -43,7 +43,7 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 	}
 
 	if httpAddr != "" {
-		this.webServer = &http.Server{
+		this.httpServer = &http.Server{
 			Addr:    httpAddr,
 			Handler: this.router,
 			//ReadTimeout:    time.Minute, // FIXME
@@ -67,7 +67,7 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 
 func (this *webServer) Start() {
 	var err error
-	if this.webServer != nil {
+	if this.httpServer != nil {
 		go func() {
 			var retryDelay time.Duration
 			for {
