@@ -218,29 +218,42 @@ func (this *Deploy) writeFileFromTemplate(tplSrc, dst string, perm os.FileMode,
 
 func (this *Deploy) demo() {
 	var (
-		maxPort     int
-		maxBrokerId int
+		maxPort int
+
+		myPort     = -1
+		myBrokerId = -1
 	)
 
 	this.zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
 		for _, broker := range liveBrokers {
+			if cluster == this.cluster {
+				myPort = broker.Port
+
+				bid, _ := strconv.Atoi(broker.Id)
+				if bid >= myBrokerId {
+					myBrokerId = bid + 1
+				}
+				return
+			}
+
+			// another cluster
 			if maxPort < broker.Port {
 				maxPort = broker.Port
 			}
 		}
 	})
 
-	brokers := &Brokers{
-		Ui:  this.Ui,
-		Cmd: this.Cmd,
-	}
-	maxBrokerId = brokers.maxBrokerId(this.zkzone, this.cluster)
-
 	ip, err := ctx.LocalIP()
 	swallow(err)
 
+	if myPort == -1 {
+		// the 1st deployment of this cluster
+		myPort = maxPort + 1
+		myBrokerId = 0
+	}
+
 	this.Ui.Output(fmt.Sprintf("gk deploy -z %s -c %s -broker.id %d -port %d -ip %s",
-		this.zone, this.cluster, maxBrokerId+1, maxPort+1, ip.String()))
+		this.zone, this.cluster, myBrokerId, myPort, ip.String()))
 
 }
 
