@@ -46,6 +46,13 @@ func init() {
 			}, nil
 		},
 
+		"offset": func() (cli.Command, error) {
+			return &command.Offset{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"migrate": func() (cli.Command, error) {
 			return &command.Migrate{
 				Ui:  ui,

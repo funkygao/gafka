@@ -359,6 +359,10 @@ func (this *ZkCluster) TotalConsumerOffsets(topicPattern string) (total int64) {
 	return
 }
 
+func (this *ZkCluster) ResetConsumerGroupOffset(topic, group string) {
+	// TODO
+}
+
 func (this *ZkCluster) ListChildren(recursive bool) ([]string, error) {
 	excludedPaths := map[string]struct{}{
 		"/zookeeper": struct{}{},
