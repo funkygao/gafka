@@ -40,4 +40,4 @@ prof:build
 	go tool pprof kateway prof/cpu.pprof
 
 clean:
-	rm -f kateway.test kateway
+	-rm -f kateway.test kateway

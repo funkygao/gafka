@@ -16,6 +16,11 @@ ak:bench.go
 	@echo bench against kafka directly in async pub mode
 	@go run bench.go -neat -mode kafka -async
 
+fasthttp:fasthttpd.go 
+	go build -o fasthttpdserver fasthttpd.go
+	GOGC=800 GODEBUG=gctrace=1 ./fasthttpdserver &
+	go run bench.go -neat -mode http
+
 http:httpd.go 
 	go build -o httpdserver httpd.go
 	GOGC=800 GODEBUG=gctrace=1 ./httpdserver -mode standalone&
@@ -37,5 +42,5 @@ proxy:httpd.go
 	go run bench.go -neat -mode http
 
 clean:
-	rm -f httpdserver
-	killall httpdserver
+	-rm -f httpdserver fasthttpdserver
+	-killall httpdserver fasthttpdserver
