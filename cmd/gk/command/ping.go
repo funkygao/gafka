@@ -60,7 +60,7 @@ func (this *Ping) setupLog() {
 	filer.SetRotateSize(0)
 	filer.SetRotateLines(0)
 	filer.SetRotateDaily(true)
-	log.AddFilter("file", log.INFO, filer)
+	log.AddFilter("file", log.DEBUG, filer)
 }
 
 func (this *Ping) diagnose() {
@@ -68,6 +68,7 @@ func (this *Ping) diagnose() {
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		registeredBrokers := zkcluster.RegisteredInfo().Roster
 		for _, broker := range registeredBrokers {
+			log.Debug("ping %s", broker.Addr())
 			kfk, err := sarama.NewClient([]string{broker.Addr()}, sarama.NewConfig())
 			if err != nil {
 				log.Error("broker %s: %v", broker.Addr(), err)
