@@ -151,12 +151,23 @@ func (this *Top) drawDashboard() {
 
 	termui.UseTheme("helloworld")
 
-	refreshProducerData := func() []float64 {
+	maxRound := termui.TermWidth() / 2
+	refreshProducerData := func(round int) []float64 {
 		this.showAndResetCounters()
+		if round%maxRound == (maxRound - 5) {
+			this.mu.Lock()
+			this.totalMps = this.totalMps[len(this.totalMps)/2:]
+			this.mu.Unlock()
+		}
 		return this.totalMps
 	}
 
-	refreshConsumerData := func() []float64 {
+	refreshConsumerData := func(round int) []float64 {
+		if round%maxRound == (maxRound - 5) {
+			this.mu.Lock()
+			this.totalConsumerMps = this.totalConsumerMps[len(this.totalConsumerMps)/2:]
+			this.mu.Unlock()
+		}
 		return this.totalConsumerMps
 	}
 
@@ -164,7 +175,7 @@ func (this *Top) drawDashboard() {
 	producerChart.Mode = "dot"
 	producerChart.Border.Label = fmt.Sprintf("producer mps totals: %s %s %s",
 		this.zone, this.clusterPattern, this.topicPattern)
-	producerChart.Data = refreshProducerData()
+	producerChart.Data = refreshProducerData(0)
 	producerChart.Width = termui.TermWidth() / 2
 	producerChart.Height = termui.TermHeight()
 	producerChart.X = 0
@@ -176,7 +187,7 @@ func (this *Top) drawDashboard() {
 	consumerChart.Mode = "dot"
 	consumerChart.Border.Label = fmt.Sprintf("consumer mps totals: %s %s %s",
 		this.zone, this.clusterPattern, this.topicPattern)
-	consumerChart.Data = refreshConsumerData()
+	consumerChart.Data = refreshConsumerData(0)
 	consumerChart.Width = termui.TermWidth() / 2
 	consumerChart.Height = termui.TermHeight()
 	consumerChart.X = termui.TermWidth() / 2
@@ -206,8 +217,8 @@ func (this *Top) drawDashboard() {
 			// refresh data, and skip the first 2 rounds
 			rounds++
 			if rounds > 1 {
-				producerChart.Data = refreshProducerData()
-				consumerChart.Data = refreshConsumerData()
+				producerChart.Data = refreshProducerData(rounds)
+				consumerChart.Data = refreshConsumerData(rounds)
 				termui.Render(producerChart, consumerChart)
 			}
 
