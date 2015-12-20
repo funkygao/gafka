@@ -3,7 +3,6 @@
 package main
 
 import (
-	"crypto/tls"
 	"net"
 	"net/http"
 	"sync"
@@ -15,10 +14,10 @@ import (
 )
 
 type pubServer struct {
-	name       string
-	maxClients int
-	gw         *Gateway
+	name string
+	gw   *Gateway
 
+	httpAddr     string
 	httpListener net.Listener
 	httpServer   *fasthttp.Server
 
@@ -34,15 +33,66 @@ type pubServer struct {
 
 func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubServer {
 	this := &pubServer{
-		webServer: newWebServer("fastpub", httpAddr, httpsAddr, maxClients, gw),
+		name:     "fastpub",
+		gw:       gw,
+		httpAddr: httpAddr,
+		router:   fasthttprouter.New(),
 	}
 	this.waitExitFunc = this.waitExit
+
+	if httpAddr != "" {
+		this.httpServer = &fasthttp.Server{
+			Name:               "kateway",
+			Handler:            this.router.Handler,
+			Concurrency:        maxClients,
+			MaxConnsPerIP:      100,
+			MaxRequestBodySize: 256 << 10,
+			ReduceMemoryUsage:  true,
+		}
+	}
 
 	return this
 }
 
 func (this *pubServer) Start() {
+	var err error
+	if this.httpServer != nil {
+		go func() {
+			var retryDelay time.Duration
+			for {
+				select {
+				case <-this.gw.shutdownCh:
+					return
 
+				default:
+				}
+
+				this.httpListener, err = net.Listen("tcp", this.httpAddr)
+				if err != nil {
+					if retryDelay == 0 {
+						retryDelay = 5 * time.Millisecond
+					} else {
+						retryDelay = 2 * retryDelay
+					}
+					if maxDelay := time.Second; retryDelay > maxDelay {
+						retryDelay = maxDelay
+					}
+					log.Error("%v, retry in %v", err, retryDelay)
+					time.Sleep(retryDelay)
+					continue
+				}
+
+				log.Error(this.httpServer.Serve(this.httpListener))
+			}
+		}()
+
+		this.once.Do(func() {
+			go this.waitExitFunc(this.gw.shutdownCh)
+		})
+
+		this.gw.wg.Add(1)
+		log.Info("%s http server ready on %s", this.name, this.httpAddr)
+	}
 }
 
 func (this *pubServer) Router() *fasthttprouter.Router {
@@ -54,7 +104,7 @@ func (this *pubServer) waitExit(exit <-chan struct{}) {
 	case <-exit:
 		if this.httpServer != nil {
 			// HTTP response will have "Connection: close"
-			this.httpServer.SetKeepAlivesEnabled(false)
+			//this.httpServer.SetKeepAlivesEnabled(false)
 
 			// avoid new connections
 			if err := this.httpListener.Close(); err != nil {
