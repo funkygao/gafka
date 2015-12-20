@@ -3,6 +3,9 @@ all:kafka
 deps:
 	@go list ./...
 
+fast:
+	@go build -tags fasthttp
+
 build:
 	@go build
 
