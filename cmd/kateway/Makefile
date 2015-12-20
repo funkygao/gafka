@@ -4,10 +4,10 @@ deps:
 	@go list ./...
 
 fast:
-	@go build -tags fasthttp
+	go build -tags fasthttp
 
 build:
-	@go build
+	go build
 
 bench:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -level info -store kafka -id 1 
