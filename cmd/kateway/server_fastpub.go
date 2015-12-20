@@ -46,7 +46,7 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 			Handler:            this.router.Handler,
 			Concurrency:        maxClients,
 			MaxConnsPerIP:      100,
-			MaxRequestBodySize: 256 << 10,
+			MaxRequestBodySize: int(options.maxPubSize + 1),
 			ReduceMemoryUsage:  true,
 		}
 	}
@@ -104,7 +104,8 @@ func (this *pubServer) waitExit(exit <-chan struct{}) {
 	case <-exit:
 		if this.httpServer != nil {
 			// HTTP response will have "Connection: close"
-			//this.httpServer.SetKeepAlivesEnabled(false)
+			this.httpServer.MaxKeepaliveDuration = time.Nanosecond
+			this.httpServer.MaxRequestsPerConn = 1
 
 			// avoid new connections
 			if err := this.httpListener.Close(); err != nil {

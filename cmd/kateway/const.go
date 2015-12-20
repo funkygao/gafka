@@ -13,6 +13,7 @@ const (
 	UrlQueryKey   = "key"
 	UrlQueryReset = "reset"
 	UrlQueryAsync = "async"
+	UrlQueryDelay = "delay"
 
 	ContentTypeHeader = "Content-Type"
 	ContentTypeJson   = "application/json; charset=utf8"
