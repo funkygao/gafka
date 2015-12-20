@@ -25,8 +25,10 @@ func (this *Gateway) helpHandler(w http.ResponseWriter, r *http.Request,
 
  GET /raw/topics/:topic/:ver
 POST /topics/:topic/:ver?key=mykey&async=1
+POST /ws/topics/:topic/:ver
  GET /raw/topics/:appid/:topic/:ver
  GET /topics/:appid/:topic/:ver/:group?limit=1&reset=newest
+ GET /ws/topics/:appid/:topic/:ver/:group
 `))))
 
 }

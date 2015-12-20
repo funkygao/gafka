@@ -14,9 +14,10 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 
 // /raw/topics/:topic/:ver
 func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.Params) {
-
+	ctx.Error("not implemented", fasthttp.StatusBadRequest)
 }
 
+// /ws/topics/:topic/:ver
 func (this *Gateway) pubWsHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.Params) {
 	ctx.Error("not implemented", fasthttp.StatusBadRequest)
 }

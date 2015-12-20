@@ -187,6 +187,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
+// /ws/topics/:appid/:topic/:ver/:group
 func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)

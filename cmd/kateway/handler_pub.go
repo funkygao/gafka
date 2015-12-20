@@ -153,6 +153,7 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
+// /ws/topics/:topic/:ver
 func (this *Gateway) pubWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
