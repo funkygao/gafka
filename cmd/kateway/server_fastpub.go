@@ -1,0 +1,125 @@
+// +build fasthttp
+
+package main
+
+import (
+	"net"
+	"net/http"
+	"sync"
+	"time"
+
+	"github.com/buaazp/fasthttprouter"
+	log "github.com/funkygao/log4go"
+	"github.com/valyala/fasthttp"
+)
+
+type pubServer struct {
+	name string
+	gw   *Gateway
+
+	httpAddr     string
+	httpListener net.Listener
+	httpServer   *fasthttp.Server
+
+	tlsListener net.Listener
+	httpsServer *http.Server
+
+	router *fasthttprouter.Router
+
+	waitExitFunc waitExitFunc
+
+	once sync.Once
+}
+
+func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubServer {
+	this := &pubServer{
+		name:     "fastpub",
+		gw:       gw,
+		httpAddr: httpAddr,
+		router:   fasthttprouter.New(),
+	}
+	this.waitExitFunc = this.waitExit
+
+	if httpAddr != "" {
+		this.httpServer = &fasthttp.Server{
+			Name:               "kateway",
+			Handler:            this.router.Handler,
+			Concurrency:        maxClients,
+			MaxConnsPerIP:      100,
+			MaxRequestBodySize: 256 << 10,
+			ReduceMemoryUsage:  true,
+		}
+	}
+
+	return this
+}
+
+func (this *pubServer) Start() {
+	var err error
+	if this.httpServer != nil {
+		go func() {
+			var retryDelay time.Duration
+			for {
+				select {
+				case <-this.gw.shutdownCh:
+					return
+
+				default:
+				}
+
+				this.httpListener, err = net.Listen("tcp", this.httpAddr)
+				if err != nil {
+					if retryDelay == 0 {
+						retryDelay = 5 * time.Millisecond
+					} else {
+						retryDelay = 2 * retryDelay
+					}
+					if maxDelay := time.Second; retryDelay > maxDelay {
+						retryDelay = maxDelay
+					}
+					log.Error("%v, retry in %v", err, retryDelay)
+					time.Sleep(retryDelay)
+					continue
+				}
+
+				log.Error(this.httpServer.Serve(this.httpListener))
+			}
+		}()
+
+		this.once.Do(func() {
+			go this.waitExitFunc(this.gw.shutdownCh)
+		})
+
+		this.gw.wg.Add(1)
+		log.Info("%s http server ready on %s", this.name, this.httpAddr)
+	}
+}
+
+func (this *pubServer) Router() *fasthttprouter.Router {
+	return this.router
+}
+
+func (this *pubServer) waitExit(exit <-chan struct{}) {
+	select {
+	case <-exit:
+		if this.httpServer != nil {
+			// HTTP response will have "Connection: close"
+			//this.httpServer.SetKeepAlivesEnabled(false)
+
+			// avoid new connections
+			if err := this.httpListener.Close(); err != nil {
+				log.Error(err.Error())
+			}
+
+			this.gw.wg.Done()
+			log.Trace("%s http server stopped", this.name)
+		}
+
+		if this.httpsServer != nil {
+			this.gw.wg.Done()
+			log.Trace("%s https server stopped", this.name)
+		}
+
+	}
+
+}

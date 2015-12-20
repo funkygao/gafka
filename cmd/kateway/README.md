@@ -121,6 +121,7 @@ A REST gateway for kafka that supports Pub and Sub.
 
 ### TODO
 
+- [ ] https://github.com/corneldamian/httpway
 - [X] multi-cluster
 - [ ] warmup
 - [ ] elastic scale

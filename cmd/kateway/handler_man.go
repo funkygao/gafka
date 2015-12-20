@@ -15,7 +15,7 @@ import (
 func (this *Gateway) helpHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set(ContentTypeHeader, ContentTypeText)
 	w.Write([]byte(strings.TrimSpace(fmt.Sprintf(`
  GET /ver
  GET /help
@@ -41,14 +41,14 @@ func (this *Gateway) pingHandler(w http.ResponseWriter, r *http.Request,
 func (this *Gateway) versionHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set(ContentTypeHeader, ContentTypeText)
 	w.Write([]byte(fmt.Sprintf("%s-%s", gafka.Version, gafka.BuildId)))
 }
 
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	w.WriteHeader(http.StatusOK)
 	b, _ := json.Marshal(meta.Default.Clusters())
 	w.Write(b)
@@ -57,7 +57,7 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 func (this *Gateway) statHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	this.guard.Refresh()
 	b, _ := json.Marshal(this.guard.cpuStat)
 	w.Write(b)

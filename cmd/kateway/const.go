@@ -15,6 +15,6 @@ const (
 	UrlQueryAsync = "async"
 
 	ContentTypeHeader = "Content-Type"
-	ContentTypeJson   = "application/json"
-	ContentTypeText   = "text/plain"
+	ContentTypeJson   = "application/json; charset=utf8"
+	ContentTypeText   = "text/plain; charset=utf8"
 )
