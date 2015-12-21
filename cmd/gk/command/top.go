@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -15,7 +16,6 @@ import (
 	"github.com/funkygao/golib/bjtime"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
-	"github.com/funkygao/golib/progress"
 	"github.com/funkygao/termui"
 	"github.com/nsf/termbox-go"
 )
@@ -31,13 +31,12 @@ type Top struct {
 
 	round int
 
-	showProgressBar bool
-	who             string
-	limit           int
-	topInterval     int
-	batchMode       bool
-	dashboardGraph  bool
-	topicPattern    string
+	who            string
+	limit          int
+	topInterval    int
+	batchMode      bool
+	dashboardGraph bool
+	topicPattern   string
 
 	counters         map[string]float64 // key is cluster:topic
 	lastCounters     map[string]float64
@@ -57,7 +56,6 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
 	cmdFlags.IntVar(&this.limit, "n", 33, "")
 	cmdFlags.StringVar(&this.who, "who", "producer", "")
-	cmdFlags.BoolVar(&this.showProgressBar, "bar", false, "")
 	cmdFlags.BoolVar(&this.dashboardGraph, "d", false, "")
 	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -116,8 +114,22 @@ func (this *Top) Run(args []string) (exitCode int) {
 		return
 	}
 
-	bar := progress.New(this.topInterval)
+	ticker := time.NewTicker(time.Duration(this.topInterval) * time.Second)
+	defer ticker.Stop()
+	keyboardPressed := make(chan struct{})
+	go func() {
+		var b []byte = make([]byte, 1)
+		for {
+			os.Stdin.Read(b)
+			keyboardPressed <- struct{}{}
+		}
+	}()
 	for {
+		select {
+		case <-keyboardPressed:
+		case <-ticker.C:
+		}
+
 		if this.batchMode {
 			this.Ui.Output(bjtime.TimeToString(bjtime.NowBj()))
 		} else {
@@ -130,13 +142,6 @@ func (this *Top) Run(args []string) (exitCode int) {
 		this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 118)))
 
 		this.showAndResetCounters()
-
-		if !this.batchMode {
-			this.showRefreshBar(bar)
-		} else {
-			time.Sleep(time.Duration(this.topInterval) * time.Second)
-		}
-
 	}
 
 	return
@@ -223,17 +228,6 @@ func (this *Top) drawDashboard() {
 			}
 
 		}
-	}
-}
-
-func (this *Top) showRefreshBar(bar *progress.Progress) {
-	this.Ui.Output("")
-	for i := 1; i <= this.topInterval; i++ {
-		if this.showProgressBar {
-			bar.ShowProgress(i)
-		}
-
-		time.Sleep(time.Second)
 	}
 }
 
@@ -448,10 +442,7 @@ Options:
     -n limit
 
     -d
-      Draw dashboard in graph.
-
-    -bar
-      Show progress bar.
+      Draw dashboard in graph.    
 
     -b 
       Batch mode operation. 
