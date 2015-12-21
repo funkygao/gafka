@@ -2,6 +2,13 @@
 
 A REST gateway for kafka that supports Pub and Sub.
 
+    _/    _/              _/
+       _/  _/      _/_/_/  _/_/_/_/    _/_/    _/      _/      _/    _/_/_/  _/    _/
+      _/_/      _/    _/    _/      _/_/_/_/  _/      _/      _/  _/    _/  _/    _/
+     _/  _/    _/    _/    _/      _/          _/  _/  _/  _/    _/    _/  _/    _/
+    _/    _/    _/_/_/      _/_/    _/_/_/      _/      _/        _/_/_/    _/_/_/
+                                                                               _/
+
 ### Features
 
 - RESTful API for kafka Pub/Sub
