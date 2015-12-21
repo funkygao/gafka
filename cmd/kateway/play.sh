@@ -29,11 +29,11 @@ curl -XGET -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9191/raw/topic
 #----------------------
 # play with meta
 #----------------------
-curl http://localhost:9191/help
+curl http://localhost:9193/help
 echo
-curl http://localhost:9191/ver
+curl http://localhost:9193/ver
 echo
-curl http://localhost:9191/stat
+curl http://localhost:9193/stat
 echo
-curl http://localhost:9191/clusters
+curl http://localhost:9193/clusters
 echo

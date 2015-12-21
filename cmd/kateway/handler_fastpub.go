@@ -3,6 +3,8 @@
 package main
 
 import (
+	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/buaazp/fasthttprouter"
@@ -84,7 +86,35 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 
 // /raw/topics/:topic/:ver
 func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.Params) {
-	ctx.Error("not implemented", fasthttp.StatusBadRequest)
+	var (
+		topic  string
+		ver    string
+		appid  string
+		pubkey string
+	)
+
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	header := ctx.Request.Header
+	appid = hack.String(header.Peek(HttpHeaderAppid))
+	pubkey = hack.String(header.Peek(HttpHeaderPubkey))
+
+	if !meta.Default.AuthSub(appid, pubkey, topic) {
+		ctx.SetConnectionClose()
+		ctx.Error("invalid secret", fasthttp.StatusUnauthorized)
+		return
+	}
+
+	cluster := meta.Default.LookupCluster(appid, topic)
+	var out = map[string]string{
+		"store":       "kafka",
+		"broker.list": strings.Join(meta.Default.BrokerList(cluster), ","),
+		"topic":       meta.KafkaTopic(appid, topic, ver),
+	}
+
+	b, _ := json.Marshal(out)
+	ctx.SetContentType(ContentTypeJson)
+	ctx.Write(b)
 }
 
 // /ws/topics/:topic/:ver
