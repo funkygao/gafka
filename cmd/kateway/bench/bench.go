@@ -29,7 +29,7 @@ var (
 func main() {
 	flag.StringVar(&addr, "addr", "http://localhost:9191/", "pub addr")
 	flag.IntVar(&loops, "loops", 1000, "loops in each thread")
-	flag.IntVar(&loops, "size", 200, "each pub message size")
+	flag.IntVar(&sz, "size", 200, "each pub message size")
 	flag.StringVar(&topic, "topic", "foobar", "pub topic")
 	flag.StringVar(&mode, "mode", "gw", "<gw|kafka|http>")
 	flag.StringVar(&appid, "appid", "app1", "appid of pub")
