@@ -19,3 +19,7 @@ const (
 	ContentTypeJson   = "application/json; charset=utf8"
 	ContentTypeText   = "text/plain; charset=utf8"
 )
+
+var (
+	ResponsePubOk = []byte(`{"ok": 1}`)
+)

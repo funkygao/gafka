@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/mpool"
+	"github.com/funkygao/golib/hack"
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
@@ -74,10 +74,10 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
 	ver := params.ByName(UrlParamVersion)
-	partition, offset, err := pubMethod(meta.Default.LookupCluster(appid, topic),
+	err := pubMethod(meta.Default.LookupCluster(appid, topic),
 		appid+"."+topic+"."+ver,
 		//meta.KafkaTopic(appid, topic, params.ByName(UrlParamVersion)),
-		query.Get(UrlQueryKey), msg.Body)
+		hack.Byte(query.Get(UrlQueryKey)), msg.Body)
 	if err != nil {
 		msg.Free() // defer is costly
 
@@ -95,23 +95,11 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	//w.Header().Set(ContentTypeHeader, ContentTypeJson)
-
-	// manually create the json for performance
-	// use encoding/json will cost 800ns
-
-	msg.Reset()
-	msg.WriteString(`{"partition":`)
-	msg.WriteString(strconv.Itoa(int(partition)))
-	msg.WriteString(`,"offset":`)
-	msg.WriteString(strconv.Itoa(int(offset)))
-	msg.WriteString(`}`)
-	if _, err = w.Write(msg.Bytes()); err != nil {
+	msg.Free()
+	if _, err = w.Write(ResponsePubOk); err != nil {
 		log.Error("%s: %v", r.RemoteAddr, err)
 		this.pubMetrics.ClientError.Inc(1)
 	}
-
-	msg.Free()
 
 	// TODO so many metrics, are to be put into anther thread via chan
 	// DONT block the main handler thread

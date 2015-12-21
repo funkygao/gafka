@@ -3,7 +3,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/buaazp/fasthttprouter"
@@ -33,7 +32,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 
 	ver := params.ByName(UrlParamVersion)
 	queryArgs := ctx.Request.URI().QueryArgs()
-	key := hack.String(queryArgs.Peek(UrlQueryKey)) // TODO use []byte
+	key := queryArgs.Peek(UrlQueryKey)
 	asyncArg := queryArgs.Peek(UrlQueryAsync)
 	async := len(asyncArg) == 1 && asyncArg[0] == '1'
 	//delay := hack.String(queryArgs.Peek(UrlQueryDelay))
@@ -57,7 +56,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 	if async {
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
-	partition, offset, err := pubMethod(meta.Default.LookupCluster(appid, topic),
+	err := pubMethod(meta.Default.LookupCluster(appid, topic),
 		appid+"."+topic+"."+ver,
 		key, ctx.PostBody())
 	if err != nil {
@@ -76,7 +75,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 	}
 
 	// write the reponse
-	ctx.Write([]byte(fmt.Sprintf("%d %d", partition, offset)))
+	ctx.Write(ResponsePubOk)
 	if !options.disableMetrics {
 		this.pubMetrics.pubOk(appid, topic, params.ByName(UrlParamVersion))
 		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms

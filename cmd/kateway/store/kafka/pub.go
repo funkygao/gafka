@@ -94,8 +94,8 @@ func (this *pubStore) doRefresh() {
 	this.poolLock.Unlock()
 }
 
-func (this *pubStore) SyncPub(cluster string, topic, key string,
-	msg []byte) (partition int32, offset int64, err error) {
+func (this *pubStore) SyncPub(cluster string, topic string, key []byte,
+	msg []byte) (err error) {
 	this.poolLock.RLock()
 	pool, present := this.pubPools[cluster]
 	this.poolLock.RUnlock()
@@ -110,16 +110,16 @@ func (this *pubStore) SyncPub(cluster string, topic, key string,
 			producer.Recycle()
 		}
 
-		return -1, -1, e
+		return e
 	}
 
 	// TODO add msg header
 
 	var keyEncoder sarama.Encoder = nil // will use random partitioner
-	if key != "" {
-		keyEncoder = sarama.StringEncoder(key) // will use hash partition
+	if len(key) > 0 {
+		keyEncoder = sarama.ByteEncoder(key) // will use hash partition
 	}
-	partition, offset, err = producer.SendMessage(&sarama.ProducerMessage{
+	_, _, err = producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic,
 		Key:   keyEncoder,
 		Value: sarama.ByteEncoder(msg),
@@ -129,8 +129,8 @@ func (this *pubStore) SyncPub(cluster string, topic, key string,
 	return
 }
 
-func (this *pubStore) AsyncPub(cluster string, topic, key string,
-	msg []byte) (partition int32, offset int64, err error) {
+func (this *pubStore) AsyncPub(cluster string, topic string, key []byte,
+	msg []byte) (err error) {
 	this.poolLock.RLock()
 	pool, present := this.pubPools[cluster]
 	this.poolLock.RUnlock()
@@ -145,12 +145,12 @@ func (this *pubStore) AsyncPub(cluster string, topic, key string,
 			producer.Recycle()
 		}
 
-		return 0, 0, e
+		return e
 	}
 
 	var keyEncoder sarama.Encoder = nil // will use random partitioner
-	if key != "" {
-		keyEncoder = sarama.StringEncoder(key) // will use hash partition
+	if len(key) > 0 {
+		keyEncoder = sarama.ByteEncoder(key) // will use hash partition
 	}
 	producer.Input() <- &sarama.ProducerMessage{
 		Topic: topic,

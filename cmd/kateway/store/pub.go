@@ -8,10 +8,8 @@ type PubStore interface {
 	/* TODO
 	SyncPub(cluster string, topic, key string, in io.Reader) (partition int32,
 		offset int64, err error)*/
-	SyncPub(cluster string, topic, key string, data []byte) (partition int32,
-		offset int64, err error)
-	AsyncPub(cluster string, topic, key string, data []byte) (partition int32,
-		offset int64, err error)
+	SyncPub(cluster string, topic string, key, msg []byte) error
+	AsyncPub(cluster string, topic string, key, msg []byte) error
 }
 
 var DefaultPubStore PubStore
