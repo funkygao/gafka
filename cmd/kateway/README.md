@@ -121,6 +121,7 @@ A REST gateway for kafka that supports Pub and Sub.
 
 ### TODO
 
+- [ ] for intranet traffic, record the src ip and port
 - [ ] delayed pub
 - [ ] https://github.com/corneldamian/httpway
 - [X] multi-cluster
