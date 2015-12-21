@@ -222,6 +222,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 
 	type clusterInfo struct {
 		name, path         string
+		nickname           string
 		topicN, partitionN int
 		err                string
 		priority           int
@@ -274,6 +275,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 		info := zkcluster.RegisteredInfo()
 		clusters = append(clusters, clusterInfo{
 			name:        zkcluster.Name(),
+			nickname:    info.Nickname,
 			path:        zkcluster.Chroot(),
 			topicN:      len(topics),
 			partitionN:  partitionN,
@@ -304,7 +306,8 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 			this.Ui.Output(fmt.Sprintf("%30s: %s",
 				c.name, c.path))
 			this.Ui.Output(strings.Repeat(" ", 4) +
-				color.Blue("topics:%d partitions:%d replicas:%d priority:%d brokers:%+v",
+				color.Blue("nick:%s topics:%d partitions:%d replicas:%d priority:%d brokers:%+v",
+					c.nickname,
 					c.topicN, c.partitionN, c.replicas, c.priority, c.brokerInfos))
 		}
 
