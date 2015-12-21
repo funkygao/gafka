@@ -132,7 +132,7 @@ func BenchmarkDirectKafkaProduce1K(b *testing.B) {
 
 	data := []byte(strings.Repeat("X", msgSize))
 	for i := 0; i < b.N; i++ {
-		store.DefaultPubStore.SyncPub("me", "foobar", "", data)
+		store.DefaultPubStore.SyncPub("me", "foobar", nil, data)
 	}
 }
 
