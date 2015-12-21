@@ -3,6 +3,8 @@
 package main
 
 import (
+	"io/ioutil"
+	golog "log"
 	"net"
 	"net/http"
 	"sync"
@@ -41,6 +43,8 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 	this.waitExitFunc = this.waitExit
 
 	if httpAddr != "" {
+		logger := &golog.Logger{}
+		logger.SetOutput(ioutil.Discard)
 		this.httpServer = &fasthttp.Server{
 			Name:               "kateway",
 			Handler:            this.router.Handler,
@@ -48,6 +52,7 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 			MaxConnsPerIP:      100,
 			MaxRequestBodySize: int(options.maxPubSize + 1),
 			ReduceMemoryUsage:  true,
+			Logger:             logger,
 		}
 	}
 
@@ -58,6 +63,11 @@ func (this *pubServer) Start() {
 	var err error
 	if this.httpServer != nil {
 		go func() {
+			this.httpListener, err = net.Listen("tcp", this.httpAddr)
+			if err != nil {
+				panic(err)
+			}
+
 			var retryDelay time.Duration
 			for {
 				select {
@@ -67,22 +77,19 @@ func (this *pubServer) Start() {
 				default:
 				}
 
-				this.httpListener, err = net.Listen("tcp", this.httpAddr)
-				if err != nil {
-					if retryDelay == 0 {
-						retryDelay = 5 * time.Millisecond
-					} else {
-						retryDelay = 2 * retryDelay
-					}
-					if maxDelay := time.Second; retryDelay > maxDelay {
-						retryDelay = maxDelay
-					}
-					log.Error("%v, retry in %v", err, retryDelay)
-					time.Sleep(retryDelay)
-					continue
-				}
+				err = this.httpServer.Serve(this.httpListener)
 
-				log.Error(this.httpServer.Serve(this.httpListener))
+				// backoff
+				if retryDelay == 0 {
+					retryDelay = 5 * time.Millisecond
+				} else {
+					retryDelay = 2 * retryDelay
+				}
+				if maxDelay := time.Second; retryDelay > maxDelay {
+					retryDelay = maxDelay
+				}
+				log.Error("fastpub server: %v, retry in %v", err, retryDelay)
+				time.Sleep(retryDelay)
 			}
 		}()
 
