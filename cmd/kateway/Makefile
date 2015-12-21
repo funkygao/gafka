@@ -16,11 +16,14 @@ benchmark-metrics:
 	go test -v -benchmem -bench=^BenchmarkMetrics 
 	go test -v -benchmem -bench=^BenchmarkExtractFromMetricsName
 
-benchmark-fast-cpu-dumb:
+benchmark-cpu-fastdumb:
 	go test -v -benchmem -tags fasthttp -bench=^BenchmarkKatewayPubDumb1K -benchtime=20s -cpuprofile=prof.cpu; go tool pprof kateway.test prof.cpu
 
 benchmark-cpu-dumb:
 	go test -v -benchmem -bench=^BenchmarkKatewayPubDumb1K -benchtime=20s -cpuprofile=prof.cpu; go tool pprof kateway.test prof.cpu
+
+benchmark-mem-fastdumb:
+	go test -v -benchmem -tags fasthttp -bench=^BenchmarkKatewayPubDumb1K -benchtime=20s -memprofile=prof.mem; go tool pprof kateway.test prof.mem
 
 benchmark-mem-dumb:
 	go test -v -benchmem -bench=^BenchmarkKatewayPubDumb1K -benchtime=20s -memprofile=prof.mem; go tool pprof kateway.test prof.mem
