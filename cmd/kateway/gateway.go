@@ -186,6 +186,7 @@ func (this *Gateway) ServeForever() {
 			registry.Default.Deregister()
 		}
 
+		log.Info("waiting for components shutdown...")
 		this.wg.Wait()
 
 		if store.DefaultPubStore != nil {

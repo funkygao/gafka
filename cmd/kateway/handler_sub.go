@@ -150,8 +150,6 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 		}
 	}
 
-	return nil
-
 }
 
 // /raw/topics/:appid/:topic/:ver

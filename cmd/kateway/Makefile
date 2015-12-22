@@ -3,6 +3,10 @@ all:kafka
 deps:
 	@go list ./...
 
+check:
+	-go vet
+	golint
+
 fast:
 	go build -tags fasthttp
 

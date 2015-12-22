@@ -102,6 +102,8 @@ func (this *webServer) Start() {
 			}
 		}()
 
+		// FIXME if net.Listen fails, kateway will not be able to stop
+		// e,g. start a kateway, then start another, the 2nd will not be able to stop
 		if waitHttpListenerUp != nil {
 			<-waitHttpListenerUp
 		}
