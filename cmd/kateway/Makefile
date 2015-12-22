@@ -5,7 +5,8 @@ deps:
 
 check:
 	-go vet
-	golint
+	-golint
+	go tool nm -size -sort=size kateway | head -n 50
 
 fast:
 	go build -tags fasthttp
