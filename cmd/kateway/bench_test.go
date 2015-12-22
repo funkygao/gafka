@@ -222,8 +222,24 @@ func BenchmarkManualCreateJson(b *testing.B) {
 	}
 }
 
+// 1k log line
+// on the vm, go1.5
+// 12614 ns/op	81.18 MB/s	3680 B/op  5 allocs/op
+// 85k line/second
+// on the physical server, go1.4
+// 9944 ns/op	102.97 MB/ 3714 B/op   7 allocs/op
+// 100k line/second
+//
+// 0.5k log line
+// on the vm, go1.5
+// 8111 ns/op	61.64 MB/s	 528 B/op  2 allocs/op
+// 135k line/second
+// on the physical server, go1.4
+// 4677 ns/op	106.89 MB/s	 547 B/op  4 allocs/op
+// 200k line/second
 func BenchmarkLogAppend(b *testing.B) {
-	line := strings.Repeat("X", 1<<10)
+	sz := 1 << 10
+	line := strings.Repeat("X", sz)
 	f, err := os.OpenFile("log.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
 	if err != nil {
 		panic(err)
@@ -233,6 +249,6 @@ func BenchmarkLogAppend(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		l.Println(line)
 	}
-	b.SetBytes(1 << 10)
+	b.SetBytes(int64(sz))
 	os.Remove("log.log")
 }
