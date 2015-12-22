@@ -115,3 +115,25 @@ func BenchmarkIntern(b *testing.B) {
 		_ = intern(p)
 	}
 }
+
+const size = 100
+
+func BenchmarkDelayedAlloc(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		var s []int
+		for i := 0; i < size; i++ {
+			s = append(s, i)
+		}
+		_ = s
+	}
+}
+
+func BenchmarkOneAlloc(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		s := make([]int, 0, 100)
+		for i := 0; i < size; i++ {
+			s = append(s, i)
+		}
+		_ = s
+	}
+}
