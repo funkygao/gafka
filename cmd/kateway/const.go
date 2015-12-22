@@ -18,6 +18,10 @@ const (
 	ContentTypeHeader = "Content-Type"
 	ContentTypeJson   = "application/json; charset=utf8"
 	ContentTypeText   = "text/plain; charset=utf8"
+
+	CharBraceletLeft  = '{'
+	CharBraceletRight = '}'
+	CharDot           = '.'
 )
 
 var (

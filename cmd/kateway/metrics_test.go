@@ -18,7 +18,7 @@ func BenchmarkMetricsCounterWithoutLock(b *testing.B) {
 	}
 }
 
-func BenchmarkMetricsCountersWithLock(b *testing.B) {
+func BenchmarkMetricsPubOkCounter(b *testing.B) {
 	p := newPubMetrics(time.Hour)
 	for i := 0; i < b.N; i++ {
 		p.pubOk("appid", "topic", "ver")

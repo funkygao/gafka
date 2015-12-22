@@ -76,7 +76,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	ver := params.ByName(UrlParamVersion)
 	err := pubMethod(meta.Default.LookupCluster(appid, topic),
 		appid+"."+topic+"."+ver,
-		//meta.KafkaTopic(appid, topic, params.ByName(UrlParamVersion)),
 		hack.Byte(query.Get(UrlQueryKey)), msg.Body)
 	if err != nil {
 		msg.Free() // defer is costly
@@ -104,7 +103,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	// TODO so many metrics, are to be put into anther thread via chan
 	// DONT block the main handler thread
 	if !options.disableMetrics {
-		this.pubMetrics.pubOk(appid, topic, params.ByName(UrlParamVersion))
+		this.pubMetrics.pubOk(appid, topic, ver)
 		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 	}
 
