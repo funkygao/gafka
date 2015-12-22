@@ -12,6 +12,9 @@ build:
 bench:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -level info -store kafka -id 1 
 
+benchmark-metrics-pubok:
+	go test -v -benchmem -bench=^BenchmarkMetricsPubOkCounter -benchtime=20s -cpuprofile=prof.cpu; go tool pprof kateway.test prof.cpu
+
 benchmark-metrics:
 	go test -v -benchmem -bench=^BenchmarkMetrics 
 	go test -v -benchmem -bench=^BenchmarkExtractFromMetricsName

@@ -5,9 +5,9 @@ import (
 	uurl "net/url"
 	"time"
 
+	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 	"github.com/influxdb/influxdb/client"
-	"github.com/rcrowley/go-metrics"
 )
 
 type reporter struct {
