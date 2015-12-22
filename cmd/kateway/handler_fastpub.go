@@ -44,7 +44,6 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 			appid, ctx.RemoteAddr(),
 			topic, ver, key, async,
 			string(ctx.Request.Body()))
-
 	}
 
 	var t1 time.Time // FIXME should be placed at beginning of handler

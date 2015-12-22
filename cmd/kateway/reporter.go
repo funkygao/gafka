@@ -7,8 +7,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/funkygao/go-metrics"
 	w "github.com/funkygao/log4go"
-	"github.com/rcrowley/go-metrics"
 )
 
 func runMetricsReporter(r metrics.Registry, d time.Duration) {

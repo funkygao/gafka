@@ -65,7 +65,10 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 
 func (this *webServer) Start() {
 	var err error
+	var waitHttpListenerUp chan struct{}
 	if this.httpServer != nil {
+		waitHttpListenerUp = make(chan struct{})
+
 		go func() {
 			var retryDelay time.Duration
 			for {
@@ -92,10 +95,16 @@ func (this *webServer) Start() {
 				}
 
 				this.httpListener = LimitListener(this.gw, this.httpListener, this.maxClients)
-				log.Error(this.httpServer.Serve(this.httpListener))
+				close(waitHttpListenerUp)
+
+				err = this.httpServer.Serve(this.httpListener)
+				log.Error("%s: %v", this.name, err)
 			}
 		}()
 
+		if waitHttpListenerUp != nil {
+			<-waitHttpListenerUp
+		}
 		this.once.Do(func() {
 			go this.waitExitFunc(this.gw.shutdownCh)
 		})
@@ -104,6 +113,7 @@ func (this *webServer) Start() {
 		log.Info("%s http server ready on %s", this.name, this.httpServer.Addr)
 	}
 
+	var waitHttpsListenerUp chan struct{}
 	if this.httpsServer != nil {
 		this.tlsListener, err = this.setupHttpsServer(this.httpsServer,
 			this.gw.certFile, this.gw.keyFile)
@@ -137,10 +147,16 @@ func (this *webServer) Start() {
 				}
 
 				this.tlsListener = LimitListener(this.gw, this.tlsListener, this.maxClients)
-				log.Error(this.httpsServer.Serve(this.tlsListener))
+				close(waitHttpsListenerUp)
+
+				err = this.httpsServer.Serve(this.tlsListener)
+				log.Error("%s: %v", this.name, err)
 			}
 		}()
 
+		if this.httpsServer != nil {
+			<-waitHttpsListenerUp
+		}
 		this.once.Do(func() {
 			go this.waitExitFunc(this.gw.shutdownCh)
 		})

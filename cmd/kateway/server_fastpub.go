@@ -61,12 +61,16 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 
 func (this *pubServer) Start() {
 	var err error
+	var waitHttpListenerUp chan struct{}
 	if this.httpServer != nil {
+		waitHttpListenerUp = make(chan struct{})
+
 		go func() {
 			this.httpListener, err = net.Listen("tcp", this.httpAddr)
 			if err != nil {
 				panic(err)
 			}
+			close(waitHttpListenerUp)
 
 			var retryDelay time.Duration
 			for {
@@ -93,6 +97,9 @@ func (this *pubServer) Start() {
 			}
 		}()
 
+		if waitHttpListenerUp != nil {
+			<-waitHttpListenerUp
+		}
 		this.once.Do(func() {
 			go this.waitExitFunc(this.gw.shutdownCh)
 		})
