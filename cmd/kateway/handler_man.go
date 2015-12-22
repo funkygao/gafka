@@ -30,6 +30,11 @@ POST /ws/topics/:topic/:ver
  GET /topics/:appid/:topic/:ver/:group?limit=1&reset=newest
  GET /ws/topics/:appid/:topic/:ver/:group
 `))))
+	if options.pprofListener != "" {
+		w.Write([]byte(fmt.Sprintf(`
+  GET /debug/pprof
+`)))
+	}
 
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"os"
 	"sync"
 	"syscall"
@@ -129,6 +130,10 @@ func (this *Gateway) Start() (err error) {
 	this.startedAt = time.Now()
 
 	startRuntimeMetrics(options.reporterInterval)
+
+	if options.pprofListener != "" {
+		go http.ListenAndServe(options.pprofListener, nil)
+	}
 
 	meta.Default.Start()
 	log.Trace("meta store started")

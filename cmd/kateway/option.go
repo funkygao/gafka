@@ -21,6 +21,7 @@ var (
 		consulAddr           string
 		store                string
 		pidFile              string
+		pprofListener        string
 		certFile             string
 		keyFile              string
 		logFile              string
@@ -64,6 +65,7 @@ func parseFlags() {
 	flag.StringVar(&options.certFile, "certfile", "", "cert file path")
 	flag.StringVar(&options.pidFile, "pid", "", "pid file")
 	flag.StringVar(&options.keyFile, "keyfile", "", "key file path")
+	flag.StringVar(&options.pprofListener, "pprofaddr", "", "net/http/pprof listener addr")
 	flag.StringVar(&options.store, "store", "kafka", "backend store")
 	flag.StringVar(&options.configFile, "conf", "/etc/kateway.cf", "config file")
 	flag.BoolVar(&options.debug, "debug", false, "enable debug mode")
