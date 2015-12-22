@@ -33,6 +33,7 @@ POST /ws/topics/:topic/:ver
 	if options.pprofListener != "" {
 		w.Write([]byte(fmt.Sprintf(`
   GET /debug/pprof
+  GET /debug/vars
 `)))
 	}
 

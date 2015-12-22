@@ -131,10 +131,6 @@ func (this *Gateway) Start() (err error) {
 
 	startRuntimeMetrics(options.reporterInterval)
 
-	if options.pprofListener != "" {
-		go http.ListenAndServe(options.pprofListener, nil)
-	}
-
 	meta.Default.Start()
 	log.Trace("meta store started")
 
@@ -143,6 +139,12 @@ func (this *Gateway) Start() (err error) {
 
 	this.buildRouting()
 	this.manServer.Start()
+
+	if options.pprofListener != "" {
+		log.Info("debug http server ready on %s", options.pprofListener)
+
+		go http.ListenAndServe(options.pprofListener, nil)
+	}
 
 	if this.pubServer != nil {
 		store.DefaultPubStore.Start()
