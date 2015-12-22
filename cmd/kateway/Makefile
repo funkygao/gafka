@@ -19,6 +19,9 @@ benchmark-metrics:
 	go test -v -benchmem -bench=^BenchmarkMetrics 
 	go test -v -benchmem -bench=^BenchmarkExtractFromMetricsName
 
+benchmark-logappend:
+	go test -v -benchmem -bench=^BenchmarkLogAppend -benchtime=20s 
+
 benchmark-cpu-fastdumb:
 	go test -v -benchmem -tags fasthttp -bench=^BenchmarkKatewayPubDumb1K -benchtime=20s -cpuprofile=prof.cpu; go tool pprof kateway.test prof.cpu
 

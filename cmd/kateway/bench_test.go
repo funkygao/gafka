@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	glog "log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -61,8 +63,8 @@ func newGatewayForTest(b *testing.B, store string) *Gateway {
 	options.subHttpAddr = ":9192"
 	options.store = store
 	options.debug = false
-	options.disableMetrics = true
-	options.enableBreaker = false
+	options.disableMetrics = false
+	options.enableBreaker = true
 
 	ctx.LoadConfig("/etc/kateway.cf")
 
@@ -218,4 +220,19 @@ func BenchmarkManualCreateJson(b *testing.B) {
 
 		mpool.BytesBufferPut(buffer)
 	}
+}
+
+func BenchmarkLogAppend(b *testing.B) {
+	line := strings.Repeat("X", 1<<10)
+	f, err := os.OpenFile("log.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+	if err != nil {
+		panic(err)
+	}
+
+	l := glog.New(f, "", glog.LstdFlags)
+	for i := 0; i < b.N; i++ {
+		l.Println(line)
+	}
+	b.SetBytes(1 << 10)
+	os.Remove("log.log")
 }

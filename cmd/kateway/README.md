@@ -102,14 +102,6 @@ A REST gateway for kafka that supports Pub and Sub.
                          | Store   |   | Store   |   | Store   |
                          +---------+   +---------+   +---------+   
 
-### Usage
-
-    pub:
-    curl -i -XPOST -H "Pubkey: mypubkey" -d '{"orderId":56, "uid": 89}' "http://localhost:9191/topics/v2/foobar?key=56"
-
-    sub:
-    curl -i XGET -H "Subkey: mysubkey" http://localhost:9192/topics/v2/foobar/mygroup1?limit=100
-
 ### FAQ
 
 - how to batch messages in Pub?
@@ -128,6 +120,11 @@ A REST gateway for kafka that supports Pub and Sub.
 
 ### TODO
 
+- [ ] metrics
+  - intranet/extranet pub
+  - failure count
+  - consumer performance: how many msges can it consume
+  - rank by topic/ver/app
 - [ ] for intranet traffic, record the src ip and port
 - [ ] delayed pub
 - [ ] https://github.com/corneldamian/httpway
