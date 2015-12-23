@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -85,6 +86,10 @@ func (this *Client) Publish(topic, ver, key string, msg []byte) (err error) {
 
 	// reuse the connection
 	response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return errors.New(string(b))
+	}
 
 	if this.cf.Debug {
 		log.Printf("got: %s", string(b))
