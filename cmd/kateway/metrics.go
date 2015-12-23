@@ -19,14 +19,42 @@ func startRuntimeMetrics(interval time.Duration) {
 }
 
 type subMetrics struct {
+	expConsumeOk *expvar.Int
+
 	ClientError metrics.Counter
+
+	// i consume msgs of others
+	ConsumeMap   map[string]metrics.Counter
+	consumeMapMu sync.RWMutex
+
+	// my msgs are consumed by others
+	// TODO who are consuming my msgs
+	ConsumedMap   map[string]metrics.Counter
+	consumedMapMu sync.RWMutex
 }
 
 func newSubMetrics(interval time.Duration) *subMetrics {
 	this := &subMetrics{
 		ClientError: metrics.NewCounter(),
+		ConsumeMap:  make(map[string]metrics.Counter),
+		ConsumedMap: make(map[string]metrics.Counter),
+	}
+
+	if options.debugHttpAddr != "" {
+		this.expConsumeOk = expvar.NewInt("ConsumeOk")
 	}
 	return this
+}
+
+func (this *subMetrics) consumeOk(appid, topic, ver string) {
+	if this.expConsumeOk != nil {
+		this.expConsumeOk.Add(1)
+	}
+	updateCounter(appid, topic, ver, "sub.ok", &this.consumeMapMu, this.ConsumeMap)
+}
+
+func (this *subMetrics) consumedOk(appid, topic, ver string) {
+	updateCounter(appid, topic, ver, "subd.ok", &this.consumedMapMu, this.ConsumedMap)
 }
 
 func goroutines() interface{} {
@@ -80,7 +108,7 @@ func newPubMetrics(interval time.Duration) *pubMetrics {
 	return this
 }
 
-func (this *pubMetrics) updateCounter(appid, topic, ver, name string,
+func updateCounter(appid, topic, ver, name string,
 	mu *sync.RWMutex, m map[string]metrics.Counter) {
 	tagBuf := make([]byte, 4+len(appid)+len(topic)+len(ver))
 	tagBuf[0] = CharBraceletLeft
@@ -127,12 +155,12 @@ func (this *pubMetrics) pubFail(appid, topic, ver string) {
 	if this.expPubFail != nil {
 		this.expPubFail.Add(1)
 	}
-	this.updateCounter(appid, topic, ver, "pub.fail", &this.pubFailMu, this.PubFailMap)
+	updateCounter(appid, topic, ver, "pub.fail", &this.pubFailMu, this.PubFailMap)
 }
 
 func (this *pubMetrics) pubOk(appid, topic, ver string) {
 	if this.expPubOk != nil {
 		this.expPubOk.Add(1)
 	}
-	this.updateCounter(appid, topic, ver, "pub.ok", &this.pubOkMu, this.PubOkMap)
+	updateCounter(appid, topic, ver, "pub.ok", &this.pubOkMu, this.PubOkMap)
 }

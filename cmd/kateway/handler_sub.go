@@ -68,7 +68,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	err = this.fetchMessages(w, fetcher, limit)
+	err = this.fetchMessages(w, fetcher, limit, myAppid, hisAppid, topic, ver)
 	if err != nil {
 		// broken pipe, io timeout
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
@@ -79,7 +79,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 }
 
 func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
-	limit int) error {
+	limit int, myAppid, hisAppid, topic, ver string) error {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
 	chunkedBeforeTimeout := false
@@ -110,6 +110,9 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			// TODO test case: client got chunk 2, then killed. should server commit offset?
 			log.Debug("commit offset: {T:%s, P:%d, O:%d}", msg.Topic, msg.Partition, msg.Offset)
 			fetcher.CommitUpto(msg)
+
+			this.subMetrics.consumeOk(myAppid, topic, ver)
+			this.subMetrics.consumedOk(hisAppid, topic, ver)
 
 			n++
 			if n >= limit {
