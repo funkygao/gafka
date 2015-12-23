@@ -1,4 +1,4 @@
-# gafka [![Build Status](https://travis-ci.org/funkygao/gafka.png?branch=master)](https://travis-ci.org/funkygao/gafka)
+# gafka 
 Unified multi-datacenter multi-cluster kafka swiss-knife management console powered by golang.
 
 ### Features
