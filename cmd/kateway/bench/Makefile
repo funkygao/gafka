@@ -1,5 +1,9 @@
 bench:sync
 
+pub:pub.go
+	@echo keep pub to kateway to check mem/thread leakeage
+	@go run pub.go
+
 sync:bench.go
 	@echo bench against kateway in sync pub mode
 	@go run bench.go -neat -mode gw -addr "localhost:9191"
