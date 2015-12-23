@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"math/rand"
 	"strings"
 	"sync/atomic"
@@ -45,6 +46,10 @@ func pubGatewayLoop(seq int) {
 	for {
 		sz = msgSize + rand.Intn(msgSize)
 		no = atomic.AddInt64(&n, 1)
+		if no%5000 == 0 {
+			log.Println(no)
+		}
+
 		msg = fmt.Sprintf("%2d %10d %s", seq, no, strings.Repeat("X", sz))
 		err = client.Publish("foobar", "v1", "", []byte(msg))
 		if err != nil {
