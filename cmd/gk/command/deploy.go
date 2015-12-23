@@ -29,13 +29,14 @@ type Deploy struct {
 	kafkaBaseDir  string
 	zone, cluster string
 	rootPah       string
-	user          string
+	runAs         string
 	userInfo      *user.User
 	brokerId      string
 	tcpPort       string
 	ip            string
 	demoMode      bool
 	kafkaVer      string
+	logDirs       string
 }
 
 // TODO
@@ -51,7 +52,8 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.tcpPort, "port", "", "")
 	cmdFlags.StringVar(&this.rootPah, "root", "/var/wd", "")
 	cmdFlags.StringVar(&this.ip, "ip", "", "")
-	cmdFlags.StringVar(&this.user, "user", "sre", "")
+	cmdFlags.StringVar(&this.logDirs, "log.dirs", "", "")
+	cmdFlags.StringVar(&this.runAs, "user", "sre", "")
 	cmdFlags.BoolVar(&this.demoMode, "demo", false, "")
 	cmdFlags.StringVar(&this.kafkaVer, "ver", "2.10-0.8.1.1", "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -79,9 +81,17 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	}
 
 	if validateArgs(this, this.Ui).
-		require("-broker.id", "-port", "-ip").
+		require("-broker.id", "-port", "-ip", "-log.dirs").
 		invalid(args) {
 		return 2
+	}
+
+	// ensure the log.dirs all exists
+	for _, dir := range strings.Split(this.logDirs, ",") {
+		if !gio.DirExists(dir) {
+			this.Ui.Error(fmt.Sprintf("%s not exists", dir))
+			return 1
+		}
 	}
 
 	if !ctx.CurrentUserIsRoot() {
@@ -90,7 +100,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	}
 
 	var err error
-	this.userInfo, err = user.Lookup(this.user)
+	this.userInfo, err = user.Lookup(this.runAs)
 	swallow(err)
 
 	// prepare the root directory
@@ -114,6 +124,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		ZkChroot    string
 		ZkAddrs     string
 		InstanceDir string
+		LogDirs     string
 	}
 	data := templateVar{
 		ZkChroot:    zkchroot,
@@ -121,9 +132,10 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		BrokerId:    this.brokerId,
 		Ip:          this.ip,
 		InstanceDir: this.instanceDir(),
-		User:        this.user,
+		User:        this.runAs,
 		TcpPort:     this.tcpPort,
 		ZkAddrs:     this.zkzone.ZkAddrs(),
+		LogDirs:     this.logDirs,
 	}
 
 	// package the kafka runtime together
@@ -252,8 +264,11 @@ func (this *Deploy) demo() {
 		myBrokerId = 0
 	}
 
-	this.Ui.Output(fmt.Sprintf("gk deploy -z %s -c %s -broker.id %d -port %d -ip %s",
-		this.zone, this.cluster, myBrokerId, myPort, ip.String()))
+	this.Ui.Output(fmt.Sprintf("gk deploy -z %s -c %s -broker.id %d -port %d -ip %s -log.dirs %s",
+		this.zone, this.cluster,
+		myBrokerId, myPort,
+		ip.String(),
+		"/data0,/data1,/data2,/data3,/data4,/data5,/data6,/data7,/data8,/data9,/data10,/data11"))
 
 }
 
@@ -300,6 +315,9 @@ Options:
     -kafka.base dir
       Kafka installation prefix dir.
       Defaults to %s
+
+    -log.dirs dirs
+      A comma seperated list of directories under which to store log files.
 
 `, this.Cmd, ctx.KafkaHome())
 	return strings.TrimSpace(help)
