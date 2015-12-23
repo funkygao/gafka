@@ -140,10 +140,10 @@ func (this *Gateway) Start() (err error) {
 	this.buildRouting()
 	this.manServer.Start()
 
-	if options.pprofListener != "" {
-		log.Info("debug http server ready on %s", options.pprofListener)
+	if options.debugHttpAddr != "" {
+		log.Info("debug http server ready on %s", options.debugHttpAddr)
 
-		go http.ListenAndServe(options.pprofListener, nil)
+		go http.ListenAndServe(options.debugHttpAddr, nil)
 	}
 
 	if this.pubServer != nil {

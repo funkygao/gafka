@@ -1,6 +1,8 @@
 package main
 
 import (
+	"expvar"
+	"runtime"
 	"sync"
 	"time"
 
@@ -27,7 +29,14 @@ func newSubMetrics(interval time.Duration) *subMetrics {
 	return this
 }
 
+func goroutines() interface{} {
+	return runtime.NumGoroutine()
+}
+
 type pubMetrics struct {
+	expPubOk   *expvar.Int
+	expPubFail *expvar.Int
+
 	PubOkMap   map[string]metrics.Counter
 	pubOkMu    sync.RWMutex
 	PubFailMap map[string]metrics.Counter
@@ -53,6 +62,11 @@ func newPubMetrics(interval time.Duration) *pubMetrics {
 		PubQps:        metrics.NewRegisteredMeter("pub.qps", metrics.DefaultRegistry),
 		PubMsgSize:    metrics.NewRegisteredHistogram("pub.msgsize", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015)),
 		PubLatency:    metrics.NewRegisteredHistogram("pub.latency", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015)),
+	}
+	if options.debugHttpAddr != "" {
+		this.expPubOk = expvar.NewInt("PubOk")
+		this.expPubFail = expvar.NewInt("PubFail")
+		expvar.Publish("Goroutines", expvar.Func(goroutines))
 	}
 
 	go runMetricsReporter(metrics.DefaultRegistry, interval*60)
@@ -110,9 +124,15 @@ func (this *pubMetrics) updateCounter(appid, topic, ver, name string,
 }
 
 func (this *pubMetrics) pubFail(appid, topic, ver string) {
+	if this.expPubFail != nil {
+		this.expPubFail.Add(1)
+	}
 	this.updateCounter(appid, topic, ver, "pub.fail", &this.pubFailMu, this.PubFailMap)
 }
 
 func (this *pubMetrics) pubOk(appid, topic, ver string) {
+	if this.expPubOk != nil {
+		this.expPubOk.Add(1)
+	}
 	this.updateCounter(appid, topic, ver, "pub.ok", &this.pubOkMu, this.PubOkMap)
 }
