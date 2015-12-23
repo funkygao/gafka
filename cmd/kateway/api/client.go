@@ -59,7 +59,7 @@ func (this *Client) Publish(topic, ver, key string, msg []byte) (err error) {
 	buf.Reset()
 	buf.Write(msg)
 	var req *http.Request
-	url := fmt.Sprintf("%s/topics/%s/%s?key=%s", this.addr, ver, topic, key)
+	url := fmt.Sprintf("%s/topics/%s/%s?key=%s", this.addr, topic, ver, key)
 	req, err = http.NewRequest("POST", url, buf)
 	if err != nil {
 		return
