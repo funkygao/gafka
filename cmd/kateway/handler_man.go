@@ -17,25 +17,34 @@ func (this *Gateway) helpHandler(w http.ResponseWriter, r *http.Request,
 	this.writeKatewayHeader(w)
 	w.Header().Set(ContentTypeHeader, ContentTypeText)
 	w.Write([]byte(strings.TrimSpace(fmt.Sprintf(`
+pub server: %s
+sub server: %s
+man server: %s
+dbg server: %s
+
+pub:
+POST /topics/:topic/:ver?key=mykey&async=1
+POST /ws/topics/:topic/:ver
+ GET /raw/topics/:topic/:ver
+
+sub:
+ GET /topics/:appid/:topic/:ver/:group?limit=1&reset=newest
+ GET /ws/topics/:appid/:topic/:ver/:group
+ GET /raw/topics/:appid/:topic/:ver
+
+man:
  GET /ver
  GET /help
  GET /stat
  GET /ping
  GET /clusters
 
- GET /raw/topics/:topic/:ver
-POST /topics/:topic/:ver?key=mykey&async=1
-POST /ws/topics/:topic/:ver
- GET /raw/topics/:appid/:topic/:ver
- GET /topics/:appid/:topic/:ver/:group?limit=1&reset=newest
- GET /ws/topics/:appid/:topic/:ver/:group
-`))))
-	if options.pprofListener != "" {
-		w.Write([]byte(fmt.Sprintf(`
-  GET /debug/pprof
-  GET /debug/vars
-`)))
-	}
+dbg:
+ GET /debug/pprof
+ GET /debug/vars
+`,
+		options.pubHttpAddr, options.subHttpAddr,
+		options.manHttpAddr, options.debugHttpAddr))))
 
 }
 

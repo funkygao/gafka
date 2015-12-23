@@ -66,7 +66,6 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 				}
 
 			case http.StateClosed:
-				log.Debug("remote http client[%s] closed", c.RemoteAddr())
 				this.closedConnCh <- c.RemoteAddr().String()
 				this.idleConnsWg.Done()
 			}

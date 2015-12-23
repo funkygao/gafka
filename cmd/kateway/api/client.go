@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,11 +11,6 @@ import (
 )
 
 type SubHandler func(statusCode int, msg []byte) error
-
-type pubResponse struct {
-	Partition int   `json:"partition"`
-	Offset    int64 `json:offset`
-}
 
 type Client struct {
 	cf *Config
@@ -58,15 +52,14 @@ func (this *Client) Close() {
 }
 
 // TODO async
-func (this *Client) Publish(topic, ver, key string, msg []byte) (partition int,
-	offset int64, err error) {
+func (this *Client) Publish(topic, ver, key string, msg []byte) (err error) {
 	buf := mpool.BytesBufferGet()
 	defer mpool.BytesBufferPut(buf)
 
 	buf.Reset()
 	buf.Write(msg)
 	var req *http.Request
-	url := fmt.Sprintf("%s/topics/%s/%s?key=%s", this.addr, ver, topic, key)
+	url := fmt.Sprintf("%s/topics/%s/%s?key=%s", this.addr, topic, ver, key)
 	req, err = http.NewRequest("POST", url, buf)
 	if err != nil {
 		return
@@ -96,13 +89,8 @@ func (this *Client) Publish(topic, ver, key string, msg []byte) (partition int,
 	if this.cf.Debug {
 		log.Printf("got: %s", string(b))
 	}
-	var v pubResponse
-	err = json.Unmarshal(b, &v)
-	if err != nil {
-		return
-	}
 
-	return v.Partition, v.Offset, nil
+	return nil
 }
 
 func (this *Client) Subscribe(appid, topic, ver, group string, h SubHandler) error {

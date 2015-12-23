@@ -33,7 +33,7 @@ type Top struct {
 
 	who            string
 	limit          int
-	topInterval    int
+	topInterval    time.Duration
 	batchMode      bool
 	dashboardGraph bool
 	topicPattern   string
@@ -52,7 +52,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
-	cmdFlags.IntVar(&this.topInterval, "interval", 5, "refresh interval")
+	cmdFlags.DurationVar(&this.topInterval, "i", time.Second*5, "refresh interval")
 	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
 	cmdFlags.IntVar(&this.limit, "n", 33, "")
 	cmdFlags.StringVar(&this.who, "who", "producer", "")
@@ -69,14 +69,16 @@ func (this *Top) Run(args []string) (exitCode int) {
 	}
 
 	if this.dashboardGraph {
-		this.topInterval = 20
+		if this.topInterval.Seconds() < 20 {
+			this.topInterval = 20 * time.Second
+		}
 		this.who = "both"
 		go this.clusterOffsetSummary()
 	}
 
 	if this.who == "c" || this.who == "consumer" {
-		if this.topInterval < 20 {
-			this.topInterval = 20 // consumer groups only refresh offset per minute
+		if this.topInterval.Seconds() < 20 {
+			this.topInterval = 20 * time.Second // consumer groups only refresh offset per minute
 		}
 
 	}
@@ -114,7 +116,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 		return
 	}
 
-	ticker := time.NewTicker(time.Duration(this.topInterval) * time.Second)
+	ticker := time.NewTicker(this.topInterval)
 	defer ticker.Stop()
 	keyboardPressed := make(chan struct{})
 	go func() {
@@ -208,7 +210,7 @@ func (this *Top) drawDashboard() {
 	}()
 
 	termui.Render(producerChart, consumerChart)
-	tick := time.NewTicker(time.Duration(this.topInterval) * time.Second)
+	tick := time.NewTicker(this.topInterval)
 	defer tick.Stop()
 	rounds := 0
 	for {
@@ -261,7 +263,7 @@ func (this *Top) showAndResetCounters() {
 		}
 
 		num := sortedNum[i]
-		mps := float64(num-this.lastCounters[counterFlip[num]]) / float64(this.topInterval) // msg per sec
+		mps := float64(num-this.lastCounters[counterFlip[num]]) / this.topInterval.Seconds() // msg per sec
 		if this.round > 1 {
 			totalNum += num
 			totalMps += mps
@@ -331,12 +333,12 @@ func (this *Top) clusterOffsetSummary() {
 
 		if lastOffsets > 1 {
 			this.totalConsumerMps = append(this.totalConsumerMps,
-				(float64(total)-lastOffsets)/float64(this.topInterval))
+				(float64(total)-lastOffsets)/this.topInterval.Seconds())
 		}
 
 		lastOffsets = float64(total)
 
-		time.Sleep(time.Second * time.Duration(this.topInterval))
+		time.Sleep(this.topInterval)
 	}
 }
 
@@ -362,7 +364,7 @@ func (this *Top) clusterTopConsumers(zkcluster *zk.ZkCluster) {
 			this.mu.Unlock()
 		}
 
-		time.Sleep(time.Second * time.Duration(this.topInterval))
+		time.Sleep(this.topInterval)
 	}
 
 }
@@ -436,8 +438,9 @@ Options:
 
     -t topic pattern    
 
-    -interval interval
+    -i interval
       Refresh interval in seconds.
+      e,g. 5s
 
     -n limit
 

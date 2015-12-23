@@ -32,7 +32,7 @@ func main() {
 	step := 3000
 	err := c.Subscribe(appid, "foobar", "v1", group, func(statusCode int, msg []byte) error {
 		i++
-		if i >= n {
+		if n > 0 && i >= n {
 			return api.ErrSubStop
 		}
 

@@ -31,7 +31,7 @@ func (this *Zktop) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("zktop", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
-	cmdFlags.DurationVar(&refreshInterval, "r", time.Second*5, "")
+	cmdFlags.DurationVar(&refreshInterval, "i", time.Second*5, "")
 	cmdFlags.BoolVar(&graph, "g", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
@@ -198,7 +198,8 @@ Options:
     -g
       Draws zk connections in graph. TODO
 
-    -r refresh duration
+    -i interval
+      Refresh interval in seconds.
       e,g. 5s
 
 `, this.Cmd)

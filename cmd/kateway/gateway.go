@@ -51,6 +51,7 @@ type Gateway struct {
 
 	pubMetrics *pubMetrics
 	subMetrics *subMetrics
+	svrMetrics *serverMetrics
 }
 
 func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
@@ -87,11 +88,12 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 	this.manServer = newManServer(options.manHttpAddr, options.manHttpsAddr,
 		options.maxClients, this)
+	this.svrMetrics = NewServerMetrics(options.reporterInterval)
 
 	if options.pubHttpAddr != "" || options.pubHttpsAddr != "" {
 		this.pubServer = newPubServer(options.pubHttpAddr, options.pubHttpsAddr,
 			options.maxClients, this)
-		this.pubMetrics = newPubMetrics(options.reporterInterval)
+		this.pubMetrics = NewPubMetrics()
 
 		switch options.store {
 		case "kafka":
@@ -105,7 +107,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	if options.subHttpAddr != "" || options.subHttpsAddr != "" {
 		this.subServer = newSubServer(options.subHttpAddr, options.subHttpsAddr,
 			options.maxClients, this)
-		this.subMetrics = newSubMetrics(options.reporterInterval)
+		this.subMetrics = NewSubMetrics()
 
 		switch options.store {
 		case "kafka":
@@ -140,10 +142,10 @@ func (this *Gateway) Start() (err error) {
 	this.buildRouting()
 	this.manServer.Start()
 
-	if options.pprofListener != "" {
-		log.Info("debug http server ready on %s", options.pprofListener)
+	if options.debugHttpAddr != "" {
+		log.Info("debug http server ready on %s", options.debugHttpAddr)
 
-		go http.ListenAndServe(options.pprofListener, nil)
+		go http.ListenAndServe(options.debugHttpAddr, nil)
 	}
 
 	if this.pubServer != nil {

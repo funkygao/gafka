@@ -1,11 +1,11 @@
 %define name gafka
-%define version 0.2.2
-%define release 5
+%define version 0.2.3
+%define release 6
 %define path usr/local
 %define group Development/Tools
 %define __os_install_post %{nil}
 
-Summary:    Unified multi-datacenter multi-kafka-clusters central management console
+Summary:    Unified multi-datacenter multi-cluster kafka swiss-knife management console
 Name:       %{name}
 Version:    %{version}
 Release:    %{release}
@@ -19,8 +19,7 @@ AutoReqProv: no
 # BuildRequires: go
 
 %description 
-Unified multi-datacenter multi-kafka-clusters central management console powered by golang.
-https://github.com/funkygao/gafka
+Unified multi-datacenter multi-cluster kafka swiss-knife management console powered by golang.
 
 %prep
 mkdir -p $RPM_BUILD_DIR/%{name}-%{version}-%{release}

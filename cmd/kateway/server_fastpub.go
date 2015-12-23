@@ -70,6 +70,7 @@ func (this *pubServer) Start() {
 			if err != nil {
 				panic(err)
 			}
+			this.httpListener = FastListener(this.httpListener, this.gw)
 			close(waitHttpListenerUp)
 
 			var retryDelay time.Duration

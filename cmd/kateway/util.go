@@ -5,8 +5,10 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/funkygao/gafka/cmd/kateway/store"
+	"github.com/funkygao/go-metrics"
 )
 
 func isBrokerError(err error) bool {
@@ -47,4 +49,47 @@ func extractFromMetricsName(name string) (appid, topic, ver, realname string) {
 	p := strings.SplitN(name[1:i], ".", 3)
 	appid, topic, ver = p[0], p[1], p[2]
 	return
+}
+
+func updateCounter(appid, topic, ver, name string,
+	mu *sync.RWMutex, m map[string]metrics.Counter) {
+	tagBuf := make([]byte, 4+len(appid)+len(topic)+len(ver))
+	tagBuf[0] = CharBraceletLeft
+	idx := 1
+	for ; idx <= len(appid); idx++ {
+		tagBuf[idx] = appid[idx-1]
+	}
+	tagBuf[idx] = CharDot
+	idx++
+	for j := 0; j < len(topic); j++ {
+		tagBuf[idx+j] = topic[j]
+	}
+	idx += len(topic)
+	tagBuf[idx] = CharDot
+	idx++
+	for j := 0; j < len(ver); j++ {
+		tagBuf[idx+j] = ver[j]
+	}
+	idx += len(ver)
+	tagBuf[idx] = CharBraceletRight
+
+	mu.RLock()
+	// golang has optimization avoids extra allocations when []byte keys are used to
+	// lookup entries in map[string] collections: m[string(key)]
+	counter, present := m[string(tagBuf)]
+	mu.RUnlock()
+
+	if present {
+		counter.Inc(1)
+		return
+	}
+
+	// seldom goes here, needn't optimize
+
+	tag := string(tagBuf)
+	mu.Lock()
+	m[tag] = metrics.NewRegisteredCounter(tag+name, metrics.DefaultRegistry)
+	mu.Unlock()
+
+	m[tag].Inc(1)
 }
