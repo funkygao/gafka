@@ -24,8 +24,8 @@ func (l *fastListener) Accept() (net.Conn, error) {
 
 	log.Trace("%s got conn %s", l.Listener.Addr(), c.RemoteAddr())
 	if l.gw != nil && !options.disableMetrics {
-		l.gw.pubMetrics.ConnAccept.Inc(1)
-		l.gw.pubMetrics.PubConcurrent.Inc(1)
+		l.gw.svrMetrics.TotalConns.Inc(1)
+		l.gw.svrMetrics.ConcurrentConns.Inc(1)
 	}
 
 	return &fastListenerConn{c, l.gw}, nil
@@ -41,7 +41,7 @@ func (c *fastListenerConn) Close() error {
 
 	err := c.Conn.Close()
 	if c.gw != nil && !options.disableMetrics {
-		c.gw.pubMetrics.PubConcurrent.Dec(1)
+		c.gw.svrMetrics.ConcurrentConns.Dec(1)
 	}
 	return err
 }
@@ -71,8 +71,8 @@ func (l *limitListener) Accept() (net.Conn, error) {
 
 	log.Trace("%s got conn %s", l.Listener.Addr(), c.RemoteAddr())
 	if l.gw != nil && !options.disableMetrics {
-		l.gw.pubMetrics.ConnAccept.Inc(1)
-		l.gw.pubMetrics.PubConcurrent.Inc(1)
+		l.gw.svrMetrics.TotalConns.Inc(1)
+		l.gw.svrMetrics.ConcurrentConns.Inc(1)
 	}
 
 	return &limitListenerConn{Conn: c, release: l.release, gw: l.gw}, nil
@@ -90,7 +90,7 @@ func (c *limitListenerConn) Close() error {
 
 	err := c.Conn.Close()
 	if c.gw != nil && !options.disableMetrics {
-		c.gw.pubMetrics.PubConcurrent.Dec(1)
+		c.gw.svrMetrics.ConcurrentConns.Dec(1)
 	}
 	c.releaseOnce.Do(c.release)
 	return err

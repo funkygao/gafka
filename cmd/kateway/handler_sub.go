@@ -111,8 +111,8 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			log.Debug("commit offset: {T:%s, P:%d, O:%d}", msg.Topic, msg.Partition, msg.Offset)
 			fetcher.CommitUpto(msg)
 
-			this.subMetrics.consumeOk(myAppid, topic, ver)
-			this.subMetrics.consumedOk(hisAppid, topic, ver)
+			this.subMetrics.ConsumeOk(myAppid, topic, ver)
+			this.subMetrics.ConsumedOk(hisAppid, topic, ver)
 
 			n++
 			if n >= limit {
