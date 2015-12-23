@@ -1,5 +1,5 @@
 # gafka [![Build Status](https://travis-ci.org/funkygao/gafka.png?branch=master)](https://travis-ci.org/funkygao/gafka)
-Unified multi-datacenter multi-kafka-clusters central management console powered by golang.
+Unified multi-datacenter multi-cluster kafka swiss-knife management console powered by golang.
 
 ### Features
 
@@ -23,7 +23,7 @@ Unified multi-datacenter multi-kafka-clusters central management console powered
 
     $gk
     
-    Unified multi-datacenter multi-kafka-clusters management console
+    Unified multi-datacenter multi-cluster kafka swiss-knife management console
     
     usage: gk [--version] [--help] <command> [<args>]
     
