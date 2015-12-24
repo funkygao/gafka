@@ -68,17 +68,11 @@ func (this *webServer) Start() {
 	var waitHttpListenerUp chan struct{}
 	if this.httpServer != nil {
 		waitHttpListenerUp = make(chan struct{})
+		var once sync.Once
 
 		go func() {
 			var retryDelay time.Duration
 			for {
-				select {
-				case <-this.gw.shutdownCh:
-					return
-
-				default:
-				}
-
 				this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
 				if err != nil {
 					if retryDelay == 0 {
@@ -95,8 +89,11 @@ func (this *webServer) Start() {
 				}
 
 				this.httpListener = LimitListener(this.gw, this.httpListener, this.maxClients)
-				close(waitHttpListenerUp)
+				once.Do(func() {
+					close(waitHttpListenerUp)
+				})
 
+				// on non-temporary err, net/http will close the listener
 				err = this.httpServer.Serve(this.httpListener)
 				log.Error("%s: %v", this.name, err)
 			}
