@@ -29,6 +29,10 @@ fi
 
 BUILD_PKG=cmd/gk
 BUILD_BIN=gk
+if [[ $1 = "zk" ]]; then
+    BUILD_PKG=cmd/zk
+    BUILD_BIN=zk
+fi
 if [[ $1 = "kw" ]]; then
     BUILD_PKG=cmd/kateway
     BUILD_BIN=kateway

@@ -1,6 +1,6 @@
 %define name gafka
 %define version 0.2.3
-%define release 6
+%define release 7
 %define path usr/local
 %define group Development/Tools
 %define __os_install_post %{nil}
@@ -30,6 +30,7 @@ git clone https://github.com/funkygao/gafka
 cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
 ./build.sh
 ./build.sh kw
+./build.sh zk
 
 %install
 export DONT_STRIP=1
@@ -38,10 +39,14 @@ cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
 mkdir -p $RPM_BUILD_ROOT/%{path}/bin
 mkdir -p $RPM_BUILD_ROOT/etc/bash_completion.d
 install cmd/gk/gk $RPM_BUILD_ROOT/%{path}/bin
+install cmd/zk/zk $RPM_BUILD_ROOT/%{path}/bin
 install cmd/kateway/kateway $RPM_BUILD_ROOT/%{path}/bin
 install misc/autocomplete/bash_autocomplete $RPM_BUILD_ROOT/etc/bash_completion.d/gk
+install misc/autocomplete/bash_autocomplete $RPM_BUILD_ROOT/etc/bash_completion.d/zk
 
 %files
 /%{path}/bin/gk
+/%{path}/bin/zk
 /%{path}/bin/kateway
 /etc/bash_completion.d/gk
+/etc/bash_completion.d/zk
