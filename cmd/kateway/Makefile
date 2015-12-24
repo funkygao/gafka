@@ -56,4 +56,4 @@ consul:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -consul localhost:8500 -pubhttp :9191 -subhttp :9192 -level debug -debug -store dumb -id 1 
 
 clean:
-	-rm -f kateway.test kateway
+	-rm -f kateway.test kateway prof.cpu prof.mem

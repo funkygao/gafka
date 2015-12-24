@@ -120,6 +120,7 @@ A REST gateway for kafka that supports Pub and Sub.
 
 ### TODO
 
+- [ ] Pub HTTP POST Request compress
 - [ ] metrics
   - intranet/extranet pub
   - failure count
