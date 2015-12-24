@@ -51,17 +51,17 @@ type Peek struct {
 
 func (this *Peek) Run(args []string) (exitCode int) {
 	var (
-		cluster     string
-		zone        string
-		topic       string
-		partitionId int
-		neat        bool
+		cluster      string
+		zone         string
+		topicPattern string
+		partitionId  int
+		neat         bool
 	)
 	cmdFlags := flag.NewFlagSet("peek", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
-	cmdFlags.StringVar(&topic, "t", "", "")
+	cmdFlags.StringVar(&topicPattern, "t", "", "")
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
 	cmdFlags.BoolVar(&this.fromBeginning, "from-beginning", false, "")
 	cmdFlags.BoolVar(&neat, "n", false, "")
@@ -82,11 +82,11 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	msgChan := make(chan *sarama.ConsumerMessage, 20000) // msg aggerator channel
 	if cluster == "" {
 		zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
-			this.consumeCluster(zkcluster, topic, partitionId, msgChan)
+			this.consumeCluster(zkcluster, topicPattern, partitionId, msgChan)
 		})
 	} else {
 		zkcluster := zkzone.NewCluster(cluster)
-		this.consumeCluster(zkcluster, topic, partitionId, msgChan)
+		this.consumeCluster(zkcluster, topicPattern, partitionId, msgChan)
 	}
 
 	var msg *sarama.ConsumerMessage
@@ -107,7 +107,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topic string,
+func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topicPattern string,
 	partitionId int, msgChan chan *sarama.ConsumerMessage) {
 	brokerList := zkcluster.BrokerList()
 	if len(brokerList) == 0 {
@@ -120,20 +120,18 @@ func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topic string,
 	}
 	//defer kfk.Close() // FIXME how to close it
 
-	if topic == "" {
-		// peek all topics
-		topics, err := kfk.Topics()
-		if err != nil {
-			this.Ui.Output(err.Error())
-			return
-		}
+	topics, err := kfk.Topics()
+	if err != nil {
+		this.Ui.Output(err.Error())
+		return
+	}
 
-		for _, t := range topics {
+	for _, t := range topics {
+		if patternMatched(t, topicPattern) {
 			go this.consumeTopic(kfk, t, int32(partitionId), msgChan)
 		}
-	} else {
-		go this.consumeTopic(kfk, topic, int32(partitionId), msgChan)
 	}
+
 }
 
 func (this *Peek) consumeTopic(kfk sarama.Client, topic string, partitionId int32,
@@ -167,6 +165,7 @@ func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
 	if this.fromBeginning {
 		offset = sarama.OffsetOldest
 	}
+
 	p, err := consumer.ConsumePartition(topic, partitionId, offset)
 	if err != nil {
 		panic(err)
@@ -195,7 +194,7 @@ Options:
 
     -c cluster
 
-    -t topic 
+    -t topic pattern
 
     -p partition id
       -1 will peek all partitions of a topic

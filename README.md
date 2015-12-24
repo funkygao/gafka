@@ -49,6 +49,7 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
     
 ### TODO
 
+- [ ] peek from a specified offset
 - [ ] bootstrap kafka
 - [ ] producer source
 - [ ] sms/email alarm when any node of kafka/zk is down
