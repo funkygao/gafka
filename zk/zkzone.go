@@ -52,6 +52,11 @@ func (this *ZkZone) Close() {
 	this.conn.Close()
 }
 
+func (this *ZkZone) Conn() *zk.Conn {
+	this.connectIfNeccessary()
+	return this.conn
+}
+
 func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
 	if c, present := this.zkclusters[cluster]; present {
 		return c
