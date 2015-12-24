@@ -24,6 +24,7 @@ type Lags struct {
 	topicPattern    string
 	watchMode       bool
 	problematicMode bool
+	lagThreshold    int
 }
 
 func (this *Lags) Run(args []string) (exitCode int) {
@@ -41,6 +42,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.groupPattern, "g", "", "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
 	cmdFlags.BoolVar(&this.watchMode, "w", false, "")
+	cmdFlags.IntVar(&this.lagThreshold, "lag", 5000, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -73,7 +75,6 @@ func (this *Lags) Run(args []string) (exitCode int) {
 					bar.ShowProgress(i)
 					time.Sleep(time.Second)
 				}
-				//refreshScreen()
 			} else {
 				break
 			}
@@ -116,25 +117,49 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 
 	for _, group := range sortedGroups {
 		this.Ui.Output(strings.Repeat(" ", 4) + group)
-		for _, consumer := range consumersByGroup[group] {
-			// TODO sort by partitionId
-			if consumer.Online {
-				if !patternMatched(consumer.Topic, this.topicPattern) {
-					continue
-				}
 
-				var lagOutput string
-				if this.problematicMode && consumer.Lag <= 1000 {
-					continue
-				}
-				if consumer.Lag > 1000 { // TODO
-					lagOutput = color.Red("%15s", gofmt.Comma(consumer.Lag))
+		consumers := make(map[string]zk.ConsumerMeta)
+		sortedPartitions := make([]string, 0)
+		for _, consumer := range consumersByGroup[group] {
+			sortedPartitions = append(sortedPartitions, consumer.PartitionId)
+			consumers[consumer.PartitionId] = consumer
+		}
+		sort.Strings(sortedPartitions)
+
+		for _, partition := range sortedPartitions {
+			consumer := consumers[partition]
+
+			if !patternMatched(consumer.Topic, this.topicPattern) {
+				continue
+			}
+
+			var (
+				lagOutput string
+				symbol    string
+			)
+			if consumer.Lag > int64(this.lagThreshold) {
+				lagOutput = color.Red("%15s", gofmt.Comma(consumer.Lag))
+				if consumer.Online {
+					symbol = color.Green("⚠︎︎")
 				} else {
-					lagOutput = color.Magenta("%15s", gofmt.Comma(consumer.Lag))
+					symbol = color.Yellow("☔︎︎")
+				}
+			} else {
+				lagOutput = color.Blue("%15s", gofmt.Comma(consumer.Lag))
+				if consumer.Online {
+					symbol = color.Green("☀︎")
+				} else {
+					symbol = color.Yellow("☔︎︎")
+				}
+			}
+
+			if consumer.Online {
+				if this.problematicMode && consumer.Lag <= int64(this.lagThreshold) {
+					continue
 				}
 
 				this.Ui.Output(fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s\n%s %s",
-					color.Green("☀︎"),
+					symbol,
 					consumer.Topic, consumer.PartitionId,
 					gofmt.Comma(consumer.ProducerOffset),
 					gofmt.Comma(consumer.ConsumerOffset),
@@ -143,19 +168,8 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					color.Green("%90s", consumer.ConsumerZnode.Host()),
 					gofmt.PrettySince(consumer.ConsumerZnode.Uptime())))
 			} else if !this.onlineOnly {
-				if !patternMatched(consumer.Topic, this.topicPattern) {
-					continue
-				}
-
-				var lagOutput string
-				if consumer.Lag > 1000 {
-					lagOutput = color.Red("%15s", gofmt.Comma(consumer.Lag))
-				} else {
-					lagOutput = color.Magenta("%15s", gofmt.Comma(consumer.Lag))
-				}
-
 				this.Ui.Output(fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s",
-					color.Yellow("☔︎︎"),
+					symbol,
 					consumer.Topic, consumer.PartitionId,
 					gofmt.Comma(consumer.ProducerOffset),
 					gofmt.Comma(consumer.ConsumerOffset),
@@ -189,6 +203,9 @@ Options:
 
     -l
       Only show online consumers lag.
+
+    -lag threshold
+      Default 5000.
 
     -p
       Only show problematic consumers.

@@ -91,6 +91,10 @@ func (this *zkMetaStore) Stop() {
 	close(this.shutdownCh)
 }
 
+func (this *zkMetaStore) Refresh() {
+	this.doRefresh()
+}
+
 func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) int {
 	// without cache
 	this.mu.Lock()

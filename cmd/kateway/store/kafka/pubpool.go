@@ -19,10 +19,11 @@ type syncProducerClient struct {
 }
 
 func (this *syncProducerClient) Close() {
-	log.Trace("closeing syncProducerClient: %d", this.id)
+	log.Trace("closing kafka sync client: %d", this.id)
+
 	this.SyncProducer.Close()
 	this.client.Close()
-	//this.pool.pool.Put(nil)
+	//this.pool.syncPool.Put(nil) // fill this slot
 }
 
 func (this *syncProducerClient) Id() uint64 {
@@ -51,7 +52,7 @@ type asyncProducerClient struct {
 }
 
 func (this *asyncProducerClient) Close() {
-	log.Trace("closeing asyncProducerClient: %d", this.id)
+	log.Trace("closing kafka async client: %d", this.id)
 	this.AsyncProducer.AsyncClose()
 	this.client.Close()
 	//this.pool.pool.Put(nil)
@@ -72,7 +73,6 @@ func (this *asyncProducerClient) Recycle() {
 	} else {
 		this.pool.asyncPool.Put(this)
 	}
-
 }
 
 type pubPool struct {
