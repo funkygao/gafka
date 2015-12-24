@@ -37,6 +37,13 @@ func init() {
 			}, nil
 		},
 
+		"zones": func() (cli.Command, error) {
+			return &command.Zones{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"create": func() (cli.Command, error) {
 			return &command.Create{
 				Ui:  ui,
