@@ -22,6 +22,8 @@ type pubStore struct {
 	// FIXME maybe we should have another pool for async
 	pubPools map[string]*pubPool // key is cluster
 	poolLock sync.RWMutex
+
+	lastRefreshedAt time.Time
 }
 
 func NewPubStore(wg *sync.WaitGroup, debug bool) *pubStore {
@@ -44,7 +46,7 @@ func (this *pubStore) Start() (err error) {
 
 	for _, cluster := range meta.Default.ClusterNames() {
 		this.pubPools[cluster] = newPubPool(this,
-			meta.Default.BrokerList(cluster), 500) // TODO
+			meta.Default.BrokerList(cluster), 50) // TODO
 	}
 
 	go func() {
@@ -88,8 +90,15 @@ func (this *pubStore) doRefresh() {
 	// TODO maybe this is not neccessary
 	// main thread triggers the refresh, child threads just get fed
 	this.poolLock.Lock()
-	for _, cluster := range meta.Default.ClusterNames() {
-		this.pubPools[cluster].RefreshBrokerList(meta.Default.BrokerList(cluster))
+	if time.Since(this.lastRefreshedAt) > time.Second*5 { // TODO
+		meta.Default.Refresh()
+
+		for _, cluster := range meta.Default.ClusterNames() {
+			this.pubPools[cluster].RefreshBrokerList(meta.Default.BrokerList(cluster))
+		}
+
+		log.Trace("all kafka broker list refreshed")
+		this.lastRefreshedAt = time.Now()
 	}
 	this.poolLock.Unlock()
 }
@@ -104,28 +113,70 @@ func (this *pubStore) SyncPub(cluster string, topic string, key []byte,
 		return
 	}
 
-	producer, e := pool.GetSyncProducer()
-	if e != nil {
-		if producer != nil {
-			producer.Recycle()
-		}
-
-		return e
-	}
-
-	// TODO add msg header
-
-	var keyEncoder sarama.Encoder = nil // will use random partitioner
+	var (
+		maxRetries = 5
+		retryDelay time.Duration
+		producer   *syncProducerClient
+		keyEncoder sarama.Encoder = nil // will use random partitioner
+	)
 	if len(key) > 0 {
 		keyEncoder = sarama.ByteEncoder(key) // will use hash partition
 	}
-	_, _, err = producer.SendMessage(&sarama.ProducerMessage{
+	producerMsg := &sarama.ProducerMessage{
 		Topic: topic,
 		Key:   keyEncoder,
 		Value: sarama.ByteEncoder(msg),
-	})
+	}
 
-	producer.Recycle()
+	for i := 0; i < maxRetries; i++ {
+		producer, err = pool.GetSyncProducer()
+		if err != nil {
+			if producer != nil {
+				producer.Recycle()
+			}
+
+			switch err {
+			case ErrorKafkaConfig, sarama.ErrOutOfBrokers:
+				this.doRefresh()
+
+			default:
+				log.Warn("unknown pubPool err: %v", err)
+			}
+
+			goto backoff
+		}
+
+		_, _, err = producer.SendMessage(producerMsg)
+		if err != nil {
+			producer.Close()
+			producer.Recycle()
+
+			switch err {
+			case sarama.ErrOutOfBrokers:
+				this.doRefresh()
+
+			default:
+				log.Warn("unknown pub err: %v", err)
+			}
+		} else {
+			producer.Recycle()
+			return
+		}
+
+	backoff:
+		if retryDelay == 0 {
+			retryDelay = 50 * time.Millisecond
+		} else {
+			retryDelay = 2 * retryDelay
+		}
+		if maxDelay := time.Second; retryDelay > maxDelay {
+			retryDelay = maxDelay
+		}
+
+		log.Debug("cluster:%s topic:%s %v, retry in %v", cluster, topic, err, retryDelay)
+		time.Sleep(retryDelay)
+	}
+
 	return
 }
 
