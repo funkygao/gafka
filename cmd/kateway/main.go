@@ -12,7 +12,6 @@ import (
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
-	"github.com/funkygao/golib/profiler"
 	"github.com/funkygao/golib/signal"
 )
 
@@ -51,27 +50,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	if options.cpuprof || options.memprof {
-		cf := &profiler.Config{
-			Quiet:        true,
-			ProfilePath:  "prof",
-			CPUProfile:   options.cpuprof,
-			MemProfile:   options.memprof,
-			BlockProfile: options.blockprof,
-		}
-
-		defer profiler.Start(cf).Stop()
-	}
-
-	fmt.Fprintln(os.Stderr, strings.TrimSpace(`
-    _/    _/              _/                                                        
-   _/  _/      _/_/_/  _/_/_/_/    _/_/    _/      _/      _/    _/_/_/  _/    _/   
-  _/_/      _/    _/    _/      _/_/_/_/  _/      _/      _/  _/    _/  _/    _/    
- _/  _/    _/    _/    _/      _/          _/  _/  _/  _/    _/    _/  _/    _/     
-_/    _/    _/_/_/      _/_/    _/_/_/      _/      _/        _/_/_/    _/_/_/      
-                                                                           _/       
-                                                                      _/_/          
-	`))
+	fmt.Fprintln(os.Stderr, strings.TrimSpace(logo))
 
 	if options.pidFile != "" {
 		pid := os.Getpid()

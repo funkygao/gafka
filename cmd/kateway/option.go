@@ -29,13 +29,10 @@ var (
 		crashLogFile         string
 		influxServer         string
 		killFile             string
-		cpuprof              bool
 		showVersion          bool
-		memprof              bool
 		enableBreaker        bool
 		ratelimit            bool
 		disableMetrics       bool
-		blockprof            bool
 		debug                bool
 		maxPubSize           int64
 		maxClients           int
@@ -73,12 +70,9 @@ func parseFlags() {
 	flag.BoolVar(&options.showVersion, "version", false, "show version and exit")
 	flag.BoolVar(&options.ratelimit, "raltelimit", false, "enable rate limit")
 	flag.BoolVar(&options.enableBreaker, "breakeron", true, "enable circuit breaker")
-	flag.BoolVar(&options.cpuprof, "cpuprof", false, "enable cpu profiling")
 	flag.BoolVar(&options.disableMetrics, "metricsoff", false, "disable metrics reporter")
-	flag.BoolVar(&options.memprof, "memprof", false, "enable memory profiling")
 	flag.StringVar(&options.influxServer, "influxdb", "http://10.77.144.193:10036", "influxdb server address for the metrics reporter")
 	flag.DurationVar(&options.reporterInterval, "report", time.Second*10, "reporter flush interval")
-	flag.BoolVar(&options.blockprof, "blockprof", false, "enable block profiling")
 	flag.Int64Var(&options.maxPubSize, "maxpub", 1<<20, "max Pub message size")
 	flag.IntVar(&options.maxClients, "maxclient", 100000, "max concurrent connections")
 	flag.DurationVar(&options.offsetCommitInterval, "offsetcommit", time.Minute, "consumer offset commit interval")

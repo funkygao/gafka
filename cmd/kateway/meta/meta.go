@@ -16,6 +16,8 @@ type MetaStore interface {
 	ClusterNames() []string
 	Clusters() []map[string]string
 
+	Refresh()
+
 	Partitions(cluster, topic string) []int32
 	OnlineConsumersCount(cluster, topic, group string) int
 	ZkAddrs() []string
