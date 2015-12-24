@@ -41,7 +41,9 @@ func (this *logLine) save(t NgType) {
 		stmt = intraInsertStmt
 	}
 
-	if _, err := stmt.Exec(this.Host, time.Now().Unix(), this.Message); err != nil {
+	// message: 2015/12/25 06:47:15 [error] 140915#0: check protocol http error with peer: 10.209.37.33:10085
+	p := strings.SplitN(this.Message, " ", 3)
+	if _, err := stmt.Exec(this.Host, time.Now().Unix(), p[2]); err != nil {
 		fmt.Println(err)
 	}
 }
