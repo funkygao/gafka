@@ -75,13 +75,6 @@ func (this *pubServer) Start() {
 
 			var retryDelay time.Duration
 			for {
-				select {
-				case <-this.gw.shutdownCh:
-					return
-
-				default:
-				}
-
 				err = this.httpServer.Serve(this.httpListener)
 
 				// backoff
@@ -119,7 +112,7 @@ func (this *pubServer) waitExit(exit <-chan struct{}) {
 	case <-exit:
 		if this.httpServer != nil {
 			// HTTP response will have "Connection: close"
-			this.httpServer.MaxKeepaliveDuration = time.Nanosecond
+			this.httpServer.MaxKeepaliveDuration = time.Microsecond
 			this.httpServer.MaxRequestsPerConn = 1
 
 			// avoid new connections

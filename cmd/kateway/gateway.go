@@ -198,7 +198,7 @@ func (this *Gateway) ServeForever() {
 			store.DefaultSubStore.Stop()
 		}
 
-		log.Trace("all components shutdown complete")
+		log.Info("all components shutdown complete")
 
 		meta.Default.Stop()
 		this.timer.Stop()

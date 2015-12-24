@@ -40,7 +40,7 @@ benchmark-mem-dumb:
 	go test -v -benchmem -bench=^BenchmarkKatewayPubDumb1K -benchtime=20s -memprofile=prof.mem; go tool pprof kateway.test prof.mem
 
 kafka:fast
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -store kafka -id 1 -level info -cpuprof -debughttp ":9194"
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -store kafka -id 1 -level debug -debughttp ":9194"
 
 race:
 	@go build -race -gcflags '-m=1'
@@ -49,15 +49,11 @@ race:
 dryrun:dumb
 
 dumb:fast
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -level debug -store dumb -id 1 -cpuprof -metricsoff=false -breakeron=true -debughttp ":9194" -debug=true
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -level debug -store dumb -id 1 -metricsoff=false -breakeron=true -debughttp ":9194" -debug=true
 
 consul:build 
 	consul agent -data-dir /tmp/consul &
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -consul localhost:8500 -pubhttp :9191 -subhttp :9192 -level debug -debug -store dumb -id 1 
-
-prof:build
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -level debug -debug -store kafka -id 1 -memprof -cpuprof -blockprof
-	go tool pprof kateway prof/cpu.pprof
 
 clean:
 	-rm -f kateway.test kateway
