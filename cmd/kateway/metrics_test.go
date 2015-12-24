@@ -12,28 +12,28 @@ func init() {
 }
 
 func BenchmarkMetricsCounterWithoutLock(b *testing.B) {
-	p := newPubMetrics(time.Hour)
+	s := NewServerMetrics(time.Hour)
 	for i := 0; i < b.N; i++ {
-		p.ConnAccept.Inc(1)
+		s.TotalConns.Inc(1)
 	}
 }
 
 func BenchmarkMetricsPubOkCounter(b *testing.B) {
-	p := newPubMetrics(time.Hour)
+	p := NewPubMetrics()
 	for i := 0; i < b.N; i++ {
 		p.pubOk("appid", "topic", "ver")
 	}
 }
 
 func BenchmarkMetricsQpsMeter(b *testing.B) {
-	p := newPubMetrics(time.Hour)
+	p := NewPubMetrics()
 	for i := 0; i < b.N; i++ {
 		p.PubQps.Mark(1)
 	}
 }
 
 func BenchmarkMetricsLatencyHistogram(b *testing.B) {
-	p := newPubMetrics(time.Hour)
+	p := NewPubMetrics()
 	for i := 0; i < b.N; i++ {
 		p.PubLatency.Update(5)
 	}
