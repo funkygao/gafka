@@ -47,6 +47,7 @@ type Peek struct {
 	Cmd string
 
 	fromBeginning bool
+	colorize      bool
 }
 
 func (this *Peek) Run(args []string) (exitCode int) {
@@ -63,6 +64,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.StringVar(&topicPattern, "t", "", "")
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
+	cmdFlags.BoolVar(&this.colorize, "color", false, "")
 	cmdFlags.BoolVar(&this.fromBeginning, "from-beginning", false, "")
 	cmdFlags.BoolVar(&neat, "n", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -97,8 +99,13 @@ func (this *Peek) Run(args []string) (exitCode int) {
 				stats.MsgCountPerSecond.Mark(1)
 				stats.MsgBytesPerSecond.Mark(int64(len(msg.Value)))
 			} else {
-				this.Ui.Output(fmt.Sprintf("%s %s  %s", color.Green(msg.Topic),
-					gofmt.Comma(msg.Offset), string(msg.Value)))
+				if this.colorize {
+					this.Ui.Output(fmt.Sprintf("%s %s %s", color.Green(msg.Topic),
+						gofmt.Comma(msg.Offset), string(msg.Value)))
+				} else {
+					this.Ui.Output(fmt.Sprintf("%s %s %s", msg.Topic,
+						gofmt.Comma(msg.Offset), string(msg.Value)))
+				}
 			}
 
 		}
@@ -195,6 +202,9 @@ Options:
     -c cluster
 
     -t topic pattern
+
+    -color
+      Display topic name in green
 
     -p partition id
       -1 will peek all partitions of a topic

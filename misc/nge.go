@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -24,7 +25,7 @@ const (
 
 type logLine struct {
 	Timestamp string `json:"@timestamp"`
-	Version   string `json:""`
+	Version   string `json:"@version"`
 	Type      string `json:"type"`
 	Path      string `json:"path"`
 
@@ -54,6 +55,8 @@ var (
 	dbExtra         *sqldb.SqlDb
 	intraInsertStmt *sql.Stmt
 	extraInsertStmt *sql.Stmt
+
+	debugMode bool
 )
 
 func init() {
@@ -62,6 +65,9 @@ func init() {
 }
 
 func main() {
+	flag.BoolVar(&debugMode, "d", false, "debug mode")
+	flag.Parse()
+
 	var (
 		errinfo logLine
 		jsonIdx int
@@ -76,6 +82,10 @@ func main() {
 
 		jsonIdx = bytes.IndexByte(line, '{')
 		json.Unmarshal(line[jsonIdx:], &errinfo)
+		if debugMode {
+			fmt.Printf("%#v\n", errinfo)
+		}
+
 		errinfo.save(ngType)
 	}
 
@@ -84,12 +94,12 @@ func main() {
 
 func prepareDB() {
 	intraDsn := fmt.Sprintf("file:%s?cache=shared&mode=rwc",
-		fmt.Sprintf("%s-%d.sqlite", "nginx.err.intra", os.Getpid()))
+		fmt.Sprintf("%s.sqlite", "nginx.err.intra"))
 	dbIntra = sqldb.NewSqlDb(sqldb.DRIVER_SQLITE3, intraDsn, logger)
 	dbIntra.CreateDb(`CREATE TABLE IF NOT EXISTS intra (host CHAR(30), ts INT, msg VARCHAR(200));`)
 
 	extraDsn := fmt.Sprintf("file:%s?cache=shared&mode=rwc",
-		fmt.Sprintf("%s-%d.sqlite", "nginx.err.extra", os.Getpid()))
+		fmt.Sprintf("%s.sqlite", "nginx.err.extra"))
 	dbExtra = sqldb.NewSqlDb(sqldb.DRIVER_SQLITE3, extraDsn, logger)
 	dbExtra.CreateDb(`CREATE TABLE IF NOT EXISTS extra (host CHAR(30), ts INT, msg VARCHAR(200));`)
 
