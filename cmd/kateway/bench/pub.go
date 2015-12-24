@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/api"
 )
@@ -16,11 +17,13 @@ var (
 	addr    string
 	n       int64
 	msgSize int
+	sleep   time.Duration
 )
 
 func main() {
 	flag.IntVar(&c, "c", 10, "client concurrency")
 	flag.IntVar(&msgSize, "sz", 100, "msg size")
+	flag.DurationVar(&sleep, "sleep", 0, "sleep between pub")
 	flag.StringVar(&addr, "h", "http://localhost:9191", "pub http addr")
 	flag.Parse()
 
@@ -54,6 +57,10 @@ func pubGatewayLoop(seq int) {
 		err = client.Publish("foobar", "v1", "", []byte(msg))
 		if err != nil {
 			fmt.Println(err)
+		}
+
+		if sleep > 0 {
+			time.Sleep(sleep)
 		}
 	}
 
