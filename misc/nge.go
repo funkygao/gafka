@@ -10,9 +10,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
+	"github.com/funkygao/golib/color"
 	sqldb "github.com/funkygao/golib/db"
 )
 
@@ -21,6 +23,21 @@ type NgType int
 const (
 	TypeIntra NgType = iota
 	TypeExtra
+)
+
+var (
+	logger          *log.Logger
+	dbIntra         *sqldb.SqlDb
+	dbExtra         *sqldb.SqlDb
+	intraInsertStmt *sql.Stmt
+	extraInsertStmt *sql.Stmt
+
+	debugMode bool
+	dryrun    bool
+
+	progressStep int
+
+	normalizerNum = regexp.MustCompile(`\d+`)
 )
 
 type logLine struct {
@@ -44,20 +61,16 @@ func (this *logLine) save(t NgType) {
 
 	// message: 2015/12/25 06:47:15 [error] 140915#0: check protocol http error with peer: 10.209.37.33:10085
 	p := strings.SplitN(this.Message, " ", 5)
-	if _, err := stmt.Exec(this.Host, time.Now().Unix(), p[4]); err != nil {
+	msg := normalizerNum.ReplaceAll([]byte(string(p[4])), []byte("?"))
+	if dryrun {
+		fmt.Println(string(msg))
+		return
+	}
+
+	if _, err := stmt.Exec(this.Host, time.Now().Unix(), string(msg)); err != nil {
 		fmt.Println(err)
 	}
 }
-
-var (
-	logger          *log.Logger
-	dbIntra         *sqldb.SqlDb
-	dbExtra         *sqldb.SqlDb
-	intraInsertStmt *sql.Stmt
-	extraInsertStmt *sql.Stmt
-
-	debugMode bool
-)
 
 func init() {
 	logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -66,14 +79,22 @@ func init() {
 
 func main() {
 	flag.BoolVar(&debugMode, "d", false, "debug mode")
+	flag.BoolVar(&dryrun, "dryrun", false, "dryrun mode")
+	flag.IntVar(&progressStep, "step", 100, "show progress step")
 	flag.Parse()
 
 	var (
 		errinfo logLine
 		jsonIdx int
 		ngType  NgType
+		n       int64
 	)
 	for line := range EachLogLine() {
+		n++
+		if progressStep > 0 && n%int64(progressStep) == 0 {
+			fmt.Printf("%d errors found\n", n)
+		}
+
 		if strings.Contains(string(line[:30]), "extra") {
 			ngType = TypeExtra
 		} else {
@@ -82,7 +103,7 @@ func main() {
 
 		jsonIdx = bytes.IndexByte(line, '{')
 		if err := json.Unmarshal(line[jsonIdx:], &errinfo); err != nil {
-			fmt.Printf("%v: %s", err, string(line[jsonIdx:]))
+			fmt.Printf("%s: %s", color.Red(err.Error()), string(line[jsonIdx:]))
 			continue
 		}
 		if debugMode {
