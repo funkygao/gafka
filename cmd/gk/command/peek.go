@@ -103,7 +103,8 @@ func (this *Peek) Run(args []string) (exitCode int) {
 					this.Ui.Output(fmt.Sprintf("%s %s %s", color.Green(msg.Topic),
 						gofmt.Comma(msg.Offset), string(msg.Value)))
 				} else {
-					this.Ui.Output(fmt.Sprintf("%s %s %s", msg.Topic,
+					// colored UI will have invisible chars output
+					fmt.Println(fmt.Sprintf("%s %s %s", msg.Topic,
 						gofmt.Comma(msg.Offset), string(msg.Value)))
 				}
 			}
