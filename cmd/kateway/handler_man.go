@@ -33,10 +33,8 @@ sub:
  GET /raw/topics/:appid/:topic/:ver
 
 man:
- GET /ver
  GET /help
- GET /stat
- GET /ping
+ GET /status
  GET /clusters
 
 dbg:
@@ -48,18 +46,11 @@ dbg:
 
 }
 
-func (this *Gateway) pingHandler(w http.ResponseWriter, r *http.Request,
+func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
 	w.Write([]byte(fmt.Sprintf("ver:%s, build:%s, uptime:%s",
 		gafka.Version, gafka.BuildId, time.Since(this.startedAt))))
-}
-
-func (this *Gateway) versionHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	this.writeKatewayHeader(w)
-	w.Header().Set(ContentTypeHeader, ContentTypeText)
-	w.Write([]byte(fmt.Sprintf("%s-%s", gafka.Version, gafka.BuildId)))
 }
 
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
@@ -68,14 +59,5 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	w.WriteHeader(http.StatusOK)
 	b, _ := json.Marshal(meta.Default.Clusters())
-	w.Write(b)
-}
-
-func (this *Gateway) statHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	this.writeKatewayHeader(w)
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
-	this.guard.Refresh()
-	b, _ := json.Marshal(this.guard.cpuStat)
 	w.Write(b)
 }

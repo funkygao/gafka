@@ -49,7 +49,9 @@ func NewServerMetrics(interval time.Duration) *serverMetrics {
 }
 
 type subMetrics struct {
-	expConsumeOk *expvar.Int
+	expConsumeOk      *expvar.Int
+	expActiveConns    *expvar.Int
+	expActiveUpstream *expvar.Int
 
 	// i consume msgs of others
 	ConsumeMap   map[string]metrics.Counter
@@ -69,6 +71,8 @@ func NewSubMetrics() *subMetrics {
 
 	if options.debugHttpAddr != "" {
 		this.expConsumeOk = expvar.NewInt("ConsumeOk")
+		this.expActiveConns = expvar.NewInt("ConsumeConns")       // TODO
+		this.expActiveUpstream = expvar.NewInt("ConsumeUpstream") // TODO
 	}
 
 	return this
@@ -86,8 +90,10 @@ func (this *subMetrics) ConsumedOk(appid, topic, ver string) {
 }
 
 type pubMetrics struct {
-	expPubOk   *expvar.Int
-	expPubFail *expvar.Int
+	expPubOk          *expvar.Int
+	expPubFail        *expvar.Int
+	expActiveConns    *expvar.Int
+	expActiveUpstream *expvar.Int
 
 	PubOkMap   map[string]metrics.Counter
 	pubOkMu    sync.RWMutex
@@ -115,6 +121,8 @@ func NewPubMetrics() *pubMetrics {
 	if options.debugHttpAddr != "" {
 		this.expPubOk = expvar.NewInt("PubOk")
 		this.expPubFail = expvar.NewInt("PubFail")
+		this.expActiveConns = expvar.NewInt("PubConns")       // TODO
+		this.expActiveUpstream = expvar.NewInt("PubUpstream") // TODO
 	}
 
 	return this

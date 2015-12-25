@@ -1,11 +1,9 @@
 package main
 
 func (this *Gateway) buildRouting() {
-	this.manServer.Router().GET("/ver", this.versionHandler)
 	this.manServer.Router().GET("/clusters", this.clustersHandler)
 	this.manServer.Router().GET("/help", this.helpHandler)
-	this.manServer.Router().GET("/stat", this.statHandler)
-	this.manServer.Router().GET("/ping", this.pingHandler)
+	this.manServer.Router().GET("/status", this.statusHandler)
 
 	if this.pubServer != nil {
 		this.pubServer.Router().GET("/raw/topics/:topic/:ver", this.pubRawHandler)
