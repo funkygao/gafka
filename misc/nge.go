@@ -25,6 +25,11 @@ const (
 	TypeExtra
 )
 
+var ngTypeText = map[NgType]string{
+	TypeIntra: "intra",
+	TypeExtra: "extra",
+}
+
 var (
 	logger          *log.Logger
 	dbIntra         *sqldb.SqlDb
@@ -32,8 +37,10 @@ var (
 	intraInsertStmt *sql.Stmt
 	extraInsertStmt *sql.Stmt
 
-	debugMode bool
-	dryrun    bool
+	debugMode  bool
+	dryrun     bool
+	ignores    string
+	ignoreList []string
 
 	progressStep int
 
@@ -63,7 +70,7 @@ func (this *logLine) save(t NgType) {
 	p := strings.SplitN(this.Message, " ", 5)
 	msg := normalizerNum.ReplaceAll([]byte(string(p[4])), []byte("?"))
 	if dryrun {
-		fmt.Println(string(msg))
+		fmt.Printf("%s %s\n", ngTypeText[t], string(msg))
 		return
 	}
 
@@ -81,7 +88,12 @@ func main() {
 	flag.BoolVar(&debugMode, "d", false, "debug mode")
 	flag.BoolVar(&dryrun, "dryrun", false, "dryrun mode")
 	flag.IntVar(&progressStep, "step", 100, "show progress step")
+	flag.StringVar(&ignores, "ignore", "", "ignores, comma seperated list")
 	flag.Parse()
+
+	if ignores != "" {
+		ignoreList = strings.Split(ignores, ",")
+	}
 
 	var (
 		errinfo logLine
@@ -102,6 +114,9 @@ func main() {
 		}
 
 		jsonIdx = bytes.IndexByte(line, '{')
+		if ignored(string(line[jsonIdx:])) {
+			continue
+		}
 		if err := json.Unmarshal(line[jsonIdx:], &errinfo); err != nil {
 			fmt.Printf("%s: %s", color.Red(err.Error()), string(line[jsonIdx:]))
 			continue
@@ -114,6 +129,20 @@ func main() {
 	}
 
 	fmt.Println("bye")
+}
+
+func ignored(msg string) bool {
+	if len(ignoreList) == 0 {
+		return false
+	}
+
+	for _, ignore := range ignoreList {
+		if strings.Contains(msg, ignore) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func prepareDB() {
