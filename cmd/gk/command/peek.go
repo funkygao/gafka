@@ -46,8 +46,8 @@ type Peek struct {
 	Ui  cli.Ui
 	Cmd string
 
-	fromBeginning bool
-	colorize      bool
+	offset   int64
+	colorize bool
 }
 
 func (this *Peek) Run(args []string) (exitCode int) {
@@ -56,7 +56,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		zone         string
 		topicPattern string
 		partitionId  int
-		neat         bool
+		silence      bool
 	)
 	cmdFlags := flag.NewFlagSet("peek", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -65,8 +65,8 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&topicPattern, "t", "", "")
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
 	cmdFlags.BoolVar(&this.colorize, "color", false, "")
-	cmdFlags.BoolVar(&this.fromBeginning, "from-beginning", false, "")
-	cmdFlags.BoolVar(&neat, "n", false, "")
+	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
+	cmdFlags.BoolVar(&silence, "s", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -75,7 +75,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	if neat {
+	if silence {
 		stats := newPeekStats()
 		go stats.start()
 	}
@@ -95,7 +95,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	for {
 		select {
 		case msg = <-msgChan:
-			if neat {
+			if silence {
 				stats.MsgCountPerSecond.Mark(1)
 				stats.MsgBytesPerSecond.Mark(int64(len(msg.Value)))
 			} else {
@@ -136,13 +136,13 @@ func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topicPattern string,
 
 	for _, t := range topics {
 		if patternMatched(t, topicPattern) {
-			go this.consumeTopic(kfk, t, int32(partitionId), msgChan)
+			go this.simpleConsumeTopic(kfk, t, int32(partitionId), msgChan)
 		}
 	}
 
 }
 
-func (this *Peek) consumeTopic(kfk sarama.Client, topic string, partitionId int32,
+func (this *Peek) simpleConsumeTopic(kfk sarama.Client, topic string, partitionId int32,
 	msgCh chan *sarama.ConsumerMessage) {
 	consumer, err := sarama.NewConsumerFromClient(kfk)
 	if err != nil {
@@ -169,12 +169,7 @@ func (this *Peek) consumeTopic(kfk sarama.Client, topic string, partitionId int3
 
 func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
 	topic string, partitionId int32, msgCh chan *sarama.ConsumerMessage) {
-	offset := sarama.OffsetNewest
-	if this.fromBeginning {
-		offset = sarama.OffsetOldest
-	}
-
-	p, err := consumer.ConsumePartition(topic, partitionId, offset)
+	p, err := consumer.ConsumePartition(topic, partitionId, this.offset)
 	if err != nil {
 		panic(err)
 	}
@@ -189,31 +184,34 @@ func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
 }
 
 func (*Peek) Synopsis() string {
-	return "Peek kafka cluster messages ongoing from newest offset"
+	return "Peek kafka cluster messages ongoing from any offset"
 }
 
 func (this *Peek) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s peek -z zone [options]
 
-    Peek kafka cluster messages ongoing from newest offset
+    Peek kafka cluster messages ongoing from any offset
 
 Options:
 
     -c cluster
 
     -t topic pattern
-
-    -color
-      Display topic name in green
-
+    
     -p partition id
       -1 will peek all partitions of a topic
 
-    -from-beginning
+    -offset message offset value
+      -1 OffsetNewest, -2 OffsetOldest. 
+      You can specify your own offset.
+      Default -1(OffsetNewest)
 
-    -n
-      Neat mode, only display statastics instead of message content
+    -s
+      Silence mode, only display statastics instead of message content
+
+    -color
+      Enable colorized output
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }
