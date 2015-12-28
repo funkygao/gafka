@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/user"
+	"strings"
 )
 
 func Hostname() string {
@@ -25,6 +26,15 @@ func Zones() map[string]string {
 func Tunnels() map[string]string {
 	ensureLogLoaded()
 	return conf.tunnels
+}
+
+func ConsulBootstrap() string {
+	ensureLogLoaded()
+	return conf.consulBootstrap
+}
+
+func ConsulBootstrapList() []string {
+	return strings.Split(ConsulBootstrap(), ",")
 }
 
 func KafkaHome() string {

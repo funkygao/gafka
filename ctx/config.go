@@ -15,11 +15,12 @@ var (
 type config struct {
 	hostname string // not config, but runtime
 
-	kafkaHome    string
-	logLevel     string
-	influxdbHost string
-	zones        map[string]string // name:zkConn
-	tunnels      map[string]string // name:tunnel host ip
+	kafkaHome       string
+	logLevel        string
+	influxdbHost    string
+	consulBootstrap string            // consul bootstrap nodes addrs
+	zones           map[string]string // name:zkConn
+	tunnels         map[string]string // name:tunnel host ip
 }
 
 func (c *config) sortedZones() []string {
