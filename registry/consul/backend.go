@@ -4,8 +4,8 @@ import (
 	"errors"
 	"log"
 
-	"github.com/funkygao/gafka/cmd/kateway/registry"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/registry"
 	"github.com/hashicorp/consul/api"
 )
 
@@ -45,13 +45,13 @@ func (b *be) Register() error {
 		return err
 	}
 
-	log.Printf("[INFO] consul: Registered kateway as %q", service.ID)
+	log.Printf("[INFO] consul: Registered %s as %q", b.cfg.ServiceName, service.ID)
 	b.serviceID = service.ID
 	return nil
 }
 
 func (b *be) Deregister() error {
-	log.Printf("[INFO] consul: Deregistering kateway")
+	log.Printf("[INFO] consul: Deregistering %s", b.cfg.ServiceName)
 	return b.c.Agent().ServiceDeregister(b.serviceID)
 }
 

@@ -55,8 +55,14 @@ consul:build
 	consul agent -data-dir /tmp/consul &
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -consul localhost:8500 -pubhttp :9191 -subhttp :9192 -level debug -debug -store dumb -id 1 
 
-pprof:
+pprof-cpu:
 	go tool pprof http://localhost:9194/debug/pprof/profile?seconds=30
+
+pprof-mem:
+	go tool pprof http://localhost:9194/debug/pprof/heap?seconds=30
+
+pprof-block:
+	go tool pprof http://localhost:9194/debug/pprof/blocking?seconds=30
 
 clean:
 	-rm -f kateway.test kateway prof.cpu prof.mem

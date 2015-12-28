@@ -1,6 +1,6 @@
 # kateway
 
-A REST gateway for kafka that supports Pub and Sub.
+A RESTful gateway for kafka that supports Pub and Sub.
 
     _/    _/              _/
        _/  _/      _/_/_/  _/_/_/_/    _/_/    _/      _/      _/    _/_/_/  _/    _/
@@ -11,9 +11,9 @@ A REST gateway for kafka that supports Pub and Sub.
 
 ### Features
 
-- RESTful API for kafka Pub/Sub
 - http/https and websocket supported
 - Quotas and rate limit
+- Circuit breakers
 - Plugins
   - authentication and authorization
   - transform
@@ -21,12 +21,10 @@ A REST gateway for kafka that supports Pub and Sub.
 - Analytics
 - Monitor Performance
 - Service Discovery
-- Circuit breakers
 - Hot reload without downtime
 - Audit
 - Distributed load balancing
 - Health checks
-- Web UI to monitor lag
 
 ### Architecture
 

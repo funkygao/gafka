@@ -1,6 +1,6 @@
 # test cases
 
-功能测试、压力测试、疲劳测试、并发测试、edge case test
+功能测试、压力测试、容错测试、疲劳测试、并发测试、edge case test
 
 ### pub
 

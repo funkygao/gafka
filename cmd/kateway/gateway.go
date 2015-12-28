@@ -12,12 +12,12 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
-	"github.com/funkygao/gafka/cmd/kateway/registry"
-	"github.com/funkygao/gafka/cmd/kateway/registry/consul"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/cmd/kateway/store/dumb"
 	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/registry"
+	"github.com/funkygao/gafka/registry/consul"
 	"github.com/funkygao/golib/breaker"
 	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/signal"
@@ -65,12 +65,8 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 	if options.consulAddr != "" {
 		var err error
-		registry.Default, err = consul.NewBackend(&ctx.Consul{
-			Addr:          options.consulAddr,
-			ServiceName:   "kateway",
-			CheckInterval: time.Second * 10,
-			CheckTimeout:  time.Second * 30,
-		}, ":9191") // TODO multiple service addr
+		registry.Default, err = consul.NewBackend(
+			ctx.NewConsul(options.consulAddr, "kateway"), this.pubServer.httpAddr) // TODO multiple service addr
 		if err != nil {
 			panic(err)
 		}

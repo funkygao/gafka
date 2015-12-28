@@ -5,7 +5,7 @@ import (
 )
 
 type Consul struct {
-	Addr          string
+	Addr          string // address of the Consul server
 	KVPath        string
 	TagPrefix     string
 	ServiceName   string
@@ -13,9 +13,11 @@ type Consul struct {
 	CheckTimeout  time.Duration
 }
 
-func NewConsul() *Consul {
+func NewConsul(consulAddr, serviceName string) *Consul {
 	return &Consul{
+		Addr:          consulAddr,
 		CheckInterval: time.Second * 10,
 		CheckTimeout:  time.Second * 30,
+		ServiceName:   serviceName,
 	}
 }
