@@ -64,7 +64,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.StringVar(&topicPattern, "t", "", "")
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
-	cmdFlags.BoolVar(&this.colorize, "color", false, "")
+	cmdFlags.BoolVar(&this.colorize, "color", true, "")
 	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
 	cmdFlags.BoolVar(&silence, "s", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
