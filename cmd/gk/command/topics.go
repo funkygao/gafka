@@ -173,9 +173,15 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		return
 	}
 
+	sortedTopics := make([]string, 0, len(topics))
+	for _, t := range topics {
+		sortedTopics = append(sortedTopics, t)
+	}
+	sort.Strings(sortedTopics)
+
 	topicsCtime := zkcluster.TopicsCtime()
 	hasTopicMatched := false
-	for _, topic := range topics {
+	for _, topic := range sortedTopics {
 		if !patternMatched(topic, this.topicPattern) {
 			continue
 		}
