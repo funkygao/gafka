@@ -27,7 +27,7 @@ var (
 )
 
 func main() {
-	flag.StringVar(&addr, "addr", "http://localhost:9191/", "pub addr")
+	flag.StringVar(&addr, "addr", "http://10.213.1.210:9191/", "pub addr")
 	flag.IntVar(&loops, "loops", 1000, "loops in each thread")
 	flag.IntVar(&sz, "size", 200, "each pub message size")
 	flag.StringVar(&topic, "topic", "foobar", "pub topic")
