@@ -38,7 +38,7 @@ man:
  GET /help
  GET /status
  GET /clusters
-POST /topics/:appid/:cluster/:topic/:ver
+POST /topics/:cluster/:appid/:topic/:ver
 
 dbg:
  GET /debug/pprof
@@ -65,7 +65,7 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// /topics/:appid/:cluster/:topic/:ver?partitions=1&replicas=2
+// /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2
 func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
