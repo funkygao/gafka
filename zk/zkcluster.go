@@ -318,6 +318,10 @@ func (this *ZkCluster) Broker(id int) (b *BrokerZnode) {
 
 func (this *ZkCluster) AddTopic(topic string, replicas,
 	partitions int) (output []string, err error) {
+	if replicas < 1 || partitions < 1 {
+		return nil, errors.New("invalid replicas or partitions")
+	}
+
 	zkAddrs := this.ZkConnectAddr()
 	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
 		fmt.Sprintf("--zookeeper %s", zkAddrs),

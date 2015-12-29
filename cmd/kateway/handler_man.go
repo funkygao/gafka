@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -36,6 +38,7 @@ man:
  GET /help
  GET /status
  GET /clusters
+POST /topics/:cluster/:topic/:ver
 
 dbg:
  GET /debug/pprof
@@ -60,4 +63,56 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 	w.WriteHeader(http.StatusOK)
 	b, _ := json.Marshal(meta.Default.Clusters())
 	w.Write(b)
+}
+
+// /topics/cluster:/:topic/:ver?partitions=1&replicas=2
+func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	this.writeKatewayHeader(w)
+
+	topic := params.ByName(UrlParamTopic)
+	cluster := params.ByName(UrlParamCluster)
+	appid := r.Header.Get(HttpHeaderAppid)
+	if !meta.Default.AuthPub(appid, r.Header.Get(HttpHeaderPubkey), topic) {
+		this.writeAuthFailure(w)
+		return
+	}
+
+	ver := params.ByName(UrlParamVersion)
+
+	replicas, partitions := 2, 1
+	query := r.URL.Query()
+	partitionsArg := query.Get("partitions")
+	if partitionsArg != "" {
+		partitions, _ = strconv.Atoi(partitionsArg)
+	}
+	replicasArg := query.Get("replicas")
+	if replicasArg != "" {
+		replicas, _ = strconv.Atoi(replicasArg)
+	}
+
+	log.Info("%s add topic: {cluster:%s, topic:%s, ver:%s query:%s}",
+		appid, cluster, topic, ver, query.Encode())
+
+	topic = meta.KafkaTopic(appid, topic, ver)
+	lines, err := meta.Default.ZkCluster(cluster).AddTopic(topic, replicas, partitions)
+	if err != nil {
+		log.Info("%s add topic: %s", appid, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	ok := false
+	for _, l := range lines {
+		log.Info("%s add topic: %s", appid, l)
+		if strings.Contains(l, "Created topic") {
+			ok = true
+		}
+	}
+
+	if ok {
+		w.Write(ResponseOk)
+	} else {
+		http.Error(w, strings.Join(lines, "\n"), http.StatusInternalServerError)
+	}
 }

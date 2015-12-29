@@ -5,6 +5,7 @@ const (
 	HttpHeaderPubkey = "Pubkey"
 	HttpHeaderSubkey = "Subkey"
 
+	UrlParamCluster = "cluster"
 	UrlParamTopic   = "topic"
 	UrlParamVersion = "ver"
 	UrlParamAppid   = "appid"
@@ -25,7 +26,7 @@ const (
 )
 
 var (
-	ResponsePubOk = []byte(`{"ok": 1}`)
+	ResponseOk = []byte(`{"ok": 1}`)
 )
 
 const (

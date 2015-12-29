@@ -6,11 +6,8 @@
 # register the demo cluster 'me'
 gk clusters -z local -add me -p /kafka_pubsub
 
-# initialize executor reserved topic
-gk topics -z local -c me -add _executor._kateway.v1 -replicas 1
-
 # register a topic
-curl -XPOST -H'Appid: _executor' -H'Pubkey: mypubkey' -d'{"cmd":"createTopic", "topic": "foobar", "appid": "app1", "ver": "v1"}' http://localhost:9191/topics/_kateway/v1
+curl -XPOST -H'Appid: myapp' -H'Pubkey: mypubkey' 'http://localhost:9193/topics/me/foobar/v1?partitions=1&replicas=1'
 
 # sub a topic
 curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/topics/app1/foobar/v1/group1?reset=newest&limit=1'

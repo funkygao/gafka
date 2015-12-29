@@ -76,7 +76,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 	}
 
 	// write the reponse
-	ctx.Write(ResponsePubOk)
+	ctx.Write(ResponseOk)
 	if !options.disableMetrics {
 		this.pubMetrics.pubOk(appid, topic, ver)
 		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
