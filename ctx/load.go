@@ -65,7 +65,7 @@ func LoadFromHome() {
         }
     ]
 
-    consul_bootstrap: "10.209.1.1:8500"
+    consul_bootstrap: "10.209.33.69:8500"
     kafka_home: "/opt/kafka_2.10-0.8.1.1"
     loglevel: "info"
 }

@@ -49,6 +49,8 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
     
 ### TODO
 
+- [ ] display kafka config e,g. retention
+- [ ] integration with consul
 - [ ] nge ES
 - [ ] bootstrap kafka
 - [ ] producer source

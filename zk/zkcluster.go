@@ -162,15 +162,26 @@ func (this *ZkCluster) ConsumerGroups() map[string]map[string]*ConsumerZnode {
 }
 
 // Returns {partitionId: consumerId}
+// consumerId is /consumers/$group/ids/$consumerId
 func (this *ZkCluster) ownersOfGroupByTopic(group, topic string) map[string]string {
 	r := make(map[string]string)
 	for partition, data := range this.zone.childrenWithData(this.consumerGroupOwnerOfTopicPath(group, topic)) {
-		// data: $consumerId-$num
+		// data:
+		// for java api: $consumerId-$threadNum  /consumers/$group/ids/$group_$hostname-$timestamp-$uuid
+		// for golang api: $consumerId
 		consumerIdNum := string(data.data)
 		var i int
-		for i = len(consumerIdNum) - 1; consumerIdNum[i] != '-'; i-- {
+		if strings.Contains(consumerIdNum, "_") {
+			// FIXME this rule is too naive, not robust
+			// java api consumer
+			for i = len(consumerIdNum) - 1; consumerIdNum[i] != '-'; i-- {
+			}
+			r[partition] = consumerIdNum[:i]
+		} else {
+			// golang consumer
+			r[partition] = consumerIdNum
 		}
-		r[partition] = consumerIdNum[:i]
+
 	}
 	return r
 }
@@ -238,7 +249,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 					Topic:          topic,
 					PartitionId:    partitionId,
 					Mtime:          offsetData.mtime,
-					ConsumerZnode:  consumerGroups[group][consumerInstances[partitionId]],
+					ConsumerZnode:  consumers[consumerInstances[partitionId]],
 					ConsumerOffset: consumerOffset,
 					ProducerOffset: producerOffset,
 					Lag:            producerOffset - consumerOffset,

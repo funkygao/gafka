@@ -32,13 +32,6 @@ func init() {
 			}, nil
 		},
 
-		"consul": func() (cli.Command, error) {
-			return &command.Consul{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
 		"ping": func() (cli.Command, error) {
 			return &command.Ping{
 				Ui:  ui,
@@ -118,6 +111,13 @@ func init() {
 		},
 
 		/* TODOs
+		"consul": func() (cli.Command, error) {
+			return &command.Consul{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"rebalance": func() (cli.Command, error) {
 			return &command.Rebalance{
 				Ui:  ui,
