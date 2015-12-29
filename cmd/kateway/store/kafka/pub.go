@@ -148,15 +148,20 @@ func (this *pubStore) SyncPub(cluster string, topic string, key []byte,
 
 		_, _, err = producer.SendMessage(producerMsg)
 		if err != nil {
-			producer.Close()
-			producer.Recycle()
+			if err == sarama.ErrUnknownTopicOrPartition {
+				log.Warn("cluster:%s topic:%s %v", cluster, topic, err)
+				producer.Recycle()
+			} else {
+				producer.Close()
+				producer.Recycle()
 
-			switch err {
-			case sarama.ErrOutOfBrokers:
-				this.doRefresh()
+				switch err {
+				case sarama.ErrOutOfBrokers:
+					this.doRefresh()
 
-			default:
-				log.Warn("unknown pub err: %v", err)
+				default:
+					log.Warn("unknown pub err: %v", err)
+				}
 			}
 		} else {
 			producer.Recycle()
