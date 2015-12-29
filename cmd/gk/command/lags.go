@@ -118,16 +118,18 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 	for _, group := range sortedGroups {
 		this.Ui.Output(strings.Repeat(" ", 4) + group)
 
+		sortedTopicAndPartitionIds := make([]string, 0)
 		consumers := make(map[string]zk.ConsumerMeta)
-		sortedPartitions := make([]string, 0)
-		for _, consumer := range consumersByGroup[group] {
-			sortedPartitions = append(sortedPartitions, consumer.PartitionId)
-			consumers[consumer.PartitionId] = consumer
-		}
-		sort.Strings(sortedPartitions)
+		for _, t := range consumersByGroup[group] {
+			key := fmt.Sprintf("%s:%s", t.Topic, t.PartitionId)
+			sortedTopicAndPartitionIds = append(sortedTopicAndPartitionIds, key)
 
-		for _, partition := range sortedPartitions {
-			consumer := consumers[partition]
+			consumers[key] = t
+		}
+		sort.Strings(sortedTopicAndPartitionIds)
+
+		for _, topicAndPartitionId := range sortedTopicAndPartitionIds {
+			consumer := consumers[topicAndPartitionId]
 
 			if !patternMatched(consumer.Topic, this.topicPattern) {
 				continue
