@@ -19,6 +19,7 @@ type Consumers struct {
 	onlineOnly   bool
 	groupPattern string
 	byHost       bool
+	cleanup      bool
 }
 
 func (this *Consumers) Run(args []string) (exitCode int) {
@@ -33,40 +34,84 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.groupPattern, "g", "", "")
 	cmdFlags.BoolVar(&this.onlineOnly, "l", false, "")
 	cmdFlags.BoolVar(&this.byHost, "byhost", false, "")
+	cmdFlags.BoolVar(&this.cleanup, "cleanup", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	if zone == "" {
 		forSortedZones(func(zkzone *zk.ZkZone) {
-			if this.byHost {
+			switch {
+			case this.cleanup:
+				this.cleanupStaleConsumerGroups(zkzone, cluster)
+			case this.byHost:
 				this.printConsumersByHost(zkzone, cluster)
-			} else {
+			default:
 				this.printConsumersByGroup(zkzone, cluster)
 			}
-
 		})
 
 		return
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-	if this.byHost {
+	switch {
+	case this.cleanup:
+		this.cleanupStaleConsumerGroups(zkzone, cluster)
+	case this.byHost:
 		this.printConsumersByHost(zkzone, cluster)
-	} else {
+	default:
 		this.printConsumersByGroup(zkzone, cluster)
 	}
 
 	return
 }
 
-func (this *Consumers) printConsumersByHost(zkzone *zk.ZkZone, clusterFilter string) {
+func (this *Consumers) cleanupStaleConsumerGroups(zkzone *zk.ZkZone, clusterPattern string) {
+	// what consumer groups are safe to delete?
+	// 1. not online
+	// 2. have no offsets
+	this.Ui.Output(color.Blue(zkzone.Name()))
+
+	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		if !patternMatched(zkcluster.Name(), clusterPattern) {
+			return
+		}
+
+		this.Ui.Output(strings.Repeat(" ", 4) + zkcluster.Name())
+		consumerGroups := zkcluster.ConsumerGroups()
+		for group, consumers := range consumerGroups {
+			if len(consumers) > 0 {
+				// this consumer group is online
+				continue
+			}
+
+			children, _, err := zkzone.Conn().Children(zkcluster.ConsumerGroupOffsetPath(group))
+			swallow(err)
+			if len(children) == 0 {
+				// have no offsets, safe to delete
+				yes, err := this.Ui.Ask(fmt.Sprintf("confirm to remove consumer group: %s? [y/N]", group))
+				swallow(err)
+				if strings.ToLower(yes) != "y" {
+					this.Ui.Info(fmt.Sprintf("%s skipped", group))
+					continue
+				}
+
+				// do delete this consumer group
+				zkzone.DeleteRecursive(zkcluster.ConsumerGroupRoot(group))
+				this.Ui.Info(fmt.Sprintf("%s deleted", group))
+			}
+		}
+	})
+}
+
+func (this *Consumers) printConsumersByHost(zkzone *zk.ZkZone, clusterPattern string) {
 	outputs := make(map[string]map[string]map[string]int) // host: {cluster: {topic: count}}
 
 	this.Ui.Output(color.Blue(zkzone.Name()))
 
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
-		if clusterFilter != "" && clusterFilter != zkcluster.Name() {
+		if !patternMatched(zkcluster.Name(), clusterPattern) {
 			return
 		}
 
@@ -101,10 +146,10 @@ func (this *Consumers) printConsumersByHost(zkzone *zk.ZkZone, clusterFilter str
 }
 
 // Print all controllers of all clusters within a zone.
-func (this *Consumers) printConsumersByGroup(zkzone *zk.ZkZone, clusterFilter string) {
+func (this *Consumers) printConsumersByGroup(zkzone *zk.ZkZone, clusterPattern string) {
 	this.Ui.Output(color.Blue(zkzone.Name()))
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
-		if clusterFilter != "" && clusterFilter != zkcluster.Name() {
+		if !patternMatched(zkcluster.Name(), clusterPattern) {
 			return
 		}
 
@@ -166,6 +211,9 @@ Options:
 
     -l 
       Only show online consumer groups.
+
+    -cleanup
+      Cleanup the stale consumer groups after confirmation.
 
     -byhost
       Display consumer groups by consumer hosts.

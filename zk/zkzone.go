@@ -282,8 +282,7 @@ func (this *ZkZone) mkdirRecursive(node string) (err error) {
 	return
 }
 
-// unused yet
-func (this *ZkZone) deleteRecursive(node string) (err error) {
+func (this *ZkZone) DeleteRecursive(node string) (err error) {
 	children, stat, err := this.conn.Children(node)
 	if err == zk.ErrNoNode {
 		return nil
@@ -292,7 +291,7 @@ func (this *ZkZone) deleteRecursive(node string) (err error) {
 	}
 
 	for _, child := range children {
-		if err = this.deleteRecursive(path.Join(node, child)); err != nil {
+		if err = this.DeleteRecursive(path.Join(node, child)); err != nil {
 			return
 		}
 	}

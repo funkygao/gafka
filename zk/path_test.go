@@ -26,12 +26,12 @@ func TestZkClusterPath(t *testing.T) {
 	assert.Equal(t, "/test/brokers/ids", c.brokerIdsRoot())
 	assert.Equal(t, "/test/brokers/ids/2", c.brokerPath(2))
 	assert.Equal(t, "/test/consumers/console-group",
-		c.consumerGroupRoot("console-group"))
+		c.ConsumerGroupRoot("console-group"))
 	assert.Equal(t, "/test/consumers", c.consumerGroupsRoot())
 	assert.Equal(t, "/test/consumers/console-group/ids",
 		c.consumerGroupIdsPath("console-group"))
 	assert.Equal(t, "/test/consumers/console-group/offsets",
-		c.consumerGroupOffsetPath("console-group"))
+		c.ConsumerGroupOffsetPath("console-group"))
 	assert.Equal(t, "/test/consumers/console-group/offsets/t1",
 		c.consumerGroupOffsetOfTopicPath("console-group", "t1"))
 	assert.Equal(t, "/test/consumers/console-group/owners/t1",

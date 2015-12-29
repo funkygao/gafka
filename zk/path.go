@@ -60,22 +60,22 @@ func (this *ZkCluster) consumerGroupsRoot() string {
 	return this.path + ConsumersPath
 }
 
-func (this *ZkCluster) consumerGroupRoot(group string) string {
+func (this *ZkCluster) ConsumerGroupRoot(group string) string {
 	return this.path + ConsumersPath + "/" + group
 }
 
 func (this *ZkCluster) consumerGroupIdsPath(group string) string {
-	return this.consumerGroupRoot(group) + "/ids"
+	return this.ConsumerGroupRoot(group) + "/ids"
 }
 
-func (this *ZkCluster) consumerGroupOffsetPath(group string) string {
-	return this.consumerGroupRoot(group) + "/offsets"
+func (this *ZkCluster) ConsumerGroupOffsetPath(group string) string {
+	return this.ConsumerGroupRoot(group) + "/offsets"
 }
 
 func (this *ZkCluster) consumerGroupOffsetOfTopicPath(group, topic string) string {
-	return this.consumerGroupOffsetPath(group) + "/" + topic
+	return this.ConsumerGroupOffsetPath(group) + "/" + topic
 }
 
 func (this *ZkCluster) consumerGroupOwnerOfTopicPath(group, topic string) string {
-	return this.consumerGroupRoot(group) + "/owners/" + topic
+	return this.ConsumerGroupRoot(group) + "/owners/" + topic
 }

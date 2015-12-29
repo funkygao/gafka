@@ -208,7 +208,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 			continue
 		}
 
-		topics := this.zone.children(this.consumerGroupOffsetPath(group))
+		topics := this.zone.children(this.ConsumerGroupOffsetPath(group))
 		for _, topic := range topics {
 			consumerInstances := this.ownersOfGroupByTopic(group, topic)
 			if len(consumerInstances) == 0 {
