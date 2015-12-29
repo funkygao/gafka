@@ -66,7 +66,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	if options.consulAddr != "" {
 		var err error
 		registry.Default, err = consul.NewBackend(
-			ctx.NewConsul(options.consulAddr, "kateway"), this.pubServer.httpAddr) // TODO multiple service addr
+			ctx.NewConsul(options.consulAddr, "kateway"), options.pubHttpAddr) // TODO multiple service addr
 		if err != nil {
 			panic(err)
 		}

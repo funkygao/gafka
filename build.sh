@@ -27,6 +27,7 @@ if [[ $1 = "-gc" ]]; then
     BUILD_FLAGS="$BUILD_FLAGS -gcflags '-m=1'"
 fi
 
+BUILD_TAGS="-tags fasthttp"
 BUILD_PKG=cmd/gk
 BUILD_BIN=gk
 if [[ $1 = "zk" ]]; then
@@ -41,9 +42,9 @@ fi
 cd $BUILD_PKG
 go generate ./...
 if [ $GOVER -gt 4 ]; then
-    go build $BUILD_FLAGS -tags fasthttp -ldflags "-X github.com/funkygao/gafka.Version=$VER -X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
+    go build $BUILD_FLAGS $BUILD_TAGS -ldflags "-X github.com/funkygao/gafka.Version=$VER -X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
 else
-    go build $BUILD_FLAGS -tags fasthttp -ldflags "-X github.com/funkygao/gafka.Version $VER -X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
+    go build $BUILD_FLAGS $BUILD_TAGS -ldflags "-X github.com/funkygao/gafka.Version $VER -X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
 fi
 
 if [[ $1 = "-install" ]]; then
