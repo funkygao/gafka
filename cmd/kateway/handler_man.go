@@ -38,7 +38,7 @@ man:
  GET /help
  GET /status
  GET /clusters
-POST /topics/:cluster/:topic/:ver
+POST /topics/:appid/:cluster/:topic/:ver
 
 dbg:
  GET /debug/pprof
@@ -65,13 +65,14 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// /topics/cluster:/:topic/:ver?partitions=1&replicas=2
+// /topics/:appid/:cluster/:topic/:ver?partitions=1&replicas=2
 func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
 
 	topic := params.ByName(UrlParamTopic)
 	cluster := params.ByName(UrlParamCluster)
+	hisAppid := params.ByName("appid")
 	appid := r.Header.Get(HttpHeaderAppid)
 	if !meta.Default.AuthPub(appid, r.Header.Get(HttpHeaderPubkey), topic) {
 		this.writeAuthFailure(w)
@@ -91,10 +92,10 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		replicas, _ = strconv.Atoi(replicasArg)
 	}
 
-	log.Info("%s add topic: {cluster:%s, topic:%s, ver:%s query:%s}",
-		appid, cluster, topic, ver, query.Encode())
+	log.Info("%s add topic: {appid:%s, cluster:%s, topic:%s, ver:%s query:%s}",
+		appid, hisAppid, cluster, topic, ver, query.Encode())
 
-	topic = meta.KafkaTopic(appid, topic, ver)
+	topic = meta.KafkaTopic(hisAppid, topic, ver)
 	lines, err := meta.Default.ZkCluster(cluster).AddTopic(topic, replicas, partitions)
 	if err != nil {
 		log.Info("%s add topic: %s", appid, err.Error())

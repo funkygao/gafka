@@ -4,7 +4,7 @@ func (this *Gateway) buildRouting() {
 	this.manServer.Router().GET("/clusters", this.clustersHandler)
 	this.manServer.Router().GET("/help", this.helpHandler)
 	this.manServer.Router().GET("/status", this.statusHandler)
-	this.manServer.Router().POST("/topics/:cluster/:topic/:ver", this.addTopicHandler)
+	this.manServer.Router().POST("/topics/:appid/:cluster/:topic/:ver", this.addTopicHandler)
 
 	if this.pubServer != nil {
 		this.pubServer.Router().GET("/raw/topics/:topic/:ver", this.pubRawHandler)
