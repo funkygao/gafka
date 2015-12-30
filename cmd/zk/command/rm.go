@@ -22,7 +22,7 @@ type Rm struct {
 func (this *Rm) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("rm", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.zone, "z", "", "")
+	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.path, "p", "", "")
 	cmdFlags.BoolVar(&this.recursive, "R", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -30,9 +30,14 @@ func (this *Rm) Run(args []string) (exitCode int) {
 	}
 
 	if validateArgs(this, this.Ui).
-		require("-z", "-p").
-		requireAdminRights("-z").
+		require("-p").
+		requireAdminRights("-p").
 		invalid(args) {
+		return 2
+	}
+
+	if this.zone == "" {
+		this.Ui.Error("unknown zone")
 		return 2
 	}
 

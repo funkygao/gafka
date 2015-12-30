@@ -24,6 +24,7 @@ func LoadConfig(fn string) {
 	conf.influxdbHost = cf.String("influxdb_host", "")
 	conf.zones = make(map[string]string)
 	conf.consulBootstrap = cf.String("consul_bootstrap", "")
+	conf.zkDefaultZone = cf.String("zk_default_zone", "")
 	conf.tunnels = make(map[string]string)
 	for i := 0; i < len(cf.List("zones", nil)); i++ {
 		section, err := cf.Section(fmt.Sprintf("zones[%d]", i))
@@ -65,6 +66,7 @@ func LoadFromHome() {
         }
     ]
 
+    zk_default_zone: "test"
     consul_bootstrap: "10.209.33.69:8500"
     kafka_home: "/opt/kafka_2.10-0.8.1.1"
     loglevel: "info"

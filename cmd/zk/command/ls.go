@@ -24,20 +24,16 @@ type Ls struct {
 func (this *Ls) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("ls", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.zone, "z", "", "")
-	cmdFlags.StringVar(&this.path, "p", "", "")
+	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&this.recursive, "R", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
-	if this.path == "" {
-		this.path = "/"
-	}
+	this.path = args[len(args)-1]
 
-	if validateArgs(this, this.Ui).
-		require("-z").
-		invalid(args) {
+	if this.zone == "" {
+		this.Ui.Error("unknown zone")
 		return 2
 	}
 
@@ -84,16 +80,16 @@ func (*Ls) Synopsis() string {
 
 func (this *Ls) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s ls -z zone [options]
+Usage: %s ls [options] path
 
     List znode children
 
 Options:
 
-    -p path
+    -z zone
 
     -R
-      Recursive.    
+      Recursively list subdirectories encountered.    
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

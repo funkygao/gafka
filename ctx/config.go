@@ -21,6 +21,7 @@ type config struct {
 	consulBootstrap string            // consul bootstrap nodes addrs
 	zones           map[string]string // name:zkConn
 	tunnels         map[string]string // name:tunnel host ip
+	zkDefaultZone   string            // zk command default zone name
 }
 
 func (c *config) sortedZones() []string {

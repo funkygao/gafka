@@ -23,6 +23,11 @@ func Zones() map[string]string {
 	return conf.zones
 }
 
+func ZkDefaultZone() string {
+	ensureLogLoaded()
+	return conf.zkDefaultZone
+}
+
 func Tunnels() map[string]string {
 	ensureLogLoaded()
 	return conf.tunnels
