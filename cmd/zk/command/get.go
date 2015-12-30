@@ -18,6 +18,7 @@ type Get struct {
 
 	zone      string
 	path      string
+	verbose   bool
 	recursive bool
 }
 
@@ -25,6 +26,7 @@ func (this *Get) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("get", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.BoolVar(&this.recursive, "R", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -71,7 +73,10 @@ func (this *Get) Run(args []string) (exitCode int) {
 		return
 	}
 
-	this.Ui.Output(fmt.Sprintf("%#v", *stat))
+	if this.verbose {
+		this.Ui.Output(color.Magenta("%#v", *stat))
+	}
+
 	this.Ui.Output(color.Green("Data Bytes"))
 	fmt.Println(data)
 	this.Ui.Output(color.Green("Data as String"))
@@ -93,6 +98,9 @@ Usage: %s get [options] path
 Options:
 
     -z zone
+
+    -l
+      Use a long display format.
 
     -R
       Recursively show subdirectories znode encountered.
