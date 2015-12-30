@@ -42,7 +42,7 @@ func (this *Dump) Run(args []string) (exitCode int) {
 }
 
 func (*Dump) Synopsis() string {
-	return "Dump directories and contents of Zookeeper"
+	return "Dump directories and contents of Zookeeper TODO"
 }
 
 func (this *Dump) Help() string {
