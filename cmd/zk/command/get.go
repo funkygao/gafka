@@ -71,9 +71,9 @@ func (this *Get) Run(args []string) (exitCode int) {
 		return
 	}
 
-	this.Ui.Output("raw data:")
+	this.Ui.Output(color.Green("raw data:"))
 	fmt.Println(data)
-	this.Ui.Output("string data:")
+	this.Ui.Output(color.Green("string data:"))
 	this.Ui.Output(string(data)) // TODO what if binary?
 
 	return
