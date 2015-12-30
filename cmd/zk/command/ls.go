@@ -65,12 +65,11 @@ func (this *Ls) showChildrenRecursively(conn *zk.Conn, path string) {
 	sort.Strings(children)
 	for _, child := range children {
 		if path == "/" {
-			this.Ui.Output(path + child)
-			this.showChildrenRecursively(conn, path+child)
-		} else {
-			this.Ui.Output(path + "/" + child)
-			this.showChildrenRecursively(conn, path+"/"+child)
+			path = ""
 		}
+
+		this.Ui.Output(path + "/" + child)
+		this.showChildrenRecursively(conn, path+"/"+child)
 	}
 }
 

@@ -78,53 +78,32 @@ func (this *Get) showChildrenRecursively(conn *zk.Conn, path string) {
 	sort.Strings(children)
 	for _, child := range children {
 		if path == "/" {
-			znode := fmt.Sprintf("/%s", child)
-
-			// display znode content
-			data, stat, err := conn.Get(znode)
-			must(err)
-			if stat.EphemeralOwner > 0 {
-				this.Ui.Output(color.Yellow(znode))
-			} else {
-				this.Ui.Output(color.Green(znode))
-			}
-			if len(data) > 0 {
-				if this.verbose {
-					this.Ui.Output(fmt.Sprintf("%s %#v",
-						strings.Repeat(" ", 3), stat))
-					this.Ui.Output(fmt.Sprintf("%s %v",
-						strings.Repeat(" ", 3), data))
-				}
-				this.Ui.Output(fmt.Sprintf("%s %s",
-					strings.Repeat(" ", 3), string(data)))
-			}
-
-			this.showChildrenRecursively(conn, path+child)
-		} else {
-			znode := fmt.Sprintf("%s/%s", path, child)
-
-			// display znode content
-			data, stat, err := conn.Get(znode)
-			must(err)
-			if stat.EphemeralOwner > 0 {
-				this.Ui.Output(color.Yellow(znode))
-			} else {
-				this.Ui.Output(color.Green(znode))
-			}
-
-			if len(data) > 0 {
-				if this.verbose {
-					this.Ui.Output(fmt.Sprintf("%s %#v",
-						strings.Repeat(" ", 3), stat))
-					this.Ui.Output(fmt.Sprintf("%s %v",
-						strings.Repeat(" ", 3), data))
-				}
-				this.Ui.Output(fmt.Sprintf("%s %s",
-					strings.Repeat(" ", 3), string(data)))
-			}
-
-			this.showChildrenRecursively(conn, path+"/"+child)
+			path = ""
 		}
+
+		znode := fmt.Sprintf("%s/%s", path, child)
+
+		// display znode content
+		data, stat, err := conn.Get(znode)
+		must(err)
+		if stat.EphemeralOwner > 0 {
+			this.Ui.Output(color.Yellow(znode))
+		} else {
+			this.Ui.Output(color.Green(znode))
+		}
+
+		if len(data) > 0 {
+			if this.verbose {
+				this.Ui.Output(fmt.Sprintf("%s %#v",
+					strings.Repeat(" ", 3), stat))
+				this.Ui.Output(fmt.Sprintf("%s %v",
+					strings.Repeat(" ", 3), data))
+			}
+			this.Ui.Output(fmt.Sprintf("%s %s",
+				strings.Repeat(" ", 3), string(data)))
+		}
+
+		this.showChildrenRecursively(conn, znode)
 	}
 }
 func (*Get) Synopsis() string {
@@ -140,12 +119,12 @@ Usage: %s get [options] path
 Options:
 
     -z zone
+    
+    -R
+      Recursively show subdirectories znode encountered.
 
     -l
       Use a long display format.
-
-    -R
-      Recursively show subdirectories znode encountered.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
