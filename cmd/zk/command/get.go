@@ -63,7 +63,7 @@ func (this *Get) Run(args []string) (exitCode int) {
 	}
 
 	conn := zkzone.Conn()
-	data, _, err := conn.Get(this.path)
+	data, stat, err := conn.Get(this.path)
 	must(err)
 
 	if len(data) == 0 {
@@ -71,10 +71,11 @@ func (this *Get) Run(args []string) (exitCode int) {
 		return
 	}
 
-	this.Ui.Output(color.Green("raw data:"))
+	this.Ui.Output(fmt.Sprintf("%#v", *stat))
+	this.Ui.Output(color.Green("Data Bytes"))
 	fmt.Println(data)
-	this.Ui.Output(color.Green("string data:"))
-	this.Ui.Output(string(data)) // TODO what if binary?
+	this.Ui.Output(color.Green("Data as String"))
+	this.Ui.Output(string(data))
 
 	return
 }
