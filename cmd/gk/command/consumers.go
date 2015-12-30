@@ -40,6 +40,12 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	if validateArgs(this, this.Ui).
+		requireAdminRights("-cleanup").
+		invalid(args) {
+		return 2
+	}
+
 	if zone == "" {
 		forSortedZones(func(zkzone *zk.ZkZone) {
 			switch {
