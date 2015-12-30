@@ -10,6 +10,7 @@ import (
 	gzk "github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/samuel/go-zookeeper/zk"
 )
 
 type Get struct {
@@ -42,24 +43,7 @@ func (this *Get) Run(args []string) (exitCode int) {
 	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	defer zkzone.Close()
 	if this.recursive {
-		datas := zkzone.ChildrenWithData(this.path)
-		sortedPath := make([]string, 0, len(datas))
-		for path, _ := range datas {
-			sortedPath = append(sortedPath, path)
-		}
-		sort.Strings(sortedPath)
-
-		if this.path == "/" {
-			this.path = ""
-		}
-		for _, path := range sortedPath {
-			this.Ui.Output(color.Green("%s/%s", this.path, path))
-			data := datas[path]
-			if len(data.Data()) > 0 {
-				this.Ui.Output(fmt.Sprintf("%s %s", strings.Repeat(" ", 3),
-					string(data.Data())))
-			}
-		}
+		this.showChildrenRecursively(zkzone.Conn(), this.path)
 
 		return 0
 	}
@@ -85,6 +69,64 @@ func (this *Get) Run(args []string) (exitCode int) {
 	return
 }
 
+func (this *Get) showChildrenRecursively(conn *zk.Conn, path string) {
+	children, _, err := conn.Children(path)
+	if err != nil {
+		return
+	}
+
+	sort.Strings(children)
+	for _, child := range children {
+		if path == "/" {
+			znode := fmt.Sprintf("/%s", child)
+
+			// display znode content
+			data, stat, err := conn.Get(znode)
+			must(err)
+			if stat.EphemeralOwner > 0 {
+				this.Ui.Output(color.Yellow(znode))
+			} else {
+				this.Ui.Output(color.Green(znode))
+			}
+			if len(data) > 0 {
+				if this.verbose {
+					this.Ui.Output(fmt.Sprintf("%s %#v",
+						strings.Repeat(" ", 3), stat))
+					this.Ui.Output(fmt.Sprintf("%s %v",
+						strings.Repeat(" ", 3), data))
+				}
+				this.Ui.Output(fmt.Sprintf("%s %s",
+					strings.Repeat(" ", 3), string(data)))
+			}
+
+			this.showChildrenRecursively(conn, path+child)
+		} else {
+			znode := fmt.Sprintf("%s/%s", path, child)
+
+			// display znode content
+			data, stat, err := conn.Get(znode)
+			must(err)
+			if stat.EphemeralOwner > 0 {
+				this.Ui.Output(color.Yellow(znode))
+			} else {
+				this.Ui.Output(color.Green(znode))
+			}
+
+			if len(data) > 0 {
+				if this.verbose {
+					this.Ui.Output(fmt.Sprintf("%s %#v",
+						strings.Repeat(" ", 3), stat))
+					this.Ui.Output(fmt.Sprintf("%s %v",
+						strings.Repeat(" ", 3), data))
+				}
+				this.Ui.Output(fmt.Sprintf("%s %s",
+					strings.Repeat(" ", 3), string(data)))
+			}
+
+			this.showChildrenRecursively(conn, path+"/"+child)
+		}
+	}
+}
 func (*Get) Synopsis() string {
 	return "Show znode data"
 }
