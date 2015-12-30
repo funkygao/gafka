@@ -10,6 +10,7 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	gozk "github.com/samuel/go-zookeeper/zk"
 )
 
 type Consumers struct {
@@ -86,21 +87,28 @@ func (this *Consumers) cleanupStaleConsumerGroups(zkzone *zk.ZkZone, clusterPatt
 				continue
 			}
 
-			children, _, err := zkzone.Conn().Children(zkcluster.ConsumerGroupOffsetPath(group))
-			swallow(err)
-			if len(children) == 0 {
-				// have no offsets, safe to delete
-				yes, err := this.Ui.Ask(fmt.Sprintf("confirm to remove consumer group: %s? [y/N]", group))
-				swallow(err)
-				if strings.ToLower(yes) != "y" {
-					this.Ui.Info(fmt.Sprintf("%s skipped", group))
-					continue
-				}
-
-				// do delete this consumer group
-				zkzone.DeleteRecursive(zkcluster.ConsumerGroupRoot(group))
-				this.Ui.Info(fmt.Sprintf("%s deleted", group))
+			_, _, err := zkzone.Conn().Children(zkcluster.ConsumerGroupOffsetPath(group))
+			if err == nil {
+				// have offsets, unsafe to delete
+				continue
 			}
+
+			if err != gozk.ErrNoNode {
+				// should never happen
+				swallow(err)
+			}
+
+			// have no offsets, safe to delete
+			yes, err := this.Ui.Ask(fmt.Sprintf("confirm to remove consumer group: %s? [y/N]", group))
+			swallow(err)
+			if strings.ToLower(yes) != "y" {
+				this.Ui.Info(fmt.Sprintf("%s skipped", group))
+				continue
+			}
+
+			// do delete this consumer group
+			zkzone.DeleteRecursive(zkcluster.ConsumerGroupRoot(group))
+			this.Ui.Info(fmt.Sprintf("%s deleted", group))
 		}
 	})
 }
