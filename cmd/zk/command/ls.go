@@ -49,8 +49,11 @@ func (this *Ls) Run(args []string) (exitCode int) {
 	children, _, err := conn.Children(this.path)
 	must(err)
 	sort.Strings(children)
+	if this.path == "/" {
+		this.path = ""
+	}
 	for _, child := range children {
-		this.Ui.Output(child)
+		this.Ui.Output(this.path + "/" + child)
 	}
 
 	return
