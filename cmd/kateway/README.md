@@ -118,6 +118,7 @@ A RESTful gateway for kafka that supports Pub and Sub.
 
 ### TODO
 
+- [ ] guard.go panic
 - [ ] Pub HTTP POST Request compress
 - [ ] metrics
   - intranet/extranet pub

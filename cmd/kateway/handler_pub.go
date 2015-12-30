@@ -17,7 +17,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// /topics/:topic/:ver?key=mykey&async=1
+// /topics/:topic/:ver?key=mykey&async=1&delay=100
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	if options.enableBreaker && this.breaker.Open() {
