@@ -72,7 +72,7 @@ func (*Rm) Synopsis() string {
 
 func (this *Rm) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s create -z zone -p path [options]
+Usage: %s rm -z zone -p path [options]
 
     Remove znode
 

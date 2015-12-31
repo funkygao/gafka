@@ -286,7 +286,9 @@ func (this *ZkZone) mkdirRecursive(node string) (err error) {
 }
 
 func (this *ZkZone) DeleteRecursive(node string) (err error) {
+	this.connectIfNeccessary()
 	children, stat, err := this.conn.Children(node)
+
 	if err == zk.ErrNoNode {
 		return nil
 	} else if err != nil {
