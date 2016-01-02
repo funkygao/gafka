@@ -160,6 +160,18 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					continue
 				}
 
+				var (
+					host   string
+					uptime string
+				)
+				if consumer.ConsumerZnode == nil {
+					host = "unrecognized"
+					uptime = "-"
+				} else {
+					host = color.Green("%90s", consumer.ConsumerZnode.Host())
+					uptime = gofmt.PrettySince(consumer.ConsumerZnode.Uptime())
+				}
+
 				this.Ui.Output(fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s\n%s %s",
 					symbol,
 					consumer.Topic, consumer.PartitionId,
@@ -167,8 +179,7 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					gofmt.Comma(consumer.ConsumerOffset),
 					lagOutput,
 					gofmt.PrettySince(consumer.Mtime.Time()),
-					color.Green("%90s", consumer.ConsumerZnode.Host()),
-					gofmt.PrettySince(consumer.ConsumerZnode.Uptime())))
+					host, uptime))
 			} else if !this.onlineOnly {
 				this.Ui.Output(fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s",
 					symbol,
