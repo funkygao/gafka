@@ -13,6 +13,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/golib/stress"
+	"github.com/funkygao/redigo/redis"
 )
 
 var (
@@ -31,7 +32,7 @@ func main() {
 	flag.IntVar(&loops, "loops", 1000, "loops in each thread")
 	flag.IntVar(&sz, "size", 200, "each pub message size")
 	flag.StringVar(&topic, "topic", "foobar", "pub topic")
-	flag.StringVar(&mode, "mode", "gw", "<gw|kafka|http>")
+	flag.StringVar(&mode, "mode", "gw", "<gw|kafka|http|redis>")
 	flag.StringVar(&appid, "appid", "app1", "appid of pub")
 	flag.BoolVar(&async, "async", false, "async pub")
 	flag.BoolVar(&suppressError, "noerr", true, "suppress error output")
@@ -48,6 +49,9 @@ func main() {
 		} else {
 			stress.RunStress(pubKafkaLoop)
 		}
+
+	case "redis":
+		stress.RunStress(redisLoop)
 
 	case "http":
 		http.DefaultClient.Timeout = time.Second * 30
@@ -97,6 +101,30 @@ func pubKafkaLoop(seq int) {
 		if err == nil {
 			stress.IncCounter("ok", 1)
 		} else {
+			stress.IncCounter("fail", 1)
+		}
+	}
+
+}
+
+func redisLoop(seq int) {
+	conn, err := redis.DialTimeout("tcp", ":6379", 0, 1*time.Second, 1*time.Second)
+	if err != nil {
+		stress.IncCounter("fail", 1)
+		log.Println(err)
+		return
+	}
+
+	defer conn.Close()
+	msg := strings.Repeat("X", sz)
+	for i := 0; i < loops; i++ {
+		_, err := conn.Do("SET", "key", msg)
+		if err == nil {
+			stress.IncCounter("ok", 1)
+		} else {
+			if !suppressError {
+				log.Println(err)
+			}
 			stress.IncCounter("fail", 1)
 		}
 	}
