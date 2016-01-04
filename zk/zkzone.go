@@ -212,10 +212,13 @@ func (this *ZkZone) children(path string) []string {
 }
 
 // return {childName: zkData}
-func (this *ZkZone) childrenWithData(path string) map[string]zkData {
+func (this *ZkZone) ChildrenWithData(path string) map[string]zkData {
 	children := this.children(path)
 
 	r := make(map[string]zkData, len(children))
+	if path == "/" {
+		path = ""
+	}
 	for _, name := range children {
 		data, stat, err := this.conn.Get(path + "/" + name)
 		if !this.swallow(err) {
@@ -234,7 +237,7 @@ func (this *ZkZone) childrenWithData(path string) map[string]zkData {
 // returns {clusterName: clusterZkPath}
 func (this *ZkZone) Clusters() map[string]string {
 	r := make(map[string]string)
-	for cluster, clusterData := range this.childrenWithData(clusterRoot) {
+	for cluster, clusterData := range this.ChildrenWithData(clusterRoot) {
 		r[cluster] = string(clusterData.data)
 	}
 
@@ -283,7 +286,9 @@ func (this *ZkZone) mkdirRecursive(node string) (err error) {
 }
 
 func (this *ZkZone) DeleteRecursive(node string) (err error) {
+	this.connectIfNeccessary()
 	children, stat, err := this.conn.Children(node)
+
 	if err == zk.ErrNoNode {
 		return nil
 	} else if err != nil {
@@ -357,7 +362,7 @@ func (this *ZkZone) brokers() map[string]map[string]*BrokerZnode {
 	r := make(map[string]map[string]*BrokerZnode)
 	for cluster, path := range this.Clusters() {
 		c := this.NewclusterWithPath(cluster, path)
-		liveBrokers := this.childrenWithData(c.brokerIdsRoot())
+		liveBrokers := this.ChildrenWithData(c.brokerIdsRoot())
 		if len(liveBrokers) > 0 {
 			r[cluster] = make(map[string]*BrokerZnode)
 			for brokerId, brokerInfo := range liveBrokers {

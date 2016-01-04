@@ -53,7 +53,7 @@ func (this *ZkCluster) Close() {
 
 func (this *ZkCluster) TopicsCtime() map[string]time.Time {
 	r := make(map[string]time.Time)
-	for name, data := range this.zone.childrenWithData(this.topicsRoot()) {
+	for name, data := range this.zone.ChildrenWithData(this.topicsRoot()) {
 		r[name] = data.ctime.Time()
 	}
 	return r
@@ -152,7 +152,7 @@ func (this *ZkCluster) ConsumerGroups() map[string]map[string]*ConsumerZnode {
 	r := make(map[string]map[string]*ConsumerZnode)
 	for _, group := range this.zone.children(this.consumerGroupsRoot()) {
 		r[group] = make(map[string]*ConsumerZnode)
-		for consumerId, data := range this.zone.childrenWithData(this.consumerGroupIdsPath(group)) {
+		for consumerId, data := range this.zone.ChildrenWithData(this.consumerGroupIdsPath(group)) {
 			c := newConsumerZnode(consumerId)
 			c.from(data.data)
 			r[group][consumerId] = c
@@ -165,7 +165,7 @@ func (this *ZkCluster) ConsumerGroups() map[string]map[string]*ConsumerZnode {
 // consumerId is /consumers/$group/ids/$consumerId
 func (this *ZkCluster) ownersOfGroupByTopic(group, topic string) map[string]string {
 	r := make(map[string]string)
-	for partition, data := range this.zone.childrenWithData(this.consumerGroupOwnerOfTopicPath(group, topic)) {
+	for partition, data := range this.zone.ChildrenWithData(this.consumerGroupOwnerOfTopicPath(group, topic)) {
 		// data:
 		// for java api: $consumerId-$threadNum  /consumers/$group/ids/$group_$hostname-$timestamp-$uuid
 		// for golang api: $consumerId
@@ -217,7 +217,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 			}
 
 		topicLoop:
-			for partitionId, offsetData := range this.zone.childrenWithData(this.consumerGroupOffsetOfTopicPath(group, topic)) {
+			for partitionId, offsetData := range this.zone.ChildrenWithData(this.consumerGroupOffsetOfTopicPath(group, topic)) {
 				consumerOffset, err := strconv.ParseInt(string(offsetData.data), 10, 64)
 				if err != nil {
 					log.Error("kafka[%s] %s P:%s %v", this.name, topic, partitionId, err)
@@ -267,7 +267,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 // Returns online {brokerId: broker}.
 func (this *ZkCluster) Brokers() map[string]*BrokerZnode {
 	r := make(map[string]*BrokerZnode)
-	for brokerId, brokerInfo := range this.zone.childrenWithData(this.brokerIdsRoot()) {
+	for brokerId, brokerInfo := range this.zone.ChildrenWithData(this.brokerIdsRoot()) {
 		broker := newBrokerZnode(brokerId)
 		broker.from(brokerInfo.data)
 
@@ -280,7 +280,7 @@ func (this *ZkCluster) Brokers() map[string]*BrokerZnode {
 // Returns distinct online consumers in group for a topic.
 func (this *ZkCluster) OnlineConsumersCount(topic, group string) int {
 	consumers := make(map[string]struct{})
-	for _, zkData := range this.zone.childrenWithData(this.consumerGroupOwnerOfTopicPath(group, topic)) {
+	for _, zkData := range this.zone.ChildrenWithData(this.consumerGroupOwnerOfTopicPath(group, topic)) {
 		consumers[string(zkData.data)] = struct{}{}
 	}
 	return len(consumers)
@@ -364,7 +364,7 @@ func (this *ZkCluster) TotalConsumerOffsets(topicPattern string) (total int64) {
 			}
 
 			offsetsPath := fmt.Sprintf("%s/%s", topicsPath, topic)
-			offsets := this.zone.childrenWithData(offsetsPath)
+			offsets := this.zone.ChildrenWithData(offsetsPath)
 			for _, zdata := range offsets {
 				offset, _ := strconv.Atoi(string(zdata.data))
 				total += int64(offset)

@@ -51,7 +51,7 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	// FIXME what if client wants to consumer a non-existent topic?
 	onlineN := meta.Default.OnlineConsumersCount(cluster, topic, group)
 	partitionN := len(meta.Default.Partitions(cluster, topic))
-	if onlineN >= partitionN {
+	if partitionN > 0 && onlineN >= partitionN {
 		log.Debug("online:%d>=partitions:%d, current clients: %+v, remote addr: %s",
 			onlineN, partitionN, this.clientMap, remoteAddr)
 		err = store.ErrTooManyConsumers

@@ -22,16 +22,21 @@ type Create struct {
 func (this *Create) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("create", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.zone, "z", "", "")
+	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.path, "p", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	if validateArgs(this, this.Ui).
-		require("-z", "-p").
-		requireAdminRights("-z").
+		require("-p").
+		requireAdminRights("-p").
 		invalid(args) {
+		return 2
+	}
+
+	if this.zone == "" {
+		this.Ui.Error("unknown zone")
 		return 2
 	}
 

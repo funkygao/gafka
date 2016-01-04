@@ -1,8 +1,10 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"net/url"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,6 +38,18 @@ func getIp(r *http.Request) string {
 
 	p := strings.SplitN(ip, ",", 1)
 	return p[0]
+}
+
+func checkUlimit(min int) {
+	ulimitN, err := exec.Command("/bin/sh", "-c", "ulimit -n").Output()
+	if err != nil {
+		panic(err)
+	}
+
+	n, err := strconv.Atoi(strings.TrimSpace(string(ulimitN)))
+	if err != nil || n < min {
+		log.Panicf("ulimit too small: %d, should be at least %d", n, min)
+	}
 }
 
 func extractFromMetricsName(name string) (appid, topic, ver, realname string) {

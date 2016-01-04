@@ -20,6 +20,18 @@ type zkData struct {
 	ctime zkTimestamp
 }
 
+func (this *zkData) Data() []byte {
+	return this.data
+}
+
+func (this *zkData) Mtime() time.Time {
+	return this.mtime.Time()
+}
+
+func (this *zkData) Ctime() time.Time {
+	return this.ctime.Time()
+}
+
 type ConsumerMeta struct {
 	Group          string
 	Online         bool

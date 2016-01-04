@@ -5,24 +5,22 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/funkygao/golib/pool"
 	"github.com/funkygao/golib/set"
 	log "github.com/funkygao/log4go"
+	pool "github.com/youtube/vitess/go/pools"
+	"golang.org/x/net/context"
 )
 
 type syncProducerClient struct {
-	id   uint64
 	pool *pubPool
 
-	client sarama.Client
+	id uint64
 	sarama.SyncProducer
 }
 
 func (this *syncProducerClient) Close() {
 	log.Trace("closing kafka sync client: %d", this.id)
-
 	this.SyncProducer.Close()
-	this.client.Close()
 	//this.pool.syncPool.Put(nil) // fill this slot
 }
 
@@ -30,59 +28,38 @@ func (this *syncProducerClient) Id() uint64 {
 	return this.id
 }
 
-func (this *syncProducerClient) IsOpen() bool {
-	return !this.client.Closed()
-}
-
 func (this *syncProducerClient) Recycle() {
-	if this.client.Closed() {
-		this.pool.syncPool.Kill(this)
-		this.pool.syncPool.Put(nil)
-	} else {
-		this.pool.syncPool.Put(this)
-	}
+	this.pool.syncPool.Put(this)
 }
 
 type asyncProducerClient struct {
-	id   uint64
 	pool *pubPool
 
-	client sarama.Client
+	id uint64
 	sarama.AsyncProducer
 }
 
 func (this *asyncProducerClient) Close() {
 	log.Trace("closing kafka async client: %d", this.id)
 	this.AsyncProducer.AsyncClose()
-	this.client.Close()
-	//this.pool.pool.Put(nil)
 }
 
 func (this *asyncProducerClient) Id() uint64 {
 	return this.id
 }
 
-func (this *asyncProducerClient) IsOpen() bool {
-	return !this.client.Closed()
-}
-
 func (this *asyncProducerClient) Recycle() {
-	if this.client.Closed() {
-		this.pool.asyncPool.Kill(this)
-		this.pool.asyncPool.Put(nil)
-	} else {
-		this.pool.asyncPool.Put(this)
-	}
+	this.pool.asyncPool.Put(this)
 }
 
 type pubPool struct {
 	store *pubStore
 
 	size       int
+	nextId     uint64
 	brokerList []string
 	syncPool   *pool.ResourcePool
 	asyncPool  *pool.ResourcePool
-	nextId     uint64
 }
 
 func newPubPool(store *pubStore, brokerList []string, size int) *pubPool {
@@ -112,22 +89,18 @@ func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
 	cf.Producer.Flush.MaxMessages = 1000
 	cf.Producer.RequiredAcks = sarama.WaitForLocal
 	cf.Producer.Partitioner = sarama.NewHashPartitioner
-	cf.Producer.Timeout = time.Second
+	cf.Producer.Timeout = time.Second * 4
 	cf.ClientID = this.store.hostname
-	//cf.Producer.Compression = sarama.CompressionSnappy
 	cf.Producer.Retry.Max = 3
-	apc.client, err = sarama.NewClient(this.brokerList, cf)
+	//cf.Producer.Compression = sarama.CompressionSnappy
+
+	apc.AsyncProducer, err = sarama.NewAsyncProducer(this.brokerList, cf)
 	if err != nil {
 		return nil, err
 	}
 
 	log.Trace("kafka connected[%d]: %+v %s", apc.id, this.brokerList,
 		time.Since(t1))
-
-	apc.AsyncProducer, err = sarama.NewAsyncProducerFromClient(apc.client)
-	if err != nil {
-		return nil, err
-	}
 
 	// TODO
 	go func() {
@@ -153,11 +126,12 @@ func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
 	cf.Metadata.Retry.Max = 3
 	cf.Producer.RequiredAcks = sarama.WaitForLocal
 	cf.Producer.Partitioner = sarama.NewHashPartitioner
-	cf.Producer.Timeout = time.Second
+	cf.Producer.Timeout = time.Second * 4
 	cf.ClientID = this.store.hostname
-	//cf.Producer.Compression = sarama.CompressionSnappy
 	cf.Producer.Retry.Max = 3
-	spc.client, err = sarama.NewClient(this.brokerList, cf)
+	//cf.Producer.Compression = sarama.CompressionSnappy
+
+	spc.SyncProducer, err = sarama.NewSyncProducer(this.brokerList, cf)
 	if err != nil {
 		return nil, err
 	}
@@ -165,34 +139,27 @@ func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
 	log.Trace("kafka connected[%d]: %+v %s", spc.id, this.brokerList,
 		time.Since(t1))
 
-	// TODO sarama.NewSyncProducer(this.brokerList, cf)
-	// TODO we don't need reuse the sarama.Client
-	spc.SyncProducer, err = sarama.NewSyncProducerFromClient(spc.client)
-	if err != nil {
-		return nil, err
-	}
-
 	return spc, err
 }
 
 func (this *pubPool) initialize() {
-	this.syncPool = pool.NewResourcePool("kafka.pub.sync", this.syncProducerFactory,
-		this.size, this.size, 0, time.Second*10, time.Minute) // TODO
-	this.asyncPool = pool.NewResourcePool("kafka.pub.async", this.asyncProducerFactory,
-		this.size, this.size, 0, time.Second*10, time.Minute)
+	this.syncPool = pool.NewResourcePool(this.syncProducerFactory,
+		this.size, this.size, time.Minute*10) // TODO
+	this.asyncPool = pool.NewResourcePool(this.asyncProducerFactory,
+		this.size, this.size, time.Minute*10)
 }
 
 func (this *pubPool) Close() {
 	this.syncPool.Close()
-	this.asyncPool.Close()
-}
+	this.syncPool = nil
 
-func (this *pubPool) Stop() {
-	this.Close()
+	this.asyncPool.Close()
+	this.asyncPool = nil
 }
 
 func (this *pubPool) GetSyncProducer() (*syncProducerClient, error) {
-	k, err := this.syncPool.Get()
+	ctx := context.Background()
+	k, err := this.syncPool.Get(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +168,8 @@ func (this *pubPool) GetSyncProducer() (*syncProducerClient, error) {
 }
 
 func (this *pubPool) GetAsyncProducer() (*asyncProducerClient, error) {
-	k, err := this.asyncPool.Get()
+	ctx := context.Background()
+	k, err := this.asyncPool.Get(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -6,11 +6,10 @@ import (
 	"strings"
 
 	"github.com/funkygao/gafka/ctx"
-	gzk "github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 )
 
-type Set struct {
+type Import struct {
 	Ui  cli.Ui
 	Cmd string
 
@@ -18,8 +17,8 @@ type Set struct {
 	path string
 }
 
-func (this *Set) Run(args []string) (exitCode int) {
-	cmdFlags := flag.NewFlagSet("set", flag.ContinueOnError)
+func (this *Import) Run(args []string) (exitCode int) {
+	cmdFlags := flag.NewFlagSet("import", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.path, "p", "", "")
@@ -39,31 +38,21 @@ func (this *Set) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
-	defer zkzone.Close()
-	conn := zkzone.Conn()
-
-	version := int32(-1)
-	data := inData()
-	_, err := conn.Set(this.path, data, version)
-	must(err)
-
 	return
 }
 
-func (*Set) Synopsis() string {
-	return "Write znode data"
+func (*Import) Synopsis() string {
+	return "Load directories and contents to Zookeeper TODO"
 }
 
-func (this *Set) Help() string {
+func (this *Import) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s set -z zone -p path [options]
+Usage: %s import [options]
 
-    Write znode data
+    Load directories and contents to Zookeeper
 
 Options:
 
-    e,g. 'echo foo | zk set -z test -p /bar'
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

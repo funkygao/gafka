@@ -22,17 +22,17 @@ type Stat struct {
 func (this *Stat) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("stat", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.zone, "z", "", "")
-	cmdFlags.StringVar(&this.path, "p", "", "")
+	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
-	if validateArgs(this, this.Ui).
-		require("-z", "-p").
-		invalid(args) {
+	if this.zone == "" {
+		this.Ui.Error("unknown zone")
 		return 2
 	}
+
+	this.path = args[len(args)-1]
 
 	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	defer zkzone.Close()
@@ -50,9 +50,13 @@ func (*Stat) Synopsis() string {
 
 func (this *Stat) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s create -z zone -p path [options]
+Usage: %s stat [options] path
 
     Show znode status info
+
+Options:
+
+    -z zone
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

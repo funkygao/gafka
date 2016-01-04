@@ -203,7 +203,7 @@ func BenchmxarkPubJsonResponse(b *testing.B) {
 
 func BenchmarkPubManualJsonResponse(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		fmt.Sprintf(`{"partition":%d,"offset:%d"}`, 5, 32)
+		_ = fmt.Sprintf(`{"partition":%d,"offset:%d"}`, 5, 32)
 	}
 }
 

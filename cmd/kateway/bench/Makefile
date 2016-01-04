@@ -25,6 +25,10 @@ fasthttp:fasthttpd.go
 	GOGC=800 GODEBUG=gctrace=1 ./fasthttpdserver &
 	go run bench.go -neat -mode http
 
+redis:bench.go
+	@echo bench against redis set/get
+	@go run bench.go -neat -mode redis -noerr=true
+
 http:httpd.go 
 	go build -o httpdserver httpd.go
 	GOGC=800 GODEBUG=gctrace=1 ./httpdserver -mode standalone&
