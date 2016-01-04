@@ -44,13 +44,6 @@ func init() {
 			}, nil
 		},
 
-		"import": func() (cli.Command, error) {
-			return &command.Import{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
 		"zones": func() (cli.Command, error) {
 			return &command.Zones{
 				Ui:  ui,
