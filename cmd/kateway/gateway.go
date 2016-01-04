@@ -93,7 +93,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 		switch options.store {
 		case "kafka":
-			store.DefaultPubStore = kafka.NewPubStore(&this.wg, options.debug)
+			store.DefaultPubStore = kafka.NewPubStore(&this.wg, options.debug, options.dryRun)
 
 		case "dumb":
 			store.DefaultPubStore = dumb.NewPubStore(&this.wg, options.debug)

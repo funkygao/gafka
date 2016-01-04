@@ -18,6 +18,7 @@ type pubStore struct {
 	shutdownCh chan struct{}
 	wg         *sync.WaitGroup
 	hostname   string
+	dryRun     bool
 
 	pubPools map[string]*pubPool // key is cluster
 	poolLock sync.RWMutex
@@ -25,7 +26,7 @@ type pubStore struct {
 	lastRefreshedAt time.Time
 }
 
-func NewPubStore(wg *sync.WaitGroup, debug bool) *pubStore {
+func NewPubStore(wg *sync.WaitGroup, debug bool, dryRun bool) *pubStore {
 	if debug {
 		sarama.Logger = l.New(os.Stdout, color.Green("[Sarama]"),
 			l.LstdFlags|l.Lshortfile)
@@ -35,6 +36,7 @@ func NewPubStore(wg *sync.WaitGroup, debug bool) *pubStore {
 		hostname:   ctx.Hostname(),
 		pubPools:   make(map[string]*pubPool),
 		wg:         wg,
+		dryRun:     dryRun,
 		shutdownCh: make(chan struct{}),
 	}
 }
@@ -94,13 +96,13 @@ func (this *pubStore) doRefresh(force bool) {
 	if time.Since(this.lastRefreshedAt) > time.Second*5 { // TODO
 		if force {
 			meta.Default.Refresh()
+			log.Trace("all kafka clusters broker list refreshed")
 		}
 
 		for _, cluster := range meta.Default.ClusterNames() {
 			this.pubPools[cluster].RefreshBrokerList(meta.Default.BrokerList(cluster))
 		}
 
-		log.Trace("all kafka broker list refreshed")
 		this.lastRefreshedAt = time.Now()
 	}
 	this.poolLock.Unlock()
@@ -131,6 +133,12 @@ func (this *pubStore) SyncPub(cluster string, topic string, key []byte,
 		Value: sarama.ByteEncoder(msg),
 	}
 
+	if this.dryRun {
+		producer, err = pool.GetSyncProducer()
+		producer.Recycle()
+		return
+	}
+
 	for i := 0; i < maxRetries; i++ {
 		producer, err = pool.GetSyncProducer()
 		if err != nil {
@@ -150,25 +158,30 @@ func (this *pubStore) SyncPub(cluster string, topic string, key []byte,
 		}
 
 		_, _, err = producer.SendMessage(producerMsg)
-		if err != nil {
-			if err == sarama.ErrUnknownTopicOrPartition {
-				log.Warn("cluster:%s topic:%s %v", cluster, topic, err)
-				producer.Recycle()
-			} else {
-				producer.Close()
-				producer.Recycle()
-
-				switch err {
-				case sarama.ErrOutOfBrokers:
-					this.doRefresh(true)
-
-				default:
-					log.Warn("unknown pub err: %v", err)
-				}
-			}
-		} else {
+		if err == nil {
+			// send success
 			producer.Recycle()
 			return
+		}
+
+		// send fail
+		if err == sarama.ErrUnknownTopicOrPartition {
+			log.Warn("cluster:%s topic:%s %v", cluster, topic, err)
+
+			// the kafka connection is still valid
+			producer.Recycle()
+		} else {
+			// the kafka connection is invalid
+			producer.Close()
+			//producer.Recycle()
+
+			switch err {
+			case sarama.ErrOutOfBrokers:
+				this.doRefresh(true)
+
+			default:
+				log.Warn("unknown pub err: %v", err)
+			}
 		}
 
 	backoff:

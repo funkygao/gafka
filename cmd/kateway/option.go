@@ -33,6 +33,7 @@ var (
 		enableBreaker        bool
 		ratelimit            bool
 		disableMetrics       bool
+		dryRun               bool
 		debug                bool
 		maxPubSize           int64
 		maxClients           int
@@ -68,6 +69,7 @@ func parseFlags() {
 	flag.BoolVar(&options.debug, "debug", false, "enable debug mode")
 	flag.StringVar(&options.killFile, "kill", "", "kill running kateway by pid file")
 	flag.BoolVar(&options.showVersion, "version", false, "show version and exit")
+	flag.BoolVar(&options.dryRun, "dryrun", false, "dry run mode")
 	flag.BoolVar(&options.ratelimit, "raltelimit", false, "enable rate limit")
 	flag.BoolVar(&options.enableBreaker, "breakeron", true, "enable circuit breaker")
 	flag.BoolVar(&options.disableMetrics, "metricsoff", false, "disable metrics reporter")
