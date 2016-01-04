@@ -144,3 +144,13 @@ type BrokerInfo struct {
 func (this *BrokerInfo) Addr() string {
 	return fmt.Sprintf("%s:%d", this.Host, this.Port)
 }
+
+type PartitionOffset struct {
+	Cluster             string
+	Topic               string
+	Partition           int32
+	Offset              int64
+	Timestamp           int64
+	Group               string
+	TopicPartitionCount int
+}

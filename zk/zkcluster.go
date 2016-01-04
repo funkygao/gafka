@@ -2,7 +2,9 @@ package zk
 
 import (
 	"bufio"
+	"bytes"
 	"container/list"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -422,4 +424,80 @@ MAIN_LOOP:
 	}
 
 	return result, nil
+}
+
+func readString(buf *bytes.Buffer) (string, error) {
+	var strlen uint16
+	err := binary.Read(buf, binary.BigEndian, &strlen)
+	if err != nil {
+		return "", err
+	}
+	strbytes := make([]byte, strlen)
+	n, err := buf.Read(strbytes)
+	if (err != nil) || (n != int(strlen)) {
+		return "", errors.New("string underflow")
+	}
+	return string(strbytes), nil
+}
+
+// consume topic: __consumer_offsets and process the message to get offsets of consumers
+func (this *ZkCluster) processConsumerOffsetsMessage(msg *sarama.ConsumerMessage) {
+	var keyver, valver uint16
+	var partition uint32
+	var offset, timestamp uint64
+
+	buf := bytes.NewBuffer(msg.Key)
+	err := binary.Read(buf, binary.BigEndian, &keyver)
+	if (err != nil) || ((keyver != 0) && (keyver != 1)) {
+		log.Warn("Failed to decode %s:%v offset %v: keyver", msg.Topic, msg.Partition, msg.Offset)
+		return
+	}
+	group, err := readString(buf)
+	if err != nil {
+		log.Warn("Failed to decode %s:%v offset %v: group", msg.Topic, msg.Partition, msg.Offset)
+		return
+	}
+	topic, err := readString(buf)
+	if err != nil {
+		log.Warn("Failed to decode %s:%v offset %v: topic", msg.Topic, msg.Partition, msg.Offset)
+		return
+	}
+	err = binary.Read(buf, binary.BigEndian, &partition)
+	if err != nil {
+		log.Warn("Failed to decode %s:%v offset %v: partition", msg.Topic, msg.Partition, msg.Offset)
+		return
+	}
+
+	buf = bytes.NewBuffer(msg.Value)
+	err = binary.Read(buf, binary.BigEndian, &valver)
+	if (err != nil) || ((valver != 0) && (valver != 1)) {
+		log.Warn("Failed to decode %s:%v offset %v: valver", msg.Topic, msg.Partition, msg.Offset)
+		return
+	}
+	err = binary.Read(buf, binary.BigEndian, &offset)
+	if err != nil {
+		log.Warn("Failed to decode %s:%v offset %v: offset", msg.Topic, msg.Partition, msg.Offset)
+		return
+	}
+	_, err = readString(buf)
+	if err != nil {
+		log.Warn("Failed to decode %s:%v offset %v: metadata", msg.Topic, msg.Partition, msg.Offset)
+		return
+	}
+	err = binary.Read(buf, binary.BigEndian, &timestamp)
+	if err != nil {
+		log.Warn("Failed to decode %s:%v offset %v: timestamp", msg.Topic, msg.Partition, msg.Offset)
+		return
+	}
+
+	partitionOffset := &PartitionOffset{
+		Cluster:   this.Name(),
+		Topic:     topic,
+		Partition: int32(partition),
+		Group:     group,
+		Timestamp: int64(timestamp),
+		Offset:    int64(offset),
+	}
+	log.Debug("%+v", partitionOffset)
+	return
 }
