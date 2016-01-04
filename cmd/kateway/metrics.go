@@ -100,9 +100,8 @@ type pubMetrics struct {
 	PubFailMap map[string]metrics.Counter
 	pubFailMu  sync.RWMutex
 
-	// BytesInPerSec, BytesOutPerSec, FailedMessagesPerSec
 	ClientError metrics.Counter
-	PubQps      metrics.Meter
+	PubQps      metrics.Meter // FIXME if 2 servers run on 1 host, the metrics will be wrong
 	PubLatency  metrics.Histogram
 	PubMsgSize  metrics.Histogram
 }
