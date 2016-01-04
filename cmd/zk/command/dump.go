@@ -52,7 +52,8 @@ func (this *Dump) Run(args []string) (exitCode int) {
 
 	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	defer zkzone.Close()
-	this.showChildrenRecursively(zkzone.Conn(), this.path)
+
+	this.dump(zkzone.Conn(), this.path)
 	this.f.Close()
 
 	this.Ui.Info(fmt.Sprintf("dumpped to %s", this.outfile))
@@ -60,7 +61,7 @@ func (this *Dump) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Dump) showChildrenRecursively(conn *zk.Conn, path string) {
+func (this *Dump) dump(conn *zk.Conn, path string) {
 	children, _, err := conn.Children(path)
 	if err != nil {
 		must(err)
@@ -94,19 +95,19 @@ func (this *Dump) showChildrenRecursively(conn *zk.Conn, path string) {
 			must(err)
 		}
 
-		this.showChildrenRecursively(conn, znode)
+		this.dump(conn, znode)
 	}
 }
 
 func (*Dump) Synopsis() string {
-	return "Dump permanant directories and contents of Zookeeper"
+	return "Dump permanent directories and contents of Zookeeper"
 }
 
 func (this *Dump) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s dump -z zone -p path [options]
 
-    Dump permanant directories and contents of Zookeeper
+    Dump permanent directories and contents of Zookeeper
 
 Options:
 
