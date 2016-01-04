@@ -63,7 +63,7 @@ func main() {
 	setupLogging(options.logFile, options.logLevel, options.crashLogFile)
 	ctx.LoadConfig(options.configFile)
 
-	checkUlimit(65536)
+	ensureValidUlimit()
 
 	gw := NewGateway(options.id, options.metaRefresh)
 	if err := gw.Start(); err != nil {
