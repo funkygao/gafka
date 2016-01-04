@@ -42,11 +42,8 @@ install cmd/gk/gk $RPM_BUILD_ROOT/%{path}/bin
 install cmd/zk/zk $RPM_BUILD_ROOT/%{path}/bin
 install cmd/kateway/kateway $RPM_BUILD_ROOT/%{path}/bin
 install misc/autocomplete/bash_autocomplete $RPM_BUILD_ROOT/etc/bash_completion.d/gk
-install misc/autocomplete/bash_autocomplete $RPM_BUILD_ROOT/etc/bash_completion.d/zk
 
 %files
 /%{path}/bin/gk
 /%{path}/bin/zk
-/%{path}/bin/kateway
 /etc/bash_completion.d/gk
-/etc/bash_completion.d/zk
