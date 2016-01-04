@@ -47,8 +47,13 @@ func New(cf *config) meta.MetaStore {
 	}
 }
 
+func (this *zkMetaStore) RefreshInterval() time.Duration {
+	return this.cf.Refresh
+}
+
 func (this *zkMetaStore) fillBrokerList() {
 	this.mu.Lock()
+	// zkzone.Clusters() will never cache
 	for cluster, path := range this.zkzone.Clusters() {
 		// FIXME don't work when cluster is deleted
 		if _, present := this.clusters[cluster]; !present {
@@ -109,12 +114,8 @@ func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) int 
 	return c.OnlineConsumersCount(topic, group)
 }
 
-func (this *zkMetaStore) RefreshInterval() time.Duration {
-	return this.cf.Refresh
-}
-
 func (this *zkMetaStore) doRefresh() {
-	log.Debug("refreshing meta")
+	log.Trace("refreshing meta")
 
 	this.fillBrokerList()
 

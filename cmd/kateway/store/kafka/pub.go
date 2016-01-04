@@ -19,7 +19,6 @@ type pubStore struct {
 	wg         *sync.WaitGroup
 	hostname   string
 
-	// FIXME maybe we should have another pool for async
 	pubPools map[string]*pubPool // key is cluster
 	poolLock sync.RWMutex
 
@@ -46,7 +45,7 @@ func (this *pubStore) Start() (err error) {
 
 	for _, cluster := range meta.Default.ClusterNames() {
 		this.pubPools[cluster] = newPubPool(this,
-			meta.Default.BrokerList(cluster), 50) // TODO
+			meta.Default.BrokerList(cluster), 200) // TODO
 	}
 
 	go func() {
@@ -59,7 +58,9 @@ func (this *pubStore) Start() (err error) {
 		for {
 			select {
 			case <-ticker.C:
-				this.doRefresh()
+				// FIXME the meta might not finished refresh yet
+				// should use channel for synchronization
+				this.doRefresh(false)
 
 			case <-this.shutdownCh:
 				log.Trace("kafka pub store stopped")
@@ -75,7 +76,7 @@ func (this *pubStore) Start() (err error) {
 func (this *pubStore) Stop() {
 	this.poolLock.Lock()
 	for _, p := range this.pubPools {
-		p.Stop()
+		p.Close()
 	}
 	this.poolLock.Unlock()
 
@@ -86,12 +87,14 @@ func (this *pubStore) Name() string {
 	return "kafka"
 }
 
-func (this *pubStore) doRefresh() {
+func (this *pubStore) doRefresh(force bool) {
 	// TODO maybe this is not neccessary
 	// main thread triggers the refresh, child threads just get fed
 	this.poolLock.Lock()
 	if time.Since(this.lastRefreshedAt) > time.Second*5 { // TODO
-		meta.Default.Refresh()
+		if force {
+			meta.Default.Refresh()
+		}
 
 		for _, cluster := range meta.Default.ClusterNames() {
 			this.pubPools[cluster].RefreshBrokerList(meta.Default.BrokerList(cluster))
@@ -137,7 +140,7 @@ func (this *pubStore) SyncPub(cluster string, topic string, key []byte,
 
 			switch err {
 			case ErrorKafkaConfig, sarama.ErrOutOfBrokers:
-				this.doRefresh()
+				this.doRefresh(true)
 
 			default:
 				log.Warn("unknown pubPool err: %v", err)
@@ -157,7 +160,7 @@ func (this *pubStore) SyncPub(cluster string, topic string, key []byte,
 
 				switch err {
 				case sarama.ErrOutOfBrokers:
-					this.doRefresh()
+					this.doRefresh(true)
 
 				default:
 					log.Warn("unknown pub err: %v", err)
