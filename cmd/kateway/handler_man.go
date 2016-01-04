@@ -105,7 +105,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 
 	ok := false
 	for _, l := range lines {
-		log.Info("%s add topic: %s", appid, l)
+		log.Info("%s add topic in cluster %s: %s", appid, cluster, l)
 		if strings.Contains(l, "Created topic") {
 			ok = true
 		}
