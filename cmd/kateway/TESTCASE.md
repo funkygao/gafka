@@ -7,3 +7,9 @@
 - pub ok, then shutdown kafka, then pub again
 - shutdown alll kafka, start kateway, then pub, then startup 1node of 2-node kafka 
   cluster, then start another, then shutdown
+- keepalive timeout, read/write timeout
+- max message size, max header size
+
+### sub
+
+- sub a non-existent topic

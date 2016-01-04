@@ -44,15 +44,19 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 
 	if httpAddr != "" {
 		logger := &golog.Logger{}
-		logger.SetOutput(ioutil.Discard)
+		//logger.SetOutput(ioutil.Discard) TODO
+
 		this.httpServer = &fasthttp.Server{
-			Name:               "kateway",
-			Handler:            this.router.Handler,
-			Concurrency:        maxClients,
-			MaxConnsPerIP:      100,
-			MaxRequestBodySize: int(options.maxPubSize + 1),
-			ReduceMemoryUsage:  true,
-			Logger:             logger,
+			Name:                 "kateway",
+			Handler:              this.router.Handler,
+			Concurrency:          maxClients,
+			MaxConnsPerIP:        5000, // TODO
+			ReadTimeout:          0,
+			WriteTimeout:         0,
+			MaxKeepaliveDuration: time.Minute,
+			MaxRequestBodySize:   int(options.maxPubSize + 1),
+			ReduceMemoryUsage:    true,
+			Logger:               logger,
 		}
 	}
 
