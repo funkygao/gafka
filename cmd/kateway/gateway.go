@@ -29,9 +29,13 @@ import (
 type Gateway struct {
 	id        string
 	startedAt time.Time
+	zone      string
 
 	certFile string
 	keyFile  string
+
+	pubPeersLock sync.RWMutex
+	pubPeers     []string // cluster of kateway pub
 
 	pubServer *pubServer
 	subServer *subServer
@@ -54,10 +58,12 @@ type Gateway struct {
 func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this := &Gateway{
 		id:           id,
+		zone:         options.zone,
 		shutdownCh:   make(chan struct{}),
 		leakyBuckets: ratelimiter.NewLeakyBuckets(1000*60, time.Minute),
 		certFile:     options.certFile,
 		keyFile:      options.keyFile,
+		pubPeers:     make([]string, 0, 20),
 	}
 
 	registry.Default = zk.New(options.zone, id, this.InstanceInfo())

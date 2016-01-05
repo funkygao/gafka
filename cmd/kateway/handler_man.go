@@ -39,6 +39,7 @@ man:
  GET /help
  GET /status
  GET /clusters
+ GET /servers
 POST /topics/:cluster/:appid/:topic/:ver
 
 dbg:
@@ -65,6 +66,17 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	w.WriteHeader(http.StatusOK)
 	b, _ := json.Marshal(meta.Default.Clusters())
+	w.Write(b)
+}
+
+// client lookup servers and decide with kateway to connect and pub
+func (this *Gateway) serversHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	this.writeKatewayHeader(w)
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
+	this.pubPeersLock.RLock()
+	b, _ := json.Marshal(this.pubPeers)
+	this.pubPeersLock.RUnlock()
 	w.Write(b)
 }
 
