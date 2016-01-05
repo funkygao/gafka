@@ -118,6 +118,7 @@ A RESTful gateway for kafka that supports Pub and Sub.
 
 ### TODO
 
+- [ ] check hack pkg
 - [ ] https, outer ip must https
 - [ ] guard.go panic
 - [ ] Pub HTTP POST Request compress

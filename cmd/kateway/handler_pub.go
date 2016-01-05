@@ -34,7 +34,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	// get the raw POST message
-	//lbr := io.LimitReader(r.Body, options.maxPubSize+1)
+	lbr := io.LimitReader(r.Body, options.maxPubSize+1)
 	msgLen := int(r.ContentLength)
 	if msgLen == -1 {
 		this.writeInvalidContentLength(w)
@@ -44,11 +44,11 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 
 	msg := mpool.NewMessage(msgLen)
 	msg.Body = msg.Body[0:msgLen]
-	if _, err := io.ReadAtLeast(r.Body, msg.Body, msgLen); err != nil {
+	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
 		msg.Free()
 
-		log.Warn("%s %+v: %s", r.RemoteAddr, params, err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Error("%s %+v: %s", r.RemoteAddr, params, err)
+		this.writeErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -78,8 +78,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			this.pubMetrics.pubFail(appid, topic, ver)
 		}
 
-		log.Error("%s: %v", r.RemoteAddr, err)
-
+		log.Error("%s %+v: %s", r.RemoteAddr, params, err)
 		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -90,8 +89,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		this.pubMetrics.ClientError.Inc(1)
 	}
 
-	// TODO so many metrics, are to be put into anther thread via chan
-	// DONT block the main handler thread
 	if !options.disableMetrics {
 		this.pubMetrics.pubOk(appid, topic, ver)
 		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
