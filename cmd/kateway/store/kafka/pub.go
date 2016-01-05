@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/eapache/go-resiliency/breaker"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/ctx"
@@ -90,8 +91,7 @@ func (this *pubStore) Name() string {
 }
 
 func (this *pubStore) doRefresh(force bool) {
-	// TODO maybe this is not neccessary
-	// main thread triggers the refresh, child threads just get fed
+	// TODO the lock is too big, should consider cluster level refresh
 	this.poolLock.Lock()
 	if time.Since(this.lastRefreshedAt) > time.Second*5 { // TODO
 		if force {
@@ -158,30 +158,27 @@ func (this *pubStore) SyncPub(cluster string, topic string, key []byte,
 		}
 
 		_, _, err = producer.SendMessage(producerMsg)
-		if err == nil {
+		producer.Recycle()
+		switch err {
+		case nil:
 			// send success
-			producer.Recycle()
 			return
-		}
 
-		// send fail
-		if err == sarama.ErrUnknownTopicOrPartition {
+		case sarama.ErrUnknownTopicOrPartition:
 			log.Warn("cluster:%s topic:%s %v", cluster, topic, err)
 
-			// the kafka connection is still valid
-			producer.Recycle()
-		} else {
-			// the kafka connection is invalid
+		case breaker.ErrBreakerOpen:
+			// will not retry
+			return
+
+		case sarama.ErrOutOfBrokers:
 			producer.Close()
-			//producer.Recycle()
+			this.doRefresh(true)
 
-			switch err {
-			case sarama.ErrOutOfBrokers:
-				this.doRefresh(true)
+		default:
+			producer.Close()
+			log.Warn("unknown pub err: %v", err)
 
-			default:
-				log.Warn("unknown pub err: %v", err)
-			}
 		}
 
 	backoff:
