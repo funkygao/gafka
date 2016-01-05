@@ -11,13 +11,14 @@ func setupHttpsListener(listenAddr string, certFile, keyFile string) (net.Listen
 		return nil, err
 	}
 
-	config := &tls.Config{
-		NextProtos:   []string{"http/1.1"},
-		Certificates: make([]tls.Certificate, 1),
-	}
-	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+	cer, err := tls.LoadX509KeyPair("server.pem", "server.key")
 	if err != nil {
 		return nil, err
+	}
+
+	config := &tls.Config{
+		NextProtos:   []string{"http/1.1"},
+		Certificates: []tls.Certificate{cer},
 	}
 
 	tlsListener := tls.NewListener(listener, config)
