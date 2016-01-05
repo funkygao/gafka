@@ -28,9 +28,13 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	instances, _, err := zkzone.Conn().Children(zkr.KatewayIdsRoot)
-	if err.Error() == "zk: node does not exist" {
-		this.Ui.Output("no kateway running")
-		return
+	if err != nil {
+		if err.Error() == "zk: node does not exist" {
+			this.Ui.Output("no kateway running")
+			return
+		} else {
+			swallow(err)
+		}
 	}
 
 	for _, instance := range instances {
