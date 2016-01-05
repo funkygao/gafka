@@ -15,7 +15,7 @@ build:
 	go build
 
 bench:build
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -level info -store kafka -id 1 
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -pubhttps :9291 -subhttp :9192 -level trace -store kafka -id 1 
 
 benchmark-metrics-pubok:
 	go test -v -benchmem -bench=^BenchmarkMetricsPubOkCounter -benchtime=20s -cpuprofile=prof.cpu; go tool pprof kateway.test prof.cpu
@@ -59,10 +59,16 @@ pprof-cpu:
 	go tool pprof http://localhost:9194/debug/pprof/profile?seconds=30
 
 pprof-mem:
-	go tool pprof http://localhost:9194/debug/pprof/heap?seconds=30
+	go tool pprof http://localhost:9194/debug/pprof/heap
 
 pprof-block:
-	go tool pprof http://localhost:9194/debug/pprof/blocking?seconds=30
+	go tool pprof http://localhost:9194/debug/pprof/blocking
+
+genkey:
+	@mkdir key
+	openssl genrsa -out key/server.key 2048
+	openssl req -new -x509 -key key/server.key -out key/server.pem -days 3650
+	@echo check out key/
 
 clean:
 	-rm -f kateway.test kateway prof.cpu prof.mem

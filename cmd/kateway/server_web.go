@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/tls"
 	"net"
 	"net/http"
 	"runtime"
@@ -12,8 +11,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type waitExitFunc func(exit <-chan struct{})
-
 type webServer struct {
 	name       string
 	maxClients int
@@ -22,14 +19,12 @@ type webServer struct {
 	httpListener net.Listener
 	httpServer   *http.Server
 
-	tlsListener net.Listener
-	httpsServer *http.Server
+	httpsListener net.Listener
+	httpsServer   *http.Server
 
 	router *httprouter.Router
 
 	waitExitFunc waitExitFunc
-
-	once sync.Once
 }
 
 func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
@@ -65,112 +60,12 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 }
 
 func (this *webServer) Start() {
-	var err error
-	var waitHttpListenerUp chan struct{}
-	if this.httpServer != nil {
-		waitHttpListenerUp = make(chan struct{})
-		var once sync.Once
-
-		go func() {
-			if options.cpuAffinity {
-				runtime.LockOSThread()
-			}
-
-			var retryDelay time.Duration
-			for {
-				this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
-				if err != nil {
-					if retryDelay == 0 {
-						retryDelay = 5 * time.Millisecond
-					} else {
-						retryDelay = 2 * retryDelay
-					}
-					if maxDelay := time.Second; retryDelay > maxDelay {
-						retryDelay = maxDelay
-					}
-					log.Error("%v, retry in %v", err, retryDelay)
-					time.Sleep(retryDelay)
-					continue
-				}
-
-				this.httpListener = LimitListener(this.gw, this.httpListener, this.maxClients)
-				once.Do(func() {
-					close(waitHttpListenerUp)
-				})
-
-				// on non-temporary err, net/http will close the listener
-				err = this.httpServer.Serve(this.httpListener)
-				log.Error("%s: %v", this.name, err)
-			}
-		}()
-
-		// FIXME if net.Listen fails, kateway will not be able to stop
-		// e,g. start a kateway, then start another, the 2nd will not be able to stop
-		if waitHttpListenerUp != nil {
-			<-waitHttpListenerUp
-		}
-		this.once.Do(func() {
-			go this.waitExitFunc(this.gw.shutdownCh)
-		})
-
-		this.gw.wg.Add(1)
-		log.Info("%s http server ready on %s", this.name, this.httpServer.Addr)
+	if this.httpsServer != nil {
+		this.startServer(true)
 	}
 
-	var waitHttpsListenerUp chan struct{}
-	if this.httpsServer != nil {
-		this.tlsListener, err = this.setupHttpsServer(this.httpsServer,
-			this.gw.certFile, this.gw.keyFile)
-		if err != nil {
-			panic(err)
-		}
-
-		go func() {
-			if options.cpuAffinity {
-				runtime.LockOSThread()
-			}
-
-			var retryDelay time.Duration
-			for {
-				select {
-				case <-this.gw.shutdownCh:
-					return
-
-				default:
-				}
-
-				this.tlsListener, err = net.Listen("tcp", this.httpsServer.Addr)
-				if err != nil {
-					if retryDelay == 0 {
-						retryDelay = 5 * time.Millisecond
-					} else {
-						retryDelay = 2 * retryDelay
-					}
-					if maxDelay := time.Second; retryDelay > maxDelay {
-						retryDelay = maxDelay
-					}
-					log.Error("%v, retry in %v", err, retryDelay)
-					time.Sleep(retryDelay)
-					continue
-				}
-
-				this.tlsListener = LimitListener(this.gw, this.tlsListener, this.maxClients)
-				close(waitHttpsListenerUp)
-
-				err = this.httpsServer.Serve(this.tlsListener)
-				log.Error("%s: %v", this.name, err)
-			}
-		}()
-
-		if this.httpsServer != nil {
-			<-waitHttpsListenerUp
-		}
-		this.once.Do(func() {
-			go this.waitExitFunc(this.gw.shutdownCh)
-		})
-
-		this.gw.wg.Add(1)
-		log.Info("%s https server ready on %s", this.name, this.httpsServer.Addr)
+	if this.httpServer != nil {
+		this.startServer(false)
 	}
 
 }
@@ -179,20 +74,81 @@ func (this *webServer) Router() *httprouter.Router {
 	return this.router
 }
 
-func (this *webServer) setupHttpsServer(server *http.Server, certFile, keyFile string) (net.Listener, error) {
-	listener, err := net.Listen("tcp", server.Addr)
-	if err != nil {
-		return nil, err
+func (this *webServer) startServer(https bool) {
+	var err error
+	if https {
+		this.httpsListener, err = setupHttpsListener(this.httpsServer.Addr,
+			this.gw.certFile, this.gw.keyFile)
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	config := &tls.Config{}
-	config.NextProtos = []string{"http/1.1"}
-	config.Certificates = make([]tls.Certificate, 1)
-	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		return nil, err
+	waitListenerUp := make(chan struct{})
+	go func() {
+		if options.cpuAffinity {
+			runtime.LockOSThread()
+		}
+
+		var (
+			retryDelay         time.Duration
+			theListener        net.Listener
+			waitListenerUpOnce sync.Once
+		)
+		for {
+			if https {
+				this.httpsListener, err = net.Listen("tcp", this.httpsServer.Addr)
+				theListener = this.httpsListener
+			} else {
+				this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
+				theListener = this.httpListener
+			}
+
+			if err != nil {
+				if retryDelay == 0 {
+					retryDelay = 50 * time.Millisecond
+				} else {
+					retryDelay = 2 * retryDelay
+				}
+				if maxDelay := time.Second; retryDelay > maxDelay {
+					retryDelay = maxDelay
+				}
+				log.Error("listener %v, retry in %v", err, retryDelay)
+				time.Sleep(retryDelay)
+				continue
+			}
+
+			theListener = LimitListener(this.gw, theListener, this.maxClients)
+			waitListenerUpOnce.Do(func() {
+				close(waitListenerUp)
+			})
+
+			// on non-temporary err, net/http will close the listener
+			if https {
+				err = this.httpsServer.Serve(theListener)
+			} else {
+				err = this.httpServer.Serve(theListener)
+			}
+			log.Error("%s server: %v", this.name, err)
+		}
+	}()
+
+	// FIXME if net.Listen fails, kateway will not be able to stop
+	// e,g. start a kateway, then start another, the 2nd will not be able to stop
+
+	// wait for the listener up
+	<-waitListenerUp
+
+	this.gw.wg.Add(1)
+	if https {
+		go this.waitExitFunc(this.httpsServer, this.httpsListener, this.gw.shutdownCh)
+	} else {
+		go this.waitExitFunc(this.httpServer, this.httpListener, this.gw.shutdownCh)
 	}
 
-	tlsListener := tls.NewListener(listener, config)
-	return tlsListener, nil
+	if https {
+		log.Info("%s https server ready on %s", this.name, this.httpsServer.Addr)
+	} else {
+		log.Info("%s http server ready on %s", this.name, this.httpServer.Addr)
+	}
 }

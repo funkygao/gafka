@@ -75,38 +75,27 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 	return this
 }
 
-func (this *subServer) waitExit(exit <-chan struct{}) {
-	select {
-	case <-exit:
-		if this.httpServer != nil {
-			// HTTP response will have "Connection: close"
-			this.httpServer.SetKeepAlivesEnabled(false)
+func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit <-chan struct{}) {
+	<-exit
 
-			// avoid new connections
-			if err := this.httpListener.Close(); err != nil {
-				log.Error(err.Error())
-			}
+	// HTTP response will have "Connection: close"
+	server.SetKeepAlivesEnabled(false)
 
-			this.idleConnsLock.Lock()
-			t := time.Now().Add(time.Millisecond * 100)
-			for _, c := range this.idleConns {
-				c.SetReadDeadline(t)
-			}
-			this.idleConnsLock.Unlock()
-
-			log.Trace("%s waiting for all connected http client close", this.name)
-			this.idleConnsWg.Wait()
-
-			this.gw.wg.Done()
-			log.Trace("%s http server stopped", this.name)
-		}
-
-		if this.httpsServer != nil {
-			// TODO
-			this.gw.wg.Done()
-			log.Trace("%s https server stopped", this.name)
-		}
-
+	// avoid new connections
+	if err := listener.Close(); err != nil {
+		log.Error(err.Error())
 	}
 
+	this.idleConnsLock.Lock()
+	t := time.Now().Add(time.Millisecond * 100)
+	for _, c := range this.idleConns {
+		c.SetReadDeadline(t)
+	}
+	this.idleConnsLock.Unlock()
+
+	log.Trace("%s waiting for all connected http client close", this.name)
+	this.idleConnsWg.Wait()
+
+	this.gw.wg.Done()
+	log.Trace("%s server stopped on %s", this.name, server.Addr)
 }

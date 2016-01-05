@@ -31,6 +31,7 @@ bindata.go
 cmd/kateway/kateway
 cmd/kateway/prof.cpu
 cmd/kateway/prof.mem
+cmd/kateway/key
 cmd/kateway/bench/bench
 cmd/kateway/executor/executor
 cmd/kateway/bench/httpdserver

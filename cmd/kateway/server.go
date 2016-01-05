@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net"
+	"net/http"
 	"time"
 )
 
@@ -9,3 +11,5 @@ var (
 	httpWriteTimeout   = time.Minute
 	httpHeaderMaxBytes = 4 << 10
 )
+
+type waitExitFunc func(server *http.Server, listener net.Listener, exit <-chan struct{})

@@ -22,19 +22,23 @@ var (
 	topic         string
 	loops         int
 	suppressError bool
+	pubkey        string
 	appid         string
+	sleep         time.Duration
 	sz            int
 	async         bool
 )
 
 func main() {
-	flag.StringVar(&addr, "addr", "http://10.213.1.210:9191/", "pub addr")
+	flag.StringVar(&addr, "addr", "http://localhost:9191/", "kateway pub addr, must start with http or https")
 	flag.IntVar(&loops, "loops", 1000, "loops in each thread")
 	flag.IntVar(&sz, "size", 200, "each pub message size")
 	flag.StringVar(&topic, "topic", "foobar", "pub topic")
 	flag.StringVar(&mode, "mode", "gw", "<gw|kafka|http|redis>")
 	flag.StringVar(&appid, "appid", "app1", "appid of pub")
+	flag.StringVar(&pubkey, "pubkey", "mypubkey", "pubkey")
 	flag.BoolVar(&async, "async", false, "async pub")
+	flag.DurationVar(&sleep, "sleep", 0, "sleep between pub")
 	flag.BoolVar(&suppressError, "noerr", true, "suppress error output")
 	flag.Parse()
 
@@ -178,7 +182,7 @@ func createHttpClient() *http.Client {
 
 func pubGatewayLoop(seq int) {
 	httpClient := createHttpClient()
-	url := fmt.Sprintf("http://%s/topics/%s/v1?", addr, topic)
+	url := fmt.Sprintf("%s/topics/%s/v1?", addr, topic)
 	if async {
 		url += "async=1"
 	}
@@ -192,7 +196,7 @@ func pubGatewayLoop(seq int) {
 		}
 
 		req.Header.Set("Appid", appid)
-		req.Header.Set("Pubkey", "mypubkey")
+		req.Header.Set("Pubkey", pubkey)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		// use httpClient to send request
@@ -226,6 +230,10 @@ func pubGatewayLoop(seq int) {
 			if false {
 				log.Println("Response Body:", string(body))
 			}
+		}
+
+		if sleep > 0 {
+			time.Sleep(sleep)
 		}
 	}
 }

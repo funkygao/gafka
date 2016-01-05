@@ -3,6 +3,9 @@
 package main
 
 import (
+	"net"
+	"net/http"
+
 	log "github.com/funkygao/log4go"
 )
 
@@ -19,27 +22,17 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 	return this
 }
 
-func (this *pubServer) waitExit(exit <-chan struct{}) {
-	select {
-	case <-exit:
-		if this.httpServer != nil {
-			// HTTP response will have "Connection: close"
-			this.httpServer.SetKeepAlivesEnabled(false)
+func (this *pubServer) waitExit(server *http.Server, listener net.Listener, exit <-chan struct{}) {
+	<-exit
 
-			// avoid new connections
-			if err := this.httpListener.Close(); err != nil {
-				log.Error(err.Error())
-			}
+	// HTTP response will have "Connection: close"
+	server.SetKeepAlivesEnabled(false)
 
-			this.gw.wg.Done()
-			log.Trace("%s http server stopped", this.name)
-		}
-
-		if this.httpsServer != nil {
-			this.gw.wg.Done()
-			log.Trace("%s https server stopped", this.name)
-		}
-
+	// avoid new connections
+	if err := listener.Close(); err != nil {
+		log.Error(err.Error())
 	}
 
+	this.gw.wg.Done()
+	log.Trace("%s server stopped on %s", this.name, server.Addr)
 }

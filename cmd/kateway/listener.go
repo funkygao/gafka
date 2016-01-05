@@ -12,8 +12,11 @@ type fastListener struct {
 	gw *Gateway
 }
 
-func FastListener(l net.Listener, gw *Gateway) net.Listener {
-	return &fastListener{l, gw}
+func FastListener(gw *Gateway, l net.Listener) net.Listener {
+	return &fastListener{
+		Listener: l,
+		gw:       gw,
+	}
 }
 
 func (l *fastListener) Accept() (net.Conn, error) {

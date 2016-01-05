@@ -1,16 +1,20 @@
-bench:sync
+bench:kwsync
 
 pub:pub.go
 	@echo keep pub to kateway to check mem/thread leakeage
 	@go run pub.go
 
-sync:bench.go
+kwsync:bench.go
 	@echo bench against kateway in sync pub mode
-	@go run bench.go -neat -mode gw -addr "localhost:9191"
+	@go run bench.go -neat -mode gw -addr "http://localhost:9191"
 
-async:bench.go
+kwsyncs:bench.go
+	@echo bench against kateway in sync pub mode
+	@go run bench.go -neat -mode gw -addr "https://localhost:9191"
+
+kwasync:bench.go
 	@echo bench against kateway in async pub mode
-	@go run bench.go -async -neat -mode gw -addr "localhost:9191"
+	@go run bench.go -async -neat -mode gw -addr "http://localhost:9191"
 
 kafka:bench.go
 	@echo bench against kafka directly in sync pub mode
