@@ -9,6 +9,7 @@ import (
 	zkr "github.com/funkygao/gafka/registry/zk"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/gofmt"
 )
 
 type Kateway struct {
@@ -42,12 +43,12 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		swallow(err)
 
 		this.Ui.Info(instance)
+		this.Ui.Output(fmt.Sprintf("  ctime:%s mtime:%s",
+			gofmt.PrettySince(zk.ZkTimestamp(stat.Ctime).Time()),
+			gofmt.PrettySince(zk.ZkTimestamp(stat.Mtime).Time()),
+		))
 
-		this.Ui.Output(fmt.Sprintf("  %s %s %s",
-			zk.ZkTimestamp(stat.Ctime).Time(),
-			zk.ZkTimestamp(stat.Mtime).Time(),
-			string(data)))
-
+		this.Ui.Output(fmt.Sprintf("  %s", string(data)))
 	}
 
 	return
