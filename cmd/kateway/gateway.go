@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"os"
 	"sync"
@@ -17,7 +18,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/registry"
-	"github.com/funkygao/gafka/registry/consul"
+	"github.com/funkygao/gafka/registry/zk"
 	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/signal"
 	"github.com/funkygao/golib/timewheel"
@@ -61,14 +62,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		keyFile:      options.keyFile,
 	}
 
-	if options.consulAddr != "" {
-		var err error
-		registry.Default, err = consul.NewBackend(
-			ctx.NewConsul(options.consulAddr, "kateway"), options.pubHttpAddr) // TODO multiple service addr
-		if err != nil {
-			panic(err)
-		}
-	}
+	registry.Default = zk.New(options.zone, id, this.InstanceInfo())
 
 	metaConf := zkmeta.DefaultConfig(options.zone)
 	metaConf.Refresh = metaRefreshInterval
@@ -114,6 +108,19 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	return this
 }
 
+func (this *Gateway) InstanceInfo() []byte {
+	var s map[string]string
+	s["host"] = ctx.Hostname()
+	s["id"] = this.id
+	s["zone"] = options.zone
+	s["man"] = options.manHttpAddr
+	s["pub"] = options.pubHttpAddr
+	s["sub"] = options.subHttpAddr
+	s["debug"] = options.debugHttpAddr
+	d, _ := json.Marshal(s)
+	return d
+}
+
 func (this *Gateway) Start() (err error) {
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		this.Stop()
@@ -151,7 +158,7 @@ func (this *Gateway) Start() (err error) {
 		this.subServer.Start()
 	}
 
-	if options.consulAddr != "" {
+	if registry.Default != nil {
 		if err := registry.Default.Register(); err != nil {
 			panic(err)
 		}
@@ -174,7 +181,7 @@ func (this *Gateway) Stop() {
 func (this *Gateway) ServeForever() {
 	select {
 	case <-this.shutdownCh:
-		if options.consulAddr != "" {
+		if registry.Default != nil {
 			registry.Default.Deregister()
 		}
 

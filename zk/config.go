@@ -6,18 +6,18 @@ import (
 )
 
 type Config struct {
-	Name         string
-	ZkAddrs      string
-	Timeout      time.Duration
-	PanicOnError bool
+	Name           string
+	ZkAddrs        string
+	SessionTimeout time.Duration
+	PanicOnError   bool
 }
 
 func DefaultConfig(name, addrs string) *Config {
 	return &Config{
-		Name:         name,
-		ZkAddrs:      addrs,
-		Timeout:      time.Minute,
-		PanicOnError: false,
+		Name:           name,
+		ZkAddrs:        addrs,
+		SessionTimeout: time.Minute,
+		PanicOnError:   false,
 	}
 }
 

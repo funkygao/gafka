@@ -8,16 +8,16 @@ import (
 	"github.com/funkygao/golib/gofmt"
 )
 
-type zkTimestamp int64
+type ZkTimestamp int64
 
-func (this zkTimestamp) Time() time.Time {
+func (this ZkTimestamp) Time() time.Time {
 	return time.Unix(int64(this)/int64(1000), 0)
 }
 
 type zkData struct {
 	data  []byte
-	mtime zkTimestamp
-	ctime zkTimestamp
+	mtime ZkTimestamp
+	ctime ZkTimestamp
 }
 
 func (this *zkData) Data() []byte {
@@ -37,7 +37,7 @@ type ConsumerMeta struct {
 	Online         bool
 	Topic          string
 	PartitionId    string
-	Mtime          zkTimestamp
+	Mtime          ZkTimestamp
 	ConsumerOffset int64
 	ProducerOffset int64
 	Lag            int64
@@ -46,7 +46,7 @@ type ConsumerMeta struct {
 
 type ControllerMeta struct {
 	Broker *BrokerZnode
-	Mtime  zkTimestamp
+	Mtime  ZkTimestamp
 	Epoch  string
 }
 

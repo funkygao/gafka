@@ -67,6 +67,13 @@ func init() {
 			}, nil
 		},
 
+		"kateway": func() (cli.Command, error) {
+			return &command.Kateway{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"deploy": func() (cli.Command, error) {
 			return &command.Deploy{
 				Ui:  ui,

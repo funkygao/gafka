@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"fmt"
 	"path"
+	pt "path"
 	"sort"
 	"strings"
 	"sync"
@@ -127,7 +128,7 @@ func (this *ZkZone) Connect() (err error) {
 	var i int
 	for i = 1; i <= 3; i++ {
 		log.Debug("zk #%d try connecting %s", i, this.conf.ZkAddrs)
-		this.conn, this.evt, err = zk.Connect(this.ZkAddrList(), this.conf.Timeout)
+		this.conn, this.evt, err = zk.Connect(this.ZkAddrList(), this.conf.SessionTimeout)
 		if err == nil {
 			// connected ok
 			break
@@ -183,7 +184,15 @@ func (this *ZkZone) createZnode(path string, data []byte) error {
 	return err
 }
 
-func (this *ZkZone) createEphemeralZnode(path string, data []byte) error {
+func (this *ZkZone) CreateEphemeralZnode(path string, data []byte) error {
+	this.connectIfNeccessary()
+
+	// ensure the parent dir exists
+	parent := pt.Dir(path)
+	if err := this.mkdirRecursive(parent); err != nil {
+		return err
+	}
+
 	acl := zk.WorldACL(zk.PermAll)
 	flags := int32(zk.FlagEphemeral)
 	_, err := this.conn.Create(path, data, flags, acl)
@@ -227,8 +236,8 @@ func (this *ZkZone) ChildrenWithData(path string) map[string]zkData {
 
 		r[name] = zkData{
 			data:  data,
-			mtime: zkTimestamp(stat.Mtime),
-			ctime: zkTimestamp(stat.Ctime),
+			mtime: ZkTimestamp(stat.Mtime),
+			ctime: ZkTimestamp(stat.Ctime),
 		}
 	}
 	return r
@@ -335,7 +344,7 @@ func (this *ZkZone) controllers() map[string]*ControllerMeta {
 		epochData, _, _ := this.conn.Get(c.controllerEpochPath())
 		controller := &ControllerMeta{
 			Broker: broker,
-			Mtime:  zkTimestamp(stat.Mtime),
+			Mtime:  ZkTimestamp(stat.Mtime),
 			Epoch:  string(epochData),
 		}
 

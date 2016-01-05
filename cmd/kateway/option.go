@@ -18,7 +18,6 @@ var (
 		subHttpsAddr           string
 		manHttpAddr            string
 		manHttpsAddr           string
-		consulAddr             string
 		store                  string
 		pidFile                string
 		debugHttpAddr          string
@@ -58,7 +57,6 @@ func parseFlags() {
 	flag.StringVar(&options.manHttpAddr, "manhttp", ":9193", "management http bind addr")
 	flag.StringVar(&options.manHttpsAddr, "manhttps", "", "management https bind addr")
 	flag.StringVar(&options.logLevel, "level", "debug", "log level")
-	flag.StringVar(&options.consulAddr, "consul", "", "consul addr")
 	flag.StringVar(&options.logFile, "log", "stdout", "log file, default stdout")
 	flag.StringVar(&options.crashLogFile, "crashlog", "", "crash log")
 	flag.StringVar(&options.certFile, "certfile", "", "cert file path")
