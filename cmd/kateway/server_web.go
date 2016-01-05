@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"runtime"
 	"sync"
 	"time"
 
@@ -71,6 +72,10 @@ func (this *webServer) Start() {
 		var once sync.Once
 
 		go func() {
+			if options.cpuAffinity {
+				runtime.LockOSThread()
+			}
+
 			var retryDelay time.Duration
 			for {
 				this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
@@ -121,6 +126,10 @@ func (this *webServer) Start() {
 		}
 
 		go func() {
+			if options.cpuAffinity {
+				runtime.LockOSThread()
+			}
+
 			var retryDelay time.Duration
 			for {
 				select {

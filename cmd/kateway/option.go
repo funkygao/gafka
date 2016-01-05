@@ -33,6 +33,7 @@ var (
 		ratelimit              bool
 		disableMetrics         bool
 		dryRun                 bool
+		cpuAffinity            bool
 		debug                  bool
 		maxPubSize             int64
 		maxClients             int
@@ -70,6 +71,7 @@ func parseFlags() {
 	flag.StringVar(&options.killFile, "kill", "", "kill running kateway by pid file")
 	flag.BoolVar(&options.showVersion, "version", false, "show version and exit")
 	flag.BoolVar(&options.dryRun, "dryrun", false, "dry run mode")
+	flag.BoolVar(&options.cpuAffinity, "cpuaffinity", false, "enable cpu affinity")
 	flag.BoolVar(&options.ratelimit, "raltelimit", false, "enable rate limit")
 	flag.BoolVar(&options.disableMetrics, "metricsoff", false, "disable metrics reporter")
 	flag.StringVar(&options.influxServer, "influxdb", "http://10.77.144.193:10036", "influxdb server address for the metrics reporter")

@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -68,6 +69,10 @@ func (this *pubServer) Start() {
 		waitHttpListenerUp = make(chan struct{})
 
 		go func() {
+			if options.cpuAffinity {
+				runtime.LockOSThread()
+			}
+
 			this.httpListener, err = net.Listen("tcp", this.httpAddr)
 			if err != nil {
 				panic(err)
