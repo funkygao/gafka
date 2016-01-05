@@ -12,9 +12,15 @@
 
 ### sub
 
+- sub when partitions/brokers added/deleted
 - sub a non-existent topic
+- auto commit offset when kateway restarts
+- never get message lost or duplicated
 
 
 ### misc
 
 - graceful shutdown
+- simulate bad network environment and slow client for testing
+- logging what should be logged
+- kill -9 client

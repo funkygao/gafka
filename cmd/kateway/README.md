@@ -80,9 +80,9 @@ A RESTful gateway for kafka that supports Pub and Sub.
                                            |
                                            | HTTP/1.1 keep-alive
                                            |     
-                                    +--------------+
-                                    | LoadBalancer |
-                                    +--------------+
+                                    +--------------+                         +----------+
+                                    | LoadBalancer |                         | registry |
+                                    +--------------+                         +----------+
                                            |
                                            | HTTP/1.1 keep-alive             +----------+
                                            |      session sticky             | guard    |
@@ -110,6 +110,11 @@ A RESTful gateway for kafka that supports Pub and Sub.
 
   kateway uses chunked transfer encoding
 
+- how to load balance the Pub?
+
+  - client side LB
+  - haproxy
+
 - how to load balance the Sub?
 
   haproxy MUST enable session sticky
@@ -130,43 +135,13 @@ A RESTful gateway for kafka that supports Pub and Sub.
 - [ ] for intranet traffic, record the src ip and port
 - [ ] delayed pub
 - [ ] https://github.com/corneldamian/httpway
-- [X] multi-cluster
 - [ ] warmup
 - [ ] elastic scale
-- [ ] Under high load presure, mpool pkg might become a burden
 - [ ] pool benchmark
 - [ ] sub lock more precise 
-- [ ] registers itself in consul
-- [ ] async pub not fully tested
 - [ ] Update to glibc 2.20 or higher
 - [ ] compression in kafka
 - [ ] plugin
-
-### Test
-
-- [ ] stress test and leakage test
-- [ ] simulate bad network environment for testing
-- [ ] message never get lost
-- [ ] post a BIG msg
-- [ ] logging
-
-### Bugs
-
-- [ ] race conditions
-- [X] pub listener closes silently in high load case
-
-### EdgeCase
-
-- when producing/consuming, partition added
-- when producing/consuming, brokers added/died
-
-    1. a sub client -> kateway
-    2. consumes msg 1-10
-    3. client disconnects 
-    4. kateway fails to write(msg 11), and kills this client record(10s)
-    5. will commit offset to 10
-
-    1. a sub client -> kateway
-    2. no msgs and reach idle max timeout, kateway closes the client
-    3. we MUST handle this case
+- [ ] pub audit
+- [ ] smooth upgrade kafka version
 
