@@ -16,6 +16,8 @@ import (
 
 // /topics/:topic/:ver?key=mykey&async=1&delay=100
 func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.Params) {
+	t1 := time.Now()
+
 	topic := params.ByName(UrlParamTopic)
 	header := ctx.Request.Header
 	appid := string(header.Peek(HttpHeaderAppid))
@@ -40,9 +42,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 			string(ctx.Request.Body()))
 	}
 
-	var t1 time.Time // FIXME should be placed at beginning of handler
 	if !options.disableMetrics {
-		t1 = time.Now()
 		this.pubMetrics.PubQps.Mark(1)
 		this.pubMetrics.PubMsgSize.Update(int64(len(ctx.PostBody())))
 	}

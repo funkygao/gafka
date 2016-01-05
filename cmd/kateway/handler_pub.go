@@ -19,6 +19,8 @@ import (
 // /topics/:topic/:ver?key=mykey&async=1&delay=100
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
+	t1 := time.Now()
+
 	if options.ratelimit && !this.leakyBuckets.Pour(r.RemoteAddr, 1) {
 		this.writeQuotaExceeded(w)
 		return
@@ -54,9 +56,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Debug("pub[%s] %s %+v %s", appid, r.RemoteAddr, params, string(msg.Body))
 	}
 
-	var t1 time.Time // FIXME should be placed at beginning of handler
 	if !options.disableMetrics {
-		t1 = time.Now()
 		this.pubMetrics.PubQps.Mark(1)
 		this.pubMetrics.PubMsgSize.Update(int64(len(msg.Body)))
 	}
