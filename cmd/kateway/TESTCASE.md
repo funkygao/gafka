@@ -13,3 +13,8 @@
 ### sub
 
 - sub a non-existent topic
+
+
+### misc
+
+- graceful shutdown

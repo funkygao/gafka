@@ -36,18 +36,18 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 	gw *Gateway) *webServer {
 	this := &webServer{
 		name:       name,
-		router:     httprouter.New(),
 		gw:         gw,
 		maxClients: maxClients,
+		router:     httprouter.New(),
 	}
 
 	if httpAddr != "" {
 		this.httpServer = &http.Server{
-			Addr:    httpAddr,
-			Handler: this.router,
-			//ReadTimeout:    time.Minute, // FIXME
-			//WriteTimeout:   time.Minute, // FIXME
-			MaxHeaderBytes: 4 << 10, // should be enough
+			Addr:           httpAddr,
+			Handler:        this.router,
+			ReadTimeout:    httpReadTimeout,
+			WriteTimeout:   httpWriteTimeout,
+			MaxHeaderBytes: httpHeaderMaxBytes,
 		}
 	}
 
@@ -55,9 +55,9 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 		this.httpsServer = &http.Server{
 			Addr:           httpAddr,
 			Handler:        this.router,
-			ReadTimeout:    0,       // FIXME
-			WriteTimeout:   0,       // FIXME
-			MaxHeaderBytes: 4 << 10, // should be enough
+			ReadTimeout:    httpReadTimeout,
+			WriteTimeout:   httpWriteTimeout,
+			MaxHeaderBytes: httpHeaderMaxBytes,
 		}
 	}
 

@@ -82,7 +82,7 @@ func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
 	var err error
 	t1 := time.Now()
 	cf := sarama.NewConfig()
-	cf.Metadata.RefreshFrequency = time.Minute * 10 // TODO
+	cf.Metadata.RefreshFrequency = time.Minute // TODO
 	cf.Metadata.Retry.Max = 3
 	cf.Producer.Flush.Frequency = time.Second * 10
 	cf.Producer.Flush.Messages = 1000
@@ -122,7 +122,7 @@ func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
 	var err error
 	t1 := time.Now()
 	cf := sarama.NewConfig()
-	cf.Metadata.RefreshFrequency = time.Minute * 10 // TODO
+	cf.Metadata.RefreshFrequency = time.Minute // TODO
 	cf.Metadata.Retry.Max = 3
 	cf.Producer.RequiredAcks = sarama.WaitForLocal
 	cf.Producer.Partitioner = sarama.NewHashPartitioner

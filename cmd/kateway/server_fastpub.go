@@ -47,14 +47,15 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 		logger := golog.New(os.Stdout, "fasthttp ", golog.LstdFlags|golog.Lshortfile)
 		this.httpServer = &fasthttp.Server{
 			Name:                 "kateway",
-			Handler:              this.router.Handler,
 			Concurrency:          maxClients,
 			MaxConnsPerIP:        5000, // TODO
-			ReadTimeout:          time.Hour,
-			WriteTimeout:         time.Hour,
-			MaxKeepaliveDuration: time.Hour,
+			MaxRequestsPerConn:   0,    // unlimited
+			MaxKeepaliveDuration: httpReadTimeout,
+			ReadTimeout:          httpReadTimeout,
+			WriteTimeout:         httpWriteTimeout,
 			MaxRequestBodySize:   int(options.maxPubSize + 1),
-			ReduceMemoryUsage:    true,
+			ReduceMemoryUsage:    false, // TODO
+			Handler:              this.router.Handler,
 			Logger:               logger,
 		}
 	}
@@ -108,6 +109,7 @@ func (this *pubServer) Start() {
 		this.gw.wg.Add(1)
 		log.Info("%s http server ready on %s", this.name, this.httpAddr)
 	}
+
 }
 
 func (this *pubServer) Router() *fasthttprouter.Router {
@@ -119,7 +121,8 @@ func (this *pubServer) waitExit(exit <-chan struct{}) {
 	case <-exit:
 		if this.httpServer != nil {
 			// HTTP response will have "Connection: close"
-			this.httpServer.MaxKeepaliveDuration = time.Microsecond
+			this.httpServer.ReadTimeout = time.Millisecond
+			this.httpServer.MaxKeepaliveDuration = time.Millisecond
 			this.httpServer.MaxRequestsPerConn = 1
 
 			// avoid new connections

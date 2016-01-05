@@ -4,13 +4,14 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+// management server
 type manServer struct {
 	*webServer
 }
 
 func newManServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *manServer {
 	this := &manServer{
-		webServer: newWebServer("management", httpAddr, httpsAddr, maxClients, gw),
+		webServer: newWebServer("man", httpAddr, httpsAddr, maxClients, gw),
 	}
 	this.waitExitFunc = this.waitExit
 
