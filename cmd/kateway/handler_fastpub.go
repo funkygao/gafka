@@ -17,11 +17,6 @@ import (
 
 // /topics/:topic/:ver?key=mykey&async=1&delay=100
 func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.Params) {
-	if options.enableBreaker && this.breaker.Open() {
-		ctx.Error("backend busy", fasthttp.StatusBadGateway)
-		return
-	}
-
 	topic := params.ByName(UrlParamTopic)
 	header := ctx.Request.Header
 	appid := hack.String(header.Peek(HttpHeaderAppid))
@@ -61,10 +56,6 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 		appid+"."+topic+"."+ver,
 		key, ctx.PostBody())
 	if err != nil {
-		if options.enableBreaker && isBrokerError(err) {
-			this.breaker.Fail()
-		}
-
 		if !options.disableMetrics {
 			this.pubMetrics.pubFail(appid, topic, ver)
 		}

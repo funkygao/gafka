@@ -13,11 +13,6 @@ import (
 // /topics/:appid/:topic/:ver/:group?limit=1&reset=newest
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	if this.breaker.Open() {
-		this.writeBreakerOpen(w)
-		return
-	}
-
 	var (
 		topic    string
 		ver      string
@@ -57,11 +52,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	fetcher, err := store.DefaultSubStore.Fetch(meta.Default.LookupCluster(hisAppid, topic),
 		rawTopic, group, r.RemoteAddr, reset)
 	if err != nil {
-		if isBrokerError(err) {
-			// broker error
-			this.breaker.Fail()
-		}
-
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 
 		this.writeBadRequest(w, err)

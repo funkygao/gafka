@@ -37,10 +37,6 @@ func (this *Gateway) writeQuotaExceeded(w http.ResponseWriter) {
 	this.writeErrorResponse(w, "quota exceeded", http.StatusNotAcceptable)
 }
 
-func (this *Gateway) writeBreakerOpen(w http.ResponseWriter) {
-	this.writeErrorResponse(w, "backend busy", http.StatusBadGateway)
-}
-
 func (this *Gateway) writeBadRequest(w http.ResponseWriter, err error) {
 	this.writeErrorResponse(w, err.Error(), http.StatusBadRequest)
 }

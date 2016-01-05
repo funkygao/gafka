@@ -18,7 +18,6 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/registry"
 	"github.com/funkygao/gafka/registry/consul"
-	"github.com/funkygao/golib/breaker"
 	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/signal"
 	"github.com/funkygao/golib/timewheel"
@@ -47,7 +46,6 @@ type Gateway struct {
 	wg           sync.WaitGroup
 
 	leakyBuckets *ratelimiter.LeakyBuckets // TODO
-	breaker      *breaker.Consecutive
 
 	pubMetrics *pubMetrics
 	subMetrics *subMetrics
@@ -77,10 +75,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	meta.Default = zkmeta.New(metaConf)
 	this.guard = newGuard(this)
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
-	this.breaker = &breaker.Consecutive{
-		FailureAllowance: 10,
-		RetryTimeout:     time.Second * 10,
-	}
 
 	this.manServer = newManServer(options.manHttpAddr, options.manHttpsAddr,
 		options.maxClients, this)

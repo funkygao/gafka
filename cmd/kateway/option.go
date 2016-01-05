@@ -30,7 +30,6 @@ var (
 		influxServer           string
 		killFile               string
 		showVersion            bool
-		enableBreaker          bool
 		ratelimit              bool
 		disableMetrics         bool
 		dryRun                 bool
@@ -72,7 +71,6 @@ func parseFlags() {
 	flag.BoolVar(&options.showVersion, "version", false, "show version and exit")
 	flag.BoolVar(&options.dryRun, "dryrun", false, "dry run mode")
 	flag.BoolVar(&options.ratelimit, "raltelimit", false, "enable rate limit")
-	flag.BoolVar(&options.enableBreaker, "breakeron", true, "enable circuit breaker")
 	flag.BoolVar(&options.disableMetrics, "metricsoff", false, "disable metrics reporter")
 	flag.StringVar(&options.influxServer, "influxdb", "http://10.77.144.193:10036", "influxdb server address for the metrics reporter")
 	flag.DurationVar(&options.reporterInterval, "report", time.Second*10, "reporter flush interval")

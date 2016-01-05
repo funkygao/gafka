@@ -20,11 +20,6 @@ import (
 // /topics/:topic/:ver?key=mykey&async=1&delay=100
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	if options.enableBreaker && this.breaker.Open() {
-		this.writeBreakerOpen(w)
-		return
-	}
-
 	if options.ratelimit && !this.leakyBuckets.Pour(r.RemoteAddr, 1) {
 		this.writeQuotaExceeded(w)
 		return
@@ -79,10 +74,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		hack.Byte(query.Get(UrlQueryKey)), msg.Body)
 	if err != nil {
 		msg.Free() // defer is costly
-
-		if options.enableBreaker && isBrokerError(err) {
-			this.breaker.Fail()
-		}
 
 		if !options.disableMetrics {
 			this.pubMetrics.pubFail(appid, topic, ver)
