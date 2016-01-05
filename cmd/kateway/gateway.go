@@ -109,7 +109,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 }
 
 func (this *Gateway) InstanceInfo() []byte {
-	var s map[string]string
+	var s map[string]string = make(map[string]string)
 	s["host"] = ctx.Hostname()
 	s["id"] = this.id
 	s["zone"] = options.zone
