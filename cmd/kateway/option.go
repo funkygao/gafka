@@ -9,40 +9,41 @@ import (
 
 var (
 	options struct {
-		id                   string
-		zone                 string
-		configFile           string
-		pubHttpAddr          string
-		pubHttpsAddr         string
-		subHttpAddr          string
-		subHttpsAddr         string
-		manHttpAddr          string
-		manHttpsAddr         string
-		consulAddr           string
-		store                string
-		pidFile              string
-		debugHttpAddr        string
-		certFile             string
-		keyFile              string
-		logFile              string
-		logLevel             string
-		crashLogFile         string
-		influxServer         string
-		killFile             string
-		showVersion          bool
-		enableBreaker        bool
-		ratelimit            bool
-		disableMetrics       bool
-		dryRun               bool
-		debug                bool
-		maxPubSize           int64
-		maxClients           int
-		subTimeout           time.Duration
-		offsetCommitInterval time.Duration
-		reporterInterval     time.Duration
-		metaRefresh          time.Duration
-		httpReadTimeout      time.Duration
-		httpWriteTimeout     time.Duration
+		id                     string
+		zone                   string
+		configFile             string
+		pubHttpAddr            string
+		pubHttpsAddr           string
+		subHttpAddr            string
+		subHttpsAddr           string
+		manHttpAddr            string
+		manHttpsAddr           string
+		consulAddr             string
+		store                  string
+		pidFile                string
+		debugHttpAddr          string
+		certFile               string
+		keyFile                string
+		logFile                string
+		logLevel               string
+		crashLogFile           string
+		influxServer           string
+		killFile               string
+		showVersion            bool
+		enableBreaker          bool
+		ratelimit              bool
+		disableMetrics         bool
+		dryRun                 bool
+		debug                  bool
+		maxPubSize             int64
+		maxClients             int
+		subTimeout             time.Duration
+		offsetCommitInterval   time.Duration
+		reporterInterval       time.Duration
+		consoleMetricsInterval time.Duration
+		metaRefresh            time.Duration
+		httpReadTimeout        time.Duration
+		httpWriteTimeout       time.Duration
 	}
 )
 
@@ -81,6 +82,7 @@ func parseFlags() {
 	flag.DurationVar(&options.httpReadTimeout, "httprtimeout", time.Second*60, "http server read timeout")
 	flag.DurationVar(&options.httpWriteTimeout, "httpwtimeout", time.Second*60, "http server write timeout")
 	flag.DurationVar(&options.subTimeout, "subtimeout", time.Minute, "sub timeout before send http 204")
+	flag.DurationVar(&options.consoleMetricsInterval, "consolemetrics", 0, "console metrics report interval")
 
 	flag.Parse()
 }

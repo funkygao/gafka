@@ -3,7 +3,7 @@
 package main
 
 import (
-	"io/ioutil"
+	//"io/ioutil"
 	golog "log"
 	"net"
 	"net/http"

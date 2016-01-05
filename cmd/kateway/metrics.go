@@ -37,7 +37,9 @@ func NewServerMetrics(interval time.Duration) *serverMetrics {
 		expvar.Publish("Goroutines", expvar.Func(goroutines))
 	}
 
-	go runMetricsReporter(metrics.DefaultRegistry, interval*60)
+	if options.consoleMetricsInterval > 0 {
+		go runMetricsReporter(metrics.DefaultRegistry, options.consoleMetricsInterval)
+	}
 
 	// influxdb reporter
 	if options.influxServer != "" {
