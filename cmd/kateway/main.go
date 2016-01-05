@@ -23,6 +23,11 @@ func init() {
 		os.Exit(0)
 	}
 
+	if gafka.BuildId == "" {
+		fmt.Fprintf(os.Stderr, "empty BuildId, please rebuild with build.sh\n")
+		os.Exit(1)
+	}
+
 	if options.debug {
 		log.SetFlags(log.LstdFlags | log.Llongfile) // TODO zk sdk uses this
 		log.SetPrefix(color.Magenta("[log]"))
