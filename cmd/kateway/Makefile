@@ -1,5 +1,8 @@
 all:kafka
 
+GIT_ID=$(shell git rev-parse HEAD | cut -c1-7)
+GIT_DIRTY=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
+
 deps:
 	@go list ./...
 
@@ -9,13 +12,13 @@ check:
 	go tool nm -size -sort=size kateway | head -n 50
 
 fast:
-	go build -tags fasthttp
+	go build -tags fasthttp -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY)"
 
 build:
-	go build
+	go build -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY)"
 
 bench:build
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -pubhttps :9291 -subhttp :9192 -level trace -store kafka -id 1 
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -pubhttps :9291 -subhttp :9192 -level trace -store kafka -id 1 
 
 benchmark-metrics-pubok:
 	go test -v -benchmem -bench=^BenchmarkMetricsPubOkCounter -benchtime=20s -cpuprofile=prof.cpu; go tool pprof kateway.test prof.cpu
@@ -40,16 +43,16 @@ benchmark-mem-dumb:
 	go test -v -benchmem -bench=^BenchmarkKatewayPubDumb1K -benchtime=20s -memprofile=prof.mem; go tool pprof kateway.test prof.mem
 
 kafka:fast
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -store kafka -id 1 -level debug -debughttp ":9194"
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -subhttp :9192 -store kafka -id 1 -level debug -debughttp ":9194"
 
 race:
 	@go build -race -gcflags '-m=1'
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -level debug -debug -store kafka -id 1 
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -subhttp :9192 -level debug -debug -store kafka -id 1 
 
 dryrun:dumb
 
 dumb:fast
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local  -pubhttp :9191 -subhttp :9192 -level debug -store dumb -id 1 -metricsoff=false -breakeron=true -debughttp ":9194" -debug=true
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -subhttp :9192 -level debug -store dumb -id 1 -metricsoff=false -breakeron=true -debughttp ":9194" -debug=true
 
 consul:build 
 	consul agent -data-dir /tmp/consul &
