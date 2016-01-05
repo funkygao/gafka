@@ -12,7 +12,6 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/mpool"
-	"github.com/funkygao/golib/hack"
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
@@ -71,7 +70,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	ver := params.ByName(UrlParamVersion)
 	err := pubMethod(meta.Default.LookupCluster(appid, topic),
 		appid+"."+topic+"."+ver,
-		hack.Byte(query.Get(UrlQueryKey)), msg.Body)
+		[]byte(query.Get(UrlQueryKey)), msg.Body)
 	if err != nil {
 		msg.Free() // defer is costly
 

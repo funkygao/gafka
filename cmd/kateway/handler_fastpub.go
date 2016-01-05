@@ -10,7 +10,6 @@ import (
 	"github.com/buaazp/fasthttprouter"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
-	"github.com/funkygao/golib/hack"
 	log "github.com/funkygao/log4go"
 	"github.com/valyala/fasthttp"
 )
@@ -19,8 +18,8 @@ import (
 func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	header := ctx.Request.Header
-	appid := hack.String(header.Peek(HttpHeaderAppid))
-	pubkey := hack.String(header.Peek(HttpHeaderPubkey))
+	appid := string(header.Peek(HttpHeaderAppid))
+	pubkey := string(header.Peek(HttpHeaderPubkey))
 	if !meta.Default.AuthPub(appid, pubkey, topic) {
 		ctx.SetConnectionClose()
 		ctx.Error("invalid secret", fasthttp.StatusUnauthorized)
@@ -86,8 +85,8 @@ func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprout
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
 	header := ctx.Request.Header
-	appid = hack.String(header.Peek(HttpHeaderAppid))
-	pubkey = hack.String(header.Peek(HttpHeaderPubkey))
+	appid = string(header.Peek(HttpHeaderAppid))
+	pubkey = string(header.Peek(HttpHeaderPubkey))
 
 	if !meta.Default.AuthSub(appid, pubkey, topic) {
 		ctx.SetConnectionClose()
