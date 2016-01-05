@@ -22,36 +22,38 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
 ### Usage
 
     $gk
-    
     Unified multi-datacenter multi-cluster kafka swiss-knife management console
     
     usage: gk [--version] [--help] <command> [<args>]
     
     Available commands are:
         brokers            Print online brokers from Zookeeper
-        checkup            Checkup of zookeepers and brokers
-        clusters           Register kafka clusters to a zone
-        consumers          Print consumer groups from Zookeeper
+        checkup            Health checkup of kafka runtime
+        clusters           Register or display kafka clusters
+        console            Interactive mode
+        consumers          Print high level consumer groups from Zookeeper
         controllers        Print active controllers in kafka clusters
+        deploy             Deploy a new kafka broker
         discover           Automatically discover online kafka clusters
-        lags               Display consumers lag for each topic each partition
-        lszk               List zookeepeer znode children
-        partition          Add partition num to a topic
-        peek               Peek kafka cluster messages ongoing
-        ssh                ssh to a host through tunnel
+        kateway            List online kateway instances
+        lags               Display high level consumers lag for each topic/partition
+        lszk               List kafka related zookeepeer znode children
+        migrate            Migrate given topic partition to specified broker ids
+        offset             Manually reset consumer group offset
+        partition          Add partition num to a topic for better parallel
+        peek               Peek kafka cluster messages ongoing from any offset
+        ping               Ping liveness of all registered brokers in a zone
         top                Unix “top” like utility for kafka
-        topics             Manage topics & partitions of a zone
+        topics             Manage kafka topics
         topology           Print server topology and balancing stats of kafka clusters
         underreplicated    Display under-replicated partitions
         zktop              Unix “top” like utility for ZooKeeper
         zones              Print zones defined in $HOME/.gafka.cf
-        zookeeper          Display zone Zookeeper status
-    
+        zookeeper          Display zone Zookeeper status by four letter word command
+
 ### TODO
 
 - [ ] display kafka config e,g. retention
-- [ ] integration with consul
-- [ ] nge ES
 - [ ] bootstrap kafka
 - [ ] producer source
 - [ ] sms/email alarm when any node of kafka/zk is down
