@@ -3,10 +3,10 @@
 package main
 
 import (
-	//"io/ioutil"
 	golog "log"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -43,17 +43,15 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 	this.waitExitFunc = this.waitExit
 
 	if httpAddr != "" {
-		logger := &golog.Logger{}
-		//logger.SetOutput(ioutil.Discard) TODO
-
+		logger := golog.New(os.Stdout, "fasthttp ", golog.LstdFlags|golog.Lshortfile)
 		this.httpServer = &fasthttp.Server{
 			Name:                 "kateway",
 			Handler:              this.router.Handler,
 			Concurrency:          maxClients,
 			MaxConnsPerIP:        5000, // TODO
-			ReadTimeout:          0,
-			WriteTimeout:         0,
-			MaxKeepaliveDuration: time.Minute,
+			ReadTimeout:          time.Hour,
+			WriteTimeout:         time.Hour,
+			MaxKeepaliveDuration: time.Hour,
 			MaxRequestBodySize:   int(options.maxPubSize + 1),
 			ReduceMemoryUsage:    true,
 			Logger:               logger,

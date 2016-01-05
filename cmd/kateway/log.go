@@ -58,7 +58,8 @@ func setupLogging(logFile, logLevel, crashLogFile string) {
 			panic(err)
 		}
 
-		syscall.Dup2(int(f.Fd()), 2)
+		syscall.Dup2(int(f.Fd()), int(os.Stdout.Fd()))
+		syscall.Dup2(int(f.Fd()), int(os.Stderr.Fd()))
 		fmt.Fprintf(os.Stderr, "\n%s %s (build: %s)\n===================\n",
 			time.Now().String(),
 			gafka.Version, gafka.BuildId)
