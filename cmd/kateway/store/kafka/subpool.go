@@ -12,7 +12,7 @@ import (
 )
 
 type subPool struct {
-	clientMap     map[string]*consumergroup.ConsumerGroup // a client can only sub 1 topic
+	clientMap     map[string]*consumergroup.ConsumerGroup // key is client remote addr, a client can only sub 1 topic
 	clientMapLock sync.RWMutex                            // TODO the lock is too big
 
 	rebalancing bool // FIXME 1 topic rebalance should not affect other topics
@@ -126,11 +126,11 @@ func (this *subPool) Stop() {
 	for _, c := range this.clientMap {
 		wg.Add(1)
 		go func() {
-			c.Close()
+			c.Close() // will commit inflight offsets
 			wg.Done()
 		}()
 	}
 
-	// wait for all consumers commit offset
 	wg.Wait()
+	log.Trace("all consumer offsets committed")
 }

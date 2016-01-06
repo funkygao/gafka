@@ -85,7 +85,9 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 		switch options.store {
 		case "kafka":
-			store.DefaultPubStore = kafka.NewPubStore(&this.wg, options.debug, options.dryRun)
+			store.DefaultPubStore = kafka.NewPubStore(
+				options.pubPoolCapcity, options.maxPubRetries, options.pubPoolIdleTimeout,
+				&this.wg, options.debug, options.dryRun)
 
 		case "dumb":
 			store.DefaultPubStore = dumb.NewPubStore(&this.wg, options.debug)
@@ -153,13 +155,17 @@ func (this *Gateway) Start() (err error) {
 	}
 
 	if this.pubServer != nil {
-		store.DefaultPubStore.Start()
+		if err := store.DefaultPubStore.Start(); err != nil {
+			panic(err)
+		}
 		log.Trace("pub store[%s] started", store.DefaultPubStore.Name())
 
 		this.pubServer.Start()
 	}
 	if this.subServer != nil {
-		store.DefaultSubStore.Start()
+		if err := store.DefaultSubStore.Start(); err != nil {
+			panic(err)
+		}
 		log.Trace("sub store[%s] started", store.DefaultSubStore.Name())
 
 		this.subServer.Start()

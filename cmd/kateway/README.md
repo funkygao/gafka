@@ -123,6 +123,7 @@ A RESTful gateway for kafka that supports Pub and Sub.
 
 ### TODO
 
+- [ ] pub fails retry should be done at kafka pub sdk: sarama
 - [ ] check hack pkg
 - [ ] https, outer ip must https
 - [ ] guard.go panic

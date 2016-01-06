@@ -1,15 +1,18 @@
 package store
 
+// A PubStore is a generic store that can Pub sync/async.
 type PubStore interface {
-	Start() error
-	Stop()
+	// Name returns the name of the underlying store.
 	Name() string
 
-	/* TODO
-	SyncPub(cluster string, topic, key string, in io.Reader) (partition int32,
-		offset int64, err error)*/
-	SyncPub(cluster string, topic string, key, msg []byte) error
-	AsyncPub(cluster string, topic string, key, msg []byte) error
+	Start() error
+	Stop()
+
+	// SyncPub pub a keyed message to a topic of a cluster synchronously.
+	SyncPub(cluster, topic string, key, msg []byte) error
+
+	// AsyncPub pub a keyed message to a topic of a cluster asynchronously.
+	AsyncPub(cluster, topic string, key, msg []byte) error
 }
 
 var DefaultPubStore PubStore

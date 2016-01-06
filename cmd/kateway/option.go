@@ -37,7 +37,10 @@ var (
 		debug                  bool
 		maxPubSize             int64
 		minPubSize             int
+		maxPubRetries          int
 		maxClients             int
+		pubPoolCapcity         int
+		pubPoolIdleTimeout     time.Duration
 		subTimeout             time.Duration
 		offsetCommitInterval   time.Duration
 		reporterInterval       time.Duration
@@ -79,12 +82,15 @@ func parseFlags() {
 	flag.DurationVar(&options.reporterInterval, "report", time.Second*10, "reporter flush interval")
 	flag.Int64Var(&options.maxPubSize, "maxpub", 1<<20, "max Pub message size")
 	flag.IntVar(&options.minPubSize, "minpub", 1, "min Pub message size")
+	flag.IntVar(&options.maxPubRetries, "pubretry", 5, "max retries when Pub fails")
+	flag.IntVar(&options.pubPoolCapcity, "pubpool", 100, "pub connection pool capacity")
 	flag.IntVar(&options.maxClients, "maxclient", 100000, "max concurrent connections")
 	flag.DurationVar(&options.offsetCommitInterval, "offsetcommit", time.Minute, "consumer offset commit interval")
 	flag.DurationVar(&options.httpReadTimeout, "httprtimeout", time.Second*60, "http server read timeout")
 	flag.DurationVar(&options.httpWriteTimeout, "httpwtimeout", time.Second*60, "http server write timeout")
 	flag.DurationVar(&options.subTimeout, "subtimeout", time.Minute, "sub timeout before send http 204")
 	flag.DurationVar(&options.consoleMetricsInterval, "consolemetrics", 0, "console metrics report interval")
+	flag.DurationVar(&options.pubPoolIdleTimeout, "pubpoolidle", time.Minute*10, "pub pool connect idle timeout")
 
 	flag.Parse()
 }

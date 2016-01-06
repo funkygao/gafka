@@ -9,8 +9,11 @@
   cluster, then start another, then shutdown
 - keepalive timeout, read/write timeout
 - max message size, max header size
+- keyed message
 
 ### sub
+
+- curl sub fails for 'gk lags'
 
 - sub when partitions/brokers added/deleted
 
@@ -28,6 +31,11 @@
 
 - never get message lost or duplicated
 
+- stop kafka when sub is running
+
+### zk
+
+- use iptables to simulate zk session timeout
 
 ### misc
 
