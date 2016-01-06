@@ -115,7 +115,7 @@ func (this *subPool) killClient(remoteAddr string) {
 	delete(this.clientMap, remoteAddr)
 	this.rebalancing = false
 
-	log.Info("consumer %s closed, rebalanced ok", remoteAddr)
+	log.Trace("consumer %s closed, rebalanced ok", remoteAddr)
 }
 
 func (this *subPool) Stop() {
