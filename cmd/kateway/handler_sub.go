@@ -138,8 +138,8 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			return nil
 
 		case err := <-fetcher.Errors():
+			// e,g. consume a non-existent topic
 			return err
-
 		}
 	}
 

@@ -48,7 +48,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		msg.Free()
 
 		log.Error("%s %+v: %s", r.RemoteAddr, params, err)
-		this.writeErrorResponse(w, err.Error(), http.StatusBadRequest)
+		this.writeErrorResponse(w, "body size exceeds the given limit", http.StatusBadRequest)
 		return
 	}
 

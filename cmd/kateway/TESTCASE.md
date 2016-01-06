@@ -24,3 +24,9 @@
 - simulate bad network environment and slow client for testing
 - logging what should be logged
 - kill -9 client
+
+
+### bugs
+
+- sub after 1m, got no 204 reply: empty reply
+- when pub a too big msg, fasthttp has empty reply while normal http is ok
