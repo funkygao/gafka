@@ -11,7 +11,7 @@ A RESTful gateway for kafka that supports Pub and Sub.
 
 ### Features
 
-- http/https and websocket supported
+- http/https/websocket/http2 supported
 - Quotas and rate limit
 - Circuit breakers
 - Plugins
@@ -22,9 +22,7 @@ A RESTful gateway for kafka that supports Pub and Sub.
 - Monitor Performance
 - Service Discovery
 - Hot reload without downtime
-- Audit
 - Distributed load balancing
-- Health checks
 
 ### Architecture
 
@@ -32,7 +30,7 @@ A RESTful gateway for kafka that supports Pub and Sub.
            | DB |------|   manager UI    |
            +----+      +-----------------+                                                  
                                |                                                           
-                               ^ register [application|topic|binding]                       
+                               ^ register [application|topic|pub|sub]                       
                                |                                                          
                        +-----------------+                                                 
                        |  Application    |                                                
@@ -45,12 +43,14 @@ A RESTful gateway for kafka that supports Pub and Sub.
        HTTP |                                HTTP |                                        
        POST |                                 GET |                                       
             |                                     |                                      
-        +------------+                      +------------+          application border  
+        +------------+                      +------------+                 application 
      ---| PubEndpoint|----------------------| SubEndpoint|---------------------------- 
-        +------------+           |          +------------+                            
+        +------------+           |          +------------+                     kateway
         | stateless  |        Plugins       | stateful   |                           
         +------------+  +----------------+  +------------+                          
-        | monitor    |  | Authentication |  | monitor    |                         
+        | quota      |  | Authentication |  | quota      |                         
+        +------------+  +----------------+  +------------+                          
+        | monitor    |  | Authorization  |  | monitor    |                         
         +------------+  +----------------+  +------------+                        
         | guard      |                      | guard      |                       
         +------------+                      +------------+                      
@@ -59,7 +59,7 @@ A RESTful gateway for kafka that supports Pub and Sub.
             |----| ZK or other ensemble |---------| 
             |    +----------------------+         |
             |                                     |    
-            | Pub                                 | Fetch
+            | Put                                 | Get
             |                                     |                     
             |       +------------------+          |     
             |       |      Store       |          |    
@@ -89,7 +89,7 @@ A RESTful gateway for kafka that supports Pub and Sub.
                        +-----------------------------------------+           +----------+
                        |              |            |             |      
                   +---------+   +---------+   +---------+   +---------+      +----------+
-                  | Kateway |   | Kateway |   | Kateway |   | Kateway |      | ensemble |
+                  | Kateway |---| Kateway |---| Kateway |---| Kateway |------| ensemble |
                   +---------+   +---------+   +---------+   +---------+      +----------+
                        |              |            |             |
                        +-----------------------------------------+           +----------+
