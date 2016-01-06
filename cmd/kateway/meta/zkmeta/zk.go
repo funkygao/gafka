@@ -14,6 +14,7 @@ import (
 type zkMetaStore struct {
 	cf         *config
 	shutdownCh chan struct{}
+	refreshCh  chan struct{}
 	mu         sync.RWMutex
 
 	zkzone *zk.ZkZone
@@ -47,8 +48,8 @@ func New(cf *config) meta.MetaStore {
 	}
 }
 
-func (this *zkMetaStore) RefreshInterval() time.Duration {
-	return this.cf.Refresh
+func (this *zkMetaStore) RefreshEvent() <-chan struct{} {
+	return this.refreshCh
 }
 
 func (this *zkMetaStore) fillBrokerList() {
@@ -67,6 +68,7 @@ func (this *zkMetaStore) fillBrokerList() {
 }
 
 func (this *zkMetaStore) Start() {
+	// warm up
 	this.fillBrokerList()
 
 	go func() {
@@ -88,10 +90,11 @@ func (this *zkMetaStore) Start() {
 
 func (this *zkMetaStore) Stop() {
 	this.mu.Lock()
+	defer this.mu.Unlock()
+
 	for _, c := range this.clusters {
 		c.Close()
 	}
-	this.mu.Unlock()
 
 	close(this.shutdownCh)
 }
@@ -111,11 +114,12 @@ func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) int 
 		return 0
 	}
 
+	// FIXME will always lookup zk
 	return c.OnlineConsumersCount(topic, group)
 }
 
 func (this *zkMetaStore) doRefresh() {
-	log.Trace("refreshing meta")
+	log.Trace("refreshing meta store")
 
 	this.fillBrokerList()
 
@@ -123,6 +127,9 @@ func (this *zkMetaStore) doRefresh() {
 	this.pmapLock.Lock()
 	this.partitionsMap = make(map[string]map[string][]int32, len(this.partitionsMap))
 	this.pmapLock.Unlock()
+
+	// notify others that I have got the most recent data
+	this.refreshCh <- struct{}{}
 }
 
 func (this *zkMetaStore) Partitions(cluster, topic string) []int32 {
@@ -184,7 +191,10 @@ func (this *zkMetaStore) ZkChroot(cluster string) string {
 
 func (this *zkMetaStore) Clusters() []map[string]string {
 	r := make([]map[string]string, 0)
+
 	this.mu.RLock()
+	defer this.mu.RUnlock()
+
 	this.zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		info := zkcluster.RegisteredInfo()
 		c := make(map[string]string)
@@ -192,7 +202,6 @@ func (this *zkMetaStore) Clusters() []map[string]string {
 		c["nickname"] = info.Nickname
 		r = append(r, c)
 	})
-	this.mu.RUnlock()
 	return r
 }
 

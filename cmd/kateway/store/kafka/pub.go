@@ -68,17 +68,9 @@ func (this *pubStore) Start() (err error) {
 	}
 
 	go func() {
-		// 5 seconds after meta store refresh
-		time.Sleep(time.Second * 5)
-
-		ticker := time.NewTicker(meta.Default.RefreshInterval())
-		defer ticker.Stop()
-
 		for {
 			select {
-			case <-ticker.C:
-				// FIXME the meta might not finished refresh yet
-				// should use channel for synchronization
+			case <-meta.Default.RefreshEvent():
 				this.doRefresh(false)
 
 			case <-this.shutdownCh:
