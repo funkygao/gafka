@@ -22,6 +22,7 @@ type ZkZone struct {
 	conn *zk.Conn
 	evt  <-chan zk.Event
 	mu   sync.Mutex
+	once sync.Once
 	errs []error
 
 	zkclusters map[string]*ZkCluster
@@ -50,7 +51,9 @@ func (this *ZkZone) ZkAddrList() []string {
 }
 
 func (this *ZkZone) Close() {
-	this.conn.Close()
+	this.once.Do(func() {
+		this.conn.Close()
+	})
 }
 
 func (this *ZkZone) Conn() *zk.Conn {
