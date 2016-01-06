@@ -14,6 +14,8 @@ Don't make programmer think!
 ### Features
 
 - http/https/websocket/http2 interface for programmer
+- High performance and high throughput
+  - over 100K message per second on a single host
 - Service Discovery
   - self contained
 - Quotas and rate limit, QoS
