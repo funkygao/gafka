@@ -4,10 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"runtime/debug"
 	"strings"
 
 	"github.com/funkygao/etclib"
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 	zkr "github.com/funkygao/gafka/registry/zk"
 )
@@ -19,11 +21,13 @@ var (
 		tplFile           string
 		haproxyConfigFile string
 		haproxyBin        string
+		showVersion       bool
 	}
 )
 
 func parseFlags() {
 	flag.StringVar(&options.zone, "z", "prod", "zone")
+	flag.BoolVar(&options.showVersion, "version", false, "display version and exit")
 	flag.StringVar(&options.haproxyBin, "haproxy", "/opt/app/haproxy/haproxy", "haproxy binary path")
 	flag.StringVar(&options.configFile, "c", "/etc/kateway.cf", "config file path")
 	flag.StringVar(&options.tplFile, "t", "etc/haproxy.tpl", "haproxy config template file")
@@ -41,6 +45,11 @@ func main() {
 	}()
 
 	parseFlags()
+	if options.showVersion {
+		fmt.Fprintf(os.Stderr, "%s-%s\n", gafka.Version, gafka.BuildId)
+		os.Exit(0)
+	}
+
 	ctx.LoadConfig(options.configFile)
 
 	if err := etclib.Dial(strings.Split(ctx.ZoneZkAddrs(options.zone), ",")); err != nil {

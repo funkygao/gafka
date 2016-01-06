@@ -38,6 +38,10 @@ if [[ $1 = "kw" ]]; then
     BUILD_PKG=cmd/kateway
     BUILD_BIN=kateway
 fi
+if [[ $1 = "ha" ]]; then
+    BUILD_PKG=cmd/elasticha
+    BUILD_BIN=elasticha
+fi
 
 cd $BUILD_PKG
 go generate ./...
