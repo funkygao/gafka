@@ -2,6 +2,8 @@
 
 A RESTful gateway for kafka that supports Pub and Sub.
 
+Don't make programmer think!
+
     _/    _/              _/
        _/  _/      _/_/_/  _/_/_/_/    _/_/    _/      _/      _/    _/_/_/  _/    _/
       _/_/      _/    _/    _/      _/_/_/_/  _/      _/      _/  _/    _/  _/    _/
