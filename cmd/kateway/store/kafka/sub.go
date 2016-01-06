@@ -19,7 +19,7 @@ type consumerFetcher struct {
 
 type subStore struct {
 	shutdownCh   chan struct{}
-	closedConnCh <-chan string
+	closedConnCh <-chan string // remote addr
 	wg           *sync.WaitGroup
 	hostname     string
 
@@ -38,6 +38,10 @@ func NewSubStore(wg *sync.WaitGroup, closedConnCh <-chan string, debug bool) *su
 		shutdownCh:   make(chan struct{}),
 		closedConnCh: closedConnCh,
 	}
+}
+
+func (this *subStore) Name() string {
+	return "kafka"
 }
 
 func (this *subStore) Start() (err error) {
@@ -69,14 +73,6 @@ func (this *subStore) Stop() {
 	close(this.shutdownCh)
 }
 
-func (this *subStore) Name() string {
-	return "kafka"
-}
-
-func (this *subStore) KillClient(remoteAddr string) {
-	this.subPool.killClient(remoteAddr)
-}
-
 func (this *subStore) Fetch(cluster, topic, group, remoteAddr, reset string) (store.Fetcher, error) {
 	cg, err := this.subPool.PickConsumerGroup(cluster, topic, group, remoteAddr, reset)
 	if err != nil {
@@ -86,4 +82,8 @@ func (this *subStore) Fetch(cluster, topic, group, remoteAddr, reset string) (st
 	return &consumerFetcher{
 		ConsumerGroup: cg,
 	}, nil
+}
+
+func (this *subStore) KillClient(remoteAddr string) {
+	this.subPool.killClient(remoteAddr)
 }

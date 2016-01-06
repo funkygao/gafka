@@ -20,7 +20,7 @@ type subPool struct {
 
 func newSubPool() *subPool {
 	return &subPool{
-		clientMap: make(map[string]*consumergroup.ConsumerGroup),
+		clientMap: make(map[string]*consumergroup.ConsumerGroup, 500),
 	}
 }
 
