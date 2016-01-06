@@ -50,3 +50,4 @@
 - sub after 1m, got no 204 reply: empty reply
 - when pub a too big msg, fasthttp has empty reply while normal http is ok
 - when kateway shutdown, it did not flush offset commit
+- guard.go panic

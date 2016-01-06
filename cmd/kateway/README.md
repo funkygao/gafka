@@ -134,24 +134,16 @@ Don't make programmer think!
 
 - [ ] pub fails retry should be done at kafka pub sdk: sarama
 - [ ] check hack pkg
+- [ ] delayed pub
+- [ ] warmup
 - [ ] https, outer ip must https
-- [ ] guard.go panic
 - [ ] Pub HTTP POST Request compress
 - [ ] metrics
-  - intranet/extranet pub
-  - failure count
-  - consumer performance: how many msges can it consume
-  - rank by topic/ver/app
+- [ ] who post the most messages
 - [ ] for intranet traffic, record the src ip and port
-- [ ] delayed pub
 - [ ] https://github.com/corneldamian/httpway
-- [ ] warmup
-- [ ] elastic scale
-- [ ] pool benchmark
-- [ ] sub lock more precise 
 - [ ] Update to glibc 2.20 or higher
 - [ ] compression in kafka
 - [ ] plugin
 - [ ] pub audit
-- [ ] smooth upgrade kafka version
 
