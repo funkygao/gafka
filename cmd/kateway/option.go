@@ -32,6 +32,7 @@ var (
 		ratelimit              bool
 		disableMetrics         bool
 		dryRun                 bool
+		clusterAware           bool
 		cpuAffinity            bool
 		debug                  bool
 		maxPubSize             int64
@@ -71,6 +72,7 @@ func parseFlags() {
 	flag.BoolVar(&options.dryRun, "dryrun", false, "dry run mode")
 	flag.BoolVar(&options.cpuAffinity, "cpuaffinity", false, "enable cpu affinity")
 	flag.BoolVar(&options.ratelimit, "raltelimit", false, "enable rate limit")
+	flag.BoolVar(&options.clusterAware, "clusteraware", false, "each kateway knows the cluster nodes")
 	flag.BoolVar(&options.disableMetrics, "metricsoff", false, "disable metrics reporter")
 	flag.StringVar(&options.influxServer, "influxdb", "http://10.77.144.193:10036", "influxdb server address for the metrics reporter")
 	flag.DurationVar(&options.reporterInterval, "report", time.Second*10, "reporter flush interval")

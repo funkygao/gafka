@@ -22,7 +22,9 @@ func newManServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *manS
 	}
 	this.waitExitFunc = this.waitExit
 
-	<-this.peersHousekeep()
+	if options.clusterAware {
+		<-this.peersHousekeep()
+	}
 
 	return this
 }
