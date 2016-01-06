@@ -16,6 +16,8 @@ Don't make programmer think!
 - http/https/websocket/http2 interface for programmer
 - High performance and high throughput
   - over 100K message per second on a single host
+- Loosely coupled with kafka/zk
+  - each component is replaceable
 - Service Discovery
   - self contained
 - Quotas and rate limit, QoS
