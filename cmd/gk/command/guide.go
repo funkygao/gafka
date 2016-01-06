@@ -24,7 +24,7 @@ What is zone?
     gk will automatically install zones in your $HOME/.gafka.cf
 
 How can I get help?
-    gk <cmd> -h
+    gk <command> -h
 
 `
 
