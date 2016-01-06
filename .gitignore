@@ -32,6 +32,8 @@ cmd/kateway/kateway
 cmd/kateway/prof.cpu
 cmd/kateway/prof.mem
 cmd/kateway/ssl
+cmd/hadiscover/hadiscover
+cmd/hadiscover/.haproxy.cf
 cmd/kateway/bench/bench
 cmd/kateway/executor/executor
 cmd/kateway/bench/httpdserver

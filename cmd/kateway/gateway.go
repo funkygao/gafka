@@ -165,6 +165,7 @@ func (this *Gateway) Start() (err error) {
 		this.subServer.Start()
 	}
 
+	// after everything is ready, register to notify others
 	if registry.Default != nil {
 		if err := registry.Default.Register(); err != nil {
 			panic(err)
