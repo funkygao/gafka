@@ -165,7 +165,7 @@ func (this *Gateway) Start() (err error) {
 		this.subServer.Start()
 	}
 
-	// after everything is ready, register to notify others
+	// the last thing is to register: notify others
 	if registry.Default != nil {
 		if err := registry.Default.Register(); err != nil {
 			panic(err)
@@ -189,11 +189,14 @@ func (this *Gateway) Stop() {
 func (this *Gateway) ServeForever() {
 	select {
 	case <-this.shutdownCh:
+		// the 1st thing is to deregister
 		if registry.Default != nil {
-			registry.Default.Deregister()
+			if err := registry.Default.Deregister(); err != nil {
+				log.Error("Deregister: %v", err)
+			}
 		}
 
-		log.Info("waiting for components shutdown...")
+		log.Info("deregisted, waiting for components shutdown...")
 		this.wg.Wait()
 
 		if store.DefaultPubStore != nil {

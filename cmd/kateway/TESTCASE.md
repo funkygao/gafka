@@ -13,8 +13,17 @@
 ### sub
 
 - sub when partitions/brokers added/deleted
+
+  fail, sub can recv the new partition message. but pub can produce to the new partitions
+
 - sub a non-existent topic
+  
+  not allowed
+
 - auto commit offset when kateway restarts
+
+  fail
+
 - never get message lost or duplicated
 
 
@@ -30,3 +39,4 @@
 
 - sub after 1m, got no 204 reply: empty reply
 - when pub a too big msg, fasthttp has empty reply while normal http is ok
+- when kateway shutdown, it did not flush offset commit
