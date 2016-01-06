@@ -40,7 +40,7 @@ type fastListenerConn struct {
 }
 
 func (c *fastListenerConn) Close() error {
-	log.Trace("%s closing conn %s", c.Conn.LocalAddr(), c.Conn.RemoteAddr())
+	log.Trace("%s closing conn from %s", c.Conn.LocalAddr(), c.Conn.RemoteAddr())
 
 	err := c.Conn.Close()
 	if c.gw != nil && !options.disableMetrics {
@@ -89,7 +89,7 @@ type limitListenerConn struct {
 }
 
 func (c *limitListenerConn) Close() error {
-	log.Trace("%s closing conn %s", c.Conn.LocalAddr(), c.Conn.RemoteAddr())
+	log.Trace("%s closing conn from %s", c.Conn.LocalAddr(), c.Conn.RemoteAddr())
 
 	err := c.Conn.Close()
 	if c.gw != nil && !options.disableMetrics {

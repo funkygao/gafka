@@ -55,7 +55,6 @@ func (this *subStore) Start() (err error) {
 				return
 
 			case remoteAddr = <-this.closedConnCh:
-				log.Trace("%s closed, killing sub", remoteAddr)
 				this.subPool.killClient(remoteAddr)
 
 			}
