@@ -39,7 +39,7 @@ func main() {
 	flag.StringVar(&pubkey, "pubkey", "mypubkey", "pubkey")
 	flag.BoolVar(&async, "async", false, "async pub")
 	flag.DurationVar(&sleep, "sleep", 0, "sleep between pub")
-	flag.BoolVar(&suppressError, "noerr", true, "suppress error output")
+	flag.BoolVar(&suppressError, "noerr", false, "suppress error output")
 	flag.Parse()
 
 	switch mode {
