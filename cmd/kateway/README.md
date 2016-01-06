@@ -13,18 +13,21 @@ Don't make programmer think!
 
 ### Features
 
-- http/https/websocket/http2 supported
-- Quotas and rate limit
+- http/https/websocket/http2 interface for programmer
+- Service Discovery
+  - self contained
+- Quotas and rate limit, QoS
 - Circuit breakers
 - Plugins
   - authentication and authorization
   - transform
+  - other stuff related to enterprise message bus
 - Elastic scales
-- Analytics
-- Monitor Performance
-- Service Discovery
-- Hot reload without downtime
-- Distributed load balancing
+- Works closely with the powerful tool: gk
+- Realtime analytics and metrics monitor
+- Multi-tenant message metrics dashboard
+- Graceful shutdown without downtime
+- Handles most of the difficult stuff while providing easy to use interface
 
 ### Architecture
 
