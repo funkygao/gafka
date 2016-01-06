@@ -14,12 +14,16 @@ var (
 	n     int
 	appid string
 	group string
+	topic string
+	step  int
 )
 
 func init() {
 	flag.StringVar(&addr, "addr", "http://localhost:9192", "sub kateway addr")
 	flag.StringVar(&group, "g", "mygroup1", "consumer group name")
 	flag.StringVar(&appid, "appid", "app1", "consume whose topic")
+	flag.IntVar(&step, "step", 1, "display progress step")
+	flag.StringVar(&topic, "t", "foobar", "topic to sub")
 	flag.IntVar(&n, "n", 1000000, "run sub how many times")
 	flag.Parse()
 }
@@ -29,15 +33,14 @@ func main() {
 	c.Connect(addr)
 	i := 0
 	t0 := time.Now()
-	step := 3000
-	err := c.Subscribe(appid, "foobar", "v1", group, func(statusCode int, msg []byte) error {
+	err := c.Subscribe(appid, topic, "v1", group, func(statusCode int, msg []byte) error {
 		i++
 		if n > 0 && i >= n {
 			return api.ErrSubStop
 		}
 
 		if i%step == 0 {
-			log.Println(i)
+			log.Println(string(msg))
 		}
 
 		return nil
