@@ -63,5 +63,4 @@ func (this *manServer) waitExit(server *http.Server, listener net.Listener, exit
 	}
 
 	this.gw.wg.Done()
-	log.Trace("%s server stopped on %s", this.name, server.Addr)
 }

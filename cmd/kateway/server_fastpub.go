@@ -107,6 +107,7 @@ func (this *pubServer) startServer(https bool) {
 		var (
 			retryDelay  time.Duration
 			theListener net.Listener
+			addr        string
 		)
 
 		if https {
@@ -118,31 +119,42 @@ func (this *pubServer) startServer(https bool) {
 			}
 
 			theListener = this.httpsListener
+			addr = this.httpsServer.Addr
 		} else {
 			this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
 			theListener = this.httpListener
+			addr = this.httpServer.Addr
 		}
+
 		theListener = FastListener(this.gw, theListener)
 		close(waitListenerUp)
 
 		for {
 			if https {
-				err = this.httpsServer.Serve(this.httpsListener)
+				err = this.httpsServer.Serve(theListener)
 			} else {
-				err = this.httpServer.Serve(this.httpListener)
+				err = this.httpServer.Serve(theListener)
 			}
 
-			// backoff
-			if retryDelay == 0 {
-				retryDelay = 5 * time.Millisecond
-			} else {
-				retryDelay = 2 * retryDelay
+			select {
+			case <-this.gw.shutdownCh:
+				log.Trace("%s server stopped on %s", this.name, addr)
+				return
+
+			default:
+				// backoff
+				if retryDelay == 0 {
+					retryDelay = 5 * time.Millisecond
+				} else {
+					retryDelay = 2 * retryDelay
+				}
+				if maxDelay := time.Second; retryDelay > maxDelay {
+					retryDelay = maxDelay
+				}
+
+				log.Error("%s server: %v, retry in %v", this.name, err, retryDelay)
+				time.Sleep(retryDelay)
 			}
-			if maxDelay := time.Second; retryDelay > maxDelay {
-				retryDelay = maxDelay
-			}
-			log.Error("fastpub server: %v, retry in %v", err, retryDelay)
-			time.Sleep(retryDelay)
 		}
 	}()
 
@@ -181,5 +193,4 @@ func (this *pubServer) waitExit(server *myFastServer, listener net.Listener, exi
 	}
 
 	this.gw.wg.Done()
-	log.Trace("%s server stopped on %s", this.name, server.Addr)
 }

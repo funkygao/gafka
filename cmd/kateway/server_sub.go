@@ -96,5 +96,4 @@ func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit
 	this.idleConnsWg.Wait()
 
 	this.gw.wg.Done()
-	log.Trace("%s server stopped on %s", this.name, server.Addr)
 }
