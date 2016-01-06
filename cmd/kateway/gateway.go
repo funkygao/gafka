@@ -196,7 +196,7 @@ func (this *Gateway) ServeForever() {
 			}
 		}
 
-		log.Info("deregisted, waiting for components shutdown...")
+		log.Info("Deregister done, waiting for components shutdown...")
 		this.wg.Wait()
 
 		if store.DefaultPubStore != nil {
