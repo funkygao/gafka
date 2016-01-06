@@ -76,9 +76,9 @@ A RESTful gateway for kafka that supports Pub and Sub.
                   | client  |   | client  |   | client  |   | client  |     
                   +---------+   +---------+   +---------+   +---------+    
                        |              |            |             |
-                       +-----------------------------------------+        
-                                           |
-                                           | HTTP/1.1 keep-alive
+                       +-----------------------------------------+           +----------+
+                                           |                                 | elasticha|
+                                           | HTTP/1.1 keep-alive             +----------+
                                            |     
                                     +--------------+                         +----------+
                                     | LoadBalancer |                         | registry |
