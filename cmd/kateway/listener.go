@@ -25,7 +25,7 @@ func (l *fastListener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 
-	log.Trace("%s got conn %s", l.Listener.Addr(), c.RemoteAddr())
+	log.Trace("%s new conn from %s", l.Listener.Addr(), c.RemoteAddr())
 	if l.gw != nil && !options.disableMetrics {
 		l.gw.svrMetrics.TotalConns.Inc(1)
 		l.gw.svrMetrics.ConcurrentConns.Inc(1)
@@ -72,7 +72,7 @@ func (l *limitListener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 
-	log.Trace("%s got conn %s", l.Listener.Addr(), c.RemoteAddr())
+	log.Trace("%s new conn from %s", l.Listener.Addr(), c.RemoteAddr())
 	if l.gw != nil && !options.disableMetrics {
 		l.gw.svrMetrics.TotalConns.Inc(1)
 		l.gw.svrMetrics.ConcurrentConns.Inc(1)
