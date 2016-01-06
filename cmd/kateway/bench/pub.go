@@ -60,10 +60,11 @@ func pubGatewayLoop(seq int) {
 		err = client.Publish(topic, "v1", "", []byte(msg))
 		if err != nil {
 			fmt.Println(err)
-		}
-
-		if no%step == 0 {
-			log.Println(msg)
+			no = atomic.AddInt64(&n, -1)
+		} else {
+			if no%step == 0 {
+				log.Println(msg)
+			}
 		}
 
 		if sleep > 0 {
