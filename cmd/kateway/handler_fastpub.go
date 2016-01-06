@@ -28,6 +28,24 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 		return
 	}
 
+	msgLen := ctx.Request.Header.ContentLength()
+	switch {
+	case msgLen == -1:
+		log.Warn("pub[%s] %s %+v invalid content length", appid, ctx.RemoteAddr(), params)
+		ctx.Error("invalid content length", fasthttp.StatusBadRequest)
+		return
+
+	case int64(msgLen) > options.maxPubSize:
+		log.Warn("pub[%s] %s %+v too big content length:%d", appid, ctx.RemoteAddr(), params, msgLen)
+		ctx.Error(ErrTooBigPubMessage.Error(), fasthttp.StatusBadRequest)
+		return
+
+	case msgLen < options.minPubSize:
+		log.Warn("pub[%s] %s %+v too small content length:%d", appid, ctx.RemoteAddr(), params, msgLen)
+		ctx.Error(ErrTooSmallPubMessage.Error(), fasthttp.StatusBadRequest)
+		return
+	}
+
 	ver := params.ByName(UrlParamVersion)
 	queryArgs := ctx.Request.URI().QueryArgs()
 	key := queryArgs.Peek(UrlQueryKey)

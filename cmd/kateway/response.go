@@ -17,7 +17,7 @@ func (this *Gateway) writeErrorResponse(w http.ResponseWriter, err string, code 
 }
 
 func (this *Gateway) writeInvalidContentLength(w http.ResponseWriter) {
-	this.writeErrorResponse(w, "invalid content length header", http.StatusBadRequest)
+	this.writeErrorResponse(w, "invalid content length", http.StatusBadRequest)
 }
 
 func (this *Gateway) writeKatewayHeader(w http.ResponseWriter) {

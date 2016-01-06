@@ -34,21 +34,32 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	// get the raw POST message
-	lbr := io.LimitReader(r.Body, options.maxPubSize+1)
 	msgLen := int(r.ContentLength)
-	if msgLen == -1 {
-		this.writeInvalidContentLength(w)
+	switch {
+	case msgLen == -1:
 		log.Warn("pub[%s] %s %+v invalid content length", appid, r.RemoteAddr, params)
+		this.writeInvalidContentLength(w)
+		return
+
+	case int64(msgLen) > options.maxPubSize:
+		log.Warn("pub[%s] %s %+v too big content length:%d", appid, r.RemoteAddr, params, msgLen)
+		this.writeErrorResponse(w, ErrTooBigPubMessage.Error(), http.StatusBadRequest)
+		return
+
+	case msgLen < options.minPubSize:
+		log.Warn("pub[%s] %s %+v too small content length:%d", appid, r.RemoteAddr, params, msgLen)
+		this.writeErrorResponse(w, ErrTooSmallPubMessage.Error(), http.StatusBadRequest)
 		return
 	}
 
+	lbr := io.LimitReader(r.Body, options.maxPubSize+1)
 	msg := mpool.NewMessage(msgLen)
 	msg.Body = msg.Body[0:msgLen]
 	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
 		msg.Free()
 
 		log.Error("%s %+v: %s", r.RemoteAddr, params, err)
-		this.writeErrorResponse(w, "body size exceeds the given limit", http.StatusBadRequest)
+		this.writeErrorResponse(w, ErrTooBigPubMessage.Error(), http.StatusBadRequest)
 		return
 	}
 

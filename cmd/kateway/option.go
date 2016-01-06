@@ -36,6 +36,7 @@ var (
 		cpuAffinity            bool
 		debug                  bool
 		maxPubSize             int64
+		minPubSize             int
 		maxClients             int
 		subTimeout             time.Duration
 		offsetCommitInterval   time.Duration
@@ -77,6 +78,7 @@ func parseFlags() {
 	flag.StringVar(&options.influxServer, "influxdb", "http://10.77.144.193:10036", "influxdb server address for the metrics reporter")
 	flag.DurationVar(&options.reporterInterval, "report", time.Second*10, "reporter flush interval")
 	flag.Int64Var(&options.maxPubSize, "maxpub", 1<<20, "max Pub message size")
+	flag.IntVar(&options.minPubSize, "minpub", 1, "min Pub message size")
 	flag.IntVar(&options.maxClients, "maxclient", 100000, "max concurrent connections")
 	flag.DurationVar(&options.offsetCommitInterval, "offsetcommit", time.Minute, "consumer offset commit interval")
 	flag.DurationVar(&options.httpReadTimeout, "httprtimeout", time.Second*60, "http server read timeout")
