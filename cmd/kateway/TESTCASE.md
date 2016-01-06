@@ -24,6 +24,8 @@
 
   fail
 
+- start a sub, then another... then shutdown...
+
 - never get message lost or duplicated
 
 

@@ -142,7 +142,7 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 			if consumer.Lag > int64(this.lagThreshold) {
 				lagOutput = color.Red("%15s", gofmt.Comma(consumer.Lag))
 				if consumer.Online {
-					symbol = color.Green("⚠︎︎")
+					symbol = color.Yellow("⚠︎︎")
 				} else {
 					symbol = color.Yellow("☔︎︎")
 				}
