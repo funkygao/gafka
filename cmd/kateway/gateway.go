@@ -118,8 +118,11 @@ func (this *Gateway) InstanceInfo() []byte {
 	s["id"] = this.id
 	s["zone"] = options.zone
 	s["man"] = options.manHttpAddr
+	s["sman"] = options.manHttpsAddr
 	s["pub"] = options.pubHttpAddr
+	s["spub"] = options.pubHttpsAddr
 	s["sub"] = options.subHttpAddr
+	s["ssub"] = options.subHttpsAddr
 	s["debug"] = options.debugHttpAddr
 	d, _ := json.Marshal(s)
 	return d
@@ -151,13 +154,13 @@ func (this *Gateway) Start() (err error) {
 
 	if this.pubServer != nil {
 		store.DefaultPubStore.Start()
-		log.Info("pub store[%s] started", store.DefaultPubStore.Name())
+		log.Trace("pub store[%s] started", store.DefaultPubStore.Name())
 
 		this.pubServer.Start()
 	}
 	if this.subServer != nil {
 		store.DefaultSubStore.Start()
-		log.Info("sub store[%s] started", store.DefaultSubStore.Name())
+		log.Trace("sub store[%s] started", store.DefaultSubStore.Name())
 
 		this.subServer.Start()
 	}

@@ -48,7 +48,7 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 
 	if httpsAddr != "" {
 		this.httpsServer = &http.Server{
-			Addr:           httpAddr,
+			Addr:           httpsAddr,
 			Handler:        this.router,
 			ReadTimeout:    httpReadTimeout,
 			WriteTimeout:   httpWriteTimeout,
@@ -76,14 +76,6 @@ func (this *webServer) Router() *httprouter.Router {
 
 func (this *webServer) startServer(https bool) {
 	var err error
-	if https {
-		this.httpsListener, err = setupHttpsListener(this.httpsServer.Addr,
-			this.gw.certFile, this.gw.keyFile)
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	waitListenerUp := make(chan struct{})
 	go func() {
 		if options.cpuAffinity {
@@ -98,6 +90,12 @@ func (this *webServer) startServer(https bool) {
 		for {
 			if https {
 				this.httpsListener, err = net.Listen("tcp", this.httpsServer.Addr)
+				this.httpsListener, err = setupHttpsListener(this.httpsListener,
+					this.gw.certFile, this.gw.keyFile)
+				if err != nil {
+					panic(err)
+				}
+
 				theListener = this.httpsListener
 			} else {
 				this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
@@ -113,7 +111,7 @@ func (this *webServer) startServer(https bool) {
 				if maxDelay := time.Second; retryDelay > maxDelay {
 					retryDelay = maxDelay
 				}
-				log.Error("listener %v, retry in %v", err, retryDelay)
+				log.Error("%s listener %v, retry in %v", this.name, err, retryDelay)
 				time.Sleep(retryDelay)
 				continue
 			}

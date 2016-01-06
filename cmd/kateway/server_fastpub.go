@@ -60,7 +60,7 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 	}
 
 	if httpsAddr != "" {
-		this.httpServer = &myFastServer{
+		this.httpsServer = &myFastServer{
 			Server: &fasthttp.Server{
 				Name:                 "kateway",
 				Concurrency:          maxClients,
@@ -98,14 +98,6 @@ func (this *pubServer) Router() *fasthttprouter.Router {
 
 func (this *pubServer) startServer(https bool) {
 	var err error
-	if https {
-		this.httpsListener, err = setupHttpsListener(this.httpsServer.Addr,
-			this.gw.certFile, this.gw.keyFile)
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	waitListenerUp := make(chan struct{})
 	go func() {
 		if options.cpuAffinity {
@@ -119,6 +111,12 @@ func (this *pubServer) startServer(https bool) {
 
 		if https {
 			this.httpsListener, err = net.Listen("tcp", this.httpsServer.Addr)
+			this.httpsListener, err = setupHttpsListener(this.httpsListener,
+				this.gw.certFile, this.gw.keyFile)
+			if err != nil {
+				panic(err)
+			}
+
 			theListener = this.httpsListener
 		} else {
 			this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
@@ -162,9 +160,9 @@ func (this *pubServer) startServer(https bool) {
 	}
 
 	if https {
-		log.Info("%s fast https server ready on %s", this.name, this.httpsServer.Addr)
+		log.Info("%s https server ready on %s", this.name, this.httpsServer.Addr)
 	} else {
-		log.Info("%s fast http server ready on %s", this.name, this.httpServer.Addr)
+		log.Info("%s http server ready on %s", this.name, this.httpServer.Addr)
 	}
 
 }

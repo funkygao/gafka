@@ -5,13 +5,8 @@ import (
 	"net"
 )
 
-func setupHttpsListener(listenAddr string, certFile, keyFile string) (net.Listener, error) {
-	listener, err := net.Listen("tcp", listenAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	cer, err := tls.LoadX509KeyPair("server.pem", "server.key")
+func setupHttpsListener(listener net.Listener, certFile, keyFile string) (net.Listener, error) {
+	cer, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return nil, err
 	}
