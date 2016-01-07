@@ -128,7 +128,9 @@ Don't make programmer think!
 
   haproxy MUST enable session sticky
 
-- how to scale kateway?
+- topic name cannot include
+  - slash, dot, ~, +, @
+  - case sensitive
 
 ### TODO
 

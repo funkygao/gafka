@@ -6,8 +6,10 @@ import (
 	"log"
 	"os"
 	"runtime/debug"
+	"runtime/trace"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
@@ -53,6 +55,20 @@ func main() {
 
 		fmt.Println("kateway killed")
 		os.Exit(0)
+	}
+
+	if options.golangTrace {
+		// go tool trace kateway xxx.pprof
+		f, err := os.Create(time.Now().Format("2006-01-02T150405.pprof"))
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+
+		if err = trace.Start(f); err != nil {
+			panic(err)
+		}
+		defer trace.Stop()
 	}
 
 	fmt.Fprintln(os.Stderr, strings.TrimSpace(logo))

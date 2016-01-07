@@ -34,6 +34,7 @@ var (
 		dryRun                 bool
 		clusterAware           bool
 		cpuAffinity            bool
+		golangTrace            bool
 		debug                  bool
 		maxPubSize             int64
 		minPubSize             int
@@ -71,6 +72,7 @@ func parseFlags() {
 	flag.StringVar(&options.store, "store", "kafka", "backend store")
 	flag.StringVar(&options.configFile, "conf", "/etc/kateway.cf", "config file")
 	flag.BoolVar(&options.debug, "debug", false, "enable debug mode")
+	flag.BoolVar(&options.golangTrace, "gotrace", false, "go tool trace")
 	flag.StringVar(&options.killFile, "kill", "", "kill running kateway by pid file")
 	flag.BoolVar(&options.showVersion, "version", false, "show version and exit")
 	flag.BoolVar(&options.dryRun, "dryrun", false, "dry run mode")
