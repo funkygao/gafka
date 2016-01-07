@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
@@ -34,6 +35,7 @@ type neverEnding byte
 var gw *Gateway
 
 func init() {
+	gafka.BuildId = "test"
 	log.AddFilter("stdout", log.ERROR, log.NewConsoleLogWriter())
 }
 
@@ -64,7 +66,6 @@ func newGatewayForTest(b *testing.B, store string) *Gateway {
 	options.store = store
 	options.debug = false
 	options.disableMetrics = false
-	options.enableBreaker = true
 
 	ctx.LoadConfig("/etc/kateway.cf")
 
@@ -129,7 +130,7 @@ func BenchmarkDirectKafkaProduce1K(b *testing.B) {
 	meta.Default = zkmeta.New(cf)
 	meta.Default.Start()
 	var wg sync.WaitGroup
-	store.DefaultPubStore = kafka.NewPubStore(&wg, false)
+	store.DefaultPubStore = kafka.NewPubStore(100, 5, 0, &wg, false, true)
 	store.DefaultPubStore.Start()
 
 	data := []byte(strings.Repeat("X", msgSize))

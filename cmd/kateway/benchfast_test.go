@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/buaazp/fasthttprouter"
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 	log "github.com/funkygao/log4go"
 	"github.com/valyala/fasthttp"
@@ -19,6 +20,7 @@ type neverEnding byte
 var gw *Gateway
 
 func init() {
+	gafka.BuildId = "test"
 	log.AddFilter("stdout", log.ERROR, log.NewConsoleLogWriter())
 }
 
