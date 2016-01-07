@@ -13,8 +13,6 @@
 
 ### sub
 
-- curl sub fails for 'gk lags'
-
 - sub when partitions/brokers added/deleted
 
   fail, sub can recv the new partition message. but pub can produce to the new partitions
