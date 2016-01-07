@@ -54,10 +54,11 @@ dbg:
 func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
-	w.Write([]byte(fmt.Sprintf("ver:%s-%s, Built with %s-%s for %s-%s, uptime:%s",
-		gafka.Version, gafka.BuildId,
+	w.Write([]byte(fmt.Sprintf("id:%s, ver:%s-%s, Built with %s-%s for %s-%s, uptime:%s\n",
+		options.id, gafka.Version, gafka.BuildId,
 		runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH,
 		time.Since(this.startedAt))))
+	w.Write([]byte(fmt.Sprintf("pubserver: %s", this.pubServer.name)))
 }
 
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,

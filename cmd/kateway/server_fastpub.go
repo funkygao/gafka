@@ -14,7 +14,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-type myFastServer struct {
+type fastServerWithAddr struct {
 	*fasthttp.Server
 	Addr string
 }
@@ -24,10 +24,10 @@ type pubServer struct {
 	gw   *Gateway
 
 	httpListener net.Listener
-	httpServer   *myFastServer
+	httpServer   *fastServerWithAddr
 
 	httpsListener net.Listener
-	httpsServer   *myFastServer
+	httpsServer   *fastServerWithAddr
 
 	router *fasthttprouter.Router
 }
@@ -41,7 +41,7 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 
 	logger := golog.New(os.Stdout, "fasthttp ", golog.LstdFlags|golog.Lshortfile)
 	if httpAddr != "" {
-		this.httpServer = &myFastServer{
+		this.httpServer = &fastServerWithAddr{
 			Server: &fasthttp.Server{
 				Name:                 "kateway",
 				Concurrency:          maxClients,
@@ -60,7 +60,7 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 	}
 
 	if httpsAddr != "" {
-		this.httpsServer = &myFastServer{
+		this.httpsServer = &fastServerWithAddr{
 			Server: &fasthttp.Server{
 				Name:                 "kateway",
 				Concurrency:          maxClients,
@@ -179,7 +179,7 @@ func (this *pubServer) startServer(https bool) {
 
 }
 
-func (this *pubServer) waitExit(server *myFastServer, listener net.Listener, exit <-chan struct{}) {
+func (this *pubServer) waitExit(server *fastServerWithAddr, listener net.Listener, exit <-chan struct{}) {
 	<-exit
 
 	// HTTP response will have "Connection: close"
