@@ -161,9 +161,13 @@ func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (err error
 			}
 
 			switch err {
-			case ypool.ErrClosed:
+			case ypool.ErrClosed, sarama.ErrShuttingDown:
 				// the connection pool is already closed
 				return store.ErrShutdown
+
+			case sarama.ErrClosedClient, sarama.ErrNotConnected:
+			case sarama.ErrMessageTooLarge:
+				// TODO
 
 			case ypool.ErrTimeout:
 				// the connection pool is too busy
@@ -197,6 +201,7 @@ func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (err error
 			return
 
 		case sarama.ErrOutOfBrokers:
+			// all brokers fails to respond
 			producer.Close()
 			this.doRefresh(true)
 
