@@ -173,9 +173,12 @@ func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (err error
 				// the connection pool is too busy
 				return store.ErrBusy
 
-			case ErrorKafkaConfig, sarama.ErrOutOfBrokers:
-				// the conn is idle too long which triggers the factory method and connect to kafka
-				// all brokers down! retry for luck
+			case sarama.ErrOutOfBrokers:
+				// all brokers down!
+				return
+
+			case ErrEmptyBrokerList:
+				// we provided empty broker list for sarama client
 				this.doRefresh(true)
 
 			default:

@@ -5,5 +5,5 @@ import (
 )
 
 var (
-	ErrorKafkaConfig = sarama.ConfigurationError("You must provide at least one broker address")
+	ErrEmptyBrokerList = sarama.ConfigurationError("You must provide at least one broker address")
 )
