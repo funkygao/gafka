@@ -40,7 +40,7 @@ func main() {
 		}
 
 		if i%step == 0 {
-			log.Println(string(msg))
+			log.Println(statusCode, string(msg))
 		}
 
 		return nil
