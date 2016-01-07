@@ -13,14 +13,15 @@ import (
 )
 
 var (
-	c       int
-	addr    string
-	n       int64
-	msgSize int
-	step    int64
-	appid   string
-	topic   string
-	sleep   time.Duration
+	c        int
+	addr     string
+	n        int64
+	msgSize  int
+	step     int64
+	appid    string
+	topic    string
+	workerId string
+	sleep    time.Duration
 )
 
 func main() {
@@ -31,6 +32,7 @@ func main() {
 	flag.StringVar(&addr, "h", "http://localhost:9191", "pub http addr")
 	flag.Int64Var(&step, "step", 1, "display progress step")
 	flag.StringVar(&topic, "t", "foobar", "topic to pub")
+	flag.StringVar(&workerId, "id", "1", "worker id")
 	flag.Parse()
 
 	for i := 0; i < c; i++ {
@@ -56,7 +58,8 @@ func pubGatewayLoop(seq int) {
 		sz = msgSize + rand.Intn(msgSize)
 		no = atomic.AddInt64(&n, 1)
 
-		msg = fmt.Sprintf("seq:%-2d no:%-10d payload:%s", seq, no, strings.Repeat("X", sz))
+		msg = fmt.Sprintf("w:%s seq:%-2d no:%-10d payload:%s",
+			workerId, seq, no, strings.Repeat("X", sz))
 		err = client.Publish(topic, "v1", "", []byte(msg))
 		if err != nil {
 			fmt.Println(err)
