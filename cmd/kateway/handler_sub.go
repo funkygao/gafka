@@ -50,7 +50,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
 	// pick a consumer from the consumer group
 	fetcher, err := store.DefaultSubStore.Fetch(meta.Default.LookupCluster(hisAppid, topic),
-		rawTopic, group, r.RemoteAddr, reset)
+		rawTopic, myAppid+"."+group, r.RemoteAddr, reset)
 	if err != nil {
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 
