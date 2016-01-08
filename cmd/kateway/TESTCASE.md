@@ -10,6 +10,8 @@
 - keepalive timeout, read/write timeout
 - max message size, max header size
 - keyed message
+- when pub, what if shutdown kateway
+- when refreshing meta store, no timeout, hang forever
 
 ### sub
 
