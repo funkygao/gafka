@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
@@ -36,6 +37,13 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
 	group = params.ByName(UrlParamGroup)
+	if strings.Contains(group, ".") {
+		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} invalid group",
+			r.RemoteAddr, topic, ver, group, limit)
+
+		http.Error(w, "group cannot contain dot", http.StatusBadRequest)
+		return
+	}
 
 	if !meta.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic) {
 		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} auth fail",
