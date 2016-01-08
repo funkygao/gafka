@@ -57,7 +57,7 @@ func main() {
 	}
 
 	ch := make(chan []string, 10)
-	go etclib.WatchChildren(zkr.KatewayIdsRoot, ch)
+	go etclib.WatchChildren(zkr.Root(options.zone), ch)
 
 	var err error
 	for {

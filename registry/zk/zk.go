@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	KatewayIdsRoot = "/_kateway/ids"
+	katewayIdsRoot = "/_kateway/ids"
 )
 
 type zkreg struct {
@@ -28,8 +28,12 @@ func New(zone string, id string, data []byte) *zkreg {
 	return this
 }
 
+func Root(zone string) string {
+	return fmt.Sprintf("%s/%s", katewayIdsRoot, zone)
+}
+
 func (this *zkreg) mypath() string {
-	return fmt.Sprintf("%s/%s", KatewayIdsRoot, this.id)
+	return fmt.Sprintf("%s/%s", Root(this.zkzone.Name()), this.id)
 }
 
 func (this *zkreg) Register() error {

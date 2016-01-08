@@ -36,7 +36,7 @@ func (this *manServer) peersHousekeep() chan struct{} {
 	}
 
 	ch := make(chan []string, 10)
-	go etclib.WatchChildren(zkr.KatewayIdsRoot, ch)
+	go etclib.WatchChildren(zkr.Root(this.gw.zone), ch)
 	close(r)
 
 	go func() {

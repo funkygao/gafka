@@ -37,7 +37,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
 	group = params.ByName(UrlParamGroup)
-	if strings.Contains(group, ".") {
+	if strings.Contains(group, ".") { // TODO more strict rules
 		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} invalid group",
 			r.RemoteAddr, topic, ver, group, limit)
 

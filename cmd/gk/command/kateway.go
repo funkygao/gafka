@@ -1,6 +1,7 @@
 package command
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"strings"
@@ -28,7 +29,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
-	instances, _, err := zkzone.Conn().Children(zkr.KatewayIdsRoot)
+	instances, _, err := zkzone.Conn().Children(zkr.Root(this.zone))
 	if err != nil {
 		if err.Error() == "zk: node does not exist" {
 			this.Ui.Output("no kateway running")
@@ -39,16 +40,23 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	}
 
 	for _, instance := range instances {
-		data, stat, err := zkzone.Conn().Get(zkr.KatewayIdsRoot + "/" + instance)
+		data, stat, err := zkzone.Conn().Get(zkr.Root(this.zone) + "/" + instance)
 		swallow(err)
 
-		this.Ui.Info(instance)
-		this.Ui.Output(fmt.Sprintf("  ctime:%s mtime:%s",
-			gofmt.PrettySince(zk.ZkTimestamp(stat.Ctime).Time()),
-			gofmt.PrettySince(zk.ZkTimestamp(stat.Mtime).Time()),
+		info := make(map[string]string)
+		json.Unmarshal(data, &info)
+
+		this.Ui.Info(fmt.Sprintf("%s id:%-2s up:%s", info["host"], instance,
+			gofmt.PrettySince(zk.ZkTimestamp(stat.Ctime).Time())))
+		this.Ui.Output(fmt.Sprintf("    ver: %s\n    build: %s\n    pub: %s\n    sub: %s\n    man: %s\n    dbg: %s",
+			info["ver"],
+			info["build"],
+			info["pub"],
+			info["sub"],
+			info["man"],
+			info["debug"],
 		))
 
-		this.Ui.Output(fmt.Sprintf("  %s", string(data)))
 	}
 
 	return
