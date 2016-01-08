@@ -229,10 +229,16 @@ func (this *zkMetaStore) ZkCluster(cluster string) *zk.ZkCluster {
 }
 
 func (this *zkMetaStore) AuthPub(appid, pubkey, topic string) (ok bool) {
+	if appid == "" || topic == "" {
+		return false
+	}
 	return true
 }
 
 func (this *zkMetaStore) AuthSub(appid, subkey, topic string) (ok bool) {
+	if appid == "" || topic == "" {
+		return false
+	}
 	return true
 }
 
