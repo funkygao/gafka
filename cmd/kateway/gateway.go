@@ -11,6 +11,7 @@ import (
 	_ "expvar"
 	_ "net/http/pprof"
 
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
@@ -118,6 +119,8 @@ func (this *Gateway) InstanceInfo() []byte {
 	var s map[string]string = make(map[string]string)
 	s["host"] = ctx.Hostname()
 	s["id"] = this.id
+	s["ver"] = gafka.Version
+	s["build"] = gafka.BuildId
 	s["zone"] = options.zone
 	s["man"] = options.manHttpAddr
 	s["sman"] = options.manHttpsAddr
