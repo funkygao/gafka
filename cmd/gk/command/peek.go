@@ -100,15 +100,16 @@ func (this *Peek) Run(args []string) (exitCode int) {
 				stats.MsgBytesPerSecond.Mark(int64(len(msg.Value)))
 			} else {
 				if this.colorize {
-					this.Ui.Output(fmt.Sprintf("%s %s %s", color.Green(msg.Topic),
-						gofmt.Comma(msg.Offset), string(msg.Value)))
+					this.Ui.Output(fmt.Sprintf("%s/%d %s k:%s, v:%s",
+						color.Green(msg.Topic), msg.Partition,
+						gofmt.Comma(msg.Offset), string(msg.Key), string(msg.Value)))
 				} else {
 					// colored UI will have invisible chars output
-					fmt.Println(fmt.Sprintf("%s %s %s", msg.Topic,
-						gofmt.Comma(msg.Offset), string(msg.Value)))
+					fmt.Println(fmt.Sprintf("%s/%d %s k:%s, v:%s",
+						msg.Topic, msg.Partition,
+						gofmt.Comma(msg.Offset), string(msg.Key), string(msg.Value)))
 				}
 			}
-
 		}
 	}
 
@@ -171,7 +172,8 @@ func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
 	topic string, partitionId int32, msgCh chan *sarama.ConsumerMessage) {
 	p, err := consumer.ConsumePartition(topic, partitionId, this.offset)
 	if err != nil {
-		panic(err)
+		this.Ui.Error(fmt.Sprintf("%s/%d: %v", topic, partitionId, err))
+		os.Exit(1)
 	}
 	defer p.Close()
 
