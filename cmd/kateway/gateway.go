@@ -32,28 +32,36 @@ type Gateway struct {
 	startedAt time.Time
 	zone      string
 
+	shutdownOnce sync.Once
+	shutdownCh   chan struct{}
+	wg           sync.WaitGroup
+
 	certFile string
 	keyFile  string
 
+	// online http producers client
+	producers    map[string]Producer // key is remote addr
+	produersLock sync.RWMutex
+
+	// online http consumers client
+	consumers     map[string]Consumer // key is remote addr
+	consumersLock sync.RWMutex
+
+	// cluster of kateway pub, only for client side load balance
+	pubPeers     []string
 	pubPeersLock sync.RWMutex
-	pubPeers     []string // cluster of kateway pub
 
 	pubServer *pubServer
 	subServer *subServer
 	manServer *manServer
 
-	guard *guard
-	timer *timewheel.TimeWheel
-
-	shutdownOnce sync.Once
-	shutdownCh   chan struct{}
-	wg           sync.WaitGroup
-
-	leakyBuckets *ratelimiter.LeakyBuckets // TODO
-
 	pubMetrics *pubMetrics
 	subMetrics *subMetrics
 	svrMetrics *serverMetrics
+
+	guard        *guard
+	timer        *timewheel.TimeWheel
+	leakyBuckets *ratelimiter.LeakyBuckets // TODO
 }
 
 func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
@@ -65,6 +73,8 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		certFile:     options.certFile,
 		keyFile:      options.keyFile,
 		pubPeers:     make([]string, 0, 20),
+		producers:    make(map[string]Producer),
+		consumers:    make(map[string]Consumer),
 	}
 
 	registry.Default = zk.New(options.zone, id, this.InstanceInfo())

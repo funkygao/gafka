@@ -5,6 +5,8 @@ func (this *Gateway) buildRouting() {
 	this.manServer.Router().GET("/help", this.helpHandler)
 	this.manServer.Router().GET("/status", this.statusHandler)
 	this.manServer.Router().GET("/servers", this.serversHandler)
+	this.manServer.Router().GET("/producers", this.producersHandler)
+	this.manServer.Router().GET("/consumers", this.consumersHandler)
 	this.manServer.Router().POST("/topics/:cluster/:appid/:topic/:ver", this.addTopicHandler)
 
 	if this.pubServer != nil {

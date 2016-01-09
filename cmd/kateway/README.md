@@ -1,5 +1,7 @@
 # kateway
 
+Kafka as a service
+
 A RESTful gateway for kafka that supports Pub and Sub.
 
 Don't make programmer think!
@@ -147,6 +149,7 @@ Don't make programmer think!
 
 ### TODO
 
+- [ ] online producers/consumers
 - [ ] pub fails retry should be done at kafka pub sdk: sarama
 - [ ] check hack pkg
 - [ ] delayed pub

@@ -66,10 +66,26 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	// register the online consumer
+	this.consumersLock.Lock()
+	this.consumers[r.RemoteAddr] = Consumer{
+		MyAppId:  myAppid,
+		HisAppId: hisAppid,
+		Topic:    topic,
+		Ver:      ver,
+		Group:    group,
+	}
+	this.consumersLock.Unlock()
+
 	err = this.fetchMessages(w, fetcher, limit, myAppid, hisAppid, topic, ver)
 	if err != nil {
 		// broken pipe, io timeout
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
+
+		// deregister the consumer
+		this.consumersLock.Lock()
+		delete(this.consumers, r.RemoteAddr)
+		this.consumersLock.Unlock()
 
 		go store.DefaultSubStore.KillClient(r.RemoteAddr) // wait cf.ProcessingTimeout
 	}

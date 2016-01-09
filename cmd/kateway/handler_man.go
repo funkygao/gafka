@@ -15,6 +15,32 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+func (this *Gateway) producersHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	this.produersLock.RLock()
+	producers := this.producers
+	this.produersLock.RUnlock()
+
+	b, _ := json.Marshal(producers)
+
+	this.writeKatewayHeader(w)
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
+	w.Write(b)
+}
+
+func (this *Gateway) consumersHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	this.consumersLock.RLock()
+	consumers := this.consumers
+	this.consumersLock.RUnlock()
+
+	b, _ := json.Marshal(consumers)
+
+	this.writeKatewayHeader(w)
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
+	w.Write(b)
+}
+
 func (this *Gateway) helpHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
@@ -40,6 +66,8 @@ man:
  GET /status
  GET /clusters
  GET /servers
+ GET /producers
+ GET /consumers
 POST /topics/:cluster/:appid/:topic/:ver
 
 dbg:
