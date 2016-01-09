@@ -57,6 +57,11 @@ func SortedZones() []string {
 	return conf.sortedZones()
 }
 
+func Alias(cmd string) (alias string, present bool) {
+	alias, present = conf.aliases[cmd]
+	return
+}
+
 func ZoneZkAddrs(zone string) (zkAddrs string) {
 	ensureLogLoaded()
 	var present bool

@@ -7,9 +7,15 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	LoadConfig("../etc/gafka.cf")
+	LoadConfig(".gafka.cf")
 	t.Logf("%+v", conf)
 	assert.Equal(t, 3, len(conf.zones))
-	assert.Equal(t, "debug", conf.logLevel)
+	assert.Equal(t, "info", conf.logLevel)
+	alias, present := Alias("localtopics")
+	assert.Equal(t, true, present)
+	assert.Equal(t, "topics -z local", alias)
+	alias, present = Alias("non-existent")
+	assert.Equal(t, false, present)
+	assert.Equal(t, "", alias)
 
 }
