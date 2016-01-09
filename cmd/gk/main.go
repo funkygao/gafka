@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
@@ -32,11 +33,25 @@ func main() {
 			for name, _ := range commands {
 				fmt.Println(name)
 			}
+			for _, cmd := range ctx.Aliases() {
+				fmt.Println(cmd)
+			}
 			return
 		}
 	}
 	c := cli.NewCLI(app, gafka.Version+"-"+gafka.BuildId)
 	c.Args = os.Args[1:]
+	if len(os.Args) > 1 {
+		// command given, convert alias
+		if alias, present := ctx.Alias(os.Args[1]); present {
+			cargs := make([]string, 0)
+			cargs = append(cargs, strings.Split(alias, " ")...)
+			if len(os.Args) > 2 {
+				cargs = append(cargs, os.Args[2:]...)
+			}
+			c.Args = cargs
+		}
+	}
 	c.Commands = commands
 	c.HelpFunc = func(m map[string]cli.CommandFactory) string {
 		var buf bytes.Buffer

@@ -62,6 +62,14 @@ func Alias(cmd string) (alias string, present bool) {
 	return
 }
 
+func Aliases() []string {
+	r := make([]string, 0, len(conf.aliases))
+	for cmd, _ := range conf.aliases {
+		r = append(r, cmd)
+	}
+	return r
+}
+
 func ZoneZkAddrs(zone string) (zkAddrs string) {
 	ensureLogLoaded()
 	var present bool
