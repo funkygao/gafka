@@ -82,8 +82,6 @@ func (this *Console) Run(args []string) (exitCode int) {
 					f.Close()
 				}
 			}
-		} else {
-			break
 		}
 	}
 	return

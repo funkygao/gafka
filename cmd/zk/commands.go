@@ -78,6 +78,13 @@ func init() {
 				Cmd: cmd,
 			}, nil
 		},
+
+		"console": func() (cli.Command, error) {
+			return &command.Console{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
 	}
 
 }
