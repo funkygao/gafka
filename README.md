@@ -13,7 +13,7 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
 - automatically discovery of kafka clusters
 - list under-replicated/offline brokers
 - zookeeper management console included
-- bash-autocomplete supported
+- bash-autocomplete, alias, history supported
 
 ### Install
 
