@@ -22,6 +22,7 @@ type config struct {
 	zones           map[string]string // name:zkConn
 	tunnels         map[string]string // name:tunnel host ip
 	zkDefaultZone   string            // zk command default zone name
+	aliases         map[string]string
 }
 
 func (c *config) sortedZones() []string {

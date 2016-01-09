@@ -33,6 +33,19 @@ Don't make programmer think!
 - Graceful shutdown without downtime
 - Handles most of the difficult stuff while providing easy to use interface
 
+### Befinits
+
+- export message tube to internet
+- let programmers forget about servers and concentrate on services/kateway
+  - no zk
+  - no kafka
+  - no topology
+  - a single endpoint
+- even benificial for OPS team of kafka/zk
+  - single client
+  - easy upgrade/maintain
+  - consolidated hooks possible
+
 ### Architecture
 
            +----+      +-----------------+          

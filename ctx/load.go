@@ -26,6 +26,16 @@ func LoadConfig(fn string) {
 	conf.consulBootstrap = cf.String("consul_bootstrap", "")
 	conf.zkDefaultZone = cf.String("zk_default_zone", "")
 	conf.tunnels = make(map[string]string)
+	conf.aliases = make(map[string]string)
+	for i := 0; i < len(cf.List("aliases", nil)); i++ {
+		section, err := cf.Section(fmt.Sprintf("aliases[%d]", i))
+		if err != nil {
+			panic(err)
+		}
+
+		conf.aliases[section.String("cmd", "")] = section.String("alias", "")
+	}
+
 	for i := 0; i < len(cf.List("zones", nil)); i++ {
 		section, err := cf.Section(fmt.Sprintf("zones[%d]", i))
 		if err != nil {
@@ -64,6 +74,13 @@ func LoadFromHome() {
             zk: "10.209.33.69:2181,10.209.37.19:2181,10.209.37.68:2181"
             tunnel: "gaopeng27@10.209.11.11"
         }
+    ]
+
+    aliases: [
+    	{
+    		cmd: "zone"
+    		alias: "zone"
+    	}
     ]
 
     zk_default_zone: "test"
