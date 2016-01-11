@@ -29,6 +29,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	topic := params.ByName(UrlParamTopic)
 	appid := r.Header.Get(HttpHeaderAppid)
 	if !meta.Default.AuthPub(appid, r.Header.Get(HttpHeaderPubkey), topic) {
+		log.Error("app[%s] %s %+v: auth fail", appid, r.RemoteAddr, params)
+
 		this.writeAuthFailure(w)
 		return
 	}

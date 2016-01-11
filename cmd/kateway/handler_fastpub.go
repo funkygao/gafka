@@ -23,6 +23,8 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 	appid := string(header.Peek(HttpHeaderAppid))
 	pubkey := string(header.Peek(HttpHeaderPubkey))
 	if !meta.Default.AuthPub(appid, pubkey, topic) {
+		log.Error("app[%s] %s %+v: auth fail", appid, ctx.RemoteAddr(), params)
+
 		ctx.SetConnectionClose()
 		ctx.Error("invalid secret", fasthttp.StatusUnauthorized)
 		return

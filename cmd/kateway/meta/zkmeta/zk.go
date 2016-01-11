@@ -243,5 +243,5 @@ func (this *zkMetaStore) AuthSub(appid, subkey, topic string) (ok bool) {
 }
 
 func (this *zkMetaStore) LookupCluster(appid, topic string) (cluster string) {
-	return "psub" // TODO
+	return "me" // TODO
 }

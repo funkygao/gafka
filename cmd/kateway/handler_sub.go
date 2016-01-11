@@ -46,8 +46,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if !meta.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic) {
-		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} auth fail",
-			r.RemoteAddr, topic, ver, group, limit)
+		log.Warn("consumer[%s] %s {topic:%s, ver:%s, group:%s, limit:%d}: auth fail",
+			myAppid, r.RemoteAddr, topic, ver, group, limit)
 
 		this.writeAuthFailure(w)
 		return

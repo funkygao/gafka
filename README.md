@@ -54,6 +54,7 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
 
 ### TODO
 
+- [ ] zk console
 - [ ] display kafka config e,g. retention
 - [ ] bootstrap kafka
 - [ ] producer source
