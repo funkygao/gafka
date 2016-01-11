@@ -42,6 +42,7 @@ func New(cf *config) meta.MetaStore {
 		cf:         cf,
 		zkzone:     zk.NewZkZone(zk.DefaultConfig(cf.Zone, zkAddrs)), // TODO session timeout
 		shutdownCh: make(chan struct{}),
+		refreshCh:  make(chan struct{}, 5),
 
 		brokerList:    make(map[string][]string),
 		clusters:      make(map[string]*zk.ZkCluster),

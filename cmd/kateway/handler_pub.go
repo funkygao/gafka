@@ -60,7 +60,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
 		msg.Free()
 
-		log.Error("%s %+v: %s", r.RemoteAddr, params, err)
+		log.Error("pub[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
 		this.writeErrorResponse(w, ErrTooBigPubMessage.Error(), http.StatusBadRequest)
 		return
 	}
@@ -106,7 +106,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			this.pubMetrics.pubFail(appid, topic, ver)
 		}
 
-		log.Error("%s %+v: %s", r.RemoteAddr, params, err)
+		log.Error("pub[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
 		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

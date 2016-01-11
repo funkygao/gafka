@@ -26,6 +26,7 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 				// do nothing
 
 			case http.StateClosed:
+				// deregister the online producer
 				this.gw.produersLock.Lock()
 				delete(this.gw.producers, c.RemoteAddr().String())
 				this.gw.produersLock.Unlock()

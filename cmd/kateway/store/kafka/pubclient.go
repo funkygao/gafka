@@ -10,21 +10,33 @@ type syncProducerClient struct {
 
 	id uint64
 	sarama.SyncProducer
-}
-
-func (this *syncProducerClient) Close() {
-	log.Trace("closing kafka sync client: %d", this.id)
-
-	// will close the producer and the kafka tcp conn
-	this.SyncProducer.Close()
+	closed bool
 }
 
 func (this *syncProducerClient) Id() uint64 {
 	return this.id
 }
 
+// Close must be called before Recycle
+func (this *syncProducerClient) Close() {
+	log.Trace("cluster[%s] closing kafka sync client: %d", this.pool.cluster, this.id)
+
+	// will close the producer and the kafka tcp conn
+	this.SyncProducer.Close()
+	this.closed = true
+}
+
 func (this *syncProducerClient) Recycle() {
-	this.pool.syncPool.Put(this)
+	if this.closed {
+		this.pool.syncPool.Put(nil)
+	} else {
+		this.pool.syncPool.Put(this)
+	}
+}
+
+func (this *syncProducerClient) CloseAndRecycle() {
+	this.Close()
+	this.Recycle()
 }
 
 type asyncProducerClient struct {
@@ -35,7 +47,7 @@ type asyncProducerClient struct {
 }
 
 func (this *asyncProducerClient) Close() {
-	log.Trace("closing kafka async client: %d", this.id)
+	log.Trace("cluster[%s] closing kafka async client: %d", this.pool.cluster, this.id)
 
 	// will flush any buffered message
 	this.AsyncProducer.AsyncClose()

@@ -13,7 +13,6 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
 	log "github.com/funkygao/log4go"
-	ypool "github.com/youtube/vitess/go/pools"
 )
 
 type pubStore struct {
@@ -21,7 +20,7 @@ type pubStore struct {
 
 	maxRetries int
 	wg         *sync.WaitGroup
-	hostname   string
+	hostname   string // used as kafka client id
 	dryRun     bool
 
 	pubPools     map[string]*pubPool // key is cluster, each cluster maintains a conn pool
@@ -63,7 +62,7 @@ func (this *pubStore) Start() (err error) {
 
 	// warmup: create pools according the current kafka topology
 	for _, cluster := range meta.Default.ClusterNames() {
-		this.pubPools[cluster] = newPubPool(this,
+		this.pubPools[cluster] = newPubPool(this, cluster,
 			meta.Default.BrokerList(cluster), this.poolsCapcity)
 	}
 
@@ -71,7 +70,7 @@ func (this *pubStore) Start() (err error) {
 		for {
 			select {
 			case <-meta.Default.RefreshEvent():
-				this.doRefresh(false)
+				this.doRefresh()
 
 			case <-this.shutdownCh:
 				log.Trace("kafka pub store stopped")
@@ -88,30 +87,36 @@ func (this *pubStore) Stop() {
 	defer this.poolsLock.Unlock()
 
 	// close all kafka connections
-	for _, p := range this.pubPools {
-		p.Close()
+	for _, pool := range this.pubPools {
+		pool.Close()
 	}
 
 	close(this.shutdownCh)
 }
 
-func (this *pubStore) doRefresh(force bool) {
+func (this *pubStore) doRefresh() {
 	// TODO the lock is too big, should consider cluster level refresh
 	this.poolsLock.Lock()
 	defer this.poolsLock.Unlock()
 
 	if time.Since(this.lastRefreshedAt) <= time.Second*5 {
-		// too frequent refresh
+		log.Warn("ignored too frequent refresh: %s", time.Since(this.lastRefreshedAt))
 		return
 	}
 
-	if force {
-		meta.Default.Refresh()
-		log.Trace("kafka clusters topology refreshed")
+	activeClusters := make(map[string]struct{})
+	for _, cluster := range meta.Default.ClusterNames() {
+		activeClusters[cluster] = struct{}{}
+		this.pubPools[cluster].RefreshBrokerList(meta.Default.BrokerList(cluster))
 	}
 
-	for _, cluster := range meta.Default.ClusterNames() {
-		this.pubPools[cluster].RefreshBrokerList(meta.Default.BrokerList(cluster))
+	// shutdown the dead clusters
+	for cluster, pool := range this.pubPools {
+		if _, present := activeClusters[cluster]; !present {
+			// this cluster is dead or removed forever
+			pool.Close()
+			delete(this.pubPools, cluster)
+		}
 	}
 
 	this.lastRefreshedAt = time.Now()
@@ -135,7 +140,7 @@ func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (err error
 		keyEncoder = sarama.ByteEncoder(key) // will use hash partition
 	}
 
-	// TODO can be pooled
+	// TODO can be pooled, see msgpool
 	producerMsg := &sarama.ProducerMessage{
 		Topic: topic,
 		Key:   keyEncoder,
@@ -143,77 +148,51 @@ func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (err error
 	}
 
 	if this.dryRun {
+		// ignore kafka I/O
 		producer, err = pool.GetSyncProducer()
 		producer.Recycle()
 		return
 	}
 
-	for i := 0; i < this.maxRetries; i++ {
-		producer, err = pool.GetSyncProducer()
-		if err != nil {
-			// e,g the connection is idle too long, so when get, will triger
-			// factory method, which might lead to kafka connection error
-
-			if producer != nil {
-				// should never happen
-				log.Warn("cluster:%s, topic:%s pool fails while got a pub conn", cluster, topic)
-				producer.Recycle()
-			}
-
-			switch err {
-			case ypool.ErrClosed, sarama.ErrShuttingDown:
-				// the connection pool is already closed
-				return store.ErrShutdown
-
-			case sarama.ErrClosedClient, sarama.ErrNotConnected:
-			case sarama.ErrMessageTooLarge:
-				// TODO
-
-			case ypool.ErrTimeout:
-				// the connection pool is too busy
-				return store.ErrBusy
-
-			case sarama.ErrOutOfBrokers:
-				// all brokers down!
-				return
-
-			case ErrEmptyBrokerList:
-				// we provided empty broker list for sarama client
-				this.doRefresh(true)
-
-			default:
-				log.Warn("cluster:%s, topic:%s unknown pubPool err: %v", cluster, topic, err)
-			}
-
-			goto backoff
+	producer, err = pool.GetSyncProducer()
+	if err != nil {
+		// e,g the connection is idle too long, so when get, will trigger
+		// factory method, which might lead to kafka connection error
+		if producer != nil {
+			// should never happen
+			producer.CloseAndRecycle()
 		}
 
-		// TODO like java kafka lib, when pub fails, it should refresh metadata, and auto retry
+		return
+	}
+
+	for i := 0; i < this.maxRetries; i++ {
+		// sarama will retry Producer.Retry.Max(3) times on produce failure before return error
+		// meanwhile, it will auto refresh meta
 		_, _, err = producer.SendMessage(producerMsg)
-		producer.Recycle() // NEVER forget about this
+		if err == nil {
+			// send ok
+			producer.Recycle()
+			return
+		}
+
+		log.Warn("cluster[%s] topic:%s %v", cluster, topic, err)
 		switch err {
-		case nil:
-			// send success
-			return
-
 		case sarama.ErrUnknownTopicOrPartition:
-			log.Warn("cluster:%s topic:%s %v", cluster, topic, err)
-
-		case breaker.ErrBreakerOpen:
 			// will not retry
+			producer.Recycle()
 			return
 
-		case sarama.ErrOutOfBrokers:
-			// all brokers fails to respond
-			producer.Close()
-			this.doRefresh(true)
+		case breaker.ErrBreakerOpen, sarama.ErrOutOfBrokers:
+			// will not retry
+			producer.CloseAndRecycle()
+			return store.ErrBusy
 
 		default:
-			producer.Close()
-			log.Warn("cluster:%s topic:%s unknown pub err: %v", cluster, topic, err)
+			// will retry
+			producer.CloseAndRecycle()
 		}
 
-	backoff:
 		if retryDelay == 0 {
 			retryDelay = 50 * time.Millisecond
 		} else {
@@ -223,7 +202,7 @@ func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (err error
 			retryDelay = maxDelay
 		}
 
-		log.Debug("cluster:%s topic:%s %v retry in %v", cluster, topic, err, retryDelay)
+		log.Warn("cluster[%s] topic:%s %v retry in %v", cluster, topic, err, retryDelay)
 		time.Sleep(retryDelay)
 	}
 

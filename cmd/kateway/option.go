@@ -90,7 +90,7 @@ func parseFlags() {
 	flag.DurationVar(&options.httpWriteTimeout, "httpwtimeout", time.Second*60, "http server write timeout")
 	flag.DurationVar(&options.subTimeout, "subtimeout", time.Minute, "sub timeout before send http 204")
 	flag.DurationVar(&options.reporterInterval, "report", time.Second*10, "reporter flush interval")
-	flag.DurationVar(&options.metaRefresh, "metarefresh", time.Hour, "meta data refresh interval")
+	flag.DurationVar(&options.metaRefresh, "metarefresh", time.Minute*10, "meta data refresh interval")
 	flag.DurationVar(&options.consoleMetricsInterval, "consolemetrics", 0, "console metrics report interval")
 	flag.DurationVar(&options.pubPoolIdleTimeout, "pubpoolidle", 0, "pub pool connect idle timeout")
 

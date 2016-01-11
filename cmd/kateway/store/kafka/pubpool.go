@@ -12,6 +12,7 @@ import (
 type pubPool struct {
 	store *pubStore
 
+	cluster    string
 	size       int
 	nextId     uint64
 	brokerList []string
@@ -20,18 +21,43 @@ type pubPool struct {
 	asyncPool *pool.ResourcePool
 }
 
-func newPubPool(store *pubStore, brokerList []string, size int) *pubPool {
+func newPubPool(store *pubStore, cluster string, brokerList []string, size int) *pubPool {
 	this := &pubPool{
 		store:      store,
+		cluster:    cluster,
 		size:       size,
 		brokerList: brokerList,
 	}
-	this.initialize()
+	this.buildPools()
 
 	return this
 }
 
-func (this *pubPool) initialize() {
+func (this *pubPool) RefreshBrokerList(brokerList []string) {
+	if len(brokerList) == 0 {
+		log.Warn("%s meta store found empty broker list, refresh refused", this.cluster)
+		return
+	}
+
+	setOld, setNew := set.NewSet(), set.NewSet()
+	for _, b := range this.brokerList {
+		setOld.Add(b)
+	}
+	for _, b := range brokerList {
+		setNew.Add(b)
+	}
+
+	if !setOld.Equal(setNew) {
+		log.Info("%s broker list from %+v to %+v", this.cluster, this.brokerList, brokerList)
+
+		// rebuild the kafka conn pool
+		this.brokerList = brokerList
+		this.Close()
+		this.buildPools()
+	}
+}
+
+func (this *pubPool) buildPools() {
 	this.syncPool = pool.NewResourcePool(this.syncProducerFactory,
 		this.size, this.size, time.Minute*10)
 	this.asyncPool = pool.NewResourcePool(this.asyncProducerFactory,
@@ -64,24 +90,4 @@ func (this *pubPool) GetAsyncProducer() (*asyncProducerClient, error) {
 	}
 
 	return k.(*asyncProducerClient), nil
-}
-
-func (this *pubPool) RefreshBrokerList(brokerList []string) {
-	setOld, setNew := set.NewSet(), set.NewSet()
-	for _, b := range this.brokerList {
-		setOld.Add(b)
-	}
-	for _, b := range brokerList {
-		setNew.Add(b)
-	}
-
-	if !setOld.Equal(setNew) {
-		log.Warn("brokers changed: %+v -> %+v", this.brokerList, brokerList)
-
-		// rebuild the kafka conn pool
-		this.brokerList = brokerList
-		this.Close()
-		this.initialize()
-	}
-
 }

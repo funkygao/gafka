@@ -7,6 +7,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
+	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 	"github.com/wvanbergen/kafka/consumergroup"
 )
@@ -50,7 +51,7 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 
 	// FIXME what if client wants to consumer a non-existent topic?
 	onlineN := meta.Default.OnlineConsumersCount(cluster, topic, group)
-	partitionN := len(meta.Default.Partitions(cluster, topic))
+	partitionN := len(meta.Default.TopicPartitions(cluster, topic))
 	if partitionN > 0 && onlineN >= partitionN {
 		log.Debug("online:%d>=partitions:%d, current clients: %+v, remote addr: %s",
 			onlineN, partitionN, this.clientMap, remoteAddr)
@@ -60,7 +61,12 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 
 	// cache miss, create the consumer group for this client
 	cf := consumergroup.NewConfig()
-	cf.ChannelBufferSize = 0
+	cf.ChannelBufferSize = 0 // TODO
+	cf.Consumer.Return.Errors = true
+
+	cf.Zookeeper.Chroot = meta.Default.ZkChroot(cluster)
+	cf.Zookeeper.Timeout = zk.DefaultZkSessionTimeout()
+
 	switch reset {
 	case "newest":
 		cf.Offsets.ResetOffsets = true
@@ -71,12 +77,10 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	default:
 		cf.Offsets.Initial = sarama.OffsetOldest
 	}
-
 	cf.Offsets.CommitInterval = time.Minute // TODO
-	cf.Consumer.Return.Errors = true
 	// time to wait for all the offsets for a partition to be processed after stopping to consume from it.
 	cf.Offsets.ProcessingTimeout = time.Second * 10 // TODO
-	cf.Zookeeper.Chroot = meta.Default.ZkChroot(cluster)
+
 	for i := 0; i < 3; i++ {
 		// join group will async register zk owners znodes
 		// so, if many client concurrently connects to kateway, will not
