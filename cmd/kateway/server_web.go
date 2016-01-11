@@ -91,6 +91,20 @@ func (this *webServer) startServer(https bool) {
 		for {
 			if https {
 				this.httpsListener, err = net.Listen("tcp", this.httpsServer.Addr)
+				if err != nil {
+					if retryDelay == 0 {
+						retryDelay = 50 * time.Millisecond
+					} else {
+						retryDelay = 2 * retryDelay
+					}
+					if maxDelay := time.Second; retryDelay > maxDelay {
+						retryDelay = maxDelay
+					}
+					log.Error("%s listener %v, retry in %v", this.name, err, retryDelay)
+					time.Sleep(retryDelay)
+					continue
+				}
+
 				this.httpsListener, err = setupHttpsListener(this.httpsListener,
 					this.gw.certFile, this.gw.keyFile)
 				if err != nil {

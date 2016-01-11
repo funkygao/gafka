@@ -20,9 +20,7 @@ type MetaStore interface {
 	// Clusters returns all live clusters name,nickname info.
 	Clusters() []map[string]string
 
-	Refresh()
-
-	Partitions(cluster, topic string) []int32
+	TopicPartitions(cluster, topic string) []int32
 	OnlineConsumersCount(cluster, topic, group string) int
 	ZkAddrs() []string
 	ZkChroot(cluster string) string

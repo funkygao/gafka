@@ -60,13 +60,29 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
 		msg.Free()
 
-		log.Error("%s %+v: %s", r.RemoteAddr, params, err)
+		log.Error("pub[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
 		this.writeErrorResponse(w, ErrTooBigPubMessage.Error(), http.StatusBadRequest)
 		return
 	}
 
+	ver := params.ByName(UrlParamVersion)
+
 	if options.debug {
 		log.Debug("pub[%s] %s %+v %s", appid, r.RemoteAddr, params, string(msg.Body))
+	}
+
+	// register the online consumer
+	this.produersLock.RLock()
+	_, producerExists := this.producers[r.RemoteAddr]
+	this.produersLock.RUnlock()
+	if !producerExists {
+		this.produersLock.Lock()
+		this.producers[r.RemoteAddr] = Producer{
+			Appid: appid,
+			Topic: topic,
+			Ver:   ver,
+		}
+		this.produersLock.Unlock()
 	}
 
 	if !options.disableMetrics {
@@ -80,7 +96,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	if query.Get(UrlQueryAsync) == "1" {
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
-	ver := params.ByName(UrlParamVersion)
 	err := pubMethod(meta.Default.LookupCluster(appid, topic),
 		appid+"."+topic+"."+ver,
 		[]byte(query.Get(UrlQueryKey)), msg.Body)
@@ -91,7 +106,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			this.pubMetrics.pubFail(appid, topic, ver)
 		}
 
-		log.Error("%s %+v: %s", r.RemoteAddr, params, err)
+		log.Error("pub[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
 		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

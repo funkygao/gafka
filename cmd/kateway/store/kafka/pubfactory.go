@@ -5,11 +5,16 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 	pool "github.com/youtube/vitess/go/pools"
 )
 
 func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
+	if len(this.brokerList) == 0 {
+		return nil, store.ErrEmptyBrokers
+	}
+
 	spc := &syncProducerClient{
 		pool: this,
 		id:   atomic.AddUint64(&this.nextId, 1),
@@ -41,13 +46,17 @@ func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
 		return nil, err
 	}
 
-	log.Trace("kafka connected[%d]: %+v %s", spc.id, this.brokerList,
-		time.Since(t1))
+	log.Trace("cluster[%s] kafka connected[%d]: %+v %s",
+		this.cluster, spc.id, this.brokerList, time.Since(t1))
 
 	return spc, err
 }
 
 func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
+	if len(this.brokerList) == 0 {
+		return nil, store.ErrEmptyBrokers
+	}
+
 	apc := &asyncProducerClient{
 		pool: this,
 		id:   atomic.AddUint64(&this.nextId, 1),
@@ -75,14 +84,14 @@ func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
 		return nil, err
 	}
 
-	log.Trace("kafka connected[%d]: %+v %s", apc.id, this.brokerList,
-		time.Since(t1))
+	log.Trace("cluster[%s] kafka connected[%d]: %+v %s",
+		this.cluster, apc.id, this.brokerList, time.Since(t1))
 
 	// TODO
 	go func() {
 		// messages will only be returned here after all retry attempts are exhausted.
 		for err := range apc.Errors() {
-			log.Error("async producer: %v", err)
+			log.Error("cluster[%s] async producer: %v", this.cluster, err)
 		}
 	}()
 

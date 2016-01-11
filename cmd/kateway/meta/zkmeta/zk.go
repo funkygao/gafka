@@ -12,10 +12,11 @@ import (
 )
 
 type zkMetaStore struct {
-	cf         *config
+	cf *config
+	mu sync.RWMutex
+
 	shutdownCh chan struct{}
-	refreshCh  chan struct{}
-	mu         sync.RWMutex
+	refreshCh  chan struct{} // deadlock if no receiver
 
 	zkzone *zk.ZkZone
 
@@ -41,6 +42,7 @@ func New(cf *config) meta.MetaStore {
 		cf:         cf,
 		zkzone:     zk.NewZkZone(zk.DefaultConfig(cf.Zone, zkAddrs)), // TODO session timeout
 		shutdownCh: make(chan struct{}),
+		refreshCh:  make(chan struct{}, 5),
 
 		brokerList:    make(map[string][]string),
 		clusters:      make(map[string]*zk.ZkCluster),
@@ -52,11 +54,14 @@ func (this *zkMetaStore) RefreshEvent() <-chan struct{} {
 	return this.refreshCh
 }
 
-func (this *zkMetaStore) fillBrokerList() {
+func (this *zkMetaStore) refreshTopologyCache() {
+	// refresh live clusters from Zookeeper
+	liveClusters := this.zkzone.Clusters()
+
 	this.mu.Lock()
-	// zkzone.Clusters() will never cache
-	for cluster, path := range this.zkzone.Clusters() {
-		// FIXME don't work when cluster is deleted
+
+	// add new live clusters if not present in my cache
+	for cluster, path := range liveClusters {
 		if _, present := this.clusters[cluster]; !present {
 			this.clusters[cluster] = this.zkzone.NewclusterWithPath(cluster, path)
 		}
@@ -64,12 +69,21 @@ func (this *zkMetaStore) fillBrokerList() {
 		this.brokerList[cluster] = this.clusters[cluster].BrokerList()
 	}
 
+	// remove dead clusters
+	cachedClusters := this.clusters
+	for cluster, _ := range cachedClusters {
+		if _, present := liveClusters[cluster]; !present {
+			delete(this.clusters, cluster)
+			delete(this.brokerList, cluster)
+		}
+	}
+
 	this.mu.Unlock()
 }
 
 func (this *zkMetaStore) Start() {
 	// warm up
-	this.fillBrokerList()
+	this.refreshTopologyCache()
 
 	go func() {
 		ticker := time.NewTicker(this.cf.Refresh)
@@ -78,7 +92,18 @@ func (this *zkMetaStore) Start() {
 		for {
 			select {
 			case <-ticker.C:
-				this.doRefresh()
+				log.Trace("refreshing meta store")
+
+				this.refreshTopologyCache()
+
+				// clear the partition cache
+				this.pmapLock.Lock()
+				this.partitionsMap = make(map[string]map[string][]int32,
+					len(this.partitionsMap))
+				this.pmapLock.Unlock()
+
+				// notify others that I have got the most recent data
+				this.refreshCh <- struct{}{}
 
 			case <-this.shutdownCh:
 				log.Trace("meta store closed")
@@ -99,10 +124,6 @@ func (this *zkMetaStore) Stop() {
 	close(this.shutdownCh)
 }
 
-func (this *zkMetaStore) Refresh() {
-	this.doRefresh()
-}
-
 func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) int {
 	// without cache
 	this.mu.Lock()
@@ -118,21 +139,7 @@ func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) int 
 	return c.OnlineConsumersCount(topic, group)
 }
 
-func (this *zkMetaStore) doRefresh() {
-	log.Trace("refreshing meta store")
-
-	this.fillBrokerList()
-
-	// clear the partition cache
-	this.pmapLock.Lock()
-	this.partitionsMap = make(map[string]map[string][]int32, len(this.partitionsMap))
-	this.pmapLock.Unlock()
-
-	// notify others that I have got the most recent data
-	this.refreshCh <- struct{}{}
-}
-
-func (this *zkMetaStore) Partitions(cluster, topic string) []int32 {
+func (this *zkMetaStore) TopicPartitions(cluster, topic string) []int32 {
 	clusterNotPresent := true
 
 	this.pmapLock.RLock()

@@ -79,7 +79,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	err = this.fetchMessages(w, fetcher, limit, myAppid, hisAppid, topic, ver)
 	if err != nil {
-		// broken pipe, io timeout
+		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 
 		// deregister the consumer

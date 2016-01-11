@@ -19,6 +19,21 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 	}
 	this.waitExitFunc = this.waitExit
 
+	if this.httpServer != nil {
+		this.httpServer.ConnState = func(c net.Conn, cs http.ConnState) {
+			switch cs {
+			case http.StateNew, http.StateActive, http.StateIdle:
+				// do nothing
+
+			case http.StateClosed:
+				// deregister the online producer
+				this.gw.produersLock.Lock()
+				delete(this.gw.producers, c.RemoteAddr().String())
+				this.gw.produersLock.Unlock()
+			}
+		}
+	}
+
 	return this
 }
 

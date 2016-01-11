@@ -32,6 +32,13 @@ func init() {
 			}, nil
 		},
 
+		"alias": func() (cli.Command, error) {
+			return &command.Alias{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"?": func() (cli.Command, error) {
 			return &command.Guide{
 				Ui:  ui,

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"strings"
 
 	"github.com/funkygao/gafka/ctx"
@@ -17,13 +19,15 @@ type Kateway struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone string
+	zone          string
+	showConsumers bool
 }
 
 func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("kateway", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.BoolVar(&this.showConsumers, "consumers", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
 	}
@@ -57,9 +61,32 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			info["debug"],
 		))
 
+		if this.showConsumers {
+			// FIXME
+			this.showOnlineConsumers("http://" + info["man"] + "/consumers")
+		}
+
 	}
 
 	return
+}
+
+func (this *Kateway) showOnlineConsumers(url string) {
+	response, err := http.Get(url)
+	swallow(err)
+
+	b, err := ioutil.ReadAll(response.Body)
+	swallow(err)
+
+	response.Body.Close()
+
+	consumers := make(map[string]string)
+	json.Unmarshal(b, &consumers)
+
+	for addr, info := range consumers {
+		this.Ui.Output(fmt.Sprintf("    consumers: %s  %+v", addr, info))
+	}
+
 }
 
 func (*Kateway) Synopsis() string {
@@ -75,6 +102,9 @@ Usage: %s kateway [options]
 Options:
 
     -z zone
+
+    -consumers
+      Display online consumers of kateway
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

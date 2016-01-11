@@ -73,8 +73,8 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		certFile:     options.certFile,
 		keyFile:      options.keyFile,
 		pubPeers:     make([]string, 0, 20),
-		producers:    make(map[string]Producer),
-		consumers:    make(map[string]Consumer),
+		producers:    make(map[string]Producer, 100),
+		consumers:    make(map[string]Consumer, 100),
 	}
 
 	registry.Default = zk.New(options.zone, id, this.InstanceInfo())
