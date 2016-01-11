@@ -49,7 +49,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&addBroker, "addbroker", "", "")
 	cmdFlags.StringVar(&nickname, "nickname", "", "")
 	cmdFlags.IntVar(&delBroker, "delbroker", -1, "")
-	cmdFlags.BoolVar(&this.registeredBrokers, "r", false, "")
+	cmdFlags.BoolVar(&this.registeredBrokers, "registered", false, "")
 	cmdFlags.BoolVar(&verifyMode, "verify", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -368,7 +368,7 @@ Options:
     -delbroker id TODO
       Delete a broker from a cluster.
 
-    -r
+    -registered
       Display registered permanent brokers info.
 
     -verify
