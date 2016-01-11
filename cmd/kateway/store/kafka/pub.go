@@ -107,7 +107,12 @@ func (this *pubStore) doRefresh() {
 	activeClusters := make(map[string]struct{})
 	for _, cluster := range meta.Default.ClusterNames() {
 		activeClusters[cluster] = struct{}{}
-		this.pubPools[cluster].RefreshBrokerList(meta.Default.BrokerList(cluster))
+		if _, present := this.pubPools[cluster]; !present {
+			this.pubPools[cluster] = newPubPool(this, cluster,
+				meta.Default.BrokerList(cluster), this.poolsCapcity)
+		} else {
+			this.pubPools[cluster].RefreshBrokerList(meta.Default.BrokerList(cluster))
+		}
 	}
 
 	// shutdown the dead clusters
