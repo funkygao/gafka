@@ -19,7 +19,7 @@ func TestBrokerZnodeFrom(t *testing.T) {
 }
 
 func TestZkTimestamp(t *testing.T) {
-	tm := zkTimestamp(1447157138058)
+	tm := ZkTimestamp(1447157138058)
 	t.Logf("%v", tm.Time())
 	assert.Equal(t, 2015, tm.Time().Year())
 	assert.Equal(t, 10, tm.Time().Day())
