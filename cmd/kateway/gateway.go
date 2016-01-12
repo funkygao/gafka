@@ -189,9 +189,12 @@ func (this *Gateway) Start() (err error) {
 		if err := registry.Default.Register(); err != nil {
 			panic(err)
 		}
-	}
 
-	log.Info("gateway[%s:%s] ready", ctx.Hostname(), this.id)
+		log.Info("gateway[%s:%s] ready, registered in %s", ctx.Hostname(), this.id,
+			registry.Default.Name())
+	} else {
+		log.Info("gateway[%s:%s] ready, unregistered", ctx.Hostname(), this.id)
+	}
 
 	return nil
 }

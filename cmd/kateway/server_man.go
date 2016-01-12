@@ -1,14 +1,11 @@
 package main
 
 import (
-	"net"
-	"net/http"
 	"strings"
 
 	"github.com/funkygao/etclib"
 	"github.com/funkygao/gafka/ctx"
 	zkr "github.com/funkygao/gafka/registry/zk"
-	log "github.com/funkygao/log4go"
 )
 
 // management server
@@ -20,7 +17,6 @@ func newManServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *manS
 	this := &manServer{
 		webServer: newWebServer("man", httpAddr, httpsAddr, maxClients, gw),
 	}
-	this.waitExitFunc = this.waitExit
 
 	if options.clusterAware {
 		<-this.peersHousekeep()
@@ -51,18 +47,4 @@ func (this *manServer) peersHousekeep() chan struct{} {
 	}()
 
 	return r
-}
-
-func (this *manServer) waitExit(server *http.Server, listener net.Listener, exit <-chan struct{}) {
-	<-exit
-
-	// HTTP response will have "Connection: close"
-	server.SetKeepAlivesEnabled(false)
-
-	// avoid new connections
-	if err := listener.Close(); err != nil {
-		log.Error(err.Error())
-	}
-
-	this.gw.wg.Done()
 }

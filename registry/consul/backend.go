@@ -36,6 +36,10 @@ func NewBackend(cfg *ctx.Consul, apiAddr string) (registry.Backend, error) {
 	return &be{c: c, dc: dc, cfg: cfg, apiAddr: apiAddr}, nil
 }
 
+func (b *be) Name() string {
+	return "consul"
+}
+
 func (b *be) Register() error {
 	service, err := serviceRegistration(b.apiAddr, b.cfg.ServiceName, b.cfg.CheckInterval, b.cfg.CheckTimeout)
 	if err != nil {

@@ -36,6 +36,10 @@ func (this *zkreg) mypath() string {
 	return fmt.Sprintf("%s/%s", Root(this.zkzone.Name()), this.id)
 }
 
+func (this *zkreg) Name() string {
+	return "zookeeper"
+}
+
 func (this *zkreg) Register() error {
 	return this.zkzone.CreateEphemeralZnode(this.mypath(), this.data)
 }

@@ -163,6 +163,9 @@ func (this *webServer) startServer(https bool) {
 	<-waitListenerUp
 
 	this.gw.wg.Add(1)
+	if this.waitExitFunc == nil {
+		this.waitExitFunc = this.waitExit
+	}
 	if https {
 		go this.waitExitFunc(this.httpsServer, this.httpsListener, this.gw.shutdownCh)
 	} else {
@@ -174,4 +177,18 @@ func (this *webServer) startServer(https bool) {
 	} else {
 		log.Info("%s http server ready on %s", this.name, this.httpServer.Addr)
 	}
+}
+
+func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit <-chan struct{}) {
+	<-exit
+
+	// HTTP response will have "Connection: close"
+	server.SetKeepAlivesEnabled(false)
+
+	// avoid new connections
+	if err := listener.Close(); err != nil {
+		log.Error(err.Error())
+	}
+
+	this.gw.wg.Done()
 }
