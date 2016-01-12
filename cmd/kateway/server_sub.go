@@ -27,59 +27,61 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 	this.waitExitFunc = this.waitExit
 
 	if this.httpsServer != nil {
-		// TODO
+		this.httpsServer.ConnState = this.connStateHandler
 	}
 
 	if this.httpServer != nil {
-		this.httpServer.ConnState = func(c net.Conn, cs http.ConnState) {
-			switch cs {
-			case http.StateNew:
-				// Connections begin at StateNew and then
-				// transition to either StateActive or StateClosed
-				this.idleConnsWg.Add(1)
-
-				if this.gw != nil && !options.disableMetrics {
-					this.gw.svrMetrics.ConcurrentSub.Inc(1)
-				}
-
-			case http.StateActive:
-				// StateActive fires before the request has entered a handler
-				// and doesn't fire again until the request has been
-				// handled.
-				// After the request is handled, the state
-				// transitions to StateClosed, StateHijacked, or StateIdle.
-				this.idleConnsLock.Lock()
-				delete(this.idleConns, c.RemoteAddr().String())
-				this.idleConnsLock.Unlock()
-
-			case http.StateIdle:
-				// StateIdle represents a connection that has finished
-				// handling a request and is in the keep-alive state, waiting
-				// for a new request. Connections transition from StateIdle
-				// to either StateActive or StateClosed.
-				select {
-				case <-this.gw.shutdownCh:
-					// actively close the client safely because IO is all done
-					c.Close()
-
-				default:
-					this.idleConnsLock.Lock()
-					this.idleConns[c.RemoteAddr().String()] = c
-					this.idleConnsLock.Unlock()
-				}
-
-			case http.StateClosed, http.StateHijacked:
-				if this.gw != nil && !options.disableMetrics {
-					this.gw.svrMetrics.ConcurrentSub.Dec(1)
-				}
-
-				this.closedConnCh <- c.RemoteAddr().String()
-				this.idleConnsWg.Done()
-			}
-		}
+		this.httpServer.ConnState = this.connStateHandler
 	}
 
 	return this
+}
+
+func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
+	switch cs {
+	case http.StateNew:
+		// Connections begin at StateNew and then
+		// transition to either StateActive or StateClosed
+		this.idleConnsWg.Add(1)
+
+		if this.gw != nil && !options.disableMetrics {
+			this.gw.svrMetrics.ConcurrentSub.Inc(1)
+		}
+
+	case http.StateActive:
+		// StateActive fires before the request has entered a handler
+		// and doesn't fire again until the request has been
+		// handled.
+		// After the request is handled, the state
+		// transitions to StateClosed, StateHijacked, or StateIdle.
+		this.idleConnsLock.Lock()
+		delete(this.idleConns, c.RemoteAddr().String())
+		this.idleConnsLock.Unlock()
+
+	case http.StateIdle:
+		// StateIdle represents a connection that has finished
+		// handling a request and is in the keep-alive state, waiting
+		// for a new request. Connections transition from StateIdle
+		// to either StateActive or StateClosed.
+		select {
+		case <-this.gw.shutdownCh:
+			// actively close the client safely because IO is all done
+			c.Close()
+
+		default:
+			this.idleConnsLock.Lock()
+			this.idleConns[c.RemoteAddr().String()] = c
+			this.idleConnsLock.Unlock()
+		}
+
+	case http.StateClosed, http.StateHijacked:
+		if this.gw != nil && !options.disableMetrics {
+			this.gw.svrMetrics.ConcurrentSub.Dec(1)
+		}
+
+		this.closedConnCh <- c.RemoteAddr().String()
+		this.idleConnsWg.Done()
+	}
 }
 
 func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit <-chan struct{}) {
