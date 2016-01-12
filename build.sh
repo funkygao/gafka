@@ -1,61 +1,110 @@
-#!/bin/bash -e
+#!/bin/bash
 
-if [[ $1 = "-h" ]]; then
-    echo "build.sh [-gc|-loc|-install|kw|-race]"
-    exit
-fi
-
-if [[ $1 = "-loc" ]]; then
-    find . -name '*.go' | xargs wc -l | sort -n | tail -1
-    exit
-fi
-
+INSTALL="no"
+GCDEBUG="no"
+RACE="no"
+FASTHTTP="no"
+QA="no"
+TARGET="gk"
 PREFIX=$GOPATH
-BINDIR=${PREFIX}/bin
 
+show_usage() {
+    echo -e "`printf %-18s "Usage: $0"` [-h] help"
+    echo -e "`printf %-18s ` [-f] enable fasthttp pub"
+    echo -e "`printf %-18s ` [-g] enable gc compile output"
+    echo -e "`printf %-18s ` [-i] install"
+    echo -e "`printf %-18s ` [-l] display line of code"
+    echo -e "`printf %-18s ` [-p] install prefix path"
+    echo -e "`printf %-18s ` [-q] quality assurance of code"
+    echo -e "`printf %-18s ` [-r] enable data race detection"
+    echo -e "`printf %-18s ` -t <target> `ls -Cm cmd`"
+
+}
+
+show_line_of_code() {
+    find . -name '*.go' | xargs wc -l | sort -n | tail -1
+}
+
+check_gofmt() {
+    GOFMT_LINES=`gofmt -l . | grep -v bindata.go | wc -l | xargs`
+    test $GOFMT_LINES -eq 0 || echo "gofmt needs to be run, ${GOFMT_LINES} files have issues"
+}
+
+args=`getopt qfgrhilt:p: $*`
+[ $? != 0 ] && echo "hs" && show_usage && exit 1
+
+set -- $args
+for i
+do
+  case "$i" in
+      -f):
+          FASTHTTP="yes"; shift
+          ;;
+      -g):
+          GCDEBUG="yes"; shift
+          ;;
+      -r):
+          RACE="yes"; shift
+          ;;
+      -q)
+          QA="yes"; shift
+          ;;
+      -h): 
+          show_usage; exit 0
+          ;;
+      -i) 
+          INSTALL="yes"; shift
+          ;;
+      -l) 
+          show_line_of_code; exit 0
+          ;;
+      -p)
+          PREFIX=$2; shift 2
+          ;;
+      -t)
+          TARGET=$2; shift 2
+          ;;
+  esac
+done
+ 
 VER=0.2.4stable
 GOVER=$(go version | cut -d' ' -f3 | cut -d'.' -f2)
-# get the git commit
 GIT_ID=$(git rev-parse HEAD | cut -c1-7)
 GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 
 BUILD_FLAGS=''
-if [[ $1 = "-race" ]]; then
+if [ $RACE == "yes" ]; then
     BUILD_FLAGS="$BUILD_FLAGS -race"
 fi
-if [[ $1 = "-gc" ]]; then
+if [ $GCDEBUG == "yes" ]; then
     BUILD_FLAGS="$BUILD_FLAGS -gcflags '-m=1'"
 fi
-
-BUILD_TAGS="-tags fasthttp"
-BUILD_PKG=cmd/gk
-BUILD_BIN=gk
-if [[ $1 = "zk" ]]; then
-    BUILD_PKG=cmd/zk
-    BUILD_BIN=zk
-fi
-if [[ $1 = "kw" ]]; then
-    BUILD_PKG=cmd/kateway
-    BUILD_BIN=kateway
-fi
-if [[ $1 = "ha" ]]; then
-    BUILD_PKG=cmd/elasticha
-    BUILD_BIN=elasticha
+if [ $FASTHTTP == "yes" ]; then
+    BUILD_FLAGS="$BUILD_FLAGS -tags fasthttp"
 fi
 
-cd $BUILD_PKG
+echo "compiling $TARGET"
+
+cd cmd/$TARGET
+check_gofmt
+if [ $QA == "yes" ]; then
+    go vet
+    golint
+    exit $?
+fi
 go generate ./...
+
 if [ $GOVER -gt 4 ]; then
-    go build $BUILD_FLAGS $BUILD_TAGS -ldflags "-X github.com/funkygao/gafka.Version=$VER -X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
+    go build $BUILD_FLAGS -ldflags "-X github.com/funkygao/gafka.Version=$VER -X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
 else
-    go build $BUILD_FLAGS $BUILD_TAGS -ldflags "-X github.com/funkygao/gafka.Version $VER -X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
+    go build $BUILD_FLAGS -ldflags "-X github.com/funkygao/gafka.Version $VER -X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
 fi
 
-if [[ $1 = "-install" ]]; then
-    install -m 755 gk $PREFIX/bin
+if [ $INSTALL == "yes" ]; then
+    install -m 755 $TARGET $PREFIX/bin
 fi
 
 #---------
 # show ver
 #---------
-./$BUILD_BIN -version
+./$TARGET -version

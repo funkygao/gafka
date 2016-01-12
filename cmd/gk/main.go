@@ -30,7 +30,7 @@ func main() {
 		}
 
 		if arg == "--generate-bash-completion" {
-			for name, _ := range commands {
+			for name := range commands {
 				fmt.Println(name)
 			}
 			for _, cmd := range ctx.Aliases() {
