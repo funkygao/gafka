@@ -38,6 +38,10 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 				// transition to either StateActive or StateClosed
 				this.idleConnsWg.Add(1)
 
+				if this.gw != nil && !options.disableMetrics {
+					this.gw.svrMetrics.ConcurrentSub.Inc(1)
+				}
+
 			case http.StateActive:
 				// StateActive fires before the request has entered a handler
 				// and doesn't fire again until the request has been
@@ -64,7 +68,11 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 					this.idleConnsLock.Unlock()
 				}
 
-			case http.StateClosed:
+			case http.StateClosed, http.StateHijacked:
+				if this.gw != nil && !options.disableMetrics {
+					this.gw.svrMetrics.ConcurrentSub.Dec(1)
+				}
+
 				this.closedConnCh <- c.RemoteAddr().String()
 				this.idleConnsWg.Done()
 			}

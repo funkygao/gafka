@@ -22,10 +22,19 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 	if this.httpServer != nil {
 		this.httpServer.ConnState = func(c net.Conn, cs http.ConnState) {
 			switch cs {
-			case http.StateNew, http.StateActive, http.StateIdle:
+			case http.StateNew:
+				if this.gw != nil && !options.disableMetrics {
+					this.gw.svrMetrics.ConcurrentPub.Inc(1)
+				}
+
+			case http.StateActive, http.StateIdle:
 				// do nothing
 
-			case http.StateClosed:
+			case http.StateClosed, http.StateHijacked:
+				if this.gw != nil && !options.disableMetrics {
+					this.gw.svrMetrics.ConcurrentPub.Dec(1)
+				}
+
 				// deregister the online producer
 				this.gw.produersLock.Lock()
 				delete(this.gw.producers, c.RemoteAddr().String())

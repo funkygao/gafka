@@ -25,12 +25,16 @@ func goroutines() interface{} {
 type serverMetrics struct {
 	TotalConns      metrics.Counter
 	ConcurrentConns metrics.Counter
+	ConcurrentPub   metrics.Counter
+	ConcurrentSub   metrics.Counter
 }
 
 func NewServerMetrics(interval time.Duration) *serverMetrics {
 	this := &serverMetrics{
 		TotalConns:      metrics.NewRegisteredCounter("server.totalconns", metrics.DefaultRegistry),
 		ConcurrentConns: metrics.NewRegisteredCounter("server.concurrent", metrics.DefaultRegistry),
+		ConcurrentPub:   metrics.NewRegisteredCounter("server.conns.pub", metrics.DefaultRegistry),
+		ConcurrentSub:   metrics.NewRegisteredCounter("server.conns.sub", metrics.DefaultRegistry),
 	}
 
 	if options.debugHttpAddr != "" {
