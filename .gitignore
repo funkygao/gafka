@@ -37,6 +37,7 @@ cmd/elasticha/.haproxy.cf
 cmd/kateway/bench/bench
 cmd/kateway/executor/executor
 cmd/kateway/bench/httpdserver
+cmd/zk/zk
 panic.dump
 cmd/gk/gk
 misc/scripts
