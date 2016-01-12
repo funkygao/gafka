@@ -37,6 +37,7 @@ type Deploy struct {
 	demoMode      bool
 	kafkaVer      string
 	logDirs       string
+	dryRun        bool
 }
 
 // TODO
@@ -55,7 +56,8 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.logDirs, "log.dirs", "", "")
 	cmdFlags.StringVar(&this.runAs, "user", "sre", "")
 	cmdFlags.BoolVar(&this.demoMode, "demo", false, "")
-	cmdFlags.StringVar(&this.kafkaVer, "ver", "2.10-0.8.1.1", "")
+	cmdFlags.BoolVar(&this.dryRun, "dryrun", true, "")
+	cmdFlags.StringVar(&this.kafkaVer, "ver", "2.10-0.8.2.2", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -75,6 +77,10 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	var err error
+	this.userInfo, err = user.Lookup(this.runAs)
+	swallow(err)
+
 	if this.demoMode {
 		this.demo()
 		return
@@ -86,31 +92,39 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	// ensure the log.dirs all exists
-	for _, dir := range strings.Split(this.logDirs, ",") {
-		if !gio.DirExists(dir) {
-			this.Ui.Error(fmt.Sprintf("%s not exists", dir))
-			return 1
-		}
-	}
-
 	if !ctx.CurrentUserIsRoot() {
 		this.Ui.Error("requires root priviledges!")
 		return 1
 	}
 
-	var err error
-	this.userInfo, err = user.Lookup(this.runAs)
-	swallow(err)
+	if !strings.HasSuffix(this.kafkaBaseDir, this.kafkaVer) {
+		this.Ui.Error(fmt.Sprintf("kafka.base[%s] does not match ver[%s]",
+			this.kafkaBaseDir, this.kafkaVer))
+		return 1
+	}
 
 	// prepare the root directory
 	this.rootPah = strings.TrimSuffix(this.rootPah, "/")
+	if this.dryRun {
+		this.Ui.Output(fmt.Sprintf("mkdir %s/bin and chown to %s",
+			this.instanceDir(), this.userInfo.Name))
+	}
 	err = os.MkdirAll(fmt.Sprintf("%s/bin", this.instanceDir()), 0755)
 	swallow(err)
 	this.chown(fmt.Sprintf("%s/bin", this.instanceDir()))
+
+	if this.dryRun {
+		this.Ui.Output(fmt.Sprintf("mkdir %s/config and chown to %s",
+			this.instanceDir(), this.userInfo.Name))
+	}
 	err = os.MkdirAll(fmt.Sprintf("%s/config", this.instanceDir()), 0755)
 	swallow(err)
 	this.chown(fmt.Sprintf("%s/config", this.instanceDir()))
+
+	if this.dryRun {
+		this.Ui.Output(fmt.Sprintf("mkdir %s/logs and chown to %s",
+			this.instanceDir(), this.userInfo.Name))
+	}
 	err = os.MkdirAll(fmt.Sprintf("%s/logs", this.instanceDir()), 0755)
 	swallow(err)
 	this.chown(fmt.Sprintf("%s/logs", this.instanceDir()))
@@ -125,6 +139,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		ZkAddrs     string
 		InstanceDir string
 		LogDirs     string
+		IoThreads   string
 	}
 	data := templateVar{
 		ZkChroot:    zkchroot,
@@ -137,10 +152,22 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		ZkAddrs:     this.zkzone.ZkAddrs(),
 		LogDirs:     this.logDirs,
 	}
+	data.IoThreads = strconv.Itoa(3 * len(strings.Split(data.LogDirs, ",")))
+
+	// create the log.dirs directory and chown to sre
+	logDirs := strings.Split(this.logDirs, ",")
+	for _, logDir := range logDirs {
+		if this.dryRun {
+			this.Ui.Output(fmt.Sprintf("mkdir %s and chown to %s",
+				logDir, this.userInfo.Name))
+		}
+
+		swallow(os.MkdirAll(logDir, 0755))
+		this.chown(logDir)
+	}
 
 	// package the kafka runtime together
 	if !gio.DirExists(this.kafkaLibDir()) {
-		swallow(os.MkdirAll(this.kafkaLibDir(), 0755))
 		this.installKafka()
 	}
 
@@ -170,6 +197,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		fmt.Sprintf("%s/config/log4j.properties", this.instanceDir()), 0644, data, true)
 
 	this.Ui.Warn(fmt.Sprintf("NOW, please run the following command:"))
+	this.Ui.Output(color.Red("update kafka_home in $HOME/.gafka.cf"))
 	this.Ui.Output(color.Red("chkconfig --add %s", this.clusterName()))
 	this.Ui.Output(color.Red("/etc/init.d/%s start", this.clusterName()))
 
@@ -178,6 +206,10 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 
 func (this *Deploy) kafkaLibDir() string {
 	return fmt.Sprintf("%s/libs", this.kafkaBaseDir)
+}
+
+func (this *Deploy) kafkaBinDir() string {
+	return fmt.Sprintf("%s/bin", this.kafkaBaseDir)
 }
 
 func (this *Deploy) instanceDir() string {
@@ -191,6 +223,10 @@ func (this *Deploy) clusterName() string {
 func (this *Deploy) installKafka() {
 	this.Ui.Output("installing kafka runtime...")
 
+	swallow(os.MkdirAll(this.kafkaLibDir(), 0755))
+	swallow(os.MkdirAll(this.kafkaBinDir(), 0755))
+
+	// install kafka libs
 	kafkaLibTemplateDir := fmt.Sprintf("template/kafka_%s/libs", this.kafkaVer)
 	jars, err := AssetDir(kafkaLibTemplateDir)
 	swallow(err)
@@ -200,6 +236,18 @@ func (this *Deploy) installKafka() {
 			fmt.Sprintf("%s/libs/%s", this.kafkaBaseDir, jar),
 			0644, nil, false)
 	}
+
+	// install kafka bin
+	kafkaBinTemplateDir := fmt.Sprintf("template/kafka_%s/bin", this.kafkaVer)
+	scripts, err := AssetDir(kafkaBinTemplateDir)
+	swallow(err)
+	for _, script := range scripts {
+		this.writeFileFromTemplate(
+			fmt.Sprintf("%s/%s", kafkaBinTemplateDir, script),
+			fmt.Sprintf("%s/bin/%s", this.kafkaBaseDir, script),
+			0644, nil, false)
+	}
+
 	this.Ui.Output("kafka runtime installed")
 }
 
@@ -263,12 +311,17 @@ func (this *Deploy) demo() {
 		myPort = maxPort + 1
 		myBrokerId = 0
 	}
+	logDirs := make([]string, 0)
+	for i := 0; i <= 11; i++ {
+		logDir := fmt.Sprintf("/data%d/%s", i, this.clusterName())
+		logDirs = append(logDirs, logDir)
+	}
 
 	this.Ui.Output(fmt.Sprintf("gk deploy -z %s -c %s -broker.id %d -port %d -ip %s -log.dirs %s",
 		this.zone, this.cluster,
 		myBrokerId, myPort,
 		ip.String(),
-		"/data0,/data1,/data2,/data3,/data4,/data5,/data6,/data7,/data8,/data9,/data10,/data11"))
+		strings.Join(logDirs, ",")))
 
 }
 
@@ -293,6 +346,9 @@ Options:
     -demo
       Demonstrate how to use this command.
 
+    -dryrun
+      Default is true.
+
     -root dir
       Root directory of the kafka broker.
       Defaults to /var/wd
@@ -310,7 +366,7 @@ Options:
       Defaults to sre
 
     -ver [2.10-0.8.1.1|2.10-0.8.2.2]
-      Defaults to 2.10-0.8.1.1
+      Defaults to 2.10-0.8.2.2
 
     -kafka.base dir
       Kafka installation prefix dir.
