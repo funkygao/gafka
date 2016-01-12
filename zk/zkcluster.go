@@ -45,6 +45,10 @@ func (this *ZkCluster) ZkConnectAddr() string {
 	return this.zone.ZkAddrs() + this.path
 }
 
+func (this *ZkCluster) NamedZkConnectAddr() string {
+	return ctx.NamedZoneZkAddrs(this.zone.Name()) + this.path
+}
+
 func (this *ZkCluster) ZkZone() *ZkZone {
 	return this.zone
 }
