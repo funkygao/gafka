@@ -107,7 +107,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	this.rootPah = strings.TrimSuffix(this.rootPah, "/")
 	if this.dryRun {
 		this.Ui.Output(fmt.Sprintf("mkdir %s/bin and chown to %s",
-			this.instanceDir(), this.userInfo.Name))
+			this.instanceDir(), this.runAs))
 	}
 	err = os.MkdirAll(fmt.Sprintf("%s/bin", this.instanceDir()), 0755)
 	swallow(err)
@@ -115,7 +115,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 
 	if this.dryRun {
 		this.Ui.Output(fmt.Sprintf("mkdir %s/config and chown to %s",
-			this.instanceDir(), this.userInfo.Name))
+			this.instanceDir(), this.runAs))
 	}
 	err = os.MkdirAll(fmt.Sprintf("%s/config", this.instanceDir()), 0755)
 	swallow(err)
@@ -123,7 +123,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 
 	if this.dryRun {
 		this.Ui.Output(fmt.Sprintf("mkdir %s/logs and chown to %s",
-			this.instanceDir(), this.userInfo.Name))
+			this.instanceDir(), this.runAs))
 	}
 	err = os.MkdirAll(fmt.Sprintf("%s/logs", this.instanceDir()), 0755)
 	swallow(err)
@@ -152,14 +152,14 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		ZkAddrs:     this.zkzone.ZkAddrs(),
 		LogDirs:     this.logDirs,
 	}
-	data.IoThreads = strconv.Itoa(3 * len(strings.Split(data.LogDirs, ",")))
+	data.IoThreads = strconv.Itoa(4 * len(strings.Split(data.LogDirs, ",")))
 
 	// create the log.dirs directory and chown to sre
 	logDirs := strings.Split(this.logDirs, ",")
 	for _, logDir := range logDirs {
 		if this.dryRun {
 			this.Ui.Output(fmt.Sprintf("mkdir %s and chown to %s",
-				logDir, this.userInfo.Name))
+				logDir, this.runAs))
 		}
 
 		swallow(os.MkdirAll(logDir, 0755))
@@ -245,7 +245,7 @@ func (this *Deploy) installKafka() {
 		this.writeFileFromTemplate(
 			fmt.Sprintf("%s/%s", kafkaBinTemplateDir, script),
 			fmt.Sprintf("%s/bin/%s", this.kafkaBaseDir, script),
-			0644, nil, false)
+			0755, nil, false)
 	}
 
 	this.Ui.Output("kafka runtime installed")
