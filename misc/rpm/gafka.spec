@@ -1,6 +1,6 @@
 %define name gafka
-%define version 0.2.4
-%define release 2
+%define version 0.2.5
+%define release 1
 %define path usr/local
 %define group Development/Tools
 %define __os_install_post %{nil}
@@ -28,9 +28,9 @@ git clone https://github.com/funkygao/gafka
 
 %build
 cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
-./build.sh
-./build.sh kw
-./build.sh zk
+./build.sh -t gk
+./build.sh -t zk
+./build.sh -t kateway
 
 %install
 export DONT_STRIP=1
