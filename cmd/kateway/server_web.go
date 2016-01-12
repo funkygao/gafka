@@ -25,7 +25,12 @@ type webServer struct {
 
 	router *httprouter.Router
 
-	waitExitFunc waitExitFunc
+	waitExitFunc    waitExitFunc
+	connStateFunc   connStateFunc
+	onConnNewFunc   onConnNewFunc
+	onConnCloseFunc onConnCloseFunc
+
+	activeConnN int32
 }
 
 func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
@@ -63,6 +68,9 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 func (this *webServer) Start() {
 	if this.waitExitFunc == nil {
 		this.waitExitFunc = this.waitExit
+	}
+	if this.connStateFunc == nil {
+		this.connStateFunc = this.connStateHandler
 	}
 
 	if this.httpsServer != nil {
@@ -181,6 +189,28 @@ func (this *webServer) startServer(https bool) {
 	}
 }
 
+func (this *webServer) connStateHandler(c net.Conn, cs http.ConnState) {
+	switch cs {
+	case http.StateNew:
+		atomic.AddInt32(&this.activeConnN, 1)
+
+		if this.onConnNewFunc != nil {
+			this.onConnNewFunc(c)
+		}
+
+	case http.StateActive, http.StateIdle:
+		// do nothing by default
+
+	case http.StateClosed, http.StateHijacked:
+		atomic.AddInt32(&this.activeConnN, -1)
+
+		if this.onConnCloseFunc != nil {
+			this.onConnCloseFunc(c)
+		}
+
+	}
+}
+
 func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit <-chan struct{}) {
 	<-exit
 
@@ -191,6 +221,27 @@ func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit
 	if err := listener.Close(); err != nil {
 		log.Error(err.Error())
 	}
+
+	// wait for active connections finish up to 4s
+	const maxWaitSeconds = 4
+	waitStart := time.Now()
+	for {
+		activeConnN := atomic.LoadInt32(&this.activeConnN)
+		if activeConnN == 0 {
+			// good luck, all connections finished
+			break
+		}
+
+		// timeout mechanism
+		if time.Since(waitStart).Seconds() > maxWaitSeconds {
+			log.Warn("%s on %s still left %d conns, but forced to shutdown after %ss",
+				this.name, server.Addr, activeConnN, maxWaitSeconds)
+			break
+		}
+
+		time.Sleep(time.Millisecond * 50)
+	}
+	log.Trace("%s on %s all connections finished", this.name, server.Addr)
 
 	this.gw.wg.Done()
 }

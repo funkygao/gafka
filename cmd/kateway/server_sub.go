@@ -25,6 +25,7 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 		idleConns:    make(map[string]net.Conn, 10000), // TODO
 	}
 	this.waitExitFunc = this.waitExit
+	this.connStateFunc = this.connStateHandler
 
 	if this.httpsServer != nil {
 		this.httpsServer.ConnState = this.connStateHandler
