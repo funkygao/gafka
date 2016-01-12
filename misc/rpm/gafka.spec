@@ -30,7 +30,6 @@ git clone https://github.com/funkygao/gafka
 cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
 ./build.sh -t gk
 ./build.sh -t zk
-./build.sh -t kateway
 
 %install
 export DONT_STRIP=1
@@ -40,7 +39,6 @@ mkdir -p $RPM_BUILD_ROOT/%{path}/bin
 mkdir -p $RPM_BUILD_ROOT/etc/bash_completion.d
 install cmd/gk/gk $RPM_BUILD_ROOT/%{path}/bin
 install cmd/zk/zk $RPM_BUILD_ROOT/%{path}/bin
-install cmd/kateway/kateway $RPM_BUILD_ROOT/%{path}/bin
 install misc/autocomplete/bash_autocomplete $RPM_BUILD_ROOT/etc/bash_completion.d/gk
 
 %files
