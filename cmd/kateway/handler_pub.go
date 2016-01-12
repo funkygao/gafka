@@ -71,7 +71,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Debug("pub[%s] %s %+v %s", appid, r.RemoteAddr, params, string(msg.Body))
 	}
 
-	// register the online consumer
+	// register the online producer
 	this.produersLock.RLock()
 	_, producerExists := this.producers[r.RemoteAddr]
 	this.produersLock.RUnlock()
