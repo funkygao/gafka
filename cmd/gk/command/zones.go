@@ -35,7 +35,7 @@ func (this *Zones) Run(args []string) (exitCode int) {
 
 	// print all by default
 	for _, zone := range ctx.SortedZones() {
-		this.Ui.Output(fmt.Sprintf("%8s %s", zone, ctx.ZoneZkAddrs(zone)))
+		this.Ui.Output(fmt.Sprintf("%8s %s", zone, ctx.NamedZoneZkAddrs(zone)))
 	}
 
 	return

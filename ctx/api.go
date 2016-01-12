@@ -76,6 +76,26 @@ func Aliases() []string {
 	return r
 }
 
+func NamedZoneZkAddrs(zone string) string {
+	parts := strings.Split(ZoneZkAddrs(zone), ",")
+	addrs := make([]string, 0, len(parts))
+	for _, p := range parts {
+		ip, port, err := net.SplitHostPort(p)
+		if err != nil {
+			fmt.Printf("zone[%s]: %s\n", zone, err)
+			os.Exit(1)
+		}
+
+		host, present := ReverseDnsLookup(ip)
+		if present {
+			ip = host
+		}
+
+		addrs = append(addrs, net.JoinHostPort(ip, port))
+	}
+	return strings.Join(addrs, ",")
+}
+
 func ZoneZkAddrs(zone string) (zkAddrs string) {
 	ensureLogLoaded()
 	var present bool
