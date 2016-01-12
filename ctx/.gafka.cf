@@ -24,6 +24,10 @@
         }
     ]
 
+    reverse_dns: [
+        "127.0.0.1:localhost"
+    ]
+
     kafka_home: "/opt/kafka_2.10-0.8.1.1"
     loglevel: "info"
 }

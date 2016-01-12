@@ -18,4 +18,11 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, false, present)
 	assert.Equal(t, "", alias)
 
+	host, present := ReverseDnsLookup("127.0.0.1")
+	assert.Equal(t, true, present)
+	assert.Equal(t, "localhost", host)
+	host, present = ReverseDnsLookup("127.0.0.12")
+	assert.Equal(t, false, present)
+	assert.Equal(t, "", host)
+
 }

@@ -33,6 +33,12 @@ func Tunnels() map[string]string {
 	return conf.tunnels
 }
 
+func ReverseDnsLookup(ip string) (host string, present bool) {
+	ensureLogLoaded()
+	host, present = conf.reverseDns[ip]
+	return
+}
+
 func ConsulBootstrap() string {
 	ensureLogLoaded()
 	return conf.consulBootstrap

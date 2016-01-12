@@ -48,6 +48,17 @@ func LoadConfig(fn string) {
 		conf.tunnels[z.name] = z.tunnel
 	}
 
+	conf.reverseDns = make(map[string]string)
+	for _, entry := range cf.StringList("reverse_dns", nil) {
+		if entry != "" {
+			parts := strings.SplitN(entry, ":", 2)
+			if len(parts) != 2 {
+				panic("invalid reverse_dns record")
+			}
+			conf.reverseDns[parts[0]] = parts[1]
+		}
+	}
+
 }
 
 func LoadFromHome() {
@@ -82,6 +93,10 @@ func LoadFromHome() {
     		alias: "zone"
     	}
     ]
+
+	reverse_dns: [
+		"127.0.0.1:localhost"
+	]
 
     zk_default_zone: "test"
     consul_bootstrap: "10.209.33.69:8500"
