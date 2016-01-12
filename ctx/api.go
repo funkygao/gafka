@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/user"
+	"strconv"
 	"strings"
 )
 
@@ -33,10 +34,28 @@ func Tunnels() map[string]string {
 	return conf.tunnels
 }
 
-func ReverseDnsLookup(ip string) (host string, present bool) {
+func ReverseDnsLookup(ip string, port int) (string, bool) {
 	ensureLogLoaded()
-	host, present = conf.reverseDns[ip]
-	return
+	hosts, present := conf.reverseDns[ip]
+	if !present || len(hosts) == 0 {
+		return "", false
+	}
+
+	if port <= 0 {
+		// ignore port as server name
+		return hosts[0], present
+	}
+
+	// a single host has multiple services each of which has a different port
+	// e,g. k[port][a-z].sit.wdds.kfk.com/kafka  z[port][a-z].sit.wdds.zk.com/zk
+	for _, name := range hosts {
+		p := strings.Split(name, ".")
+		if strings.Contains(p[0], strconv.Itoa(port)) {
+			return name, true
+		}
+	}
+
+	return "", false
 }
 
 func ConsulBootstrap() string {
@@ -86,7 +105,7 @@ func NamedZoneZkAddrs(zone string) string {
 			os.Exit(1)
 		}
 
-		host, present := ReverseDnsLookup(ip)
+		host, present := ReverseDnsLookup(ip, 0)
 		if present {
 			ip = host
 		}

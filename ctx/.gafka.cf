@@ -25,7 +25,9 @@
     ]
 
     reverse_dns: [
-        "127.0.0.1:localhost"
+        "localhost:127.0.0.1"
+        "k10113a.sit.wdds.kfk.com:10.213.33.148"
+        "k10114a.sit.wdds.kfk.com:10.213.33.148"
     ]
 
     kafka_home: "/opt/kafka_2.10-0.8.1.1"

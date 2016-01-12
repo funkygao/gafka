@@ -137,7 +137,7 @@ func (b *BrokerZnode) Addr() string {
 }
 
 func (this *BrokerZnode) NamedAddr() string {
-	dns, present := ctx.ReverseDnsLookup(this.Host)
+	dns, present := ctx.ReverseDnsLookup(this.Host, this.Port)
 	if !present {
 		return this.Addr()
 	}
@@ -156,7 +156,7 @@ func (this *BrokerInfo) Addr() string {
 }
 
 func (this *BrokerInfo) NamedAddr() string {
-	dns, present := ctx.ReverseDnsLookup(this.Host)
+	dns, present := ctx.ReverseDnsLookup(this.Host, this.Port)
 	if !present {
 		return this.Addr()
 	}
