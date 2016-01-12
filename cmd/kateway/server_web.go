@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	log "github.com/funkygao/log4go"
@@ -60,6 +61,10 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 }
 
 func (this *webServer) Start() {
+	if this.waitExitFunc == nil {
+		this.waitExitFunc = this.waitExit
+	}
+
 	if this.httpsServer != nil {
 		this.startServer(true)
 	}
@@ -163,9 +168,6 @@ func (this *webServer) startServer(https bool) {
 	<-waitListenerUp
 
 	this.gw.wg.Add(1)
-	if this.waitExitFunc == nil {
-		this.waitExitFunc = this.waitExit
-	}
 	if https {
 		go this.waitExitFunc(this.httpsServer, this.httpsListener, this.gw.shutdownCh)
 	} else {
