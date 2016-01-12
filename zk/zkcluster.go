@@ -288,6 +288,15 @@ func (this *ZkCluster) OnlineConsumersCount(topic, group string) int {
 	return len(consumers)
 }
 
+func (this *ZkCluster) NamedBrokerList() []string {
+	r := make([]string, 0)
+	for _, broker := range this.Brokers() {
+		r = append(r, broker.NamedAddr())
+	}
+
+	return r
+}
+
 func (this *ZkCluster) BrokerList() []string {
 	r := make([]string, 0)
 	for _, broker := range this.Brokers() {

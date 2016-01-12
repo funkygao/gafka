@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/gofmt"
 )
 
@@ -115,8 +116,8 @@ func newBrokerZnode(id string) *BrokerZnode {
 }
 
 func (b BrokerZnode) String() string {
-	return fmt.Sprintf("%s:%d ver:%d uptime:%s",
-		b.Host, b.Port,
+	return fmt.Sprintf("%s ver:%d uptime:%s",
+		b.NamedAddr(),
 		b.Version,
 		gofmt.PrettySince(b.Uptime()))
 }
@@ -135,6 +136,15 @@ func (b *BrokerZnode) Addr() string {
 	return fmt.Sprintf("%s:%d", b.Host, b.Port)
 }
 
+func (this *BrokerZnode) NamedAddr() string {
+	dns, present := ctx.ReverseDnsLookup(this.Host)
+	if !present {
+		return this.Addr()
+	}
+
+	return fmt.Sprintf("%s:%d", dns, this.Port)
+}
+
 type BrokerInfo struct {
 	Id   int    `json:"id"`
 	Host string `json:"host"`
@@ -143,6 +153,15 @@ type BrokerInfo struct {
 
 func (this *BrokerInfo) Addr() string {
 	return fmt.Sprintf("%s:%d", this.Host, this.Port)
+}
+
+func (this *BrokerInfo) NamedAddr() string {
+	dns, present := ctx.ReverseDnsLookup(this.Host)
+	if !present {
+		return this.Addr()
+	}
+
+	return fmt.Sprintf("%s:%d", dns, this.Port)
 }
 
 type PartitionOffset struct {

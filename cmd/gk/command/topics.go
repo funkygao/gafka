@@ -278,7 +278,7 @@ func (this *Topics) addTopic(zkcluster *zk.ZkCluster, topic string, replicas,
 	}
 	this.Ui.Output(fmt.Sprintf("\tzookeeper.connect: %s", zkcluster.ZkConnectAddr()))
 	this.Ui.Output(fmt.Sprintf("\t      broker.list: %s",
-		strings.Join(zkcluster.BrokerList(), ",")))
+		strings.Join(zkcluster.NamedBrokerList(), ",")))
 	return nil
 }
 

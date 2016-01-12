@@ -164,7 +164,7 @@ func (this *Brokers) clusterBrokers(cluster string, brokers map[string]*zk.Broke
 		}
 		lines = append(lines, fmt.Sprintf("\t%8s %21s jmx:%-2d ver:%-2d uptime:%s",
 			brokerId,
-			b.Addr(),
+			b.NamedAddr(),
 			b.JmxPort,
 			b.Version, uptime))
 	}
