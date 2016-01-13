@@ -30,14 +30,13 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 
-	for retries := 0; retries < 3; retries++ {
+	for retries := 0; retries < 5; retries++ {
 		if this.rebalancing {
-			time.Sleep(time.Millisecond * 300) // TODO
+			time.Sleep(time.Millisecond * 200)
 		} else {
 			break
 		}
 	}
-
 	if this.rebalancing {
 		err = store.ErrRebalancing
 		return
@@ -77,9 +76,9 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	default:
 		cf.Offsets.Initial = sarama.OffsetOldest
 	}
-	cf.Offsets.CommitInterval = time.Minute // TODO
+	cf.Offsets.CommitInterval = time.Minute
 	// time to wait for all the offsets for a partition to be processed after stopping to consume from it.
-	cf.Offsets.ProcessingTimeout = time.Second * 10 // TODO
+	cf.Offsets.ProcessingTimeout = time.Second * 10
 
 	for i := 0; i < 3; i++ {
 		// join group will async register zk owners znodes
@@ -93,6 +92,8 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 		}
 
 		// backoff
+		log.Warn("cluster:%s topic:%s join group:%s %v, retry after 100ms",
+			cluster, topic, group, err)
 		time.Sleep(time.Millisecond * 100)
 	}
 
@@ -105,8 +106,8 @@ func (this *subPool) killClient(remoteAddr string) {
 
 	// TODO golang keep-alive max idle defaults 60s
 	this.rebalancing = true
-	if c, present := this.clientMap[remoteAddr]; present {
-		c.Close() // will flush offset, must wait, otherwise offset is not guanranteed
+	if cg, present := this.clientMap[remoteAddr]; present {
+		cg.Close() // will flush offset, must wait, otherwise offset is not guanranteed
 	} else {
 		// client quit before getting the chance to consume
 		// e,g. 1 partition, 2 clients, the 2nd will not get consume chance, then quit
@@ -127,10 +128,10 @@ func (this *subPool) Stop() {
 	defer this.clientMapLock.Unlock()
 
 	var wg sync.WaitGroup
-	for _, c := range this.clientMap {
+	for _, cg := range this.clientMap {
 		wg.Add(1)
 		go func() {
-			c.Close() // will commit inflight offsets
+			cg.Close() // will commit inflight offsets
 			wg.Done()
 		}()
 	}
