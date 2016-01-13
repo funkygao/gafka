@@ -35,7 +35,9 @@ func newPubPool(store *pubStore, cluster string, brokerList []string, size int) 
 
 func (this *pubPool) RefreshBrokerList(brokerList []string) {
 	if len(brokerList) == 0 {
-		log.Warn("%s meta store found empty broker list, refresh refused", this.cluster)
+		if len(this.brokerList) > 0 {
+			log.Warn("%s meta store found empty broker list, refresh refused", this.cluster)
+		}
 		return
 	}
 
