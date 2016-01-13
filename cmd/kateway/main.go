@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 	"runtime/debug"
 	"runtime/trace"
 	"strings"
@@ -85,6 +86,7 @@ func main() {
 	ctx.LoadConfig(options.configFile)
 
 	ensureValidUlimit()
+	debug.SetGCPercent(800) // same env GOGC TODO
 
 	gw := NewGateway(options.id, options.metaRefresh)
 	if err := gw.Start(); err != nil {
