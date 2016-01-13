@@ -68,6 +68,10 @@ pprof-mem:
 pprof-block:
 	go tool pprof http://localhost:9194/debug/pprof/blocking
 
+prof-http-pkg:
+	go test -run=none -bench=ClientServerParallel4 -cpuprofile=cpuprof net/http
+	go tool pprof http.test cpuprof
+
 genkey:
 	@mkdir ssl
 	openssl genrsa -out ssl/server.key 2048
