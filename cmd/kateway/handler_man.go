@@ -118,8 +118,9 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	cluster := params.ByName(UrlParamCluster)
 	hisAppid := params.ByName("appid")
 	appid := r.Header.Get(HttpHeaderAppid)
+	pubkey := r.Header.Get(HttpHeaderPubkey)
 	// FIXME
-	if appid != "_kateway" {
+	if appid != "_psubAdmin_" || pubkey != "_wandafFan_" {
 		this.writeAuthFailure(w, meta.ErrPermDenied)
 		return
 	}
