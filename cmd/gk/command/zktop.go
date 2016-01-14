@@ -31,7 +31,7 @@ func (this *Zktop) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("zktop", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
-	cmdFlags.DurationVar(&refreshInterval, "i", time.Second*5, "")
+	cmdFlags.DurationVar(&refreshInterval, "i", time.Second*10, "")
 	cmdFlags.BoolVar(&graph, "g", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
@@ -72,7 +72,7 @@ func (this *Zktop) Run(args []string) (exitCode int) {
 
 func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 	this.Ui.Output(color.Green(zkzone.Name()))
-	header := "SERVER           PORT M      OUTST        RECVD         SENT CONNS ZNODES LAT(MIN/AVG/MAX)"
+	header := "VER             SERVER           PORT M      OUTST        RECVD         SENT CONNS ZNODES LAT(MIN/AVG/MAX)"
 	this.Ui.Output(header)
 
 	stats := zkzone.RunZkFourLetterCommand("stat")
@@ -92,7 +92,8 @@ func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 		if stat.mode == "" {
 			stat.mode = color.Red("E")
 		}
-		this.Ui.Output(fmt.Sprintf("%-15s %5s %1s %10s %12s %12s %5s %6s %s",
+		this.Ui.Output(fmt.Sprintf("%-15s %-15s %5s %1s %10s %12s %12s %5s %6s %s",
+			stat.ver,
 			host, port,
 			stat.mode,
 			stat.outstanding,
@@ -138,6 +139,7 @@ func (this *Zktop) draw(zkzones []*zk.ZkZone) {
 }
 
 type zkStat struct {
+	ver            string
 	latency        string
 	connections    string
 	outstanding    string
@@ -150,6 +152,11 @@ func (this *Zktop) parsedStat(s string) (stat zkStat) {
 	lines := strings.Split(s, "\n")
 	for _, l := range lines {
 		switch {
+		case strings.HasPrefix(l, "Zookeeper version:"):
+			p := strings.SplitN(l, ":", 2)
+			p = strings.SplitN(p[1], ",", 2)
+			stat.ver = strings.TrimSpace(p[0])
+
 		case strings.HasPrefix(l, "Latency"):
 			stat.latency = this.extractStatValue(l)
 
