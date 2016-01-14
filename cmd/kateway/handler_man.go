@@ -68,6 +68,7 @@ man:
  GET /servers
  GET /producers
  GET /consumers
+ GET /dbsync
 POST /topics/:cluster/:appid/:topic/:ver
 
 dbg:
@@ -121,7 +122,8 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	// FIXME
 	if appid != "_psubAdmin_" || pubkey != "_wandafFan_" {
-		log.Warn("suspicous add topic: appid=%s, pubkey=%s", appid, pubkey)
+		log.Warn("suspicous add topic from %s: appid=%s, pubkey=%s, cluster=%s, topic=%s",
+			r.RemoteAddr, appid, pubkey, cluster, topic)
 
 		this.writeAuthFailure(w, meta.ErrPermDenied)
 		return
@@ -140,20 +142,22 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		replicas, _ = strconv.Atoi(replicasArg)
 	}
 
-	log.Info("%s add topic: {appid:%s, cluster:%s, topic:%s, ver:%s query:%s}",
-		appid, hisAppid, cluster, topic, ver, query.Encode())
+	log.Info("app[%s] %s add topic: {appid:%s, cluster:%s, topic:%s, ver:%s query:%s}",
+		appid, r.RemoteAddr, hisAppid, cluster, topic, ver, query.Encode())
 
 	topic = meta.KafkaTopic(hisAppid, topic, ver)
 	lines, err := meta.Default.ZkCluster(cluster).AddTopic(topic, replicas, partitions)
 	if err != nil {
-		log.Info("%s add topic: %s", appid, err.Error())
+		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
+
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	ok := false
 	for _, l := range lines {
-		log.Info("%s add topic in cluster %s: %s", appid, cluster, l)
+		log.Trace("app[%s] add topic[%s] in cluster %s: %s", appid, topic, cluster, l)
+
 		if strings.Contains(l, "Created topic") {
 			ok = true
 		}
@@ -163,5 +167,29 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		w.Write(ResponseOk)
 	} else {
 		http.Error(w, strings.Join(lines, "\n"), http.StatusInternalServerError)
+	}
+}
+
+func (this *Gateway) dbsync(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	this.dbsyncLock.Lock()
+	defer this.dbsyncLock.Unlock()
+
+	appid := r.Header.Get(HttpHeaderAppid)
+	pubkey := r.Header.Get(HttpHeaderPubkey)
+	if appid != "_psubAdmin_" || pubkey != "_wandafFan_" {
+		log.Warn("suspicous dbsync: %s", appid, pubkey, r.RemoteAddr)
+
+		this.writeAuthFailure(w, meta.ErrPermDenied)
+		return
+	}
+
+	this.writeKatewayHeader(w)
+	if err := meta.Default.RefreshFromMysql(); err != nil {
+		log.Error("%s dbsync: %s", r.RemoteAddr, err.Error())
+
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		w.Write(ResponseOk)
 	}
 }

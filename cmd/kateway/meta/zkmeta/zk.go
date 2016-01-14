@@ -90,7 +90,7 @@ func (this *zkMetaStore) refreshTopologyCache() {
 func (this *zkMetaStore) Start() {
 	// warm up
 	this.refreshTopologyCache()
-	if err := this.refreshFromMysql(); err != nil {
+	if err := this.RefreshFromMysql(); err != nil {
 		// refuse to start if mysql conn fails
 		panic(err)
 	}
@@ -112,7 +112,7 @@ func (this *zkMetaStore) Start() {
 					len(this.partitionsMap))
 				this.pmapLock.Unlock()
 
-				go this.refreshFromMysql()
+				go this.RefreshFromMysql()
 
 				// notify others that I have got the most recent data
 				this.refreshCh <- struct{}{}

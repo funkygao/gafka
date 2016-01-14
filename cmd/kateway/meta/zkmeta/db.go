@@ -20,7 +20,7 @@ type appSubscribeRecord struct {
 	AppId, TopicName string
 }
 
-func (this *zkMetaStore) refreshFromMysql() error {
+func (this *zkMetaStore) RefreshFromMysql() error {
 	dsn, err := this.zkzone.MysqlDsn()
 	if err != nil {
 		log.Error("zk meta store fetching mysql dsn: %v", err)
