@@ -50,8 +50,25 @@ func (this *Console) Run(args []string) (exitCode int) {
 	defer this.zkzone.Close()
 
 	this.Line = liner.NewLiner()
-	this.Line.SetCtrlCAborts(false)
+	this.Line.SetCtrlCAborts(true)
 	this.Line.SetCompleter(func(line string) (c []string) {
+		p := strings.SplitN(line, " ", 2)
+		if len(p) == 2 && strings.TrimSpace(p[1]) != "" {
+			children, _, err := this.zkzone.Conn().Children(this.cwd)
+			if err != nil {
+				this.Ui.Error(err.Error())
+				return
+			}
+
+			for _, child := range children {
+				if strings.HasPrefix(child, p[1]) {
+					c = append(c, fmt.Sprintf("%s %s", p[0], child))
+				}
+			}
+
+			return
+		}
+
 		for cmd, _ := range this.Cmds {
 			if strings.HasPrefix(cmd, strings.ToLower(line)) {
 				c = append(c, cmd)
@@ -152,7 +169,12 @@ func (this *Console) runCommand(cmdLine string) {
 		}
 		if path[0] != '/' {
 			// comparative path
-			path = fmt.Sprintf("%s/%s", this.cwd, path)
+			if this.cwd == "/" {
+				path = this.cwd + path
+			} else {
+				path = fmt.Sprintf("%s/%s", this.cwd, path)
+			}
+
 		}
 
 		var (
