@@ -57,8 +57,16 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
 	// pick a consumer from the consumer group
-	fetcher, err := store.DefaultSubStore.Fetch(meta.Default.LookupCluster(hisAppid, topic),
-		rawTopic, myAppid+"."+group, r.RemoteAddr, reset)
+	cluster, found := meta.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("cluster not found for subd app: %s", hisAppid)
+
+		http.Error(w, "invalid subd appid", http.StatusBadRequest)
+		return
+	}
+
+	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
+		myAppid+"."+group, r.RemoteAddr, reset)
 	if err != nil {
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 
@@ -190,7 +198,14 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	cluster := meta.Default.LookupCluster(hisAppid, topic)
+	cluster, found := meta.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("cluster not found for subd app: %s", hisAppid)
+
+		http.Error(w, "invalid subd appid", http.StatusBadRequest)
+		return
+	}
+
 	this.writeKatewayHeader(w)
 	var out = map[string]string{
 		"store": "kafka",

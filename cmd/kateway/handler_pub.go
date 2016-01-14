@@ -96,8 +96,16 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	if query.Get(UrlQueryAsync) == "1" {
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
-	err := pubMethod(meta.Default.LookupCluster(appid, topic),
-		appid+"."+topic+"."+ver,
+
+	cluster, found := meta.Default.LookupCluster(appid)
+	if !found {
+		log.Error("cluster not found for app: %s", appid)
+
+		http.Error(w, "invalid appid", http.StatusBadRequest)
+		return
+	}
+
+	err := pubMethod(cluster, appid+"."+topic+"."+ver,
 		[]byte(query.Get(UrlQueryKey)), msg.Body)
 	if err != nil {
 		msg.Free() // defer is costly
@@ -142,7 +150,14 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	cluster := meta.Default.LookupCluster(appid, topic)
+	cluster, found := meta.Default.LookupCluster(appid)
+	if !found {
+		log.Error("cluster not found for app: %s", appid)
+
+		http.Error(w, "invalid appid", http.StatusBadRequest)
+		return
+	}
+
 	this.writeKatewayHeader(w)
 	var out = map[string]string{
 		"store":       "kafka",

@@ -30,8 +30,7 @@ type MetaStore interface {
 
 	AuthPub(appid, pubkey, topic string) bool
 	AuthSub(appid, subkey, topic string) bool
-
-	LookupCluster(appid, topic string) string
+	LookupCluster(appid string) (string, bool)
 }
 
 var Default MetaStore

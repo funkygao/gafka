@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/gofmt"
+	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
 type Kateway struct {
@@ -36,14 +37,17 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	mysqlDsn, err := zkzone.MysqlDsn()
 	if err != nil {
 		this.Ui.Error(err.Error())
-		this.Ui.Warn(fmt.Sprintf("kateway[%s] not initialized yet", this.zone))
+		this.Ui.Warn(fmt.Sprintf("kateway[%s] mysql DSN not set on zk yet", this.zone))
+		this.Ui.Output("e,g.")
+		this.Ui.Output(fmt.Sprintf("%s pubsub:pubsub@tcp(10.77.135.217:10010)/pubsub?charset=utf8&timeout=10s",
+			zk.KatewayMysqlPath))
 		return 1
 	}
 	this.Ui.Output(fmt.Sprintf("mysql: %s", mysqlDsn))
 
 	instances, _, err := zkzone.Conn().Children(zkr.Root(this.zone))
 	if err != nil {
-		if err.Error() == "zk: node does not exist" {
+		if err == zklib.ErrNoNode {
 			this.Ui.Output("no kateway running")
 			return
 		} else {

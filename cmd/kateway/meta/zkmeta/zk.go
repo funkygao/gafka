@@ -27,6 +27,12 @@ type zkMetaStore struct {
 	// cache
 	partitionsMap map[string]map[string][]int32 // {cluster: {topic: partitions}}
 	pmapLock      sync.RWMutex
+
+	// mysql store, initialized on refresh
+	appClusterMap map[string]string              // appid:cluster
+	appSecretMap  map[string]string              // appid:secret
+	appSubMap     map[string]map[string]struct{} // appid:topics
+	appPubMap     map[string]map[string]struct{} // appid:subscribed topics
 }
 
 func New(cf *config) meta.MetaStore {
@@ -84,6 +90,10 @@ func (this *zkMetaStore) refreshTopologyCache() {
 func (this *zkMetaStore) Start() {
 	// warm up
 	this.refreshTopologyCache()
+	if err := this.refreshFromMysql(); err != nil {
+		// refuse to start if mysql conn fails
+		panic(err)
+	}
 
 	go func() {
 		ticker := time.NewTicker(this.cf.Refresh)
@@ -92,7 +102,7 @@ func (this *zkMetaStore) Start() {
 		for {
 			select {
 			case <-ticker.C:
-				log.Trace("refreshing meta store")
+				log.Trace("refreshing zk meta store")
 
 				this.refreshTopologyCache()
 
@@ -102,11 +112,13 @@ func (this *zkMetaStore) Start() {
 					len(this.partitionsMap))
 				this.pmapLock.Unlock()
 
+				go this.refreshFromMysql()
+
 				// notify others that I have got the most recent data
 				this.refreshCh <- struct{}{}
 
 			case <-this.shutdownCh:
-				log.Trace("meta store closed")
+				log.Trace("zk meta store closed")
 				return
 			}
 		}
@@ -233,22 +245,4 @@ func (this *zkMetaStore) ZkCluster(cluster string) *zk.ZkCluster {
 	}
 
 	return r
-}
-
-func (this *zkMetaStore) AuthPub(appid, pubkey, topic string) (ok bool) {
-	if appid == "" || topic == "" {
-		return false
-	}
-	return true
-}
-
-func (this *zkMetaStore) AuthSub(appid, subkey, topic string) (ok bool) {
-	if appid == "" || topic == "" {
-		return false
-	}
-	return true
-}
-
-func (this *zkMetaStore) LookupCluster(appid, topic string) (cluster string) {
-	return "me" // TODO
 }

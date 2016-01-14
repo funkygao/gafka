@@ -74,12 +74,12 @@ func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
 func (this *ZkZone) MysqlDsn() (string, error) {
 	this.connectIfNeccessary()
 
-	data, _, err := this.conn.Get(katewayMysqlPath)
+	data, _, err := this.conn.Get(KatewayMysqlPath)
 	if err != nil {
 		return "", err
 	}
 
-	return string(data), nil
+	return strings.TrimSpace(string(data)), nil
 }
 
 func (this *ZkZone) NewclusterWithPath(cluster, path string) *ZkCluster {

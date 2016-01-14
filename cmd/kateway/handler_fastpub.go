@@ -71,8 +71,16 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 	if async {
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
-	err := pubMethod(meta.Default.LookupCluster(appid, topic),
-		appid+"."+topic+"."+ver,
+
+	cluster, found := meta.Default.LookupCluster(appid)
+	if !found {
+		log.Error("cluster not found for app: %s", appid)
+
+		ctx.Error("invalid appid", fasthttp.StatusBadRequest)
+		return
+	}
+
+	err := pubMethod(cluster, appid+"."+topic+"."+ver,
 		key, ctx.PostBody())
 	if err != nil {
 		if !options.disableMetrics {
@@ -114,7 +122,14 @@ func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprout
 		return
 	}
 
-	cluster := meta.Default.LookupCluster(appid, topic)
+	cluster, found := meta.Default.LookupCluster(appid)
+	if !found {
+		log.Error("cluster not found for app: %s", appid)
+
+		ctx.Error("invalid appid", fasthttp.StatusBadRequest)
+		return
+	}
+
 	var out = map[string]string{
 		"store":       "kafka",
 		"broker.list": strings.Join(meta.Default.BrokerList(cluster), ","),
