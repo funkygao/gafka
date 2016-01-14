@@ -35,7 +35,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	)
 	cmdFlags := flag.NewFlagSet("lags", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.onlineOnly, "l", false, "")
 	cmdFlags.BoolVar(&this.problematicMode, "p", false, "")
@@ -45,12 +45,6 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&this.lagThreshold, "lag", 5000, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
-	}
-
-	if validateArgs(this, this.Ui).
-		require("-z").
-		invalid(args) {
-		return 2
 	}
 
 	if this.watchMode {
@@ -199,11 +193,14 @@ func (*Lags) Synopsis() string {
 
 func (this *Lags) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s lags -z zone [options]
+Usage: %s lags [options]
 
     Display high level consumers lag for each topic/partition
 
 Options:
+
+    -z zone
+      Default %s
 
     -c cluster
 
@@ -223,6 +220,6 @@ Options:
     -p
       Only show problematic consumers.
 
-`, this.Cmd)
+`, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

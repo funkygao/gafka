@@ -116,10 +116,11 @@ Usage: %s kateway [options]
 Options:
 
     -z zone
+      Default %s
 
     -consumers
       Display online consumers of kateway
 
-`, this.Cmd)
+`, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

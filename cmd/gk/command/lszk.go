@@ -23,14 +23,10 @@ type LsZk struct {
 func (this *LsZk) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("lszk", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.zone, "z", "", "")
+	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.recursive, "R", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
-		return 2
-	}
-
-	if validateArgs(this, this.Ui).require("-z").invalid(args) {
 		return 2
 	}
 
@@ -66,17 +62,20 @@ func (*LsZk) Synopsis() string {
 
 func (this *LsZk) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s lszk -z zone [-R] [options] <path>
+Usage: %s lszk [options] <path>
 
     List kafka related zookeepeer znode children
 
 Options:
+
+    -z zone
+      Default %s
 
     -c cluster
 
     -R
       recursive.    
 
-`, this.Cmd)
+`, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

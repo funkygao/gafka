@@ -50,7 +50,7 @@ type Top struct {
 func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("top", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.zone, "z", "", "")
+	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
 	cmdFlags.DurationVar(&this.topInterval, "i", time.Second*5, "refresh interval")
 	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
@@ -60,12 +60,6 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
-	}
-
-	if validateArgs(this, this.Ui).
-		require("-z").
-		invalid(args) {
-		return 2
 	}
 
 	if this.dashboardGraph {
@@ -433,6 +427,7 @@ Usage: %s top [options]
 Options:
 
     -z zone
+      Default %s
 
     -c cluster pattern
 
@@ -452,7 +447,7 @@ Options:
       Could be useful for sending output from top to other programs or to a file.
 
     -who <%s%s|%s%s>
-`, this.Cmd, color.Colorize([]string{color.Underscore}, "p"), "roducer",
+`, this.Cmd, ctx.ZkDefaultZone(), color.Colorize([]string{color.Underscore}, "p"), "roducer",
 		color.Colorize([]string{color.Underscore}, "c"), "onsumer")
 	return strings.TrimSpace(help)
 }

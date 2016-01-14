@@ -60,7 +60,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	)
 	cmdFlags := flag.NewFlagSet("peek", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.StringVar(&topicPattern, "t", "", "")
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
@@ -69,10 +69,6 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&silence, "s", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
-	}
-
-	if validateArgs(this, this.Ui).require("-z").invalid(args) {
-		return 2
 	}
 
 	if silence {
@@ -191,11 +187,14 @@ func (*Peek) Synopsis() string {
 
 func (this *Peek) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s peek -z zone [options]
+Usage: %s peek [options]
 
     Peek kafka cluster messages ongoing from any offset
 
 Options:
+
+    -z zone
+      Default %s
 
     -c cluster
 
@@ -214,6 +213,6 @@ Options:
 
     -color
       Enable colorized output
-`, this.Cmd)
+`, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

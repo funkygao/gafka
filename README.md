@@ -28,6 +28,7 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
     
     Available commands are:
         ?                  Manual of gk
+        alias              List all active aliasess
         brokers            Print online brokers from Zookeeper
         checkup            Health checkup of kafka runtime
         clusters           Register or display kafka clusters

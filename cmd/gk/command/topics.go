@@ -36,7 +36,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
@@ -49,7 +49,6 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	}
 
 	if validateArgs(this, this.Ui).
-		require("-z").
 		on("-add", "-c").
 		requireAdminRights("-add", "-config").
 		invalid(args) {
@@ -125,7 +124,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 	brokers := zkcluster.Brokers()
 	if len(brokers) == 0 {
 		linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%4s%s", " ",
-			color.Red("empty brokers")), linesInTopicMode)
+			color.Red("%s empty brokers", zkcluster.Name())), linesInTopicMode)
 		echoBuffer(linesInTopicMode)
 		return
 	}
@@ -288,11 +287,14 @@ func (*Topics) Synopsis() string {
 
 func (this *Topics) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s topics -z zone [options]
+Usage: %s topics [options]
 
     Manage kafka topics
 
 Options:
+
+    -z zone
+      Default %s
   
     -c cluster
 
@@ -313,6 +315,6 @@ Options:
 
     -l
       Use a long listing format.
-`, this.Cmd)
+`, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }
