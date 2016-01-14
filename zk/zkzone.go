@@ -71,6 +71,17 @@ func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
 	return c
 }
 
+func (this *ZkZone) MysqlDsn() (string, error) {
+	this.connectIfNeccessary()
+
+	data, _, err := this.conn.Get(katewayMysqlPath)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
 func (this *ZkZone) NewclusterWithPath(cluster, path string) *ZkCluster {
 	if c, present := this.zkclusters[cluster]; present {
 		return c

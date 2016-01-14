@@ -8,10 +8,6 @@ import (
 	"github.com/funkygao/gafka/zk"
 )
 
-const (
-	katewayIdsRoot = "/_kateway/ids"
-)
-
 type zkreg struct {
 	id     string
 	zkzone *zk.ZkZone
@@ -29,7 +25,7 @@ func New(zone string, id string, data []byte) *zkreg {
 }
 
 func Root(zone string) string {
-	return fmt.Sprintf("%s/%s", katewayIdsRoot, zone)
+	return fmt.Sprintf("%s/%s", zk.KatewayIdsRoot, zone)
 }
 
 func (this *zkreg) mypath() string {

@@ -33,6 +33,14 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	mysqlDsn, err := zkzone.MysqlDsn()
+	if err != nil {
+		this.Ui.Error(err.Error())
+		this.Ui.Warn(fmt.Sprintf("kateway[%s] not initialized yet", this.zone))
+		return 1
+	}
+	this.Ui.Output(fmt.Sprintf("mysql: %s", mysqlDsn))
+
 	instances, _, err := zkzone.Conn().Children(zkr.Root(this.zone))
 	if err != nil {
 		if err.Error() == "zk: node does not exist" {

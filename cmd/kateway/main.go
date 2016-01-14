@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"runtime"
 	"runtime/debug"
 	"runtime/trace"
 	"strings"
