@@ -9,8 +9,6 @@ type MetaStore interface {
 	Start()
 	Stop()
 
-	RefreshFromMysql() error
-
 	// RefreshEvent is fired whenever meta data is refreshed.
 	RefreshEvent() <-chan struct{}
 

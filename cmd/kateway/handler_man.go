@@ -68,7 +68,6 @@ man:
  GET /servers
  GET /producers
  GET /consumers
- GET /dbsync
 POST /topics/:cluster/:appid/:topic/:ver
 
 dbg:
@@ -111,6 +110,7 @@ func (this *Gateway) serversHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2
+// TODO resync from mysql and broadcast to all kateway peers
 func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
@@ -167,29 +167,5 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		w.Write(ResponseOk)
 	} else {
 		http.Error(w, strings.Join(lines, "\n"), http.StatusInternalServerError)
-	}
-}
-
-func (this *Gateway) dbsync(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	this.dbsyncLock.Lock()
-	defer this.dbsyncLock.Unlock()
-
-	appid := r.Header.Get(HttpHeaderAppid)
-	pubkey := r.Header.Get(HttpHeaderPubkey)
-	if appid != "_psubAdmin_" || pubkey != "_wandafFan_" {
-		log.Warn("suspicous dbsync: %s", appid, pubkey, r.RemoteAddr)
-
-		this.writeAuthFailure(w, meta.ErrPermDenied)
-		return
-	}
-
-	this.writeKatewayHeader(w)
-	if err := meta.Default.RefreshFromMysql(); err != nil {
-		log.Error("%s dbsync: %s", r.RemoteAddr, err.Error())
-
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	} else {
-		w.Write(ResponseOk)
 	}
 }

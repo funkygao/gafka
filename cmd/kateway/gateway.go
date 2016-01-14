@@ -59,7 +59,6 @@ type Gateway struct {
 	subMetrics *subMetrics
 	svrMetrics *serverMetrics
 
-	dbsyncLock   sync.Mutex
 	guard        *guard
 	timer        *timewheel.TimeWheel
 	leakyBuckets *ratelimiter.LeakyBuckets // TODO
