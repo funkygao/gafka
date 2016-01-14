@@ -94,10 +94,15 @@ func LoadFromHome() {
         }
     ]
 
+    zk_default_zone: "prod"
+    kafka_home: "/opt/kafka_2.10-0.8.1.1"
+    loglevel: "info"
+
     aliases: [
     	{
-    		cmd: "zone"
-    		alias: "zone"
+    		// placeholder
+    		cmd: "_xxx"
+    		alias: "_yyy"
     	}
     ]
 
@@ -211,12 +216,7 @@ func LoadFromHome() {
 		"k10118b.wdds.kfk.com:10.209.11.195"
 		"k11003a.wdds.kfk.com:10.209.18.15"
 		"k11003b.wdds.kfk.com:10.209.18.16"
-	]
-
-    zk_default_zone: "prod"
-    consul_bootstrap: "10.209.33.69:8500"
-    kafka_home: "/opt/kafka_2.10-0.8.1.1"
-    loglevel: "info"
+	]    
 }
 `
 	var configFile string
