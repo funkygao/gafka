@@ -209,6 +209,8 @@ func LoadFromHome() {
 		"k10121b.wdds.kfk.com:10.209.10.141"
 		"k10118a.wdds.kfk.com:10.209.11.166"
 		"k10118b.wdds.kfk.com:10.209.11.195"
+		"k11003a.wdds.kfk.com:10.209.18.15"
+		"k11003b.wdds.kfk.com:10.209.18.16"
 	]
 
     zk_default_zone: "prod"
