@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"expvar"
 	"runtime"
 	"sync"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/go-metrics"
+	log "github.com/funkygao/log4go"
 )
 
 func startRuntimeMetrics(interval time.Duration) {
@@ -23,14 +25,17 @@ func goroutines() interface{} {
 }
 
 type serverMetrics struct {
+	gw *Gateway
+
 	TotalConns      metrics.Counter
 	ConcurrentConns metrics.Counter
 	ConcurrentPub   metrics.Counter
 	ConcurrentSub   metrics.Counter
 }
 
-func NewServerMetrics(interval time.Duration) *serverMetrics {
+func NewServerMetrics(interval time.Duration, gw *Gateway) *serverMetrics {
 	this := &serverMetrics{
+		gw:              gw,
 		TotalConns:      metrics.NewRegisteredCounter("server.totalconns", metrics.DefaultRegistry),
 		ConcurrentConns: metrics.NewRegisteredCounter("server.concurrent", metrics.DefaultRegistry),
 		ConcurrentPub:   metrics.NewRegisteredCounter("server.conns.pub", metrics.DefaultRegistry),
@@ -54,27 +59,47 @@ func NewServerMetrics(interval time.Duration) *serverMetrics {
 	return this
 }
 
-func (this *serverMetrics) Flush() {
+func (this *serverMetrics) Key() string {
+	return "server"
+}
 
+func (this *serverMetrics) Load() {
+	b, err := this.gw.GetZkZone().LoadKatewayMetrics(this.gw.id, this.Key())
+	if err != nil {
+		log.Error("load %s metrics: %v", this.Key(), err)
+		return
+	}
+
+	data := make(map[string]int64)
+	json.Unmarshal(b, &data)
+	this.TotalConns.Inc(data["total"])
+}
+
+func (this *serverMetrics) Flush() {
+	var data = map[string]int64{
+		"total": this.TotalConns.Count(),
+	}
+	b, _ := json.Marshal(data)
+	this.gw.GetZkZone().FlushKatewayMetrics(this.gw.id, this.Key(), b)
 }
 
 type subMetrics struct {
+	gw *Gateway
+
 	expConsumeOk      *expvar.Int
 	expActiveConns    *expvar.Int
 	expActiveUpstream *expvar.Int
 
-	// i consume msgs of others
-	ConsumeMap   map[string]metrics.Counter
-	consumeMapMu sync.RWMutex
-
-	// my msgs are consumed by others
-	// TODO who are consuming my msgs
-	ConsumedMap   map[string]metrics.Counter
-	consumedMapMu sync.RWMutex
+	// multi-tenant related
+	ConsumeMap    map[string]metrics.Counter // i consume msgs of others
+	consumeMapMu  sync.RWMutex
+	ConsumedMap   map[string]metrics.Counter // my msgs are consumed by others
+	consumedMapMu sync.RWMutex               // TODO who are consuming my msgs
 }
 
-func NewSubMetrics() *subMetrics {
+func NewSubMetrics(gw *Gateway) *subMetrics {
 	this := &subMetrics{
+		gw:          gw,
 		ConsumeMap:  make(map[string]metrics.Counter),
 		ConsumedMap: make(map[string]metrics.Counter),
 	}
@@ -88,8 +113,41 @@ func NewSubMetrics() *subMetrics {
 	return this
 }
 
-func (this *subMetrics) Flush() {
+func (this *subMetrics) Key() string {
+	return "sub"
+}
 
+func (this *subMetrics) Load() {
+	b, err := this.gw.GetZkZone().LoadKatewayMetrics(this.gw.id, this.Key())
+	if err != nil {
+		log.Error("load %s metrics: %v", this.Key(), err)
+		return
+	}
+
+	data := make(map[string]map[string]int64)
+	json.Unmarshal(b, &data)
+
+	for k, v := range data["sub"] {
+		this.ConsumeMap[k].Inc(v)
+	}
+	for k, v := range data["subd"] {
+		this.ConsumedMap[k].Inc(v)
+	}
+}
+
+func (this *subMetrics) Flush() {
+	var data = make(map[string]map[string]int64)
+	data["sub"] = make(map[string]int64)
+	data["subd"] = make(map[string]int64)
+	for k, v := range this.ConsumeMap {
+		data["sub"][k] = v.Count()
+	}
+	for k, v := range this.ConsumedMap {
+		data["subd"][k] = v.Count()
+	}
+
+	b, _ := json.Marshal(data)
+	this.gw.GetZkZone().FlushKatewayMetrics(this.gw.id, this.Key(), b)
 }
 
 func (this *subMetrics) ConsumeOk(appid, topic, ver string) {
@@ -104,11 +162,14 @@ func (this *subMetrics) ConsumedOk(appid, topic, ver string) {
 }
 
 type pubMetrics struct {
+	gw *Gateway
+
 	expPubOk          *expvar.Int
 	expPubFail        *expvar.Int
 	expActiveConns    *expvar.Int
 	expActiveUpstream *expvar.Int
 
+	// multi-tenant related
 	PubOkMap   map[string]metrics.Counter
 	pubOkMu    sync.RWMutex
 	PubFailMap map[string]metrics.Counter
@@ -120,8 +181,9 @@ type pubMetrics struct {
 	PubMsgSize  metrics.Histogram
 }
 
-func NewPubMetrics() *pubMetrics {
+func NewPubMetrics(gw *Gateway) *pubMetrics {
 	this := &pubMetrics{
+		gw:         gw,
 		PubOkMap:   make(map[string]metrics.Counter),
 		PubFailMap: make(map[string]metrics.Counter),
 
@@ -141,8 +203,42 @@ func NewPubMetrics() *pubMetrics {
 	return this
 }
 
-func (this *pubMetrics) Flush() {
+func (this *pubMetrics) Key() string {
+	return "pub"
+}
 
+// TODO need test
+func (this *pubMetrics) Load() {
+	b, err := this.gw.GetZkZone().LoadKatewayMetrics(this.gw.id, this.Key())
+	if err != nil {
+		log.Error("load %s metrics: %v", this.Key(), err)
+		return
+	}
+
+	data := make(map[string]map[string]int64)
+	json.Unmarshal(b, &data)
+
+	for k, v := range data["ok"] {
+		this.PubOkMap[k].Inc(v)
+	}
+	for k, v := range data["fail"] {
+		this.PubFailMap[k].Inc(v)
+	}
+}
+
+func (this *pubMetrics) Flush() {
+	var data = make(map[string]map[string]int64)
+	data["ok"] = make(map[string]int64)
+	data["fail"] = make(map[string]int64)
+	for k, v := range this.PubOkMap {
+		data["ok"][k] = v.Count()
+	}
+	for k, v := range this.PubFailMap {
+		data["fail"][k] = v.Count()
+	}
+
+	b, _ := json.Marshal(data)
+	this.gw.GetZkZone().FlushKatewayMetrics(this.gw.id, this.Key(), b)
 }
 
 func (this *pubMetrics) PubFail(appid, topic, ver string) {

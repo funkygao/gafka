@@ -82,6 +82,37 @@ func (this *ZkZone) MysqlDsn() (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
+func (this *ZkZone) ensureParentDirExists(path string) error {
+	parent := pt.Dir(path)
+	if err := this.mkdirRecursive(parent); err != nil && err != zk.ErrNodeExists {
+		return err
+	}
+
+	return nil
+}
+
+func (this *ZkZone) FlushKatewayMetrics(katewayId string, key string, data []byte) error {
+	this.connectIfNeccessary()
+
+	path := katewayMetricsRootByKey(katewayId, key)
+	this.ensureParentDirExists(path)
+
+	err := this.createZnode(path, data)
+	if err == zk.ErrNodeExists {
+		return this.setZnode(path, data)
+	}
+
+	return err
+}
+
+func (this *ZkZone) LoadKatewayMetrics(katewayId string, key string) ([]byte, error) {
+	this.connectIfNeccessary()
+
+	path := katewayMetricsRootByKey(katewayId, key)
+	data, _, err := this.conn.Get(path)
+	return data, err
+}
+
 func (this *ZkZone) NewclusterWithPath(cluster, path string) *ZkCluster {
 	if c, present := this.zkclusters[cluster]; present {
 		return c
@@ -201,9 +232,7 @@ func (this *ZkZone) createZnode(path string, data []byte) error {
 func (this *ZkZone) CreateEphemeralZnode(path string, data []byte) error {
 	this.connectIfNeccessary()
 
-	// ensure the parent dir exists
-	parent := pt.Dir(path)
-	if err := this.mkdirRecursive(parent); err != nil {
+	if err := this.ensureParentDirExists(path); err != nil {
 		return err
 	}
 

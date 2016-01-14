@@ -8,8 +8,9 @@ const (
 	clusterRoot     = "/_kafka_clusters"
 	clusterInfoRoot = "/_kafa_clusters_info"
 
-	KatewayMysqlPath = "/_kateway/mysql"
-	KatewayIdsRoot   = "/_kateway/ids"
+	KatewayIdsRoot     = "/_kateway/ids"
+	katewayMetricsRoot = "/_kateway/metrics"
+	KatewayMysqlPath   = "/_kateway/mysql"
 
 	ConsumersPath           = "/consumers"
 	BrokerIdsPath           = "/brokers/ids"
@@ -22,6 +23,10 @@ const (
 	EntityConfigPath        = "/config"
 	DeleteTopicsPath        = "/admin/delete_topics"
 )
+
+func katewayMetricsRootByKey(id, key string) string {
+	return fmt.Sprintf("%s/%s/%s", katewayMetricsRoot, id, key)
+}
 
 func clusterPath(cluster string) string {
 	return fmt.Sprintf("%s/%s", clusterRoot, cluster)

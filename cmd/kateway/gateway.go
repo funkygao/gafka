@@ -20,6 +20,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/registry"
 	"github.com/funkygao/gafka/registry/zk"
+	gzk "github.com/funkygao/gafka/zk"
 	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/signal"
 	"github.com/funkygao/golib/timewheel"
@@ -50,6 +51,8 @@ type Gateway struct {
 	// cluster of kateway pub, only for client side load balance
 	pubPeers     []string
 	pubPeersLock sync.RWMutex
+
+	zkzone *gzk.ZkZone
 
 	pubServer *pubServer
 	subServer *subServer
@@ -87,12 +90,12 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 	this.manServer = newManServer(options.manHttpAddr, options.manHttpsAddr,
 		options.maxClients, this)
-	this.svrMetrics = NewServerMetrics(options.reporterInterval)
+	this.svrMetrics = NewServerMetrics(options.reporterInterval, this)
 
 	if options.pubHttpAddr != "" || options.pubHttpsAddr != "" {
 		this.pubServer = newPubServer(options.pubHttpAddr, options.pubHttpsAddr,
 			options.maxClients, this)
-		this.pubMetrics = NewPubMetrics()
+		this.pubMetrics = NewPubMetrics(this)
 
 		switch options.store {
 		case "kafka":
@@ -108,7 +111,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	if options.subHttpAddr != "" || options.subHttpsAddr != "" {
 		this.subServer = newSubServer(options.subHttpAddr, options.subHttpsAddr,
 			options.maxClients, this)
-		this.subMetrics = NewSubMetrics()
+		this.subMetrics = NewSubMetrics(this)
 
 		switch options.store {
 		case "kafka":
@@ -143,14 +146,20 @@ func (this *Gateway) InstanceInfo() []byte {
 	return d
 }
 
+func (this *Gateway) GetZkZone() *gzk.ZkZone {
+	if this.zkzone == nil {
+		this.zkzone = gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	}
+
+	return this.zkzone
+}
+
 func (this *Gateway) Start() (err error) {
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		this.Stop()
-	}, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2)
+	}, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2) // yes we ignore HUP
 
 	this.startedAt = time.Now()
-
-	startRuntimeMetrics(options.reporterInterval)
 
 	meta.Default.Start()
 	log.Trace("meta store started")
@@ -167,12 +176,15 @@ func (this *Gateway) Start() (err error) {
 		go http.ListenAndServe(options.debugHttpAddr, nil)
 	}
 
+	this.svrMetrics.Load()
+
 	if this.pubServer != nil {
 		if err := store.DefaultPubStore.Start(); err != nil {
 			panic(err)
 		}
 		log.Trace("pub store[%s] started", store.DefaultPubStore.Name())
 
+		this.pubMetrics.Load()
 		this.pubServer.Start()
 	}
 	if this.subServer != nil {
@@ -181,8 +193,11 @@ func (this *Gateway) Start() (err error) {
 		}
 		log.Trace("sub store[%s] started", store.DefaultSubStore.Name())
 
+		this.subMetrics.Load()
 		this.subServer.Start()
 	}
+
+	go startRuntimeMetrics(options.reporterInterval)
 
 	// the last thing is to register: notify others
 	if registry.Default != nil {
@@ -239,6 +254,10 @@ func (this *Gateway) ServeForever() {
 		if this.subMetrics != nil {
 			this.subMetrics.Flush()
 			log.Info("sub metrics flushed")
+		}
+
+		if this.zkzone != nil {
+			this.zkzone.Close()
 		}
 
 		meta.Default.Stop()

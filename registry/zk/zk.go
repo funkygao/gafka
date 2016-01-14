@@ -51,5 +51,7 @@ func (this *zkreg) Deregister() error {
 		return errors.New("a stranger intrudes:" + string(data))
 	}
 
-	return this.zkzone.Conn().Delete(this.mypath(), -1)
+	err = this.zkzone.Conn().Delete(this.mypath(), -1)
+	this.zkzone.Close()
+	return err
 }
