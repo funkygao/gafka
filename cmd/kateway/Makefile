@@ -19,6 +19,7 @@ build:
 
 kafka:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -pubhttps :9291 -subhttp :9192 -manhttps :9293 -store kafka -id 1 -level trace -debughttp ":9194" -keyfile ssl/server.key -certfile ssl/server.pem -debug
+	#GOGC=800 GODEBUG="gctrace=1,schedtrace=1000,scheddetail=1" ./kateway -zone local -pubhttp :9191 -pubhttps :9291 -subhttp :9192 -manhttps :9293 -store kafka -id 1 -level trace -debughttp ":9194" -keyfile ssl/server.key -certfile ssl/server.pem -debug
 
 bench:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -pubhttps :9291 -subhttp :9192 -level trace -store kafka -id 1 -keyfile ssl/server.key -certfile ssl/server.pem
@@ -66,6 +67,10 @@ pprof-mem:
 
 pprof-block:
 	go tool pprof http://localhost:9194/debug/pprof/blocking
+
+prof-http-pkg:
+	go test -run=none -bench=ClientServerParallel4 -cpuprofile=cpuprof net/http
+	go tool pprof http.test cpuprof
 
 genkey:
 	@mkdir ssl
