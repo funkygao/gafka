@@ -28,8 +28,8 @@ type MetaStore interface {
 	// BrokerList returns the live brokers address list.
 	BrokerList(cluster string) []string
 
-	AuthPub(appid, pubkey, topic string) bool
-	AuthSub(appid, subkey, topic string) bool
+	AuthPub(appid, pubkey, topic string) error
+	AuthSub(appid, subkey, topic string) error
 	LookupCluster(appid string) (string, bool)
 }
 

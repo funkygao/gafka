@@ -45,9 +45,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	if !meta.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic) {
-		log.Warn("consumer[%s] %s {topic:%s, ver:%s, group:%s, limit:%d}: auth fail",
-			myAppid, r.RemoteAddr, topic, ver, group, limit)
+	if err := meta.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+		log.Warn("consumer[%s] %s {topic:%s, ver:%s, group:%s, limit:%d}: %s",
+			myAppid, r.RemoteAddr, topic, ver, group, limit, err)
 
 		this.writeAuthFailure(w)
 		return
@@ -193,7 +193,10 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
-	if !meta.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic) {
+	if err := meta.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+		log.Warn("consumer[%s] %s {topic:%s, ver:%s, hisapp:%s}: %s",
+			myAppid, r.RemoteAddr, topic, ver, hisAppid, err)
+
 		this.writeAuthFailure(w)
 		return
 	}

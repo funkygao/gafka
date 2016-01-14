@@ -133,44 +133,44 @@ func (this *zkMetaStore) fetchTopicRecords(db *sql.DB) error {
 	return nil
 }
 
-func (this *zkMetaStore) AuthPub(appid, pubkey, topic string) (ok bool) {
+func (this *zkMetaStore) AuthPub(appid, pubkey, topic string) error {
 	if appid == "" || topic == "" {
-		return false
+		return ErrEmptyParam
 	}
 
 	// authentication
 	if secret, present := this.appSecretMap[appid]; !present || pubkey != secret {
-		return false
+		return ErrAuthenticationFail
 	}
 
 	// authorization
 	if topics, present := this.appPubMap[appid]; present {
 		if _, present := topics[topic]; present {
-			return true
+			return nil
 		}
 	}
 
-	return false
+	return ErrAuthorizationFial
 }
 
-func (this *zkMetaStore) AuthSub(appid, subkey, topic string) (ok bool) {
+func (this *zkMetaStore) AuthSub(appid, subkey, topic string) error {
 	if appid == "" || topic == "" {
-		return false
+		return ErrEmptyParam
 	}
 
 	// authentication
 	if secret, present := this.appSecretMap[appid]; !present || subkey != secret {
-		return false
+		return ErrAuthenticationFail
 	}
 
 	// authorization
 	if topics, present := this.appSubMap[appid]; present {
 		if _, present := topics[topic]; present {
-			return true
+			return nil
 		}
 	}
 
-	return false
+	return ErrAuthorizationFial
 }
 
 func (this *zkMetaStore) LookupCluster(appid string) (string, bool) {

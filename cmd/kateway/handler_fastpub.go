@@ -22,8 +22,8 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 	header := ctx.Request.Header
 	appid := string(header.Peek(HttpHeaderAppid))
 	pubkey := string(header.Peek(HttpHeaderPubkey))
-	if !meta.Default.AuthPub(appid, pubkey, topic) {
-		log.Error("app[%s] %s %+v: auth fail", appid, ctx.RemoteAddr(), params)
+	if err := meta.Default.AuthPub(appid, pubkey, topic); err != nil {
+		log.Error("app[%s] %s %+v: %v", appid, ctx.RemoteAddr(), params, err)
 
 		ctx.SetConnectionClose()
 		ctx.Error("invalid secret", fasthttp.StatusUnauthorized)
@@ -116,7 +116,9 @@ func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprout
 	appid = string(header.Peek(HttpHeaderAppid))
 	pubkey = string(header.Peek(HttpHeaderPubkey))
 
-	if !meta.Default.AuthSub(appid, pubkey, topic) {
+	if err := meta.Default.AuthSub(appid, pubkey, topic); err != nil {
+		log.Error("app[%s] %s %+v: %v", appid, ctx.RemoteAddr(), params, err)
+
 		ctx.SetConnectionClose()
 		ctx.Error("invalid secret", fasthttp.StatusUnauthorized)
 		return

@@ -118,7 +118,8 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	cluster := params.ByName(UrlParamCluster)
 	hisAppid := params.ByName("appid")
 	appid := r.Header.Get(HttpHeaderAppid)
-	if !meta.Default.AuthPub(appid, r.Header.Get(HttpHeaderPubkey), topic) {
+	// FIXME
+	if appid != "_kateway" {
 		this.writeAuthFailure(w)
 		return
 	}
