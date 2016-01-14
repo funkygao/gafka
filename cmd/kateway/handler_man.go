@@ -121,6 +121,8 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	// FIXME
 	if appid != "_psubAdmin_" || pubkey != "_wandafFan_" {
+		log.Warn("suspicous add topic: appid=%s, pubkey=%s", appid, pubkey)
+
 		this.writeAuthFailure(w, meta.ErrPermDenied)
 		return
 	}
