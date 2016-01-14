@@ -3,6 +3,7 @@ package zkmeta
 import (
 	"database/sql"
 
+	"github.com/funkygao/gafka/cmd/kateway/meta"
 	log "github.com/funkygao/log4go"
 	_ "github.com/funkygao/mysql"
 )
@@ -135,12 +136,12 @@ func (this *zkMetaStore) fetchTopicRecords(db *sql.DB) error {
 
 func (this *zkMetaStore) AuthPub(appid, pubkey, topic string) error {
 	if appid == "" || topic == "" {
-		return ErrEmptyParam
+		return meta.ErrEmptyParam
 	}
 
 	// authentication
 	if secret, present := this.appSecretMap[appid]; !present || pubkey != secret {
-		return ErrAuthenticationFail
+		return meta.ErrAuthenticationFail
 	}
 
 	// authorization
@@ -150,17 +151,17 @@ func (this *zkMetaStore) AuthPub(appid, pubkey, topic string) error {
 		}
 	}
 
-	return ErrAuthorizationFial
+	return meta.ErrAuthorizationFial
 }
 
 func (this *zkMetaStore) AuthSub(appid, subkey, topic string) error {
 	if appid == "" || topic == "" {
-		return ErrEmptyParam
+		return meta.ErrEmptyParam
 	}
 
 	// authentication
 	if secret, present := this.appSecretMap[appid]; !present || subkey != secret {
-		return ErrAuthenticationFail
+		return meta.ErrAuthenticationFail
 	}
 
 	// authorization
@@ -170,7 +171,7 @@ func (this *zkMetaStore) AuthSub(appid, subkey, topic string) error {
 		}
 	}
 
-	return ErrAuthorizationFial
+	return meta.ErrAuthorizationFial
 }
 
 func (this *zkMetaStore) LookupCluster(appid string) (string, bool) {

@@ -49,7 +49,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("consumer[%s] %s {hisapp:%s, topic:%s, ver:%s, group:%s, limit:%d}: %s",
 			myAppid, r.RemoteAddr, hisAppid, topic, ver, group, limit, err)
 
-		this.writeAuthFailure(w)
+		this.writeAuthFailure(w, err)
 		return
 	}
 
@@ -197,7 +197,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("consumer[%s] %s {topic:%s, ver:%s, hisapp:%s}: %s",
 			myAppid, r.RemoteAddr, topic, ver, hisAppid, err)
 
-		this.writeAuthFailure(w)
+		this.writeAuthFailure(w, err)
 		return
 	}
 

@@ -120,7 +120,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	appid := r.Header.Get(HttpHeaderAppid)
 	// FIXME
 	if appid != "_kateway" {
-		this.writeAuthFailure(w)
+		this.writeAuthFailure(w, meta.ErrPermDenied)
 		return
 	}
 

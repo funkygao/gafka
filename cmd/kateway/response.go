@@ -24,11 +24,11 @@ func (this *Gateway) writeKatewayHeader(w http.ResponseWriter) {
 	w.Header().Set("Server", "kateway")
 }
 
-func (this *Gateway) writeAuthFailure(w http.ResponseWriter) {
+func (this *Gateway) writeAuthFailure(w http.ResponseWriter, err error) {
 	// close the suspicous http connection
 	w.Header().Set("Connection", "close")
 
-	this.writeErrorResponse(w, "invalid secret", http.StatusUnauthorized)
+	this.writeErrorResponse(w, err.Error(), http.StatusUnauthorized)
 }
 
 func (this *Gateway) writeQuotaExceeded(w http.ResponseWriter) {

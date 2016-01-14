@@ -31,7 +31,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	if err := meta.Default.AuthPub(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
 		log.Error("app[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
 
-		this.writeAuthFailure(w)
+		this.writeAuthFailure(w, err)
 		return
 	}
 
@@ -148,7 +148,7 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 	if err := meta.Default.AuthSub(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
 		log.Error("app[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
 
-		this.writeAuthFailure(w)
+		this.writeAuthFailure(w, err)
 		return
 	}
 
