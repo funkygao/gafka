@@ -72,7 +72,7 @@ func (this *Zktop) Run(args []string) (exitCode int) {
 
 func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 	this.Ui.Output(color.Green(zkzone.Name()))
-	header := "VER             SERVER           PORT M      OUTST        RECVD         SENT CONNS ZNODES LAT(MIN/AVG/MAX)"
+	header := "VER             SERVER           PORT M      OUTST        RECVD         SENT CONNS  ZNODES LAT(MIN/AVG/MAX)"
 	this.Ui.Output(header)
 
 	stats := zkzone.RunZkFourLetterCommand("stat")
@@ -92,7 +92,7 @@ func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 		if stat.mode == "" {
 			stat.mode = color.Red("E")
 		}
-		this.Ui.Output(fmt.Sprintf("%-15s %-15s %5s %1s %10s %12s %12s %5s %6s %s",
+		this.Ui.Output(fmt.Sprintf("%-15s %-15s %5s %1s %10s %12s %12s %5s %7s %s",
 			stat.ver,
 			host, port,
 			stat.mode,
