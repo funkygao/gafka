@@ -116,7 +116,7 @@ func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprout
 	appid = string(header.Peek(HttpHeaderAppid))
 	pubkey = string(header.Peek(HttpHeaderPubkey))
 
-	if err := meta.Default.AuthSub(appid, pubkey, topic); err != nil {
+	if err := meta.Default.AuthPub(appid, pubkey, topic); err != nil {
 		log.Error("app[%s] %s %+v: %v", appid, ctx.RemoteAddr(), params, err)
 
 		ctx.SetConnectionClose()

@@ -46,8 +46,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if err := meta.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
-		log.Warn("consumer[%s] %s {topic:%s, ver:%s, group:%s, limit:%d}: %s",
-			myAppid, r.RemoteAddr, topic, ver, group, limit, err)
+		log.Error("consumer[%s] %s {hisapp:%s, topic:%s, ver:%s, group:%s, limit:%d}: %s",
+			myAppid, hisAppid, r.RemoteAddr, topic, ver, group, limit, err)
 
 		this.writeAuthFailure(w)
 		return
@@ -194,7 +194,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
 	if err := meta.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
-		log.Warn("consumer[%s] %s {topic:%s, ver:%s, hisapp:%s}: %s",
+		log.Error("consumer[%s] %s {topic:%s, ver:%s, hisapp:%s}: %s",
 			myAppid, r.RemoteAddr, topic, ver, hisAppid, err)
 
 		this.writeAuthFailure(w)
