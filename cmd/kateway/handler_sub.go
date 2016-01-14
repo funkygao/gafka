@@ -47,7 +47,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	if err := meta.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
 		log.Error("consumer[%s] %s {hisapp:%s, topic:%s, ver:%s, group:%s, limit:%d}: %s",
-			myAppid, hisAppid, r.RemoteAddr, topic, ver, group, limit, err)
+			myAppid, r.RemoteAddr, hisAppid, topic, ver, group, limit, err)
 
 		this.writeAuthFailure(w)
 		return
