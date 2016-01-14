@@ -146,7 +146,7 @@ func (this *Gateway) InstanceInfo() []byte {
 func (this *Gateway) Start() (err error) {
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		this.Stop()
-	}, syscall.SIGINT, syscall.SIGUSR2)
+	}, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2)
 
 	this.startedAt = time.Now()
 
