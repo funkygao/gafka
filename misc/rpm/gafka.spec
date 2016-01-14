@@ -1,6 +1,6 @@
 %define name gafka
 %define version 0.2.5
-%define release 1
+%define release 2
 %define path usr/local
 %define group Development/Tools
 %define __os_install_post %{nil}
