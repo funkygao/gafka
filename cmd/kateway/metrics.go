@@ -54,6 +54,10 @@ func NewServerMetrics(interval time.Duration) *serverMetrics {
 	return this
 }
 
+func (this *serverMetrics) Flush() {
+
+}
+
 type subMetrics struct {
 	expConsumeOk      *expvar.Int
 	expActiveConns    *expvar.Int
@@ -82,6 +86,10 @@ func NewSubMetrics() *subMetrics {
 	}
 
 	return this
+}
+
+func (this *subMetrics) Flush() {
+
 }
 
 func (this *subMetrics) ConsumeOk(appid, topic, ver string) {
@@ -133,14 +141,18 @@ func NewPubMetrics() *pubMetrics {
 	return this
 }
 
-func (this *pubMetrics) pubFail(appid, topic, ver string) {
+func (this *pubMetrics) Flush() {
+
+}
+
+func (this *pubMetrics) PubFail(appid, topic, ver string) {
 	if this.expPubFail != nil {
 		this.expPubFail.Add(1)
 	}
 	updateCounter(appid, topic, ver, "pub.fail", &this.pubFailMu, this.PubFailMap)
 }
 
-func (this *pubMetrics) pubOk(appid, topic, ver string) {
+func (this *pubMetrics) PubOk(appid, topic, ver string) {
 	if this.expPubOk != nil {
 		this.expPubOk.Add(1)
 	}

@@ -84,7 +84,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 		key, ctx.PostBody())
 	if err != nil {
 		if !options.disableMetrics {
-			this.pubMetrics.pubFail(appid, topic, ver)
+			this.pubMetrics.PubFail(appid, topic, ver)
 		}
 
 		log.Error("%s: %v", ctx.RemoteAddr(), err)
@@ -96,7 +96,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 	// write the reponse
 	ctx.Write(ResponseOk)
 	if !options.disableMetrics {
-		this.pubMetrics.pubOk(appid, topic, ver)
+		this.pubMetrics.PubOk(appid, topic, ver)
 		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 	}
 }

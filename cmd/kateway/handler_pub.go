@@ -111,7 +111,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		msg.Free() // defer is costly
 
 		if !options.disableMetrics {
-			this.pubMetrics.pubFail(appid, topic, ver)
+			this.pubMetrics.PubFail(appid, topic, ver)
 		}
 
 		log.Error("pub[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
@@ -126,7 +126,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if !options.disableMetrics {
-		this.pubMetrics.pubOk(appid, topic, ver)
+		this.pubMetrics.PubOk(appid, topic, ver)
 		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 	}
 

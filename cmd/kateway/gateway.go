@@ -230,6 +230,17 @@ func (this *Gateway) ServeForever() {
 
 		log.Info("all components shutdown complete")
 
+		this.svrMetrics.Flush()
+		log.Info("server metrics flushed")
+		if this.pubMetrics != nil {
+			this.pubMetrics.Flush()
+			log.Info("pub metrics flushed")
+		}
+		if this.subMetrics != nil {
+			this.subMetrics.Flush()
+			log.Info("sub metrics flushed")
+		}
+
 		meta.Default.Stop()
 		this.timer.Stop()
 	}
