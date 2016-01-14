@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/funkygao/gafka/ctx"
@@ -54,6 +55,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			swallow(err)
 		}
 	}
+	sort.Strings(instances)
 
 	for _, instance := range instances {
 		data, stat, err := zkzone.Conn().Get(zkr.Root(this.zone) + "/" + instance)
