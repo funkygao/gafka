@@ -26,7 +26,7 @@ func (l *fastListener) Accept() (net.Conn, error) {
 	}
 
 	log.Trace("%s new conn from %s", l.Listener.Addr(), c.RemoteAddr())
-	if l.gw != nil && !options.disableMetrics {
+	if l.gw != nil && !options.DisableMetrics {
 		l.gw.svrMetrics.TotalConns.Inc(1)
 		l.gw.svrMetrics.ConcurrentConns.Inc(1)
 	}
@@ -43,7 +43,7 @@ func (c *fastListenerConn) Close() error {
 	log.Trace("%s closing conn from %s", c.Conn.LocalAddr(), c.Conn.RemoteAddr())
 
 	err := c.Conn.Close()
-	if c.gw != nil && !options.disableMetrics {
+	if c.gw != nil && !options.DisableMetrics {
 		c.gw.svrMetrics.ConcurrentConns.Dec(1)
 	}
 	return err
@@ -73,7 +73,7 @@ func (l *limitListener) Accept() (net.Conn, error) {
 	}
 
 	log.Trace("%s new conn from %s", l.Listener.Addr(), c.RemoteAddr())
-	if l.gw != nil && !options.disableMetrics {
+	if l.gw != nil && !options.DisableMetrics {
 		l.gw.svrMetrics.TotalConns.Inc(1)
 		l.gw.svrMetrics.ConcurrentConns.Inc(1)
 	}
@@ -92,7 +92,7 @@ func (c *limitListenerConn) Close() error {
 	log.Trace("%s closing conn from %s", c.Conn.LocalAddr(), c.Conn.RemoteAddr())
 
 	err := c.Conn.Close()
-	if c.gw != nil && !options.disableMetrics {
+	if c.gw != nil && !options.DisableMetrics {
 		c.gw.svrMetrics.ConcurrentConns.Dec(1)
 	}
 	c.releaseOnce.Do(c.release)

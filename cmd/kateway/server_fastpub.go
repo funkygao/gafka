@@ -50,7 +50,7 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 				MaxKeepaliveDuration: httpReadTimeout,
 				ReadTimeout:          httpReadTimeout,
 				WriteTimeout:         httpWriteTimeout,
-				MaxRequestBodySize:   int(options.maxPubSize + 1),
+				MaxRequestBodySize:   int(options.MaxPubSize + 1),
 				ReduceMemoryUsage:    false, // TODO
 				Handler:              this.router.Handler,
 				Logger:               logger,
@@ -69,7 +69,7 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 				MaxKeepaliveDuration: httpReadTimeout,
 				ReadTimeout:          httpReadTimeout,
 				WriteTimeout:         httpWriteTimeout,
-				MaxRequestBodySize:   int(options.maxPubSize + 1),
+				MaxRequestBodySize:   int(options.MaxPubSize + 1),
 				ReduceMemoryUsage:    false, // TODO
 				Handler:              this.router.Handler,
 				Logger:               logger,
@@ -100,7 +100,7 @@ func (this *pubServer) startServer(https bool) {
 	var err error
 	waitListenerUp := make(chan struct{})
 	go func() {
-		if options.cpuAffinity {
+		if options.CpuAffinity {
 			runtime.LockOSThread()
 		}
 

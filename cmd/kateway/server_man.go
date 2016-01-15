@@ -18,7 +18,7 @@ func newManServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *manS
 		webServer: newWebServer("man", httpAddr, httpsAddr, maxClients, gw),
 	}
 
-	if options.clusterAware {
+	if options.ClusterAware {
 		<-this.peersHousekeep()
 	}
 

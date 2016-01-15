@@ -37,12 +37,12 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 		ctx.Error("invalid content length", fasthttp.StatusBadRequest)
 		return
 
-	case int64(msgLen) > options.maxPubSize:
+	case int64(msgLen) > options.MaxPubSize:
 		log.Warn("pub[%s] %s %+v too big content length:%d", appid, ctx.RemoteAddr(), params, msgLen)
 		ctx.Error(ErrTooBigPubMessage.Error(), fasthttp.StatusBadRequest)
 		return
 
-	case msgLen < options.minPubSize:
+	case msgLen < options.MinPubSize:
 		log.Warn("pub[%s] %s %+v too small content length:%d", appid, ctx.RemoteAddr(), params, msgLen)
 		ctx.Error(ErrTooSmallPubMessage.Error(), fasthttp.StatusBadRequest)
 		return
@@ -55,14 +55,14 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 	async := len(asyncArg) == 1 && asyncArg[0] == '1'
 	//delay := hack.String(queryArgs.Peek(UrlQueryDelay))
 
-	if options.debug {
+	if options.Debug {
 		log.Debug("pub[%s] %s {topic:%s, ver:%s, key:%s, async:%+v} %s",
 			appid, ctx.RemoteAddr(),
 			topic, ver, key, async,
 			string(ctx.Request.Body()))
 	}
 
-	if !options.disableMetrics {
+	if !options.DisableMetrics {
 		this.pubMetrics.PubQps.Mark(1)
 		this.pubMetrics.PubMsgSize.Update(int64(len(ctx.PostBody())))
 	}
@@ -83,7 +83,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 	err := pubMethod(cluster, appid+"."+topic+"."+ver,
 		key, ctx.PostBody())
 	if err != nil {
-		if !options.disableMetrics {
+		if !options.DisableMetrics {
 			this.pubMetrics.PubFail(appid, topic, ver)
 		}
 
@@ -95,7 +95,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 
 	// write the reponse
 	ctx.Write(ResponseOk)
-	if !options.disableMetrics {
+	if !options.DisableMetrics {
 		this.pubMetrics.PubOk(appid, topic, ver)
 		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 	}

@@ -45,7 +45,7 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 		// transition to either StateActive or StateClosed
 		this.idleConnsWg.Add(1)
 
-		if this.gw != nil && !options.disableMetrics {
+		if this.gw != nil && !options.DisableMetrics {
 			this.gw.svrMetrics.ConcurrentSub.Inc(1)
 		}
 
@@ -76,7 +76,7 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 		}
 
 	case http.StateClosed, http.StateHijacked:
-		if this.gw != nil && !options.disableMetrics {
+		if this.gw != nil && !options.DisableMetrics {
 			this.gw.svrMetrics.ConcurrentSub.Dec(1)
 		}
 

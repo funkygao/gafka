@@ -91,7 +91,7 @@ func (this *webServer) startServer(https bool) {
 	var err error
 	waitListenerUp := make(chan struct{})
 	go func() {
-		if options.cpuAffinity {
+		if options.CpuAffinity {
 			runtime.LockOSThread()
 		}
 

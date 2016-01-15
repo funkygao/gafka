@@ -70,57 +70,57 @@ type Gateway struct {
 func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this := &Gateway{
 		id:           id,
-		zone:         options.zone,
+		zone:         options.Zone,
 		shutdownCh:   make(chan struct{}),
 		leakyBuckets: ratelimiter.NewLeakyBuckets(1000*60, time.Minute),
-		certFile:     options.certFile,
-		keyFile:      options.keyFile,
+		certFile:     options.CertFile,
+		keyFile:      options.KeyFile,
 		pubPeers:     make([]string, 0, 20),
 		producers:    make(map[string]Producer, 100),
 		consumers:    make(map[string]Consumer, 100),
 	}
 
-	registry.Default = zk.New(options.zone, id, this.InstanceInfo())
+	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
 
-	metaConf := zkmeta.DefaultConfig(options.zone)
+	metaConf := zkmeta.DefaultConfig(this.zone)
 	metaConf.Refresh = metaRefreshInterval
 	meta.Default = zkmeta.New(metaConf)
 	this.guard = newGuard(this)
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
 
-	this.manServer = newManServer(options.manHttpAddr, options.manHttpsAddr,
-		options.maxClients, this)
-	this.svrMetrics = NewServerMetrics(options.reporterInterval, this)
+	this.manServer = newManServer(options.ManHttpAddr, options.ManHttpsAddr,
+		options.MaxClients, this)
+	this.svrMetrics = NewServerMetrics(options.ReporterInterval, this)
 
-	if options.pubHttpAddr != "" || options.pubHttpsAddr != "" {
-		this.pubServer = newPubServer(options.pubHttpAddr, options.pubHttpsAddr,
-			options.maxClients, this)
+	if options.PubHttpAddr != "" || options.PubHttpsAddr != "" {
+		this.pubServer = newPubServer(options.PubHttpAddr, options.PubHttpsAddr,
+			options.MaxClients, this)
 		this.pubMetrics = NewPubMetrics(this)
 
-		switch options.store {
+		switch options.Store {
 		case "kafka":
 			store.DefaultPubStore = kafka.NewPubStore(
-				options.pubPoolCapcity, options.maxPubRetries, options.pubPoolIdleTimeout,
-				&this.wg, options.debug, options.dryRun)
+				options.PubPoolCapcity, options.MaxPubRetries, options.PubPoolIdleTimeout,
+				&this.wg, options.Debug, options.DryRun)
 
 		case "dumb":
-			store.DefaultPubStore = dumb.NewPubStore(&this.wg, options.debug)
+			store.DefaultPubStore = dumb.NewPubStore(&this.wg, options.Debug)
 		}
 	}
 
-	if options.subHttpAddr != "" || options.subHttpsAddr != "" {
-		this.subServer = newSubServer(options.subHttpAddr, options.subHttpsAddr,
-			options.maxClients, this)
+	if options.SubHttpAddr != "" || options.SubHttpsAddr != "" {
+		this.subServer = newSubServer(options.SubHttpAddr, options.SubHttpsAddr,
+			options.MaxClients, this)
 		this.subMetrics = NewSubMetrics(this)
 
-		switch options.store {
+		switch options.Store {
 		case "kafka":
 			store.DefaultSubStore = kafka.NewSubStore(&this.wg,
-				this.subServer.closedConnCh, options.debug)
+				this.subServer.closedConnCh, options.Debug)
 
 		case "dumb":
 			store.DefaultSubStore = dumb.NewSubStore(&this.wg,
-				this.subServer.closedConnCh, options.debug)
+				this.subServer.closedConnCh, options.Debug)
 
 		}
 	}
@@ -134,14 +134,14 @@ func (this *Gateway) InstanceInfo() []byte {
 	s["id"] = this.id
 	s["ver"] = gafka.Version
 	s["build"] = gafka.BuildId
-	s["zone"] = options.zone
-	s["man"] = options.manHttpAddr
-	s["sman"] = options.manHttpsAddr
-	s["pub"] = options.pubHttpAddr
-	s["spub"] = options.pubHttpsAddr
-	s["sub"] = options.subHttpAddr
-	s["ssub"] = options.subHttpsAddr
-	s["debug"] = options.debugHttpAddr
+	s["zone"] = this.zone
+	s["man"] = options.ManHttpAddr
+	s["sman"] = options.ManHttpsAddr
+	s["pub"] = options.PubHttpAddr
+	s["spub"] = options.PubHttpsAddr
+	s["sub"] = options.SubHttpAddr
+	s["ssub"] = options.SubHttpsAddr
+	s["debug"] = options.DebugHttpAddr
 	d, _ := json.Marshal(s)
 	return d
 }
@@ -170,10 +170,10 @@ func (this *Gateway) Start() (err error) {
 	this.buildRouting()
 	this.manServer.Start()
 
-	if options.debugHttpAddr != "" {
-		log.Info("debug http server ready on %s", options.debugHttpAddr)
+	if options.DebugHttpAddr != "" {
+		log.Info("debug http server ready on %s", options.DebugHttpAddr)
 
-		go http.ListenAndServe(options.debugHttpAddr, nil)
+		go http.ListenAndServe(options.DebugHttpAddr, nil)
 	}
 
 	this.svrMetrics.Load()
@@ -197,7 +197,7 @@ func (this *Gateway) Start() (err error) {
 		this.subServer.Start()
 	}
 
-	go startRuntimeMetrics(options.reporterInterval)
+	go startRuntimeMetrics(options.ReporterInterval)
 
 	// the last thing is to register: notify others
 	if registry.Default != nil {

@@ -42,18 +42,18 @@ func NewServerMetrics(interval time.Duration, gw *Gateway) *serverMetrics {
 		ConcurrentSub:   metrics.NewRegisteredCounter("server.conns.sub", metrics.DefaultRegistry),
 	}
 
-	if options.debugHttpAddr != "" {
+	if options.DebugHttpAddr != "" {
 		expvar.Publish("Goroutines", expvar.Func(goroutines))
 	}
 
-	if options.consoleMetricsInterval > 0 {
-		go runMetricsReporter(metrics.DefaultRegistry, options.consoleMetricsInterval)
+	if options.ConsoleMetricsInterval > 0 {
+		go runMetricsReporter(metrics.DefaultRegistry, options.ConsoleMetricsInterval)
 	}
 
 	// influxdb reporter
-	if options.influxServer != "" {
+	if options.InfluxServer != "" {
 		go InfluxDB(ctx.Hostname(), metrics.DefaultRegistry, interval,
-			options.influxServer, "kateway1", "", "") // FIXME
+			options.InfluxServer, "kateway1", "", "") // FIXME
 	}
 
 	return this
@@ -104,7 +104,7 @@ func NewSubMetrics(gw *Gateway) *subMetrics {
 		ConsumedMap: make(map[string]metrics.Counter),
 	}
 
-	if options.debugHttpAddr != "" {
+	if options.DebugHttpAddr != "" {
 		this.expConsumeOk = expvar.NewInt("ConsumeOk")
 		this.expActiveConns = expvar.NewInt("ConsumeConns")       // TODO
 		this.expActiveUpstream = expvar.NewInt("ConsumeUpstream") // TODO
@@ -193,7 +193,7 @@ func NewPubMetrics(gw *Gateway) *pubMetrics {
 		PubLatency:  metrics.NewRegisteredHistogram("pub.latency", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015)),
 	}
 
-	if options.debugHttpAddr != "" {
+	if options.DebugHttpAddr != "" {
 		this.expPubOk = expvar.NewInt("PubOk")
 		this.expPubFail = expvar.NewInt("PubFail")
 		this.expActiveConns = expvar.NewInt("PubConns")       // TODO

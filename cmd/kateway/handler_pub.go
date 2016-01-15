@@ -21,7 +21,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	t1 := time.Now()
 
-	if options.ratelimit && !this.leakyBuckets.Pour(r.RemoteAddr, 1) {
+	if options.Ratelimit && !this.leakyBuckets.Pour(r.RemoteAddr, 1) {
 		this.writeQuotaExceeded(w)
 		return
 	}
@@ -43,18 +43,18 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		this.writeInvalidContentLength(w)
 		return
 
-	case int64(msgLen) > options.maxPubSize:
+	case int64(msgLen) > options.MaxPubSize:
 		log.Warn("pub[%s] %s %+v too big content length:%d", appid, r.RemoteAddr, params, msgLen)
 		this.writeErrorResponse(w, ErrTooBigPubMessage.Error(), http.StatusBadRequest)
 		return
 
-	case msgLen < options.minPubSize:
+	case msgLen < options.MinPubSize:
 		log.Warn("pub[%s] %s %+v too small content length:%d", appid, r.RemoteAddr, params, msgLen)
 		this.writeErrorResponse(w, ErrTooSmallPubMessage.Error(), http.StatusBadRequest)
 		return
 	}
 
-	lbr := io.LimitReader(r.Body, options.maxPubSize+1)
+	lbr := io.LimitReader(r.Body, options.MaxPubSize+1)
 	msg := mpool.NewMessage(msgLen)
 	msg.Body = msg.Body[0:msgLen]
 	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
@@ -67,7 +67,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 
 	ver := params.ByName(UrlParamVersion)
 
-	if options.debug {
+	if options.Debug {
 		log.Debug("pub[%s] %s %+v %s", appid, r.RemoteAddr, params, string(msg.Body))
 	}
 
@@ -85,7 +85,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		this.produersLock.Unlock()
 	}
 
-	if !options.disableMetrics {
+	if !options.DisableMetrics {
 		this.pubMetrics.PubQps.Mark(1)
 		this.pubMetrics.PubMsgSize.Update(int64(len(msg.Body)))
 	}
@@ -110,7 +110,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		msg.Free() // defer is costly
 
-		if !options.disableMetrics {
+		if !options.DisableMetrics {
 			this.pubMetrics.PubFail(appid, topic, ver)
 		}
 
@@ -125,7 +125,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		this.pubMetrics.ClientError.Inc(1)
 	}
 
-	if !options.disableMetrics {
+	if !options.DisableMetrics {
 		this.pubMetrics.PubOk(appid, topic, ver)
 		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 	}

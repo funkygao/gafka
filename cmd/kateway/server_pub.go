@@ -21,13 +21,13 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 }
 
 func (this *pubServer) onConnNew(c net.Conn) {
-	if this.gw != nil && !options.disableMetrics {
+	if this.gw != nil && !options.DisableMetrics {
 		this.gw.svrMetrics.ConcurrentPub.Inc(1)
 	}
 }
 
 func (this *pubServer) onConnClose(c net.Conn) {
-	if this.gw != nil && !options.disableMetrics {
+	if this.gw != nil && !options.DisableMetrics {
 		this.gw.svrMetrics.ConcurrentPub.Dec(1)
 	}
 

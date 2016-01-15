@@ -148,7 +148,7 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			chunkedBeforeTimeout = true
 			chunkedEver = true
 
-		case <-this.timer.After(options.subTimeout):
+		case <-this.timer.After(options.SubTimeout):
 			if chunkedBeforeTimeout {
 				log.Debug("await message timeout, chunked to next round")
 

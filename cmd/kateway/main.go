@@ -20,7 +20,7 @@ import (
 func init() {
 	parseFlags()
 
-	if options.showVersion {
+	if options.ShowVersion {
 		fmt.Fprintf(os.Stderr, "%s-%s\n", gafka.Version, gafka.BuildId)
 		os.Exit(0)
 	}
@@ -30,7 +30,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	if options.debug {
+	if options.Debug {
 		log.SetFlags(log.LstdFlags | log.Llongfile) // TODO zk sdk uses this
 		log.SetPrefix(color.Magenta("[log]"))
 	} else {
@@ -48,8 +48,8 @@ func main() {
 		}
 	}()
 
-	if options.killFile != "" {
-		if err := signal.SignalProcessByPidFile(options.killFile, syscall.SIGUSR2); err != nil {
+	if options.KillFile != "" {
+		if err := signal.SignalProcessByPidFile(options.KillFile, syscall.SIGUSR2); err != nil {
 			panic(err)
 		}
 
@@ -57,7 +57,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	if options.golangTrace {
+	if options.GolangTrace {
 		// go tool trace kateway xxx.pprof
 		f, err := os.Create(time.Now().Format("2006-01-02T150405.pprof"))
 		if err != nil {
@@ -73,28 +73,28 @@ func main() {
 
 	fmt.Fprintln(os.Stderr, strings.TrimSpace(logo))
 
-	if options.pidFile != "" {
+	if options.PidFile != "" {
 		pid := os.Getpid()
-		if err := ioutil.WriteFile(options.pidFile, []byte(fmt.Sprintf("%d", pid)), 0644); err != nil {
+		if err := ioutil.WriteFile(options.PidFile, []byte(fmt.Sprintf("%d", pid)), 0644); err != nil {
 			panic(err)
 		}
 	}
 
 	// FIXME logLevel dup with ctx
-	setupLogging(options.logFile, options.logLevel, options.crashLogFile)
-	ctx.LoadConfig(options.configFile)
+	setupLogging(options.LogFile, options.LogLevel, options.CrashLogFile)
+	ctx.LoadConfig(options.ConfigFile)
 
 	ensureValidUlimit()
 	debug.SetGCPercent(800) // same env GOGC TODO
 
-	gw := NewGateway(options.id, options.metaRefresh)
+	gw := NewGateway(options.Id, options.MetaRefresh)
 	if err := gw.Start(); err != nil {
 		panic(err)
 	}
 
 	gw.ServeForever()
 
-	if options.pidFile != "" {
-		syscall.Unlink(options.pidFile)
+	if options.PidFile != "" {
+		syscall.Unlink(options.PidFile)
 	}
 }

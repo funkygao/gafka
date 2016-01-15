@@ -74,19 +74,22 @@ dbg:
  GET /debug/pprof
  GET /debug/vars
 `,
-		options.pubHttpAddr, options.subHttpAddr,
-		options.manHttpAddr, options.debugHttpAddr))))
+		options.PubHttpAddr, options.SubHttpAddr,
+		options.ManHttpAddr, options.DebugHttpAddr))))
 
 }
 
 func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
-	w.Write([]byte(fmt.Sprintf("id:%s, ver:%s-%s, Built with %s-%s for %s-%s, uptime:%s\n",
-		options.id, gafka.Version, gafka.BuildId,
+	w.Write([]byte(fmt.Sprintf("id:%s, ver:%s-%s, Built with %s-%s for %s-%s, uptime:%s, pubserver: %s\noptions: ",
+		this.id, gafka.Version, gafka.BuildId,
 		runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH,
-		time.Since(this.startedAt))))
-	w.Write([]byte(fmt.Sprintf("pubserver: %s", this.pubServer.name)))
+		time.Since(this.startedAt),
+		this.pubServer.name)))
+	b, _ := json.MarshalIndent(options, "", "    ")
+	w.Write(b)
+	w.Write([]byte{'\n'})
 }
 
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
