@@ -159,6 +159,20 @@ func (this *Gateway) Start() (err error) {
 		this.Stop()
 	}, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2) // yes we ignore HUP
 
+	signal.RegisterSignalsHandler(func(sig os.Signal) {
+		if registry.Default == nil {
+			log.Warn("USR1 fired when no registry defined")
+			return
+		}
+
+		if err := registry.Default.Deregister(); err != nil {
+			log.Error("Deregister: %v", err)
+			return
+		}
+
+		log.Info("Deregister done")
+	}, syscall.SIGUSR1) // disallow load balancer dispatch to me
+
 	this.startedAt = time.Now()
 
 	meta.Default.Start()
