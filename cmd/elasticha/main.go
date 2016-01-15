@@ -71,7 +71,7 @@ func main() {
 				continue
 			}
 
-			log.Printf("kateway cluster changed: %+v", children)
+			log.Printf("kateway cluster changed to %+v", children)
 
 			for _, kwId := range children {
 				kwNode := fmt.Sprintf("%s/%s", root, kwId)

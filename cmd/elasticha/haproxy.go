@@ -1,12 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"strconv"
 	"text/template"
 )
+
+//go:generate go-bindata -nomemcopy -pkg main etc/...
 
 type BackendServers struct {
 	Pub []Backend
@@ -26,18 +29,16 @@ var (
 )
 
 func createConfigFile(servers BackendServers, templateFile, outputFile string) error {
-	cfgFile, _ := os.Create(outputFile)
+	tmp := fmt.Sprintf("%s.tmp", outputFile)
+	cfgFile, _ := os.Create(tmp)
 	defer cfgFile.Close()
 
-	if tpl == nil {
-		var err error = nil
-		tpl, err = template.ParseFiles(templateFile)
-		if err != nil {
-			return err
-		}
-	}
+	b, _ := Asset("etc/haproxy.tpl")
+	t := template.Must(template.New("haproxy").Parse(string(b)))
 
-	return tpl.Execute(cfgFile, servers)
+	err := t.Execute(cfgFile, servers)
+	os.Rename(tmp, outputFile)
+	return err
 }
 
 func reloadHAproxy(command, configFile string) error {
