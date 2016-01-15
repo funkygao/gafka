@@ -48,6 +48,21 @@ Don't make programmer think!
   - easy upgrade/maintain
   - consolidated hooks possible
 
+### Ecosystem
+
+- gk
+
+  for backend kafka
+
+- kateway
+
+  pubsub endpoint for programmers
+
+- elasticha
+
+  for elastic load balance of kateway
+
+
 ### Architecture
 
            +----+      +-----------------+          
@@ -149,6 +164,7 @@ Don't make programmer think!
 
 ### TODO
 
+- [ ] metrics flush/load test
 - [ ] gzip sub response
 - [ ] test pub/sub metrics load and flush
 - [ ] online producers/consumers
