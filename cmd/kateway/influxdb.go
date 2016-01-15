@@ -66,6 +66,8 @@ func (r *reporter) run() {
 
 	for {
 		select {
+		// TODO on shutdown, flush all metrics
+
 		case <-intervalTicker:
 			if err := r.send(); err != nil {
 				log.Error("unable to send metrics to InfluxDB. err=%v", err)
