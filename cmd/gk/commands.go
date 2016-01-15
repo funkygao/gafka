@@ -53,6 +53,13 @@ func init() {
 			}, nil
 		},
 
+		"config": func() (cli.Command, error) {
+			return &command.Config{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"lszk": func() (cli.Command, error) {
 			return &command.LsZk{
 				Ui:  ui,
