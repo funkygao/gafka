@@ -47,9 +47,9 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 				Concurrency:          maxClients,
 				MaxConnsPerIP:        5000, // TODO
 				MaxRequestsPerConn:   0,    // unlimited
-				MaxKeepaliveDuration: httpReadTimeout,
-				ReadTimeout:          httpReadTimeout,
-				WriteTimeout:         httpWriteTimeout,
+				MaxKeepaliveDuration: options.HttpReadTimeout,
+				ReadTimeout:          options.HttpReadTimeout,
+				WriteTimeout:         options.HttpWriteTimeout,
 				MaxRequestBodySize:   int(options.MaxPubSize + 1),
 				ReduceMemoryUsage:    false, // TODO
 				Handler:              this.router.Handler,
@@ -66,9 +66,9 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 				Concurrency:          maxClients,
 				MaxConnsPerIP:        5000, // TODO
 				MaxRequestsPerConn:   0,    // unlimited
-				MaxKeepaliveDuration: httpReadTimeout,
-				ReadTimeout:          httpReadTimeout,
-				WriteTimeout:         httpWriteTimeout,
+				MaxKeepaliveDuration: options.HttpReadTimeout,
+				ReadTimeout:          options.HttpReadTimeout,
+				WriteTimeout:         options.HttpWriteTimeout,
 				MaxRequestBodySize:   int(options.MaxPubSize + 1),
 				ReduceMemoryUsage:    false, // TODO
 				Handler:              this.router.Handler,
