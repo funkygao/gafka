@@ -53,6 +53,7 @@ func (this *ZkZone) ZkAddrList() []string {
 func (this *ZkZone) Close() {
 	this.once.Do(func() {
 		this.conn.Close()
+		this.conn = nil
 	})
 }
 
