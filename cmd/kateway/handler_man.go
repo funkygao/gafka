@@ -52,12 +52,12 @@ man server: %s
 dbg server: %s
 
 pub:
-POST /topics/:topic/:ver?key=mykey&async=1
+POST /topics/:topic/:ver?key=msgkey&async=<0|1>
 POST /ws/topics/:topic/:ver
  GET /raw/topics/:topic/:ver
 
 sub:
- GET /topics/:appid/:topic/:ver/:group?limit=1&reset=newest
+ GET /topics/:appid/:topic/:ver/:group?limit=1&reset=<newest|oldest>
  GET /ws/topics/:appid/:topic/:ver/:group
  GET /raw/topics/:appid/:topic/:ver
 
