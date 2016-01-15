@@ -5,12 +5,17 @@ import (
 	"net/http"
 	"net/url"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/go-metrics"
+)
+
+var (
+	topicNameRegex = regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 )
 
 func isBrokerError(err error) bool {
@@ -38,6 +43,10 @@ func getIp(r *http.Request) string {
 
 	p := strings.SplitN(ip, ",", 1)
 	return p[0]
+}
+
+func validateTopicName(topic string) bool {
+	return len(topicNameRegex.FindAllString(topic, -1)) == 1
 }
 
 func checkUlimit(min int) {

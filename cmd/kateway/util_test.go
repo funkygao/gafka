@@ -12,6 +12,18 @@ func TestIsBrokerError(t *testing.T) {
 	assert.Equal(t, false, isBrokerError(store.ErrTooManyConsumers))
 }
 
+func TestValidateTopicName(t *testing.T) {
+	assert.Equal(t, true, validateTopicName("topic"))
+	assert.Equal(t, true, validateTopicName("trade-store"))
+	assert.Equal(t, true, validateTopicName("trade-store_x"))
+	assert.Equal(t, true, validateTopicName("trade-sTore_"))
+	assert.Equal(t, true, validateTopicName("trade-st99ore_x"))
+	assert.Equal(t, true, validateTopicName("trade-st99ore_x000"))
+	assert.Equal(t, false, validateTopicName("trade-.store"))
+	assert.Equal(t, false, validateTopicName("trade-$store"))
+	assert.Equal(t, false, validateTopicName("trade-@store"))
+}
+
 func TestExtractFromMetricsName(t *testing.T) {
 	appid, topic, ver, realname := extractFromMetricsName("{app1.mytopic.v1}pub.ok")
 	assert.Equal(t, "app1", appid)

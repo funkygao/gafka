@@ -149,6 +149,7 @@ Don't make programmer think!
 
 ### TODO
 
+- [ ] gzip sub response
 - [ ] test pub/sub metrics load and flush
 - [ ] online producers/consumers
 - [ ] pub fails retry should be done at kafka pub sdk: sarama

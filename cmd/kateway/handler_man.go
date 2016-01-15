@@ -119,6 +119,13 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	this.writeKatewayHeader(w)
 
 	topic := params.ByName(UrlParamTopic)
+	if !validateTopicName(topic) {
+		log.Warn("illegal topic: %s", topic)
+
+		http.Error(w, "illegal topic", http.StatusBadRequest)
+		return
+	}
+
 	cluster := params.ByName(UrlParamCluster)
 	hisAppid := params.ByName("appid")
 	appid := r.Header.Get(HttpHeaderAppid)

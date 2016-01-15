@@ -24,6 +24,9 @@ kafka:build
 bench:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -pubhttps :9291 -subhttp :9192 -level trace -store kafka -id 1 -keyfile ssl/server.key -certfile ssl/server.pem
 
+test:
+	go test -v -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY)"
+
 benchmark-metrics-pubok:
 	go test -v -benchmem -bench=^BenchmarkMetricsPubOkCounter -benchtime=20s -cpuprofile=prof.cpu; go tool pprof kateway.test prof.cpu
 

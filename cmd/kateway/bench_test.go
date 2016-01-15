@@ -60,12 +60,12 @@ func BenchmarkNeverending(b *testing.B) {
 }
 
 func newGatewayForTest(b *testing.B, store string) *Gateway {
-	options.zone = "local"
-	options.pubHttpAddr = ":9191"
-	options.subHttpAddr = ":9192"
-	options.store = store
-	options.debug = false
-	options.disableMetrics = false
+	options.Zone = "local"
+	options.PubHttpAddr = ":9191"
+	options.SubHttpAddr = ":9192"
+	options.Store = store
+	options.Debug = false
+	options.DisableMetrics = false
 
 	ctx.LoadConfig("/etc/kateway.cf")
 
