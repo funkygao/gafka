@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/mpool"
@@ -28,7 +29,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 
 	topic := params.ByName(UrlParamTopic)
 	appid := r.Header.Get(HttpHeaderAppid)
-	if err := meta.Default.AuthPub(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
+	if err := manager.Default.AuthPub(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
 		log.Error("app[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
 
 		this.writeAuthFailure(w, err)
@@ -97,7 +98,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
 
-	cluster, found := meta.Default.LookupCluster(appid)
+	cluster, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Error("cluster not found for app: %s", appid)
 
@@ -145,14 +146,14 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 	topic = params.ByName(UrlParamTopic)
 	appid = r.Header.Get(HttpHeaderAppid)
 
-	if err := meta.Default.AuthSub(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
+	if err := manager.Default.AuthSub(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
 		log.Error("app[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
 
 		this.writeAuthFailure(w, err)
 		return
 	}
 
-	cluster, found := meta.Default.LookupCluster(appid)
+	cluster, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Error("cluster not found for app: %s", appid)
 

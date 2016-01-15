@@ -73,7 +73,7 @@ func (this *pubStore) Start() (err error) {
 				this.doRefresh()
 
 			case <-this.shutdownCh:
-				log.Trace("kafka pub store stopped")
+				log.Trace("pub store[%s] stopped", this.Name())
 				return
 			}
 		}

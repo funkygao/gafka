@@ -55,7 +55,7 @@ func (this *subStore) Start() (err error) {
 		for {
 			select {
 			case <-this.shutdownCh:
-				log.Trace("kafka sub store stopped")
+				log.Trace("sub store[%s] stopped", this.Name())
 				return
 
 			case remoteAddr = <-this.closedConnCh:

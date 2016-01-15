@@ -6,6 +6,8 @@ import (
 
 // MetaStore is a generic storage that fetches meta data.
 type MetaStore interface {
+	Name() string
+
 	Start()
 	Stop()
 
@@ -27,10 +29,6 @@ type MetaStore interface {
 
 	// BrokerList returns the live brokers address list.
 	BrokerList(cluster string) []string
-
-	AuthPub(appid, pubkey, topic string) error
-	AuthSub(appid, subkey, topic string) error
-	LookupCluster(appid string) (string, bool)
 }
 
 var Default MetaStore

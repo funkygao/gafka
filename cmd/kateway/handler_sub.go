@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
@@ -45,7 +46,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	if err := meta.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
 		log.Error("consumer[%s] %s {hisapp:%s, topic:%s, ver:%s, group:%s, limit:%d}: %s",
 			myAppid, r.RemoteAddr, hisAppid, topic, ver, group, limit, err)
 
@@ -57,7 +58,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
 	// pick a consumer from the consumer group
-	cluster, found := meta.Default.LookupCluster(hisAppid)
+	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
 		log.Error("cluster not found for subd app: %s", hisAppid)
 
@@ -193,7 +194,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
-	if err := meta.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
 		log.Error("consumer[%s] %s {topic:%s, ver:%s, hisapp:%s}: %s",
 			myAppid, r.RemoteAddr, topic, ver, hisAppid, err)
 
@@ -201,7 +202,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	cluster, found := meta.Default.LookupCluster(hisAppid)
+	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
 		log.Error("cluster not found for subd app: %s", hisAppid)
 
