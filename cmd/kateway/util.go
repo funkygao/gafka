@@ -74,7 +74,7 @@ func extractFromMetricsName(name string) (appid, topic, ver, realname string) {
 	return
 }
 
-func updateCounter(appid, topic, ver, name string,
+func updateCounter(appid, topic, ver, name string, n int64,
 	mu *sync.RWMutex, m map[string]metrics.Counter) {
 	tagBuf := make([]byte, 4+len(appid)+len(topic)+len(ver))
 	tagBuf[0] = CharBraceletLeft
@@ -114,5 +114,5 @@ func updateCounter(appid, topic, ver, name string,
 	m[tag] = metrics.NewRegisteredCounter(tag+name, metrics.DefaultRegistry)
 	mu.Unlock()
 
-	m[tag].Inc(1)
+	m[tag].Inc(n)
 }

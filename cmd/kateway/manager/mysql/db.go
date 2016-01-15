@@ -1,12 +1,48 @@
-package zkmeta
+package mysql
 
 import (
 	"database/sql"
+	"time"
 
-	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/cmd/kateway/manager"
+	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 	_ "github.com/funkygao/mysql"
 )
+
+type mysqlStore struct {
+	cf     *config
+	zkzone *zk.ZkZone
+
+	shutdownCh chan struct{}
+
+	// mysql store, initialized on refresh
+	appClusterMap map[string]string              // appid:cluster
+	appSecretMap  map[string]string              // appid:secret
+	appSubMap     map[string]map[string]struct{} // appid:topics
+	appPubMap     map[string]map[string]struct{} // appid:subscribed topics
+}
+
+func New(cf *config) *mysqlStore {
+	if cf.Zone == "" {
+		panic("empty zone")
+	}
+	zkAddrs := ctx.ZoneZkAddrs(cf.Zone)
+	if len(zkAddrs) == 0 {
+		panic("empty zookeeper addr")
+	}
+
+	return &mysqlStore{
+		cf:         cf,
+		zkzone:     zk.NewZkZone(zk.DefaultConfig(cf.Zone, zkAddrs)), // TODO session timeout
+		shutdownCh: make(chan struct{}),
+	}
+}
+
+func (this *mysqlStore) Name() string {
+	return "mysql"
+}
 
 type applicationRecord struct {
 	AppId, Cluster, AppSecret string
@@ -20,39 +56,66 @@ type appSubscribeRecord struct {
 	AppId, TopicName string
 }
 
-func (this *zkMetaStore) RefreshFromMysql() error {
+func (this *mysqlStore) Start() {
+	if err := this.refreshFromMysql(); err != nil {
+		// refuse to start if mysql conn fails
+		panic(err)
+	}
+
+	go func() {
+		ticker := time.NewTicker(this.cf.Refresh)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				this.refreshFromMysql()
+
+			case <-this.shutdownCh:
+				log.Info("mysql manager stopped")
+				return
+			}
+		}
+	}()
+}
+
+func (this *mysqlStore) Stop() {
+	close(this.shutdownCh)
+}
+
+func (this *mysqlStore) refreshFromMysql() error {
 	dsn, err := this.zkzone.MysqlDsn()
 	if err != nil {
-		log.Error("zk meta store fetching mysql dsn: %v", err)
+		log.Error("mysql manager store fetching mysql dsn: %v", err)
 		return err
 	}
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		log.Error("zk meta store: %v", err)
+		log.Error("mysql manager store: %v", err)
 		return err
 	}
 	defer db.Close()
 
 	if err = this.fetchApplicationRecords(db); err != nil {
-		log.Error("zk meta store: %v", err)
+		log.Error("mysql manager store: %v", err)
 		return err
 	}
 
 	if err = this.fetchTopicRecords(db); err != nil {
-		log.Error("zk meta store: %v", err)
+		log.Error("mysql manager store: %v", err)
 		return err
 	}
 
 	if err = this.fetchSubscribeRecords(db); err != nil {
-		log.Error("zk meta store: %v", err)
+		log.Error("mysql manager store: %v", err)
 		return err
 	}
 
 	return nil
 }
 
-func (this *zkMetaStore) fetchApplicationRecords(db *sql.DB) error {
+func (this *mysqlStore) fetchApplicationRecords(db *sql.DB) error {
 	rows, err := db.Query("SELECT AppId,Cluster,AppSecret FROM application WHERE Status=1")
 	if err != nil {
 		return err
@@ -65,7 +128,7 @@ func (this *zkMetaStore) fetchApplicationRecords(db *sql.DB) error {
 	for rows.Next() {
 		err = rows.Scan(&app.AppId, &app.Cluster, &app.AppSecret)
 		if err != nil {
-			log.Error("zk meta store: %v", err)
+			log.Error("mysql manager store: %v", err)
 			continue
 		}
 
@@ -78,7 +141,7 @@ func (this *zkMetaStore) fetchApplicationRecords(db *sql.DB) error {
 	return nil
 }
 
-func (this *zkMetaStore) fetchSubscribeRecords(db *sql.DB) error {
+func (this *mysqlStore) fetchSubscribeRecords(db *sql.DB) error {
 	rows, err := db.Query("SELECT AppId,TopicName FROM topics_subscriber WHERE Status=1")
 	if err != nil {
 		return err
@@ -90,7 +153,7 @@ func (this *zkMetaStore) fetchSubscribeRecords(db *sql.DB) error {
 	for rows.Next() {
 		err = rows.Scan(&app.AppId, &app.TopicName)
 		if err != nil {
-			log.Error("zk meta store: %v", err)
+			log.Error("mysql manager store: %v", err)
 			continue
 		}
 
@@ -106,7 +169,7 @@ func (this *zkMetaStore) fetchSubscribeRecords(db *sql.DB) error {
 	return nil
 }
 
-func (this *zkMetaStore) fetchTopicRecords(db *sql.DB) error {
+func (this *mysqlStore) fetchTopicRecords(db *sql.DB) error {
 	rows, err := db.Query("SELECT AppId,TopicName FROM topics WHERE Status=1")
 	if err != nil {
 		return err
@@ -118,7 +181,7 @@ func (this *zkMetaStore) fetchTopicRecords(db *sql.DB) error {
 	for rows.Next() {
 		err = rows.Scan(&app.AppId, &app.TopicName)
 		if err != nil {
-			log.Error("zk meta store: %v", err)
+			log.Error("mysql manager store: %v", err)
 			continue
 		}
 
@@ -134,14 +197,14 @@ func (this *zkMetaStore) fetchTopicRecords(db *sql.DB) error {
 	return nil
 }
 
-func (this *zkMetaStore) AuthPub(appid, pubkey, topic string) error {
+func (this *mysqlStore) AuthPub(appid, pubkey, topic string) error {
 	if appid == "" || topic == "" {
-		return meta.ErrEmptyParam
+		return manager.ErrEmptyParam
 	}
 
 	// authentication
 	if secret, present := this.appSecretMap[appid]; !present || pubkey != secret {
-		return meta.ErrAuthenticationFail
+		return manager.ErrAuthenticationFail
 	}
 
 	// authorization
@@ -151,17 +214,17 @@ func (this *zkMetaStore) AuthPub(appid, pubkey, topic string) error {
 		}
 	}
 
-	return meta.ErrAuthorizationFial
+	return manager.ErrAuthorizationFial
 }
 
-func (this *zkMetaStore) AuthSub(appid, subkey, topic string) error {
+func (this *mysqlStore) AuthSub(appid, subkey, topic string) error {
 	if appid == "" || topic == "" {
-		return meta.ErrEmptyParam
+		return manager.ErrEmptyParam
 	}
 
 	// authentication
 	if secret, present := this.appSecretMap[appid]; !present || subkey != secret {
-		return meta.ErrAuthenticationFail
+		return manager.ErrAuthenticationFail
 	}
 
 	// authorization
@@ -171,10 +234,10 @@ func (this *zkMetaStore) AuthSub(appid, subkey, topic string) error {
 		}
 	}
 
-	return meta.ErrAuthorizationFial
+	return manager.ErrAuthorizationFial
 }
 
-func (this *zkMetaStore) LookupCluster(appid string) (string, bool) {
+func (this *mysqlStore) LookupCluster(appid string) (string, bool) {
 	if cluster, present := this.appClusterMap[appid]; present {
 		return cluster, present
 	}

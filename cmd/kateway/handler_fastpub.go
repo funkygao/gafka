@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/buaazp/fasthttprouter"
+	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
@@ -22,7 +23,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 	header := ctx.Request.Header
 	appid := string(header.Peek(HttpHeaderAppid))
 	pubkey := string(header.Peek(HttpHeaderPubkey))
-	if err := meta.Default.AuthPub(appid, pubkey, topic); err != nil {
+	if err := manager.Default.AuthPub(appid, pubkey, topic); err != nil {
 		log.Error("app[%s] %s %+v: %v", appid, ctx.RemoteAddr(), params, err)
 
 		ctx.SetConnectionClose()
@@ -72,7 +73,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
 
-	cluster, found := meta.Default.LookupCluster(appid)
+	cluster, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Error("cluster not found for app: %s", appid)
 
@@ -116,7 +117,7 @@ func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprout
 	appid = string(header.Peek(HttpHeaderAppid))
 	pubkey = string(header.Peek(HttpHeaderPubkey))
 
-	if err := meta.Default.AuthPub(appid, pubkey, topic); err != nil {
+	if err := manager.Default.AuthPub(appid, pubkey, topic); err != nil {
 		log.Error("app[%s] %s %+v: %v", appid, ctx.RemoteAddr(), params, err)
 
 		ctx.SetConnectionClose()
@@ -124,7 +125,7 @@ func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprout
 		return
 	}
 
-	cluster, found := meta.Default.LookupCluster(appid)
+	cluster, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Error("cluster not found for app: %s", appid)
 

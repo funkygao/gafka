@@ -128,9 +128,15 @@ func (this *subMetrics) Load() {
 	json.Unmarshal(b, &data)
 
 	for k, v := range data["sub"] {
+		if _, present := this.ConsumeMap[k]; !present {
+			this.ConsumeMap[k] = metrics.NewRegisteredCounter(k+"sub.ok", metrics.DefaultRegistry)
+		}
 		this.ConsumeMap[k].Inc(v)
 	}
 	for k, v := range data["subd"] {
+		if _, present := this.ConsumeMap[k]; !present {
+			this.ConsumedMap[k] = metrics.NewRegisteredCounter(k+"subd.ok", metrics.DefaultRegistry)
+		}
 		this.ConsumedMap[k].Inc(v)
 	}
 }
@@ -154,11 +160,11 @@ func (this *subMetrics) ConsumeOk(appid, topic, ver string) {
 	if this.expConsumeOk != nil {
 		this.expConsumeOk.Add(1)
 	}
-	updateCounter(appid, topic, ver, "sub.ok", &this.consumeMapMu, this.ConsumeMap)
+	updateCounter(appid, topic, ver, "sub.ok", 1, &this.consumeMapMu, this.ConsumeMap)
 }
 
 func (this *subMetrics) ConsumedOk(appid, topic, ver string) {
-	updateCounter(appid, topic, ver, "subd.ok", &this.consumedMapMu, this.ConsumedMap)
+	updateCounter(appid, topic, ver, "subd.ok", 1, &this.consumedMapMu, this.ConsumedMap)
 }
 
 type pubMetrics struct {
@@ -219,9 +225,15 @@ func (this *pubMetrics) Load() {
 	json.Unmarshal(b, &data)
 
 	for k, v := range data["ok"] {
+		if _, present := this.PubOkMap[k]; !present {
+			this.PubOkMap[k] = metrics.NewRegisteredCounter(k+"pub.ok", metrics.DefaultRegistry)
+		}
 		this.PubOkMap[k].Inc(v)
 	}
 	for k, v := range data["fail"] {
+		if _, present := this.PubFailMap[k]; !present {
+			this.PubFailMap[k] = metrics.NewRegisteredCounter(k+"pub.fail", metrics.DefaultRegistry)
+		}
 		this.PubFailMap[k].Inc(v)
 	}
 }
@@ -245,12 +257,12 @@ func (this *pubMetrics) PubFail(appid, topic, ver string) {
 	if this.expPubFail != nil {
 		this.expPubFail.Add(1)
 	}
-	updateCounter(appid, topic, ver, "pub.fail", &this.pubFailMu, this.PubFailMap)
+	updateCounter(appid, topic, ver, "pub.fail", 1, &this.pubFailMu, this.PubFailMap)
 }
 
 func (this *pubMetrics) PubOk(appid, topic, ver string) {
 	if this.expPubOk != nil {
 		this.expPubOk.Add(1)
 	}
-	updateCounter(appid, topic, ver, "pub.ok", &this.pubOkMu, this.PubOkMap)
+	updateCounter(appid, topic, ver, "pub.ok", 1, &this.pubOkMu, this.PubOkMap)
 }

@@ -27,12 +27,6 @@ type zkMetaStore struct {
 	// cache
 	partitionsMap map[string]map[string][]int32 // {cluster: {topic: partitions}}
 	pmapLock      sync.RWMutex
-
-	// mysql store, initialized on refresh
-	appClusterMap map[string]string              // appid:cluster
-	appSecretMap  map[string]string              // appid:secret
-	appSubMap     map[string]map[string]struct{} // appid:topics
-	appPubMap     map[string]map[string]struct{} // appid:subscribed topics
 }
 
 func New(cf *config) meta.MetaStore {
@@ -54,6 +48,10 @@ func New(cf *config) meta.MetaStore {
 		clusters:      make(map[string]*zk.ZkCluster),
 		partitionsMap: make(map[string]map[string][]int32),
 	}
+}
+
+func (this *zkMetaStore) Name() string {
+	return "zk"
 }
 
 func (this *zkMetaStore) RefreshEvent() <-chan struct{} {
@@ -90,10 +88,6 @@ func (this *zkMetaStore) refreshTopologyCache() {
 func (this *zkMetaStore) Start() {
 	// warm up
 	this.refreshTopologyCache()
-	if err := this.RefreshFromMysql(); err != nil {
-		// refuse to start if mysql conn fails
-		panic(err)
-	}
 
 	go func() {
 		ticker := time.NewTicker(this.cf.Refresh)
@@ -112,13 +106,10 @@ func (this *zkMetaStore) Start() {
 					len(this.partitionsMap))
 				this.pmapLock.Unlock()
 
-				go this.RefreshFromMysql()
-
 				// notify others that I have got the most recent data
 				this.refreshCh <- struct{}{}
 
 			case <-this.shutdownCh:
-				log.Trace("zk meta store closed")
 				return
 			}
 		}

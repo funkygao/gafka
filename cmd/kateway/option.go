@@ -20,6 +20,7 @@ var (
 		ManHttpsAddr           string
 		DebugHttpAddr          string
 		Store                  string
+		ManagerStore           string
 		PidFile                string
 		CertFile               string
 		KeyFile                string
@@ -48,6 +49,7 @@ var (
 		ReporterInterval       time.Duration
 		ConsoleMetricsInterval time.Duration
 		MetaRefresh            time.Duration
+		ManagerRefresh         time.Duration
 		HttpReadTimeout        time.Duration
 		HttpWriteTimeout       time.Duration
 	}
@@ -70,6 +72,7 @@ func parseFlags() {
 	flag.StringVar(&options.KeyFile, "keyfile", "", "key file path")
 	flag.StringVar(&options.DebugHttpAddr, "debughttp", "", "debug http bind addr")
 	flag.StringVar(&options.Store, "store", "kafka", "backend store")
+	flag.StringVar(&options.ManagerStore, "mstore", "mysql", "store integration with manager")
 	flag.StringVar(&options.ConfigFile, "conf", "/etc/kateway.cf", "config file")
 	flag.StringVar(&options.KillFile, "kill", "", "kill running kateway by pid file")
 	flag.StringVar(&options.InfluxServer, "influxdb", "http://10.77.144.193:10036", "influxdb server address for the metrics reporter")
@@ -92,7 +95,8 @@ func parseFlags() {
 	flag.DurationVar(&options.HttpWriteTimeout, "httpwtimeout", time.Minute, "http server write timeout")
 	flag.DurationVar(&options.SubTimeout, "subtimeout", time.Minute, "sub timeout before send http 204")
 	flag.DurationVar(&options.ReporterInterval, "report", time.Second*10, "reporter flush interval")
-	flag.DurationVar(&options.MetaRefresh, "metarefresh", time.Minute*5, "meta data refresh interval")
+	flag.DurationVar(&options.MetaRefresh, "metarefresh", time.Minute*10, "meta data refresh interval")
+	flag.DurationVar(&options.ManagerRefresh, "manrefresh", time.Minute*5, "manager integration refresh interval")
 	flag.DurationVar(&options.ConsoleMetricsInterval, "consolemetrics", 0, "console metrics report interval")
 	flag.DurationVar(&options.PubPoolIdleTimeout, "pubpoolidle", 0, "pub pool connect idle timeout")
 

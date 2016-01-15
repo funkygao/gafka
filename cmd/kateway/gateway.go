@@ -12,6 +12,9 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/funkygao/gafka"
+	"github.com/funkygao/gafka/cmd/kateway/manager"
+	mdumb "github.com/funkygao/gafka/cmd/kateway/manager/dumb"
+	"github.com/funkygao/gafka/cmd/kateway/manager/mysql"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
@@ -92,6 +95,19 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		options.MaxClients, this)
 	this.svrMetrics = NewServerMetrics(options.ReporterInterval, this)
 
+	switch options.ManagerStore {
+	case "mysql":
+		managerCf := mysql.DefaultConfig(this.zone)
+		managerCf.Refresh = options.ManagerRefresh
+		manager.Default = mysql.New(managerCf)
+
+	case "dumb":
+		manager.Default = mdumb.New()
+
+	default:
+		panic("invalid manager")
+	}
+
 	if options.PubHttpAddr != "" || options.PubHttpsAddr != "" {
 		this.pubServer = newPubServer(options.PubHttpAddr, options.PubHttpsAddr,
 			options.MaxClients, this)
@@ -105,6 +121,9 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 		case "dumb":
 			store.DefaultPubStore = dumb.NewPubStore(&this.wg, options.Debug)
+
+		default:
+			panic("invalid store")
 		}
 	}
 
@@ -176,7 +195,10 @@ func (this *Gateway) Start() (err error) {
 	this.startedAt = time.Now()
 
 	meta.Default.Start()
-	log.Trace("meta store started")
+	log.Trace("meta store[%s] started", meta.Default.Name())
+
+	manager.Default.Start()
+	log.Trace("manager store[%s] started", manager.Default.Name())
 
 	this.guard.Start()
 	log.Trace("guard started")
@@ -270,11 +292,16 @@ func (this *Gateway) ServeForever() {
 			log.Info("sub metrics flushed")
 		}
 
+		meta.Default.Stop()
+		log.Trace("meta store[%s] stopped", meta.Default.Name())
+
+		manager.Default.Stop()
+		log.Trace("manager store[%s] stopped", manager.Default.Name())
+
 		if this.zkzone != nil {
 			this.zkzone.Close()
 		}
 
-		meta.Default.Stop()
 		this.timer.Stop()
 	}
 

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka"
+	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
@@ -135,7 +136,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("suspicous add topic from %s: appid=%s, pubkey=%s, cluster=%s, topic=%s",
 			r.RemoteAddr, appid, pubkey, cluster, topic)
 
-		this.writeAuthFailure(w, meta.ErrPermDenied)
+		this.writeAuthFailure(w, manager.ErrPermDenied)
 		return
 	}
 
