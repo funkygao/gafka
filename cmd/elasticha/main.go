@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -56,16 +57,74 @@ func main() {
 		panic(err)
 	}
 
+	root := zkr.Root(options.zone)
 	ch := make(chan []string, 10)
-	go etclib.WatchChildren(zkr.Root(options.zone), ch)
+	go etclib.WatchChildren(root, ch)
 
-	var err error
+	var servers BackendServers
 	for {
 		select {
 		case <-ch:
-			log.Println("kateway cluster changed")
+			children, err := etclib.Children(root)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 
-			err = createConfigFile(nil, options.tplFile, options.haproxyConfigFile)
+			log.Printf("kateway cluster changed: %+v", children)
+
+			for _, kwId := range children {
+				kwNode := fmt.Sprintf("%s/%s", root, kwId)
+				data, err := etclib.Get(kwNode)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+
+				info := make(map[string]string)
+				if err = json.Unmarshal([]byte(data), &info); err != nil {
+					log.Println(err)
+					continue
+				}
+
+				if info["pub"] != "" {
+					if servers.Pub == nil {
+						servers.Pub = make([]Backend, 0)
+					}
+					be := Backend{
+						Name: "s" + info["id"],
+						Ip:   info["host"],
+						Port: info["pub"],
+					}
+					servers.Pub = append(servers.Pub, be)
+				}
+				if info["sub"] != "" {
+					if servers.Sub == nil {
+						servers.Sub = make([]Backend, 0)
+					}
+					be := Backend{
+						Name: "s" + info["id"],
+						Ip:   info["host"],
+						Port: info["sub"],
+					}
+					servers.Sub = append(servers.Sub, be)
+				}
+				if info["man"] != "" {
+					if servers.Man == nil {
+						servers.Man = make([]Backend, 0)
+					}
+					be := Backend{
+						Name: "s" + info["id"],
+						Ip:   info["host"],
+						Port: info["man"],
+					}
+					servers.Man = append(servers.Man, be)
+				}
+
+				log.Println(servers)
+			}
+
+			err = createConfigFile(servers, options.tplFile, options.haproxyConfigFile)
 			if err != nil {
 				log.Println(err)
 				continue

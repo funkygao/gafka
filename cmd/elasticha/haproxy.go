@@ -8,6 +8,12 @@ import (
 	"text/template"
 )
 
+type BackendServers struct {
+	Pub []Backend
+	Sub []Backend
+	Man []Backend
+}
+
 type Backend struct {
 	Name string
 	Ip   string
@@ -19,7 +25,7 @@ var (
 	pid int                = -1
 )
 
-func createConfigFile(backends []Backend, templateFile, outputFile string) error {
+func createConfigFile(servers BackendServers, templateFile, outputFile string) error {
 	cfgFile, _ := os.Create(outputFile)
 	defer cfgFile.Close()
 
@@ -31,7 +37,7 @@ func createConfigFile(backends []Backend, templateFile, outputFile string) error
 		}
 	}
 
-	return tpl.Execute(cfgFile, backends)
+	return tpl.Execute(cfgFile, servers)
 }
 
 func reloadHAproxy(command, configFile string) error {
