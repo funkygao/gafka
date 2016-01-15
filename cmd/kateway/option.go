@@ -36,6 +36,7 @@ var (
 		CpuAffinity            bool
 		GolangTrace            bool
 		Debug                  bool
+		HttpHeaderMaxBytes     int
 		MaxPubSize             int64
 		MinPubSize             int
 		MaxPubRetries          int
@@ -80,14 +81,15 @@ func parseFlags() {
 	flag.BoolVar(&options.Ratelimit, "raltelimit", false, "enable rate limit")
 	flag.BoolVar(&options.ClusterAware, "clusteraware", false, "each kateway knows the cluster nodes")
 	flag.BoolVar(&options.DisableMetrics, "metricsoff", false, "disable metrics reporter")
+	flag.IntVar(&options.HttpHeaderMaxBytes, "maxheader", 4<<10, "http header max size in bytes")
 	flag.Int64Var(&options.MaxPubSize, "maxpub", 1<<20, "max Pub message size")
 	flag.IntVar(&options.MinPubSize, "minpub", 1, "min Pub message size")
 	flag.IntVar(&options.MaxPubRetries, "pubretry", 5, "max retries when Pub fails")
 	flag.IntVar(&options.PubPoolCapcity, "pubpool", 100, "pub connection pool capacity")
 	flag.IntVar(&options.MaxClients, "maxclient", 100000, "max concurrent connections")
 	flag.DurationVar(&options.OffsetCommitInterval, "offsetcommit", time.Minute, "consumer offset commit interval")
-	flag.DurationVar(&options.HttpReadTimeout, "httprtimeout", time.Second*60, "http server read timeout")
-	flag.DurationVar(&options.HttpWriteTimeout, "httpwtimeout", time.Second*60, "http server write timeout")
+	flag.DurationVar(&options.HttpReadTimeout, "httprtimeout", time.Minute*5, "http server read timeout")
+	flag.DurationVar(&options.HttpWriteTimeout, "httpwtimeout", time.Minute, "http server write timeout")
 	flag.DurationVar(&options.SubTimeout, "subtimeout", time.Minute, "sub timeout before send http 204")
 	flag.DurationVar(&options.ReporterInterval, "report", time.Second*10, "reporter flush interval")
 	flag.DurationVar(&options.MetaRefresh, "metarefresh", time.Minute*5, "meta data refresh interval")

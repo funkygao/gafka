@@ -46,9 +46,9 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 		this.httpServer = &http.Server{
 			Addr:           httpAddr,
 			Handler:        this.router,
-			ReadTimeout:    httpReadTimeout,
-			WriteTimeout:   httpWriteTimeout,
-			MaxHeaderBytes: httpHeaderMaxBytes,
+			ReadTimeout:    options.HttpReadTimeout,
+			WriteTimeout:   options.HttpWriteTimeout,
+			MaxHeaderBytes: options.HttpHeaderMaxBytes,
 		}
 	}
 
@@ -56,9 +56,9 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 		this.httpsServer = &http.Server{
 			Addr:           httpsAddr,
 			Handler:        this.router,
-			ReadTimeout:    httpReadTimeout,
-			WriteTimeout:   httpWriteTimeout,
-			MaxHeaderBytes: httpHeaderMaxBytes,
+			ReadTimeout:    options.HttpReadTimeout,
+			WriteTimeout:   options.HttpWriteTimeout,
+			MaxHeaderBytes: options.HttpHeaderMaxBytes,
 		}
 	}
 
