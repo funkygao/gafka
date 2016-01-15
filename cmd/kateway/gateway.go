@@ -178,6 +178,8 @@ func (this *Gateway) Start() (err error) {
 		this.Stop()
 	}, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2) // yes we ignore HUP
 
+	// FIXME load balancer will redispatch the consumer to another
+	// kateway, but the offset has not been committed, then???
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		if registry.Default == nil {
 			log.Warn("USR1 fired when no registry defined")
