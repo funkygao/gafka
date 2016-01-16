@@ -2,5 +2,5 @@ all:build
 
 build:
 	go generate ./...
-	go build
+	go install
 

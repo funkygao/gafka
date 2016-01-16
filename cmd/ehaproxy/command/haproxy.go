@@ -13,6 +13,9 @@ import (
 //go:generate go-bindata -nomemcopy -pkg command templates/...
 
 type BackendServers struct {
+	HaproxyRoot string
+	LogDir      string
+
 	Pub []Backend
 	Sub []Backend
 	Man []Backend
@@ -20,14 +23,8 @@ type BackendServers struct {
 
 type Backend struct {
 	Name string
-	Ip   string
-	Port string
+	Addr string
 }
-
-var (
-	tpl *template.Template = nil
-	pid int                = -1
-)
 
 func (this *Start) createConfigFile(servers BackendServers) error {
 	tmp := fmt.Sprintf("%s.tmp", configFile)
@@ -36,6 +33,8 @@ func (this *Start) createConfigFile(servers BackendServers) error {
 	b, _ := Asset("templates/haproxy.tpl")
 	t := template.Must(template.New("haproxy").Parse(string(b)))
 
+	servers.HaproxyRoot = this.root
+	servers.LogDir = fmt.Sprintf("%s/logs", this.root)
 	err := t.Execute(cfgFile, servers)
 	cfgFile.Close()
 
@@ -44,23 +43,24 @@ func (this *Start) createConfigFile(servers BackendServers) error {
 }
 
 func (this *Start) reloadHAproxy() (err error) {
-	command := fmt.Sprintf("%s/sbin/haproxy", this.root)
 	var cmd *exec.Cmd = nil
 	waitStartCh := make(chan struct{})
-	if pid == -1 {
-		log.Info("Starting haproxy")
-		cmd = exec.Command(command, "-f", configFile)
+	if this.pid == -1 {
+		log.Info("starting haproxy")
+		cmd = exec.Command(this.command, "-f", configFile)
 		go func() {
 			<-waitStartCh
+			log.Info("haproxy started")
 			if err := cmd.Wait(); err != nil {
 				log.Error(err)
 			}
 		}()
 	} else {
-		log.Info("Restarting haproxy")
-		cmd = exec.Command(command, "-f", configFile, "-sf", strconv.Itoa(pid))
+		log.Info("reloading haproxy")
+		cmd = exec.Command(this.command, "-f", configFile, "-sf", strconv.Itoa(this.pid))
 		go func() {
 			<-waitStartCh
+			log.Info("haproxy reloaded")
 			if err := cmd.Wait(); err != nil {
 				log.Error(err)
 			}
@@ -70,8 +70,7 @@ func (this *Start) reloadHAproxy() (err error) {
 	if err = cmd.Start(); err == nil {
 		waitStartCh <- struct{}{}
 
-		pid = cmd.Process.Pid
-		log.Info("haproxy pid: %d", pid)
+		this.pid = cmd.Process.Pid
 	}
 
 	return err

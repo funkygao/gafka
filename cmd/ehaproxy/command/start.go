@@ -18,23 +18,37 @@ type Start struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone string
-	root string
+	zone    string
+	root    string
+	command string
+	pid     int
 }
 
 func (this *Start) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("start", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.zone, "z", "", "")
+	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.root, "p", defaultPrefix, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
-	if err := os.Chdir(this.root); err != nil {
+	err := os.Chdir(this.root)
+	swalllow(err)
+
+	if _, err = os.Stat(configFile); err == nil {
+		this.Ui.Error(fmt.Sprintf("another %s is running", this.Cmd))
+		return 1
+	}
+
+	this.command = fmt.Sprintf("%s/sbin/haproxy", this.root)
+	if _, err := os.Stat(this.command); err != nil {
 		panic(err)
 	}
 
+	defer os.Remove(configFile)
+
+	this.pid = -1
 	this.main()
 
 	return
@@ -43,27 +57,28 @@ func (this *Start) Run(args []string) (exitCode int) {
 func (this *Start) main() {
 	ctx.LoadFromHome()
 
-	if err := etclib.Dial(strings.Split(ctx.ZoneZkAddrs(this.zone), ",")); err != nil {
-		panic(err)
-	}
+	err := etclib.Dial(strings.Split(ctx.ZoneZkAddrs(this.zone), ","))
+	swalllow(err)
 
 	root := zkr.Root(this.zone)
 	ch := make(chan []string, 10)
 	go etclib.WatchChildren(root, ch)
 
 	var servers BackendServers
+	var lastInstances []string
 	for {
 		select {
 		case <-ch:
-			children, err := etclib.Children(root)
+			kwInstances, err := etclib.Children(root)
 			if err != nil {
 				log.Error(err)
 				continue
 			}
 
-			log.Info("kateway cluster changed to %+v", children)
+			log.Info("kateway cluster changed from %+v to %+v", lastInstances, kwInstances)
+			lastInstances = kwInstances
 
-			for _, kwId := range children {
+			for _, kwId := range kwInstances {
 				kwNode := fmt.Sprintf("%s/%s", root, kwId)
 				data, err := etclib.Get(kwNode)
 				if err != nil {
@@ -77,36 +92,38 @@ func (this *Start) main() {
 					continue
 				}
 
+				// pub
 				if info["pub"] != "" {
 					if servers.Pub == nil {
 						servers.Pub = make([]Backend, 0)
 					}
 					be := Backend{
 						Name: "s" + info["id"],
-						Ip:   info["host"],
-						Port: info["pub"],
+						Addr: info["pub"],
 					}
 					servers.Pub = append(servers.Pub, be)
 				}
+
+				// sub
 				if info["sub"] != "" {
 					if servers.Sub == nil {
 						servers.Sub = make([]Backend, 0)
 					}
 					be := Backend{
 						Name: "s" + info["id"],
-						Ip:   info["host"],
-						Port: info["sub"],
+						Addr: info["sub"],
 					}
 					servers.Sub = append(servers.Sub, be)
 				}
+
+				// man
 				if info["man"] != "" {
 					if servers.Man == nil {
 						servers.Man = make([]Backend, 0)
 					}
 					be := Backend{
 						Name: "s" + info["id"],
-						Ip:   info["host"],
-						Port: info["man"],
+						Addr: info["man"],
 					}
 					servers.Man = append(servers.Man, be)
 				}
@@ -140,9 +157,11 @@ Usage: %s start [options]
 Options:
 
     -z zone
+      Default %s
 
     -p prefix
+      Default %s
 
-`, this.Cmd, this.Cmd)
+`, this.Cmd, this.Cmd, ctx.ZkDefaultZone(), defaultPrefix)
 	return strings.TrimSpace(help)
 }

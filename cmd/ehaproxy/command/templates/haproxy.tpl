@@ -10,7 +10,7 @@ global
     #log /dev/log    local1 notice
 
     # for restarts
-    pidfile /tmp/haproxy.pid
+    pidfile {{.HaproxyRoot}}/haproxy.pid
 
     # Distribute the health checks with a bit of randomness
     spread-checks 5
@@ -18,7 +18,7 @@ global
     #user  haproxy
     #group haproxy
     nbproc 4
-    #chroot /var/wd/haproxy
+    chroot {{.HaproxyRoot}}
     #daemon
 
     # Uncomment the statement below to turn on verbose logging
@@ -73,13 +73,13 @@ defaults
     timeout check   5s
 
     balance roundrobin
-    errorfile 400 /tmp/400.http
-    errorfile 403 /tmp/403.http
-    errorfile 408 /tmp/408.http
-    errorfile 500 /tmp/500.http
-    errorfile 502 /tmp/502.http
-    errorfile 503 /tmp/503.http
-    errorfile 504 /tmp/504.http
+    errorfile 400 {{.LogDir}}/400.http
+    errorfile 403 {{.LogDir}}/403.http
+    errorfile 408 {{.LogDir}}/408.http
+    errorfile 500 {{.LogDir}}/500.http
+    errorfile 502 {{.LogDir}}/502.http
+    errorfile 503 {{.LogDir}}/503.http
+    errorfile 504 {{.LogDir}}/504.http
 
 listen admin_stats
     bind 0.0.0.0:8888
@@ -135,16 +135,16 @@ backend pub-servers
     retries         2
     option          nolinger
     option          http_proxy    
-{{range .Pub}}     server {{.Name}} {{.Ip}}{{.Port}} check weight 3 minconn 1 maxconn 3 check inter 5s rise 3 fall 3
+{{range .Pub}}     server {{.Name}} {{.Addr}} check weight 3 minconn 1 maxconn 3 check inter 5s rise 3 fall 3
 {{end}}
 
 backend sub-servers
     balance         source
     cookie SRV_ID prefix
-{{range .Sub}}     server {{.Name}} {{.Ip}}{{.Port}} check weight 3 minconn 1 maxconn 3 check inter 5s rise 3 fall 3
+{{range .Sub}}     server {{.Name}} {{.Addr}} check weight 3 minconn 1 maxconn 3 check inter 5s rise 3 fall 3
 {{end}}
 
 backend man-servers
     option httpchk GET /status HTTP/1.1\r\nHost:www.taobao.net
-{{range .Man}}     server {{.Name}} {{.Ip}}{{.Port}} check weight 3 minconn 1 maxconn 3 check inter 5s rise 3 fall 3
+{{range .Man}}     server {{.Name}} {{.Addr}} check weight 3 minconn 1 maxconn 3 check inter 5s rise 3 fall 3
 {{end}}
