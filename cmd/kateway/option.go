@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/funkygao/gafka/ctx"
 )
 
 var (
@@ -56,14 +58,28 @@ var (
 )
 
 func parseFlags() {
+	ip, err := ctx.LocalIP()
+	if err != nil {
+		panic(err)
+	}
+
+	var (
+		defaultPubHttpAddr  = fmt.Sprintf("%s:9191", ip.String())
+		defaultPubHttpsAddr = ""
+		defaultSubHttpAddr  = fmt.Sprintf("%s:9192", ip.String())
+		defaultSubHttpsAddr = ""
+		defaultManHttpAddr  = fmt.Sprintf("%s:9193", ip.String())
+		defaultManHttpsAddr = ""
+	)
+
 	flag.StringVar(&options.Id, "id", "", "kateway id, the id must be unique within a host")
 	flag.StringVar(&options.Zone, "zone", "", "kafka zone name")
-	flag.StringVar(&options.PubHttpAddr, "pubhttp", ":9191", "pub http bind addr")
-	flag.StringVar(&options.PubHttpsAddr, "pubhttps", "", "pub https bind addr")
-	flag.StringVar(&options.SubHttpAddr, "subhttp", ":9192", "sub http bind addr")
-	flag.StringVar(&options.SubHttpsAddr, "subhttps", "", "sub https bind addr")
-	flag.StringVar(&options.ManHttpAddr, "manhttp", ":9193", "management http bind addr")
-	flag.StringVar(&options.ManHttpsAddr, "manhttps", "", "management https bind addr")
+	flag.StringVar(&options.PubHttpAddr, "pubhttp", defaultPubHttpAddr, "pub http bind addr")
+	flag.StringVar(&options.PubHttpsAddr, "pubhttps", defaultPubHttpsAddr, "pub https bind addr")
+	flag.StringVar(&options.SubHttpAddr, "subhttp", defaultSubHttpAddr, "sub http bind addr")
+	flag.StringVar(&options.SubHttpsAddr, "subhttps", defaultSubHttpsAddr, "sub https bind addr")
+	flag.StringVar(&options.ManHttpAddr, "manhttp", defaultManHttpAddr, "management http bind addr")
+	flag.StringVar(&options.ManHttpsAddr, "manhttps", defaultManHttpsAddr, "management https bind addr")
 	flag.StringVar(&options.LogLevel, "level", "debug", "log level")
 	flag.StringVar(&options.LogFile, "log", "stdout", "log file, default stdout")
 	flag.StringVar(&options.CrashLogFile, "crashlog", "", "crash log")
