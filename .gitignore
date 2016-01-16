@@ -32,8 +32,8 @@ cmd/kateway/kateway
 cmd/kateway/prof.cpu
 cmd/kateway/prof.mem
 cmd/kateway/ssl
-cmd/elasticha/elasticha
-cmd/elasticha/.haproxy.cf
+cmd/ehaproxy/ehaproxy
+cmd/ehaproxy/.haproxy.cf
 cmd/kateway/bench/bench
 cmd/kateway/executor/executor
 cmd/kateway/bench/httpdserver
