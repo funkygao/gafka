@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -13,12 +12,14 @@ import (
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 	zkr "github.com/funkygao/gafka/registry/zk"
+	log "github.com/funkygao/log4go"
 )
 
 var (
 	options struct {
 		zone              string
 		configFile        string
+		guide             bool
 		tplFile           string
 		haproxyConfigFile string
 		haproxyBin        string
@@ -28,6 +29,7 @@ var (
 
 func parseFlags() {
 	flag.StringVar(&options.zone, "z", "prod", "zone")
+	flag.BoolVar(&options.guide, "guide", false, "guide")
 	flag.BoolVar(&options.showVersion, "version", false, "display version and exit")
 	flag.StringVar(&options.haproxyBin, "haproxy", "/opt/app/haproxy/haproxy", "haproxy binary path")
 	flag.StringVar(&options.configFile, "c", "/etc/kateway.cf", "config file path")
@@ -35,6 +37,11 @@ func parseFlags() {
 	flag.StringVar(&options.haproxyConfigFile, "haproxycf", ".haproxy.cf", "haproxy config file")
 
 	flag.Parse()
+
+	if options.guide {
+		displayGuide()
+		os.Exit(0)
+	}
 }
 
 func main() {
@@ -67,23 +74,23 @@ func main() {
 		case <-ch:
 			children, err := etclib.Children(root)
 			if err != nil {
-				log.Println(err)
+				log.Error(err)
 				continue
 			}
 
-			log.Printf("kateway cluster changed to %+v", children)
+			log.Info("kateway cluster changed to %+v", children)
 
 			for _, kwId := range children {
 				kwNode := fmt.Sprintf("%s/%s", root, kwId)
 				data, err := etclib.Get(kwNode)
 				if err != nil {
-					log.Println(err)
+					log.Error(err)
 					continue
 				}
 
 				info := make(map[string]string)
 				if err = json.Unmarshal([]byte(data), &info); err != nil {
-					log.Println(err)
+					log.Error(err)
 					continue
 				}
 
@@ -121,19 +128,18 @@ func main() {
 					servers.Man = append(servers.Man, be)
 				}
 
-				log.Println(servers)
+				log.Info(servers)
 			}
 
-			err = createConfigFile(servers, options.tplFile, options.haproxyConfigFile)
-			if err != nil {
-				log.Println(err)
+			if err = createConfigFile(servers, options.tplFile, options.haproxyConfigFile); err != nil {
+				log.Error(err)
 				continue
 			}
 
-			err = reloadHAproxy(options.haproxyBin, options.haproxyConfigFile)
-			if err != nil {
-				log.Println(err)
+			if err = reloadHAproxy(options.haproxyBin, options.haproxyConfigFile); err != nil {
+				log.Error(err)
 			}
+
 		}
 	}
 

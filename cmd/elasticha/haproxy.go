@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strconv"
 	"text/template"
+
+	log "github.com/funkygao/log4go"
 )
 
 //go:generate go-bindata -nomemcopy -pkg main etc/...
@@ -31,32 +32,46 @@ var (
 func createConfigFile(servers BackendServers, templateFile, outputFile string) error {
 	tmp := fmt.Sprintf("%s.tmp", outputFile)
 	cfgFile, _ := os.Create(tmp)
-	defer cfgFile.Close()
 
 	b, _ := Asset("etc/haproxy.tpl")
 	t := template.Must(template.New("haproxy").Parse(string(b)))
 
 	err := t.Execute(cfgFile, servers)
+	cfgFile.Close()
+
 	os.Rename(tmp, outputFile)
 	return err
 }
 
-func reloadHAproxy(command, configFile string) error {
+func reloadHAproxy(command, configFile string) (err error) {
 	var cmd *exec.Cmd = nil
+	waitStartCh := make(chan struct{})
 	if pid == -1 {
-		log.Println("Starting haproxy")
+		log.Info("Starting haproxy")
 		cmd = exec.Command(command, "-f", configFile)
-		go cmd.Wait()
+		go func() {
+			<-waitStartCh
+			if err := cmd.Wait(); err != nil {
+				log.Error(err)
+			}
+		}()
 	} else {
-		log.Println("Restarting haproxy")
+		log.Info("Restarting haproxy")
 		cmd = exec.Command(command, "-f", configFile, "-sf", strconv.Itoa(pid))
-		go cmd.Wait()
+		go func() {
+			<-waitStartCh
+			if err := cmd.Wait(); err != nil {
+				log.Error(err)
+			}
+		}()
 	}
 
-	err := cmd.Start()
-	if err == nil {
+	if err = cmd.Start(); err == nil {
+		waitStartCh <- struct{}{}
+
 		pid = cmd.Process.Pid
-		log.Printf("haproxy pid: %d", pid)
+		log.Info("haproxy pid: %d", pid)
 	}
+
 	return err
 }
