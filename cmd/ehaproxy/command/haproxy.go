@@ -13,6 +13,7 @@ import (
 //go:generate go-bindata -nomemcopy -pkg command templates/...
 
 type BackendServers struct {
+	CpuNum      int
 	HaproxyRoot string
 	LogDir      string
 
@@ -21,24 +22,33 @@ type BackendServers struct {
 	Man []Backend
 }
 
+func (this *BackendServers) reset() {
+	this.Pub = make([]Backend, 0)
+	this.Sub = make([]Backend, 0)
+	this.Man = make([]Backend, 0)
+}
+
 type Backend struct {
 	Name string
 	Addr string
 }
 
 func (this *Start) createConfigFile(servers BackendServers) error {
-	tmp := fmt.Sprintf("%s.tmp", configFile)
-	cfgFile, _ := os.Create(tmp)
+	log.Info("backends: %+v", servers)
+
+	tmpFile := fmt.Sprintf("%s.tmp", configFile)
+	cfgFile, err := os.Create(tmpFile)
+	if err != nil {
+		return err
+	}
 
 	b, _ := Asset("templates/haproxy.tpl")
 	t := template.Must(template.New("haproxy").Parse(string(b)))
 
-	servers.HaproxyRoot = this.root
-	servers.LogDir = fmt.Sprintf("%s/logs", this.root)
-	err := t.Execute(cfgFile, servers)
+	err = t.Execute(cfgFile, servers)
 	cfgFile.Close()
 
-	os.Rename(tmp, configFile)
+	os.Rename(tmpFile, configFile)
 	return err
 }
 
@@ -50,9 +60,8 @@ func (this *Start) reloadHAproxy() (err error) {
 		cmd = exec.Command(this.command, "-f", configFile)
 		go func() {
 			<-waitStartCh
-			log.Info("haproxy started")
 			if err := cmd.Wait(); err != nil {
-				log.Error(err)
+				log.Error("haproxy: %v", err)
 			}
 		}()
 	} else {
@@ -60,9 +69,8 @@ func (this *Start) reloadHAproxy() (err error) {
 		cmd = exec.Command(this.command, "-f", configFile, "-sf", strconv.Itoa(this.pid))
 		go func() {
 			<-waitStartCh
-			log.Info("haproxy reloaded")
 			if err := cmd.Wait(); err != nil {
-				log.Error(err)
+				log.Error("haproxy: %v", err)
 			}
 		}()
 	}
@@ -71,6 +79,7 @@ func (this *Start) reloadHAproxy() (err error) {
 		waitStartCh <- struct{}{}
 
 		this.pid = cmd.Process.Pid
+		log.Info("haproxy started with pid: %d", this.pid)
 	}
 
 	return err

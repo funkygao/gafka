@@ -1,6 +1,7 @@
 package command
 
 const (
-	defaultPrefix = "/var/wd/ehaproxy"
-	configFile    = ".haproxy.cf"
+	defaultPrefix  = "/var/wd/ehaproxy"
+	defaultLogfile = "ehaproxy.log"
+	configFile     = ".haproxy.cf"
 )

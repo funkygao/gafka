@@ -4,10 +4,8 @@ global
 
     ulimit-n 65535
 
-    # Logging to syslog facility local0
-    #log      127.0.0.1 local0 err #[err warning info debug]     
-    #log /tmp/log    local0
-    #log /dev/log    local1 notice
+    # logging to rsyslog facility local3 [err warning info debug]   
+    log 127.0.0.1 local3 info
 
     # for restarts
     pidfile {{.HaproxyRoot}}/haproxy.pid
@@ -16,14 +14,13 @@ global
     spread-checks 5
 
     #user  haproxy
-    #group haproxy
-    nbproc 4
-    chroot {{.HaproxyRoot}}
+    #group haproxy    
+    #chroot {{.HaproxyRoot}}
+
     #daemon
+    #nbproc {{.CpuNum}}
 
-    # Uncomment the statement below to turn on verbose logging
     #debug
-
     #quiet
 
 # Settings in the defaults section apply to all services (unless you change it,
@@ -74,8 +71,7 @@ defaults
 
     balance roundrobin
     errorfile 400 {{.LogDir}}/400.http
-    errorfile 403 {{.LogDir}}/403.http
-    errorfile 408 {{.LogDir}}/408.http
+    errorfile 401 {{.LogDir}}/401.http   
     errorfile 500 {{.LogDir}}/500.http
     errorfile 502 {{.LogDir}}/502.http
     errorfile 503 {{.LogDir}}/503.http
@@ -90,7 +86,6 @@ listen admin_stats
     stats auth admin:admin
     #stats hide-version
  
-
 
 frontend pub
     bind            0.0.0.0:8191
@@ -124,9 +119,7 @@ frontend man
     option          nolinger
     option          http_proxy
     timeout client  30s
-
     default_backend man-servers
-
 
 backend pub-servers
     timeout http-keep-alive 5m
@@ -135,16 +128,16 @@ backend pub-servers
     retries         2
     option          nolinger
     option          http_proxy    
-{{range .Pub}}     server {{.Name}} {{.Addr}} check weight 3 minconn 1 maxconn 3 check inter 5s rise 3 fall 3
+{{range .Pub}}    server {{.Name}} {{.Addr}} check weight 3 minconn 1 maxconn 3 check inter 5s rise 3 fall 3
 {{end}}
 
 backend sub-servers
     balance         source
     cookie SRV_ID prefix
-{{range .Sub}}     server {{.Name}} {{.Addr}} check weight 3 minconn 1 maxconn 3 check inter 5s rise 3 fall 3
+{{range .Sub}}    server {{.Name}} {{.Addr}} check weight 3 minconn 1 maxconn 3 check inter 5s rise 3 fall 3
 {{end}}
 
 backend man-servers
-    option httpchk GET /status HTTP/1.1\r\nHost:www.taobao.net
-{{range .Man}}     server {{.Name}} {{.Addr}} check weight 3 minconn 1 maxconn 3 check inter 5s rise 3 fall 3
+    option httpchk GET /status HTTP/1.1\r\nHost:kman.ffan.com
+{{range .Man}}    server {{.Name}} {{.Addr}} check weight 3 minconn 1 maxconn 3 check inter 5s rise 3 fall 3
 {{end}}

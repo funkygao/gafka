@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/funkygao/etclib"
@@ -21,12 +22,14 @@ type Start struct {
 	zone    string
 	root    string
 	command string
+	logfile string
 	pid     int
 }
 
 func (this *Start) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("start", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
+	cmdFlags.StringVar(&this.logfile, "log", defaultLogfile, "")
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.root, "p", defaultPrefix, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -48,6 +51,7 @@ func (this *Start) Run(args []string) (exitCode int) {
 
 	defer os.Remove(configFile)
 
+	this.setupLogging(this.logfile, "info", "panic")
 	this.pid = -1
 	this.main()
 
@@ -57,6 +61,7 @@ func (this *Start) Run(args []string) (exitCode int) {
 func (this *Start) main() {
 	ctx.LoadFromHome()
 
+	// TODO zk session timeout
 	err := etclib.Dial(strings.Split(ctx.ZoneZkAddrs(this.zone), ","))
 	swalllow(err)
 
@@ -64,7 +69,11 @@ func (this *Start) main() {
 	ch := make(chan []string, 10)
 	go etclib.WatchChildren(root, ch)
 
-	var servers BackendServers
+	var servers = BackendServers{
+		CpuNum:      runtime.NumCPU(),
+		HaproxyRoot: this.root,
+		LogDir:      fmt.Sprintf("%s/logs", this.root),
+	}
 	var lastInstances []string
 	for {
 		select {
@@ -75,9 +84,10 @@ func (this *Start) main() {
 				continue
 			}
 
-			log.Info("kateway cluster changed from %+v to %+v", lastInstances, kwInstances)
+			log.Info("kateway ids %+v -> %+v", lastInstances, kwInstances)
 			lastInstances = kwInstances
 
+			servers.reset()
 			for _, kwId := range kwInstances {
 				kwNode := fmt.Sprintf("%s/%s", root, kwId)
 				data, err := etclib.Get(kwNode)
@@ -94,9 +104,6 @@ func (this *Start) main() {
 
 				// pub
 				if info["pub"] != "" {
-					if servers.Pub == nil {
-						servers.Pub = make([]Backend, 0)
-					}
 					be := Backend{
 						Name: "s" + info["id"],
 						Addr: info["pub"],
@@ -106,9 +113,6 @@ func (this *Start) main() {
 
 				// sub
 				if info["sub"] != "" {
-					if servers.Sub == nil {
-						servers.Sub = make([]Backend, 0)
-					}
 					be := Backend{
 						Name: "s" + info["id"],
 						Addr: info["sub"],
@@ -118,9 +122,6 @@ func (this *Start) main() {
 
 				// man
 				if info["man"] != "" {
-					if servers.Man == nil {
-						servers.Man = make([]Backend, 0)
-					}
 					be := Backend{
 						Name: "s" + info["id"],
 						Addr: info["man"],
@@ -128,7 +129,6 @@ func (this *Start) main() {
 					servers.Man = append(servers.Man, be)
 				}
 
-				log.Info(servers)
 			}
 
 			if err = this.createConfigFile(servers); err != nil {
@@ -162,6 +162,9 @@ Options:
     -p prefix
       Default %s
 
-`, this.Cmd, this.Cmd, ctx.ZkDefaultZone(), defaultPrefix)
+    -log log file
+      Default %s
+
+`, this.Cmd, this.Cmd, ctx.ZkDefaultZone(), defaultPrefix, defaultLogfile)
 	return strings.TrimSpace(help)
 }
