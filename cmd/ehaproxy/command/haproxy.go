@@ -1,4 +1,4 @@
-package main
+package command
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-//go:generate go-bindata -nomemcopy -pkg main etc/...
+//go:generate go-bindata -nomemcopy -pkg command templates/...
 
 type BackendServers struct {
 	Pub []Backend
@@ -29,21 +29,22 @@ var (
 	pid int                = -1
 )
 
-func createConfigFile(servers BackendServers, templateFile, outputFile string) error {
-	tmp := fmt.Sprintf("%s.tmp", outputFile)
+func (this *Start) createConfigFile(servers BackendServers) error {
+	tmp := fmt.Sprintf("%s.tmp", configFile)
 	cfgFile, _ := os.Create(tmp)
 
-	b, _ := Asset("etc/haproxy.tpl")
+	b, _ := Asset("templates/haproxy.tpl")
 	t := template.Must(template.New("haproxy").Parse(string(b)))
 
 	err := t.Execute(cfgFile, servers)
 	cfgFile.Close()
 
-	os.Rename(tmp, outputFile)
+	os.Rename(tmp, configFile)
 	return err
 }
 
-func reloadHAproxy(command, configFile string) (err error) {
+func (this *Start) reloadHAproxy() (err error) {
+	command := fmt.Sprintf("%s/sbin/haproxy", this.root)
 	var cmd *exec.Cmd = nil
 	waitStartCh := make(chan struct{})
 	if pid == -1 {

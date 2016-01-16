@@ -56,7 +56,7 @@ func main() {
 	c.Commands = commands
 	c.HelpFunc = func(m map[string]cli.CommandFactory) string {
 		var buf bytes.Buffer
-		buf.WriteString(fmt.Sprintf("Unified multi-datacenter multi-cluster kafka swiss-knife management console\n\n"))
+		buf.WriteString(fmt.Sprintf("Elastic haproxy integrated with kateway\n\n"))
 		buf.WriteString(cli.BasicHelpFunc(app)(m))
 		return buf.String()
 	}

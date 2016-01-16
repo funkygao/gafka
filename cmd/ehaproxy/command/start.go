@@ -1,70 +1,53 @@
-package main
+package command
 
 import (
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
-	"runtime/debug"
 	"strings"
 
 	"github.com/funkygao/etclib"
-	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 	zkr "github.com/funkygao/gafka/registry/zk"
+	"github.com/funkygao/gocli"
 	log "github.com/funkygao/log4go"
 )
 
-var (
-	options struct {
-		zone              string
-		configFile        string
-		guide             bool
-		tplFile           string
-		haproxyConfigFile string
-		haproxyBin        string
-		showVersion       bool
-	}
-)
+type Start struct {
+	Ui  cli.Ui
+	Cmd string
 
-func parseFlags() {
-	flag.StringVar(&options.zone, "z", "prod", "zone")
-	flag.BoolVar(&options.guide, "guide", false, "guide")
-	flag.BoolVar(&options.showVersion, "version", false, "display version and exit")
-	flag.StringVar(&options.haproxyBin, "haproxy", "/opt/app/haproxy/haproxy", "haproxy binary path")
-	flag.StringVar(&options.configFile, "c", "/etc/kateway.cf", "config file path")
-	flag.StringVar(&options.tplFile, "t", "etc/haproxy.tpl", "haproxy config template file")
-	flag.StringVar(&options.haproxyConfigFile, "haproxycf", ".haproxy.cf", "haproxy config file")
-
-	flag.Parse()
-
-	if options.guide {
-		displayGuide()
-		os.Exit(0)
-	}
+	zone string
+	root string
 }
 
-func main() {
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println(err)
-			debug.PrintStack()
-		}
-	}()
-
-	parseFlags()
-	if options.showVersion {
-		fmt.Fprintf(os.Stderr, "%s-%s\n", gafka.Version, gafka.BuildId)
-		os.Exit(0)
+func (this *Start) Run(args []string) (exitCode int) {
+	cmdFlags := flag.NewFlagSet("start", flag.ContinueOnError)
+	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
+	cmdFlags.StringVar(&this.zone, "z", "", "")
+	cmdFlags.StringVar(&this.root, "p", defaultPrefix, "")
+	if err := cmdFlags.Parse(args); err != nil {
+		return 1
 	}
 
-	ctx.LoadConfig(options.configFile)
-
-	if err := etclib.Dial(strings.Split(ctx.ZoneZkAddrs(options.zone), ",")); err != nil {
+	if err := os.Chdir(this.root); err != nil {
 		panic(err)
 	}
 
-	root := zkr.Root(options.zone)
+	this.main()
+
+	return
+}
+
+func (this *Start) main() {
+	ctx.LoadFromHome()
+
+	if err := etclib.Dial(strings.Split(ctx.ZoneZkAddrs(this.zone), ",")); err != nil {
+		panic(err)
+	}
+
+	root := zkr.Root(this.zone)
 	ch := make(chan []string, 10)
 	go etclib.WatchChildren(root, ch)
 
@@ -131,16 +114,35 @@ func main() {
 				log.Info(servers)
 			}
 
-			if err = createConfigFile(servers, options.tplFile, options.haproxyConfigFile); err != nil {
+			if err = this.createConfigFile(servers); err != nil {
 				log.Error(err)
 				continue
 			}
 
-			if err = reloadHAproxy(options.haproxyBin, options.haproxyConfigFile); err != nil {
+			if err = this.reloadHAproxy(); err != nil {
 				log.Error(err)
 			}
 
 		}
 	}
+}
 
+func (this *Start) Synopsis() string {
+	return fmt.Sprintf("Start %s system on localhost", this.Cmd)
+}
+
+func (this *Start) Help() string {
+	help := fmt.Sprintf(`
+Usage: %s start [options]
+
+    Start %s system on localhost
+
+Options:
+
+    -z zone
+
+    -p prefix
+
+`, this.Cmd, this.Cmd)
+	return strings.TrimSpace(help)
 }
