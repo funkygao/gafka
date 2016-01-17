@@ -105,7 +105,7 @@ func (this *Start) main() {
 				// pub
 				if info["pub"] != "" {
 					be := Backend{
-						Name: "s" + info["id"],
+						Name: "p" + info["id"],
 						Addr: info["pub"],
 					}
 					servers.Pub = append(servers.Pub, be)
@@ -123,7 +123,7 @@ func (this *Start) main() {
 				// man
 				if info["man"] != "" {
 					be := Backend{
-						Name: "s" + info["id"],
+						Name: "m" + info["id"],
 						Addr: info["man"],
 					}
 					servers.Man = append(servers.Man, be)
