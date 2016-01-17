@@ -165,13 +165,7 @@ func (this *ZkZone) ResetErrors() {
 func (this *ZkZone) connectIfNeccessary() {
 	if this.conn == nil {
 		this.Connect()
-	} else {
-		if this.conn.State() != zk.StateHasSession {
-			// TODO how to fix this?
-			log.Warn("zk state: %s", this.conn.State())
-		}
 	}
-
 }
 
 func (this *ZkZone) Connect() (err error) {
