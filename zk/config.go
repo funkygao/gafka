@@ -26,5 +26,5 @@ func (this *Config) ZkServers() []string {
 }
 
 func DefaultZkSessionTimeout() time.Duration {
-	return time.Minute
+	return time.Minute * 5
 }
