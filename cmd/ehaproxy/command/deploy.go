@@ -68,6 +68,7 @@ func (this *Deploy) configRsyslog() {
 	this.Ui.Output(fmt.Sprintf(`
 vim  /etc/rsyslog.d/haproxy.conf
 $ModLoad imudp
+$UDPServerAddress 127.0.0.1
 $UDPServerRun 514
 local3.*     /var/log/haproxy.log
 
