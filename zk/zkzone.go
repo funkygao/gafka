@@ -37,6 +37,13 @@ func NewZkZone(config *Config) *ZkZone {
 	}
 }
 
+// SessionEvents returns zk connection events.
+func (this *ZkZone) SessionEvents() <-chan zk.Event {
+	this.connectIfNeccessary()
+
+	return this.evt
+}
+
 // Name of the zone.
 func (this *ZkZone) Name() string {
 	return this.conf.Name
@@ -158,7 +165,13 @@ func (this *ZkZone) ResetErrors() {
 func (this *ZkZone) connectIfNeccessary() {
 	if this.conn == nil {
 		this.Connect()
+	} else {
+		if this.conn.State() != zk.StateHasSession {
+			// TODO how to fix this?
+			log.Warn("zk state: %s", this.conn.State())
+		}
 	}
+
 }
 
 func (this *ZkZone) Connect() (err error) {
@@ -185,13 +198,10 @@ func (this *ZkZone) Connect() (err error) {
 		time.Sleep(backoff)
 	}
 
-	if err != nil {
-		// fail fast in case of connection fail
-		panic(this.conf.ZkAddrs + ":" + err.Error())
+	if err == nil {
+		log.Debug("zk connected with %s after %d retries",
+			this.conf.ZkAddrs, i-1)
 	}
-
-	log.Debug("zk connected with %s after %d retries",
-		this.conf.ZkAddrs, i-1)
 
 	return
 }
