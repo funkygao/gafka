@@ -6,19 +6,24 @@ import (
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
+	log "github.com/funkygao/log4go"
+	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
 type zkreg struct {
 	id     string
 	zkzone *zk.ZkZone
 	data   []byte
+
+	shutdownCh chan struct{}
 }
 
 func New(zone string, id string, data []byte) *zkreg {
 	this := &zkreg{
-		zkzone: zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone))),
-		id:     id,
-		data:   data,
+		zkzone:     zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone))),
+		id:         id,
+		data:       data,
+		shutdownCh: make(chan struct{}),
 	}
 
 	return this
@@ -37,10 +42,30 @@ func (this *zkreg) Name() string {
 }
 
 func (this *zkreg) Register() error {
-	return this.zkzone.CreateEphemeralZnode(this.mypath(), this.data)
+	err := this.zkzone.Connect()
+	go this.keepalive()
+	return err
+}
+
+func (this *zkreg) keepalive() {
+	for {
+		select {
+		case <-this.shutdownCh:
+			return
+
+		case evt := <-this.zkzone.SessionEvents():
+			if evt.State == zklib.StateHasSession {
+				this.zkzone.CreateEphemeralZnode(this.mypath(), this.data)
+
+				log.Trace("registered in zk: %s", this.mypath())
+			}
+		}
+	}
 }
 
 func (this *zkreg) Deregister() error {
+	close(this.shutdownCh)
+
 	data, _, err := this.zkzone.Conn().Get(this.mypath())
 	if err != nil {
 		return err
