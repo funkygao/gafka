@@ -40,13 +40,17 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		this.touch(fmt.Sprintf("%s/logs/%d.http", this.root, errcode))
 	}
 
-	srcPath := fmt.Sprintf("%s/src/haproxy-1.6.3.tar.gz", this.root)
+	// install files
 	b, _ := Asset("templates/haproxy-1.6.3.tar.gz")
-	if err = ioutil.WriteFile(srcPath, b, 0644); err != nil {
-		panic(err)
-	}
-	initPath := fmt.Sprintf("%s/src/init.ehaproxy", this.root)
+	srcPath := fmt.Sprintf("%s/src/haproxy-1.6.3.tar.gz", this.root)
+	err = ioutil.WriteFile(srcPath, b, 0644)
+	swalllow(err)
+	b, _ = Asset("templates/hatop-0.7.7.tar.gz")
+	hatop := fmt.Sprintf("%s/src/hatop-0.7.7.tar.gz", this.root)
+	err = ioutil.WriteFile(hatop, b, 0644)
+	swalllow(err)
 	b, _ = Asset("templates/init.ehaproxy")
+	initPath := fmt.Sprintf("%s/src/init.ehaproxy", this.root)
 	err = ioutil.WriteFile(initPath, b, 0755)
 	swalllow(err)
 
