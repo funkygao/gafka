@@ -29,6 +29,8 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 
 	err := os.MkdirAll(this.root, 0755)
 	swalllow(err)
+	err = os.MkdirAll(fmt.Sprintf("%s/bin", this.root), 0755)
+	swalllow(err)
 	err = os.MkdirAll(fmt.Sprintf("%s/sbin", this.root), 0755)
 	swalllow(err)
 	err = os.MkdirAll(fmt.Sprintf("%s/logs", this.root), 0755)
