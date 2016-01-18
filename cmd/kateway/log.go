@@ -10,9 +10,9 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-func setupLogging(logFile, logLevel, crashLogFile string) {
-	level := log.DEBUG
-	switch logLevel {
+func toLogLevel(levelStr string) log.Level {
+	level := log.TRACE
+	switch levelStr {
 	case "info":
 		level = log.INFO
 
@@ -31,6 +31,12 @@ func setupLogging(logFile, logLevel, crashLogFile string) {
 	case "alarm":
 		level = log.ALARM
 	}
+
+	return level
+}
+
+func setupLogging(logFile, logLevel, crashLogFile string) {
+	level := toLogLevel(logLevel)
 
 	for _, filter := range log.Global {
 		filter.Level = level

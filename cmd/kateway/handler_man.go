@@ -56,11 +56,13 @@ pub:
 POST /topics/:topic/:ver?key=msgkey&async=<0|1>
 POST /ws/topics/:topic/:ver
  GET /raw/topics/:topic/:ver
+ GET /alive
 
 sub:
  GET /topics/:appid/:topic/:ver/:group?limit=1&reset=<newest|oldest>
  GET /ws/topics/:appid/:topic/:ver/:group
  GET /raw/topics/:appid/:topic/:ver
+ GET /alive
 
 man:
  GET /help
@@ -69,6 +71,8 @@ man:
  GET /servers
  GET /producers
  GET /consumers
+ GET /alive
+ PUT /log/:level  level=<info|debug|trace|warn|alarm|error>
 POST /topics/:cluster/:appid/:topic/:ver
 
 dbg:
@@ -111,6 +115,21 @@ func (this *Gateway) serversHandler(w http.ResponseWriter, r *http.Request,
 	b, _ := json.Marshal(this.pubPeers)
 	this.pubPeersLock.RUnlock()
 	w.Write(b)
+}
+
+func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	lvl := params.ByName("level")
+	newLvl := toLogLevel(lvl)
+
+	for name, filter := range log.Global {
+		log.Info("log[%s] level: %s -> %s", name, filter.Level, newLvl)
+
+		filter.Level = newLvl
+	}
+
+	this.writeKatewayHeader(w)
+	w.Write(ResponseOk)
 }
 
 // /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2
