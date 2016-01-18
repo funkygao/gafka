@@ -72,20 +72,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Debug("pub[%s] %s %+v %s", appid, r.RemoteAddr, params, string(msg.Body))
 	}
 
-	// register the online producer
-	this.produersLock.RLock()
-	_, producerExists := this.producers[r.RemoteAddr]
-	this.produersLock.RUnlock()
-	if !producerExists {
-		this.produersLock.Lock()
-		this.producers[r.RemoteAddr] = Producer{
-			Appid: appid,
-			Topic: topic,
-			Ver:   ver,
-		}
-		this.produersLock.Unlock()
-	}
-
 	if !options.DisableMetrics {
 		this.pubMetrics.PubQps.Mark(1)
 		this.pubMetrics.PubMsgSize.Update(int64(len(msg.Body)))

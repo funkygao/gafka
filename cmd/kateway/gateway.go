@@ -43,19 +43,7 @@ type Gateway struct {
 	certFile string
 	keyFile  string
 
-	// online http producers client
-	producers    map[string]Producer // key is remote addr
-	produersLock sync.RWMutex
-
-	// online http consumers client
-	consumers     map[string]Consumer // key is remote addr
-	consumersLock sync.RWMutex
-
-	// cluster of kateway pub, only for client side load balance
-	pubPeers     []string
-	pubPeersLock sync.RWMutex
-
-	zkzone *gzk.ZkZone
+	zkzone *gzk.ZkZone // load/resume/flush counter metrics to zk
 
 	pubServer *pubServer
 	subServer *subServer
@@ -78,9 +66,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		leakyBuckets: ratelimiter.NewLeakyBuckets(1000*60, time.Minute),
 		certFile:     options.CertFile,
 		keyFile:      options.KeyFile,
-		pubPeers:     make([]string, 0, 20),
-		producers:    make(map[string]Producer, 100),
-		consumers:    make(map[string]Consumer, 100),
 	}
 
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
