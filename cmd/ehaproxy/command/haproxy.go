@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
 	"text/template"
 
 	log "github.com/funkygao/log4go"
@@ -41,15 +40,17 @@ func (this *Start) createConfigFile(servers BackendServers) error {
 	if err != nil {
 		return err
 	}
+	defer cfgFile.Close()
 
 	b, _ := Asset("templates/haproxy.tpl")
 	t := template.Must(template.New("haproxy").Parse(string(b)))
 
 	err = t.Execute(cfgFile, servers)
-	cfgFile.Close()
+	if err != nil {
+		return err
+	}
 
-	os.Rename(tmpFile, configFile)
-	return err
+	return os.Rename(tmpFile, configFile)
 }
 
 func (this *Start) reloadHAproxy() (err error) {
@@ -65,8 +66,10 @@ func (this *Start) reloadHAproxy() (err error) {
 			}
 		}()
 	} else {
-		log.Info("reloading haproxy")
-		cmd = exec.Command(this.command, "-f", configFile, "-sf", strconv.Itoa(this.pid))
+		shellScript := fmt.Sprintf("%s -f %s/%s -sf `cat %s/haproxy.pid`",
+			this.command, this.root, configFile, this.root)
+		log.Info("reloading: %s", shellScript)
+		cmd = exec.Command("/bin/sh", "-c", shellScript)
 		go func() {
 			<-waitStartCh
 			if err := cmd.Wait(); err != nil {
