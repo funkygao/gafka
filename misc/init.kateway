@@ -24,7 +24,7 @@ fi
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
-KATEWAY_HOME=/opt/app/kateway
+KATEWAY_HOME=/var/wd/kateway
 ID=1
 STORE=kafka
 ZONE=local
