@@ -61,16 +61,22 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	this.Ui.Info(fmt.Sprintf("cp %s to /etc/init.d/ehaproxy", initPath))
 	this.Ui.Info(fmt.Sprintf("chkconfig --add ehaproxy"))
 
-	if this.rsyslog {
-		this.Ui.Info("install and setup rsyslog for haproxy")
+	this.configKernal()
 
+	if this.rsyslog {
 		this.configRsyslog()
 	}
 
 	return
 }
 
+func (this *Deploy) configKernal() {
+	this.Ui.Warn("net.core.somaxconn = 16384")
+	this.Ui.Warn("net.core.netdev_max_backlog = 2500")
+}
+
 func (this *Deploy) configRsyslog() {
+	this.Ui.Output("install and setup rsyslog for haproxy")
 	this.Ui.Output(fmt.Sprintf(`
 vim /etc/rsyslog.conf		
 $ModLoad imudp
