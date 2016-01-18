@@ -25,7 +25,7 @@ func (l *fastListener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 
-	log.Trace("%s new conn from %s", l.Listener.Addr(), c.RemoteAddr())
+	log.Debug("%s new conn from %s", l.Listener.Addr(), c.RemoteAddr())
 	if l.gw != nil && !options.DisableMetrics {
 		l.gw.svrMetrics.TotalConns.Inc(1)
 		l.gw.svrMetrics.ConcurrentConns.Inc(1)
@@ -40,7 +40,7 @@ type fastListenerConn struct {
 }
 
 func (c *fastListenerConn) Close() error {
-	log.Trace("%s closing conn from %s", c.Conn.LocalAddr(), c.Conn.RemoteAddr())
+	log.Debug("%s closing conn from %s", c.Conn.LocalAddr(), c.Conn.RemoteAddr())
 
 	err := c.Conn.Close()
 	if c.gw != nil && !options.DisableMetrics {
@@ -72,7 +72,7 @@ func (l *limitListener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 
-	log.Trace("%s new conn from %s", l.Listener.Addr(), c.RemoteAddr())
+	log.Debug("%s new conn from %s", l.Listener.Addr(), c.RemoteAddr())
 	if l.gw != nil && !options.DisableMetrics {
 		l.gw.svrMetrics.TotalConns.Inc(1)
 		l.gw.svrMetrics.ConcurrentConns.Inc(1)
@@ -89,7 +89,7 @@ type limitListenerConn struct {
 }
 
 func (c *limitListenerConn) Close() error {
-	log.Trace("%s closing conn from %s", c.Conn.LocalAddr(), c.Conn.RemoteAddr())
+	log.Debug("%s closing conn from %s", c.Conn.LocalAddr(), c.Conn.RemoteAddr())
 
 	err := c.Conn.Close()
 	if c.gw != nil && !options.DisableMetrics {
