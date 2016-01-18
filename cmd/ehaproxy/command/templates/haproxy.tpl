@@ -35,7 +35,7 @@ defaults
     timeout check           5s
     #timeout http-request    5s
 
-    default-server weight 10 minconn 50 maxconn 5000 inter 30s rise 2 fall 3
+    default-server minconn 50 maxconn 5000 inter 30s rise 2 fall 3
     
     option log-separate-errors
     errorfile 400 {{.LogDir}}/400.http
@@ -57,7 +57,7 @@ listen pub
     cookie PUB insert indirect
     option httpchk GET /alive HTTP/1.1\r\nHost:pub.ffan.com
 {{range .Pub}}
-    server {{.Name}} {{.Addr}} cookie {{.Name}} check
+    server {{.Name}} {{.Addr}} cookie {{.Name}} weight {{.Cpu}} check
 {{end}}
 
 listen sub
@@ -66,12 +66,12 @@ listen sub
     cookie SUB insert indirect
     option httpchk GET /alive HTTP/1.1\r\nHost:sub.ffan.com
 {{range .Sub}}
-    server {{.Name}} {{.Addr}} cookie {{.Name}} check
+    server {{.Name}} {{.Addr}} cookie {{.Name}} weight {{.Cpu}} check
 {{end}}
 
 listen man
     bind 0.0.0.0:10893
     option httpchk GET /alive HTTP/1.1\r\nHost:kman.ffan.com
 {{range .Man}}
-    server {{.Name}} {{.Addr}} check
+    server {{.Name}} {{.Addr}} weight {{.Cpu}} check
 {{end}}

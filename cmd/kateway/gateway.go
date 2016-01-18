@@ -153,6 +153,7 @@ func (this *Gateway) InstanceInfo() []byte {
 	s["id"] = this.id
 	s["ver"] = gafka.Version
 	s["build"] = gafka.BuildId
+	s["cpu"] = ctx.NumCPUStr()
 	s["zone"] = this.zone
 	s["man"] = options.ManHttpAddr
 	s["sman"] = options.ManHttpsAddr

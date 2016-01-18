@@ -64,7 +64,8 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		info := make(map[string]string)
 		json.Unmarshal(data, &info)
 
-		this.Ui.Info(fmt.Sprintf("%s id:%-2s up:%s", info["host"], instance,
+		this.Ui.Info(fmt.Sprintf("id:%-2s host:%s cpu:%-2s up:%s",
+			instance, info["host"], info["cpu"],
 			gofmt.PrettySince(zk.ZkTimestamp(stat.Ctime).Time())))
 		this.Ui.Output(fmt.Sprintf("    ver: %s\n    build: %s\n    pub: %s\n    sub: %s\n    man: %s\n    dbg: %s",
 			info["ver"],

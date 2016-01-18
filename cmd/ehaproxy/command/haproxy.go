@@ -30,6 +30,7 @@ func (this *BackendServers) reset() {
 type Backend struct {
 	Name string
 	Addr string
+	Cpu  string
 }
 
 func (this *Start) createConfigFile(servers BackendServers) error {

@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/funkygao/etclib"
@@ -65,7 +64,7 @@ func (this *Start) main() {
 	go etclib.WatchChildren(root, ch)
 
 	var servers = BackendServers{
-		CpuNum:      runtime.NumCPU(),
+		CpuNum:      ctx.NumCPU(),
 		HaproxyRoot: this.root,
 		LogDir:      fmt.Sprintf("%s/logs", this.root),
 	}
@@ -102,6 +101,7 @@ func (this *Start) main() {
 					be := Backend{
 						Name: "p" + info["id"],
 						Addr: info["pub"],
+						Cpu:  info["cpu"],
 					}
 					servers.Pub = append(servers.Pub, be)
 				}
@@ -111,6 +111,7 @@ func (this *Start) main() {
 					be := Backend{
 						Name: "s" + info["id"],
 						Addr: info["sub"],
+						Cpu:  info["cpu"],
 					}
 					servers.Sub = append(servers.Sub, be)
 				}
@@ -120,6 +121,7 @@ func (this *Start) main() {
 					be := Backend{
 						Name: "m" + info["id"],
 						Addr: info["man"],
+						Cpu:  info["cpu"],
 					}
 					servers.Man = append(servers.Man, be)
 				}

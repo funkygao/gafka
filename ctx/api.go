@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/user"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -142,6 +143,14 @@ func LocalIP() (net.IP, error) {
 		}
 	}
 	return nil, nil
+}
+
+func NumCPU() int {
+	return runtime.NumCPU()
+}
+
+func NumCPUStr() string {
+	return strconv.Itoa(NumCPU())
 }
 
 func CurrentUserIsRoot() bool {
