@@ -66,10 +66,12 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 
 func (this *Deploy) configRsyslog() {
 	this.Ui.Output(fmt.Sprintf(`
-vim  /etc/rsyslog.d/haproxy.conf
+vim /etc/rsyslog.conf		
 $ModLoad imudp
 $UDPServerAddress 127.0.0.1
 $UDPServerRun 514
+
+vim  /etc/rsyslog.d/haproxy.conf
 local3.*     /var/log/haproxy.log
 
 vim /etc/sysconfig/rsyslog
