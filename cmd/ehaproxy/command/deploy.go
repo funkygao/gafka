@@ -57,7 +57,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	swalllow(err)
 
 	this.Ui.Info("useradd haproxy")
-	this.Ui.Info(fmt.Sprintf("compile haproxy to %s/sbin", this.root))
+	this.Ui.Info(fmt.Sprintf("compile haproxy to %s/sbin: make TARGET=xxx USE_ZLIB=yes", this.root))
 	this.Ui.Info(fmt.Sprintf("cp %s to /etc/init.d/ehaproxy", initPath))
 	this.Ui.Info(fmt.Sprintf("chkconfig --add ehaproxy"))
 

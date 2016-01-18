@@ -64,6 +64,8 @@ listen pub
 listen sub
     bind 0.0.0.0:10892
     balance uri # source
+    compression algo gzip
+    compression type text/html text/plain application/json
     cookie SUB insert indirect
     option httpchk GET /alive HTTP/1.1\r\nHost:sub.ffan.com
 {{range .Sub}}
