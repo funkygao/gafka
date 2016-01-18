@@ -99,7 +99,7 @@ func (this *Client) Publish(topic, ver, key string, msg []byte) (err error) {
 }
 
 func (this *Client) Subscribe(appid, topic, ver, group string, h SubHandler) error {
-	url := fmt.Sprintf("%s/topics/%s/%s/%s/%s?limit=", this.addr,
+	url := fmt.Sprintf("%s/topics/%s/%s/%s/%s?limit=1", this.addr,
 		appid, topic, ver, group)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

@@ -16,14 +16,16 @@ var (
 	group string
 	topic string
 	step  int
+	sleep time.Duration
 )
 
 func init() {
-	flag.StringVar(&addr, "addr", "http://localhost:9192", "sub kateway addr")
+	flag.StringVar(&addr, "addr", "http://localhost:10892", "sub kateway addr")
 	flag.StringVar(&group, "g", "mygroup1", "consumer group name")
 	flag.StringVar(&appid, "appid", "app1", "consume whose topic")
 	flag.IntVar(&step, "step", 1, "display progress step")
 	flag.StringVar(&topic, "t", "foobar", "topic to sub")
+	flag.DurationVar(&sleep, "sleep", 0, "sleep between pub")
 	flag.IntVar(&n, "n", 1000000, "run sub how many times")
 	flag.Parse()
 }
@@ -41,6 +43,10 @@ func main() {
 
 		if i%step == 0 {
 			log.Println(statusCode, string(msg))
+		}
+
+		if sleep > 0 {
+			time.Sleep(sleep)
 		}
 
 		return nil

@@ -54,7 +54,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	log.Trace("sub[%s] %s: %+v", myAppid, r.RemoteAddr, params)
+	log.Debug("sub[%s] %s: %+v", myAppid, r.RemoteAddr, params)
 
 	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
 	// pick a consumer from the consumer group

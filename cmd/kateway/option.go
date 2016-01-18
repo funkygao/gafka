@@ -109,7 +109,7 @@ func parseFlags() {
 	flag.DurationVar(&options.OffsetCommitInterval, "offsetcommit", time.Minute, "consumer offset commit interval")
 	flag.DurationVar(&options.HttpReadTimeout, "httprtimeout", time.Minute*5, "http server read timeout")
 	flag.DurationVar(&options.HttpWriteTimeout, "httpwtimeout", time.Minute, "http server write timeout")
-	flag.DurationVar(&options.SubTimeout, "subtimeout", time.Minute, "sub timeout before send http 204")
+	flag.DurationVar(&options.SubTimeout, "subtimeout", time.Second*30, "sub timeout before send http 204")
 	flag.DurationVar(&options.ReporterInterval, "report", time.Second*10, "reporter flush interval")
 	flag.DurationVar(&options.MetaRefresh, "metarefresh", time.Minute*10, "meta data refresh interval")
 	flag.DurationVar(&options.ManagerRefresh, "manrefresh", time.Minute*5, "manager integration refresh interval")

@@ -148,3 +148,7 @@ func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprout
 func (this *Gateway) pubWsHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.Params) {
 	ctx.Error("not implemented", fasthttp.StatusBadRequest)
 }
+
+func (this *Gateway) pubCheckHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.Params) {
+	ctx.Write(ResponseOk)
+}
