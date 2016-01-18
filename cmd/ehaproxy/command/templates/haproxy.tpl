@@ -46,7 +46,7 @@ defaults
 
 listen dashboard
     bind 0.0.0.0:10890
-    mode http
+    bind-process {{.CpuNum}}
     stats refresh 30s
     stats uri /stats
     stats realm Haproxy Manager
@@ -63,7 +63,6 @@ listen pub
 listen sub
     bind 0.0.0.0:10892
     balance uri
-    #mode tcp
     cookie SUB insert indirect
     option httpchk GET /alive HTTP/1.1\r\nHost:sub.ffan.com
 {{range .Sub}}
