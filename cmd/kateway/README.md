@@ -164,6 +164,7 @@ Don't make programmer think!
 
 ### TODO
 
+- [ ] ehaproxy integration with rsyslog test
 - [ ] metrics flush/load test
 - [ ] gzip sub response
 - [ ] test pub/sub metrics load and flush

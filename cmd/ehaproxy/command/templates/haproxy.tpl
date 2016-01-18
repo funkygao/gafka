@@ -63,7 +63,7 @@ listen pub
 
 listen sub
     bind 0.0.0.0:10892
-    balance uri
+    balance uri # source
     cookie SUB insert indirect
     option httpchk GET /alive HTTP/1.1\r\nHost:sub.ffan.com
 {{range .Sub}}
