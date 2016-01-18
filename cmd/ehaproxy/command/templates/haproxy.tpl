@@ -3,38 +3,39 @@ global
     log 127.0.0.1 local3 info
 
     maxconn  51200
-    ulimit-n 102400    
+    ulimit-n 102400
     pidfile {{.HaproxyRoot}}/haproxy.pid
-    #daemon
-    #nbproc {{.CpuNum}}
+    daemon
+    nbproc {{.CpuNum}}
+    spread-checks 5
     #user  haproxy
-    #group haproxy    
-    #chroot {{.HaproxyRoot}}    
+    #group haproxy
+    #chroot {{.HaproxyRoot}}
 
 defaults
     log global
-    mode http    
+    mode http # [tcp|http|health]
     backlog 10000
-    retries 3
+    retries 0
+    maxconn 15000
     balance roundrobin
     
     no option httpclose
-    option http-server-close # keep-alive on remote client side    
-    option http_proxy
     option httplog
-    option dontlognull # 不记录健康检查的日志信息
-    option abortonclose    
-    option redispatch
-    option forwardfor
+    option dontlognull  # 不记录健康检查的日志信息
+    option abortonclose # 当服务器负载很高的时候，自动结束掉当前队列处理比较久的链接
+    option redispatch   # 当服务器组中的某台设备故障后，自动将请求重定向到组内其他主机
+    option forwardfor   # X-Forwarded-For: remote client ip
     
-    timeout client          10m
-    timeout server          10m
-    timeout connect         1m
-    timeout http-keep-alive 5m
-    timeout http-request    15s
+    timeout client          10m  # 客户端侧最大非活动时间
+    timeout server          1m   # 服务器侧最大非活动时间
+    timeout connect         10s  # 连接服务器超时时间
+    timeout http-keep-alive 6m   # ?
+    timeout queue           1m   # 一个请求在队列里的超时时间
     timeout check           5s
+    #timeout http-request    5s
 
-    default-server weight 10 minconn 50 maxconn 5000 inter 3m rise 2 fall 3
+    default-server weight 10 minconn 50 maxconn 5000 inter 30s rise 2 fall 3
     
     option log-separate-errors
     errorfile 400 {{.LogDir}}/400.http
@@ -43,42 +44,35 @@ defaults
     errorfile 503 {{.LogDir}}/503.http
     errorfile 504 {{.LogDir}}/504.http
 
-listen admin_stats
-    bind 0.0.0.0:8888
+listen dashboard
+    bind 0.0.0.0:10890
+    mode http
     stats refresh 30s
     stats uri /stats
     stats realm Haproxy Manager
-    stats auth admin:admin 
+    stats auth admin:admin
 
-frontend pub
-    bind 0.0.0.0:8191
-    default_backend pub-servers
-
-frontend sub
-    bind 0.0.0.0:8192   
-    default_backend sub-servers
-
-frontend man
-    bind 0.0.0.0:8193
-    default_backend man-servers   
-    #stick-table type ip size 5000k expire 5m store conn_cur
-    #stick on src table man-servers
-    #tcp-request connection reject if { src_conn_cur ge 3 }
-    #tcp-request connection track-sc1 src  
-    
-backend pub-servers     
-{{range .Pub}}    server {{.Name}} {{.Addr}} check
+listen pub
+    bind 0.0.0.0:10891
+    cookie PUB insert indirect
+    option httpchk GET /alive HTTP/1.1\r\nHost:pub.ffan.com
+{{range .Pub}}
+    server {{.Name}} {{.Addr}} cookie {{.Name}} check
 {{end}}
 
-backend sub-servers
-    balance source
-    cookie SUB insert
-{{range .Sub}}    server {{.Name}} {{.Addr}} cookie {{.Name}} check
+listen sub
+    bind 0.0.0.0:10892
+    balance uri
+    #mode tcp
+    cookie SUB insert indirect
+    option httpchk GET /alive HTTP/1.1\r\nHost:sub.ffan.com
+{{range .Sub}}
+    server {{.Name}} {{.Addr}} cookie {{.Name}} check
 {{end}}
 
-backend man-servers
-    balance source
-    cookie MAN insert indirect nocache  
-    option httpchk GET /status HTTP/1.1\r\nHost:kman.ffan.com
-{{range .Man}}    server {{.Name}} {{.Addr}} cookie {{.Name}} check
+listen man
+    bind 0.0.0.0:10893
+    option httpchk GET /alive HTTP/1.1\r\nHost:kman.ffan.com
+{{range .Man}}
+    server {{.Name}} {{.Addr}} check
 {{end}}

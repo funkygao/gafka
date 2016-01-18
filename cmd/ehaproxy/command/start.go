@@ -19,11 +19,11 @@ type Start struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone    string
-	root    string
-	command string
-	logfile string
-	pid     int
+	zone     string
+	root     string
+	command  string
+	logfile  string
+	starting bool
 }
 
 func (this *Start) Run(args []string) (exitCode int) {
@@ -39,11 +39,6 @@ func (this *Start) Run(args []string) (exitCode int) {
 	err := os.Chdir(this.root)
 	swalllow(err)
 
-	if _, err = os.Stat(configFile); err == nil {
-		this.Ui.Error(fmt.Sprintf("another %s is running", this.Cmd))
-		return 1
-	}
-
 	this.command = fmt.Sprintf("%s/sbin/haproxy", this.root)
 	if _, err := os.Stat(this.command); err != nil {
 		panic(err)
@@ -52,7 +47,7 @@ func (this *Start) Run(args []string) (exitCode int) {
 	defer os.Remove(configFile)
 
 	this.setupLogging(this.logfile, "info", "panic")
-	this.pid = -1
+	this.starting = true
 	this.main()
 
 	return
@@ -84,7 +79,7 @@ func (this *Start) main() {
 				continue
 			}
 
-			log.Info("kateway ids %+v -> %+v", lastInstances, kwInstances)
+			log.Info("kateway ids: %+v -> %+v", lastInstances, kwInstances)
 			lastInstances = kwInstances
 
 			servers.reset()

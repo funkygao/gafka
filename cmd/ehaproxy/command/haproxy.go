@@ -56,11 +56,14 @@ func (this *Start) createConfigFile(servers BackendServers) error {
 func (this *Start) reloadHAproxy() (err error) {
 	var cmd *exec.Cmd = nil
 	waitStartCh := make(chan struct{})
-	if this.pid == -1 {
-		log.Info("starting haproxy")
-		cmd = exec.Command(this.command, "-f", configFile)
+	if this.starting {
+		log.Info("haproxy starting")
+		cmd = exec.Command(this.command, "-f", configFile) // TODO use absolute path
+		this.starting = false
+
 		go func() {
 			<-waitStartCh
+			log.Info("haproxy started")
 			if err := cmd.Wait(); err != nil {
 				log.Error("haproxy: %v", err)
 			}
@@ -68,10 +71,11 @@ func (this *Start) reloadHAproxy() (err error) {
 	} else {
 		shellScript := fmt.Sprintf("%s -f %s/%s -sf `cat %s/haproxy.pid`",
 			this.command, this.root, configFile, this.root)
-		log.Info("reloading: %s", shellScript)
+		log.Info("haproxy reloading: %s", shellScript)
 		cmd = exec.Command("/bin/sh", "-c", shellScript)
 		go func() {
 			<-waitStartCh
+			log.Info("haproxy reloaded")
 			if err := cmd.Wait(); err != nil {
 				log.Error("haproxy: %v", err)
 			}
@@ -80,9 +84,6 @@ func (this *Start) reloadHAproxy() (err error) {
 
 	if err = cmd.Start(); err == nil {
 		waitStartCh <- struct{}{}
-
-		this.pid = cmd.Process.Pid
-		log.Info("haproxy started with pid: %d", this.pid)
 	}
 
 	return err
