@@ -51,7 +51,7 @@ listen dashboard
     stats refresh 30s
     stats uri /stats
     stats realm Haproxy Manager
-    stats auth admin:admin
+    stats auth eadmin:adminPassOfDashboard1
 
 listen pub
     bind 0.0.0.0:10891
