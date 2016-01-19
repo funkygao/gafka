@@ -27,6 +27,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		addCluster  string
 		setMode     bool
 		verifyMode  bool
+		public      int
 		clusterName string
 		clusterPath string
 		zone        string
@@ -46,6 +47,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.IntVar(&replicas, "replicas", -1, "")
 	cmdFlags.IntVar(&priority, "priority", -1, "")
+	cmdFlags.IntVar(&public, "public", -1, "")
 	cmdFlags.StringVar(&addBroker, "addbroker", "", "")
 	cmdFlags.StringVar(&nickname, "nickname", "", "")
 	cmdFlags.IntVar(&delBroker, "delbroker", -1, "")
@@ -85,6 +87,15 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		switch {
 		case priority != -1:
 			zkcluster.SetPriority(priority)
+
+		case public != -1:
+			switch public {
+			case 0:
+				zkcluster.SetPublic(false)
+
+			case 1:
+				zkcluster.SetPublic(true)
+			}
 
 		case replicas != -1:
 			zkcluster.SetReplicas(replicas)
@@ -354,6 +365,10 @@ Options:
     
     -priority n
       Set the priority of a cluster.
+
+    -public <0|1>
+      Export the cluster for PubSub system or not.
+      e,g. gk cluster -z prod -c foo -s -public 1
 
     -nickname name
       Set nickname of a cluster.

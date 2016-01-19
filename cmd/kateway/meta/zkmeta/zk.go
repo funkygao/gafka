@@ -207,6 +207,11 @@ func (this *zkMetaStore) Clusters() []map[string]string {
 
 	this.zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		info := zkcluster.RegisteredInfo()
+		if !info.Public || info.Nickname == "" {
+			// ignored for kateway manager
+			return
+		}
+
 		c := make(map[string]string)
 		c["name"] = info.Name()
 		c["nickname"] = info.Nickname

@@ -30,6 +30,7 @@ type ZkCluster struct {
 	Roster   []BrokerInfo `json:"roster"` // manually registered brokers
 	Replicas int          `json:"replicas"`
 	Priority int          `json:"priority"`
+	Public   bool         `json:"public"`
 }
 
 func (this *ZkCluster) Name() string {
@@ -130,6 +131,13 @@ func (this *ZkCluster) SetPriority(priority int) {
 func (this *ZkCluster) SetReplicas(replicas int) {
 	c := this.RegisteredInfo()
 	c.Replicas = replicas
+	data, _ := json.Marshal(c)
+	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
+}
+
+func (this *ZkCluster) SetPublic(public bool) {
+	c := this.RegisteredInfo()
+	c.Public = public
 	data, _ := json.Marshal(c)
 	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
 }
