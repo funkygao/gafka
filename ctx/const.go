@@ -27,7 +27,7 @@ const (
     ]
 
     zk_default_zone: "prod"
-    kafka_home: "/opt/kafka_2.10-0.8.1.1"
+    kafka_home: "/opt/kafka_2.10-0.8.2.2"
     loglevel: "info"
 
     aliases: [
