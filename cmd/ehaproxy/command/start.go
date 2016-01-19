@@ -1,16 +1,22 @@
 package command
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/funkygao/etclib"
 	"github.com/funkygao/gafka/ctx"
 	zkr "github.com/funkygao/gafka/registry/zk"
 	"github.com/funkygao/gocli"
+	gio "github.com/funkygao/golib/io"
+	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
 )
 
@@ -23,6 +29,7 @@ type Start struct {
 	command  string
 	logfile  string
 	starting bool
+	quitCh   chan struct{}
 }
 
 func (this *Start) Run(args []string) (exitCode int) {
@@ -43,10 +50,19 @@ func (this *Start) Run(args []string) (exitCode int) {
 		panic(err)
 	}
 
-	defer os.Remove(configFile)
-
 	this.setupLogging(this.logfile, "info", "panic")
 	this.starting = true
+	this.quitCh = make(chan struct{})
+	signal.RegisterSignalsHandler(func(sig os.Signal) {
+		log.Info("got signal %s", sig)
+		this.shutdown()
+
+		log.Info("removing %s", configFile)
+		os.Remove(configFile)
+
+		log.Info("shutdown complete")
+	}, syscall.SIGINT, syscall.SIGTERM)
+
 	this.main()
 
 	return
@@ -71,6 +87,10 @@ func (this *Start) main() {
 	var lastInstances []string
 	for {
 		select {
+		case <-this.quitCh:
+			time.Sleep(time.Second) // FIXME just wait log flush
+			return
+
 		case <-ch:
 			kwInstances, err := etclib.Children(root)
 			if err != nil {
@@ -134,11 +154,43 @@ func (this *Start) main() {
 			}
 
 			if err = this.reloadHAproxy(); err != nil {
-				log.Error(err)
+				panic(err)
 			}
 
 		}
 	}
+}
+
+func (this *Start) shutdown() {
+	// kill haproxy
+	log.Info("killling haproxy processes")
+
+	f, e := os.Open(haproxyPidFile)
+	swalllow(e)
+
+	reader := bufio.NewReader(f)
+	for {
+		l, e := gio.ReadLine(reader)
+		if e != nil {
+			// EOF
+			break
+		}
+
+		pid, _ := strconv.Atoi(string(l))
+		p := &os.Process{
+			Pid: pid,
+		}
+		if err := p.Kill(); err != nil {
+			log.Error(err)
+		} else {
+			log.Info("haproxy[%d] terminated", pid)
+		}
+	}
+
+	log.Info("removing %s", haproxyPidFile)
+	os.Remove(haproxyPidFile)
+
+	close(this.quitCh)
 }
 
 func (this *Start) Synopsis() string {

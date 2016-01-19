@@ -70,8 +70,8 @@ func (this *Start) reloadHAproxy() (err error) {
 			}
 		}()
 	} else {
-		shellScript := fmt.Sprintf("%s -f %s/%s -sf `cat %s/haproxy.pid`",
-			this.command, this.root, configFile, this.root)
+		shellScript := fmt.Sprintf("%s -f %s/%s -sf `cat %s/%s`",
+			this.command, this.root, configFile, this.root, haproxyPidFile)
 		log.Info("haproxy reloading: %s", shellScript)
 		cmd = exec.Command("/bin/sh", "-c", shellScript)
 		go func() {
