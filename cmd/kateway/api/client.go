@@ -39,7 +39,6 @@ func (this *Client) Connect(addr string) {
 			Proxy:               http.ProxyFromEnvironment,
 			Dial: (&net.Dialer{
 				Timeout: this.cf.Timeout,
-				//KeepAlive: this.cf.KeepAlive, TODO
 			}).Dial,
 			DisableKeepAlives:     false, // enable http conn reuse
 			ResponseHeaderTimeout: this.cf.Timeout,

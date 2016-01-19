@@ -80,12 +80,12 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	lvl := params.ByName("level")
-	newLvl := toLogLevel(lvl)
+	logLevel = toLogLevel(lvl)
 
 	for name, filter := range log.Global {
-		log.Info("log[%s] level: %s -> %s", name, filter.Level, newLvl)
+		log.Info("log[%s] level: %s -> %s", name, filter.Level, logLevel)
 
-		filter.Level = newLvl
+		filter.Level = logLevel
 	}
 
 	this.writeKatewayHeader(w)

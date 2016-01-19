@@ -35,17 +35,17 @@ func toLogLevel(levelStr string) log.Level {
 	return level
 }
 
-func setupLogging(logFile, logLevel, crashLogFile string) {
-	level := toLogLevel(logLevel)
+func setupLogging(logFile, level, crashLogFile string) {
+	logLevel = toLogLevel(level)
 
 	for _, filter := range log.Global {
-		filter.Level = level
+		filter.Level = logLevel
 	}
 
 	log.LogBufferLength = 32 // default 32, chan cap
 
 	if logFile == "stdout" {
-		log.AddFilter("stdout", level, log.NewConsoleLogWriter())
+		log.AddFilter("stdout", logLevel, log.NewConsoleLogWriter())
 	} else {
 		log.DeleteFilter("stdout")
 
@@ -55,7 +55,7 @@ func setupLogging(logFile, logLevel, crashLogFile string) {
 		filer.SetRotateSize(0)
 		filer.SetRotateLines(0)
 		filer.SetRotateDaily(true)
-		log.AddFilter("file", level, filer)
+		log.AddFilter("file", logLevel, filer)
 	}
 
 	if crashLogFile != "" {

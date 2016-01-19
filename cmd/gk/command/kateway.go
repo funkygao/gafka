@@ -4,8 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/funkygao/gafka/ctx"
 	zkr "github.com/funkygao/gafka/registry/zk"
@@ -19,18 +23,34 @@ type Kateway struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone string
+	zone     string
+	id       string
+	logLevel string
 }
 
 func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("kateway", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.StringVar(&this.id, "id", "", "")
+	cmdFlags.StringVar(&this.logLevel, "loglevel", "info", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
 	}
 
+	if validateArgs(this, this.Ui).
+		on("-id", "-loglevel").
+		invalid(args) {
+		return 2
+	}
+
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+
+	if this.id != "" {
+		this.setupLogLevel(zkzone)
+		return
+	}
+
 	mysqlDsn, err := zkzone.MysqlDsn()
 	if err != nil {
 		this.Ui.Error(err.Error())
@@ -63,9 +83,10 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		this.Ui.Info(fmt.Sprintf("id:%-2s host:%s cpu:%-2s up:%s",
 			instance, info["host"], info["cpu"],
 			gofmt.PrettySince(zk.ZkTimestamp(stat.Ctime).Time())))
-		this.Ui.Output(fmt.Sprintf("    ver: %s\n    build: %s\n    pub: %s\n    sub: %s\n    man: %s\n    dbg: %s",
+		this.Ui.Output(fmt.Sprintf("    ver: %s\n    build: %s\n    log: %s\n    pub: %s\n    sub: %s\n    man: %s\n    dbg: %s",
 			info["ver"],
 			info["build"],
+			info["loglevel"],
 			info["pub"],
 			info["sub"],
 			info["man"],
@@ -75,6 +96,57 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Kateway) setupLogLevel(zkzone *zk.ZkZone) {
+	data, _, err := zkzone.Conn().Get(zkr.Root(this.zone) + "/" + this.id)
+	swallow(err)
+
+	info := make(map[string]string)
+	json.Unmarshal(data, &info)
+
+	var req *http.Request
+	url := fmt.Sprintf("http://%s/log/%s", info["man"], this.logLevel)
+	req, err = http.NewRequest("PUT", url, nil)
+	if err != nil {
+		return
+	}
+
+	var response *http.Response
+	timeout := time.Second * 10
+	client := &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: 1,
+			Proxy:               http.ProxyFromEnvironment,
+			Dial: (&net.Dialer{
+				Timeout: timeout,
+			}).Dial,
+			DisableKeepAlives:     true,
+			ResponseHeaderTimeout: timeout,
+			TLSHandshakeTimeout:   timeout,
+		},
+	}
+
+	response, err = client.Do(req)
+	if err != nil {
+		return
+	}
+
+	b, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+
+	response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		this.Ui.Error(response.Status)
+		this.Ui.Error(string(b))
+	} else {
+		this.Ui.Info("done")
+	}
+
 }
 
 func (*Kateway) Synopsis() string {
@@ -90,7 +162,12 @@ Usage: %s kateway [options]
 Options:
 
     -z zone
-      Default %s  
+      Default %s
+
+    -id kateway id
+
+    -loglevel <info|debug|trace|warn|alarm|error>
+      Set kateway log level
 
 `, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
