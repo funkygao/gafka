@@ -8,9 +8,10 @@ global
     pidfile {{.HaproxyRoot}}/haproxy.pid
     daemon
     nbproc {{.CpuNum}}
+    #cpu-map TODO
     spread-checks 5
-    #user  haproxy
-    #group haproxy
+    user  haproxy
+    group haproxy
     #chroot {{.HaproxyRoot}}
 
 defaults
