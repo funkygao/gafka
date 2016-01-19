@@ -1,5 +1,10 @@
 #!/bin/bash
 
+VER=0.2.5release
+GOVER=$(go version | cut -d' ' -f3 | cut -d'.' -f2)
+GIT_ID=$(git rev-parse HEAD | cut -c1-7)
+GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)
+
 INSTALL="no"
 GCDEBUG="no"
 RACE="no"
@@ -66,11 +71,6 @@ do
           ;;
   esac
 done
- 
-VER=0.2.5release
-GOVER=$(go version | cut -d' ' -f3 | cut -d'.' -f2)
-GIT_ID=$(git rev-parse HEAD | cut -c1-7)
-GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 
 BUILD_FLAGS=''
 if [ $RACE == "yes" ]; then
