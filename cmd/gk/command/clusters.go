@@ -25,18 +25,19 @@ type Clusters struct {
 // TODO cluster info will contain desciption,owner,etc.
 func (this *Clusters) Run(args []string) (exitCode int) {
 	var (
-		addCluster  string
-		setMode     bool
-		verifyMode  bool
-		public      int
-		clusterName string
-		clusterPath string
-		zone        string
-		priority    int
-		replicas    int
-		addBroker   string
-		nickname    string
-		delBroker   int
+		addCluster     string
+		setMode        bool
+		verifyMode     bool
+		public         int
+		clusterName    string
+		clusterPath    string
+		zone           string
+		priority       int
+		retentionHours int
+		replicas       int
+		addBroker      string
+		nickname       string
+		delBroker      int
 	)
 	cmdFlags := flag.NewFlagSet("clusters", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -48,6 +49,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&clusterPath, "p", "", "")
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.IntVar(&replicas, "replicas", -1, "")
+	cmdFlags.IntVar(&retentionHours, "retention", -1, "")
 	cmdFlags.IntVar(&priority, "priority", -1, "")
 	cmdFlags.IntVar(&public, "public", -1, "")
 	cmdFlags.StringVar(&addBroker, "addbroker", "", "")
@@ -90,11 +92,10 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		// setup a cluser meta info
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 		zkcluster := zkzone.NewCluster(clusterName)
-		switch {
-		case priority != -1:
+		if priority != -1 {
 			zkcluster.SetPriority(priority)
-
-		case public != -1:
+		}
+		if public != -1 {
 			switch public {
 			case 0:
 				zkcluster.SetPublic(false)
@@ -102,13 +103,18 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 			case 1:
 				zkcluster.SetPublic(true)
 			}
-
-		case replicas != -1:
+		}
+		if retentionHours != -1 {
+			zkcluster.SetRetention(retentionHours)
+		}
+		if replicas != -1 {
 			zkcluster.SetReplicas(replicas)
-
-		case nickname != "":
+		}
+		if nickname != "" {
 			zkcluster.SetNickname(nickname)
+		}
 
+		switch {
 		case addBroker != "":
 			parts := strings.Split(addBroker, ":")
 			if len(parts) != 3 {
@@ -127,10 +133,9 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 			this.Ui.Error("not implemented yet")
 
 		default:
-			this.Ui.Error("command not recognized")
+			return
 		}
 
-		return
 	}
 
 	if verifyMode {
@@ -244,6 +249,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 		err                string
 		priority           int
 		public             bool
+		retention          int
 		replicas           int
 		brokerInfos        []zk.BrokerInfo
 	}
@@ -300,6 +306,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 			path:        zkcluster.Chroot(),
 			topicN:      len(topics),
 			partitionN:  partitionN,
+			retention:   info.Retention,
 			public:      info.Public,
 			replicas:    info.Replicas,
 			priority:    info.Priority,
@@ -328,9 +335,9 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 			this.Ui.Output(fmt.Sprintf("%30s: %s",
 				c.name, c.path))
 			this.Ui.Output(strings.Repeat(" ", 4) +
-				color.Blue("nick:%s public:%v topics:%d partitions:%d replicas:%d priority:%d brokers:%+v",
+				color.Blue("nick:%s public:%v topics:%d partitions:%d replicas:%d retention:%dh brokers:%+v",
 					c.nickname, c.public,
-					c.topicN, c.partitionN, c.replicas, c.priority, c.brokerInfos))
+					c.topicN, c.partitionN, c.replicas, c.retention, c.brokerInfos))
 		}
 
 		return
@@ -383,6 +390,9 @@ Options:
     -public <0|1>
       Export the cluster for PubSub system or not.
       e,g. gk cluster -z prod -c foo -s -public 1
+
+    -retention n hours
+      log.retention.hours of kafka.
 
     -nickname name
       Set nickname of a cluster.

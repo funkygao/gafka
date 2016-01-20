@@ -26,11 +26,12 @@ type ZkCluster struct {
 	name string // cluster name
 	path string // cluster's kafka chroot path in zk cluster
 
-	Nickname string       `json:"nickname"`
-	Roster   []BrokerInfo `json:"roster"` // manually registered brokers
-	Replicas int          `json:"replicas"`
-	Priority int          `json:"priority"`
-	Public   bool         `json:"public"`
+	Nickname  string       `json:"nickname"`
+	Roster    []BrokerInfo `json:"roster"` // manually registered brokers
+	Replicas  int          `json:"replicas"`
+	Priority  int          `json:"priority"`
+	Public    bool         `json:"public"`
+	Retention int          `json:"retention"` // in hours
 }
 
 func (this *ZkCluster) Name() string {
@@ -117,6 +118,13 @@ func (this *ZkCluster) RegisteredInfo() ZkCluster {
 func (this *ZkCluster) SetNickname(name string) {
 	c := this.RegisteredInfo()
 	c.Nickname = name
+	data, _ := json.Marshal(c)
+	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
+}
+
+func (this *ZkCluster) SetRetention(retention int) {
+	c := this.RegisteredInfo()
+	c.Retention = retention
 	data, _ := json.Marshal(c)
 	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
 }
