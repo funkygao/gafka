@@ -99,6 +99,6 @@ Accept-Encoding: gzip`, msgSize)) + "\r\n\r\n"
 	}
 }
 
-func BenchmarkKatewayPubDumb1K(b *testing.B) {
-	runBenchmarkPub(b, "dumb", 1<<10)
+func BenchmarkKatewayPubDummy1K(b *testing.B) {
+	runBenchmarkPub(b, "dummy", 1<<10)
 }

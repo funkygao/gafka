@@ -15,12 +15,12 @@ import (
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
-	mdumb "github.com/funkygao/gafka/cmd/kateway/manager/dumb"
+	metadummy "github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	"github.com/funkygao/gafka/cmd/kateway/manager/mysql"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
-	"github.com/funkygao/gafka/cmd/kateway/store/dumb"
+	storedummy "github.com/funkygao/gafka/cmd/kateway/store/dummy"
 	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/registry"
@@ -88,8 +88,8 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		managerCf.Refresh = options.ManagerRefresh
 		manager.Default = mysql.New(managerCf)
 
-	case "dumb":
-		manager.Default = mdumb.New()
+	case "dummy":
+		manager.Default = metadummy.New()
 
 	default:
 		panic("invalid manager")
@@ -106,8 +106,8 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 				options.PubPoolCapcity, options.MaxPubRetries, options.PubPoolIdleTimeout,
 				&this.wg, options.Debug, options.DryRun)
 
-		case "dumb":
-			store.DefaultPubStore = dumb.NewPubStore(&this.wg, options.Debug)
+		case "dummy":
+			store.DefaultPubStore = storedummy.NewPubStore(&this.wg, options.Debug)
 
 		default:
 			panic("invalid store")
@@ -124,8 +124,8 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 			store.DefaultSubStore = kafka.NewSubStore(&this.wg,
 				this.subServer.closedConnCh, options.Debug)
 
-		case "dumb":
-			store.DefaultSubStore = dumb.NewSubStore(&this.wg,
+		case "dummy":
+			store.DefaultSubStore = storedummy.NewSubStore(&this.wg,
 				this.subServer.closedConnCh, options.Debug)
 
 		}

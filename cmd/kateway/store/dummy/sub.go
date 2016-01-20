@@ -1,4 +1,4 @@
-package dumb
+package dummy
 
 import (
 	"sync"
@@ -23,7 +23,7 @@ func (this *subStore) Start() (err error) {
 	msg := &sarama.ConsumerMessage{
 		Topic: "hello",
 		Key:   []byte("world"),
-		Value: []byte("hello from dumb fetcher"),
+		Value: []byte("hello from dummy fetcher"),
 	}
 
 	go func() {
@@ -38,7 +38,7 @@ func (this *subStore) Start() (err error) {
 func (this *subStore) Stop() {}
 
 func (this *subStore) Name() string {
-	return "dumb"
+	return "dummy"
 }
 
 func (this *subStore) KillClient(remoteAddr string) {

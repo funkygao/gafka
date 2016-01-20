@@ -1,4 +1,4 @@
-package dumb
+package dummy
 
 import (
 	"github.com/Shopify/sarama"

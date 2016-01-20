@@ -145,8 +145,8 @@ func BenchmarkKatewayPubKafka(b *testing.B) {
 	runBenchmarkPub(b, "kafka", 1<<10)
 }
 
-func BenchmarkKatewayPubDumb1K(b *testing.B) {
-	runBenchmarkPub(b, "dumb", 1<<10)
+func BenchmarkKatewayPubDummy1K(b *testing.B) {
+	runBenchmarkPub(b, "dummy", 1<<10)
 }
 
 func BenchmarkGorillaMux(b *testing.B) {
