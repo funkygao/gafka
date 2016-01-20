@@ -30,6 +30,7 @@ var (
 		LogLevel               string
 		CrashLogFile           string
 		InfluxServer           string
+		InfluxDbName           string
 		KillFile               string
 		ShowVersion            bool
 		Ratelimit              bool
@@ -90,7 +91,8 @@ func parseFlags() {
 	flag.StringVar(&options.ManagerStore, "mstore", "mysql", "store integration with manager")
 	flag.StringVar(&options.ConfigFile, "conf", "/etc/kateway.cf", "config file")
 	flag.StringVar(&options.KillFile, "kill", "", "kill running kateway by pid file")
-	flag.StringVar(&options.InfluxServer, "influxdb", "http://10.77.144.193:10036", "influxdb server address for the metrics reporter")
+	flag.StringVar(&options.InfluxServer, "influxdbaddr", "http://10.77.144.193:10036", "influxdb server address for the metrics reporter")
+	flag.StringVar(&options.InfluxDbName, "influxdbname", "pubsub", "influxdb db name")
 	flag.BoolVar(&options.ShowVersion, "version", false, "show version and exit")
 	flag.BoolVar(&options.Debug, "debug", false, "enable debug mode")
 	flag.BoolVar(&options.GolangTrace, "gotrace", false, "go tool trace")

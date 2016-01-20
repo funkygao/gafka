@@ -53,7 +53,7 @@ func NewServerMetrics(interval time.Duration, gw *Gateway) *serverMetrics {
 	// influxdb reporter
 	if options.InfluxServer != "" {
 		go InfluxDB(ctx.Hostname(), metrics.DefaultRegistry, interval,
-			options.InfluxServer, "kateway1", "", "") // FIXME
+			options.InfluxServer, options.InfluxDbName, "", "")
 	}
 
 	return this
