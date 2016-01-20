@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"net"
 	"os"
 	"sort"
 	"strings"
@@ -37,7 +38,9 @@ type Top struct {
 	batchMode      bool
 	dashboardGraph bool
 	topicPattern   string
+	longFmt        bool
 
+	brokers          map[string][]string
 	counters         map[string]float64 // key is cluster:topic
 	lastCounters     map[string]float64
 	consumerCounters map[string]float64
@@ -57,6 +60,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&this.limit, "n", 33, "")
 	cmdFlags.StringVar(&this.who, "who", "producer", "")
 	cmdFlags.BoolVar(&this.dashboardGraph, "d", false, "")
+	cmdFlags.BoolVar(&this.longFmt, "l", true, "")
 	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -77,6 +81,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 
 	}
 
+	this.brokers = make(map[string][]string)
 	this.counters = make(map[string]float64)
 	this.lastCounters = make(map[string]float64)
 	this.consumerCounters = make(map[string]float64)
@@ -133,9 +138,15 @@ func (this *Top) Run(args []string) (exitCode int) {
 		}
 
 		// header
-		this.Ui.Output(fmt.Sprintf("%-9s %20s %50s %20s %15s",
-			this.who, "cluster", "topic", "num", "mps")) // mps=msg per second
-		this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 118)))
+		if this.longFmt {
+			this.Ui.Output(fmt.Sprintf("%-9s %15s %-30s %35s %20s %15s",
+				this.who, "cluster", "brokers", "topic", "num", "mps")) // mps=msg per second
+			this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 129)))
+		} else {
+			this.Ui.Output(fmt.Sprintf("%-9s %20s %50s %20s %15s",
+				this.who, "cluster", "topic", "num", "mps")) // mps=msg per second
+			this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 118)))
+		}
 
 		this.showAndResetCounters()
 	}
@@ -268,10 +279,20 @@ func (this *Top) showAndResetCounters() {
 			othersMps += mps
 		} else if !this.dashboardGraph {
 			clusterAndTopic := strings.SplitN(counterFlip[num], ":", 2)
-			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
-				clusterAndTopic[0], clusterAndTopic[1],
-				gofmt.Comma(int64(num)),
-				mps))
+			if this.longFmt {
+				this.Ui.Output(fmt.Sprintf("%25s %-30s %35s %20s %15.2f",
+					clusterAndTopic[0],
+					strings.Join(this.brokers[counterFlip[num]], ","),
+					clusterAndTopic[1],
+					gofmt.Comma(int64(num)),
+					mps))
+			} else {
+				this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
+					clusterAndTopic[0], clusterAndTopic[1],
+					gofmt.Comma(int64(num)),
+					mps))
+			}
+
 		}
 	}
 
@@ -285,26 +306,55 @@ func (this *Top) showAndResetCounters() {
 
 		this.totalMps = append(this.totalMps, totalMps)
 	} else {
-		// the catchall row
-		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
-			"-OTHERS-", "-OTHERS-",
-			gofmt.Comma(int64(othersNum)),
-			othersMps))
+		if this.longFmt {
+			// the catchall row
+			this.Ui.Output(fmt.Sprintf("%25s %-30s %35s %20s %15.2f",
+				"-OTHERS-", "-", "-OTHERS-",
+				gofmt.Comma(int64(othersNum)),
+				othersMps))
 
-		// total row
-		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
-			"--TOTAL--", "--TOTAL--",
-			gofmt.Comma(int64(totalNum)),
-			totalMps))
+			// total row
+			distinceBrokerList := make(map[string]struct{})
+			for _, bs := range this.brokers {
+				distinceBrokerList[strings.Join(bs, ",")] = struct{}{}
+			}
+			this.Ui.Output(fmt.Sprintf("%25s %-30d %35s %20s %15.2f",
+				"--TOTAL--", len(distinceBrokerList),
+				"--TOTAL--",
+				gofmt.Comma(int64(totalNum)),
+				totalMps))
 
-		// max
-		if this.maxMps < totalMps {
-			this.maxMps = totalMps
+			// max
+			if this.maxMps < totalMps {
+				this.maxMps = totalMps
+			}
+			this.Ui.Output(fmt.Sprintf("%25s %-30s %35s %20s %15.2f",
+				"--MAX--", "-", "--MAX--",
+				"-",
+				this.maxMps))
+		} else {
+			// the catchall row
+			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
+				"-OTHERS-", "-OTHERS-",
+				gofmt.Comma(int64(othersNum)),
+				othersMps))
+
+			// total row
+			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
+				"--TOTAL--", "--TOTAL--",
+				gofmt.Comma(int64(totalNum)),
+				totalMps))
+
+			// max
+			if this.maxMps < totalMps {
+				this.maxMps = totalMps
+			}
+			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
+				"--MAX--", "--MAX--",
+				"-",
+				this.maxMps))
 		}
-		this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
-			"--MAX--", "--MAX--",
-			"-",
-			this.maxMps))
+
 	}
 
 	// record last counters and reset current counters
@@ -404,6 +454,7 @@ func (this *Top) clusterTopProducers(zkcluster *zk.ZkCluster) {
 			}
 
 			this.mu.Lock()
+			this.brokers[cluster+":"+topic] = this.discardPortOfBrokerAddr(brokerList)
 			this.counters[cluster+":"+topic] = float64(msgs)
 			this.mu.Unlock()
 		}
@@ -412,6 +463,16 @@ func (this *Top) clusterTopProducers(zkcluster *zk.ZkCluster) {
 		kfk.RefreshMetadata(topics...)
 	}
 
+}
+
+func (this *Top) discardPortOfBrokerAddr(brokerList []string) []string {
+	sort.Strings(brokerList)
+	r := make([]string, 0, len(brokerList))
+	for _, addr := range brokerList {
+		host, _, _ := net.SplitHostPort(addr)
+		r = append(r, host)
+	}
+	return r
 }
 
 func (*Top) Synopsis() string {
@@ -438,6 +499,9 @@ Options:
       e,g. 5s
 
     -n limit
+
+    -l
+      Display long format. Print broker host.
 
     -d
       Draw dashboard in graph.    
