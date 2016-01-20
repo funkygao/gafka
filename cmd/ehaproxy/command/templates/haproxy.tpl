@@ -23,6 +23,7 @@ defaults
     balance roundrobin
     
     no option httpclose
+    option log-separate-errors
     option httplog
     option dontlognull  # 不记录健康检查的日志信息
     option abortonclose # 当服务器负载很高的时候，自动结束掉当前队列处理比较久的链接
@@ -38,14 +39,7 @@ defaults
     #timeout http-request    5s
 
     default-server minconn 50 maxconn 5000 inter 30s rise 2 fall 3
-    
-    option log-separate-errors
-    errorfile 400 {{.LogDir}}/400.http
-    errorfile 500 {{.LogDir}}/500.http
-    errorfile 502 {{.LogDir}}/502.http
-    errorfile 503 {{.LogDir}}/503.http
-    errorfile 504 {{.LogDir}}/504.http
-
+            
 listen dashboard
     bind 0.0.0.0:10890
     bind-process {{.CpuNum}}

@@ -38,10 +38,6 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	err = os.MkdirAll(fmt.Sprintf("%s/src", this.root), 0755)
 	swalllow(err)
 
-	for _, errcode := range []int{400, 401, 500, 502, 503, 504} {
-		this.touch(fmt.Sprintf("%s/logs/%d.http", this.root, errcode))
-	}
-
 	// install files
 	b, _ := Asset("templates/haproxy-1.6.3.tar.gz")
 	srcPath := fmt.Sprintf("%s/src/haproxy-1.6.3.tar.gz", this.root)
@@ -92,11 +88,6 @@ SYSLOGD_OPTIONS=”-c 2 -r -m 0″
 #-r 开启远程日志
 #-m 0 标记时间戳。单位是分钟，为0时，表示禁用该功能	
 		`))
-}
-
-func (this *Deploy) touch(fn string) {
-	err := ioutil.WriteFile(fn, []byte{}, 0644)
-	swalllow(err)
 }
 
 func (this *Deploy) Synopsis() string {
