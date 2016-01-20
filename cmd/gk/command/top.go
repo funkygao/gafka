@@ -39,6 +39,7 @@ type Top struct {
 	dashboardGraph bool
 	topicPattern   string
 	longFmt        bool
+	skipIpPrefix   bool
 
 	brokers          map[string][]string
 	counters         map[string]float64 // key is cluster:topic
@@ -58,6 +59,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.DurationVar(&this.topInterval, "i", time.Second*5, "refresh interval")
 	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
 	cmdFlags.IntVar(&this.limit, "n", 33, "")
+	cmdFlags.BoolVar(&this.skipIpPrefix, "noiphead", true, "")
 	cmdFlags.StringVar(&this.who, "who", "producer", "")
 	cmdFlags.BoolVar(&this.dashboardGraph, "d", false, "")
 	cmdFlags.BoolVar(&this.longFmt, "l", true, "")
@@ -470,6 +472,10 @@ func (this *Top) discardPortOfBrokerAddr(brokerList []string) []string {
 	r := make([]string, 0, len(brokerList))
 	for _, addr := range brokerList {
 		host, _, _ := net.SplitHostPort(addr)
+		if this.skipIpPrefix {
+			parts := strings.SplitN(host, ".", 4)
+			host = strings.Join(parts[2:], ".")
+		}
 		r = append(r, host)
 	}
 	return r
@@ -502,6 +508,9 @@ Options:
 
     -l
       Display long format. Print broker host.
+
+    -noiphead
+      Used with -l, broker host 10.20.30.40 will display as 30.40
 
     -d
       Draw dashboard in graph.    
