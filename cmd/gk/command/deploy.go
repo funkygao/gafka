@@ -25,19 +25,20 @@ type Deploy struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zkzone        *zk.ZkZone
-	kafkaBaseDir  string
-	zone, cluster string
-	rootPah       string
-	runAs         string
-	userInfo      *user.User
-	brokerId      string
-	tcpPort       string
-	ip            string
-	demoMode      bool
-	kafkaVer      string
-	logDirs       string
-	dryRun        bool
+	zkzone           *zk.ZkZone
+	kafkaBaseDir     string
+	zone, cluster    string
+	rootPah          string
+	runAs            string
+	userInfo         *user.User
+	brokerId         string
+	tcpPort          string
+	ip               string
+	demoMode         bool
+	kafkaVer         string
+	logDirs          string
+	dryRun           bool
+	installKafkaOnly bool
 }
 
 // TODO
@@ -56,10 +57,27 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.logDirs, "log.dirs", "", "")
 	cmdFlags.StringVar(&this.runAs, "user", "sre", "")
 	cmdFlags.BoolVar(&this.demoMode, "demo", false, "")
+	cmdFlags.BoolVar(&this.installKafkaOnly, "kfkonly", false, "")
 	cmdFlags.BoolVar(&this.dryRun, "dryrun", true, "")
 	cmdFlags.StringVar(&this.kafkaVer, "ver", "2.10-0.8.2.2", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	if !ctx.CurrentUserIsRoot() {
+		this.Ui.Error("requires root priviledges!")
+		return 1
+	}
+
+	if !strings.HasSuffix(this.kafkaBaseDir, this.kafkaVer) {
+		this.Ui.Error(fmt.Sprintf("kafka.base[%s] does not match ver[%s]",
+			this.kafkaBaseDir, this.kafkaVer))
+		return 1
+	}
+
+	if this.installKafkaOnly {
+		this.installKafka()
+		return
 	}
 
 	if validateArgs(this, this.Ui).
@@ -90,17 +108,6 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		require("-broker.id", "-port", "-ip", "-log.dirs").
 		invalid(args) {
 		return 2
-	}
-
-	if !ctx.CurrentUserIsRoot() {
-		this.Ui.Error("requires root priviledges!")
-		return 1
-	}
-
-	if !strings.HasSuffix(this.kafkaBaseDir, this.kafkaVer) {
-		this.Ui.Error(fmt.Sprintf("kafka.base[%s] does not match ver[%s]",
-			this.kafkaBaseDir, this.kafkaVer))
-		return 1
 	}
 
 	// prepare the root directory
@@ -342,6 +349,9 @@ Usage: %s deploy -z zone -c cluster [options]
     Deploy a new kafka broker
 
 Options:
+
+    -kfkonly
+      Only install kafka runtime on localhost.
 
     -demo
       Demonstrate how to use this command.
