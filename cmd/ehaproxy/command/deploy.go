@@ -59,7 +59,6 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	swalllow(err)
 
 	this.Ui.Info("will read zones from $HOME/.gafka.cf")
-	this.Ui.Info("check /etc/security/limits.conf")
 	this.Ui.Info(fmt.Sprintf("compile haproxy to %s/sbin: make TARGET=xxx USE_ZLIB=yes", this.root))
 	this.Ui.Info(fmt.Sprintf("cp %s to /etc/init.d/ehaproxy", initPath))
 	this.Ui.Info(fmt.Sprintf("chkconfig --add ehaproxy"))
