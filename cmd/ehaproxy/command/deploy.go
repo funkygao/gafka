@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"strings"
 
 	"github.com/funkygao/gocli"
@@ -25,6 +26,11 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.rsyslog, "rsyslog", true, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	// must useradd haproxy before deploy
+	if _, err := user.Lookup("haproxy"); err != nil {
+		panic(err)
 	}
 
 	err := os.MkdirAll(this.root, 0755)
@@ -52,7 +58,6 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	err = ioutil.WriteFile(initPath, b, 0755)
 	swalllow(err)
 
-	this.Ui.Info("useradd haproxy")
 	this.Ui.Info(fmt.Sprintf("compile haproxy to %s/sbin: make TARGET=xxx USE_ZLIB=yes", this.root))
 	this.Ui.Info(fmt.Sprintf("cp %s to /etc/init.d/ehaproxy", initPath))
 	this.Ui.Info(fmt.Sprintf("chkconfig --add ehaproxy"))
