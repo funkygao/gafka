@@ -1,4 +1,4 @@
-package dumb
+package dummy
 
 import (
 	"sync"
@@ -18,7 +18,7 @@ func (this *pubStore) Start() (err error) {
 func (this *pubStore) Stop() {}
 
 func (this *pubStore) Name() string {
-	return "dumb"
+	return "dummy"
 }
 
 func (this *pubStore) SyncPub(cluster string, topic string, key,
