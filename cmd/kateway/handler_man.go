@@ -93,7 +93,6 @@ func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2
-// TODO resync from mysql and broadcast to all kateway peers
 func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
@@ -119,6 +118,15 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	zkcluster := meta.Default.ZkCluster(cluster)
+	info := zkcluster.RegisteredInfo()
+	if !info.Public {
+		log.Warn("app[%s] adding topic:%s in non-public cluster: %+v", hisAppid, topic, params)
+
+		http.Error(w, "invalid cluster", http.StatusBadRequest)
+		return
+	}
+
 	ver := params.ByName(UrlParamVersion)
 
 	replicas, partitions := 2, 1
@@ -136,7 +144,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		appid, r.RemoteAddr, hisAppid, cluster, topic, ver, query.Encode())
 
 	topic = meta.KafkaTopic(hisAppid, topic, ver)
-	lines, err := meta.Default.ZkCluster(cluster).AddTopic(topic, replicas, partitions)
+	lines, err := zkcluster.AddTopic(topic, replicas, partitions)
 	if err != nil {
 		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
 

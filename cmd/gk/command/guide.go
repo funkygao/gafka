@@ -14,9 +14,6 @@ type Guide struct {
 
 func (this *Guide) Run(args []string) (exitCode int) {
 	guideContent := `
-What can gk do?
-    gk can monitor/control/deploy kafka/zookeeper/kateway
-
 What is zone?
     zone is named after AWS zone with the same sematics. 
     It is a group of kafka clusters that share the same Zookeeper ensemble.
