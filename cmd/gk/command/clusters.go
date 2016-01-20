@@ -19,6 +19,7 @@ type Clusters struct {
 
 	verbose           bool
 	registeredBrokers bool
+	publicOnly        bool
 }
 
 // TODO cluster info will contain desciption,owner,etc.
@@ -41,6 +42,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&addCluster, "add", "", "")
+	cmdFlags.BoolVar(&this.publicOnly, "po", false, "")
 	cmdFlags.BoolVar(&setMode, "s", false, "")
 	cmdFlags.StringVar(&clusterName, "c", "", "")
 	cmdFlags.StringVar(&clusterPath, "p", "", "")
@@ -63,6 +65,10 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		requireAdminRights("-s", "-add").
 		invalid(args) {
 		return 2
+	}
+
+	if this.publicOnly {
+		this.verbose = true
 	}
 
 	if addCluster != "" {
@@ -237,6 +243,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 		topicN, partitionN int
 		err                string
 		priority           int
+		public             bool
 		replicas           int
 		brokerInfos        []zk.BrokerInfo
 	}
@@ -284,12 +291,16 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 		}
 
 		info := zkcluster.RegisteredInfo()
+		if this.publicOnly && !info.Public {
+			return
+		}
 		clusters = append(clusters, clusterInfo{
 			name:        zkcluster.Name(),
 			nickname:    info.Nickname,
 			path:        zkcluster.Chroot(),
 			topicN:      len(topics),
 			partitionN:  partitionN,
+			public:      info.Public,
 			replicas:    info.Replicas,
 			priority:    info.Priority,
 			brokerInfos: info.Roster,
@@ -317,8 +328,8 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 			this.Ui.Output(fmt.Sprintf("%30s: %s",
 				c.name, c.path))
 			this.Ui.Output(strings.Repeat(" ", 4) +
-				color.Blue("nick:%s topics:%d partitions:%d replicas:%d priority:%d brokers:%+v",
-					c.nickname,
+				color.Blue("nick:%s public:%v topics:%d partitions:%d replicas:%d priority:%d brokers:%+v",
+					c.nickname, c.public,
 					c.topicN, c.partitionN, c.replicas, c.priority, c.brokerInfos))
 		}
 
@@ -352,6 +363,9 @@ Options:
 
     -l
       Use a long listing format.
+
+    -po
+      Display only public clusters.
 
     -add cluster name
       Add a new kafka cluster into a zone.

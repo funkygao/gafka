@@ -120,7 +120,7 @@ Don't make programmer think!
                                            | HTTP/1.1 keep-alive             +----------+
                                            |     
                                     +--------------+                         +----------+
-                                    | LoadBalancer |                         | registry |
+                                    | ehaproxy     |                         | registry |
                                     +--------------+                         +----------+
                                            |
                                            | HTTP/1.1 keep-alive             +----------+
