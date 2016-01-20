@@ -26,5 +26,6 @@ func (this *Config) ZkServers() []string {
 }
 
 func DefaultZkSessionTimeout() time.Duration {
-	return time.Minute * 5
+	// online zk tickTime=2000
+	return time.Second * 20
 }
