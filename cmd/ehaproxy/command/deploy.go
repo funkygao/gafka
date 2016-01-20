@@ -58,6 +58,8 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	err = ioutil.WriteFile(initPath, b, 0755)
 	swalllow(err)
 
+	this.Ui.Info("will read zones from $HOME/.gafka.cf")
+	this.Ui.Info("check /etc/security/limits.conf")
 	this.Ui.Info(fmt.Sprintf("compile haproxy to %s/sbin: make TARGET=xxx USE_ZLIB=yes", this.root))
 	this.Ui.Info(fmt.Sprintf("cp %s to /etc/init.d/ehaproxy", initPath))
 	this.Ui.Info(fmt.Sprintf("chkconfig --add ehaproxy"))
@@ -79,6 +81,13 @@ func (this *Deploy) configKernal() {
 func (this *Deploy) configRsyslog() {
 	this.Ui.Output("install and setup rsyslog for haproxy")
 	this.Ui.Output(fmt.Sprintf(`
+vim /etc/security/limits.conf
+*          soft    nofile          409600
+*          hard    nofile          409600
+
+*          soft    nproc          65535
+*          hard    nproc          65535
+
 vim /etc/rsyslog.conf		
 $ModLoad imudp
 $UDPServerAddress 127.0.0.1

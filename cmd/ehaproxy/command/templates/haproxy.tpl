@@ -1,10 +1,11 @@
 global    
     # logging to rsyslog facility local3 [err warning info debug]   
     log 127.0.0.1 local3 info
+    stats bind-process {{.CpuNum}}
     stats socket /tmp/haproxy.sock mode 0600 level admin
 
     maxconn  51200
-    ulimit-n 102400
+    ulimit-n 102434
     pidfile {{.HaproxyRoot}}/haproxy.pid
     daemon
     nbproc {{.CpuNum}}

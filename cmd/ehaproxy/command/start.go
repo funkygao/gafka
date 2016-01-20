@@ -82,7 +82,6 @@ func (this *Start) main() {
 	var servers = BackendServers{
 		CpuNum:      ctx.NumCPU(),
 		HaproxyRoot: this.root,
-		LogDir:      fmt.Sprintf("%s/logs", this.root),
 	}
 	var lastInstances []string
 	for {
@@ -94,7 +93,7 @@ func (this *Start) main() {
 		case <-ch:
 			kwInstances, err := etclib.Children(root)
 			if err != nil {
-				log.Error(err)
+				log.Error("%s: %v", root, err)
 				continue
 			}
 
@@ -106,13 +105,13 @@ func (this *Start) main() {
 				kwNode := fmt.Sprintf("%s/%s", root, kwId)
 				data, err := etclib.Get(kwNode)
 				if err != nil {
-					log.Error(err)
+					log.Error("%s: %v", kwNode, err)
 					continue
 				}
 
 				info := make(map[string]string)
 				if err = json.Unmarshal([]byte(data), &info); err != nil {
-					log.Error(err)
+					log.Error("%s: %v", data, err)
 					continue
 				}
 
@@ -154,6 +153,7 @@ func (this *Start) main() {
 			}
 
 			if err = this.reloadHAproxy(); err != nil {
+				log.Error("reloading haproxy: %v", err)
 				panic(err)
 			}
 

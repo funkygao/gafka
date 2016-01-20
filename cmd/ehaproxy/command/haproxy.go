@@ -14,7 +14,6 @@ import (
 type BackendServers struct {
 	CpuNum      int
 	HaproxyRoot string
-	LogDir      string
 
 	Pub []Backend
 	Sub []Backend
