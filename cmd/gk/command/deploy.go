@@ -137,16 +137,17 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	this.chown(fmt.Sprintf("%s/logs", this.instanceDir()))
 
 	type templateVar struct {
-		KafkaBase   string
-		BrokerId    string
-		TcpPort     string
-		Ip          string
-		User        string
-		ZkChroot    string
-		ZkAddrs     string
-		InstanceDir string
-		LogDirs     string
-		IoThreads   string
+		KafkaBase      string
+		BrokerId       string
+		TcpPort        string
+		Ip             string
+		User           string
+		ZkChroot       string
+		ZkAddrs        string
+		InstanceDir    string
+		LogDirs        string
+		IoThreads      string
+		NetworkThreads string
 	}
 	data := templateVar{
 		ZkChroot:    zkchroot,
@@ -160,6 +161,11 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		LogDirs:     this.logDirs,
 	}
 	data.IoThreads = strconv.Itoa(4 * len(strings.Split(data.LogDirs, ",")))
+	networkThreads := ctx.NumCPU() / 2
+	if networkThreads < 2 {
+		networkThreads = 2
+	}
+	data.NetworkThreads = strconv.Itoa(networkThreads) // TODO not used yet
 
 	// create the log.dirs directory and chown to sre
 	logDirs := strings.Split(this.logDirs, ",")
