@@ -39,7 +39,7 @@ defaults
     timeout check           5s
     #timeout http-request    5s
 
-    default-server minconn 50 maxconn 5000 inter 30s rise 2 fall 3
+    default-server minconn 50 maxconn 5000 inter 80s rise 2 fall 3
             
 listen dashboard
     bind 0.0.0.0:10890
@@ -59,9 +59,10 @@ listen pub
 
 listen sub
     bind 0.0.0.0:10892
-    balance uri # source
-    compression algo gzip
-    compression type text/html text/plain application/json
+    #balance uri
+    balance source
+    #compression algo gzip
+    #compression type text/html text/plain application/json
     cookie SUB insert indirect
     option httpchk GET /alive HTTP/1.1\r\nHost:sub.ffan.com
 {{range .Sub}}
