@@ -42,3 +42,4 @@ panic.dump
 cmd/gk/gk
 misc/scripts
 prof/
+cmd/kateway/DEPLOY.md

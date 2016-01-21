@@ -28,7 +28,7 @@ func katewayMetricsRootByKey(id, key string) string {
 	return fmt.Sprintf("%s/%s/%s", katewayMetricsRoot, id, key)
 }
 
-func clusterPath(cluster string) string {
+func ClusterPath(cluster string) string {
 	return fmt.Sprintf("%s/%s", clusterRoot, cluster)
 }
 
@@ -36,7 +36,7 @@ func (this *ZkCluster) controllerPath() string {
 	return this.path + ControllerPath
 }
 
-func (this *ZkCluster) cluserInfoPath() string {
+func (this *ZkCluster) ClusterInfoPath() string {
 	return fmt.Sprintf("%s/%s", clusterInfoRoot, this.name)
 }
 

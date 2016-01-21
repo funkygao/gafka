@@ -207,8 +207,8 @@ func (this *ZkZone) RegisterCluster(name, path string) error {
 	this.createZnode(clusterRoot, []byte(""))
 
 	// create the cluster meta znode
-	clusterZkPath := clusterPath(name)
-	err := this.createZnode(clusterPath(name), []byte(path))
+	clusterZkPath := ClusterPath(name)
+	err := this.createZnode(ClusterPath(name), []byte(path))
 	if err != nil {
 		return fmt.Errorf("%s: %s", clusterZkPath, err.Error())
 	}
@@ -219,12 +219,6 @@ func (this *ZkZone) RegisterCluster(name, path string) error {
 		return nil
 	}
 	return err
-}
-
-func (this *ZkZone) UnregisterCluster(name string) error {
-	this.connectIfNeccessary()
-
-	return this.conn.Delete(clusterPath(name), -1)
 }
 
 func (this *ZkZone) createZnode(path string, data []byte) error {
@@ -318,7 +312,7 @@ func (this *ZkZone) ForSortedClusters(fn func(zkcluster *ZkCluster)) {
 func (this *ZkZone) ClusterPath(name string) string {
 	this.connectIfNeccessary()
 
-	clusterPath, _, err := this.conn.Get(clusterPath(name))
+	clusterPath, _, err := this.conn.Get(ClusterPath(name))
 	if err != nil {
 		panic(name + ": " + err.Error())
 	}

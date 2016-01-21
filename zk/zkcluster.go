@@ -84,10 +84,10 @@ func (this *ZkCluster) writeInfo(zc ZkCluster) error {
 	data, err := json.Marshal(zc)
 	this.zone.swallow(err)
 
-	_, err = this.zone.conn.Set(this.cluserInfoPath(), data, -1)
+	_, err = this.zone.conn.Set(this.ClusterInfoPath(), data, -1)
 	if err == zk.ErrNoNode {
 		// create the node
-		return this.zone.createZnode(this.cluserInfoPath(), data)
+		return this.zone.createZnode(this.ClusterInfoPath(), data)
 	}
 
 	return err
@@ -95,7 +95,7 @@ func (this *ZkCluster) writeInfo(zc ZkCluster) error {
 
 // Get registered cluster info from zk.
 func (this *ZkCluster) RegisteredInfo() ZkCluster {
-	zdata, _, err := this.zone.conn.Get(this.cluserInfoPath())
+	zdata, _, err := this.zone.conn.Get(this.ClusterInfoPath())
 	if err != nil {
 		if err == zk.ErrNoNode {
 			this.writeInfo(*this)
@@ -119,35 +119,35 @@ func (this *ZkCluster) SetNickname(name string) {
 	c := this.RegisteredInfo()
 	c.Nickname = name
 	data, _ := json.Marshal(c)
-	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
+	this.zone.swallow(this.zone.setZnode(this.ClusterInfoPath(), data))
 }
 
 func (this *ZkCluster) SetRetention(retention int) {
 	c := this.RegisteredInfo()
 	c.Retention = retention
 	data, _ := json.Marshal(c)
-	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
+	this.zone.swallow(this.zone.setZnode(this.ClusterInfoPath(), data))
 }
 
 func (this *ZkCluster) SetPriority(priority int) {
 	c := this.RegisteredInfo()
 	c.Priority = priority
 	data, _ := json.Marshal(c)
-	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
+	this.zone.swallow(this.zone.setZnode(this.ClusterInfoPath(), data))
 }
 
 func (this *ZkCluster) SetReplicas(replicas int) {
 	c := this.RegisteredInfo()
 	c.Replicas = replicas
 	data, _ := json.Marshal(c)
-	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
+	this.zone.swallow(this.zone.setZnode(this.ClusterInfoPath(), data))
 }
 
 func (this *ZkCluster) SetPublic(public bool) {
 	c := this.RegisteredInfo()
 	c.Public = public
 	data, _ := json.Marshal(c)
-	this.zone.swallow(this.zone.setZnode(this.cluserInfoPath(), data))
+	this.zone.swallow(this.zone.setZnode(this.ClusterInfoPath(), data))
 }
 
 func (this *ZkCluster) RegisterBroker(id int, host string, port int) error {
@@ -166,7 +166,7 @@ func (this *ZkCluster) RegisterBroker(id int, host string, port int) error {
 	b := BrokerInfo{Id: id, Host: host, Port: port}
 	c.Roster = append(c.Roster, b)
 	data, _ := json.Marshal(c)
-	return this.zone.setZnode(this.cluserInfoPath(), data)
+	return this.zone.setZnode(this.ClusterInfoPath(), data)
 }
 
 // Returns {groupName: {consumerId: consumer}}

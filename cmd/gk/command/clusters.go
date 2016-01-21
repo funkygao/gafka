@@ -34,6 +34,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		zone           string
 		priority       int
 		retentionHours int
+		delCluster     string
 		replicas       int
 		addBroker      string
 		nickname       string
@@ -49,6 +50,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&clusterPath, "p", "", "")
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.IntVar(&replicas, "replicas", -1, "")
+	cmdFlags.StringVar(&delCluster, "del", "", "")
 	cmdFlags.IntVar(&retentionHours, "retention", -1, "")
 	cmdFlags.IntVar(&priority, "priority", -1, "")
 	cmdFlags.IntVar(&public, "public", -1, "")
@@ -71,6 +73,25 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 
 	if this.publicOnly {
 		this.verbose = true
+	}
+
+	if delCluster != "" {
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+		zkcluster := zkzone.NewCluster(delCluster)
+
+		kfkCluseterPath := zkzone.ClusterPath(delCluster)
+		gafkaClusterInfoPath := zkcluster.ClusterInfoPath()
+		gafkaClusterPath := zk.ClusterPath(delCluster)
+
+		this.Ui.Info("shutdown brokers first: kill java/rm pkg/chkconfig --del")
+		this.Ui.Info(fmt.Sprintf("zk rm -z %s -R -p %s",
+			zone, kfkCluseterPath))
+		this.Ui.Info(fmt.Sprintf("zk rm -z %s -p %s",
+			zone, gafkaClusterPath))
+		this.Ui.Info(fmt.Sprintf("zk rm -z %s -p %s",
+			zone, gafkaClusterInfoPath))
+
+		return
 	}
 
 	if addCluster != "" {
@@ -376,6 +397,9 @@ Options:
 
     -add cluster name
       Add a new kafka cluster into a zone.
+
+    -del cluster name
+      Help to delete a cluster.
 
     -p cluster zk path
       The new kafka cluster chroot path in Zookeeper.

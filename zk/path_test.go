@@ -40,5 +40,5 @@ func TestZkClusterPath(t *testing.T) {
 }
 
 func TestClusterPath(t *testing.T) {
-	assert.Equal(t, "/_kafka_clusters/test-cluster", clusterPath("test-cluster"))
+	assert.Equal(t, "/_kafka_clusters/test-cluster", ClusterPath("test-cluster"))
 }
