@@ -29,7 +29,7 @@ defaults
     option dontlognull  # 不记录健康检查的日志信息
     option abortonclose # 当服务器负载很高的时候，自动结束掉当前队列处理比较久的链接
     option redispatch   # 当服务器组中的某台设备故障后，自动将请求重定向到组内其他主机
-    option forwardfor   # X-Forwarded-For: remote client ip
+    #option forwardfor   # X-Forwarded-For: remote client ip
     
     timeout client          10m  # 客户端侧最大非活动时间
     timeout server          1m   # 服务器侧最大非活动时间
