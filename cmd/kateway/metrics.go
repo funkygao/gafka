@@ -31,6 +31,7 @@ type serverMetrics struct {
 	ConcurrentConns metrics.Counter
 	ConcurrentPub   metrics.Counter
 	ConcurrentSub   metrics.Counter
+	ConcurrentSubWs metrics.Counter
 }
 
 func NewServerMetrics(interval time.Duration, gw *Gateway) *serverMetrics {
@@ -40,6 +41,7 @@ func NewServerMetrics(interval time.Duration, gw *Gateway) *serverMetrics {
 		ConcurrentConns: metrics.NewRegisteredCounter("server.concurrent", metrics.DefaultRegistry),
 		ConcurrentPub:   metrics.NewRegisteredCounter("server.conns.pub", metrics.DefaultRegistry),
 		ConcurrentSub:   metrics.NewRegisteredCounter("server.conns.sub", metrics.DefaultRegistry),
+		ConcurrentSubWs: metrics.NewRegisteredCounter("server.conns.subws", metrics.DefaultRegistry),
 	}
 
 	if options.DebugHttpAddr != "" {

@@ -81,7 +81,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 
-		go store.DefaultSubStore.KillClient(r.RemoteAddr) // wait cf.ProcessingTimeout
+		go fetcher.Close() // wait cf.ProcessingTimeout FIXME go?
 	}
 
 }
@@ -207,6 +207,10 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // /ws/topics/:appid/:topic/:ver/:group
+// TODO
+// 1. detect client gone
+// 2. websocket write buffer too big, leads to possible dup consume
+// 3. websocket how to get appid/subkey from header
 func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -215,7 +219,12 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	defer ws.Close()
+	defer func() {
+		ws.Close()
+
+		this.svrMetrics.ConcurrentSubWs.Dec(1)
+		this.subServer.idleConnsWg.Done()
+	}()
 
 	var (
 		topic    string
@@ -274,28 +283,20 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	defer func() {
-		store.DefaultSubStore.KillClient(ws.RemoteAddr().String())
-	}()
-
-LOOP:
 	for {
-		select {
-		case msg := <-fetcher.Messages():
-			err = ws.WriteMessage(1, msg.Value)
-			if err != nil {
-				log.Error("%s: %v", ws.RemoteAddr(), err)
-				break LOOP
-			}
-
-			fetcher.CommitUpto(msg)
-
-			log.Debug("writen: %s", string(msg.Value))
+		msg := <-fetcher.Messages()
+		err = ws.WriteMessage(websocket.BinaryMessage, msg.Value)
+		if err != nil {
+			log.Error("%s: %v", ws.RemoteAddr(), err)
+			break
 		}
+
+		fetcher.CommitUpto(msg)
 	}
 
+	fetcher.Close()
 }
 
 func (this *Gateway) writeWsError(ws *websocket.Conn, err string) {
-	ws.WriteMessage(1, []byte(err))
+	ws.WriteMessage(websocket.CloseMessage, []byte(err))
 }
