@@ -16,6 +16,10 @@ type subServer struct {
 	idleConns     map[string]net.Conn // in keep-alive state http connections
 	closedConnCh  chan string         // channel of remote addr
 	idleConnsLock sync.Mutex
+
+	// websocket heartbeat configuration
+	wsReadLimit int64
+	wsPongWait  time.Duration
 }
 
 func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subServer {
@@ -23,6 +27,8 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 		webServer:    newWebServer("sub", httpAddr, httpsAddr, maxClients, gw),
 		closedConnCh: make(chan string, 1<<10),
 		idleConns:    make(map[string]net.Conn, 10000), // TODO
+		wsReadLimit:  8 << 10,
+		wsPongWait:   time.Minute,
 	}
 	this.waitExitFunc = this.waitExit
 	this.connStateFunc = this.connStateHandler

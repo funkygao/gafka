@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
@@ -208,9 +209,10 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 
 // /ws/topics/:appid/:topic/:ver/:group
 // TODO
-// 1. detect client gone
+// 1. detect client gone, clientGone
 // 2. websocket write buffer too big, leads to possible dup consume
 // 3. websocket how to get appid/subkey from header
+// 4. heartbeat, done
 func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -283,18 +285,79 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	// kateway             sub client
+	//   |                    |
+	//   | ping               |
+	//   |------------------->|
+	//   |                    |
+	//   |               pong |
+	//   |<-------------------|
+	//   |                    |
+	//
+
+	clientGone := make(chan struct{})
+	go this.wsWritePump(clientGone, ws, fetcher)
+	this.wsReadPump(clientGone, ws)
+}
+
+func (this *Gateway) wsReadPump(clientGone chan struct{}, ws *websocket.Conn) {
+	ws.SetReadLimit(this.subServer.wsReadLimit)
+	ws.SetReadDeadline(time.Now().Add(this.subServer.wsPongWait))
+	ws.SetPongHandler(func(string) error {
+		ws.SetReadDeadline(time.Now().Add(this.subServer.wsPongWait))
+		return nil
+	})
+
+	// if kateway shutdown while there are open ws conns, the shutdown will
+	// wait 1m: this.subServer.wsPongWait
 	for {
-		msg := <-fetcher.Messages()
-		err = ws.WriteMessage(websocket.BinaryMessage, msg.Value)
+		_, message, err := ws.ReadMessage()
 		if err != nil {
-			log.Error("%s: %v", ws.RemoteAddr(), err)
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
+				log.Warn("%s: %v", ws.RemoteAddr(), err)
+			} else {
+				log.Debug("%s: %v", ws.RemoteAddr(), err)
+			}
+
+			close(clientGone)
 			break
 		}
 
-		fetcher.CommitUpto(msg)
+		log.Debug("ws[%s] read: %s", ws.RemoteAddr(), string(message))
+	}
+}
+
+func (this *Gateway) wsWritePump(clientGone chan struct{}, ws *websocket.Conn, fetcher store.Fetcher) {
+	defer fetcher.Close()
+
+	var err error
+	for {
+		select {
+		case msg := <-fetcher.Messages():
+			ws.SetWriteDeadline(time.Now().Add(time.Second * 10))
+			if err = ws.WriteMessage(websocket.BinaryMessage, msg.Value); err != nil {
+				log.Error("%s: %v", ws.RemoteAddr(), err)
+				return
+			}
+
+			fetcher.CommitUpto(msg)
+
+		case <-this.timer.After(this.subServer.wsPongWait / 3):
+			ws.SetWriteDeadline(time.Now().Add(time.Second * 10))
+			if err = ws.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
+				log.Error("%s: %v", ws.RemoteAddr(), err)
+				return
+			}
+
+		case <-this.shutdownCh:
+			return
+
+		case <-clientGone:
+			return
+		}
+
 	}
 
-	fetcher.Close()
 }
 
 func (this *Gateway) writeWsError(ws *websocket.Conn, err string) {
