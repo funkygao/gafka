@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&addr, "addr", "http://localhost:10892", "sub kateway addr")
+	flag.StringVar(&addr, "addr", "http://10.1.114.159:9192", "sub kateway addr")
 	flag.StringVar(&group, "g", "mygroup1", "consumer group name")
 	flag.StringVar(&appid, "appid", "app1", "consume whose topic")
 	flag.IntVar(&step, "step", 1, "display progress step")

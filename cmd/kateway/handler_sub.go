@@ -9,6 +9,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
+	"github.com/gorilla/websocket"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -80,7 +81,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 
-		go store.DefaultSubStore.KillClient(r.RemoteAddr) // wait cf.ProcessingTimeout
+		go fetcher.Close() // wait cf.ProcessingTimeout FIXME go?
 	}
 
 }
@@ -206,6 +207,10 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // /ws/topics/:appid/:topic/:ver/:group
+// TODO
+// 1. detect client gone
+// 2. websocket write buffer too big, leads to possible dup consume
+// 3. websocket how to get appid/subkey from header
 func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -214,5 +219,84 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	defer ws.Close()
+	defer func() {
+		ws.Close()
+
+		this.svrMetrics.ConcurrentSubWs.Dec(1)
+		this.subServer.idleConnsWg.Done()
+	}()
+
+	var (
+		topic    string
+		ver      string
+		myAppid  string
+		hisAppid string
+		reset    string
+		group    string
+	)
+
+	query := r.URL.Query()
+	reset = query.Get(UrlQueryReset)
+	limit, err := getHttpQueryInt(&query, "limit", 1)
+	if err != nil {
+		this.writeWsError(ws, err.Error())
+		return
+	}
+
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	hisAppid = params.ByName(UrlParamAppid)
+	myAppid = r.Header.Get(HttpHeaderAppid)
+	group = params.ByName(UrlParamGroup)
+	if strings.Contains(group, ".") { // TODO more strict rules
+		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} invalid group",
+			r.RemoteAddr, topic, ver, group, limit)
+
+		return
+	}
+
+	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+		log.Error("consumer[%s] %s {hisapp:%s, topic:%s, ver:%s, group:%s, limit:%d}: %s",
+			myAppid, r.RemoteAddr, hisAppid, topic, ver, group, limit, err)
+
+		this.writeWsError(ws, "auth fail")
+		return
+	}
+
+	log.Debug("sub[%s] %s: %+v", myAppid, r.RemoteAddr, params)
+
+	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("cluster not found for subd app: %s", hisAppid)
+
+		this.writeWsError(ws, "invalid subd appid")
+		return
+	}
+
+	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
+		myAppid+"."+group, r.RemoteAddr, reset)
+	if err != nil {
+		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
+
+		this.writeWsError(ws, err.Error())
+		return
+	}
+
+	for {
+		msg := <-fetcher.Messages()
+		err = ws.WriteMessage(websocket.BinaryMessage, msg.Value)
+		if err != nil {
+			log.Error("%s: %v", ws.RemoteAddr(), err)
+			break
+		}
+
+		fetcher.CommitUpto(msg)
+	}
+
+	fetcher.Close()
+}
+
+func (this *Gateway) writeWsError(ws *websocket.Conn, err string) {
+	ws.WriteMessage(websocket.CloseMessage, []byte(err))
 }

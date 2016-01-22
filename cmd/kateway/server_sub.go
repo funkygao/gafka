@@ -75,7 +75,15 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 			this.idleConnsLock.Unlock()
 		}
 
-	case http.StateClosed, http.StateHijacked:
+	case http.StateHijacked:
+		// websocket steals the socket
+		if this.gw != nil && !options.DisableMetrics {
+			this.gw.svrMetrics.ConcurrentSub.Dec(1)
+
+			this.gw.svrMetrics.ConcurrentSubWs.Inc(1)
+		}
+
+	case http.StateClosed:
 		if this.gw != nil && !options.DisableMetrics {
 			this.gw.svrMetrics.ConcurrentSub.Dec(1)
 		}

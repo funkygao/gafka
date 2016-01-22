@@ -30,7 +30,7 @@ func main() {
 	flag.IntVar(&msgSize, "sz", 100, "msg size")
 	flag.StringVar(&appid, "appid", "app1", "app id")
 	flag.DurationVar(&sleep, "sleep", 0, "sleep between pub")
-	flag.StringVar(&addr, "h", "http://localhost:10891", "pub http addr")
+	flag.StringVar(&addr, "h", "http://10.1.114.159:9191", "pub http addr")
 	flag.Int64Var(&step, "step", 1, "display progress step")
 	flag.StringVar(&key, "key", "", "message key")
 	flag.StringVar(&topic, "t", "foobar", "topic to pub")

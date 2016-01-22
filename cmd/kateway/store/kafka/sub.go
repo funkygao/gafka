@@ -10,12 +10,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
 	log "github.com/funkygao/log4go"
-	"github.com/wvanbergen/kafka/consumergroup"
 )
-
-type consumerFetcher struct {
-	*consumergroup.ConsumerGroup
-}
 
 type subStore struct {
 	shutdownCh   chan struct{}
@@ -81,9 +76,7 @@ func (this *subStore) Fetch(cluster, topic, group, remoteAddr, reset string) (st
 
 	return &consumerFetcher{
 		ConsumerGroup: cg,
+		remoteAddr:    remoteAddr,
+		store:         this,
 	}, nil
-}
-
-func (this *subStore) KillClient(remoteAddr string) {
-	this.subPool.killClient(remoteAddr)
 }

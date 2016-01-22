@@ -41,9 +41,6 @@ func (this *subStore) Name() string {
 	return "dummy"
 }
 
-func (this *subStore) KillClient(remoteAddr string) {
-
-}
 func (this *subStore) Fetch(cluster, topic, group, remoteAddr, reset string) (store.Fetcher, error) {
 	return this.fetcher, nil
 }
