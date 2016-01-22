@@ -100,11 +100,13 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	return
 }
 
+// For a given consumer client, it might be killed twice:
+// 1. on socket level, the socket is closed
+// 2. websocket/sub handler, conn closed or error occurs, explicitly kill the client
 func (this *subPool) killClient(remoteAddr string) {
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 
-	// TODO golang keep-alive max idle defaults 60s
 	this.rebalancing = true
 	if cg, present := this.clientMap[remoteAddr]; present {
 		cg.Close() // will flush offset, must wait, otherwise offset is not guanranteed
@@ -112,7 +114,6 @@ func (this *subPool) killClient(remoteAddr string) {
 		// client quit before getting the chance to consume
 		// e,g. 1 partition, 2 clients, the 2nd will not get consume chance, then quit
 		this.rebalancing = false
-		log.Debug("consumer %s never consumed", remoteAddr)
 
 		return
 	}

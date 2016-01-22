@@ -19,3 +19,5 @@ func (this *consumerFetcher) Errors() <-chan *sarama.ConsumerError {
 func (this *consumerFetcher) CommitUpto(*sarama.ConsumerMessage) error {
 	return nil
 }
+
+func (this *consumerFetcher) Close() {}

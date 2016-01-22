@@ -4,7 +4,7 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-// A Fetcher is a generic streamed consumer.
+// A Fetcher is a generic high level streamed consumer.
 type Fetcher interface {
 	// Messages returns a stream messages being consumed.
 	Messages() <-chan *sarama.ConsumerMessage
@@ -14,6 +14,9 @@ type Fetcher interface {
 
 	// CommitUpto records the cursor/offset of where messages are consumed.
 	CommitUpto(*sarama.ConsumerMessage) error
+
+	// Close the Fetcher and do all the cleanups.
+	Close()
 }
 
 // A SubStore is a generic data source that can be used to fetch messages.
@@ -23,8 +26,6 @@ type SubStore interface {
 
 	Start() error
 	Stop()
-
-	KillClient(remoteAddr string)
 
 	// Fetch returns a Fetcher.
 	Fetch(cluster, topic, group, remoteAddr, reset string) (Fetcher, error)
