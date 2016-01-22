@@ -16,7 +16,7 @@ var (
 	mySubkey = "mysubkey"
 	hisAppid = "app1"
 	topic    = "foo"
-	group    = "group1"
+	group    = "groupXXX"
 	ver      = "v1"
 	sleep    = time.Second * 2
 )
