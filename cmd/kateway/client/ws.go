@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 
 var (
 	host     = "10.1.114.159:9192"
-	myAppid  = "appX"
+	myAppid  = "app4"
 	mySubkey = "mysubkey"
 	hisAppid = "app1"
 	topic    = "foo"
@@ -29,7 +30,10 @@ func main() {
 	}
 	log.Printf("connecting to %+v", u)
 
-	conn, httpResponse, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	var header = make(http.Header)
+	header.Set("AppId", myAppid)
+	header.Set("Subkey", mySubkey)
+	conn, httpResponse, err := websocket.DefaultDialer.Dial(u.String(), header)
 	if err != nil {
 		log.Fatal("dial:", err)
 	}

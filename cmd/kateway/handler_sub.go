@@ -208,11 +208,6 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // /ws/topics/:appid/:topic/:ver/:group
-// TODO
-// 1. detect client gone, clientGone
-// 2. websocket write buffer too big, leads to possible dup consume
-// 3. websocket how to get appid/subkey from header
-// 4. heartbeat, done
 func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -335,6 +330,8 @@ func (this *Gateway) wsWritePump(clientGone chan struct{}, ws *websocket.Conn, f
 		select {
 		case msg := <-fetcher.Messages():
 			ws.SetWriteDeadline(time.Now().Add(time.Second * 10))
+			// FIXME because of buffer, client recv 10, but kateway written 100, then
+			// client quit...
 			if err = ws.WriteMessage(websocket.BinaryMessage, msg.Value); err != nil {
 				log.Error("%s: %v", ws.RemoteAddr(), err)
 				return
