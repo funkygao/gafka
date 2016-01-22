@@ -1,6 +1,6 @@
 %define name gafka
-%define version 0.2.5
-%define release 4
+%define version 0.2.6
+%define release 1
 %define path usr/local
 %define group Development/Tools
 %define __os_install_post %{nil}
@@ -31,6 +31,7 @@ cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
 ./build.sh -t gk
 ./build.sh -t zk
 ./build.sh -t ehaproxy
+./build.sh -t kateway
 
 %install
 export DONT_STRIP=1
@@ -41,10 +42,12 @@ mkdir -p $RPM_BUILD_ROOT/etc/bash_completion.d
 install cmd/gk/gk $RPM_BUILD_ROOT/%{path}/bin
 install cmd/zk/zk $RPM_BUILD_ROOT/%{path}/bin
 install cmd/ehaproxy/ehaproxy $RPM_BUILD_ROOT/%{path}/bin
+install cmd/kateway/kateway $RPM_BUILD_ROOT/%{path}/bin
 install misc/autocomplete/bash_autocomplete $RPM_BUILD_ROOT/etc/bash_completion.d/gk
 
 %files
 /%{path}/bin/gk
 /%{path}/bin/zk
 /%{path}/bin/ehaproxy
+/%{path}/bin/kateway
 /etc/bash_completion.d/gk
