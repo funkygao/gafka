@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"sort"
@@ -12,6 +13,7 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/golib/pipestream"
 )
 
 type Topics struct {
@@ -27,12 +29,12 @@ type Topics struct {
 
 func (this *Topics) Run(args []string) (exitCode int) {
 	var (
-		zone        string
-		cluster     string
-		addTopic    string
-		replicas    int
-		partitions  int
-		topicConfig string
+		zone            string
+		cluster         string
+		addTopic        string
+		replicas        int
+		partitions      int
+		configRetention int
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -42,7 +44,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.StringVar(&addTopic, "add", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
-	cmdFlags.StringVar(&topicConfig, "config", "", "")
+	cmdFlags.IntVar(&configRetention, "retention", -1, "")
 	cmdFlags.IntVar(&replicas, "replicas", 2, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -50,7 +52,8 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	if validateArgs(this, this.Ui).
 		on("-add", "-c").
-		requireAdminRights("-add", "-config").
+		on("-retention", "-c", "-t").
+		requireAdminRights("-add", "-retention").
 		invalid(args) {
 		return 2
 	}
@@ -65,6 +68,13 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	ensureZoneValid(zone)
 
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	if configRetention > 0 {
+		zkcluster := zkzone.NewCluster(cluster)
+		this.configTopic(zkcluster, this.topicPattern, configRetention)
+		return
+	}
+
 	if !this.verbose {
 		// output header
 		this.Ui.Output(fmt.Sprintf("%30s %50s", "cluster", "topic"))
@@ -72,7 +82,6 @@ func (this *Topics) Run(args []string) (exitCode int) {
 			strings.Repeat("-", 30), strings.Repeat("-", 50)))
 	}
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	if cluster != "" {
 		zkcluster := zkzone.NewCluster(cluster)
 		this.displayTopicsOfCluster(zkcluster)
@@ -96,6 +105,60 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Topics) configTopic(zkcluster *zk.ZkCluster, topic string, retentionInMinute int) {
+	/*
+	  val SegmentBytesProp = "segment.bytes"
+	  val SegmentMsProp = "segment.ms"
+	  val SegmentIndexBytesProp = "segment.index.bytes"
+	  val FlushMessagesProp = "flush.messages"
+	  val FlushMsProp = "flush.ms"
+	  val RetentionBytesProp = "retention.bytes"
+	  val RententionMsProp = "retention.ms"
+	  val MaxMessageBytesProp = "max.message.bytes"
+	  val IndexIntervalBytesProp = "index.interval.bytes"
+	  val DeleteRetentionMsProp = "delete.retention.ms"
+	  val FileDeleteDelayMsProp = "file.delete.delay.ms"
+	  val MinCleanableDirtyRatioProp = "min.cleanable.dirty.ratio"
+	  val CleanupPolicyProp = "cleanup.policy"
+	*/
+
+	// ./bin/kafka-topics.sh --zookeeper localhost:2181/kafka --alter --topic foobar --config max.message.bytes=10000101
+	// zk: {"version":1,"config":{"index.interval.bytes":"10000101","max.message.bytes":"10000101"}}
+
+	if retentionInMinute < 10 {
+		panic("less than 10 minutes?")
+	}
+
+	zkAddrs := zkcluster.ZkConnectAddr()
+	key := "retention.ms"
+	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
+		fmt.Sprintf("--zookeeper %s", zkAddrs),
+		fmt.Sprintf("--alter"),
+		fmt.Sprintf("--topic %s", topic),
+		fmt.Sprintf("--config %s=%d", key, retentionInMinute),
+	)
+	err := cmd.Open()
+	swallow(err)
+	defer cmd.Close()
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+
+	output := make([]string, 0)
+	for scanner.Scan() {
+		output = append(output, scanner.Text())
+	}
+	swallow(scanner.Err())
+
+	path := zkcluster.GetTopicConfigPath(topic)
+	this.Ui.Info(path)
+
+	for _, line := range output {
+		this.Ui.Output(line)
+	}
+
 }
 
 func (this *Topics) echoOrBuffer(line string, buffer []string) []string {
@@ -299,16 +362,16 @@ Options:
     -c cluster
 
     -t topic name pattern
-      Only show topics like this give topic.
-
-    -config k=v
-      Config a topic. TODO
+      Only show topics like this give topic.    
 
     -add topic
       Add a topic to a kafka cluster.
 
     -partitions n
       Partition count when adding a new topic. Default 1.
+
+    -retention retention in minutes
+      Config a topic log.retention.minutes.
 
     -replicas n
       Replica factor when adding a new topic. Default 2.
