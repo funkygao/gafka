@@ -220,6 +220,10 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 	}
 	sort.Strings(sortedClusters)
 
+	portN := 0
+	hostN := 0
+	topicN := 0
+	partitionN := 0
 	for _, host := range sortedHosts {
 		tn := 0
 		pn := 0
@@ -235,6 +239,11 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 			mn += brokerInstances[cluster][host].totalMsgsInStock()
 			ports = append(ports, brokerInstances[cluster][host].tcpPorts...)
 		}
+
+		portN += len(ports)
+		topicN += tn
+		partitionN += pn
+		hostN += 1
 
 		this.Ui.Output(fmt.Sprintf("  %s leading: %2dT %3dP %15sM ports %2d:%+v",
 			color.Green("%15s", host),
@@ -273,6 +282,10 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 
 		}
 	}
+
+	this.Ui.Output(fmt.Sprintf("%15s host:%d, topic:%d, partition:%d, instances:%d",
+		"-TOTAL-",
+		hostN, topicN, partitionN, portN))
 }
 
 func (*Topology) Synopsis() string {
