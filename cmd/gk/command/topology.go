@@ -283,7 +283,7 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 		}
 	}
 
-	this.Ui.Output(fmt.Sprintf("%17s host:%d, topic:%d, partition:%d, instances:%d",
+	this.Ui.Output(fmt.Sprintf("%17s host:%d, topic:%d, partition:%d, instance:%d",
 		"-TOTAL-",
 		hostN, topicN, partitionN, portN))
 }
