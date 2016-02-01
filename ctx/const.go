@@ -3,26 +3,18 @@ package ctx
 const (
 	DefaultConfig = `
 {
-    zones: [
-        {
-            name: "sit"
-            zk: "10.77.144.87:10181,10.77.144.88:10181,10.77.144.89:10181"
-            tunnel: "gaopeng27@10.77.130.14"
-        }
+    zones: [        
         {
             name: "test"
             zk: "10.77.144.101:10181,10.77.144.132:10181,10.77.144.182:10181"
-            tunnel: "gaopeng27@10.77.130.14"
         }      
         {
-            name: "pre"
+            name: "sit"
             zk: "10.213.33.154:2181,10.213.42.48:2181,10.213.42.49:2181"
-            tunnel: "gaopeng27@10.209.11.11"
         }  
         {
             name: "prod"
             zk: "10.209.33.69:2181,10.209.37.19:2181,10.209.37.68:2181"
-            tunnel: "gaopeng27@10.209.11.11"
         }
     ]
 
@@ -39,12 +31,12 @@ const (
     ]
 
     reverse_dns: [
-        // pre zk
+        // sit zk
         "z2181a.sit.wdds.zk.com:10.213.33.154"
         "z2181b.sit.wdds.zk.com:10.213.42.48"
         "z2181c.sit.wdds.zk.com:10.213.42.49"
         
-        // pre kafka brokers
+        // sit kafka brokers
         "k10101a.sit.wdds.kfk.com:10.213.33.148"
         "k10101b.sit.wdds.kfk.com:10.213.33.149"
         "k10102a.sit.wdds.kfk.com:10.213.33.148"
