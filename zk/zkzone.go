@@ -2,6 +2,7 @@ package zk
 
 import (
 	"container/list"
+	"errors"
 	"fmt"
 	"path"
 	pt "path"
@@ -218,7 +219,8 @@ func (this *ZkZone) RegisterCluster(name, path string) error {
 	if err == zk.ErrNodeExists {
 		return nil
 	}
-	return err
+
+	return errors.New(fmt.Sprintf("%s: %v", path, err))
 }
 
 func (this *ZkZone) createZnode(path string, data []byte) error {
