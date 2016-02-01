@@ -25,6 +25,7 @@ type Topics struct {
 	topicN       int
 	partitionN   int
 	totalMsgs    int64
+	ipInNumber   bool
 }
 
 func (this *Topics) Run(args []string) (exitCode int) {
@@ -42,6 +43,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
+	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.StringVar(&addTopic, "add", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
 	cmdFlags.IntVar(&configRetention, "retention", -1, "")
@@ -338,9 +340,16 @@ func (this *Topics) addTopic(zkcluster *zk.ZkCluster, topic string, replicas,
 	for _, l := range lines {
 		this.Ui.Output(color.Yellow(l))
 	}
-	this.Ui.Output(fmt.Sprintf("\tzookeeper.connect: %s", zkcluster.NamedZkConnectAddr()))
-	this.Ui.Output(fmt.Sprintf("\t      broker.list: %s",
-		strings.Join(zkcluster.NamedBrokerList(), ",")))
+	if this.ipInNumber {
+		this.Ui.Output(fmt.Sprintf("\tzookeeper.connect: %s", zkcluster.ZkConnectAddr()))
+		this.Ui.Output(fmt.Sprintf("\t      broker.list: %s",
+			strings.Join(zkcluster.BrokerList(), ",")))
+	} else {
+		this.Ui.Output(fmt.Sprintf("\tzookeeper.connect: %s", zkcluster.NamedZkConnectAddr()))
+		this.Ui.Output(fmt.Sprintf("\t      broker.list: %s",
+			strings.Join(zkcluster.NamedBrokerList(), ",")))
+	}
+
 	return nil
 }
 
@@ -362,7 +371,10 @@ Options:
     -c cluster
 
     -t topic name pattern
-      Only show topics like this give topic.    
+      Only show topics like this give topic.
+
+    -n
+      Show network addresses as numbers.
 
     -add topic
       Add a topic to a kafka cluster.

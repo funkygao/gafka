@@ -22,6 +22,7 @@ type Brokers struct {
 
 	staleOnly     bool
 	maxBrokerMode bool
+	ipInNumber    bool
 }
 
 func (this *Brokers) Run(args []string) (exitCode int) {
@@ -33,6 +34,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
+	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.BoolVar(&this.staleOnly, "stale", false, "")
 	cmdFlags.BoolVar(&this.maxBrokerMode, "maxbroker", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -162,11 +164,20 @@ func (this *Brokers) clusterBrokers(cluster string, brokers map[string]*zk.Broke
 		if time.Since(b.Uptime()) < time.Hour*24*7 {
 			uptime = color.Green(uptime)
 		}
-		lines = append(lines, fmt.Sprintf("\t%8s %21s jmx:%-2d ver:%-2d uptime:%s",
-			brokerId,
-			b.NamedAddr(),
-			b.JmxPort,
-			b.Version, uptime))
+		if this.ipInNumber {
+			lines = append(lines, fmt.Sprintf("\t%8s %21s jmx:%-2d ver:%-2d uptime:%s",
+				brokerId,
+				b.Addr(),
+				b.JmxPort,
+				b.Version, uptime))
+		} else {
+			lines = append(lines, fmt.Sprintf("\t%8s %21s jmx:%-2d ver:%-2d uptime:%s",
+				brokerId,
+				b.NamedAddr(),
+				b.JmxPort,
+				b.Version, uptime))
+		}
+
 	}
 	return lines, len(brokers)
 }
@@ -191,6 +202,9 @@ Options:
 
     -maxbroker
       Display max broker.id and max port
+
+    -n
+      Show network addresses as numbers
 
     -stale
       Only print stale brokers: found in zk but not connectable
