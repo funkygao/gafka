@@ -63,7 +63,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	if addTopic != "" {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 		zkcluster := zkzone.NewCluster(cluster)
-		this.addTopic(zkcluster, addTopic, replicas, partitions)
+		swallow(this.addTopic(zkcluster, addTopic, replicas, partitions))
 
 		return
 	}
