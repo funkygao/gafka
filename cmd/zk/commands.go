@@ -37,6 +37,13 @@ func init() {
 			}, nil
 		},
 
+		"acl": func() (cli.Command, error) {
+			return &command.Acl{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"dump": func() (cli.Command, error) {
 			return &command.Dump{
 				Ui:  ui,
