@@ -403,7 +403,7 @@ Options:
 
     -p cluster zk path
       The new kafka cluster chroot path in Zookeeper.
-      e,g. gk clusters -z prod -add foo -p /kafka
+      e,g. gk clusters -z prod -add foo -p /kafka/services/trade
 
     -s
       Setup a cluster info.
