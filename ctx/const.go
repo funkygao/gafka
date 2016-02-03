@@ -31,6 +31,15 @@ const (
     ]
 
     reverse_dns: [
+        // test zk
+        "z2181a.test.wdds.zk.com:10.213.42.140"
+        "z2181b.test.wdds.zk.com:10.213.42.141"
+        "z2181c.test.wdds.zk.com:10.213.42.142"
+
+        // test kafka brokers
+        "k10001a.test.wdds.kfk.com:10.213.57.156"
+        "k10001b.test.wdds.kfk.com:10.213.42.135"
+
         // sit zk
         "z2181a.sit.wdds.zk.com:10.213.33.154"
         "z2181b.sit.wdds.zk.com:10.213.42.48"
