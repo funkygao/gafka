@@ -25,6 +25,7 @@ var (
 	pubkey        string
 	appid         string
 	sleep         time.Duration
+	ver           string
 	sz            int
 	async         bool
 )
@@ -37,6 +38,7 @@ func main() {
 	flag.StringVar(&mode, "mode", "gw", "<gw|kafka|http|redis>")
 	flag.StringVar(&appid, "appid", "app1", "appid of pub")
 	flag.StringVar(&pubkey, "pubkey", "mypubkey", "pubkey")
+	flag.StringVar(&ver, "ver", "v1", "pub topic version")
 	flag.BoolVar(&async, "async", false, "async pub")
 	flag.DurationVar(&sleep, "sleep", 0, "sleep between pub")
 	flag.BoolVar(&suppressError, "noerr", false, "suppress error output")
@@ -182,7 +184,7 @@ func createHttpClient() *http.Client {
 
 func pubGatewayLoop(seq int) {
 	httpClient := createHttpClient()
-	url := fmt.Sprintf("%s/topics/%s/v1?", addr, topic)
+	url := fmt.Sprintf("%s/topics/%s/%s?", addr, topic, ver)
 	if async {
 		url += "async=1"
 	}
