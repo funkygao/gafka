@@ -24,6 +24,9 @@ type reporter struct {
 }
 
 // InfluxDB starts a InfluxDB reporter which will post the metrics from the given registry at each d interval.
+// CREATE RETENTION POLICY two_hours ON food_data DURATION 2h REPLICATION 1 DEFAULT
+// SHOW RETENTION POLICIES ON food_data
+// CREATE CONTINUOUS QUERY cq_30m ON food_data BEGIN SELECT mean(website) AS mean_website,mean(phone) AS mean_phone INTO food_data."default".downsampled_orders FROM orders GROUP BY time(30m) END
 func InfluxDB(hostname string, r metrics.Registry, interval time.Duration,
 	url, database, username, password string) {
 	u, err := uurl.Parse(url)

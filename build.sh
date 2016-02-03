@@ -28,6 +28,7 @@ show_usage() {
 
 show_line_of_code() {
     find . -name '*.go' | xargs wc -l | sort -n | tail -1
+    #git ls-files | grep '.go$' | xargs wc -l | sort -n | tail -1
 }
 
 check_gofmt() {

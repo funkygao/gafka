@@ -55,7 +55,7 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
 
 ### TODO
 
-- [ ] https://github.com/olekukonko/tablewriter
+- [ ] display kafka server versions
 - [ ] zk console
 - [ ] display kafka config e,g. retention
 - [ ] bootstrap kafka
