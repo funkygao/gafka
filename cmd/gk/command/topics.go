@@ -201,8 +201,14 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		}
 		sort.Strings(sortedBrokerIds)
 		for _, brokerId := range sortedBrokerIds {
-			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%4s%s %s", " ",
-				color.Green(brokerId), brokers[brokerId]), linesInTopicMode)
+			if this.ipInNumber {
+				linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%4s%s %s", " ",
+					color.Green(brokerId), brokers[brokerId]), linesInTopicMode)
+			} else {
+				linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%4s%s %s", " ",
+					color.Green(brokerId), brokers[brokerId].NamedString()), linesInTopicMode)
+			}
+
 		}
 	}
 

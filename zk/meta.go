@@ -115,9 +115,16 @@ func newBrokerZnode(id string) *BrokerZnode {
 	return &BrokerZnode{Id: id}
 }
 
-func (b BrokerZnode) String() string {
+func (b BrokerZnode) NamedString() string {
 	return fmt.Sprintf("%s ver:%d uptime:%s",
 		b.NamedAddr(),
+		b.Version,
+		gofmt.PrettySince(b.Uptime()))
+}
+
+func (b BrokerZnode) String() string {
+	return fmt.Sprintf("%s ver:%d uptime:%s",
+		b.Addr(),
 		b.Version,
 		gofmt.PrettySince(b.Uptime()))
 }
