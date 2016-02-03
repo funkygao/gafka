@@ -136,7 +136,7 @@ func (this *subMetrics) Load() {
 		this.ConsumeMap[k].Inc(v)
 	}
 	for k, v := range data["subd"] {
-		if _, present := this.ConsumeMap[k]; !present {
+		if _, present := this.ConsumedMap[k]; !present {
 			this.ConsumedMap[k] = metrics.NewRegisteredCounter(k+"subd.ok", metrics.DefaultRegistry)
 		}
 		this.ConsumedMap[k].Inc(v)
