@@ -25,6 +25,7 @@ type Topics struct {
 	topicN       int
 	partitionN   int
 	totalMsgs    int64
+	totalOffsets int64
 	ipInNumber   bool
 }
 
@@ -88,10 +89,11 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		zkcluster := zkzone.NewCluster(cluster)
 		this.displayTopicsOfCluster(zkcluster)
 
-		this.Ui.Output(fmt.Sprintf("-TOTAL Topics- %d", this.topicN))
-		this.Ui.Output(fmt.Sprintf("-TOTAL Partitions- %d", this.partitionN))
+		this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Topics-", this.topicN))
+		this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Partitions-", this.partitionN))
 		if this.verbose {
-			this.Ui.Output(fmt.Sprintf("-TOTAL Messages- %s", gofmt.Comma(this.totalMsgs)))
+			this.Ui.Output(fmt.Sprintf("%25s %s", "-FLAT Messages-", gofmt.Comma(this.totalMsgs)))
+			this.Ui.Output(fmt.Sprintf("%25s %s", "-CUM Messages-", gofmt.Comma(this.totalOffsets)))
 		}
 		return
 	}
@@ -100,10 +102,11 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		this.displayTopicsOfCluster(zkcluster)
 	})
-	this.Ui.Output(fmt.Sprintf("-TOTAL Topics- %d", this.topicN))
-	this.Ui.Output(fmt.Sprintf("-TOTAL Partitions- %d", this.partitionN))
+	this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Topics-", this.topicN))
+	this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Partitions-", this.partitionN))
 	if this.verbose {
-		this.Ui.Output(fmt.Sprintf("-TOTAL Messages- %s", gofmt.Comma(this.totalMsgs)))
+		this.Ui.Output(fmt.Sprintf("%25s %s", "-FLAT Messages-", gofmt.Comma(this.totalMsgs)))
+		this.Ui.Output(fmt.Sprintf("%25s %s", "-CUM Messages-", gofmt.Comma(this.totalOffsets)))
 	}
 
 	return
@@ -314,6 +317,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 					partitionID, leader.ID(), replicas, isr,
 					latestOffset, latestOffset-oldestOffset), linesInTopicMode)
 				this.totalMsgs += latestOffset - oldestOffset
+				this.totalOffsets += latestOffset
 			} else {
 				// use red for alert
 				linesInTopicMode = this.echoOrBuffer(color.Red("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%d Num:%d",
