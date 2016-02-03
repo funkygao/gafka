@@ -91,6 +91,8 @@ func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 		stat := this.parsedStat(stats[hostPort])
 		if stat.mode == "" {
 			stat.mode = color.Red("E")
+		} else if stat.mode == "L" {
+			stat.mode = color.Green("L")
 		}
 		this.Ui.Output(fmt.Sprintf("%-15s %-15s %5s %1s %10s %12s %12s %5s %7s %s",
 			stat.ver,
