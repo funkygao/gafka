@@ -96,7 +96,7 @@ func (this *zkMetaStore) Start() {
 		for {
 			select {
 			case <-ticker.C:
-				log.Trace("refreshing zk meta store")
+				log.Debug("refreshing zk meta store")
 
 				this.refreshTopologyCache()
 

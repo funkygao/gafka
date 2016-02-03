@@ -70,7 +70,7 @@ func (this *mysqlStore) Start() {
 			select {
 			case <-ticker.C:
 				this.refreshFromMysql()
-				log.Trace("manager refreshed from mysql")
+				log.Debug("manager refreshed from mysql")
 
 			case <-this.shutdownCh:
 				log.Info("mysql manager stopped")
