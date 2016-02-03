@@ -62,6 +62,7 @@ func (this *Checkup) Run(args []string) (exitCode int) {
 	}
 	cmd.Run(append(args, "-p"))
 
+	this.Ui.Output("")
 	this.Ui.Output("Did you find something wrong?")
 
 	return
