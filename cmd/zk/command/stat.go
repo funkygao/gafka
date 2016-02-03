@@ -8,6 +8,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	gzk "github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/pretty"
 )
 
@@ -41,6 +42,10 @@ func (this *Stat) Run(args []string) (exitCode int) {
 	_, stat, err := conn.Get(this.path)
 	must(err)
 	this.Ui.Output(fmt.Sprintf("%# v", pretty.Formatter(*stat)))
+	ctime := gzk.ZkTimestamp(stat.Ctime).Time()
+	mtime := gzk.ZkTimestamp(stat.Mtime).Time()
+	this.Ui.Output(fmt.Sprintf("ctime: %s, mtime: %s",
+		gofmt.PrettySince(ctime), gofmt.PrettySince(mtime)))
 	return
 }
 
