@@ -2,7 +2,6 @@ package kfs
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"sync"
@@ -10,6 +9,7 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	"github.com/Shopify/sarama"
+	log "github.com/funkygao/log4go"
 	"golang.org/x/net/context"
 )
 
@@ -33,7 +33,7 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	d.RLock()
 	defer d.RUnlock()
 
-	log.Printf("Dir Lookup, name=%s", name)
+	log.Debug("Dir Lookup, name=%s", name)
 
 	partitionOffset := -1
 	for i := len(name) - 1; i > 0; i-- {
@@ -61,7 +61,7 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 	kfk, err := sarama.NewClient(d.fs.zkcluster.BrokerList(), sarama.NewConfig())
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 	topics, err := kfk.Topics()
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	for _, topic := range topics {
 		partitions, err := kfk.Partitions(topic)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 
 			return nil, err
 		}

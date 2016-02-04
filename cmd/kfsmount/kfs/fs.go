@@ -1,7 +1,6 @@
 package kfs
 
 import (
-	"log"
 	"os"
 	"sync/atomic"
 	"syscall"
@@ -11,6 +10,7 @@ import (
 	"bazil.org/fuse/fs"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
+	log "github.com/funkygao/log4go"
 	"golang.org/x/net/context"
 )
 
@@ -25,7 +25,7 @@ type KafkaFS struct {
 }
 
 func New(zone, cluster string) *KafkaFS {
-	log.Printf("starting kfs zone:%s, cluster:%s", zone, cluster)
+	log.Info("starting kfs zone:%s, cluster:%s", zone, cluster)
 
 	this := &KafkaFS{}
 
@@ -35,7 +35,7 @@ func New(zone, cluster string) *KafkaFS {
 
 	this.root = this.newDir(os.FileMode(0777))
 	if this.root.attr.Inode != 1 {
-		panic("O Root must receive id 1")
+		panic("Root must receive inode 1")
 	}
 	return this
 }
@@ -85,7 +85,7 @@ func (this *KafkaFS) Statfs(ctx context.Context, req *fuse.StatfsRequest,
 	s := syscall.Statfs_t{}
 	err := syscall.Statfs(this.zkcluster.Name(), &s)
 	if err != nil {
-		log.Println("DRIVE) Statfs falha no syscall; ", err)
+		log.Error("DRIVE) Statfs falha no syscall; ", err)
 		return err
 	}
 

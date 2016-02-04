@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"runtime/debug"
 	"syscall"
@@ -13,6 +12,7 @@ import (
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kfsmount/kfs"
 	"github.com/funkygao/golib/signal"
+	log "github.com/funkygao/log4go"
 )
 
 func init() {
@@ -38,6 +38,8 @@ func main() {
 		}
 	}()
 
+	setupLogging("", options.logLevel, "")
+
 	c, err := fuse.Mount(
 		options.mount,
 		fuse.FSName("kfs"),
@@ -47,7 +49,7 @@ func main() {
 		fuse.AllowOther(),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Critical(err)
 	}
 	defer c.Close()
 
@@ -58,7 +60,7 @@ func main() {
 				break
 			}
 
-			log.Println(err)
+			log.Warn(err)
 			time.Sleep(time.Second * 5)
 		}
 	}, syscall.SIGINT, syscall.SIGTERM)
@@ -67,13 +69,13 @@ func main() {
 	fs := kfs.New(options.zone, options.cluster)
 
 	if err := srv.Serve(fs); err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 
 	<-c.Ready
 	if err := c.MountError; err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 
-	log.Println("Kafka FS unmounted")
+	log.Info("Kafka FS unmounted")
 }

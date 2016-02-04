@@ -1,13 +1,13 @@
 package kfs
 
 import (
-	"log"
 	"sync"
 	"time"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	"github.com/Shopify/sarama"
+	log "github.com/funkygao/log4go"
 	"golang.org/x/net/context"
 )
 
@@ -26,11 +26,11 @@ func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
 	f.RLock()
 	defer f.RUnlock()
 
-	log.Printf("File Attr, topic=%s, partitionId=%d", f.topic, f.partitionId)
+	log.Debug("File Attr, topic=%s, partitionId=%d", f.topic, f.partitionId)
 
 	kfk, err := sarama.NewClient(f.fs.zkcluster.BrokerList(), sarama.NewConfig())
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 
 		return err
 	}
@@ -38,7 +38,7 @@ func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
 
 	latestOffset, err := kfk.GetOffset(f.topic, f.partitionId, sarama.OffsetNewest)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 
 		return err
 	}
@@ -56,13 +56,13 @@ func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
 
 func (f *File) Open(ctx context.Context, req *fuse.OpenRequest,
 	resp *fuse.OpenResponse) (fs.Handle, error) {
-	log.Printf("File Open, req=%+v, topic=%s, partitionId=%d", req,
+	log.Debug("File Open, req=%+v, topic=%s, partitionId=%d", req,
 		f.topic, f.partitionId)
 
 	config := sarama.NewConfig()
 	consumer, err := sarama.NewConsumer(f.fs.zkcluster.BrokerList(), config)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest,
 }
 
 func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
-	log.Printf("File Release, req=%+v, topic=%s, partitionId=%d", req,
+	log.Debug("File Release, req=%+v, topic=%s, partitionId=%d", req,
 		f.topic, f.partitionId)
 	return f.consumer.Close()
 }
@@ -82,11 +82,11 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 	f.RLock()
 	defer f.RUnlock()
 
-	log.Printf("File Read, req=%+v, topic=%s, partitionId=%d", req,
+	log.Debug("File Read, req=%+v, topic=%s, partitionId=%d", req,
 		f.topic, f.partitionId)
 
 	if f.consumer == nil {
-		log.Println("Read: Consumer should be open, aborting request")
+		log.Error("Read: Consumer should be open, aborting request")
 		return fuse.ENOTSUP
 	}
 
