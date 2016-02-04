@@ -93,6 +93,16 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 	// TODO req.Size, req.Offset
 	resp.Data = []byte{}
 
+	p, err := f.consumer.ConsumePartition(f.topic, f.partitionId, sarama.OffsetOldest)
+	if err != nil {
+		log.Error(err)
+
+		return err
+	}
+
+	msg := <-p.Messages()
+	resp.Data = msg.Value
+
 	return nil
 }
 
