@@ -98,8 +98,8 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 			break
 		}
 
-		offset += len(msg.Value)
 		copy(resp.Data[offset:], msg.Value)
+		offset += len(msg.Value)
 	}
 
 	return nil
