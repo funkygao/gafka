@@ -1,6 +1,7 @@
 package kfs
 
 import (
+	"fmt"
 	"log"
 	"sync"
 
@@ -31,7 +32,7 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	d.RLock()
 	defer d.RUnlock()
 
-	log.Printf("[Dir] Lookup, name=%s", name)
+	log.Printf("Dir Lookup, name=%s", name)
 
 	return nil, fuse.ENOENT
 }
@@ -58,12 +59,22 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	}
 
 	for _, topic := range topics {
-		de := fuse.Dirent{
-			Name: topic,
-			Type: fuse.DT_File,
+		partitions, err := kfk.Partitions(topic)
+		if err != nil {
+			log.Println(err)
+
+			return nil, err
 		}
 
-		out = append(out, de)
+		for _, p := range partitions {
+			de := fuse.Dirent{
+				Name: fmt.Sprintf("%s.%d", topic, p),
+				Type: fuse.DT_File,
+			}
+
+			out = append(out, de)
+		}
+
 	}
 
 	return out, nil
