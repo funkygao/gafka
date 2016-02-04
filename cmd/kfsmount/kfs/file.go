@@ -91,8 +91,16 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 	}
 
 	// TODO req.Size, req.Offset
-	msg := <-f.consumer.Messages()
-	resp.Data = msg.Value
+	offset := 0
+	for {
+		msg := <-f.consumer.Messages()
+		if offset+len(msg.Value) > req.Size {
+			break
+		}
+
+		offset += len(msg.Value)
+		copy(resp.Data[offset:], msg.Value)
+	}
 
 	return nil
 }
