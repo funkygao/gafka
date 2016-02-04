@@ -33,7 +33,7 @@ func New(zone, cluster string) *KafkaFS {
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	this.zkcluster = zkzone.NewCluster(cluster) // panic if invalid cluster
 
-	this.root = this.newDir(this.zkcluster.Name(), os.FileMode(0777))
+	this.root = this.newDir(os.FileMode(0777))
 	if this.root.attr.Inode != 1 {
 		panic("O Root must receive id 1")
 	}
@@ -48,7 +48,7 @@ func (this *KafkaFS) nextInodeId() uint64 {
 	return atomic.AddUint64(&this.inodeId, 1)
 }
 
-func (this *KafkaFS) newDir(path string, mode os.FileMode) *Dir {
+func (this *KafkaFS) newDir(mode os.FileMode) *Dir {
 	now := time.Now()
 	return &Dir{
 		attr: fuse.Attr{
@@ -59,8 +59,7 @@ func (this *KafkaFS) newDir(path string, mode os.FileMode) *Dir {
 			Crtime: now,
 			Mode:   os.ModeDir | mode,
 		},
-		path: path,
-		fs:   this,
+		fs: this,
 	}
 }
 

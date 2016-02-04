@@ -3,6 +3,8 @@ package kfs
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"bazil.org/fuse"
@@ -12,11 +14,10 @@ import (
 )
 
 type Dir struct {
+	fs *KafkaFS
+
 	sync.RWMutex
 	attr fuse.Attr
-
-	path string
-	fs   *KafkaFS
 }
 
 func (d *Dir) Attr(ctx context.Context, o *fuse.Attr) error {
@@ -34,7 +35,7 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 
 	log.Printf("Dir Lookup, name=%s", name)
 
-	return nil, fuse.ENOENT
+	return d.fs.newFile(filepath.Join(d.fs.zkcluster.Name(), name), os.FileMode(0777)), nil
 }
 
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
