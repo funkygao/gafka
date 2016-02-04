@@ -20,6 +20,7 @@ type File struct {
 
 	topic       string
 	partitionId int32
+	offset      int64
 }
 
 func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
@@ -93,7 +94,10 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 	// TODO req.Size, req.Offset
 	resp.Data = []byte{}
 
-	p, err := f.consumer.ConsumePartition(f.topic, f.partitionId, sarama.OffsetOldest)
+	if f.offset == 0 {
+		f.offset = sarama.OffsetOldest
+	}
+	p, err := f.consumer.ConsumePartition(f.topic, f.partitionId, f.offset)
 	if err != nil {
 		log.Error(err)
 
@@ -102,6 +106,7 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 
 	msg := <-p.Messages()
 	resp.Data = msg.Value
+	f.offset = msg.Offset
 
 	return nil
 }
