@@ -1,6 +1,6 @@
 global    
     # logging to rsyslog facility local3 [err warning info debug]   
-    log 127.0.0.1 local3 info
+    log 127.0.0.1 local3 warning
     stats bind-process {{.CpuNum}}
     stats socket /tmp/haproxy.sock mode 0600 level admin
 
