@@ -96,7 +96,7 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 		select {
 		case msg := <-f.consumer.Messages():
 			if offset+len(msg.Value) > req.Size {
-				break
+				return nil
 			}
 
 			copy(resp.Data[offset:], msg.Value)
