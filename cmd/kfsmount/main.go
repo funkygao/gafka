@@ -38,7 +38,7 @@ func main() {
 		}
 	}()
 
-	setupLogging("", options.logLevel, "")
+	setupLogging("stdout", options.logLevel, "")
 
 	c, err := fuse.Mount(
 		options.mount,
