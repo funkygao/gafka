@@ -56,7 +56,7 @@ func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
 
 func (f *File) Open(ctx context.Context, req *fuse.OpenRequest,
 	resp *fuse.OpenResponse) (fs.Handle, error) {
-	log.Trace("File Open, req=%+v, topic=%s, partitionId=%d", req,
+	log.Trace("File Open, req=%#v, topic=%s, partitionId=%d", req,
 		f.topic, f.partitionId)
 
 	config := sarama.NewConfig()
@@ -73,7 +73,7 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest,
 }
 
 func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
-	log.Trace("File Release, req=%+v, topic=%s, partitionId=%d", req,
+	log.Trace("File Release, req=%#v, topic=%s, partitionId=%d", req,
 		f.topic, f.partitionId)
 	return f.consumer.Close()
 }
@@ -82,7 +82,7 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 	f.RLock()
 	defer f.RUnlock()
 
-	log.Trace("File Read, req=%+v, topic=%s, partitionId=%d", req,
+	log.Trace("File Read, req=%#v, topic=%s, partitionId=%d", req,
 		f.topic, f.partitionId)
 
 	if f.consumer == nil {
