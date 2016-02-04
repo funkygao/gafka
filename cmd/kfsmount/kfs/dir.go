@@ -33,7 +33,7 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	d.RLock()
 	defer d.RUnlock()
 
-	log.Debug("Dir Lookup, name=%s", name)
+	log.Trace("Dir Lookup, name=%s", name)
 
 	partitionOffset := -1
 	for i := len(name) - 1; i > 0; i-- {
