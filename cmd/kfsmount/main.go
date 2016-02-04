@@ -23,7 +23,7 @@ func init() {
 	}
 
 	if options.boot {
-		fmt.Printf("yum install fuse\nmodprobe fuse\nlsmod | grep fuse")
+		fmt.Printf("yum install -y fuse\nmodprobe fuse\nlsmod | grep fuse\n")
 		os.Exit(0)
 	}
 }
