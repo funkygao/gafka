@@ -1,10 +1,7 @@
 package kfs
 
 import (
-	"io"
 	"log"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -18,20 +15,18 @@ type File struct {
 	sync.RWMutex
 	attr fuse.Attr
 
-	fs      *KafkaFS
-	handler *os.File
+	fs       *KafkaFS
+	consumer sarama.Consumer
 
 	topic       string
 	partitionId int32
-
-	path string // TODO
 }
 
 func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
 	f.RLock()
 	defer f.RUnlock()
 
-	log.Printf("File Attr, topic=%s, partitionId:%s", f.topic, f.partitionId)
+	log.Printf("File Attr, topic=%s, partitionId=%d", f.topic, f.partitionId)
 
 	kfk, err := sarama.NewClient(f.fs.zkcluster.BrokerList(), sarama.NewConfig())
 	if err != nil {
@@ -59,65 +54,48 @@ func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
 	return nil
 }
 
-func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
-	log.Printf("(*File) Open, req=%q, path=%s", req, filepath.Base(f.path))
+func (f *File) Open(ctx context.Context, req *fuse.OpenRequest,
+	resp *fuse.OpenResponse) (fs.Handle, error) {
+	log.Printf("File Open, req=%+v, topic=%s, partitionId=%d", req,
+		f.topic, f.partitionId)
 
-	fsHandler, err := os.OpenFile(f.path, int(req.Flags), f.attr.Mode)
+	config := sarama.NewConfig()
+	consumer, err := sarama.NewConsumer(f.fs.zkcluster.BrokerList(), config)
 	if err != nil {
-		log.Print("Open ERR: ", err)
+		log.Println(err)
+
 		return nil, err
 	}
-	f.handler = fsHandler
 
-	// resp.Flags |= fuse.OpenDirectIO
+	f.consumer = consumer
 
 	return f, nil
 }
 
 func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
-	log.Printf("(*File) Release, req=%q, path=%s", req, filepath.Base(f.path))
-	return f.handler.Close()
+	log.Printf("File Release, req=%+v, topic=%s, partitionId=%d", req,
+		f.topic, f.partitionId)
+	return f.consumer.Close()
 }
 
 func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	f.RLock()
 	defer f.RUnlock()
 
-	log.Printf("(*File) Read, req=%q, path=%s", req, filepath.Base(f.path))
+	log.Printf("File Read, req=%+v, topic=%s, partitionId=%d", req,
+		f.topic, f.partitionId)
 
-	if f.handler == nil {
-		log.Println("Read: File should be open, aborting request")
+	if f.consumer == nil {
+		log.Println("Read: Consumer should be open, aborting request")
 		return fuse.ENOTSUP
 	}
 
-	resp.Data = resp.Data[:req.Size]
-	n, err := f.handler.ReadAt(resp.Data, req.Offset)
-	if err != nil && err != io.EOF {
-		log.Println("Read ERR: ", err)
-		return err
-	}
-	resp.Data = resp.Data[:n]
+	// TODO req.Size, req.Offset
+	resp.Data = []byte{}
 
 	return nil
 }
 
 func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
-	f.Lock()
-	defer f.Unlock()
-
-	log.Printf("(*File) Write, req=%q, path=%s", req, filepath.Base(f.path))
-
-	if f.handler == nil {
-		log.Println("Write: File should be open, aborting request")
-		return fuse.ENOTSUP
-	}
-
-	n, err := f.handler.WriteAt(req.Data, req.Offset)
-	if err != nil {
-		log.Println("Write ERR: ", err)
-		return err
-	}
-	resp.Size = n
-
-	return nil
+	return fuse.EPERM
 }
