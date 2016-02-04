@@ -92,6 +92,6 @@ func (this *KafkaFS) Statfs(ctx context.Context, req *fuse.StatfsRequest,
 	res.Bfree = s.Bfree
 	res.Bavail = s.Bavail
 	res.Ffree = s.Ffree
-	res.Bsize = s.Bsize
+	res.Bsize = uint32(s.Bsize)
 	return nil
 }

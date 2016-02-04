@@ -5,14 +5,22 @@ import (
 	"log"
 	"os"
 	"runtime/debug"
+	"syscall"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kfsmount/kfs"
+	"github.com/funkygao/golib/signal"
 )
 
 func init() {
 	parseFlags()
+
+	if options.version {
+		fmt.Fprintf(os.Stderr, "%s-%s\n", gafka.Version, gafka.BuildId)
+		os.Exit(0)
+	}
 
 	if options.boot {
 		fmt.Printf("yum install fuse\nmodprobe fuse\nlsmod | grep fuse")
@@ -40,10 +48,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() {
-		c.Close()
+	defer c.Close()
+
+	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		fuse.Unmount(options.mount)
-	}()
+	}, syscall.SIGINT, syscall.SIGTERM)
 
 	srv := fs.New(c, &fs.Config{})
 	fs := kfs.New(options.zone, options.cluster)

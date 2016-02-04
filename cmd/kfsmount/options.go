@@ -13,6 +13,7 @@ var (
 		cluster string
 		mount   string
 		boot    bool
+		version bool
 	}
 )
 
@@ -21,6 +22,7 @@ func parseFlags() {
 	flag.StringVar(&options.cluster, "c", "", "kafka cluster name")
 	flag.StringVar(&options.mount, "mount", "", "mount point")
 	flag.BoolVar(&options.boot, "b", false, "boot guide")
+	flag.BoolVar(&options.version, "version", false, "show version and exit")
 
 	flag.Parse()
 }
