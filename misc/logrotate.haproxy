@@ -3,7 +3,7 @@
 /var/wd/ehaproxy/logs/haproxy*.log
 {
     rotate 4
-    weekly
+    daily # size=100M
     missingok
     notifempty
     compress
