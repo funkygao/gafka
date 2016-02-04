@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
+	"strconv"
 	"sync"
 
 	"bazil.org/fuse"
@@ -35,7 +35,22 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 
 	log.Printf("Dir Lookup, name=%s", name)
 
-	return d.fs.newFile(filepath.Join(d.fs.zkcluster.Name(), name), os.FileMode(0777)), nil
+	partitionOffset := -1
+	for i := len(name) - 1; i > 0; i-- {
+		if name[i] == '.' {
+			partitionOffset = i
+		}
+	}
+
+	if partitionOffset == -1 {
+		return nil, fuse.ENOENT
+	}
+
+	topic := name[:partitionOffset]
+	partition := name[partitionOffset+1:]
+	partitionId, _ := strconv.Atoi(partition)
+
+	return d.fs.newFile(topic, int32(partitionId), os.FileMode(0777)), nil
 }
 
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {

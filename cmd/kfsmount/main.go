@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime/debug"
 	"syscall"
+	"time"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -51,7 +52,15 @@ func main() {
 	defer c.Close()
 
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
-		fuse.Unmount(options.mount)
+		for i := 0; i < 10; i++ {
+			err := fuse.Unmount(options.mount)
+			if err == nil {
+				break
+			}
+
+			log.Println(err)
+			time.Sleep(time.Second * 5)
+		}
 	}, syscall.SIGINT, syscall.SIGTERM)
 
 	srv := fs.New(c, &fs.Config{})

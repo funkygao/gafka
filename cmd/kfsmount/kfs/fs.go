@@ -63,7 +63,7 @@ func (this *KafkaFS) newDir(mode os.FileMode) *Dir {
 	}
 }
 
-func (this *KafkaFS) newFile(path string, mode os.FileMode) *File {
+func (this *KafkaFS) newFile(topic string, partitionId int32, mode os.FileMode) *File {
 	now := time.Now()
 	return &File{
 		attr: fuse.Attr{
@@ -74,7 +74,9 @@ func (this *KafkaFS) newFile(path string, mode os.FileMode) *File {
 			Crtime: now,
 			Mode:   mode,
 		},
-		path: path,
+		fs:          this,
+		topic:       topic,
+		partitionId: partitionId,
 	}
 }
 

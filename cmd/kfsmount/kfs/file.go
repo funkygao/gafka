@@ -6,49 +6,56 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	"github.com/Shopify/sarama"
 	"golang.org/x/net/context"
 )
 
-var _ fs.Node = (*File)(nil)
-var _ fs.NodeOpener = (*File)(nil)
-var _ fs.HandleReader = (*File)(nil)
-var _ fs.HandleWriter = (*File)(nil)
-var _ fs.HandleReleaser = (*File)(nil)
-
 type File struct {
 	sync.RWMutex
-	attr    fuse.Attr
-	path    string
+	attr fuse.Attr
+
 	fs      *KafkaFS
 	handler *os.File
+
+	topic       string
+	partitionId int32
+
+	path string // TODO
 }
 
 func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
 	f.RLock()
-	log.Printf("(*File) Attr, path=%s", f.path)
+	defer f.RUnlock()
 
-	_ = f.readAttr()
+	log.Printf("File Attr, topic=%s, partitionId:%s", f.topic, f.partitionId)
 
-	*o = fuse.Attr{Mode: 0555}
-	//*o = f.attr
-
-	f.RUnlock()
-	return nil
-}
-
-func (f *File) readAttr() error {
-	stats, err := os.Stat(f.path)
+	kfk, err := sarama.NewClient(f.fs.zkcluster.BrokerList(), sarama.NewConfig())
 	if err != nil {
-		//The real file does not exists.
-		log.Println("Read attr ERR: ", err, f.path)
+		log.Println(err)
+
 		return err
 	}
-	f.attr.Size = uint64(stats.Size())
-	f.attr.Mtime = stats.ModTime()
-	f.attr.Mode = stats.Mode()
+	defer kfk.Close()
+
+	latestOffset, err := kfk.GetOffset(f.topic, f.partitionId, sarama.OffsetNewest)
+	if err != nil {
+		log.Println(err)
+
+		return err
+	}
+
+	now := time.Now()
+	*o = fuse.Attr{
+		Mode:  0555,
+		Size:  uint64(latestOffset),
+		Mtime: now,
+		Ctime: now,
+	}
+
 	return nil
 }
 
