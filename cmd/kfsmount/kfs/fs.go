@@ -83,12 +83,6 @@ func (this *KafkaFS) newFile(topic string, partitionId int32, mode os.FileMode) 
 func (this *KafkaFS) Statfs(ctx context.Context, req *fuse.StatfsRequest,
 	res *fuse.StatfsResponse) error {
 	s := syscall.Statfs_t{}
-	err := syscall.Statfs(this.zkcluster.Name(), &s)
-	if err != nil {
-		log.Error("DRIVE) Statfs falha no syscall; ", err)
-		return err
-	}
-
 	res.Blocks = s.Blocks
 	res.Bfree = s.Bfree
 	res.Bavail = s.Bavail

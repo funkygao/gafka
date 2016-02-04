@@ -16,11 +16,10 @@ type File struct {
 	attr fuse.Attr
 
 	fs       *KafkaFS
-	consumer sarama.Consumer
+	consumer sarama.PartitionConsumer
 
 	topic       string
 	partitionId int32
-	offset      int64
 }
 
 func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
@@ -60,15 +59,9 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest,
 	log.Trace("File Open, req=%#v, topic=%s, partitionId=%d", req,
 		f.topic, f.partitionId)
 
-	config := sarama.NewConfig()
-	consumer, err := sarama.NewConsumer(f.fs.zkcluster.BrokerList(), config)
-	if err != nil {
-		log.Error(err)
-
+	if err := f.reconsume(sarama.OffsetOldest); err != nil {
 		return nil, err
 	}
-
-	f.consumer = consumer
 
 	return f, nil
 }
@@ -92,22 +85,29 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 	}
 
 	// TODO req.Size, req.Offset
-	resp.Data = []byte{}
+	msg := <-f.consumer.Messages()
+	resp.Data = msg.Value
 
-	if f.offset == 0 {
-		f.offset = sarama.OffsetOldest
-	}
-	p, err := f.consumer.ConsumePartition(f.topic, f.partitionId, f.offset)
+	return nil
+}
+
+func (f *File) reconsume(offset int64) error {
+	config := sarama.NewConfig()
+	consumer, err := sarama.NewConsumer(f.fs.zkcluster.BrokerList(), config)
 	if err != nil {
 		log.Error(err)
 
 		return err
 	}
 
-	msg := <-p.Messages()
-	resp.Data = msg.Value
-	f.offset = msg.Offset
+	p, err := consumer.ConsumePartition(f.topic, f.partitionId, offset)
+	if err != nil {
+		log.Error(err)
 
+		return err
+	}
+
+	f.consumer = p
 	return nil
 }
 
