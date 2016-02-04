@@ -35,7 +35,7 @@ cmd/kateway/ssl
 cmd/ehaproxy/ehaproxy
 cmd/ehaproxy/.haproxy.cf
 cmd/kateway/bench/bench
-cmd/kateway/executor/executor
+cmd/kfsmount/kfsmount
 cmd/kateway/bench/httpdserver
 cmd/zk/zk
 panic.dump
