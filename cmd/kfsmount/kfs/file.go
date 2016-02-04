@@ -42,11 +42,17 @@ func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
 
 		return err
 	}
+	oldestOffset, err := kfk.GetOffset(f.topic, f.partitionId, sarama.OffsetOldest)
+	if err != nil {
+		log.Error(err)
+
+		return err
+	}
 
 	now := time.Now()
 	*o = fuse.Attr{
 		Mode:  0555,
-		Size:  uint64(latestOffset),
+		Size:  uint64(latestOffset - oldestOffset),
 		Mtime: now,
 		Ctime: now,
 	}
