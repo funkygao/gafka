@@ -34,9 +34,6 @@ func New(zone, cluster string) *KafkaFS {
 	this.zkcluster = zkzone.NewCluster(cluster) // panic if invalid cluster
 
 	this.root = this.newDir(os.FileMode(0777))
-	if this.root.attr.Inode != 1 {
-		panic("Root must receive inode 1")
-	}
 	return this
 }
 
@@ -50,7 +47,7 @@ func (this *KafkaFS) nextInodeId() uint64 {
 
 func (this *KafkaFS) newDir(mode os.FileMode) *Dir {
 	now := time.Now()
-	return &Dir{
+	dir := &Dir{
 		attr: fuse.Attr{
 			Inode:  this.nextInodeId(),
 			Atime:  now,
@@ -61,6 +58,10 @@ func (this *KafkaFS) newDir(mode os.FileMode) *Dir {
 		},
 		fs: this,
 	}
+	dir.reconnectKafkaIfNecessary()
+	topics, _ := dir.Topics()
+	dir.attr.Size = uint64(len(topics))
+	return dir
 }
 
 func (this *KafkaFS) newFile(dir *Dir, topic string, partitionId int32, mode os.FileMode) *File {
