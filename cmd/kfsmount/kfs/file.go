@@ -16,6 +16,7 @@ type File struct {
 	attr fuse.Attr
 
 	fs       *KafkaFS
+	dir      *Dir
 	consumer sarama.PartitionConsumer
 
 	topic       string
@@ -28,21 +29,17 @@ func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
 
 	log.Trace("File Attr, topic=%s, partitionId=%d", f.topic, f.partitionId)
 
-	kfk, err := sarama.NewClient(f.fs.zkcluster.BrokerList(), sarama.NewConfig())
+	if err := f.dir.reconnectKafkaIfNecessary(); err != nil {
+		return err
+	}
+
+	latestOffset, err := f.dir.GetOffset(f.topic, f.partitionId, sarama.OffsetNewest)
 	if err != nil {
 		log.Error(err)
 
 		return err
 	}
-	defer kfk.Close()
-
-	latestOffset, err := kfk.GetOffset(f.topic, f.partitionId, sarama.OffsetNewest)
-	if err != nil {
-		log.Error(err)
-
-		return err
-	}
-	oldestOffset, err := kfk.GetOffset(f.topic, f.partitionId, sarama.OffsetOldest)
+	oldestOffset, err := f.dir.GetOffset(f.topic, f.partitionId, sarama.OffsetOldest)
 	if err != nil {
 		log.Error(err)
 
@@ -115,22 +112,25 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 }
 
 func (f *File) reconsume(offset int64) error {
-	config := sarama.NewConfig()
-	consumer, err := sarama.NewConsumer(f.fs.zkcluster.BrokerList(), config)
+	if err := f.dir.reconnectKafkaIfNecessary(); err != nil {
+		return err
+	}
+
+	consumer, err := sarama.NewConsumerFromClient(f.dir.Client)
 	if err != nil {
 		log.Error(err)
 
 		return err
 	}
 
-	p, err := consumer.ConsumePartition(f.topic, f.partitionId, offset)
+	cp, err := consumer.ConsumePartition(f.topic, f.partitionId, offset)
 	if err != nil {
 		log.Error(err)
 
 		return err
 	}
 
-	f.consumer = p
+	f.consumer = cp
 	return nil
 }
 
