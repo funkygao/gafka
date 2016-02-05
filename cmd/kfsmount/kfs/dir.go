@@ -50,7 +50,7 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	topic := name[:partitionOffset]
 	partitionId, _ := strconv.Atoi(name[partitionOffset+1:])
 
-	return d.fs.newFile(d, topic, int32(partitionId), os.FileMode(0777)), nil
+	return d.fs.newFile(d, topic, int32(partitionId), os.FileMode(0555)), nil
 }
 
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {

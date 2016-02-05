@@ -19,6 +19,8 @@ type File struct {
 	dir      *Dir
 	consumer sarama.PartitionConsumer
 
+	opened bool
+
 	topic       string
 	partitionId int32
 }
@@ -29,29 +31,28 @@ func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
 
 	log.Trace("File Attr, topic=%s, partitionId=%d", f.topic, f.partitionId)
 
-	if err := f.dir.reconnectKafkaIfNecessary(); err != nil {
-		return err
-	}
+	*o = f.attr
 
-	latestOffset, err := f.dir.GetOffset(f.topic, f.partitionId, sarama.OffsetNewest)
-	if err != nil {
-		log.Error(err)
+	// calculate size
+	if !f.opened {
+		if err := f.dir.reconnectKafkaIfNecessary(); err != nil {
+			return err
+		}
 
-		return err
-	}
-	oldestOffset, err := f.dir.GetOffset(f.topic, f.partitionId, sarama.OffsetOldest)
-	if err != nil {
-		log.Error(err)
+		latestOffset, err := f.dir.GetOffset(f.topic, f.partitionId, sarama.OffsetNewest)
+		if err != nil {
+			log.Error(err)
 
-		return err
-	}
+			return err
+		}
+		oldestOffset, err := f.dir.GetOffset(f.topic, f.partitionId, sarama.OffsetOldest)
+		if err != nil {
+			log.Error(err)
 
-	now := time.Now()
-	*o = fuse.Attr{
-		Mode:  0555,
-		Size:  uint64(latestOffset - oldestOffset),
-		Mtime: now,
-		Ctime: now,
+			return err
+		}
+
+		o.Size = uint64(latestOffset - oldestOffset)
 	}
 
 	return nil
@@ -68,6 +69,7 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest,
 
 	// Allow kernel to use buffer cache
 	resp.Flags &^= fuse.OpenDirectIO
+	f.opened = true
 
 	return f, nil
 }
@@ -75,6 +77,7 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest,
 func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	log.Trace("File Release, req=%#v, topic=%s, partitionId=%d", req,
 		f.topic, f.partitionId)
+	f.opened = false
 	return f.consumer.Close()
 }
 
@@ -85,6 +88,7 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 	log.Trace("File ReadAll, topic=%s, partitionId=%d", f.topic, f.partitionId)
 
 	out := make([]byte, 0)
+	f.attr.Size = 0
 
 LOOP:
 	for {
@@ -92,6 +96,7 @@ LOOP:
 		case msg := <-f.consumer.Messages():
 			out = append(out, msg.Value...)
 			out = append(out, '\n')
+			f.attr.Size += uint64(len(msg.Value) + 1)
 
 		case <-time.After(time.Second * 5):
 			break LOOP
