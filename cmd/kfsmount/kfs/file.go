@@ -83,6 +83,7 @@ func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 		f.topic, f.partitionId)
 	f.opened = false
 	close(f.closeCh)
+	f.content = make([]byte, 0, 16<<10)
 	return f.consumer.Close()
 }
 
