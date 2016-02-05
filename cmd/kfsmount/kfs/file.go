@@ -19,7 +19,9 @@ type File struct {
 	dir      *Dir
 	consumer sarama.PartitionConsumer
 
-	opened bool
+	opened  bool
+	content []byte
+	closeCh chan struct{}
 
 	topic       string
 	partitionId int32
@@ -28,8 +30,6 @@ type File struct {
 func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
 	f.RLock()
 	defer f.RUnlock()
-
-	log.Trace("File Attr, topic=%s, partitionId=%d", f.topic, f.partitionId)
 
 	*o = f.attr
 
@@ -53,7 +53,11 @@ func (f *File) Attr(ctx context.Context, o *fuse.Attr) error {
 		}
 
 		o.Size = uint64(latestOffset - oldestOffset)
+	} else {
+		o.Size = uint64(len(f.content))
 	}
+
+	log.Trace("File Attr, topic=%s, partitionId=%d, size=%d", f.topic, f.partitionId, o.Size)
 
 	return nil
 }
@@ -63,13 +67,13 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest,
 	log.Trace("File Open, req=%#v, topic=%s, partitionId=%d", req,
 		f.topic, f.partitionId)
 
-	if err := f.reconsume(sarama.OffsetOldest); err != nil {
-		return nil, err
-	}
-
 	// Allow kernel to use buffer cache
 	resp.Flags &^= fuse.OpenDirectIO
 	f.opened = true
+	f.closeCh = make(chan struct{})
+
+	go f.readContent()
+	time.Sleep(time.Second * 2) // TODO
 
 	return f, nil
 }
@@ -78,6 +82,7 @@ func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	log.Trace("File Release, req=%#v, topic=%s, partitionId=%d", req,
 		f.topic, f.partitionId)
 	f.opened = false
+	close(f.closeCh)
 	return f.consumer.Close()
 }
 
@@ -87,24 +92,7 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 
 	log.Trace("File ReadAll, topic=%s, partitionId=%d", f.topic, f.partitionId)
 
-	out := make([]byte, 0)
-	f.attr.Size = 0
-
-LOOP:
-	for {
-		select {
-		case msg := <-f.consumer.Messages():
-			out = append(out, msg.Value...)
-			out = append(out, '\n')
-			f.attr.Size += uint64(len(msg.Value) + 1)
-
-		case <-time.After(time.Second * 5):
-			break LOOP
-		}
-
-	}
-
-	return out, nil
+	return f.content, nil
 }
 
 func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
@@ -114,28 +102,35 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 	log.Trace("File Read, req=%#v, topic=%s, partitionId=%d", req,
 		f.topic, f.partitionId)
 
-	// TODO req.Size, req.Offset
-	offset := 0
 	resp.Data = resp.Data[:req.Size]
-	for {
-		select {
-		case msg := <-f.consumer.Messages():
-			if offset+len(msg.Value) > req.Size {
-				return nil
-			}
-
-			log.Trace("offset: %d, msg: %s, data: %s", offset, string(msg.Value), string(resp.Data))
-
-			copy(resp.Data[offset:], msg.Value)
-			offset += len(msg.Value)
-
-		case <-time.After(time.Second * 5):
-			return nil
-		}
-
-	}
+	n := len(f.content) - int(req.Offset)
+	resp.Data = f.content[req.Offset:]
+	resp.Data = resp.Data[:n]
 
 	return nil
+}
+
+func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
+	return fuse.EPERM
+}
+
+func (f *File) readContent() {
+	if err := f.reconsume(sarama.OffsetOldest); err != nil {
+		log.Error(err)
+		return
+	}
+
+	var msg *sarama.ConsumerMessage
+	for {
+		select {
+		case <-f.closeCh:
+			return
+
+		case msg = <-f.consumer.Messages():
+			f.content = append(f.content, msg.Value...)
+			f.content = append(f.content, '\n')
+		}
+	}
 }
 
 func (f *File) reconsume(offset int64) error {
@@ -159,8 +154,4 @@ func (f *File) reconsume(offset int64) error {
 
 	f.consumer = cp
 	return nil
-}
-
-func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
-	return fuse.EPERM
 }

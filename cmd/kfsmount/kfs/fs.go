@@ -78,6 +78,7 @@ func (this *KafkaFS) newFile(dir *Dir, topic string, partitionId int32, mode os.
 		fs:          this,
 		dir:         dir,
 		topic:       topic,
+		content:     make([]byte, 0, 16<<10),
 		partitionId: partitionId,
 	}
 }
