@@ -121,5 +121,6 @@ func (d *Dir) reconnectKafkaIfNecessary() error {
 	}
 
 	d.Client = kfk
+	log.Trace("kafka %+v connected", d.fs.zkcluster.BrokerList())
 	return nil
 }

@@ -24,7 +24,7 @@ func init() {
 	}
 
 	if options.guide {
-		fmt.Printf("yum install -y fuse\nmodprobe fuse\nlsmod | grep fuse\nfusermount -u /mnt/kfk\n")
+		fmt.Printf("Pre-requisites:\nyum install -y fuse\nmodprobe fuse\nlsmod | grep fuse\nfusermount -u /mnt/kfk\n")
 		os.Exit(0)
 	}
 }
@@ -51,7 +51,6 @@ func main() {
 	if err != nil {
 		log.Critical(err)
 	}
-	defer c.Close()
 
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		var err error
@@ -71,6 +70,7 @@ func main() {
 			log.Error("Kafka FS unable to umount")
 		}
 
+		c.Close()
 		os.Exit(0)
 	}, syscall.SIGINT, syscall.SIGTERM)
 

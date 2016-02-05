@@ -66,6 +66,9 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest,
 		return nil, err
 	}
 
+	// Allow kernel to use buffer cache
+	resp.Flags &^= fuse.OpenDirectIO
+
 	return f, nil
 }
 
@@ -75,17 +78,36 @@ func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	return f.consumer.Close()
 }
 
+func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
+	f.RLock()
+	defer f.RUnlock()
+
+	log.Trace("File ReadAll, topic=%s, partitionId=%d", f.topic, f.partitionId)
+
+	out := make([]byte, 0)
+
+LOOP:
+	for {
+		select {
+		case msg := <-f.consumer.Messages():
+			out = append(out, msg.Value...)
+			out = append(out, '\n')
+
+		case <-time.After(time.Second * 5):
+			break LOOP
+		}
+
+	}
+
+	return out, nil
+}
+
 func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	f.RLock()
 	defer f.RUnlock()
 
 	log.Trace("File Read, req=%#v, topic=%s, partitionId=%d", req,
 		f.topic, f.partitionId)
-
-	if f.consumer == nil {
-		log.Error("Read: Consumer should be open, aborting request")
-		return fuse.ENOTSUP
-	}
 
 	// TODO req.Size, req.Offset
 	offset := 0
