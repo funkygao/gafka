@@ -104,10 +104,7 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 		f.topic, f.partitionId)
 
 	resp.Data = resp.Data[:req.Size]
-	n := len(f.content) - int(req.Offset)
-	resp.Data = f.content[req.Offset:]
-	resp.Data = resp.Data[:n]
-
+	resp.Data = f.content[req.Offset : req.Size+int(req.Offset)]
 	return nil
 }
 
@@ -125,6 +122,8 @@ func (f *File) readContent() {
 	for {
 		select {
 		case <-f.closeCh:
+			log.Trace("File readContent quit, topic=%s, partitionId=%d",
+				f.topic, f.partitionId)
 			return
 
 		case msg = <-f.consumer.Messages():
