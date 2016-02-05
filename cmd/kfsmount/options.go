@@ -12,7 +12,7 @@ var (
 		zone     string
 		cluster  string
 		mount    string
-		boot     bool
+		guide    bool
 		logLevel string
 		version  bool
 	}
@@ -21,8 +21,8 @@ var (
 func parseFlags() {
 	flag.StringVar(&options.zone, "z", "", "kafka zone name")
 	flag.StringVar(&options.cluster, "c", "", "kafka cluster name")
-	flag.StringVar(&options.mount, "mount", "", "mount point")
-	flag.BoolVar(&options.boot, "b", false, "boot guide")
+	flag.StringVar(&options.mount, "m", "", "mount point")
+	flag.BoolVar(&options.guide, "g", false, "usage guide")
 	flag.StringVar(&options.logLevel, "l", "info", "log level")
 	flag.BoolVar(&options.version, "version", false, "show version and exit")
 
@@ -41,7 +41,7 @@ func validateFlags() {
 	}
 
 	if options.mount == "" {
-		fmt.Fprintf(os.Stderr, "-mount required\n")
+		fmt.Fprintf(os.Stderr, "-m required\n")
 		os.Exit(1)
 	}
 

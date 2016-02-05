@@ -92,12 +92,15 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 
 	// TODO req.Size, req.Offset
 	offset := 0
+	resp.Data = resp.Data[:req.Size]
 	for {
 		select {
 		case msg := <-f.consumer.Messages():
 			if offset+len(msg.Value) > req.Size {
 				return nil
 			}
+
+			log.Trace("offset: %d, msg: %s, data: %s", offset, string(msg.Value), string(resp.Data))
 
 			copy(resp.Data[offset:], msg.Value)
 			offset += len(msg.Value)

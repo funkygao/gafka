@@ -23,8 +23,8 @@ func init() {
 		os.Exit(0)
 	}
 
-	if options.boot {
-		fmt.Printf("yum install -y fuse\nmodprobe fuse\nlsmod | grep fuse\n")
+	if options.guide {
+		fmt.Printf("yum install -y fuse\nmodprobe fuse\nlsmod | grep fuse\nfusermount -u /mnt/kfk\n")
 		os.Exit(0)
 	}
 }
@@ -54,8 +54,9 @@ func main() {
 	defer c.Close()
 
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
+		var err error
 		for i := 0; i < 10; i++ {
-			err := fuse.Unmount(options.mount)
+			err = fuse.Unmount(options.mount)
 			if err == nil {
 				break
 			}
@@ -63,6 +64,14 @@ func main() {
 			log.Warn(err)
 			time.Sleep(time.Second * 5)
 		}
+
+		if err == nil {
+			log.Info("Kafka FS unmounted")
+		} else {
+			log.Error("Kafka FS unable to umount")
+		}
+
+		os.Exit(0)
 	}, syscall.SIGINT, syscall.SIGTERM)
 
 	srv := fs.New(c, &fs.Config{})
@@ -77,5 +86,4 @@ func main() {
 		log.Error(err)
 	}
 
-	log.Info("Kafka FS unmounted")
 }
