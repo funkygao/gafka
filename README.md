@@ -41,6 +41,7 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
         lags               Display high level consumers lag for each topic/partition
         lszk               List kafka related zookeepeer znode children
         migrate            Migrate given topic partition to specified broker ids
+        mount              A FUSE module to mount a Kafka cluster in the filesystem
         offset             Manually reset consumer group offset
         partition          Add partition num to a topic for better parallel
         peek               Peek kafka cluster messages ongoing from any offset
