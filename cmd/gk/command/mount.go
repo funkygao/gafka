@@ -118,6 +118,7 @@ Pre-requisites:
 Options:
 
     -z zone
+      Default '%s'.
 
     -c cluster
 
@@ -125,6 +126,6 @@ Options:
       Default 'info'.
       
 
-`, this.Cmd)
+`, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }
