@@ -67,6 +67,13 @@ func init() {
 			}, nil
 		},
 
+		"mount": func() (cli.Command, error) {
+			return &command.Mount{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"offset": func() (cli.Command, error) {
 			return &command.Offset{
 				Ui:  ui,
