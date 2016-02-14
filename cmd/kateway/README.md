@@ -164,6 +164,7 @@ Don't make programmer think!
 
 ### TODO
 
+- [ ] POST will return 201 http status code
 - [ ] ehaproxy integration with rsyslog test
 - [ ] metrics flush/load test
 - [ ] gzip sub response
