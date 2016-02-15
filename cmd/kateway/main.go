@@ -82,6 +82,12 @@ func main() {
 
 	// FIXME logLevel dup with ctx
 	setupLogging(options.LogFile, options.LogLevel, options.CrashLogFile)
+
+	// load config
+	_, err := os.Stat(options.ConfigFile)
+	if err != nil {
+		panic(err)
+	}
 	ctx.LoadConfig(options.ConfigFile)
 
 	ensureValidUlimit()
