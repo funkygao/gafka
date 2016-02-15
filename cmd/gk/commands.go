@@ -40,7 +40,7 @@ func init() {
 		},
 
 		"?": func() (cli.Command, error) {
-			return &command.Guide{
+			return &command.Faq{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
