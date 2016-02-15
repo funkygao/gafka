@@ -149,6 +149,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 			swallow(err)
 			err = zkcluster.RegisterBroker(brokerId, parts[1], port)
 			swallow(err)
+			return
 
 		case delBroker != -1:
 			this.Ui.Error("not implemented yet")
@@ -173,6 +174,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 				printSwallowedErrors(this.Ui, zkzone)
 			})
 		}
+
 		return
 	}
 
