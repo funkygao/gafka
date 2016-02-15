@@ -46,9 +46,15 @@ func (this *UnderReplicated) Run(args []string) (exitCode int) {
 	ensureZoneValid(this.zone)
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	this.Ui.Output(zkzone.Name())
-	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+	if this.cluster != "" {
+		zkcluster := zkzone.NewCluster(this.cluster)
 		this.displayUnderReplicatedPartitionsOfCluster(zkcluster)
-	})
+	} else {
+		// all clusters
+		zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+			this.displayUnderReplicatedPartitionsOfCluster(zkcluster)
+		})
+	}
 
 	printSwallowedErrors(this.Ui, zkzone)
 
