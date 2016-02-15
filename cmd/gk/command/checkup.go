@@ -15,13 +15,15 @@ type Checkup struct {
 
 func (this *Checkup) Run(args []string) (exitCode int) {
 	var cmd cli.Command
-	this.Ui.Output(color.Cyan("checking zookeepeer\n%s", strings.Repeat("-", 80)))
-	cmd = &Zookeeper{
-		Ui:  this.Ui,
-		Cmd: this.Cmd,
+	if false {
+		this.Ui.Output(color.Cyan("checking zookeepeer\n%s", strings.Repeat("-", 80)))
+		cmd = &Zookeeper{
+			Ui:  this.Ui,
+			Cmd: this.Cmd,
+		}
+		cmd.Run(append(args, "-c", "srvr"))
+		this.Ui.Output("")
 	}
-	cmd.Run(append(args, "-c", "srvr"))
-	this.Ui.Output("")
 
 	this.Ui.Output(color.Cyan("checking registered brokers are alive\n%s", strings.Repeat("-", 80)))
 	cmd = &Clusters{
