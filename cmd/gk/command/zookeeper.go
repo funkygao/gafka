@@ -150,14 +150,14 @@ func (this *Zookeeper) printZkStats(zkzone *zk.ZkZone) {
 }
 
 func (*Zookeeper) Synopsis() string {
-	return "Display zone Zookeeper status by four letter word command"
+	return "Monitor zone Zookeeper status by four letter word command"
 }
 
 func (this *Zookeeper) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s zookeeper [options]
 
-    Display zone Zookeeper status by four letter word command
+    Monitor zone Zookeeper status by four letter word command
 
 Options:
 

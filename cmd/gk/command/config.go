@@ -18,16 +18,29 @@ type Config struct {
 }
 
 func (this *Config) Run(args []string) (exitCode int) {
-	var genratedMode bool
+	var (
+		genratedMode bool
+		showAliases  bool
+	)
 	cmdFlags := flag.NewFlagSet("config", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.BoolVar(&genratedMode, "gen", false, "")
+	cmdFlags.BoolVar(&showAliases, "alias", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	if genratedMode {
 		this.Ui.Output(strings.TrimSpace(ctx.DefaultConfig))
+		return
+	}
+
+	if showAliases {
+		this.Ui.Output("Active aliases:")
+		for _, cmd := range ctx.Aliases() {
+			alias, _ := ctx.Alias(cmd)
+			this.Ui.Output(fmt.Sprintf("%10s = %s", cmd, alias))
+		}
 		return
 	}
 
@@ -56,6 +69,9 @@ Options:
 
     -gen
       Display default config contents on console.
+
+    -alias
+      Display active aliases.
 
 `, this.Cmd, this.Cmd)
 	return strings.TrimSpace(help)
