@@ -316,7 +316,7 @@ func (this *ZkZone) ClusterPath(name string) string {
 
 	clusterPath, _, err := this.conn.Get(ClusterPath(name))
 	if err != nil {
-		panic(name + ": " + err.Error())
+		panic(fmt.Sprintf("cluster[%s] %v", name, err))
 	}
 
 	return string(clusterPath)

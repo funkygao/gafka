@@ -83,16 +83,27 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	if configged {
 		displayTopicConfigs := func(zkcluster *zk.ZkCluster) {
 			this.Ui.Output(zkcluster.Name())
-			for topic, configInfo := range zkcluster.ConfiggedTopics() {
+
+			// sort by topic name
+			configs := zkcluster.ConfiggedTopics()
+			sortedTopics := make([]string, 0, len(configs))
+			for topic, _ := range configs {
+				sortedTopics = append(sortedTopics, topic)
+			}
+			sort.Strings(sortedTopics)
+
+			for _, topic := range sortedTopics {
+				configInfo := configs[topic]
 				this.Ui.Output(fmt.Sprintf("    %30s ctime:%15s mtime:%15s %s",
 					topic,
 					gofmt.PrettySince(configInfo.Ctime),
 					gofmt.PrettySince(configInfo.Mtime),
 					configInfo.Config))
 			}
+
 		}
 
-		if cluster != "" {
+		if cluster == "" {
 			zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 				displayTopicConfigs(zkcluster)
 			})
