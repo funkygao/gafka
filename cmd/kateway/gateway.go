@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
-	"runtime"
-	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -141,7 +139,6 @@ func (this *Gateway) InstanceInfo() []byte {
 	s["ver"] = gafka.Version
 	s["build"] = gafka.BuildId
 	s["cpu"] = ctx.NumCPUStr()
-	s["goroutines"] = strconv.Itoa(runtime.NumGoroutine())
 	s["zone"] = this.zone
 	s["loglevel"] = logLevel.String()
 	s["man"] = options.ManHttpAddr
