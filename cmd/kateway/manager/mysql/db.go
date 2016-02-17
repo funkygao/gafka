@@ -85,7 +85,7 @@ func (this *mysqlStore) Stop() {
 }
 
 func (this *mysqlStore) refreshFromMysql() error {
-	dsn, err := this.zkzone.MysqlDsn()
+	dsn, err := this.zkzone.KatewayMysqlDsn()
 	if err != nil {
 		log.Error("mysql manager store fetching mysql dsn: %v", err)
 		return err

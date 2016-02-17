@@ -12,6 +12,7 @@ func (this *Gateway) buildRouting() {
 	this.manServer.Router().GET("/help", this.helpHandler)
 	this.manServer.Router().GET("/status", this.statusHandler)
 	this.manServer.Router().PUT("/log/:level", this.setlogHandler)
+	this.manServer.Router().DELETE("/counter/:name", this.resetCounterHandler)
 	this.manServer.Router().POST("/topics/:cluster/:appid/:topic/:ver", this.addTopicHandler)
 
 	if this.pubServer != nil {

@@ -2,6 +2,7 @@ package zk
 
 import (
 	"container/list"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path"
@@ -80,7 +81,16 @@ func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
 	return c
 }
 
-func (this *ZkZone) MysqlDsn() (string, error) {
+func (this *ZkZone) ensureParentDirExists(path string) error {
+	parent := pt.Dir(path)
+	if err := this.mkdirRecursive(parent); err != nil && err != zk.ErrNodeExists {
+		return err
+	}
+
+	return nil
+}
+
+func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 	this.connectIfNeccessary()
 
 	data, _, err := this.conn.Get(KatewayMysqlPath)
@@ -91,10 +101,26 @@ func (this *ZkZone) MysqlDsn() (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
-func (this *ZkZone) ensureParentDirExists(path string) error {
-	parent := pt.Dir(path)
-	if err := this.mkdirRecursive(parent); err != nil && err != zk.ErrNodeExists {
-		return err
+func (this *ZkZone) KatewayInfos() []*KatewayMeta {
+	r := make([]*KatewayMeta, 0)
+	path := fmt.Sprintf("%s/%s", KatewayIdsRoot, this.Name())
+	for _, katewayInfo := range this.ChildrenWithData(path) {
+		var k *KatewayMeta
+		if err := json.Unmarshal(katewayInfo.data, k); err != nil {
+			this.swallow(err)
+		} else {
+			r = append(r, k)
+		}
+	}
+
+	return r
+}
+
+func (this *ZkZone) KatewayInfoById(id string) *KatewayMeta {
+	for _, kw := range this.KatewayInfos() {
+		if kw.Id == id {
+			return kw
+		}
 	}
 
 	return nil

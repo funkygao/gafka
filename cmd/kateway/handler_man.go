@@ -92,6 +92,16 @@ func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
+func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	counterName := params.ByName("name")
+
+	_ = counterName // TODO
+
+	this.writeKatewayHeader(w)
+	w.Write(ResponseOk)
+}
+
 // /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2
 func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {

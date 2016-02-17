@@ -186,3 +186,10 @@ type TopicConfigMeta struct {
 	Ctime  time.Time
 	Mtime  time.Time
 }
+
+type KatewayMeta struct {
+	Id      string `json:"id"`
+	PubAddr string `json:"pub"`
+	SubAddr string `json:"sub"`
+	ManAddr string `json:"man"`
+}

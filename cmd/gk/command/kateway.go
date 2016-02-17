@@ -23,35 +23,63 @@ type Kateway struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone     string
-	id       string
-	logLevel string
+	zone         string
+	id           string
+	configMode   bool
+	logLevel     string
+	resetCounter string
 }
 
 func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("kateway", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.BoolVar(&this.configMode, "cf", false, "")
 	cmdFlags.StringVar(&this.id, "id", "", "")
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "info", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
 	}
 
-	if validateArgs(this, this.Ui).
-		on("-id", "-loglevel").
-		invalid(args) {
-		return 2
-	}
-
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	if this.configMode {
+		switch {
+		case this.logLevel != "":
+			if this.id != "" {
+				kw := zkzone.KatewayInfoById(this.id)
+				if kw == nil {
+					panic(fmt.Sprintf("kateway %d invalid entry found in zk", this.id))
+				}
 
-	if this.id != "" {
-		this.setupLogLevel(zkzone)
+				this.callKateway(kw, "PUT", fmt.Sprintf("log/%s", this.logLevel))
+			} else {
+				// apply on all kateways
+				for _, kw := range zkzone.KatewayInfos() {
+					this.callKateway(kw, "PUT", fmt.Sprintf("log/%s", this.logLevel))
+				}
+			}
+
+		case this.resetCounter != "":
+			if this.id != "" {
+				kw := zkzone.KatewayInfoById(this.id)
+				if kw == nil {
+					panic(fmt.Sprintf("kateway %d invalid entry found in zk", this.id))
+				}
+
+				this.callKateway(kw, "DELETE", fmt.Sprintf("counter/%s", this.resetCounter))
+			} else {
+				// apply on all kateways
+				for _, kw := range zkzone.KatewayInfos() {
+					this.callKateway(kw, "DELETE", fmt.Sprintf("counter/%s", this.resetCounter))
+				}
+			}
+		}
+
 		return
 	}
 
-	mysqlDsn, err := zkzone.MysqlDsn()
+	// display mode
+	mysqlDsn, err := zkzone.KatewayMysqlDsn()
 	if err != nil {
 		this.Ui.Error(err.Error())
 		this.Ui.Warn(fmt.Sprintf("kateway[%s] mysql DSN not set on zk yet", this.zone))
@@ -99,16 +127,10 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Kateway) setupLogLevel(zkzone *zk.ZkZone) {
-	data, _, err := zkzone.Conn().Get(zkr.Root(this.zone) + "/" + this.id)
-	swallow(err)
-
-	info := make(map[string]string)
-	json.Unmarshal(data, &info)
-
+func (this *Kateway) callKateway(kw *zk.KatewayMeta, method string, uri string) (err error) {
 	var req *http.Request
-	url := fmt.Sprintf("http://%s/log/%s", info["man"], this.logLevel)
-	req, err = http.NewRequest("PUT", url, nil)
+	url := fmt.Sprintf("http://%s/%s", kw.ManAddr, uri)
+	req, err = http.NewRequest(method, url, nil)
 	if err != nil {
 		return
 	}
@@ -145,9 +167,10 @@ func (this *Kateway) setupLogLevel(zkzone *zk.ZkZone) {
 		this.Ui.Error(response.Status)
 		this.Ui.Error(string(b))
 	} else {
-		this.Ui.Info("done")
+		this.Ui.Info(fmt.Sprintf("%s %s ok", method, url))
 	}
 
+	return
 }
 
 func (*Kateway) Synopsis() string {
@@ -165,10 +188,16 @@ Options:
     -z zone
       Default %s
 
-    -id kateway id
+    -cf
+      Enter config mode
+
+    -reset metrics name
+      Reset kateway metric counter by name
 
     -loglevel <info|debug|trace|warn|alarm|error>
       Set kateway log level
+
+    -id kateway id    
 
 `, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
