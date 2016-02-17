@@ -122,6 +122,10 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 				zkcluster.SetPublic(false)
 
 			case 1:
+				if nickname == "" {
+					this.Ui.Error("-nickname required if set public a cluster, quit.")
+					return
+				}
 				zkcluster.SetPublic(true)
 			}
 		}
@@ -415,7 +419,7 @@ Options:
 
     -public <0|1>
       Export the cluster for PubSub system or not.
-      e,g. gk cluster -z prod -c foo -s -public 1
+      e,g. gk cluster -z prod -c foo -s -public 1 -nickname foo
 
     -retention n hours
       log.retention.hours of kafka.
