@@ -37,7 +37,7 @@ func (this *ZkCluster) controllerPath() string {
 }
 
 func (this *ZkCluster) TopicConfigRoot() string {
-	return fmt.Sprintf("%s/%s", this.path, TopicConfigPath)
+	return fmt.Sprintf("%s%s", this.path, TopicConfigPath)
 }
 
 func (this *ZkCluster) GetTopicConfigPath(topic string) string {
