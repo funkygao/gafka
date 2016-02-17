@@ -1,14 +1,14 @@
 # boot servers and agents
 
-### zk1 10.209.33.69
+### zk1:10.209.33.69
 consul agent -server -bootstrap-expect 3 -data-dir /var/consul -dc cd -ui-dir /var/consul/ui 
 
-### zk2 10.209.37.19
+### zk2 and zk3
 consul agent -server -bootstrap-expect 3 -data-dir /var/consul -dc cd
 consul join 10.209.33.69
 
-### agent
-consul agent -data-dir /var/consul -dc=cd 
+### on each agent
+nohup consul agent -data-dir /var/consul -dc=cd &
 consul join 10.209.33.69
 
 # register service
