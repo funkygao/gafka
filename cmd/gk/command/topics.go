@@ -37,6 +37,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		replicas        int
 		partitions      int
 		configRetention int
+		configged       bool
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -47,6 +48,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.StringVar(&addTopic, "add", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
+	cmdFlags.BoolVar(&configged, "configged", false, "")
 	cmdFlags.IntVar(&configRetention, "retention", -1, "")
 	cmdFlags.IntVar(&replicas, "replicas", 2, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -75,6 +77,30 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	if configRetention > 0 {
 		zkcluster := zkzone.NewCluster(cluster)
 		this.configTopic(zkcluster, this.topicPattern, configRetention)
+		return
+	}
+
+	if configged {
+		displayTopicConfigs := func(zkcluster *zk.ZkCluster) {
+			this.Ui.Output(zkcluster.Name())
+			for topic, configInfo := range zkcluster.ConfiggedTopics() {
+				this.Ui.Output(fmt.Sprintf("    %30s ctime:%15s mtime:%15s %s",
+					topic,
+					gofmt.PrettySince(configInfo.Ctime),
+					gofmt.PrettySince(configInfo.Mtime),
+					configInfo.Config))
+			}
+		}
+
+		if cluster != "" {
+			zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+				displayTopicConfigs(zkcluster)
+			})
+		} else {
+			zkcluster := zkzone.NewCluster(cluster)
+			displayTopicConfigs(zkcluster)
+		}
+
 		return
 	}
 
@@ -383,8 +409,8 @@ Options:
     -t topic name pattern
       Only show topics like this give topic.
 
-    -n
-      Show network addresses as numbers.
+    -configged
+      Only show topics that have non-default configurations.    
 
     -add topic
       Add a topic to a kafka cluster.
@@ -392,14 +418,17 @@ Options:
     -partitions n
       Partition count when adding a new topic. Default 1.
 
-    -retention retention in minutes
-      Config a topic log.retention.minutes.
-
     -replicas n
       Replica factor when adding a new topic. Default 2.
 
+    -retention retention in minutes
+      Config a topic log.retention.minutes.
+    
     -l
       Use a long listing format.
+
+    -n
+      Show network addresses as numbers.
 `, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

@@ -59,10 +59,30 @@ func (this *ZkCluster) Close() {
 	this.zone.Close()
 }
 
+// ConfiggedTopics returns topics and theirs configs in zk:/config/topics that have non-default configuration.
+func (this *ZkCluster) ConfiggedTopics() map[string]TopicConfigMeta {
+	r := make(map[string]TopicConfigMeta)
+	for topic, config := range this.zone.ChildrenWithData(this.TopicConfigRoot()) {
+		cfStr := string(config.data)
+		if cfStr == `{"version":1,"config":{}}` {
+			// default config
+			continue
+		}
+
+		r[topic] = TopicConfigMeta{
+			Config: cfStr,
+			Ctime:  config.Ctime(),
+			Mtime:  config.Mtime(),
+		}
+
+	}
+	return r
+}
+
 func (this *ZkCluster) TopicsCtime() map[string]time.Time {
 	r := make(map[string]time.Time)
 	for name, data := range this.zone.ChildrenWithData(this.topicsRoot()) {
-		r[name] = data.ctime.Time()
+		r[name] = data.Ctime()
 	}
 	return r
 }

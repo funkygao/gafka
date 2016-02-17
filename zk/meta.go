@@ -180,3 +180,9 @@ type PartitionOffset struct {
 	Group               string
 	TopicPartitionCount int
 }
+
+type TopicConfigMeta struct {
+	Config string
+	Ctime  time.Time
+	Mtime  time.Time
+}
