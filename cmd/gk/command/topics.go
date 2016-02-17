@@ -48,7 +48,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.StringVar(&addTopic, "add", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
-	cmdFlags.BoolVar(&configged, "configged", false, "")
+	cmdFlags.BoolVar(&configged, "cf", false, "")
 	cmdFlags.IntVar(&configRetention, "retention", -1, "")
 	cmdFlags.IntVar(&replicas, "replicas", 2, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -81,9 +81,12 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	}
 
 	if configged {
-		displayTopicConfigs := func(zkcluster *zk.ZkCluster) {
-			this.Ui.Output(zkcluster.Name())
+		// output header
+		this.Ui.Output(fmt.Sprintf("%25s %40s %15s", "cluster", "topic", "mtime"))
+		this.Ui.Output(fmt.Sprintf("%25s %40s %15s",
+			strings.Repeat("-", 25), strings.Repeat("-", 40), strings.Repeat("-", 15)))
 
+		displayTopicConfigs := func(zkcluster *zk.ZkCluster) {
 			// sort by topic name
 			configs := zkcluster.ConfiggedTopics()
 			sortedTopics := make([]string, 0, len(configs))
@@ -94,9 +97,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 			for _, topic := range sortedTopics {
 				configInfo := configs[topic]
-				this.Ui.Output(fmt.Sprintf("    %30s ctime:%15s mtime:%15s %s",
+				this.Ui.Output(fmt.Sprintf("%25s %40s %15s %s",
+					zkcluster.Name(),
 					topic,
-					gofmt.PrettySince(configInfo.Ctime),
 					gofmt.PrettySince(configInfo.Mtime),
 					configInfo.Config))
 			}
@@ -420,7 +423,7 @@ Options:
     -t topic name pattern
       Only show topics like this give topic.
 
-    -configged
+    -cf
       Only show topics that have non-default configurations.    
 
     -add topic
