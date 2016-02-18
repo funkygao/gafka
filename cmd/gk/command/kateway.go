@@ -111,10 +111,9 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		this.Ui.Info(fmt.Sprintf("id:%-2s host:%s cpu:%-2s up:%s",
 			instance, info["host"], info["cpu"],
 			gofmt.PrettySince(zk.ZkTimestamp(stat.Ctime).Time())))
-		this.Ui.Output(fmt.Sprintf("    ver: %s\n    build: %s\n    log: %s\n    pub: %s\n    sub: %s\n    man: %s\n    dbg: %s",
+		this.Ui.Output(fmt.Sprintf("    ver: %s\n    build: %s\n    pub: %s\n    sub: %s\n    man: %s\n    dbg: %s",
 			info["ver"],
 			info["build"],
-			info["loglevel"], // FIXME when change loglevel, this zk node not updated
 			info["pub"],
 			info["sub"],
 			info["man"],
