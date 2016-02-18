@@ -146,7 +146,7 @@ func (this *webServer) startServer(https bool) {
 				continue
 			}
 
-			theListener = LimitListener(this.gw, theListener, this.maxClients)
+			theListener = LimitListener(this.name, this.gw, theListener, this.maxClients)
 			waitListenerUpOnce.Do(func() {
 				close(waitListenerUp)
 			})

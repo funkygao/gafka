@@ -164,6 +164,9 @@ Don't make programmer think!
 
 ### TODO
 
+- [ ] kateway
+  - (pubclient.go:22) cluster[gateway] closing kafka sync client: 6127
+  - log remote addr and port
 - [ ] manually reset metrics counter
 - [ ] more strict validator for group and topic name
 - [ ] POST will return 201 http status code

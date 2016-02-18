@@ -53,12 +53,17 @@ type limitListener struct {
 	net.Listener
 	throttler chan struct{}
 	gw        *Gateway
+	name      string
 }
 
 // LimitListener returns a Listener that accepts at most n simultaneous
 // connections from the provided Listener.
-func LimitListener(gw *Gateway, l net.Listener, n int) net.Listener {
-	return &limitListener{l, make(chan struct{}, n), gw}
+func LimitListener(name string, gw *Gateway, l net.Listener, n int) net.Listener {
+	return &limitListener{
+		Listener:  l,
+		throttler: make(chan struct{}, n),
+		gw:        gw,
+		name:      name}
 }
 
 func (l *limitListener) acquire() { l.throttler <- struct{}{} }
@@ -72,13 +77,17 @@ func (l *limitListener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 
-	log.Debug("%s new conn from %s", l.Listener.Addr(), c.RemoteAddr())
+	log.Debug("%s[%s] new conn from %s", l.name, l.Listener.Addr(), c.RemoteAddr())
 	if l.gw != nil && !options.DisableMetrics {
 		l.gw.svrMetrics.TotalConns.Inc(1)
 		l.gw.svrMetrics.ConcurrentConns.Inc(1)
 	}
 
-	return &limitListenerConn{Conn: c, release: l.release, gw: l.gw}, nil
+	return &limitListenerConn{
+		Conn:    c,
+		release: l.release,
+		gw:      l.gw,
+		name:    l.name}, nil
 }
 
 type limitListenerConn struct {
@@ -86,10 +95,11 @@ type limitListenerConn struct {
 	releaseOnce sync.Once
 	release     func()
 	gw          *Gateway
+	name        string
 }
 
 func (c *limitListenerConn) Close() error {
-	log.Debug("%s closing conn from %s", c.Conn.LocalAddr(), c.Conn.RemoteAddr())
+	log.Debug("%s[%s] closing conn from %s", c.name, c.Conn.LocalAddr(), c.Conn.RemoteAddr())
 
 	err := c.Conn.Close()
 	if c.gw != nil && !options.DisableMetrics {
