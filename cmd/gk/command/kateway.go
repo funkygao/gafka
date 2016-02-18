@@ -127,7 +127,8 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 }
 
 func (this *Kateway) getKatewayLogLevel(url string) string {
-	body, err := this.callHttp(url, "GET", "status")
+	url = fmt.Sprintf("http://%s/status", url)
+	body, err := this.callHttp(url, "GET")
 	if err != nil {
 		return err.Error()
 	}
@@ -137,7 +138,7 @@ func (this *Kateway) getKatewayLogLevel(url string) string {
 	return v["loglevel"].(string)
 }
 
-func (this *Kateway) callHttp(url string, method string, uri string) (body []byte, err error) {
+func (this *Kateway) callHttp(url string, method string) (body []byte, err error) {
 	var req *http.Request
 	req, err = http.NewRequest(method, url, nil)
 	if err != nil {
@@ -184,7 +185,7 @@ func (this *Kateway) callHttp(url string, method string, uri string) (body []byt
 
 func (this *Kateway) callKateway(kw *zk.KatewayMeta, method string, uri string) (err error) {
 	url := fmt.Sprintf("http://%s/%s", kw.ManAddr, uri)
-	_, err = this.callHttp(url, method, uri)
+	_, err = this.callHttp(url, method)
 	return
 }
 
