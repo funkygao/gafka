@@ -31,14 +31,14 @@ type Topics struct {
 
 func (this *Topics) Run(args []string) (exitCode int) {
 	var (
-		zone            string
-		cluster         string
-		addTopic        string
-		replicas        int
-		partitions      int
-		configRetention int
-		resetConf       bool
-		configged       bool
+		zone              string
+		cluster           string
+		addTopic          string
+		replicas          int
+		partitions        int
+		retentionInMinute int
+		resetConf         bool
+		configged         bool
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -51,7 +51,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
 	cmdFlags.BoolVar(&configged, "cf", false, "")
 	cmdFlags.BoolVar(&resetConf, "cfreset", false, "")
-	cmdFlags.IntVar(&configRetention, "retention", -1, "")
+	cmdFlags.IntVar(&retentionInMinute, "retention", -1, "")
 	cmdFlags.IntVar(&replicas, "replicas", 2, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -77,9 +77,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	ensureZoneValid(zone)
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-	if configRetention > 0 {
+	if retentionInMinute > 0 {
 		zkcluster := zkzone.NewCluster(cluster)
-		this.configTopic(zkcluster, this.topicPattern, configRetention)
+		this.configTopic(zkcluster, this.topicPattern, retentionInMinute)
 		return
 	}
 
@@ -225,7 +225,7 @@ func (this *Topics) configTopic(zkcluster *zk.ZkCluster, topic string, retention
 		fmt.Sprintf("--zookeeper %s", zkAddrs),
 		fmt.Sprintf("--alter"),
 		fmt.Sprintf("--topic %s", topic),
-		fmt.Sprintf("--config %s=%d", key, retentionInMinute),
+		fmt.Sprintf("--config %s=%d", key, retentionInMinute*1000*60),
 	)
 	err := cmd.Open()
 	swallow(err)
@@ -481,8 +481,8 @@ Options:
     -replicas n
       Replica factor when adding a new topic. Default 2.
 
-    -retention retention in minutes
-      Config a topic log.retention.minutes.
+    -retention n in minutes
+      Config a kafka topic log retention.
     
     -l
       Use a long listing format.
