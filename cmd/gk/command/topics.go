@@ -37,6 +37,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		replicas        int
 		partitions      int
 		configRetention int
+		resetConf       bool
 		configged       bool
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
@@ -49,6 +50,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&addTopic, "add", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
 	cmdFlags.BoolVar(&configged, "cf", false, "")
+	cmdFlags.BoolVar(&resetConf, "cfreset", false, "")
 	cmdFlags.IntVar(&configRetention, "retention", -1, "")
 	cmdFlags.IntVar(&replicas, "replicas", 2, "")
 	if err := cmdFlags.Parse(args); err != nil {

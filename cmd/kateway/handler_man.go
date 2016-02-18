@@ -4,12 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	log "github.com/funkygao/log4go"
@@ -58,12 +55,11 @@ dbg:
 func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
-	w.Write([]byte(fmt.Sprintf("id:%s, ver:%s-%s, Built with %s-%s for %s-%s, uptime:%s, pubserver: %s\noptions: ",
-		this.id, gafka.Version, gafka.BuildId,
-		runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH,
-		time.Since(this.startedAt),
-		this.pubServer.name)))
-	b, _ := json.MarshalIndent(options, "", "    ")
+	output := make(map[string]interface{})
+	output["options"] = options
+	output["loglevel"] = logLevel.String()
+	output["pubserver.type"] = this.pubServer.name
+	b, _ := json.MarshalIndent(output, "", "    ")
 	w.Write(b)
 	w.Write([]byte{'\n'})
 }

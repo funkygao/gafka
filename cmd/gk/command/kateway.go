@@ -111,9 +111,10 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		this.Ui.Info(fmt.Sprintf("id:%-2s host:%s cpu:%-2s up:%s",
 			instance, info["host"], info["cpu"],
 			gofmt.PrettySince(zk.ZkTimestamp(stat.Ctime).Time())))
-		this.Ui.Output(fmt.Sprintf("    ver: %s\n    build: %s\n    pub: %s\n    sub: %s\n    man: %s\n    dbg: %s",
+		this.Ui.Output(fmt.Sprintf("    ver: %s\n    build: %s\n    log: %s\n    pub: %s\n    sub: %s\n    man: %s\n    dbg: %s",
 			info["ver"],
 			info["build"],
+			this.getKatewayLogLevel(info["man"]),
 			info["pub"],
 			info["sub"],
 			info["man"],
@@ -125,9 +126,19 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Kateway) callKateway(kw *zk.KatewayMeta, method string, uri string) (err error) {
+func (this *Kateway) getKatewayLogLevel(url string) string {
+	body, err := this.callHttp(url, "GET", "status")
+	if err != nil {
+		return err.Error()
+	}
+
+	var v map[string]interface{}
+	json.Unmarshal(body, &v)
+	return v["loglevel"].(string)
+}
+
+func (this *Kateway) callHttp(url string, method string, uri string) (body []byte, err error) {
 	var req *http.Request
-	url := fmt.Sprintf("http://%s/%s", kw.ManAddr, uri)
 	req, err = http.NewRequest(method, url, nil)
 	if err != nil {
 		return
@@ -154,7 +165,7 @@ func (this *Kateway) callKateway(kw *zk.KatewayMeta, method string, uri string) 
 		return
 	}
 
-	b, err := ioutil.ReadAll(response.Body)
+	body, err = ioutil.ReadAll(response.Body)
 	if err != nil {
 		return
 	}
@@ -163,11 +174,17 @@ func (this *Kateway) callKateway(kw *zk.KatewayMeta, method string, uri string) 
 
 	if response.StatusCode != http.StatusOK {
 		this.Ui.Error(response.Status)
-		this.Ui.Error(string(b))
+		this.Ui.Error(string(body))
 	} else {
 		this.Ui.Info(fmt.Sprintf("%s %s ok", method, url))
 	}
 
+	return
+}
+
+func (this *Kateway) callKateway(kw *zk.KatewayMeta, method string, uri string) (err error) {
+	url := fmt.Sprintf("http://%s/%s", kw.ManAddr, uri)
+	_, err = this.callHttp(url, method, uri)
 	return
 }
 
