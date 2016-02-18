@@ -60,6 +60,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	if validateArgs(this, this.Ui).
 		on("-add", "-c").
 		on("-retention", "-c", "-t").
+		on("-cfreset", "-c", "-t").
 		requireAdminRights("-add", "-retention").
 		invalid(args) {
 		return 2
@@ -82,6 +83,11 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		return
 	}
 
+	if resetConf {
+		this.resetTopicConfig(zkcluster, this.topicPattern)
+		configged = true // after reset, display most recent znode info
+	}
+
 	if configged {
 		// output header
 		this.Ui.Output(fmt.Sprintf("%25s %40s %15s", "cluster", "topic", "mtime"))
@@ -98,6 +104,10 @@ func (this *Topics) Run(args []string) (exitCode int) {
 			sort.Strings(sortedTopics)
 
 			for _, topic := range sortedTopics {
+				if !patternMatched(topic, this.topicPattern) {
+					continue
+				}
+
 				configInfo := configs[topic]
 				this.Ui.Output(fmt.Sprintf("%25s %40s %15s %s",
 					zkcluster.Name(),
@@ -152,6 +162,36 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Topics) resetTopicConfig(zkcluster *zk.ZkCluster, topic string) {
+	zkAddrs := zkcluster.ZkConnectAddr()
+	key := "retention.ms"
+	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
+		fmt.Sprintf("--zookeeper %s", zkAddrs),
+		fmt.Sprintf("--alter"),
+		fmt.Sprintf("--topic %s", topic),
+		fmt.Sprintf("--deleteConfig %s", key),
+	)
+	err := cmd.Open()
+	swallow(err)
+	defer cmd.Close()
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+
+	output := make([]string, 0)
+	for scanner.Scan() {
+		output = append(output, scanner.Text())
+	}
+	swallow(scanner.Err())
+
+	path := zkcluster.GetTopicConfigPath(topic)
+	this.Ui.Info(path)
+
+	for _, line := range output {
+		this.Ui.Output(line)
+	}
 }
 
 func (this *Topics) configTopic(zkcluster *zk.ZkCluster, topic string, retentionInMinute int) {
@@ -427,6 +467,9 @@ Options:
 
     -cf
       Only show topics that have non-default configurations.    
+
+    -cfreset
+      Reset config of a topic.
 
     -add topic
       Add a topic to a kafka cluster.
