@@ -48,6 +48,7 @@ type Peek struct {
 
 	offset   int64
 	colorize bool
+	limit    int
 }
 
 func (this *Peek) Run(args []string) (exitCode int) {
@@ -65,6 +66,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&topicPattern, "t", "", "")
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
 	cmdFlags.BoolVar(&this.colorize, "color", true, "")
+	cmdFlags.IntVar(&this.limit, "limit", -1, "")
 	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
 	cmdFlags.BoolVar(&silence, "s", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -87,7 +89,11 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		this.consumeCluster(zkcluster, topicPattern, partitionId, msgChan)
 	}
 
-	var msg *sarama.ConsumerMessage
+	var (
+		msg   *sarama.ConsumerMessage
+		total int
+	)
+LOOP:
 	for {
 		select {
 		case msg = <-msgChan:
@@ -106,6 +112,14 @@ func (this *Peek) Run(args []string) (exitCode int) {
 						gofmt.Comma(msg.Offset), string(msg.Key), string(msg.Value)))
 				}
 			}
+
+			if this.limit > 0 {
+				total++
+				if total >= this.limit {
+					break LOOP
+				}
+			}
+
 		}
 	}
 
@@ -207,6 +221,9 @@ Options:
       -1 OffsetNewest, -2 OffsetOldest. 
       You can specify your own offset.
       Default -1(OffsetNewest)
+
+    -limit n
+      Limit how many messages to consume
 
     -s
       Silence mode, only display statastics instead of message content
