@@ -228,6 +228,25 @@ func (this *ZkCluster) ownersOfGroupByTopic(group, topic string) map[string]stri
 	return r
 }
 
+// Returns {topic: {partitionId: offset}}
+func (this *ZkCluster) ConsumerOffsetsOfGroup(group string) map[string]map[string]int64 {
+	r := make(map[string]map[string]int64)
+	topics := this.zone.children(this.ConsumerGroupOffsetPath(group))
+	for _, topic := range topics {
+		r[topic] = make(map[string]int64)
+		for partitionId, offsetData := range this.zone.ChildrenWithData(this.consumerGroupOffsetOfTopicPath(group, topic)) {
+			consumerOffset, err := strconv.ParseInt(string(offsetData.data), 10, 64)
+			if err != nil {
+				log.Error("kafka[%s] %s P:%s %v", this.name, topic, partitionId, err)
+			} else {
+				r[topic][partitionId] = consumerOffset
+			}
+		}
+	}
+
+	return r
+}
+
 // returns {consumerGroup: consumerInfo}
 func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]ConsumerMeta {
 	r := make(map[string][]ConsumerMeta)

@@ -21,6 +21,7 @@ type Consumers struct {
 	groupPattern string
 	byHost       bool
 	cleanup      bool
+	topicPattern string
 }
 
 func (this *Consumers) Run(args []string) (exitCode int) {
@@ -35,6 +36,7 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.groupPattern, "g", "", "")
 	cmdFlags.BoolVar(&this.onlineOnly, "l", false, "")
 	cmdFlags.BoolVar(&this.byHost, "byhost", false, "")
+	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
 	cmdFlags.BoolVar(&this.cleanup, "cleanup", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -159,7 +161,7 @@ func (this *Consumers) printConsumersByHost(zkzone *zk.ZkZone, clusterPattern st
 	}
 }
 
-// Print all controllers of all clusters within a zone.
+// Print all consumers of all clusters within a zone.
 func (this *Consumers) printConsumersByGroup(zkzone *zk.ZkZone, clusterPattern string) {
 	this.Ui.Output(color.Blue(zkzone.Name()))
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
@@ -199,8 +201,37 @@ func (this *Consumers) printConsumersByGroup(zkzone *zk.ZkZone, clusterPattern s
 			} else if !this.onlineOnly {
 				this.Ui.Output(fmt.Sprintf("\t%s %s", color.Yellow("☔︎"), group))
 			}
+
+			this.displayGroupOffsets(zkcluster, group)
 		}
 	})
+
+}
+
+func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, group string) {
+	offsetMap := zkcluster.ConsumerOffsetsOfGroup(group)
+	sortedTopics := make([]string, 0, len(offsetMap))
+	for topic, _ := range offsetMap {
+		sortedTopics = append(sortedTopics, topic)
+	}
+	sort.Strings(sortedTopics)
+
+	for _, topic := range sortedTopics {
+		if !patternMatched(topic, this.topicPattern) {
+			continue
+		}
+
+		sortedPartitionIds := make([]string, 0, len(offsetMap[topic]))
+		for partitionId, _ := range offsetMap[topic] {
+			sortedPartitionIds = append(sortedPartitionIds, partitionId)
+		}
+		sort.Strings(sortedPartitionIds)
+
+		for _, partitionId := range sortedPartitionIds {
+			this.Ui.Output(fmt.Sprintf("\t\t%s/%s Offset:%d",
+				topic, partitionId, offsetMap[topic][partitionId]))
+		}
+	}
 
 }
 
@@ -222,6 +253,8 @@ Options:
     -c cluster
 
     -g group name pattern
+
+    -t topic pattern
 
     -l 
       Only show online consumer groups.
