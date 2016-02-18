@@ -84,6 +84,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	}
 
 	if resetConf {
+		zkcluster := zkzone.NewCluster(cluster)
 		this.resetTopicConfig(zkcluster, this.topicPattern)
 		configged = true // after reset, display most recent znode info
 	}
