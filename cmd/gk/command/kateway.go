@@ -174,10 +174,7 @@ func (this *Kateway) callHttp(url string, method string) (body []byte, err error
 	response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		this.Ui.Error(response.Status)
-		this.Ui.Error(string(body))
-	} else {
-		this.Ui.Info(fmt.Sprintf("%s %s ok", method, url))
+		this.Ui.Error(fmt.Sprintf("%s %s %s", url, response.Status, string(body)))
 	}
 
 	return
