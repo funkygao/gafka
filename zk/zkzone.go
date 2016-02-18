@@ -102,14 +102,16 @@ func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 }
 
 func (this *ZkZone) KatewayInfos() []*KatewayMeta {
+	this.connectIfNeccessary()
+
 	r := make([]*KatewayMeta, 0)
 	path := fmt.Sprintf("%s/%s", KatewayIdsRoot, this.Name())
 	for _, katewayInfo := range this.ChildrenWithData(path) {
-		var k *KatewayMeta
-		if err := json.Unmarshal(katewayInfo.data, k); err != nil {
+		var k KatewayMeta
+		if err := json.Unmarshal(katewayInfo.data, &k); err != nil {
 			this.swallow(err)
 		} else {
-			r = append(r, k)
+			r = append(r, &k)
 		}
 	}
 

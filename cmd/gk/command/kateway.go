@@ -48,7 +48,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			if this.id != "" {
 				kw := zkzone.KatewayInfoById(this.id)
 				if kw == nil {
-					panic(fmt.Sprintf("kateway %d invalid entry found in zk", this.id))
+					panic(fmt.Sprintf("kateway %s invalid entry found in zk", this.id))
 				}
 
 				this.callKateway(kw, "PUT", fmt.Sprintf("log/%s", this.logLevel))
