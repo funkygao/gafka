@@ -23,11 +23,10 @@ const (
     loglevel: "info"
 
     aliases: [
-    	{
-    		// placeholder
-    		cmd: "_xxx"
-    		alias: "_yyy"
-    	}
+    	//{
+    	//	cmd: "_xxx"
+    	//	alias: "_yyy"
+    	//}
     ]
 
     reverse_dns: [
