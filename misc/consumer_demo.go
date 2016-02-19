@@ -10,8 +10,8 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/kafka-cg/consumergroup"
 	log "github.com/funkygao/log4go"
-	"github.com/wvanbergen/kafka/consumergroup"
 )
 
 func main() {
