@@ -45,6 +45,7 @@ type Top struct {
 	counters         map[string]float64 // key is cluster:topic
 	lastCounters     map[string]float64
 	consumerCounters map[string]float64
+	partitions       map[string]int
 
 	totalConsumerMps []float64
 	totalMps         []float64 // for the dashboard graph
@@ -86,6 +87,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	this.brokers = make(map[string][]string)
 	this.counters = make(map[string]float64)
 	this.lastCounters = make(map[string]float64)
+	this.partitions = make(map[string]int)
 	this.consumerCounters = make(map[string]float64)
 	this.totalMps = make([]float64, 0, 1000)
 	this.totalConsumerMps = make([]float64, 0, 1000)
@@ -285,12 +287,13 @@ func (this *Top) showAndResetCounters() {
 				this.Ui.Output(fmt.Sprintf("%25s %-30s %35s %20s %15.2f",
 					clusterAndTopic[0],
 					strings.Join(this.brokers[counterFlip[num]], ","),
-					clusterAndTopic[1],
+					fmt.Sprintf("%s:%2d", clusterAndTopic[1], this.partitions[counterFlip[num]]),
 					gofmt.Comma(int64(num)),
 					mps))
 			} else {
 				this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
-					clusterAndTopic[0], clusterAndTopic[1],
+					clusterAndTopic[0],
+					fmt.Sprintf("%s:%2d", clusterAndTopic[1], this.partitions[counterFlip[num]]),
 					gofmt.Comma(int64(num)),
 					mps))
 			}
@@ -458,6 +461,7 @@ func (this *Top) clusterTopProducers(zkcluster *zk.ZkCluster) {
 			this.mu.Lock()
 			this.brokers[cluster+":"+topic] = this.discardPortOfBrokerAddr(brokerList)
 			this.counters[cluster+":"+topic] = float64(msgs)
+			this.partitions[cluster+":"+topic] = len(alivePartitions)
 			this.mu.Unlock()
 		}
 
