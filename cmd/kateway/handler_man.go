@@ -76,8 +76,17 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	lvl := params.ByName("level")
-	logLevel = toLogLevel(lvl)
+	switch lvl {
+	case "debug1":
+		lvl = "debug"
+		options.Debug = false
 
+	case "debug2":
+		lvl = "debug"
+		options.Debug = true
+	}
+
+	logLevel = toLogLevel(lvl)
 	for name, filter := range log.Global {
 		log.Info("log[%s] level: %s -> %s", name, filter.Level, logLevel)
 
