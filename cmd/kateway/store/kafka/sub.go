@@ -68,8 +68,8 @@ func (this *subStore) Stop() {
 	close(this.shutdownCh)
 }
 
-func (this *subStore) Fetch(cluster, topic, group, remoteAddr, reset string) (store.Fetcher, error) {
-	cg, err := this.subPool.PickConsumerGroup(cluster, topic, group, remoteAddr, reset)
+func (this *subStore) Fetch(cluster, topic, group, remoteAddr, resetOffset string) (store.Fetcher, error) {
+	cg, err := this.subPool.PickConsumerGroup(cluster, topic, group, remoteAddr, resetOffset)
 	if err != nil {
 		return nil, err
 	}

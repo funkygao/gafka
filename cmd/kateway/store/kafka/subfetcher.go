@@ -1,7 +1,7 @@
 package kafka
 
 import (
-	"github.com/wvanbergen/kafka/consumergroup"
+	"github.com/funkygao/kafka-cg/consumergroup"
 )
 
 type consumerFetcher struct {

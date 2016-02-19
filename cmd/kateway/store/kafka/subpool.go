@@ -8,8 +8,8 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/kafka-cg/consumergroup"
 	log "github.com/funkygao/log4go"
-	"github.com/wvanbergen/kafka/consumergroup"
 )
 
 type subPool struct {
@@ -26,7 +26,7 @@ func newSubPool() *subPool {
 }
 
 func (this *subPool) PickConsumerGroup(cluster, topic, group,
-	remoteAddr, reset string) (cg *consumergroup.ConsumerGroup, err error) {
+	remoteAddr, resetOffset string) (cg *consumergroup.ConsumerGroup, err error) {
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 
@@ -67,7 +67,7 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	cf.Zookeeper.Chroot = meta.Default.ZkChroot(cluster)
 	cf.Zookeeper.Timeout = zk.DefaultZkSessionTimeout()
 
-	switch reset {
+	switch resetOffset {
 	case "newest":
 		cf.Offsets.ResetOffsets = true
 		cf.Offsets.Initial = sarama.OffsetNewest
