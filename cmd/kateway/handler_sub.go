@@ -56,7 +56,11 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	log.Debug("sub[%s] %s: %+v", myAppid, r.RemoteAddr, params)
+	if options.Debug || true {
+		log.Debug("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s}",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r),
+			hisAppid, topic, ver, group)
+	}
 
 	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
 	// pick a consumer from the consumer group

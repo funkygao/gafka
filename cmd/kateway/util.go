@@ -35,10 +35,10 @@ func getHttpQueryInt(query *url.Values, key string, defaultVal int) (int, error)
 	return strconv.Atoi(valStr)
 }
 
-func getRmoteAddr(r *http.Request) string {
+func getHttpRemoteIp(r *http.Request) string {
 	ip := r.Header.Get("X-Forwarded-For") // client_ip,proxy_ip,proxy_ip,...
 	if ip == "" {
-		return r.RemoteAddr
+		return r.RemoteAddr // ip:port
 	}
 
 	p := strings.SplitN(ip, ",", 1)

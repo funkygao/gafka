@@ -69,7 +69,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	ver := params.ByName(UrlParamVersion)
 
 	if options.Debug {
-		log.Debug("pub[%s] %s %+v %s", appid, r.RemoteAddr, params, string(msg.Body))
+		log.Debug("pub[%s] %s(%s) %+v %s", appid,
+			r.RemoteAddr, getHttpRemoteIp(r), params, string(msg.Body))
 	}
 
 	if !options.DisableMetrics {
