@@ -96,9 +96,12 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 	limit int, myAppid, hisAppid, topic, ver string) error {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
-	chunkedBeforeTimeout := false
-	chunkedEver := false
-	n := 0
+	var (
+		chunkedBeforeTimeout = false
+		chunkedEver          = false
+		n                    = 0
+		err                  error
+	)
 	for {
 		select {
 		case <-clientGoneCh:
@@ -123,7 +126,9 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			// client really got this msg, safe to commit
 			// TODO test case: client got chunk 2, then killed. should server commit offset?
 			log.Debug("commit offset: {T:%s, P:%d, O:%d}", msg.Topic, msg.Partition, msg.Offset)
-			fetcher.CommitUpto(msg)
+			if err = fetcher.CommitUpto(msg); err != nil {
+				log.Error("commit offset {T:%s, P:%d, O:%d}: %v", msg.Topic, msg.Partition, msg.Offset, err)
+			}
 
 			this.subMetrics.ConsumeOk(myAppid, topic, ver)
 			this.subMetrics.ConsumedOk(hisAppid, topic, ver)
@@ -161,7 +166,7 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			w.Write([]byte{}) // without this, client cant get response
 			return nil
 
-		case err := <-fetcher.Errors():
+		case err = <-fetcher.Errors():
 			// e,g. consume a non-existent topic
 			return err
 		}
@@ -229,16 +234,16 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	}()
 
 	var (
-		topic    string
-		ver      string
-		myAppid  string
-		hisAppid string
-		reset    string
-		group    string
+		topic       string
+		ver         string
+		myAppid     string
+		hisAppid    string
+		resetOffset string
+		group       string
 	)
 
 	query := r.URL.Query()
-	reset = query.Get(UrlQueryReset)
+	resetOffset = query.Get(UrlQueryReset)
 	limit, err := getHttpQueryInt(&query, "limit", 1)
 	if err != nil {
 		this.writeWsError(ws, err.Error())
@@ -277,7 +282,7 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
-		myAppid+"."+group, r.RemoteAddr, reset)
+		myAppid+"."+group, r.RemoteAddr, resetOffset)
 	if err != nil {
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 
@@ -342,7 +347,13 @@ func (this *Gateway) wsWritePump(clientGone chan struct{}, ws *websocket.Conn, f
 				return
 			}
 
-			fetcher.CommitUpto(msg)
+			if err := fetcher.CommitUpto(msg); err != nil {
+				log.Error(err) // TODO add more ctx
+			}
+
+		case err = <-fetcher.Errors():
+			// TODO
+			log.Error(err)
 
 		case <-this.timer.After(this.subServer.wsPongWait / 3):
 			ws.SetWriteDeadline(time.Now().Add(time.Second * 10))
