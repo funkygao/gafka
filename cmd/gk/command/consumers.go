@@ -10,6 +10,7 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/gofmt"
 	gozk "github.com/samuel/go-zookeeper/zk"
 )
 
@@ -229,7 +230,7 @@ func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, group string
 
 		for _, partitionId := range sortedPartitionIds {
 			this.Ui.Output(fmt.Sprintf("\t\t%s/%s Offset:%d",
-				topic, partitionId, offsetMap[topic][partitionId]))
+				topic, partitionId, gofmt.Comma(offsetMap[topic][partitionId])))
 		}
 	}
 
