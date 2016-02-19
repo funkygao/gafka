@@ -46,6 +46,13 @@ func init() {
 			}, nil
 		},
 
+		"sample": func() (cli.Command, error) {
+			return &command.Sample{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"config": func() (cli.Command, error) {
 			return &command.Config{
 				Ui:  ui,
