@@ -131,14 +131,14 @@ public class KafkaConsumer {
 }
 
 func (*Sample) Synopsis() string {
-	return "Sample code of kafka java produce/consume"
+	return "Sample code of kafka producer/consumer in Java"
 }
 
 func (this *Sample) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s sample -m mode
 
-    Sample code of kafka java produce/consume
+    Sample code of kafka producer/consumer in Java
 
 Options:
 
