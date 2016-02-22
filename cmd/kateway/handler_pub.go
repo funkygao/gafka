@@ -30,7 +30,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	topic := params.ByName(UrlParamTopic)
 	appid := r.Header.Get(HttpHeaderAppid)
 	if err := manager.Default.AuthPub(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
-		log.Error("app[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
+		log.Warn("pub[%s] %s(%s) %+v %s",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), params, err)
 
 		this.writeAuthFailure(w, err)
 		return
@@ -40,17 +41,20 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	msgLen := int(r.ContentLength)
 	switch {
 	case msgLen == -1:
-		log.Warn("pub[%s] %s %+v invalid content length", appid, r.RemoteAddr, params)
+		log.Warn("pub[%s] %s(%s) %+v invalid content length: %d",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), params, msgLen)
 		this.writeInvalidContentLength(w)
 		return
 
 	case int64(msgLen) > options.MaxPubSize:
-		log.Warn("pub[%s] %s %+v too big content length:%d", appid, r.RemoteAddr, params, msgLen)
+		log.Warn("pub[%s] %s(%s) %+v too big content length: %d",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), params, msgLen)
 		this.writeErrorResponse(w, ErrTooBigPubMessage.Error(), http.StatusBadRequest)
 		return
 
 	case msgLen < options.MinPubSize:
-		log.Warn("pub[%s] %s %+v too small content length:%d", appid, r.RemoteAddr, params, msgLen)
+		log.Warn("pub[%s] %s(%s) %+v too small content length: %d",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), params, msgLen)
 		this.writeErrorResponse(w, ErrTooSmallPubMessage.Error(), http.StatusBadRequest)
 		return
 	}
@@ -61,7 +65,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
 		msg.Free()
 
-		log.Error("pub[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
+		log.Error("pub[%s] %s(%s) %+v %s",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), params, err)
 		this.writeErrorResponse(w, ErrTooBigPubMessage.Error(), http.StatusBadRequest)
 		return
 	}
@@ -69,8 +74,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	ver := params.ByName(UrlParamVersion)
 
 	if options.Debug {
-		log.Debug("pub[%s] %s(%s) %+v %s", appid,
-			r.RemoteAddr, getHttpRemoteIp(r), params, string(msg.Body))
+		log.Debug("pub[%s] %s(%s) %+v %s",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), params, string(msg.Body))
 	}
 
 	if !options.DisableMetrics {
@@ -87,7 +92,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 
 	cluster, found := manager.Default.LookupCluster(appid)
 	if !found {
-		log.Error("cluster not found for app: %s", appid)
+		log.Warn("pub[%s] %s(%s) %+v cluster not found",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), params)
 
 		http.Error(w, "invalid appid", http.StatusBadRequest)
 		return
@@ -102,7 +108,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			this.pubMetrics.PubFail(appid, topic, ver)
 		}
 
-		log.Error("pub[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
+		log.Error("pub[%s] %s(%s) %+v %s",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), params, err)
 		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -41,16 +41,18 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	myAppid = r.Header.Get(HttpHeaderAppid)
 	group = params.ByName(UrlParamGroup)
 	if strings.Contains(group, ".") { // TODO more strict rules
-		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} invalid group",
-			r.RemoteAddr, topic, ver, group, limit)
+		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r),
+			hisAppid, topic, ver, group)
 
 		http.Error(w, "group cannot contain dot", http.StatusBadRequest)
 		return
 	}
 
 	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
-		log.Error("consumer[%s] %s {hisapp:%s, topic:%s, ver:%s, group:%s, limit:%d}: %s",
-			myAppid, r.RemoteAddr, hisAppid, topic, ver, group, limit, err)
+		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r),
+			hisAppid, topic, ver, group, err)
 
 		this.writeAuthFailure(w, err)
 		return
@@ -66,7 +68,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	// pick a consumer from the consumer group
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("cluster not found for subd app: %s", hisAppid)
+		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r),
+			hisAppid, topic, ver, group)
 
 		http.Error(w, "invalid subd appid", http.StatusBadRequest)
 		return
@@ -75,7 +79,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
 		myAppid+"."+group, r.RemoteAddr, reset)
 	if err != nil {
-		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
+		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r),
+			hisAppid, topic, ver, group, err)
 
 		this.writeBadRequest(w, err)
 		return
@@ -84,7 +90,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	err = this.fetchMessages(w, fetcher, limit, myAppid, hisAppid, topic, ver)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
-		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
+		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r),
+			hisAppid, topic, ver, group, err)
 
 		go fetcher.Close() // wait cf.ProcessingTimeout FIXME go?
 	}
