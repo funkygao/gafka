@@ -61,6 +61,9 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 
 	// cache miss, create the consumer group for this client
 	cf := consumergroup.NewConfig()
+	cf.Net.DialTimeout = time.Second * 10
+	cf.Net.WriteTimeout = time.Second * 10
+	cf.Net.ReadTimeout = time.Second * 10
 	cf.ChannelBufferSize = 0 // TODO
 	cf.Consumer.Return.Errors = true
 
