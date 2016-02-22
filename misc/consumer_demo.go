@@ -43,10 +43,9 @@ func main() {
 	cg, err := consumergroup.JoinConsumerGroup(group, []string{topic},
 		strings.Split(zkzone.ZkAddrs(), ","), cf)
 	msg := <-cg.Messages()
-	log.Info("%s", string(msg.Value))
-	log.Info("to commit")
+	log.Info("=> partition:%d offset:%d msg:%s", msg.Partition, msg.Offset, string(msg.Value))
 	err = cg.CommitUpto(msg)
-	log.Info("commit: %v", err)
+	log.Info("CommitUpto error: %v", err)
 
 	go func() {
 		e := <-cg.Errors()
@@ -55,7 +54,7 @@ func main() {
 		}
 	}()
 
-	log.Info("to close")
+	log.Info("closing consumer group")
 	err = cg.Close()
 	log.Info("close: %v", err)
 }
