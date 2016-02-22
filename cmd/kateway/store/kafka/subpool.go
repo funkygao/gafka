@@ -75,6 +75,7 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 		cf.Offsets.ResetOffsets = true
 		cf.Offsets.Initial = sarama.OffsetOldest
 	default:
+		cf.Offsets.ResetOffsets = false
 		cf.Offsets.Initial = sarama.OffsetOldest
 	}
 	cf.Offsets.CommitInterval = time.Minute

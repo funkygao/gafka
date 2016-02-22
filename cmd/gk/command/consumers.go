@@ -229,7 +229,7 @@ func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, group string
 		sort.Strings(sortedPartitionIds)
 
 		for _, partitionId := range sortedPartitionIds {
-			this.Ui.Output(fmt.Sprintf("\t\t%s/%s Offset:%d",
+			this.Ui.Output(fmt.Sprintf("\t\t%s/%s Offset:%s",
 				topic, partitionId, gofmt.Comma(offsetMap[topic][partitionId])))
 		}
 	}
