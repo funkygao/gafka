@@ -54,9 +54,9 @@ listen dashboard
 listen pub
     bind 0.0.0.0:10891
     cookie PUB insert indirect
-    option httpchk GET /alive HTTP/1.1\r\nHost:pub.ffan.com
+    #option httpchk GET /alive HTTP/1.1\r\nHost:pub.ffan.com
 {{range .Pub}}
-    server {{.Name}} {{.Addr}} cookie {{.Name}} weight {{.Cpu}} check
+    server {{.Name}} {{.Addr}} cookie {{.Name}} weight {{.Cpu}}
 {{end}}
 
 listen sub
@@ -66,14 +66,14 @@ listen sub
     #compression algo gzip
     #compression type text/html text/plain application/json
     cookie SUB insert indirect
-    option httpchk GET /alive HTTP/1.1\r\nHost:sub.ffan.com
+    #option httpchk GET /alive HTTP/1.1\r\nHost:sub.ffan.com
 {{range .Sub}}
-    server {{.Name}} {{.Addr}} cookie {{.Name}} weight {{.Cpu}} check
+    server {{.Name}} {{.Addr}} cookie {{.Name}} weight {{.Cpu}}
 {{end}}
 
 listen man
     bind 0.0.0.0:10893
-    option httpchk GET /alive HTTP/1.1\r\nHost:kman.ffan.com
+    #option httpchk GET /alive HTTP/1.1\r\nHost:kman.ffan.com
 {{range .Man}}
-    server {{.Name}} {{.Addr}} weight {{.Cpu}} check
+    server {{.Name}} {{.Addr}} weight {{.Cpu}}
 {{end}}
