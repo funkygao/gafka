@@ -1,8 +1,6 @@
 package kafka
 
 import (
-	"time"
-
 	"github.com/funkygao/golib/set"
 	log "github.com/funkygao/log4go"
 	pool "github.com/youtube/vitess/go/pools"
@@ -33,6 +31,14 @@ func newPubPool(store *pubStore, cluster string, brokerList []string, size int) 
 	return this
 }
 
+func (this *pubPool) buildPools() {
+	// idleTimeout=0 means each kafka conn will last forever
+	this.syncPool = pool.NewResourcePool(this.syncProducerFactory,
+		this.size, this.size, 0)
+	this.asyncPool = pool.NewResourcePool(this.asyncProducerFactory,
+		this.size, this.size, 0)
+}
+
 func (this *pubPool) RefreshBrokerList(brokerList []string) {
 	if len(brokerList) == 0 {
 		if len(this.brokerList) > 0 {
@@ -57,13 +63,6 @@ func (this *pubPool) RefreshBrokerList(brokerList []string) {
 		this.Close()
 		this.buildPools()
 	}
-}
-
-func (this *pubPool) buildPools() {
-	this.syncPool = pool.NewResourcePool(this.syncProducerFactory,
-		this.size, this.size, time.Minute*10)
-	this.asyncPool = pool.NewResourcePool(this.asyncProducerFactory,
-		this.size, this.size, time.Minute*10)
 }
 
 func (this *pubPool) Close() {
