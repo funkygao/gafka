@@ -96,7 +96,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		go fetcher.Close() // wait cf.ProcessingTimeout FIXME go?
 	}
 
-	this.writeKatewayHeader(w)
 }
 
 func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
