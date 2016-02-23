@@ -355,8 +355,8 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		partions, err := kfk.Partitions(topic)
 		swallow(err)
 		if len(alivePartitions) != len(partions) {
-			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("topic[%s] has %s partitions: %+v/%+v",
-				alivePartitions, color.Red("dead"), partions), linesInTopicMode)
+			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%30s %s %s P: %s/%+v",
+				zkcluster.Name(), color.Blue("%50s", topic), color.Red("partial dead"), color.Green("%+v", alivePartitions), partions), linesInTopicMode)
 		}
 
 		replicas, err := kfk.Replicas(topic, partions[0])
