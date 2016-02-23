@@ -42,17 +42,20 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	group = params.ByName(UrlParamGroup)
 	if strings.Contains(group, ".") { // TODO more strict rules
 		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r),
-			hisAppid, topic, ver, group)
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 		http.Error(w, "group cannot contain dot", http.StatusBadRequest)
 		return
 	}
+	if r.Header.Get(HttpHeaderConnection) == "close" {
+		// sub should use keep-alive
+		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} not keep-alive",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+	}
 
 	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r),
-			hisAppid, topic, ver, group, err)
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
 		this.writeAuthFailure(w, err)
 		return
@@ -60,8 +63,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	if options.Debug || true {
 		log.Debug("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s}",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r),
-			hisAppid, topic, ver, group)
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 	}
 
 	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
@@ -69,8 +71,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r),
-			hisAppid, topic, ver, group)
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 		http.Error(w, "invalid subd appid", http.StatusBadRequest)
 		return
@@ -80,8 +81,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		myAppid+"."+group, r.RemoteAddr, reset)
 	if err != nil {
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r),
-			hisAppid, topic, ver, group, err)
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
 		this.writeBadRequest(w, err)
 		return
@@ -91,8 +91,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r),
-			hisAppid, topic, ver, group, err)
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
 		go fetcher.Close() // wait cf.ProcessingTimeout FIXME go?
 	}

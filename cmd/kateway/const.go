@@ -1,9 +1,10 @@
 package main
 
 const (
-	HttpHeaderAppid  = "Appid"
-	HttpHeaderPubkey = "Pubkey"
-	HttpHeaderSubkey = "Subkey"
+	HttpHeaderAppid      = "Appid"
+	HttpHeaderPubkey     = "Pubkey"
+	HttpHeaderSubkey     = "Subkey"
+	HttpHeaderConnection = "Connection"
 
 	UrlParamCluster = "cluster"
 	UrlParamTopic   = "topic"
