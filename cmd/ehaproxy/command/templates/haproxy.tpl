@@ -1,6 +1,5 @@
 global    
     # logging to rsyslog facility local3 [err warning info debug]   
-    log 127.0.0.1 local0
     log 127.0.0.1 local1 notice
     log 127.0.0.1 local3 warning
     stats bind-process {{.CpuNum}}

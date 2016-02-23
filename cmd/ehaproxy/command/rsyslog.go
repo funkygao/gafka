@@ -30,7 +30,6 @@ vim /etc/logrotate.d/haproxy
 }
 
 vim  /etc/rsyslog.d/haproxy.conf
-local0.*  /var/log/haproxy.log
 local1.*  /var/log/haproxy.log
 local3.*  /var/log/haproxy.log
 
