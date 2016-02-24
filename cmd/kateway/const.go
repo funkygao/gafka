@@ -10,12 +10,12 @@ const (
 	UrlParamTopic   = "topic"
 	UrlParamVersion = "ver"
 	UrlParamAppid   = "appid"
-	UrlParamGroup   = "group"
 
 	UrlQueryKey   = "key"
 	UrlQueryReset = "reset"
 	UrlQueryAsync = "async"
 	UrlQueryDelay = "delay"
+	UrlQueryGroup = "group"
 
 	ContentTypeHeader = "Content-Type"
 	ContentTypeJson   = "application/json; charset=utf8"

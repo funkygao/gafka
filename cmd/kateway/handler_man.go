@@ -30,8 +30,8 @@ POST /ws/topics/:topic/:ver
  GET /alive
 
 sub:
- GET /topics/:appid/:topic/:ver/:group?limit=1&reset=<newest|oldest>&autocommit=<1|0>
- GET /ws/topics/:appid/:topic/:ver/:group
+ GET /topics/:appid/:topic/:ver?group=xx&limit=1&reset=<newest|oldest>&autocommit=<1|0>
+ GET /ws/topics/:appid/:topic/:ver?group=xx
  GET /raw/topics/:appid/:topic/:ver
  GET /alive
 
