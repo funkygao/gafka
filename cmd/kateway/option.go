@@ -80,7 +80,7 @@ func parseFlags() {
 	flag.StringVar(&options.SubHttpsAddr, "subhttps", defaultSubHttpsAddr, "sub https bind addr")
 	flag.StringVar(&options.ManHttpAddr, "manhttp", defaultManHttpAddr, "management http bind addr")
 	flag.StringVar(&options.ManHttpsAddr, "manhttps", defaultManHttpsAddr, "management https bind addr")
-	flag.StringVar(&options.LogLevel, "level", "debug", "log level")
+	flag.StringVar(&options.LogLevel, "level", "trace", "log level")
 	flag.StringVar(&options.LogFile, "log", "stdout", "log file, default stdout")
 	flag.StringVar(&options.CrashLogFile, "crashlog", "", "crash log")
 	flag.StringVar(&options.CertFile, "certfile", "", "cert file path")
