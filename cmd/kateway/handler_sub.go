@@ -14,7 +14,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// /topics/:appid/:topic/:ver/:group?limit=1&reset=newest
+// /topics/:appid/:topic/:ver?group=xx&limit=1&reset=newest
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -28,10 +28,18 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	)
 
 	query := r.URL.Query()
+	group = query.Get(UrlQueryGroup)
 	reset = query.Get(UrlQueryReset)
 	limit, err := getHttpQueryInt(&query, "limit", 1)
 	if err != nil {
 		this.writeBadRequest(w, err)
+		return
+	}
+	if group == "" || strings.Contains(group, ".") { // TODO more strict rules
+		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+
+		http.Error(w, "invalid group name", http.StatusBadRequest)
 		return
 	}
 
@@ -39,14 +47,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
-	group = params.ByName(UrlParamGroup)
-	if strings.Contains(group, ".") { // TODO more strict rules
-		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
-
-		http.Error(w, "group cannot contain dot", http.StatusBadRequest)
-		return
-	}
 	if r.Header.Get(HttpHeaderConnection) == "close" {
 		// sub should use keep-alive
 		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} not keep-alive",
@@ -223,7 +223,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// /ws/topics/:appid/:topic/:ver/:group
+// /ws/topics/:appid/:topic/:ver?group=xx
 func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -249,10 +249,17 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	)
 
 	query := r.URL.Query()
+	group = query.Get(UrlQueryGroup)
 	resetOffset = query.Get(UrlQueryReset)
 	limit, err := getHttpQueryInt(&query, "limit", 1)
 	if err != nil {
 		this.writeWsError(ws, err.Error())
+		return
+	}
+	if group == "" || strings.Contains(group, ".") { // TODO more strict rules
+		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} invalid group",
+			r.RemoteAddr, topic, ver, group, limit)
+
 		return
 	}
 
@@ -260,14 +267,6 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
-	group = params.ByName(UrlParamGroup)
-	if strings.Contains(group, ".") { // TODO more strict rules
-		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} invalid group",
-			r.RemoteAddr, topic, ver, group, limit)
-
-		return
-	}
-
 	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
 		log.Error("consumer[%s] %s {hisapp:%s, topic:%s, ver:%s, group:%s, limit:%d}: %s",
 			myAppid, r.RemoteAddr, hisAppid, topic, ver, group, limit, err)
