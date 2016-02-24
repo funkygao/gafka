@@ -8,18 +8,25 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+// MonitorTopics montor total msg count over time.
 type MonitorTopics struct {
 	zkzone *zk.ZkZone
+	stop   chan struct{}
+	tick   time.Duration
 }
 
 func (this *MonitorTopics) Run() {
-	tick := time.NewTicker(time.Hour)
+	ticker := time.NewTicker(this.tick)
+	defer ticker.Stop()
+
 	for {
 		select {
-		case <-tick.C:
+		case <-this.stop:
+			return
+
+		case <-ticker.C:
 
 		}
-
 	}
 
 }
