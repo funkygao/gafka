@@ -7,7 +7,7 @@ import (
 )
 
 func (this *Gateway) buildRouting() {
-	this.manServer.Router().GET("/alive", this.checkHandler)
+	this.manServer.Router().GET("/alive", this.checkAliveHandler)
 	this.manServer.Router().GET("/clusters", this.clustersHandler)
 	this.manServer.Router().GET("/help", this.helpHandler)
 	this.manServer.Router().GET("/status", this.statusHandler)
@@ -26,12 +26,12 @@ func (this *Gateway) buildRouting() {
 		this.subServer.Router().GET("/raw/topics/:appid/:topic/:ver", this.subRawHandler)
 		this.subServer.Router().GET("/topics/:appid/:topic/:ver", this.subHandler)
 		this.subServer.Router().GET("/ws/topics/:appid/:topic/:ver", this.subWsHandler)
-		this.subServer.Router().GET("/alive", this.checkHandler)
+		this.subServer.Router().GET("/alive", this.checkAliveHandler)
 	}
 
 }
 
-func (this *Gateway) checkHandler(w http.ResponseWriter, r *http.Request,
+func (this *Gateway) checkAliveHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
 	w.Write(ResponseOk)

@@ -28,8 +28,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	appid := r.Header.Get(HttpHeaderAppid)
-	topic := params.ByName(UrlParamTopic)
-	ver := params.ByName(UrlParamVersion)
+	topic := params.ByName(UrlParamTopic) // params[0].Value
+	ver := params.ByName(UrlParamVersion) // params[1].Value
 	if err := manager.Default.AuthPub(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
