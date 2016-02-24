@@ -72,7 +72,7 @@ func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
 	cf.Producer.Flush.Messages = 1000
 	cf.Producer.Flush.MaxMessages = 0 // unlimited
 
-	cf.Producer.RequiredAcks = sarama.WaitForLocal
+	cf.Producer.RequiredAcks = sarama.NoResponse
 	cf.Producer.Partitioner = sarama.NewHashPartitioner
 	cf.Producer.Retry.Max = 3
 	//cf.Producer.Compression = sarama.CompressionSnappy TODO
