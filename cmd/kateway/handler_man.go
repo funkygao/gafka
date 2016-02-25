@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	log "github.com/funkygao/log4go"
@@ -42,6 +43,7 @@ man:
  GET /alive
  PUT /log/:level  level=<info|debug|trace|warn|alarm|error>
 POST /topics/:cluster/:appid/:topic/:ver
+ GET /partitions/:cluster/:appid/:topic/:ver
 
 dbg:
  GET /debug/pprof
@@ -107,6 +109,56 @@ func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
+func (this *Gateway) authAdmin(appid, pubkey string) (ok bool) {
+	if appid == "_psubAdmin_" && pubkey == "_wandafFan_" { // FIXME
+		ok = true
+	}
+	return
+}
+
+// /partitions/:cluster/:appid/:topic/:ver
+func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	this.writeKatewayHeader(w)
+
+	topic := params.ByName(UrlParamTopic)
+	cluster := params.ByName(UrlParamCluster)
+	hisAppid := params.ByName(UrlParamAppid)
+	appid := r.Header.Get(HttpHeaderAppid)
+	pubkey := r.Header.Get(HttpHeaderPubkey)
+	ver := params.ByName(UrlParamVersion)
+	if !this.authAdmin(appid, pubkey) {
+		log.Warn("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s}",
+			r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
+
+		this.writeAuthFailure(w, manager.ErrPermDenied)
+		return
+	}
+
+	zkcluster := meta.Default.ZkCluster(cluster)
+	defer zkcluster.Close()
+
+	kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
+	if err != nil {
+		log.Error("cluster[%s] %v", zkcluster.Name(), err)
+
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer kfk.Close()
+
+	partitions, err := kfk.Partitions(meta.KafkaTopic(hisAppid, topic, ver))
+	if err != nil {
+		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
+			zkcluster.Name(), r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, err)
+
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte(fmt.Sprintf(`{"num": %d}`, len(partitions))))
+}
+
 // /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2
 func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
@@ -121,19 +173,21 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	cluster := params.ByName(UrlParamCluster)
-	hisAppid := params.ByName("appid")
+	hisAppid := params.ByName(UrlParamAppid)
 	appid := r.Header.Get(HttpHeaderAppid)
 	pubkey := r.Header.Get(HttpHeaderPubkey)
-	// FIXME
-	if appid != "_psubAdmin_" || pubkey != "_wandafFan_" {
-		log.Warn("suspicous add topic from %s: appid=%s, pubkey=%s, cluster=%s, topic=%s",
-			r.RemoteAddr, appid, pubkey, cluster, topic)
+	ver := params.ByName(UrlParamVersion)
+	if !this.authAdmin(appid, pubkey) {
+		log.Warn("suspicous add topic from %s(s): {appid:%s, pubkey:%s, cluster:%s, topic:%s, ver:%s}",
+			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
 		this.writeAuthFailure(w, manager.ErrPermDenied)
 		return
 	}
 
 	zkcluster := meta.Default.ZkCluster(cluster)
+	defer zkcluster.Close()
+
 	info := zkcluster.RegisteredInfo()
 	if !info.Public {
 		log.Warn("app[%s] adding topic:%s in non-public cluster: %+v", hisAppid, topic, params)
@@ -141,8 +195,6 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		http.Error(w, "invalid cluster", http.StatusBadRequest)
 		return
 	}
-
-	ver := params.ByName(UrlParamVersion)
 
 	replicas, partitions := 2, 1
 	query := r.URL.Query()
@@ -155,8 +207,8 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		replicas, _ = strconv.Atoi(replicasArg)
 	}
 
-	log.Info("app[%s] %s add topic: {appid:%s, cluster:%s, topic:%s, ver:%s query:%s}",
-		appid, r.RemoteAddr, hisAppid, cluster, topic, ver, query.Encode())
+	log.Info("app[%s] from %s(%s) add topic: {appid:%s, cluster:%s, topic:%s, ver:%s query:%s}",
+		appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
 
 	topic = meta.KafkaTopic(hisAppid, topic, ver)
 	lines, err := zkcluster.AddTopic(topic, replicas, partitions)
