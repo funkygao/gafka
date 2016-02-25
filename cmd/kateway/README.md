@@ -132,6 +132,10 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### FAQ
 
+- why named kateway?
+
+  Admittedly, it is not a good name. Just short for kafka gateway.
+
 - how to batch messages in Pub?
 
   It is http client's job to put the variant length data into json array
