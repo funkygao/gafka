@@ -20,15 +20,16 @@ func (this *MonitorTopics) Run() {
 	ticker := time.NewTicker(this.tick)
 	defer ticker.Stop()
 
-	c := metrics.NewRegisteredCounter("msg.cum", metrics.DefaultRegistry)
+	c := metrics.NewRegisteredGauge("msg.cum", metrics.DefaultRegistry)
 	for {
 		select {
 		case <-this.stop:
 			return
 
 		case <-ticker.C:
-			c.Inc(this.totalOffsets())
-
+			total := this.totalOffsets()
+			log.Info("zone[%s] total offsets: %d", this.zkzone.Name(), total)
+			c.Update(total)
 		}
 	}
 

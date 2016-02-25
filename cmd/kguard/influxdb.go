@@ -90,7 +90,7 @@ func (r *reporter) run() {
 }
 
 func extractFromMetricsName(name string) (string, string, string, string) {
-	return "", "", "", ""
+	return "", "", "", name
 }
 
 func (r *reporter) send() error {
