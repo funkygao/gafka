@@ -1,6 +1,6 @@
 # kateway
 
-A RESTful Cloud Pub/Sub.
+A fully-managed real-time RESTful Cloud Pub/Sub messaging service.
 
     _/    _/              _/
        _/  _/      _/_/_/  _/_/_/_/    _/_/    _/      _/      _/    _/_/_/  _/    _/
@@ -11,8 +11,9 @@ A RESTful Cloud Pub/Sub.
 
 ### Features
 
+- REST API
 - http/https/websocket/http2 interface for Pub/Sub
-- High performance and high throughput
+- High performance, high throughput, low latency
   - over 100K message per second on a single host
   - graceful shudown without downtime
   - elastic scales
@@ -20,20 +21,26 @@ A RESTful Cloud Pub/Sub.
 - Service Discovery
   - self contained
 - Realtime analytics and metrics monitor dashboard
+- Communication can be one-to-many (fan-out), many-to-one (fan-in), and many-to-many
 - Loosely coupled with kafka/zk
   - each component is replaceable
   - there is a storage abstraction layer
     - curretly 2 implementations
     - dummy
     - kafka
+- Replicated storage and guaranteed at-least-once message delivery
 - Ready for cloud
   - container ready
+- [ ] Flexible delivery options
+  - Both push- and pull-style subscriptions supported
 - [ ] Quotas and rate limit, QoS
+  - Flow control: Dynamic rate limiting 
 - [ ] Plugins
   - authentication and authorization
   - transform
   - hooks
-  - other stuff related to enterprise message bus
+  - other stuff related to message-oriented middleware
+- [ ] Encryption of all message data on the wire
 
 ### Ecosystem
 
@@ -104,6 +111,16 @@ A RESTful Cloud Pub/Sub.
            +----+   +------------------+        +---------------+
 
 
+### Common scenarios
+
+- Balancing workloads in network clusters
+- Implementing asynchronous workflows
+- Distributing event notifications
+- Refreshing distributed caches
+- Logging to multiple systems
+- Data streaming from various processes or devices
+- Reliability improvement
+
 ### FAQ
 
 - how to batch messages in Pub?
@@ -134,6 +151,7 @@ A RESTful Cloud Pub/Sub.
 - [ ] pub fails retry should be done at kafka pub sdk: sarama
 - [ ] check hack pkg
 - [ ] delayed pub
+- [ ] message will have header
 - [ ] warmup
 - [ ] https, outer ip must https
 - [ ] Pub HTTP POST Request compress
