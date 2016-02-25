@@ -1,6 +1,6 @@
 # kateway
 
-A fully-managed real-time RESTful Cloud Pub/Sub messaging service.
+A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub messaging service.
 
     _/    _/              _/
        _/  _/      _/_/_/  _/_/_/_/    _/_/    _/      _/      _/    _/_/_/  _/    _/
@@ -9,30 +9,39 @@ A fully-managed real-time RESTful Cloud Pub/Sub messaging service.
     _/    _/    _/_/_/      _/_/    _/_/_/      _/      _/        _/_/_/    _/_/_/
                                                                                _/
 
+### Counterparts
+
+- google Cloud Pub/Sub
+- amazon kenesis
+- misc
+  - pubnub
+  - pusher
+  - firebase
+  - parse
+
 ### Features
 
 - REST API
-- http/https/websocket/http2 interface for Pub/Sub
+  - http/https/websocket/http2 interface for Pub/Sub
 - High performance, high throughput, low latency
   - over 100K message per second on a single host
   - graceful shudown without downtime
   - elastic scales
   - circuit breaker
-- Service Discovery
-  - self contained
-- Realtime analytics and metrics monitor dashboard
-- Communication can be one-to-many (fan-out), many-to-one (fan-in), and many-to-many
-- Loosely coupled with kafka/zk
-  - each component is replaceable
-  - there is a storage abstraction layer
-    - curretly 2 implementations
-    - dummy
-    - kafka
+- Fully-managed
+  - Discovery
+  - Create topics, subscribe to topics
+  - Dedicated real-time metrics and fully-functional dashboard 
+  - Easy trouble shooting
+  - [ ] Visualize message flow
+- Communication can be 
+  - one-to-many (fan-out)
+  - many-to-one (fan-in)
+  - many-to-many
 - Replicated storage and guaranteed at-least-once message delivery
-- Ready for cloud
-  - container ready
 - [ ] Flexible delivery options
   - Both push- and pull-style subscriptions supported
+  - Webhook
 - [ ] Quotas and rate limit, QoS
   - Flow control: Dynamic rate limiting 
 - [ ] Plugins
@@ -137,6 +146,7 @@ A fully-managed real-time RESTful Cloud Pub/Sub messaging service.
 
 ### TODO
 
+- [ ] rename to bigmsg
 - [ ] kateway
   - (pubclient.go:22) cluster[gateway] closing kafka sync client: 6127
   - log remote addr and port
