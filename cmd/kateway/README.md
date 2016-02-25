@@ -140,9 +140,25 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub messaging se
 
   kateway uses chunked transfer encoding
 
-- topic name cannot include
-  - slash, dot, ~, +, @
-  - case sensitive
+- http header size limit?
+
+  4KB
+
+- what is limit of a pub message in size?
+
+  1MB
+
+- can I pub an empty message?
+
+  No
+
+- if sub with no arriving message, how long do client get http 204?
+
+  30s
+
+- after I subscribe a topic on manager ui, why my client got http 401?
+
+  yes, this is a trade off. You have to wait 5 minutes.
 
 ### TODO
 
