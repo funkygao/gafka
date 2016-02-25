@@ -47,6 +47,7 @@ func (this *Monitor) ServeForever() {
 		this.influxdbAddr, this.influxdbDbName, "", "")
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	defer zkzone.Close()
 
 	this.addExecutor(&MonitorTopics{zkzone: zkzone, tick: time.Minute, stop: this.stop})
 	this.addExecutor(&MonitorBrokers{zkzone: zkzone, tick: time.Minute, stop: this.stop})
