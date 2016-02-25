@@ -52,6 +52,7 @@ func (this *Monitor) ServeForever() {
 	this.addExecutor(&MonitorTopics{zkzone: zkzone, tick: time.Minute, stop: this.stop})
 	this.addExecutor(&MonitorBrokers{zkzone: zkzone, tick: time.Minute, stop: this.stop})
 	this.addExecutor(&MonitorReplicas{zkzone: zkzone, tick: time.Minute, stop: this.stop})
+	this.addExecutor(&MonitorConsumers{zkzone: zkzone, tick: time.Minute, stop: this.stop})
 	this.addExecutor(&MonitorClusters{zkzone: zkzone, tick: time.Minute, stop: this.stop})
 
 	for _, e := range this.executors {
