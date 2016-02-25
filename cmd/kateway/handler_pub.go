@@ -38,8 +38,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	if r.Header.Get(HttpHeaderConnection) == "close" {
-		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} not keep-alive",
+	if false && r.Header.Get(HttpHeaderConnection) == "close" {
+		log.Debug("pub[%s] %s(%s) {topic:%s, ver:%s} better keep-alive",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
 	}
 
