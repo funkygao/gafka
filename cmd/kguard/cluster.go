@@ -25,7 +25,7 @@ func (this *MonitorClusters) Run() {
 			return
 
 		case <-ticker.C:
-			clusters.Update(len(this.zkzone.Clusters()))
+			clusters.Update(int64(len(this.zkzone.Clusters())))
 		}
 	}
 
