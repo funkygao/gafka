@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/zk"
+	//"github.com/funkygao/go-metrics"
 )
 
 // MonitorReplicas reports out of sync partitions num over time.

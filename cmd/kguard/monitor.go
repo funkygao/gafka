@@ -6,6 +6,7 @@ import (
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/go-metrics"
 )
 
 type Monitor struct {
@@ -41,6 +42,9 @@ func (this *Monitor) Stop() {
 
 func (this *Monitor) ServeForever() {
 	ctx.LoadFromHome()
+
+	go InfluxDB(ctx.Hostname(), metrics.DefaultRegistry, time.Minute,
+		this.influxdbAddr, this.influxdbDbName, "", "")
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 

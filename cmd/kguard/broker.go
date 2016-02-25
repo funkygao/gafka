@@ -4,9 +4,10 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/zk"
+	//"github.com/funkygao/go-metrics"
 )
 
-// MonitorBrokers monitors
+// MonitorBrokers monitors aliveness of brokers.
 type MonitorBrokers struct {
 	zkzone *zk.ZkZone
 	stop   chan struct{}

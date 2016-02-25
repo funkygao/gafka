@@ -5,6 +5,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 )
 
@@ -19,12 +20,14 @@ func (this *MonitorTopics) Run() {
 	ticker := time.NewTicker(this.tick)
 	defer ticker.Stop()
 
+	c := metrics.NewRegisteredCounter("msg.cum", metrics.DefaultRegistry)
 	for {
 		select {
 		case <-this.stop:
 			return
 
 		case <-ticker.C:
+			c.Inc(this.totalOffsets())
 
 		}
 	}
