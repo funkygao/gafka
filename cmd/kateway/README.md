@@ -1,10 +1,6 @@
 # kateway
 
-Kafka as a service
-
-A RESTful gateway for kafka that supports Pub and Sub.
-
-Don't make programmer think!
+A RESTful Cloud Pub/Sub.
 
     _/    _/              _/
        _/  _/      _/_/_/  _/_/_/_/    _/_/    _/      _/      _/    _/_/_/  _/    _/
@@ -15,50 +11,45 @@ Don't make programmer think!
 
 ### Features
 
-- http/https/websocket/http2 interface for programmer
+- http/https/websocket/http2 interface for Pub/Sub
 - High performance and high throughput
   - over 100K message per second on a single host
-- Loosely coupled with kafka/zk
-  - each component is replaceable
+  - graceful shudown without downtime
+  - elastic scales
+  - circuit breaker
 - Service Discovery
   - self contained
-- Quotas and rate limit, QoS
-- Circuit breakers
-- Plugins
+- Realtime analytics and metrics monitor dashboard
+- Loosely coupled with kafka/zk
+  - each component is replaceable
+  - there is a storage abstraction layer
+    - curretly 2 implementations
+    - dummy
+    - kafka
+- Ready for cloud
+  - container ready
+- [ ] Quotas and rate limit, QoS
+- [ ] Plugins
   - authentication and authorization
   - transform
+  - hooks
   - other stuff related to enterprise message bus
-- Elastic scales
-- Works closely with the powerful tool: gk
-- Realtime analytics and metrics monitor
-- Multi-tenant message metrics dashboard
-- Graceful shutdown without downtime
-- Handles most of the difficult stuff while providing easy to use interface
-
-### Befinits
-
-- export message tube to internet
-- let programmers forget about servers and concentrate on services/kateway
-  - no zk
-  - no kafka
-  - no topology
-  - a single endpoint
-- even benificial for OPS team of kafka/zk
-  - single client
-  - easy upgrade/maintain
-  - consolidated hooks possible
 
 ### Ecosystem
 
 - gk
 
-  for backend kafka
+  for backend kafka and kateway cluster management
 
 - kateway
 
-  pubsub endpoint for programmers
+  Pub/Sub engine
 
-- elasticha
+- manager
+
+  a multi-tenant web management console
+
+- ehaproxy
 
   for elastic load balance of kateway
 
@@ -69,7 +60,7 @@ Don't make programmer think!
            | DB |------|   manager UI    |
            +----+      +-----------------+                                                  
                                |                                                           
-                               ^ register [application|topic|pub|sub]                       
+                               ^ register [application|topic|version|subscription]                       
                                |                                                          
                        +-----------------+                                                 
                        |  Application    |                                                
@@ -79,65 +70,39 @@ Don't make programmer think!
             PUB                |               SUB                                    
             +-------------------------------------+                                  
             |                                     |                                         
-       HTTP |                                HTTP |                                        
-       POST |                                 GET |                                       
+       HTTP |                                HTTP | keep-alive 
+       POST |                                 GET | session sticky                        
             |                                     |                                      
         +------------+                      +------------+                 application 
      ---| PubEndpoint|----------------------| SubEndpoint|---------------------------- 
         +------------+           |          +------------+                     kateway
         | stateless  |        Plugins       | stateful   |                           
         +------------+  +----------------+  +------------+                          
-        | quota      |  | Authentication |  | quota      |                         
-        +------------+  +----------------+  +------------+                          
-        | monitor    |  | Authorization  |  | monitor    |                         
-        +------------+  +----------------+  +------------+                        
-        | guard      |                      | guard      |                       
+        | quota      |  | Authentication |  | quota      |      
+        +------------+  +----------------+  +------------+     
+        | metrics    |  | Authorization  |  | metrics    |    
+        +------------+  +----------------+  +------------+   
+        | guard      |  | ......         |  | guard      |  
+        +------------+  +----------------+  +------------+                      
+        | registry   |                      | registry   |  
+        +------------+                      +------------+                      
+        | meta       |                      | meta       |  
         +------------+                      +------------+                      
             |                                     |    
             |    +----------------------+         |  
             |----| ZK or other ensemble |---------| 
             |    +----------------------+         |
             |                                     |    
-            | Put                                 | Get
+            | Append                              | Fetch
             |                                     |                     
             |       +------------------+          |     
             |       |      Store       |          |    
             +-------+------------------+----------+   
                     |  kafka or else   |
-                    +------------------+        +-----------------------------+
-                    |     monitor      |--------| elastic partitioner/monitor |
-                    +------------------+        +-----------------------------+
+           +----+   +------------------+        +---------------+
+           | gk |---|     monitor      |--------| elastic scale |
+           +----+   +------------------+        +---------------+
 
-
-### Deployment
-
-                  +---------+   +---------+   +---------+   +---------+      
-                  | client  |   | client  |   | client  |   | client  |     
-                  +---------+   +---------+   +---------+   +---------+    
-                       |              |            |             |
-                       +-----------------------------------------+           
-                                           |                                
-                                           | HTTP/1.1 keep-alive           
-                                           |     
-                                    +--------------+                         +----------+
-                                    | ehaproxy     |                         | registry |
-                                    +--------------+                         +----------+
-                                           |
-                                           | HTTP/1.1 keep-alive             +----------+
-                                           |      session sticky             | guard    |
-                       +-----------------------------------------+           +----------+
-                       |              |            |             |      
-                  +---------+   +---------+   +---------+   +---------+      +----------+
-                  | Kateway |---| Kateway |---| Kateway |---| Kateway |------| ensemble |
-                  +---------+   +---------+   +---------+   +---------+      +----------+
-                       |              |            |             |
-                       +-----------------------------------------+           +----------+
-                                            |                                | metrics  |
-                             +---------------------------+                   +----------+
-                             |              |            |             
-                         +---------+   +---------+   +---------+   
-                         | Store   |   | Store   |   | Store   |
-                         +---------+   +---------+   +---------+   
 
 ### FAQ
 
@@ -148,15 +113,6 @@ Don't make programmer think!
 - how to consume multiple messages in Sub?
 
   kateway uses chunked transfer encoding
-
-- how to load balance the Pub?
-
-  - client side LB
-  - haproxy
-
-- how to load balance the Sub?
-
-  haproxy MUST enable session sticky
 
 - topic name cannot include
   - slash, dot, ~, +, @
