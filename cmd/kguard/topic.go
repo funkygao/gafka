@@ -41,14 +41,14 @@ func (this *MonitorTopics) totalOffsets() (total int64) {
 
 		topics, err := kfk.Topics()
 		if err != nil {
-			log.Error(err)
+			log.Error("cluster[%s] %v", zkcluster.Name(), err)
 			return
 		}
 
 		for _, topic := range topics {
 			partions, err := kfk.Partitions(topic)
 			if err != nil {
-				log.Error(err)
+				log.Error("cluster[%s] topic:%s %v", zkcluster.Name(), topic, err)
 				continue
 			}
 
@@ -56,7 +56,8 @@ func (this *MonitorTopics) totalOffsets() (total int64) {
 				latestOffset, err := kfk.GetOffset(topic, partitionId,
 					sarama.OffsetNewest)
 				if err != nil {
-					log.Error(err)
+					log.Error("cluster[%s] topic:%s partition:%d %v",
+						zkcluster.Name(), topic, partitionId, err)
 					continue
 				}
 
