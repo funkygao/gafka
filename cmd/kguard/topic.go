@@ -21,22 +21,38 @@ func (this *MonitorTopics) Run() {
 	defer ticker.Stop()
 
 	offsets := metrics.NewRegisteredGauge("msg.cum", nil)
+	topics := metrics.NewRegisteredGauge("topics", nil)
+	partitions := metrics.NewRegisteredGauge("partitions", nil)
+	brokers := metrics.NewRegisteredGauge("brokers", nil)
 	for {
+
 		select {
 		case <-this.stop:
 			return
 
 		case <-ticker.C:
-			offsets.Update(this.totalOffsets())
+			o, t, p, b := this.report()
+			offsets.Update(o)
+			topics.Update(t)
+			partitions.Update(p)
+			brokers.Update(b)
 		}
 	}
 
 }
 
-func (this *MonitorTopics) totalOffsets() (total int64) {
+func (this *MonitorTopics) report() (totalOffsets int64, topicsN int64,
+	partitionN int64, brokersN int64) {
 	this.zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
-		kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
+		brokerList := zkcluster.BrokerList()
+		kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
+		if err != nil {
+			log.Error("cluster[%s] %v", zkcluster.Name(), err)
+			return
+		}
 		defer kfk.Close()
+
+		brokersN += int64(len(brokerList))
 
 		topics, err := kfk.Topics()
 		if err != nil {
@@ -51,6 +67,8 @@ func (this *MonitorTopics) totalOffsets() (total int64) {
 				continue
 			}
 
+			topicsN += 1
+
 			for _, partitionId := range partions {
 				latestOffset, err := kfk.GetOffset(topic, partitionId,
 					sarama.OffsetNewest)
@@ -60,7 +78,8 @@ func (this *MonitorTopics) totalOffsets() (total int64) {
 					continue
 				}
 
-				total += latestOffset
+				partitionN += 1
+				totalOffsets += latestOffset
 			}
 		}
 

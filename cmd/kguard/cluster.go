@@ -18,7 +18,7 @@ func (this *MonitorClusters) Run() {
 	ticker := time.NewTicker(this.tick)
 	defer ticker.Stop()
 
-	clusters := metrics.NewRegisteredGauge("clusters.num", nil)
+	clusters := metrics.NewRegisteredGauge("clusters", nil)
 	for {
 		select {
 		case <-this.stop:
