@@ -28,6 +28,7 @@ type Kateway struct {
 	configMode   bool
 	logLevel     string
 	resetCounter string
+	listClients  bool
 }
 
 func (this *Kateway) Run(args []string) (exitCode int) {
@@ -36,6 +37,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&this.configMode, "cf", false, "")
 	cmdFlags.StringVar(&this.id, "id", "", "")
+	cmdFlags.BoolVar(&this.listClients, "clients", false, "")
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "info", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
@@ -102,6 +104,10 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	sort.Strings(instances)
 
 	for _, instance := range instances {
+		if this.id != "" && this.id != instance {
+			continue
+		}
+
 		data, stat, err := zkzone.Conn().Get(zkr.Root(this.zone) + "/" + instance)
 		swallow(err)
 
@@ -121,9 +127,37 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			info["debug"],
 		))
 
+		if this.listClients {
+			clients := this.getClientsInfo(info["man"])
+			this.Ui.Output("    pub clients:")
+			pubClients := clients["pub"]
+			sort.Strings(pubClients)
+			for _, client := range pubClients {
+				this.Ui.Output("    " + client)
+			}
+
+			this.Ui.Output("    sub clients:")
+			subClients := clients["sub"]
+			sort.Strings(subClients)
+			for _, client := range subClients {
+				this.Ui.Output("    " + client)
+			}
+		}
 	}
 
 	return
+}
+
+func (this *Kateway) getClientsInfo(url string) map[string][]string {
+	url = fmt.Sprintf("http://%s/clients", url)
+	body, err := this.callHttp(url, "GET")
+	if err != nil {
+		return err.Error()
+	}
+
+	var v map[string][]string
+	json.Unmarshal(body, &v)
+	return v
 }
 
 func (this *Kateway) getKatewayLogLevel(url string) string {
@@ -209,6 +243,9 @@ Options:
 
     -loglevel <info|debug|trace|warn|alarm|error>
       Set kateway log level
+
+    -clients
+      List online pub/sub clients
 
     -id kateway id    
 

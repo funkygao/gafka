@@ -40,6 +40,7 @@ man:
  GET /help
  GET /status
  GET /clusters
+ GET /clients
  GET /alive
  PUT /log/:level  level=<info|debug|trace|warn|alarm|error>
 POST /topics/:cluster/:appid/:topic/:ver
@@ -64,6 +65,14 @@ func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	b, _ := json.MarshalIndent(output, "", "    ")
 	w.Write(b)
 	w.Write([]byte{'\n'})
+}
+
+func (this *Gateway) clientsHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	this.writeKatewayHeader(w)
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
+	b, _ := json.Marshal(this.clientStates.Export())
+	w.Write(b)
 }
 
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,

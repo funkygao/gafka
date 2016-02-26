@@ -9,6 +9,7 @@ import (
 func (this *Gateway) buildRouting() {
 	this.manServer.Router().GET("/alive", this.checkAliveHandler)
 	this.manServer.Router().GET("/clusters", this.clustersHandler)
+	this.manServer.Router().GET("/clients", this.clientsHandler)
 	this.manServer.Router().GET("/help", this.helpHandler)
 	this.manServer.Router().GET("/status", this.statusHandler)
 	this.manServer.Router().PUT("/log/:level", this.setlogHandler)
