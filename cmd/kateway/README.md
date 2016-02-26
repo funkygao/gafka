@@ -30,18 +30,18 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - circuit breaker
 - Fully-managed
   - Discovery
-  - Create topics, subscribe to topics
+  - Create versioned topics, subscribe to topics
   - Dedicated real-time metrics and fully-functional dashboard 
   - Easy trouble shooting
+  - [ ] Managed integration service via Webhooks
   - [ ] Visualize message flow
 - Communication can be 
   - one-to-many (fan-out)
   - many-to-one (fan-in)
   - many-to-many
 - Replicated storage and guaranteed at-least-once message delivery
-- [ ] Flexible delivery options
+- Flexible delivery options
   - Both push- and pull-style subscriptions supported
-  - Webhook
 - [ ] Quotas and rate limit, QoS
   - Flow control: Dynamic rate limiting 
 - [ ] Plugins
@@ -166,7 +166,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
-- [ ] rename to bigmsg
+- [ ] rename to bigtopic
 - [ ] kateway
   - (pubclient.go:22) cluster[gateway] closing kafka sync client: 6127
   - log remote addr and port
