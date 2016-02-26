@@ -1,6 +1,6 @@
 %define name kafka
 %define version 0.2.6
-%define release 4
+%define release 5
 %define path usr
 %define group Development/Tools
 %define __os_install_post %{nil}
@@ -15,8 +15,6 @@ License:    Apache
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}
 Prefix:     /usr
 AutoReqProv: no
-# we just assume you have go installed. You may or may not have an RPM to depend on.
-# BuildRequires: go
 
 %description 
 kafka console for programmers powered by golang.

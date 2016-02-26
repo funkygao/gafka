@@ -193,14 +193,14 @@ func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
 }
 
 func (*Peek) Synopsis() string {
-	return "Peek kafka topic messages from any offset"
+	return "Peek kafka topic messages"
 }
 
 func (this *Peek) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s peek [options]
 
-    Peek kafka topic messages from any offset
+    Peek kafka topic messages
 
     e,g.
     %s peek -z prod -c trade -t OrderStatusMsg
@@ -212,7 +212,7 @@ Options:
 
     -c cluster
 
-    -t topic pattern
+    -t topic
     
     -p partition id
       -1 will peek all partitions of a topic

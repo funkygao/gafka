@@ -13,7 +13,7 @@ import (
 	"github.com/ryanuber/columnize"
 )
 
-type Lags struct {
+type Lag struct {
 	Ui  cli.Ui
 	Cmd string
 
@@ -24,13 +24,13 @@ type Lags struct {
 	lagThreshold    int
 }
 
-func (this *Lags) Run(args []string) (exitCode int) {
+func (this *Lag) Run(args []string) (exitCode int) {
 	const secondsInMinute = 60
 	var (
 		cluster string
 		zone    string
 	)
-	cmdFlags := flag.NewFlagSet("lags", flag.ContinueOnError)
+	cmdFlags := flag.NewFlagSet("lag", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
@@ -61,7 +61,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
+func (this *Lag) printConsumersLag(zkcluster *zk.ZkCluster) {
 	lines := make([]string, 0)
 	header := "ConsumerGroup|Topic/Partition|Produced|Consumed|Lag|Updated"
 	lines = append(lines, header)
@@ -112,18 +112,18 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 	this.Ui.Output(columnize.SimpleFormat(lines))
 }
 
-func (*Lags) Synopsis() string {
-	return "Display online high level consumer group lags for a topic"
+func (*Lag) Synopsis() string {
+	return "Diagnose online high level consumer group lag on a topic"
 }
 
-func (this *Lags) Help() string {
+func (this *Lag) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s lags [options]
+Usage: %s lag [options]
 
-    Display online high level consumer group lags for a topic
+    Diagnose online high level consumer group lag on a topic
 
     e,g.
-    %s lags -z prod -c trade -t OrderStatusMsg
+    %s lag -z prod -c trade -t OrderStatusMsg
 
 Options:
 
@@ -132,9 +132,9 @@ Options:
 
     -c cluster
 
-    -g consumer group name pattern
+    -g consumer group name
 
-    -t topic name pattern
+    -t topic
 
 `, this.Cmd, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)

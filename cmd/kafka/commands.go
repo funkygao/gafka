@@ -44,8 +44,8 @@ func init() {
 			}, nil
 		},
 
-		"lags": func() (cli.Command, error) {
-			return &command.Lags{
+		"lag": func() (cli.Command, error) {
+			return &command.Lag{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
