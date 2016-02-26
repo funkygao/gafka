@@ -23,7 +23,7 @@ func NewClientStates() *ClientStates {
 	return this
 }
 
-func (this *ClientStates) registerPubClient(r *http.Request) {
+func (this *ClientStates) RegisterPubClient(r *http.Request) {
 	realIp := getHttpRemoteIp(r)
 	if realIp == r.RemoteAddr {
 		return
@@ -35,14 +35,18 @@ func (this *ClientStates) registerPubClient(r *http.Request) {
 	this.pubClientsLock.Unlock()
 }
 
-func (this *ClientStates) registerSubClient(r *http.Request) {
+func (this *ClientStates) RegisterSubClient(r *http.Request) {
 
 }
 
-func (this *ClientStates) unregisterPubClient(c net.Conn) {
+func (this *ClientStates) UnregisterPubClient(c net.Conn) {
 	haproxyIp, port := net.SplitHostPort(c.RemoteAddr().String())
 }
 
-func (this *ClientStates) unregisterSubClient(c net.Conn) {
+func (this *ClientStates) UnregisterSubClient(c net.Conn) {
+
+}
+
+func (this *ClientStates) Export() map[string][]string {
 
 }
