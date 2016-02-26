@@ -165,6 +165,11 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		}
 	}
 
+	if len(instances) > 0 {
+		this.Ui.Output("")
+		this.Ui.Output(fmt.Sprintf("max id:%s", instances[len(instances)-1]))
+	}
+
 	return
 }
 
