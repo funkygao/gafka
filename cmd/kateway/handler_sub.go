@@ -28,7 +28,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	)
 
 	if options.EnableClientStats {
-		this.registerSubClient(r)
+		this.clientStates.registerSubClient(r)
 	}
 
 	query := r.URL.Query()
@@ -196,7 +196,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	)
 
 	if options.EnableClientStats {
-		this.registerSubClient(r)
+		this.clientStates.registerSubClient(r)
 	}
 
 	ver = params.ByName(UrlParamVersion)

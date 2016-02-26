@@ -23,7 +23,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	t1 := time.Now()
 
 	if options.EnableClientStats { // TODO enable pub or sub client stats
-		this.registerPubClient(r)
+		this.clientStates.registerPubClient(r)
 	}
 
 	if options.Ratelimit && !this.leakyBuckets.Pour(r.RemoteAddr, 1) {
@@ -181,7 +181,7 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 func (this *Gateway) pubWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	if options.EnableClientStats {
-		this.registerPubClient(r)
+		this.clientStates.registerPubClient(r)
 	}
 
 	ws, err := upgrader.Upgrade(w, r, nil)

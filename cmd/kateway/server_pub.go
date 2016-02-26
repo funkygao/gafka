@@ -32,6 +32,6 @@ func (this *pubServer) onConnClose(c net.Conn) {
 	}
 
 	if options.EnableClientStats {
-		this.gw.unregisterPubClient(c)
+		this.gw.clientStates.unregisterPubClient(c)
 	}
 }
