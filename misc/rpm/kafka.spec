@@ -1,11 +1,11 @@
-%define name fk
+%define name kafka
 %define version 0.2.6
 %define release 3
 %define path usr
 %define group Development/Tools
 %define __os_install_post %{nil}
 
-Summary:    ffan.com kafka console for programmers
+Summary:    kafka console for programmers
 Name:       %{name}
 Version:    %{version}
 Release:    %{release}
@@ -19,7 +19,7 @@ AutoReqProv: no
 # BuildRequires: go
 
 %description 
-ffan.com kafka console for programmers powered by golang.
+kafka console for programmers powered by golang.
 
 %prep
 mkdir -p $RPM_BUILD_DIR/%{name}-%{version}-%{release}
@@ -28,15 +28,14 @@ git clone https://github.com/funkygao/gafka
 
 %build
 cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
-./build.sh -t fk
+./build.sh -t kafka
 
 %install
 export DONT_STRIP=1
 rm -rf $RPM_BUILD_ROOT
 cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
 mkdir -p $RPM_BUILD_ROOT/%{path}/bin
-mkdir -p $RPM_BUILD_ROOT/etc/bash_completion.d
-install cmd/fk/fk $RPM_BUILD_ROOT/%{path}/bin
+install cmd/kafka/kafka $RPM_BUILD_ROOT/%{path}/bin
 
 %files
-/%{path}/bin/fk
+/%{path}/bin/kafka

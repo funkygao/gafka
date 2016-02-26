@@ -35,3 +35,48 @@
 
 - num.io.threads >= #disks
 - num.network.threads
+
+
+
+
+
+
+        SocketServer has 1 Acceptor and num.network.threads Processor
+                     |
+                RequestChannel
+                     |
+        num.io.threads KafkaRequestHandler forms a KafkaRequestHandlerPool
+                           |
+                        KafkaApis.handle
+
+        /data3/kfk_logs/replication-offset-checkpoint
+
+        TopicConfigManager /config/changes/config_change_13321 and delete older than 15m config_change_*
+        KafkaHealthcheck   /brokers/ids/$id
+
+        ReplicaManager
+
+        KafkaController
+            elect就是创建临时节点/controller，成功者成为controller
+
+            ControllerChannelManager
+
+            onControllerFailover
+                成为controller
+                    /admin/reassign_partitions
+                    /admin/preferred_replica_election
+
+                    PartitionStateMachine
+                        /brokers/topics         TopicChangeListener
+                        /admin/delete_topics    DeleteTopicsListener
+
+                    ReplicaStateMachine
+                        /brokers/ids            BrokerChangeListener
+
+
+
+            onControllerResignation
+                以前是controller，现在不是了，重新elect
+
+            /controller_epoch 记录controller变化的全部过程，解决race condition问题 CAS
+
