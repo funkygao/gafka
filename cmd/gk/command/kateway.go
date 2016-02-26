@@ -171,7 +171,7 @@ func (this *Kateway) getClientsInfo(url string) map[string][]string {
 	url = fmt.Sprintf("http://%s/clients", url)
 	body, err := this.callHttp(url, "GET")
 	if err != nil {
-		return err.Error()
+		return nil
 	}
 
 	var v map[string][]string

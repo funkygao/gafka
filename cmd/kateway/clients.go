@@ -36,7 +36,7 @@ func (this *ClientStates) RegisterPubClient(r *http.Request) {
 		return
 	}
 
-	_, port := net.SplitHostPort(r.RemoteAddr) // FIXME port is not real port
+	_, port, _ := net.SplitHostPort(r.RemoteAddr) // FIXME port is not real port
 	realHostPort := realIp + ":" + port
 
 	this.pubClientsLock.Lock()
@@ -51,7 +51,7 @@ func (this *ClientStates) RegisterSubClient(r *http.Request) {
 		return
 	}
 
-	_, port := net.SplitHostPort(r.RemoteAddr)
+	_, port, _ := net.SplitHostPort(r.RemoteAddr)
 	realHostPort := realIp + ":" + port
 
 	this.subClientsLock.Lock()
@@ -106,7 +106,7 @@ func (this *ClientStates) Export() map[string][]string {
 	}
 
 	this.subClientsLock.RLock()
-	subClients := this.subClientsLock
+	subClients := this.subClients
 	this.subClientsLock.RUnlock()
 	r["sub"] = make([]string, 0, len(subClients))
 	for ipPort, _ := range subClients {
