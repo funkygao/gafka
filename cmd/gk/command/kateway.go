@@ -15,6 +15,7 @@ import (
 	zkr "github.com/funkygao/gafka/registry/zk"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	zklib "github.com/samuel/go-zookeeper/zk"
 )
@@ -109,7 +110,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			zk.KatewayMysqlPath))
 		return 1
 	}
-	this.Ui.Output(fmt.Sprintf("mysql: %s", mysqlDsn))
+	this.Ui.Output(fmt.Sprintf("mysql: %s", color.Cyan(mysqlDsn)))
 
 	instances, _, err := zkzone.Conn().Children(zkr.Root(this.zone))
 	if err != nil {
