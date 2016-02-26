@@ -92,7 +92,7 @@ public class KafkaConsumer {
         props.put("zookeeper.session.timeout.ms", "4000");
         props.put("zookeeper.sync.time.ms", "200");
         props.put("auto.commit.interval.ms", "60000"); // 1m
-        props.put("auto.offset.reset", "smallest");    // largest | smallest
+        //props.put("auto.offset.reset", "smallest");    // largest | smallest
         props.put("serializer.class", "kafka.serializer.StringEncoder");
         ConsumerConfig config = new ConsumerConfig(props);
 
@@ -107,6 +107,7 @@ public class KafkaConsumer {
 
     void consume(String topic, int %s) {
     	// %s
+        // %s
         // %s
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
@@ -138,7 +139,8 @@ public class KafkaConsumer {
 		color.Cyan("group.id"),
 		color.Green("threads"),
 		color.Red("VERY important!"),
-		color.Red("graceful shudown the consumer group to avoid duplicated message to consume"),
+		color.Red("graceful shutdown the consumer group to commit consumed offset"),
+		color.Red("avoid consuming duplicated message when restarting the same consumer group"),
 		color.Green("threads"))
 }
 
