@@ -20,10 +20,12 @@ func (this *MonitorTopics) Run() {
 	ticker := time.NewTicker(this.tick)
 	defer ticker.Stop()
 
+	pubQps := metrics.NewRegisteredMeter("pub.qps", nil)
 	offsets := metrics.NewRegisteredGauge("msg.cum", nil)
 	topics := metrics.NewRegisteredGauge("topics", nil)
 	partitions := metrics.NewRegisteredGauge("partitions", nil)
 	brokers := metrics.NewRegisteredGauge("brokers", nil)
+	var lastTotalOffsets int64
 	for {
 
 		select {
@@ -36,6 +38,11 @@ func (this *MonitorTopics) Run() {
 			topics.Update(t)
 			partitions.Update(p)
 			brokers.Update(b)
+
+			if lastTotalOffsets > 0 {
+				pubQps.Mark(o - lastTotalOffsets)
+			}
+			lastTotalOffsets = o
 		}
 	}
 
