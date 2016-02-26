@@ -63,7 +63,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 
 func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 	lines := make([]string, 0)
-	header := "ConsumerGroup|Topic/Partition|Produced|Consumed|Lag|Refreshed"
+	header := "ConsumerGroup|Topic/Partition|Produced|Consumed|Lag|Updated"
 	lines = append(lines, header)
 
 	// sort by group name
