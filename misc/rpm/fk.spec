@@ -1,6 +1,6 @@
 %define name fk
 %define version 0.2.6
-%define release 2
+%define release 3
 %define path usr
 %define group Development/Tools
 %define __os_install_post %{nil}

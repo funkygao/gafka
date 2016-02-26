@@ -123,7 +123,7 @@ Usage: %s lags [options]
     Display online high level consumer group lags for a topic
 
     e,g.
-    %s -z prod -c trade -t OrderStatusMsg
+    %s lags -z prod -c trade -t OrderStatusMsg
 
 Options:
 
