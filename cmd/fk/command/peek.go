@@ -71,6 +71,12 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	if validateArgs(this, this.Ui).
+		require("-c", "-t").
+		invalid(args) {
+		return 2
+	}
+
 	if silence {
 		stats := newPeekStats()
 		go stats.start()
@@ -187,14 +193,17 @@ func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
 }
 
 func (*Peek) Synopsis() string {
-	return "Peek kafka cluster messages ongoing from any offset"
+	return "Peek kafka topic messages from any offset"
 }
 
 func (this *Peek) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s peek [options]
 
-    Peek kafka cluster messages ongoing from any offset
+    Peek kafka topic messages from any offset
+
+    e,g.
+    %s peek -z prod -c trade -t OrderStatusMsg
 
 Options:
 
@@ -216,6 +225,6 @@ Options:
     -limit n
       Limit how many messages to consume    
 
-`, this.Cmd, ctx.ZkDefaultZone())
+`, this.Cmd, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

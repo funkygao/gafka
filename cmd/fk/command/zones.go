@@ -54,14 +54,14 @@ func (this *Zones) Run(args []string) (exitCode int) {
 }
 
 func (*Zones) Synopsis() string {
-	return "Print zones defined in $HOME/.gafka.cf"
+	return "Print all zones"
 }
 
 func (this *Zones) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s zones [zone ...]
 
-    Print zones defined in $HOME/.gafka.cf
+    Print all zones
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }

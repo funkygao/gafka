@@ -1,11 +1,11 @@
 %define name fk
 %define version 0.2.6
-%define release 1
+%define release 2
 %define path usr
 %define group Development/Tools
 %define __os_install_post %{nil}
 
-Summary:    ffan.com kafka swiss-knife management console
+Summary:    ffan.com kafka console for programmers
 Name:       %{name}
 Version:    %{version}
 Release:    %{release}
@@ -19,7 +19,7 @@ AutoReqProv: no
 # BuildRequires: go
 
 %description 
-ffan.com kafka swiss-knife management console powered by golang.
+ffan.com kafka console for programmers powered by golang.
 
 %prep
 mkdir -p $RPM_BUILD_DIR/%{name}-%{version}-%{release}

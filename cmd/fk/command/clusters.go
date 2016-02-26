@@ -48,14 +48,14 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 }
 
 func (*Clusters) Synopsis() string {
-	return "Display kafka clusters of a zone"
+	return "Display kafka clusters in a zone"
 }
 
 func (this *Clusters) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s clusters -z zone
 
-    Display kafka clusters of a zone
+    Display kafka clusters in a zone
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

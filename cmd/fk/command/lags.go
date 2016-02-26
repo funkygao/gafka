@@ -47,6 +47,12 @@ func (this *Lags) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	if validateArgs(this, this.Ui).
+		require("-c", "-t").
+		invalid(args) {
+		return 2
+	}
+
 	if this.watchMode {
 		refreshScreen()
 	}
@@ -188,14 +194,14 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 }
 
 func (*Lags) Synopsis() string {
-	return "Display high level consumers lag for each topic/partition"
+	return "Display high level consumer group lags for a topic"
 }
 
 func (this *Lags) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s lags [options]
 
-    Display high level consumers lag for each topic/partition
+    Display high level consumer group lags for a topic
 
     e,g.
     %s -z prod -c trade -t OrderStatusMsg
