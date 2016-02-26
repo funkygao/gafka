@@ -50,11 +50,11 @@ func (this *ClientStates) UnregisterSubClient(c net.Conn) {
 
 func (this *ClientStates) Export() map[string][]string {
 	r := make(map[string][]string)
-	r["pub"] = make([]string, 0)
-	r["sub"] = make([]string, 0)
+
 	this.pubClientsLock.RLock()
 	pubClients := this.pubClients
 	this.pubClientsLock.RUnlock()
+	r["pub"] = make([]string, 0, len(pubClients))
 	for ipPort, _ := range pubClients {
 		r["pub"] = append(r["pub"], ipPort)
 	}
@@ -62,6 +62,7 @@ func (this *ClientStates) Export() map[string][]string {
 	this.subClientsLock.RLock()
 	subClients := this.subClientsLock
 	this.subClientsLock.RUnlock()
+	r["sub"] = make([]string, 0, len(subClients))
 	for ipPort, _ := range subClients {
 		r["sub"] = append(r["sub"], ipPort)
 	}
