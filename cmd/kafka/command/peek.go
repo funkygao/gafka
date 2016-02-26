@@ -193,14 +193,14 @@ func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
 }
 
 func (*Peek) Synopsis() string {
-	return "Peek kafka topic messages"
+	return "Peek kafka messages of a topic"
 }
 
 func (this *Peek) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s peek [options]
 
-    Peek kafka topic messages
+    Peek kafka messages of a topic
 
     e,g.
     %s peek -z prod -c trade -t OrderStatusMsg
