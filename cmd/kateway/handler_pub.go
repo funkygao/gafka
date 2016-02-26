@@ -120,6 +120,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 
 	msg.Free()
 	this.writeKatewayHeader(w)
+	w.WriteHeader(http.StatusCreated)
 	if _, err = w.Write(ResponseOk); err != nil {
 		log.Error("%s: %v", r.RemoteAddr, err)
 		this.pubMetrics.ClientError.Inc(1)
