@@ -49,6 +49,8 @@ type Gateway struct {
 	subServer *subServer
 	manServer *manServer
 
+	clientStates *ClientStates
+
 	pubMetrics *pubMetrics
 	subMetrics *subMetrics
 	svrMetrics *serverMetrics
@@ -66,6 +68,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		leakyBuckets: ratelimiter.NewLeakyBuckets(1000*60, time.Minute),
 		certFile:     options.CertFile,
 		keyFile:      options.KeyFile,
+		clientStates: NewClientStates(),
 	}
 
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())

@@ -9,8 +9,10 @@ import (
 func (this *Gateway) buildRouting() {
 	this.manServer.Router().GET("/alive", this.checkAliveHandler)
 	this.manServer.Router().GET("/clusters", this.clustersHandler)
+	this.manServer.Router().GET("/clients", this.clientsHandler)
 	this.manServer.Router().GET("/help", this.helpHandler)
 	this.manServer.Router().GET("/status", this.statusHandler)
+	this.manServer.Router().PUT("/options/:option/:value", this.setOptionHandler)
 	this.manServer.Router().PUT("/log/:level", this.setlogHandler)
 	this.manServer.Router().GET("/partitions/:cluster/:appid/:topic/:ver", this.partitionsHandler)
 	this.manServer.Router().POST("/topics/:cluster/:appid/:topic/:ver", this.addTopicHandler)
@@ -20,7 +22,7 @@ func (this *Gateway) buildRouting() {
 		this.pubServer.Router().GET("/raw/topics/:topic/:ver", this.pubRawHandler)
 		this.pubServer.Router().POST("/topics/:topic/:ver", this.pubHandler)
 		this.pubServer.Router().POST("/ws/topics/:topic/:ver", this.pubWsHandler)
-		this.pubServer.Router().GET("/alive", this.pubCheckHandler)
+		this.pubServer.Router().GET("/alive", this.checkAliveHandler)
 	}
 
 	if this.subServer != nil {

@@ -30,4 +30,8 @@ func (this *pubServer) onConnClose(c net.Conn) {
 	if this.gw != nil && !options.DisableMetrics {
 		this.gw.svrMetrics.ConcurrentPub.Dec(1)
 	}
+
+	if options.EnableClientStats {
+		this.gw.clientStates.UnregisterPubClient(c)
+	}
 }

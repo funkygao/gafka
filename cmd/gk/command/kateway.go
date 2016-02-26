@@ -27,7 +27,9 @@ type Kateway struct {
 	id           string
 	configMode   bool
 	logLevel     string
+	configOption string
 	resetCounter string
+	listClients  bool
 }
 
 func (this *Kateway) Run(args []string) (exitCode int) {
@@ -36,6 +38,8 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&this.configMode, "cf", false, "")
 	cmdFlags.StringVar(&this.id, "id", "", "")
+	cmdFlags.StringVar(&this.configOption, "option", "", "")
+	cmdFlags.BoolVar(&this.listClients, "clients", false, "")
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "info", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
@@ -73,6 +77,23 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 					this.callKateway(kw, "DELETE", fmt.Sprintf("counter/%s", this.resetCounter))
 				}
 			}
+
+		case this.configOption != "":
+			parts := strings.SplitN(this.configOption, "=", 2)
+			k, v := parts[0], parts[1]
+			if this.id != "" {
+				kw := zkzone.KatewayInfoById(this.id)
+				if kw == nil {
+					panic(fmt.Sprintf("kateway %d invalid entry found in zk", this.id))
+				}
+
+				this.callKateway(kw, "PUT", fmt.Sprintf("options/%s/%s", k, v))
+			} else {
+				// apply on all kateways
+				for _, kw := range zkzone.KatewayInfos() {
+					this.callKateway(kw, "PUT", fmt.Sprintf("options/%s/%s", k, v))
+				}
+			}
 		}
 
 		return
@@ -102,6 +123,10 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	sort.Strings(instances)
 
 	for _, instance := range instances {
+		if this.id != "" && this.id != instance {
+			continue
+		}
+
 		data, stat, err := zkzone.Conn().Get(zkr.Root(this.zone) + "/" + instance)
 		swallow(err)
 
@@ -121,9 +146,37 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			info["debug"],
 		))
 
+		if this.listClients {
+			clients := this.getClientsInfo(info["man"])
+			this.Ui.Output("    pub clients:")
+			pubClients := clients["pub"]
+			sort.Strings(pubClients)
+			for _, client := range pubClients {
+				this.Ui.Output("    " + client)
+			}
+
+			this.Ui.Output("    sub clients:")
+			subClients := clients["sub"]
+			sort.Strings(subClients)
+			for _, client := range subClients {
+				this.Ui.Output("    " + client)
+			}
+		}
 	}
 
 	return
+}
+
+func (this *Kateway) getClientsInfo(url string) map[string][]string {
+	url = fmt.Sprintf("http://%s/clients", url)
+	body, err := this.callHttp(url, "GET")
+	if err != nil {
+		return err.Error()
+	}
+
+	var v map[string][]string
+	json.Unmarshal(body, &v)
+	return v
 }
 
 func (this *Kateway) getKatewayLogLevel(url string) string {
@@ -187,20 +240,23 @@ func (this *Kateway) callKateway(kw *zk.KatewayMeta, method string, uri string) 
 }
 
 func (*Kateway) Synopsis() string {
-	return "List online kateway instances"
+	return "List/Config online kateway instances"
 }
 
 func (this *Kateway) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s kateway [options]
+Usage: %s kateway -z zone [options]
 
-    List online kateway instances
+    List/Config online kateway instances
 
 Options:
 
-    -z zone
-      Default %s
+    -id kateway id
+      Execute on a single kateway instance. By default, apply on all
 
+    -clients
+      List online pub/sub clients
+   
     -cf
       Enter config mode
 
@@ -209,9 +265,10 @@ Options:
 
     -loglevel <info|debug|trace|warn|alarm|error>
       Set kateway log level
+    
+    -option <debug|clients|nometrics|ratelimit>=<true|false>
+      Set kateway options value
 
-    -id kateway id    
-
-`, this.Cmd, ctx.ZkDefaultZone())
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }

@@ -40,7 +40,9 @@ man:
  GET /help
  GET /status
  GET /clusters
+ GET /clients
  GET /alive
+ PUT /options/:option/:value
  PUT /log/:level  level=<info|debug|trace|warn|alarm|error>
 POST /topics/:cluster/:appid/:topic/:ver
  GET /partitions/:cluster/:appid/:topic/:ver
@@ -66,6 +68,14 @@ func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	w.Write([]byte{'\n'})
 }
 
+func (this *Gateway) clientsHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	this.writeKatewayHeader(w)
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
+	b, _ := json.Marshal(this.clientStates.Export())
+	w.Write(b)
+}
+
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	this.writeKatewayHeader(w)
@@ -75,6 +85,40 @@ func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
+// /options/:option/:value
+func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	option := params.ByName("option")
+	value := params.ByName("value")
+	boolVal := value == "true"
+
+	switch option {
+	case "debug":
+		options.Debug = boolVal
+
+	case "clients":
+		options.EnableClientStats = boolVal
+
+	case "nometrics":
+		options.DisableMetrics = boolVal
+
+	case "ratelimit":
+		options.Ratelimit = boolVal
+
+	default:
+		log.Warn("invalid option:%s=%s", option, value)
+
+		http.Error(w, "invalid option", http.StatusBadRequest)
+		return
+	}
+
+	log.Info("set option:%s to %s, %#v", option, value, options)
+
+	this.writeKatewayHeader(w)
+	w.Write(ResponseOk)
+}
+
+// /log/:level
 func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	lvl := params.ByName("level")

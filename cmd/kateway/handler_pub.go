@@ -22,6 +22,10 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	t1 := time.Now()
 
+	if options.EnableClientStats { // TODO enable pub or sub client stats
+		this.clientStates.RegisterPubClient(r)
+	}
+
 	if options.Ratelimit && !this.leakyBuckets.Pour(r.RemoteAddr, 1) {
 		this.writeQuotaExceeded(w)
 		return
@@ -176,6 +180,10 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 // /ws/topics/:topic/:ver
 func (this *Gateway) pubWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
+	if options.EnableClientStats {
+		this.clientStates.RegisterPubClient(r)
+	}
+
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Error("%s: %v", r.RemoteAddr, err)
@@ -183,10 +191,4 @@ func (this *Gateway) pubWsHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	defer ws.Close()
-}
-
-func (this *Gateway) pubCheckHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	this.writeKatewayHeader(w)
-	w.Write(ResponseOk)
 }

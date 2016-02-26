@@ -94,6 +94,10 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 			this.gw.svrMetrics.ConcurrentSub.Dec(1)
 		}
 
+		if options.EnableClientStats {
+			this.gw.clientStates.UnregisterSubClient(c)
+		}
+
 		this.closedConnCh <- c.RemoteAddr().String()
 		this.idleConnsWg.Done()
 	}
