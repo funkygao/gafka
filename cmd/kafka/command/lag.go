@@ -56,7 +56,6 @@ func (this *Lag) Run(args []string) (exitCode int) {
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	zkcluster := zkzone.NewCluster(cluster) // panic if invalid cluster
 	this.printConsumersLag(zkcluster)
-	printSwallowedErrors(this.Ui, zkzone)
 
 	return
 }

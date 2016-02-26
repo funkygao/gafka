@@ -16,7 +16,6 @@ type Clusters struct {
 	Cmd string
 }
 
-// TODO cluster info will contain desciption,owner,etc.
 func (this *Clusters) Run(args []string) (exitCode int) {
 	var zone string
 	cmdFlags := flag.NewFlagSet("clusters", flag.ContinueOnError)
@@ -29,8 +28,6 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	this.printClusters(zkzone)
 
-	printSwallowedErrors(this.Ui, zkzone)
-
 	return
 }
 
@@ -40,9 +37,8 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 	lines = append(lines, header)
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		lines = append(lines,
-			fmt.Sprintf("%s|%s", zkcluster.Name(), zkcluster.ZkConnectAddr()))
+			fmt.Sprintf("%s|%s", zkcluster.Name(), zkcluster.NamedZkConnectAddr()))
 	})
-	columnize.SimpleFormat(lines)
 
 	this.Ui.Output(columnize.SimpleFormat(lines))
 }
