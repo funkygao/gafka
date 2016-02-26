@@ -20,7 +20,7 @@ func (this *Gateway) buildRouting() {
 		this.pubServer.Router().GET("/raw/topics/:topic/:ver", this.pubRawHandler)
 		this.pubServer.Router().POST("/topics/:topic/:ver", this.pubHandler)
 		this.pubServer.Router().POST("/ws/topics/:topic/:ver", this.pubWsHandler)
-		this.pubServer.Router().GET("/alive", this.pubCheckHandler)
+		this.pubServer.Router().GET("/alive", this.checkAliveHandler)
 	}
 
 	if this.subServer != nil {

@@ -27,6 +27,10 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		err      error
 	)
 
+	if options.EnableClientStats {
+		this.registerSubClient(r)
+	}
+
 	query := r.URL.Query()
 	group = query.Get(UrlQueryGroup)
 	reset = query.Get(UrlQueryReset)
@@ -190,6 +194,10 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 		hisAppid string
 		myAppid  string
 	)
+
+	if options.EnableClientStats {
+		this.registerSubClient(r)
+	}
 
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)

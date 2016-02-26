@@ -37,6 +37,7 @@ var (
 		DisableMetrics         bool
 		DryRun                 bool
 		CpuAffinity            bool
+		EnableClientStats      bool
 		GolangTrace            bool
 		Debug                  bool
 		HttpHeaderMaxBytes     int
@@ -96,6 +97,7 @@ func parseFlags() {
 	flag.BoolVar(&options.ShowVersion, "version", false, "show version and exit")
 	flag.BoolVar(&options.Debug, "debug", false, "enable debug mode")
 	flag.BoolVar(&options.GolangTrace, "gotrace", false, "go tool trace")
+	flag.BoolVar(&options.EnableClientStats, "clientsmap", true, "record online pub/sub clients")
 	flag.BoolVar(&options.DryRun, "dryrun", false, "dry run mode")
 	flag.BoolVar(&options.CpuAffinity, "cpuaffinity", false, "enable cpu affinity")
 	flag.BoolVar(&options.Ratelimit, "raltelimit", false, "enable rate limit")
