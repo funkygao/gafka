@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sync"
 	"time"
 
 	"github.com/funkygao/gafka/zk"
@@ -12,9 +13,12 @@ type MonitorConsumers struct {
 	zkzone *zk.ZkZone
 	stop   chan struct{}
 	tick   time.Duration
+	wg     *sync.WaitGroup
 }
 
 func (this *MonitorConsumers) Run() {
+	defer this.wg.Done()
+
 	ticker := time.NewTicker(this.tick)
 	defer ticker.Stop()
 

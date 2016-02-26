@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -14,9 +15,12 @@ type MonitorTopics struct {
 	zkzone *zk.ZkZone
 	stop   chan struct{}
 	tick   time.Duration
+	wg     *sync.WaitGroup
 }
 
 func (this *MonitorTopics) Run() {
+	defer this.wg.Done()
+
 	ticker := time.NewTicker(this.tick)
 	defer ticker.Stop()
 

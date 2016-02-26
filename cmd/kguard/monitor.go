@@ -2,11 +2,13 @@ package main
 
 import (
 	"flag"
+	"sync"
 	"time"
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
+	log "github.com/funkygao/log4go"
 )
 
 type Monitor struct {
@@ -49,16 +51,20 @@ func (this *Monitor) ServeForever() {
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	defer zkzone.Close()
 
-	this.addExecutor(&MonitorTopics{zkzone: zkzone, tick: time.Minute, stop: this.stop})
-	this.addExecutor(&MonitorBrokers{zkzone: zkzone, tick: time.Minute, stop: this.stop})
-	this.addExecutor(&MonitorReplicas{zkzone: zkzone, tick: time.Minute, stop: this.stop})
-	this.addExecutor(&MonitorConsumers{zkzone: zkzone, tick: time.Minute, stop: this.stop})
-	this.addExecutor(&MonitorClusters{zkzone: zkzone, tick: time.Minute, stop: this.stop})
+	wg := new(sync.WaitGroup)
+	this.addExecutor(&MonitorTopics{zkzone: zkzone, tick: time.Minute, stop: this.stop, wg: wg})
+	this.addExecutor(&MonitorBrokers{zkzone: zkzone, tick: time.Minute, stop: this.stop, wg: wg})
+	this.addExecutor(&MonitorReplicas{zkzone: zkzone, tick: time.Minute, stop: this.stop, wg: wg})
+	this.addExecutor(&MonitorConsumers{zkzone: zkzone, tick: time.Minute, stop: this.stop, wg: wg})
+	this.addExecutor(&MonitorClusters{zkzone: zkzone, tick: time.Minute, stop: this.stop, wg: wg})
 
 	for _, e := range this.executors {
+		wg.Add(1)
 		go e.Run()
 	}
 
-	select {}
+	log.Info("all executors ready")
 
+	<-this.stop
+	wg.Wait()
 }
