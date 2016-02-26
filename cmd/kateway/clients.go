@@ -4,20 +4,26 @@ import (
 	"net"
 	"net/http"
 	"sync"
+
+	log "github.com/funkygao/log4go"
 )
 
 type ClientStates struct {
 	// client states TODO differetiate ws and normal client
-	pubClients     map[string]struct{}
+	pubMap         map[string]string   // haproxyHostPort=>realHostPort
+	pubClients     map[string]struct{} // key is realHostPort
 	pubClientsLock sync.RWMutex
 
-	subClients     map[string]struct{}
+	subMap         map[string]string   // haproxyHostPort=>realHostPort
+	subClients     map[string]struct{} // key is realHostPort
 	subClientsLock sync.RWMutex
 }
 
 func NewClientStates() *ClientStates {
 	this := &ClientStates{
+		pubMap:     make(map[string]string, 1000),
 		pubClients: make(map[string]struct{}, 1000),
+		subMap:     make(map[string]string, 1000),
 		subClients: make(map[string]struct{}, 1000),
 	}
 
@@ -30,22 +36,62 @@ func (this *ClientStates) RegisterPubClient(r *http.Request) {
 		return
 	}
 
-	haproxyIp, port := net.SplitHostPort(r.RemoteAddr)
+	_, port := net.SplitHostPort(r.RemoteAddr) // FIXME port is not real port
+	realHostPort := realIp + ":" + port
+
 	this.pubClientsLock.Lock()
-	this.pubClients[realIp+":"+port] = struct{}{}
+	this.pubMap[r.RemoteAddr] = realHostPort
+	this.pubClients[realHostPort] = struct{}{}
 	this.pubClientsLock.Unlock()
 }
 
 func (this *ClientStates) RegisterSubClient(r *http.Request) {
+	realIp := getHttpRemoteIp(r)
+	if realIp == r.RemoteAddr {
+		return
+	}
 
+	_, port := net.SplitHostPort(r.RemoteAddr)
+	realHostPort := realIp + ":" + port
+
+	this.subClientsLock.Lock()
+	this.subMap[r.RemoteAddr] = realHostPort
+	this.subClients[realHostPort] = struct{}{}
+	this.subClientsLock.Unlock()
 }
 
 func (this *ClientStates) UnregisterPubClient(c net.Conn) {
-	haproxyIp, port := net.SplitHostPort(c.RemoteAddr().String())
+	haproxyHostPort := c.RemoteAddr().String()
+
+	this.pubClientsLock.Lock()
+	realHostPort := this.pubMap[haproxyHostPort]
+	if realHostPort == "" {
+		log.Warn("pub try to unregister a non-exist haproxy client: %s", haproxyHostPort)
+
+		this.pubClientsLock.Unlock()
+		return
+	}
+
+	delete(this.pubMap, haproxyHostPort)
+	delete(this.pubClients, realHostPort)
+	this.pubClientsLock.Unlock()
 }
 
 func (this *ClientStates) UnregisterSubClient(c net.Conn) {
+	haproxyHostPort := c.RemoteAddr().String()
 
+	this.subClientsLock.Lock()
+	realHostPort := this.subMap[haproxyHostPort]
+	if realHostPort == "" {
+		log.Warn("sub try to unregister a non-exist haproxy client: %s", haproxyHostPort)
+
+		this.subClientsLock.Unlock()
+		return
+	}
+
+	delete(this.subMap, haproxyHostPort)
+	delete(this.subClients, realHostPort)
+	this.subClientsLock.Unlock()
 }
 
 func (this *ClientStates) Export() map[string][]string {
