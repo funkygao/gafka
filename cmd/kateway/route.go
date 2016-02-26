@@ -12,6 +12,7 @@ func (this *Gateway) buildRouting() {
 	this.manServer.Router().GET("/clients", this.clientsHandler)
 	this.manServer.Router().GET("/help", this.helpHandler)
 	this.manServer.Router().GET("/status", this.statusHandler)
+	this.manServer.Router().PUT("/options/:option/:value", this.setOptionHandler)
 	this.manServer.Router().PUT("/log/:level", this.setlogHandler)
 	this.manServer.Router().GET("/partitions/:cluster/:appid/:topic/:ver", this.partitionsHandler)
 	this.manServer.Router().POST("/topics/:cluster/:appid/:topic/:ver", this.addTopicHandler)

@@ -27,6 +27,7 @@ type Kateway struct {
 	id           string
 	configMode   bool
 	logLevel     string
+	configOption string
 	resetCounter string
 	listClients  bool
 }
@@ -37,6 +38,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&this.configMode, "cf", false, "")
 	cmdFlags.StringVar(&this.id, "id", "", "")
+	cmdFlags.StringVar(&this.configOption, "option", "", "")
 	cmdFlags.BoolVar(&this.listClients, "clients", false, "")
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "info", "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -73,6 +75,23 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 				// apply on all kateways
 				for _, kw := range zkzone.KatewayInfos() {
 					this.callKateway(kw, "DELETE", fmt.Sprintf("counter/%s", this.resetCounter))
+				}
+			}
+
+		case this.configOption != "":
+			parts := strings.SplitN(this.configOption, "=", 2)
+			k, v := parts[0], parts[1]
+			if this.id != "" {
+				kw := zkzone.KatewayInfoById(this.id)
+				if kw == nil {
+					panic(fmt.Sprintf("kateway %d invalid entry found in zk", this.id))
+				}
+
+				this.callKateway(kw, "PUT", fmt.Sprintf("options/%s/%s", k, v))
+			} else {
+				// apply on all kateways
+				for _, kw := range zkzone.KatewayInfos() {
+					this.callKateway(kw, "PUT", fmt.Sprintf("options/%s/%s", k, v))
 				}
 			}
 		}
@@ -221,20 +240,23 @@ func (this *Kateway) callKateway(kw *zk.KatewayMeta, method string, uri string) 
 }
 
 func (*Kateway) Synopsis() string {
-	return "List online kateway instances"
+	return "List/Config online kateway instances"
 }
 
 func (this *Kateway) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s kateway [options]
+Usage: %s kateway -z zone [options]
 
-    List online kateway instances
+    List/Config online kateway instances
 
 Options:
 
-    -z zone
-      Default %s
+    -id kateway id
+      Execute on a single kateway instance. By default, apply on all
 
+    -clients
+      List online pub/sub clients
+   
     -cf
       Enter config mode
 
@@ -243,12 +265,10 @@ Options:
 
     -loglevel <info|debug|trace|warn|alarm|error>
       Set kateway log level
+    
+    -option <debug|clients|nometrics|ratelimit>=<true|false>
+      Set kateway options value
 
-    -clients
-      List online pub/sub clients
-
-    -id kateway id    
-
-`, this.Cmd, ctx.ZkDefaultZone())
+`, this.Cmd)
 	return strings.TrimSpace(help)
 }
