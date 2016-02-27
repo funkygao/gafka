@@ -166,14 +166,14 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	this.writeKatewayHeader(w)
-	var out = map[string]string{
+	w.Header().Set(ContentTypeText, ContentTypeJson)
+
+	out := map[string]string{
 		"store":       "kafka",
 		"broker.list": strings.Join(meta.Default.BrokerList(cluster), ","),
 		"topic":       meta.KafkaTopic(appid, topic, ver),
 	}
-
 	b, _ := json.Marshal(out)
-	w.Header().Set(ContentTypeText, ContentTypeJson)
 	w.Write(b)
 }
 
