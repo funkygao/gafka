@@ -94,17 +94,14 @@ func (this *Lag) printConsumersLag(zkcluster *zk.ZkCluster) {
 				continue
 			}
 
-			if consumer.Online {
-				lines = append(lines,
-					fmt.Sprintf("%s|%s/%s|%s|%s|%s|%s",
-						group,
-						consumer.Topic, consumer.PartitionId,
-						gofmt.Comma(consumer.ProducerOffset),
-						gofmt.Comma(consumer.ConsumerOffset),
-						gofmt.Comma(consumer.Lag),
-						gofmt.PrettySince(consumer.Mtime.Time()),
-					))
-			}
+			lines = append(lines,
+				fmt.Sprintf("%s|%s/%s|%s|%s|%s|%s",
+					group,
+					consumer.Topic, consumer.PartitionId,
+					gofmt.Comma(consumer.ProducerOffset),
+					gofmt.Comma(consumer.ConsumerOffset),
+					gofmt.Comma(consumer.Lag),
+					gofmt.PrettySince(consumer.Mtime.Time())))
 		}
 	}
 
