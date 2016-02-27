@@ -31,6 +31,7 @@ POST /ws/topics/:topic/:ver
  GET /alive
 
 sub:
+ GET /lag/:appid/:topic/:ver?group=xx
  GET /topics/:appid/:topic/:ver?group=xx&limit=1&reset=<newest|oldest>&autocommit=<1|0>
  GET /ws/topics/:appid/:topic/:ver?group=xx
  GET /raw/topics/:appid/:topic/:ver
@@ -41,7 +42,7 @@ man:
  GET /status
  GET /clusters
  GET /clients
- GET /alive
+ GET /alive 
  PUT /options/:option/:value
  PUT /log/:level  level=<info|debug|trace|warn|alarm|error>
 POST /topics/:cluster/:appid/:topic/:ver

@@ -2,17 +2,106 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
+	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/websocket"
 	"github.com/julienschmidt/httprouter"
 )
+
+type SubLag struct {
+	Group     string `json:"group"`
+	Partition string `json:"partition"`
+	Produced  int64  `json:"pubd"`
+	Consumed  int64  `json:"subd"`
+}
+
+// /lag/:appid/:topic/:ver?group=xx
+// FIXME currently there might be in flight offsets because of batch offset commit
+func (this *Gateway) lagHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	var (
+		topic    string
+		ver      string
+		myAppid  string
+		hisAppid string
+		group    string
+		err      error
+	)
+
+	query := r.URL.Query()
+	group = query.Get(UrlQueryGroup)
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	hisAppid = params.ByName(UrlParamAppid)
+	myAppid = r.Header.Get(HttpHeaderAppid)
+
+	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+		log.Error("lag[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+
+		this.writeAuthFailure(w, err)
+		return
+	}
+
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("lag[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+
+		http.Error(w, "invalid appid", http.StatusBadRequest)
+		return
+	}
+
+	zkcluster := meta.Default.ZkCluster(cluster)
+	consumersByGroup := zkcluster.ConsumersByGroup(group)
+	sortedGroups := make([]string, 0, len(consumersByGroup))
+	for group, _ := range consumersByGroup {
+		sortedGroups = append(sortedGroups, group)
+	}
+	sort.Strings(sortedGroups)
+
+	out := make([]SubLag, 0, len(sortedGroups))
+	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
+	for _, group := range sortedGroups {
+		sortedTopicAndPartitionIds := make([]string, 0, len(consumersByGroup[group]))
+		consumers := make(map[string]zk.ConsumerMeta)
+		for _, t := range consumersByGroup[group] {
+			key := fmt.Sprintf("%s:%s", t.Topic, t.PartitionId)
+			sortedTopicAndPartitionIds = append(sortedTopicAndPartitionIds, key)
+
+			consumers[key] = t
+		}
+		sort.Strings(sortedTopicAndPartitionIds)
+
+		for _, topicAndPartitionId := range sortedTopicAndPartitionIds {
+			consumer := consumers[topicAndPartitionId]
+			if rawTopic != consumer.Topic {
+				continue
+			}
+
+			out = append(out, SubLag{
+				Group:     group,
+				Partition: consumer.PartitionId,
+				Produced:  consumer.ProducerOffset,
+				Consumed:  consumer.ConsumerOffset,
+			})
+		}
+	}
+
+	this.writeKatewayHeader(w)
+	w.Header().Set(ContentTypeText, ContentTypeJson)
+	b, _ := json.Marshal(out)
+	w.Write(b)
+}
 
 // /topics/:appid/:topic/:ver?group=xx&limit=1&reset=newest
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
@@ -77,7 +166,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		http.Error(w, "invalid subd appid", http.StatusBadRequest)
+		http.Error(w, "invalid appid", http.StatusBadRequest)
 		return
 	}
 
@@ -216,7 +305,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	if !found {
 		log.Error("cluster not found for subd app: %s", hisAppid)
 
-		http.Error(w, "invalid subd appid", http.StatusBadRequest)
+		http.Error(w, "invalid appid", http.StatusBadRequest)
 		return
 	}
 
