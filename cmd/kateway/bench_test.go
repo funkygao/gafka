@@ -59,6 +59,12 @@ func BenchmarkNeverending(b *testing.B) {
 	}
 }
 
+func BenchmarkStrconvItoa(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		strconv.Itoa(100000)
+	}
+}
+
 func newGatewayForTest(b *testing.B, store string) *Gateway {
 	options.Zone = "local"
 	options.PubHttpAddr = ":9191"

@@ -22,12 +22,12 @@ func (this *pubStore) Name() string {
 }
 
 func (this *pubStore) SyncPub(cluster string, topic string, key,
-	msg []byte) (err error) {
+	msg []byte) (partition int32, offset int64, err error) {
 	return
 }
 
 func (this *pubStore) AsyncPub(cluster string, topic string, key,
-	msg []byte) (err error) {
+	msg []byte) (partition int32, offset int64, err error) {
 
 	return
 }
