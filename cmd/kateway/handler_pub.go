@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -107,7 +108,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	err := pubMethod(cluster, appid+"."+topic+"."+ver,
+	partition, offset, err := pubMethod(cluster, appid+"."+topic+"."+ver,
 		[]byte(query.Get(UrlQueryKey)), msg.Body)
 	if err != nil {
 		msg.Free() // defer is costly
@@ -125,6 +126,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	msg.Free()
 	this.writeKatewayHeader(w)
 	w.WriteHeader(http.StatusCreated)
+	w.Header().Set(HttpHeaderPartition, strconv.FormatInt(int64(partition), 10))
+	w.Header().Set(HttpHeaderOffset, strconv.FormatInt(offset, 10))
 	if _, err = w.Write(ResponseOk); err != nil {
 		log.Error("%s: %v", r.RemoteAddr, err)
 		this.pubMetrics.ClientError.Inc(1)

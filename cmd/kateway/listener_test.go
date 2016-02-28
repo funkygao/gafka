@@ -24,7 +24,7 @@ func TestLimitListener(t *testing.T) {
 		t.Fatalf("Listen: %v", err)
 	}
 	defer l.Close()
-	l = LimitListener(nil, l, max)
+	l = LimitListener("", nil, l, max)
 
 	var open int32
 	go http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +78,7 @@ func TestLimitListenerError(t *testing.T) {
 	donec := make(chan bool, 1)
 	go func() {
 		const n = 2
-		ll := LimitListener(nil, errorListener{}, n)
+		ll := LimitListener("", nil, errorListener{}, n)
 		for i := 0; i < n+1; i++ {
 			_, err := ll.Accept()
 			if err != errFake {

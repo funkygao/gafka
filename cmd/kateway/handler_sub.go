@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -192,14 +193,13 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 }
 
 func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
-	limit int, myAppid, hisAppid, topic, ver string) error {
+	limit int, myAppid, hisAppid, topic, ver string) (err error) {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
 	var (
 		chunkedBeforeTimeout = false
 		chunkedEver          = false
 		n                    = 0
-		err                  error
 	)
 	for {
 		select {
@@ -216,6 +216,8 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 		case msg := <-fetcher.Messages():
 			// TODO when remote close silently, the write still ok
 			// which will lead to msg losing for sub
+			w.Header().Set(HttpHeaderPartition, strconv.FormatInt(int64(msg.Partition), 10))
+			w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
 			if _, err := w.Write(msg.Value); err != nil {
 				// TODO if cf.ChannelBufferSize > 0, client may lose message
 				// got message in chan, client not recv it but offset commited.
@@ -267,7 +269,7 @@ func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
 
 		case err = <-fetcher.Errors():
 			// e,g. consume a non-existent topic
-			return err
+			return
 		}
 	}
 

@@ -9,10 +9,10 @@ type PubStore interface {
 	Stop()
 
 	// SyncPub pub a keyed message to a topic of a cluster synchronously.
-	SyncPub(cluster, topic string, key, msg []byte) error
+	SyncPub(cluster, topic string, key, msg []byte) (partition int32, offset int64, err error)
 
 	// AsyncPub pub a keyed message to a topic of a cluster asynchronously.
-	AsyncPub(cluster, topic string, key, msg []byte) error
+	AsyncPub(cluster, topic string, key, msg []byte) (partition int32, offset int64, err error)
 }
 
 var DefaultPubStore PubStore

@@ -127,7 +127,7 @@ func (this *pubStore) doRefresh() {
 	this.lastRefreshedAt = time.Now()
 }
 
-func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (err error) {
+func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (partition int32, offset int64, err error) {
 	this.poolsLock.RLock()
 	pool, present := this.pubPools[cluster]
 	this.poolsLock.RUnlock()
@@ -174,7 +174,7 @@ func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (err error
 	for i := 0; i < this.maxRetries; i++ {
 		// sarama will retry Producer.Retry.Max(3) times on produce failure before return error
 		// meanwhile, it will auto refresh meta
-		_, _, err = producer.SendMessage(producerMsg)
+		partition, offset, err = producer.SendMessage(producerMsg)
 		if err == nil {
 			// send ok
 			producer.Recycle()
@@ -191,7 +191,8 @@ func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (err error
 		case breaker.ErrBreakerOpen, sarama.ErrOutOfBrokers:
 			// will not retry
 			producer.CloseAndRecycle()
-			return store.ErrBusy
+			err = store.ErrBusy
+			return
 
 		default:
 			// will retry
@@ -216,7 +217,7 @@ func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (err error
 
 // FIXME not fully fault tolerant like SyncPub.
 func (this *pubStore) AsyncPub(cluster string, topic string, key []byte,
-	msg []byte) (err error) {
+	msg []byte) (partition int32, offset int64, err error) {
 	this.poolsLock.RLock()
 	pool, present := this.pubPools[cluster]
 	this.poolsLock.RUnlock()
@@ -231,7 +232,8 @@ func (this *pubStore) AsyncPub(cluster string, topic string, key []byte,
 			producer.Recycle()
 		}
 
-		return e
+		err = e
+		return
 	}
 
 	var keyEncoder sarama.Encoder = nil // will use random partitioner
