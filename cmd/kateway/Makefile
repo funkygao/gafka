@@ -56,7 +56,7 @@ race:
 dryrun:dummy
 
 dummy:fast
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -subhttp :9192 -level debug -store dummy -id 1 -metricsoff=false -breakeron=true -debughttp ":9194" -debug=true
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -subhttp :9192 -level debug -store dummy -id 1 -metricsoff=false -debughttp ":9194" -debug=true
 
 consul:build 
 	consul agent -data-dir /tmp/consul &
