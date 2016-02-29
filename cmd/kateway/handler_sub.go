@@ -66,19 +66,23 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	if group != "" {
 		group = myAppid + "." + group
 	}
-	consumersByGroup := zkcluster.ConsumersByGroup(group)
+	consumersByGroup := zkcluster.ConsumerGroupsOfTopic(rawTopic)
 	sortedGroups := make([]string, 0, len(consumersByGroup))
-	for group, _ := range consumersByGroup {
-		sortedGroups = append(sortedGroups, group)
+	for grp, _ := range consumersByGroup {
+		sortedGroups = append(sortedGroups, grp)
 	}
 	sort.Strings(sortedGroups)
 
 	out := make([]SubStatus, 0, len(sortedGroups))
 	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
-	for _, group := range sortedGroups {
-		sortedTopicAndPartitionIds := make([]string, 0, len(consumersByGroup[group]))
+	for _, grp := range sortedGroups {
+		if group != "" && grp != group {
+			continue
+		}
+
+		sortedTopicAndPartitionIds := make([]string, 0, len(consumersByGroup[grp]))
 		consumers := make(map[string]zk.ConsumerMeta)
-		for _, t := range consumersByGroup[group] {
+		for _, t := range consumersByGroup[grp] {
 			key := fmt.Sprintf("%s:%s", t.Topic, t.PartitionId)
 			sortedTopicAndPartitionIds = append(sortedTopicAndPartitionIds, key)
 

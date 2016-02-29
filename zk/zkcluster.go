@@ -248,6 +248,53 @@ func (this *ZkCluster) ConsumerOffsetsOfGroup(group string) map[string]map[strin
 }
 
 // returns {consumerGroup: consumerInfo}
+func (this *ZkCluster) ConsumerGroupsOfTopic(topic string) (map[string][]ConsumerMeta, error) {
+	r := make(map[string][]ConsumerMeta, 0)
+
+	kfk, err := sarama.NewClient(this.BrokerList(), sarama.NewConfig())
+	if err != nil {
+		return r, err
+	}
+	defer kfk.Close()
+
+	for _, group := range this.zone.children(this.consumerGroupsRoot()) {
+		for t, partitionOffsets := range this.ConsumerOffsetsOfGroup(group) {
+			if t != topic {
+				continue
+			}
+
+			for partitionId, consumerOffset := range partitionOffsets {
+				pid, err := strconv.Atoi(partitionId)
+				if err != nil {
+					return r, errors.New(fmt.Sprintf("invalid partition id: %s", partitionId))
+				}
+
+				producerOffset, err := kfk.GetOffset(topic, int32(pid), sarama.OffsetNewest)
+				if err != nil {
+					return r, err
+				}
+
+				cm := ConsumerMeta{
+					Group:          group,
+					Topic:          topic,
+					PartitionId:    partitionId,
+					ConsumerOffset: consumerOffset,
+					ProducerOffset: producerOffset,
+					Lag:            producerOffset - consumerOffset,
+				}
+				if _, present := r[group]; !present {
+					r[group] = make([]ConsumerMeta, 0)
+				}
+				r[group] = append(r[group], cm)
+			}
+
+		}
+	}
+
+	return r, nil
+}
+
+// returns {consumerGroup: consumerInfo}
 func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]ConsumerMeta {
 	r := make(map[string][]ConsumerMeta)
 	brokerList := this.BrokerList()
@@ -262,6 +309,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 		log.Error("kafka[%s] %+v: %v", this.name, brokerList, err)
 		return r
 	}
+	defer kfk.Close()
 
 	consumerGroups := this.ConsumerGroups()
 	for group, consumers := range consumerGroups {
@@ -322,6 +370,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 			}
 		}
 	}
+
 	return r
 }
 
