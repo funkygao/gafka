@@ -165,6 +165,7 @@ func (this *Gateway) GetZkZone() *gzk.ZkZone {
 
 func (this *Gateway) Start() (err error) {
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
+		log.Info("received signal: %v", sig)
 		this.Stop()
 	}, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2) // yes we ignore HUP
 
