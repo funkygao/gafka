@@ -188,8 +188,19 @@ type TopicConfigMeta struct {
 }
 
 type KatewayMeta struct {
-	Id      string `json:"id"`
-	PubAddr string `json:"pub"`
-	SubAddr string `json:"sub"`
-	ManAddr string `json:"man"`
+	Id        string `json:"id"`
+	Zone      string `json:"zone"`
+	Ver       string `json:"ver"`
+	Build     string `json:"build"`
+	Host      string `json:"host"`
+	Cpu       string `json:"cpu"`
+	PubAddr   string `json:"pub"`
+	SPubAddr  string `json:"spub"`
+	SubAddr   string `json:"sub"`
+	SSubAddr  string `json:"ssub"`
+	ManAddr   string `json:"man"`
+	SManAddr  string `json:"sman"`
+	DebugAddr string `json:"debug"`
+
+	Ctime time.Time `json:"-"`
 }

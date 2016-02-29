@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/ctx"
-	zkr "github.com/funkygao/gafka/registry/zk"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
@@ -59,7 +58,8 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 				this.callKateway(kw, "PUT", fmt.Sprintf("log/%s", this.logLevel))
 			} else {
 				// apply on all kateways
-				for _, kw := range zkzone.KatewayInfos() {
+				kws, _ := zkzone.KatewayInfos()
+				for _, kw := range kws {
 					this.callKateway(kw, "PUT", fmt.Sprintf("log/%s", this.logLevel))
 				}
 			}
@@ -74,7 +74,8 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 				this.callKateway(kw, "DELETE", fmt.Sprintf("counter/%s", this.resetCounter))
 			} else {
 				// apply on all kateways
-				for _, kw := range zkzone.KatewayInfos() {
+				kws, _ := zkzone.KatewayInfos()
+				for _, kw := range kws {
 					this.callKateway(kw, "DELETE", fmt.Sprintf("counter/%s", this.resetCounter))
 				}
 			}
@@ -91,7 +92,8 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 				this.callKateway(kw, "PUT", fmt.Sprintf("options/%s/%s", k, v))
 			} else {
 				// apply on all kateways
-				for _, kw := range zkzone.KatewayInfos() {
+				kws, _ := zkzone.KatewayInfos()
+				for _, kw := range kws {
 					this.callKateway(kw, "PUT", fmt.Sprintf("options/%s/%s", k, v))
 				}
 			}
@@ -112,7 +114,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	}
 	this.Ui.Output(fmt.Sprintf("mysql: %s", color.Cyan(mysqlDsn)))
 
-	instances, _, err := zkzone.Conn().Children(zkr.Root(this.zone))
+	kateways, err := zkzone.KatewayInfos()
 	if err != nil {
 		if err == zklib.ErrNoNode {
 			this.Ui.Output("no kateway running")
@@ -121,34 +123,27 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			swallow(err)
 		}
 	}
-	sort.Strings(instances)
 
-	for _, instance := range instances {
-		if this.id != "" && this.id != instance {
+	for _, kw := range kateways {
+		if this.id != "" && this.id != kw.Id {
 			continue
 		}
 
-		data, stat, err := zkzone.Conn().Get(zkr.Root(this.zone) + "/" + instance)
-		swallow(err)
-
-		info := make(map[string]string)
-		json.Unmarshal(data, &info)
-
 		this.Ui.Info(fmt.Sprintf("id:%-2s host:%s cpu:%-2s up:%s",
-			instance, info["host"], info["cpu"],
-			gofmt.PrettySince(zk.ZkTimestamp(stat.Ctime).Time())))
+			kw.Id, kw.Host, kw.Cpu,
+			gofmt.PrettySince(kw.Ctime)))
 		this.Ui.Output(fmt.Sprintf("    ver: %s\n    build: %s\n    log: %s\n    pub: %s\n    sub: %s\n    man: %s\n    dbg: %s",
-			info["ver"],
-			info["build"],
-			this.getKatewayLogLevel(info["man"]),
-			info["pub"],
-			info["sub"],
-			info["man"],
-			info["debug"],
+			kw.Ver,
+			kw.Build,
+			this.getKatewayLogLevel(kw.ManAddr),
+			kw.PubAddr,
+			kw.SubAddr,
+			kw.ManAddr,
+			kw.DebugAddr,
 		))
 
 		if this.listClients {
-			clients := this.getClientsInfo(info["man"])
+			clients := this.getClientsInfo(kw.ManAddr)
 			this.Ui.Output("    pub clients:")
 			pubClients := clients["pub"]
 			sort.Strings(pubClients)
@@ -165,9 +160,9 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		}
 	}
 
-	if len(instances) > 0 {
+	if len(kateways) > 0 {
 		this.Ui.Output("")
-		this.Ui.Output(fmt.Sprintf("max id:%s", instances[len(instances)-1]))
+		this.Ui.Output(fmt.Sprintf("max id:%s", kateways[len(kateways)-1].Id))
 	}
 
 	return

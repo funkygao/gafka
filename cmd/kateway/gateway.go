@@ -136,21 +136,22 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 }
 
 func (this *Gateway) InstanceInfo() []byte {
-	var s map[string]string = make(map[string]string)
-	s["host"] = ctx.Hostname()
-	s["id"] = this.id
-	s["ver"] = gafka.Version
-	s["build"] = gafka.BuildId
-	s["cpu"] = ctx.NumCPUStr()
-	s["zone"] = this.zone
-	s["man"] = options.ManHttpAddr
-	s["sman"] = options.ManHttpsAddr
-	s["pub"] = options.PubHttpAddr
-	s["spub"] = options.PubHttpsAddr
-	s["sub"] = options.SubHttpAddr
-	s["ssub"] = options.SubHttpsAddr
-	s["debug"] = options.DebugHttpAddr
-	d, _ := json.Marshal(s)
+	info := gzk.KatewayMeta{
+		Id:        this.id,
+		Zone:      this.zone,
+		Ver:       gafka.Version,
+		Build:     gafka.BuildId,
+		Host:      ctx.Hostname(),
+		Cpu:       ctx.NumCPUStr(),
+		PubAddr:   options.PubHttpAddr,
+		SPubAddr:  options.PubHttpsAddr,
+		SubAddr:   options.SubHttpAddr,
+		SSubAddr:  options.SubHttpsAddr,
+		ManAddr:   options.ManHttpAddr,
+		SManAddr:  options.ManHttpsAddr,
+		DebugAddr: options.DebugHttpAddr,
+	}
+	d, _ := json.Marshal(info)
 	return d
 }
 

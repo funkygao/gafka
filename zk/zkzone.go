@@ -101,25 +101,36 @@ func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
-func (this *ZkZone) KatewayInfos() []*KatewayMeta {
+// KatewayInfos return online kateway instances meta sort by id.
+func (this *ZkZone) KatewayInfos() ([]*KatewayMeta, error) {
 	this.connectIfNeccessary()
 
 	r := make([]*KatewayMeta, 0)
 	path := fmt.Sprintf("%s/%s", KatewayIdsRoot, this.Name())
-	for _, katewayInfo := range this.ChildrenWithData(path) {
+	katewayInstances := this.ChildrenWithData(path)
+	sortedIds := make([]string, 0, len(katewayInstances))
+	for id, _ := range katewayInstances {
+		sortedIds = append(sortedIds, id)
+	}
+	sort.Strings(sortedIds)
+
+	for _, id := range sortedIds {
+		katewayInfo := katewayInstances[id]
 		var k KatewayMeta
 		if err := json.Unmarshal(katewayInfo.data, &k); err != nil {
-			this.swallow(err)
+			return nil, err
 		} else {
+			k.Ctime = katewayInfo.Ctime()
 			r = append(r, &k)
 		}
 	}
 
-	return r
+	return r, nil
 }
 
 func (this *ZkZone) KatewayInfoById(id string) *KatewayMeta {
-	for _, kw := range this.KatewayInfos() {
+	kateways, _ := this.KatewayInfos()
+	for _, kw := range kateways {
 		if kw.Id == id {
 			return kw
 		}
