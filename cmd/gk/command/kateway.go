@@ -320,7 +320,7 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 			return api.ErrSubStop
 		})
 
-		this.Ui.Info(fmt.Sprintf("run curl -H'Appid: %s' -H'Subkey: %s' -i http://%s/status/%s/%s/%s",
+		this.Ui.Info(fmt.Sprintf("curl -H'Appid: %s' -H'Subkey: %s' -i http://%s/status/%s/%s/%s",
 			myApp, secret, kw.SubAddr, hisApp, topic, ver))
 
 		// 1. 查询某个pubsub topic的partition数量
