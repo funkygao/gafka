@@ -286,6 +286,8 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 
 	}
 
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	kws, err := zkzone.KatewayInfos()
 	swallow(err)
 	for _, kw := range kws {
@@ -305,7 +307,6 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 		err := cli.Publish(topic, ver, "", []byte(msg))
 		swallow(err)
 
-		this.Ui.Output("Sub")
 		cli.Connect(fmt.Sprintf("http://%s", kw.SubAddr))
 		cli.Subscribe(hisApp, topic, ver, "__smoketestonly__", func(statusCode int, msg []byte) error {
 			if statusCode == http.StatusNoContent {
@@ -313,13 +314,13 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 				return nil
 			}
 
-			this.Ui.Output(http.StatusText(statusCode))
-			this.Ui.Output(fmt.Sprintf("Sub: %s", string(msg)))
+			this.Ui.Output(fmt.Sprintf("Sub: %s, http:%s", string(msg),
+				http.StatusText(statusCode)))
 
 			return api.ErrSubStop
 		})
 
-		this.Ui.Info(fmt.Sprint("run curl -H'Appid: %s' -H'Subkey: %s' -i http://%s/status/%s/%s/%s",
+		this.Ui.Info(fmt.Sprintf("run curl -H'Appid: %s' -H'Subkey: %s' -i http://%s/status/%s/%s/%s",
 			myApp, secret, kw.SubAddr, hisApp, topic, ver))
 
 		// 1. 查询某个pubsub topic的partition数量
