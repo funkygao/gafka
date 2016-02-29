@@ -86,7 +86,7 @@ func (this *Client) Publish(topic, ver, key string, msg []byte) (err error) {
 	// reuse the connection
 	response.Body.Close()
 
-	if response.StatusCode != http.StatusOK {
+	if response.StatusCode != http.StatusCreated {
 		return errors.New(string(b))
 	}
 
