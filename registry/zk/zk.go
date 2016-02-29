@@ -29,10 +29,6 @@ func New(zone string, id string, data []byte) *zkreg {
 	return this
 }
 
-func Root(zone string) string {
-	return fmt.Sprintf("%s/%s", zk.KatewayIdsRoot, zone)
-}
-
 func (this *zkreg) mypath() string {
 	return fmt.Sprintf("%s/%s", Root(this.zkzone.Name()), this.id)
 }
