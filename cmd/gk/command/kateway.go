@@ -111,7 +111,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	}
 
 	if this.checkup {
-		this.runCheckup()
+		this.runCheckup(zkzone)
 		return
 	}
 
@@ -268,7 +268,7 @@ func (this *Kateway) callKateway(kw *zk.KatewayMeta, method string, uri string) 
 	return
 }
 
-func (this *Kateway) runCheckup() {
+func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 	var (
 		myApp  string
 		hisApp string
@@ -286,33 +286,48 @@ func (this *Kateway) runCheckup() {
 
 	}
 
-	cf := api.DefaultConfig()
-	cf.AppId = myApp
-	cf.Debug = true
-	cf.Secret = secret
-	cli := api.NewClient(myApp, cf)
-	msgId := rand.Int()
-	this.Ui.Output(fmt.Sprintf("Pub msg %d", msgId))
-	err := cli.Publish(topic, ver, "", []byte(fmt.Sprintf("smoke %d", msgId)))
+	kws, err := zkzone.KatewayInfos()
 	swallow(err)
-
-	this.Ui.Output("Sub")
-	cli.Subscribe(hisApp, topic, ver, "__smoketestonly__", func(statusCode int, msg []byte) error {
-		if statusCode == http.StatusNoContent {
-			this.Ui.Output("no content, sub again")
-			return nil
+	for _, kw := range kws {
+		if this.id != "" && kw.Id != this.id {
+			continue
 		}
 
-		this.Ui.Output(http.StatusText(statusCode))
-		this.Ui.Output(fmt.Sprintf("recv: %s", string(msg)))
+		cf := api.DefaultConfig()
+		cf.AppId = myApp
+		cf.Debug = false
+		cf.Secret = secret
+		cli := api.NewClient(myApp, cf)
+		cli.Connect(fmt.Sprintf("http://%s", kw.PubAddr))
+		msgId := rand.Int()
+		msg := fmt.Sprintf("smoke %d", msgId)
+		this.Ui.Output(fmt.Sprintf("Pub: %s", msg))
+		err := cli.Publish(topic, ver, "", []byte(msg))
+		swallow(err)
 
-		return api.ErrSubStop
-	})
+		this.Ui.Output("Sub")
+		cli.Connect(fmt.Sprintf("http://%s", kw.SubAddr))
+		cli.Subscribe(hisApp, topic, ver, "__smoketestonly__", func(statusCode int, msg []byte) error {
+			if statusCode == http.StatusNoContent {
+				this.Ui.Output("no content, sub again")
+				return nil
+			}
 
-	// 1. 查询某个pubsub topic的partition数量
-	// 2. 查看pubsub系统某个topic的生产、消费状态
-	// 3. pub
-	// 4. sub
+			this.Ui.Output(http.StatusText(statusCode))
+			this.Ui.Output(fmt.Sprintf("Sub: %s", string(msg)))
+
+			return api.ErrSubStop
+		})
+
+		this.Ui.Info(fmt.Sprint("run curl -H'Appid: %s' -H'Subkey: %s' -i http://%s/status/%s/%s/%s",
+			myApp, secret, kw.SubAddr, hisApp, topic, ver))
+
+		// 1. 查询某个pubsub topic的partition数量
+		// 2. 查看pubsub系统某个topic的生产、消费状态
+		// 3. pub
+		// 4. sub
+	}
+
 }
 
 func (*Kateway) Synopsis() string {
