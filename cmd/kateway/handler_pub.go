@@ -184,10 +184,6 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 // /ws/topics/:topic/:ver
 func (this *Gateway) pubWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	if options.EnableClientStats {
-		this.clientStates.RegisterPubClient(r)
-	}
-
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Error("%s: %v", r.RemoteAddr, err)

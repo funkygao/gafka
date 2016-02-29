@@ -99,6 +99,7 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 
 	case "clients":
 		options.EnableClientStats = boolVal
+		this.clientStates.Reset()
 
 	case "nometrics":
 		options.DisableMetrics = boolVal

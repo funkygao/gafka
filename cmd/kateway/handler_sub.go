@@ -299,10 +299,6 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 		myAppid  string
 	)
 
-	if options.EnableClientStats {
-		this.clientStates.RegisterSubClient(r)
-	}
-
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
