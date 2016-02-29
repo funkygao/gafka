@@ -36,6 +36,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - Graceful Degrade
     - throttle
     - circuit breaker
+  - Rich monitoring and alarm 
 - Fully-managed
   - Discovery
   - Create versioned topics, subscribe to topics
