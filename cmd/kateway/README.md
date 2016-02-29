@@ -23,11 +23,19 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 - REST API
   - http/https/websocket/http2 interface for Pub/Sub
-- High performance, high throughput, low latency
-  - over 100K message per second on a single host
-  - graceful shudown without downtime
-  - elastic scales
-  - circuit breaker
+- Systemic Quality Requirements
+  - Performance & Throughput
+    - > 100K msg/sec delivery on a single host
+  - Scalability
+    - scales to 1M msg/sec
+    - elastic scales
+  - Latency
+    - < 1s delivery
+  - Availability
+    - Graceful shutdown without downtime
+  - Graceful Degrade
+    - throttle
+    - circuit breaker
 - Fully-managed
   - Discovery
   - Create versioned topics, subscribe to topics
