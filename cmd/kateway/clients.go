@@ -30,6 +30,18 @@ func NewClientStates() *ClientStates {
 	return this
 }
 
+func (this *ClientStates) Reset() {
+	this.pubClientsLock.Lock()
+	this.pubMap = make(map[string]string, 1000)
+	this.pubClients = make(map[string]struct{}, 1000)
+	this.pubClientsLock.Unlock()
+
+	this.subClientsLock.Lock()
+	this.subMap = make(map[string]string, 1000)
+	this.subClients = make(map[string]struct{}, 1000)
+	this.subClientsLock.Unlock()
+}
+
 func (this *ClientStates) RegisterPubClient(r *http.Request) {
 	realIp := getHttpRemoteIp(r)
 	if realIp == r.RemoteAddr {
@@ -43,21 +55,6 @@ func (this *ClientStates) RegisterPubClient(r *http.Request) {
 	this.pubMap[r.RemoteAddr] = realHostPort
 	this.pubClients[realHostPort] = struct{}{}
 	this.pubClientsLock.Unlock()
-}
-
-func (this *ClientStates) RegisterSubClient(r *http.Request) {
-	realIp := getHttpRemoteIp(r)
-	if realIp == r.RemoteAddr {
-		return
-	}
-
-	_, port, _ := net.SplitHostPort(r.RemoteAddr)
-	realHostPort := realIp + ":" + port
-
-	this.subClientsLock.Lock()
-	this.subMap[r.RemoteAddr] = realHostPort
-	this.subClients[realHostPort] = struct{}{}
-	this.subClientsLock.Unlock()
 }
 
 func (this *ClientStates) UnregisterPubClient(c net.Conn) {
@@ -75,6 +72,21 @@ func (this *ClientStates) UnregisterPubClient(c net.Conn) {
 	delete(this.pubMap, haproxyHostPort)
 	delete(this.pubClients, realHostPort)
 	this.pubClientsLock.Unlock()
+}
+
+func (this *ClientStates) RegisterSubClient(r *http.Request) {
+	realIp := getHttpRemoteIp(r)
+	if realIp == r.RemoteAddr {
+		return
+	}
+
+	_, port, _ := net.SplitHostPort(r.RemoteAddr)
+	realHostPort := realIp + ":" + port
+
+	this.subClientsLock.Lock()
+	this.subMap[r.RemoteAddr] = realHostPort
+	this.subClients[realHostPort] = struct{}{}
+	this.subClientsLock.Unlock()
 }
 
 func (this *ClientStates) UnregisterSubClient(c net.Conn) {
@@ -113,16 +125,4 @@ func (this *ClientStates) Export() map[string][]string {
 		r["sub"] = append(r["sub"], realHostPort)
 	}
 	return r
-}
-
-func (this *ClientStates) Reset() {
-	this.pubClientsLock.Lock()
-	this.pubMap = make(map[string]string, 1000)
-	this.pubClients = make(map[string]struct{}, 1000)
-	this.pubClientsLock.Unlock()
-
-	this.subClientsLock.Lock()
-	this.subMap = make(map[string]string, 1000)
-	this.subClients = make(map[string]struct{}, 1000)
-	this.subClientsLock.Unlock()
 }
