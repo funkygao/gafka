@@ -101,8 +101,9 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 				continue
 			}
 
+			p := strings.SplitN(grp, ".", 2) // grp is like 'appid.groupname'
 			out = append(out, SubStatus{
-				Group:     grp,
+				Group:     p[1],
 				Partition: consumer.PartitionId,
 				Produced:  consumer.ProducerOffset,
 				Consumed:  consumer.ConsumerOffset,
