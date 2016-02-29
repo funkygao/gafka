@@ -279,11 +279,13 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 	switch this.zone {
 	case "sit":
 		myApp = "35"
-		secret = "04dd44d8dad048e6a18ffd153eb8f642"
 		hisApp = "35"
+		secret = "04dd44d8dad048e6a18ffd153eb8f642"
 
 	case "prod":
-
+		myApp = "30"
+		hisApp = "30"
+		secret = "32f02594f55743eeb1efcf75db6dd8a0"
 	}
 
 	rand.Seed(time.Now().UTC().UnixNano())
