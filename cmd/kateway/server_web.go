@@ -74,10 +74,12 @@ func (this *webServer) Start() {
 	}
 
 	if this.httpsServer != nil {
+		this.httpsServer.ConnState = this.connStateFunc
 		this.startServer(true)
 	}
 
 	if this.httpServer != nil {
+		this.httpServer.ConnState = this.connStateFunc
 		this.startServer(false)
 	}
 

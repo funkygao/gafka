@@ -34,11 +34,11 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 	this.connStateFunc = this.connStateHandler
 
 	if this.httpsServer != nil {
-		this.httpsServer.ConnState = this.connStateHandler
+		this.httpsServer.ConnState = this.connStateFunc
 	}
 
 	if this.httpServer != nil {
-		this.httpServer.ConnState = this.connStateHandler
+		this.httpServer.ConnState = this.connStateFunc
 	}
 
 	return this
