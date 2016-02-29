@@ -175,6 +175,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
+- [ ] data needs to be enriched/sanitized before being consumed
 - [ ] rename to bigtopic
 - [ ] kateway
   - (pubclient.go:22) cluster[gateway] closing kafka sync client: 6127
