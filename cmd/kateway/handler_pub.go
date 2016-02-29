@@ -169,7 +169,7 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	this.writeKatewayHeader(w)
-	w.Header().Set(ContentTypeText, ContentTypeJson)
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 
 	out := map[string]string{
 		"store":       "kafka",

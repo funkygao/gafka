@@ -102,7 +102,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	this.writeKatewayHeader(w)
-	w.Header().Set(ContentTypeText, ContentTypeJson)
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	b, _ := json.Marshal(out)
 	w.Write(b)
 }
@@ -321,7 +321,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 		"topic": meta.KafkaTopic(hisAppid, topic, ver),
 	}
 	b, _ := json.Marshal(out)
-	w.Header().Set(ContentTypeText, ContentTypeJson)
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	w.Write(b)
 }
 
