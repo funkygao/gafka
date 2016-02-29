@@ -28,7 +28,7 @@ func (this *Gateway) buildRouting() {
 	if this.subServer != nil {
 		this.subServer.Router().GET("/raw/topics/:appid/:topic/:ver", this.subRawHandler)
 		this.subServer.Router().GET("/topics/:appid/:topic/:ver", this.subHandler)
-		this.manServer.Router().GET("/status/:appid/:topic/:ver", this.subStatusHandler)
+		this.subServer.Router().GET("/status/:appid/:topic/:ver", this.subStatusHandler)
 		this.subServer.Router().GET("/ws/topics/:appid/:topic/:ver", this.subWsHandler)
 		this.subServer.Router().GET("/alive", this.checkAliveHandler)
 	}
