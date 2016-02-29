@@ -39,7 +39,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&this.configMode, "cf", false, "")
 	cmdFlags.StringVar(&this.id, "id", "", "")
-	cmdFlags.BoolVar(&this.longFmt, "name", false, "")
+	cmdFlags.BoolVar(&this.longFmt, "l", false, "")
 	cmdFlags.StringVar(&this.configOption, "option", "", "")
 	cmdFlags.StringVar(&this.resetCounter, "reset", "", "")
 	cmdFlags.BoolVar(&this.listClients, "clients", false, "")
@@ -147,6 +147,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		))
 
 		if this.longFmt {
+			this.Ui.Output("    full status:")
 			this.Ui.Output(this.getKatewayStatus(kw.ManAddr))
 		}
 
