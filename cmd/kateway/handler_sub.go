@@ -27,7 +27,7 @@ type SubLag struct {
 
 // /lag/:appid/:topic/:ver?group=xx
 // FIXME currently there might be in flight offsets because of batch offset commit
-func (this *Gateway) lagHandler(w http.ResponseWriter, r *http.Request,
+func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic    string
@@ -63,6 +63,9 @@ func (this *Gateway) lagHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	zkcluster := meta.Default.ZkCluster(cluster)
+	if group != "" {
+		group = myAppid + "." + group
+	}
 	consumersByGroup := zkcluster.ConsumersByGroup(group)
 	sortedGroups := make([]string, 0, len(consumersByGroup))
 	for group, _ := range consumersByGroup {
