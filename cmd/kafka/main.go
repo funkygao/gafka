@@ -74,27 +74,7 @@ func main() {
 
 func setupLogging() {
 	log.SetOutput(ioutil.Discard)
-
-	level := log4go.DEBUG
-	switch ctx.LogLevel() {
-	case "info":
-		level = log4go.INFO
-
-	case "warn":
-		level = log4go.WARNING
-
-	case "error":
-		level = log4go.ERROR
-
-	case "debug":
-		level = log4go.DEBUG
-
-	case "trace":
-		level = log4go.TRACE
-
-	case "alarm":
-		level = log4go.ALARM
-	}
+	level := log4go.CRITICAL
 
 	for _, filter := range log4go.Global {
 		filter.Level = level
