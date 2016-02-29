@@ -188,6 +188,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	w.Write([]byte(fmt.Sprintf(`{"num": %d}`, len(partitions))))
 }
 
