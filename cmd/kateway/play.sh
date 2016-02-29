@@ -10,8 +10,8 @@ gk clusters -z local -add me -p /kafka_pubsub
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9193/topics/psub/app1/foobar/v1?partitions=1&replicas=2'
 
 # sub a topic
-curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/topics/app1/foobar/v1/group1?reset=newest&limit=1'
-curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/topics/app1/foo/v1/group1'
+curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/topics/app1/foobar/v1?group=group1&reset=newest&limit=1'
+curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/topics/app1/foo/v1?group=group1'
 
 # raw sub
 curl -XGET http://localhost:9192/raw/topics/app1/foobar/v1
