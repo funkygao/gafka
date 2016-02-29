@@ -44,7 +44,11 @@ func (this *MonitorTopics) Run() {
 			brokers.Update(b)
 
 			if lastTotalOffsets > 0 {
-				pubQps.Mark(o - lastTotalOffsets)
+				if o-lastTotalOffsets > 0 {
+					pubQps.Mark(o - lastTotalOffsets)
+				} else {
+					log.Warn("offset backwards: %d %d", o, lastTotalOffsets)
+				}
 			}
 			lastTotalOffsets = o
 		}
