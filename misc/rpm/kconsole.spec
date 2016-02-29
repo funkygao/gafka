@@ -1,4 +1,4 @@
-%define name kafka
+%define name kconsole
 %define version 0.2.6
 %define release 5
 %define path usr
@@ -26,14 +26,14 @@ git clone https://github.com/funkygao/gafka
 
 %build
 cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
-./build.sh -t kafka
+./build.sh -t kconsole
 
 %install
 export DONT_STRIP=1
 rm -rf $RPM_BUILD_ROOT
 cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
 mkdir -p $RPM_BUILD_ROOT/%{path}/bin
-install cmd/kafka/kafka $RPM_BUILD_ROOT/%{path}/bin
+install cmd/kconsole/kconsole $RPM_BUILD_ROOT/%{path}/bin
 
 %files
-/%{path}/bin/kafka
+/%{path}/bin/kconsole
