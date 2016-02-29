@@ -36,7 +36,6 @@ cmd/kguard/kguard
 cmd/ehaproxy/ehaproxy
 cmd/ehaproxy/.haproxy.cf
 cmd/kateway/bench/bench
-cmd/kconsole/kconsole
 cmd/kateway/bench/httpdserver
 cmd/zk/zk
 panic.dump
