@@ -18,14 +18,14 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type SubLag struct {
+type SubStatus struct {
 	Group     string `json:"group"`
 	Partition string `json:"partition"`
 	Produced  int64  `json:"pubd"`
 	Consumed  int64  `json:"subd"`
 }
 
-// /lag/:appid/:topic/:ver?group=xx
+// /status/:appid/:topic/:ver?group=xx
 // FIXME currently there might be in flight offsets because of batch offset commit
 func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
@@ -46,7 +46,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
-		log.Error("lag[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+		log.Error("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
 		this.writeAuthFailure(w, err)
@@ -55,7 +55,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("lag[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
+		log.Error("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 		http.Error(w, "invalid appid", http.StatusBadRequest)
@@ -73,7 +73,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	}
 	sort.Strings(sortedGroups)
 
-	out := make([]SubLag, 0, len(sortedGroups))
+	out := make([]SubStatus, 0, len(sortedGroups))
 	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
 	for _, group := range sortedGroups {
 		sortedTopicAndPartitionIds := make([]string, 0, len(consumersByGroup[group]))
@@ -92,7 +92,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 				continue
 			}
 
-			out = append(out, SubLag{
+			out = append(out, SubStatus{
 				Group:     group,
 				Partition: consumer.PartitionId,
 				Produced:  consumer.ProducerOffset,
