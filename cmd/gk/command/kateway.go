@@ -167,7 +167,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			sort.Strings(pubClients)
 			for _, client := range pubClients {
 				// pub client in blue
-				this.Ui.Output(color.Blue("    %s", client))
+				this.Ui.Output(color.Blue("      %s", client))
 			}
 
 			this.Ui.Output("    sub clients:")
@@ -175,7 +175,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			sort.Strings(subClients)
 			for _, client := range subClients {
 				// sub client in
-				this.Ui.Output(color.Yellow("    %s", client))
+				this.Ui.Output(color.Yellow("      %s", client))
 			}
 		}
 	}
