@@ -5,12 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/http"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/api"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
@@ -31,6 +33,7 @@ type Kateway struct {
 	longFmt      bool
 	resetCounter string
 	listClients  bool
+	checkup      bool
 }
 
 func (this *Kateway) Run(args []string) (exitCode int) {
@@ -44,6 +47,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.resetCounter, "reset", "", "")
 	cmdFlags.BoolVar(&this.listClients, "clients", false, "")
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "", "")
+	cmdFlags.BoolVar(&this.checkup, "checkup", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
 	}
@@ -103,6 +107,11 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			}
 		}
 
+		return
+	}
+
+	if this.checkup {
+		this.runCheckup()
 		return
 	}
 
@@ -259,6 +268,53 @@ func (this *Kateway) callKateway(kw *zk.KatewayMeta, method string, uri string) 
 	return
 }
 
+func (this *Kateway) runCheckup() {
+	var (
+		myApp  string
+		hisApp string
+		secret string
+		ver    string = "v1"
+		topic  string = "smoketestonly"
+	)
+	switch this.zone {
+	case "sit":
+		myApp = "35"
+		secret = "04dd44d8dad048e6a18ffd153eb8f642"
+		hisApp = "35"
+
+	case "prod":
+
+	}
+
+	cf := api.DefaultConfig()
+	cf.AppId = myApp
+	cf.Debug = true
+	cf.Secret = secret
+	cli := api.NewClient(myApp, cf)
+	msgId := rand.Int()
+	this.Ui.Output(fmt.Sprintf("Pub msg %d", msgId))
+	err := cli.Publish(topic, ver, "", []byte(fmt.Sprintf("smoke %d", msgId)))
+	swallow(err)
+
+	this.Ui.Output("Sub")
+	cli.Subscribe(hisApp, topic, ver, "__smoketestonly__", func(statusCode int, msg []byte) error {
+		if statusCode == http.StatusNoContent {
+			this.Ui.Output("no content, sub again")
+			return nil
+		}
+
+		this.Ui.Output(http.StatusText(statusCode))
+		this.Ui.Output(fmt.Sprintf("recv: %s", string(msg)))
+
+		return api.ErrSubStop
+	})
+
+	// 1. 查询某个pubsub topic的partition数量
+	// 2. 查看pubsub系统某个topic的生产、消费状态
+	// 3. pub
+	// 4. sub
+}
+
 func (*Kateway) Synopsis() string {
 	return "List/Config online kateway instances"
 }
@@ -270,6 +326,9 @@ Usage: %s kateway -z zone [options]
     List/Config online kateway instances
 
 Options:
+
+    -checkup
+      Checkup for online kateway instances
 
     -id kateway id
       Execute on a single kateway instance. By default, apply on all
