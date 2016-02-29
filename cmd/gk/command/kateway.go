@@ -28,6 +28,7 @@ type Kateway struct {
 	configMode   bool
 	logLevel     string
 	configOption string
+	longFmt      bool
 	resetCounter string
 	listClients  bool
 }
@@ -38,17 +39,18 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&this.configMode, "cf", false, "")
 	cmdFlags.StringVar(&this.id, "id", "", "")
+	cmdFlags.BoolVar(&this.longFmt, "name", false, "")
 	cmdFlags.StringVar(&this.configOption, "option", "", "")
+	cmdFlags.StringVar(&this.resetCounter, "reset", "", "")
 	cmdFlags.BoolVar(&this.listClients, "clients", false, "")
-	cmdFlags.StringVar(&this.logLevel, "loglevel", "info", "")
+	cmdFlags.StringVar(&this.logLevel, "loglevel", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	if this.configMode {
-		switch {
-		case this.logLevel != "":
+		if this.logLevel != "" {
 			if this.id != "" {
 				kw := zkzone.KatewayInfoById(this.id)
 				if kw == nil {
@@ -63,8 +65,9 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 					this.callKateway(kw, "PUT", fmt.Sprintf("log/%s", this.logLevel))
 				}
 			}
+		}
 
-		case this.resetCounter != "":
+		if this.resetCounter != "" {
 			if this.id != "" {
 				kw := zkzone.KatewayInfoById(this.id)
 				if kw == nil {
@@ -79,8 +82,9 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 					this.callKateway(kw, "DELETE", fmt.Sprintf("counter/%s", this.resetCounter))
 				}
 			}
+		}
 
-		case this.configOption != "":
+		if this.configOption != "" {
 			parts := strings.SplitN(this.configOption, "=", 2)
 			k, v := parts[0], parts[1]
 			if this.id != "" {
@@ -142,6 +146,10 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			kw.DebugAddr,
 		))
 
+		if this.longFmt {
+			this.Ui.Output(this.getKatewayStatus(kw.ManAddr))
+		}
+
 		if this.listClients {
 			clients := this.getClientsInfo(kw.ManAddr)
 			this.Ui.Output("    pub clients:")
@@ -178,6 +186,16 @@ func (this *Kateway) getClientsInfo(url string) map[string][]string {
 	var v map[string][]string
 	json.Unmarshal(body, &v)
 	return v
+}
+
+func (this Kateway) getKatewayStatus(url string) string {
+	url = fmt.Sprintf("http://%s/status", url)
+	body, err := this.callHttp(url, "GET")
+	if err != nil {
+		return err.Error()
+	}
+
+	return string(body)
 }
 
 func (this *Kateway) getKatewayLogLevel(url string) string {
@@ -257,6 +275,9 @@ Options:
 
     -clients
       List online pub/sub clients
+
+    -l
+      Use a long listing format
    
     -cf
       Enter config mode
