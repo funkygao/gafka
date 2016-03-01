@@ -9,7 +9,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
     _/    _/    _/_/_/      _/_/    _/_/_/      _/      _/        _/_/_/    _/_/_/
                                                                                _/
 
-### Counterparts
+### Alternatives
 
 - google Cloud Pub/Sub
 - amazon kenesis
@@ -62,24 +62,16 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - other stuff related to message-oriented middleware
 - [ ] Encryption of all message data on the wire
 
-### Ecosystem
 
-- gk
+### Common scenarios
 
-  for backend kafka and kateway cluster management
-
-- kateway
-
-  Pub/Sub engine
-
-- manager
-
-  a multi-tenant web management console
-
-- ehaproxy
-
-  for elastic load balance of kateway
-
+- Balancing workloads in network clusters
+- Implementing asynchronous workflows
+- Distributing event notifications
+- Refreshing distributed caches
+- Logging to multiple systems
+- Data streaming from various processes or devices
+- Reliability improvement
 
 ### Architecture
 
@@ -131,15 +123,6 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
            +----+   +------------------+        +---------------+
 
 
-### Common scenarios
-
-- Balancing workloads in network clusters
-- Implementing asynchronous workflows
-- Distributing event notifications
-- Refreshing distributed caches
-- Logging to multiple systems
-- Data streaming from various processes or devices
-- Reliability improvement
 
 ### FAQ
 
@@ -178,31 +161,12 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 ### TODO
 
 - [ ] data needs to be enriched/sanitized before being consumed
-- [ ] rename to bigtopic
-- [ ] kateway
-  - (pubclient.go:22) cluster[gateway] closing kafka sync client: 6127
-  - log remote addr and port
-- [ ] manually reset metrics counter
-- [ ] more strict validator for group and topic name
-- [ ] POST will return 201 http status code
-- [ ] ehaproxy integration with rsyslog test
-- [ ] metrics flush/load test
-- [ ] gzip sub response
-- [ ] test pub/sub metrics load and flush
-- [ ] online producers/consumers
-- [ ] pub fails retry should be done at kafka pub sdk: sarama
 - [ ] check hack pkg
 - [ ] delayed pub
-- [ ] message will have header
-- [ ] warmup
 - [ ] https, outer ip must https
-- [ ] Pub HTTP POST Request compress
-- [ ] metrics
-- [ ] who post the most messages
-- [ ] for intranet traffic, record the src ip and port
 - [ ] https://github.com/corneldamian/httpway
 - [ ] Update to glibc 2.20 or higher
-- [ ] compression in kafka
-- [ ] plugin
-- [ ] pub audit
-
+- [ ] compress
+  - gzip sub response
+  - Pub HTTP POST Request compress
+  - compression in kafka

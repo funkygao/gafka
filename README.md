@@ -27,7 +27,7 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
 
 - ehaproxy
 
-  Elastic haproxy that sits in front of kateway
+  Elastic haproxy that sits in front of kateway.
 
 - kateway
 
