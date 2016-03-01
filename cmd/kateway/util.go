@@ -49,6 +49,20 @@ func validateTopicName(topic string) bool {
 	return len(topicNameRegex.FindAllString(topic, -1)) == 1
 }
 
+func validateGroupName(group string) bool {
+	if len(group) == 0 {
+		return false
+	}
+
+	for _, c := range group {
+		if !(c == '_' || c == '-' || (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func checkUlimit(min int) {
 	ulimitN, err := exec.Command("/bin/sh", "-c", "ulimit -n").Output()
 	if err != nil {

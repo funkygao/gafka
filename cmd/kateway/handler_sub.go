@@ -142,7 +142,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		this.writeBadRequest(w, err)
 		return
 	}
-	if group == "" || strings.Contains(group, ".") { // TODO more strict rules
+	if !validateGroupName(group) {
 		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
@@ -364,7 +364,7 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 		this.writeWsError(ws, err.Error())
 		return
 	}
-	if group == "" || strings.Contains(group, ".") { // TODO more strict rules
+	if !validateGroupName(group) {
 		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} invalid group",
 			r.RemoteAddr, topic, ver, group, limit)
 
