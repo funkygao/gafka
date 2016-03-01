@@ -15,6 +15,28 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
 - zookeeper management console included
 - bash-autocomplete, alias, history supported
 
+### Ecosystem
+
+- gk
+ 
+  Unified multi-datacenter multi-cluster kafka swiss-knife management console.
+
+- zk
+
+  A handy zookeeper CLI that supports recursive query.
+
+- ehaproxy
+
+  Elastic haproxy that sits in front of kateway
+
+- kateway
+
+  A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming message service.
+
+- kguard
+
+  Kafka clusters body guard that emits health info to InfluxDB.
+
 ### Install
 
     go get github.com/funkygao/gafka
@@ -57,25 +79,4 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
 ### TODO
 
 - [ ] display kafka server versions
-- [ ] zk console
-- [ ] display kafka config e,g. retention
-- [ ] bootstrap kafka
-- [ ] producer source
-- [ ] sms/email alarm when any node of kafka/zk is down
-- [ ] github.com/wvanbergen/kazoo-go bug
-- [ ] active controller switch history
-
-### ServiceDiscovery
-
-- Register
-  - ip:port
-  - version
-  - tags
-  - auth
-  - protocol
-  - env
-  - lang
-  - runtime dependency
-
-- Discovery
 
