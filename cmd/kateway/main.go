@@ -27,7 +27,6 @@ func init() {
 
 	if gafka.BuildId == "" {
 		fmt.Fprintf(os.Stderr, "empty BuildId, please rebuild with build.sh\n")
-		os.Exit(1)
 	}
 
 	if options.Debug {
