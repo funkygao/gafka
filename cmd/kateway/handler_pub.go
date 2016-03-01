@@ -93,6 +93,14 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	query := r.URL.Query() // reuse the query will save 100ns
+	partitionKey := query.Get(UrlQueryKey)
+	if len(partitionKey) > MaxPartitionKeyLen {
+		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} too large partition key: %s",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, partitionKey)
+
+		http.Error(w, "too large partition key", http.StatusBadRequest)
+		return
+	}
 
 	pubMethod := store.DefaultPubStore.SyncPub
 	if query.Get(UrlQueryAsync) == "1" {
@@ -109,7 +117,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	partition, offset, err := pubMethod(cluster, appid+"."+topic+"."+ver,
-		[]byte(query.Get(UrlQueryKey)), msg.Body)
+		[]byte(partitionKey), msg.Body)
 	if err != nil {
 		msg.Free() // defer is costly
 

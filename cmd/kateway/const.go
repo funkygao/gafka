@@ -27,6 +27,8 @@ const (
 	CharBraceletLeft  = '{'
 	CharBraceletRight = '}'
 	CharDot           = '.'
+
+	MaxPartitionKeyLen = 256
 )
 
 var (

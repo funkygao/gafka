@@ -51,6 +51,8 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - Replicated storage and guaranteed at-least-once message delivery
 - Flexible delivery options
   - Both push- and pull-style subscriptions supported
+- Enables sophisticated streaming data processing
+  - because one app may emit kateway stream data into another kateway stream
 - [ ] Quotas and rate limit, QoS
   - Flow control: Dynamic rate limiting 
 - [ ] Plugins
