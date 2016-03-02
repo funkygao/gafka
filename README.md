@@ -82,4 +82,17 @@ A full ecosystem that is built around kafka powered by golang.
         set        Write znode data
         stat       Show znode status info
         zones      Print zones defined in $HOME/.gafka.cf
-    
+   
+### Status
+
+Currently gafka ecosystem is widely used in my corporation on production environment for daily jobs.
+
+It manages:
+- 4 data centers 
+- 50+ kafka clusters
+- 100+ kafka brokers
+- 500+ kafka topics
+- 2000+ kafka partitions
+- 2B messages per day
+- peak load
+  - 0.6M message per second
