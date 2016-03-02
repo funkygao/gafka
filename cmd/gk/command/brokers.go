@@ -222,6 +222,9 @@ func (this *Brokers) doShowVersions() {
 		if strings.Contains(line, "finished with exit code") {
 			continue
 		}
+		if strings.Contains(line, "node(s) completed") {
+			continue
+		}
 
 		fields := strings.Fields(line)
 		if len(fields) < 2 {
