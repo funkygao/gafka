@@ -1,4 +1,3 @@
-// Package ctx provides configurations loading and exporting.
 package ctx
 
 import (
