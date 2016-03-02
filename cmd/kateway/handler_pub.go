@@ -47,6 +47,13 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Debug("pub[%s] %s(%s) {topic:%s, ver:%s} better keep-alive",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
 	}
+	if options.CheckStickyCookie {
+		if _, err := r.Cookie("PUB"); err == http.ErrNoCookie {
+			// pub client should carry the haproxy added session sticky cookie
+			log.Debug("pub[%s] %s(%s) {topic:%s, ver:%s} no session sticky cookie",
+				appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
+		}
+	}
 
 	// get the raw POST message
 	msgLen := int(r.ContentLength)

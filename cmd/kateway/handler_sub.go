@@ -67,8 +67,15 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} not keep-alive",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 	}
+	if options.CheckStickyCookie {
+		if _, err = r.Cookie("SUB"); err == http.ErrNoCookie {
+			// sub client should carry the haproxy added session sticky cookie
+			log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} no session sticky cookie",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+		}
+	}
 
-	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
