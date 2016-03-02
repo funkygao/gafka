@@ -407,6 +407,11 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 		err      error
 	)
 
+	if !this.throttleSubStatus.Pour(1) {
+		this.writeQuotaExceeded(w)
+		return
+	}
+
 	query := r.URL.Query()
 	group = query.Get(UrlQueryGroup)
 	ver = params.ByName(UrlParamVersion)

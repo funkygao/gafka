@@ -55,20 +55,24 @@ type Gateway struct {
 	subMetrics *subMetrics
 	svrMetrics *serverMetrics
 
-	guard        *guard
-	timer        *timewheel.TimeWheel
-	leakyBuckets *ratelimiter.LeakyBuckets // TODO
+	guard             *guard
+	timer             *timewheel.TimeWheel
+	leakyBuckets      *ratelimiter.LeakyBuckets // TODO
+	throttleAddTopic  *ratelimiter.LeakyBucket
+	throttleSubStatus *ratelimiter.LeakyBucket
 }
 
 func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this := &Gateway{
-		id:           id,
-		zone:         options.Zone,
-		shutdownCh:   make(chan struct{}),
-		leakyBuckets: ratelimiter.NewLeakyBuckets(1000*60, time.Minute),
-		certFile:     options.CertFile,
-		keyFile:      options.KeyFile,
-		clientStates: NewClientStates(),
+		id:                id,
+		zone:              options.Zone,
+		shutdownCh:        make(chan struct{}),
+		leakyBuckets:      ratelimiter.NewLeakyBuckets(1000*60, time.Minute),
+		throttleAddTopic:  ratelimiter.NewLeakyBucket(60, time.Minute), // TODO multi-tenant
+		throttleSubStatus: ratelimiter.NewLeakyBucket(60, time.Minute),
+		certFile:          options.CertFile,
+		keyFile:           options.KeyFile,
+		clientStates:      NewClientStates(),
 	}
 
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())

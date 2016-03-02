@@ -206,6 +206,11 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	if !this.throttleAddTopic.Pour(1) {
+		this.writeQuotaExceeded(w)
+		return
+	}
+
 	cluster := params.ByName(UrlParamCluster)
 	hisAppid := params.ByName(UrlParamAppid)
 	appid := r.Header.Get(HttpHeaderAppid)
