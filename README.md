@@ -96,3 +96,4 @@ It manages:
 - 2B messages per day
 - peak load
   - 0.6M message per second
+  - 5G+ bps network bandwidth
