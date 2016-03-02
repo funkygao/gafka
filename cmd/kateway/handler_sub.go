@@ -485,6 +485,9 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 		}
 	}
 
+	log.Info("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s}",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+
 	this.writeKatewayHeader(w)
 	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	b, _ := json.Marshal(out)
@@ -538,6 +541,8 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	if group != "" {
 		group = myAppid + "." + group
 	}
+	log.Info("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} zk:%s",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, zkcluster.ConsumerGroupRoot(group))
 	if err := zkcluster.ZkZone().DeleteRecursive(zkcluster.ConsumerGroupRoot(group)); err != nil {
 		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
