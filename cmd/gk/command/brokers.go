@@ -265,7 +265,7 @@ func (this *Brokers) doShowVersions() {
 	this.Ui.Output(columnize.SimpleFormat(lines))
 	this.Ui.Output("")
 	this.Ui.Output(fmt.Sprintf("TOTAL %d processes running on %d hosts",
-		len(lines)-1), len(hosts))
+		len(lines)-1, len(hosts)))
 }
 
 func (*Brokers) Synopsis() string {
