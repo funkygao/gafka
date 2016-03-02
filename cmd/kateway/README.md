@@ -162,6 +162,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 - [ ] data needs to be enriched/sanitized before being consumed
 - [ ] check hack pkg
+- [ ] SLA of message retention
 - [ ] delayed pub
 - [ ] https, outer ip must https
 - [ ] https://github.com/corneldamian/httpway
