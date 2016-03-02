@@ -84,7 +84,3 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
         stat       Show znode status info
         zones      Print zones defined in $HOME/.gafka.cf
     
-### TODO
-
-- [ ] display kafka server versions
-
