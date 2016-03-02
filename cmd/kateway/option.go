@@ -35,7 +35,6 @@ var (
 		ShowVersion            bool
 		Ratelimit              bool
 		DisableMetrics         bool
-		CheckStickyCookie      bool
 		DryRun                 bool
 		CpuAffinity            bool
 		EnableClientStats      bool
@@ -97,7 +96,6 @@ func parseFlags() {
 	flag.StringVar(&options.InfluxDbName, "influxdbname", "pubsub", "influxdb db name")
 	flag.BoolVar(&options.ShowVersion, "version", false, "show version and exit")
 	flag.BoolVar(&options.Debug, "debug", false, "enable debug mode")
-	flag.BoolVar(&options.CheckStickyCookie, "stickycookie", true, "check session sticky cookie")
 	flag.BoolVar(&options.GolangTrace, "gotrace", false, "go tool trace")
 	flag.BoolVar(&options.EnableClientStats, "clientsmap", false, "record online pub/sub clients")
 	flag.BoolVar(&options.DryRun, "dryrun", false, "dry run mode")
