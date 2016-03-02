@@ -214,8 +214,9 @@ func (this *Brokers) doShowVersions() {
 	)
 	hosts := make(map[string]struct{})
 	lines := make([]string, 0)
-	header := "Host|Process|Version"
+	header := "Process|Host|Version"
 	lines = append(lines, header)
+	records := make(map[string]map[string]string) // {process: {host: ver}}
 	for scanner.Scan() {
 		line = scanner.Text()
 		if strings.Contains(line, "finished with exit code") {
@@ -256,11 +257,32 @@ func (this *Brokers) doShowVersions() {
 		process := matched[1]
 
 		// got a valid process record
+		if _, present := records[process]; !present {
+			records[process] = make(map[string]string)
+		}
 		host := fields[0][0 : len(fields[0])-1] // discard the ending ':'
 		hosts[host] = struct{}{}
-		lines = append(lines, fmt.Sprintf("%s|%s|%s", host, process, ver))
+		records[process][host] = ver
 	}
 	swallow(scanner.Err())
+
+	sortedProceses := make([]string, 0, len(records))
+	for proc, _ := range records {
+		sortedProceses = append(sortedProceses, proc)
+	}
+	sort.Strings(sortedProceses)
+
+	for _, proc := range sortedProceses {
+		sortedHosts := make([]string, 0, len(records[proc]))
+		for host, _ := range records[proc] {
+			sortedHosts = append(sortedHosts, host)
+		}
+		sort.Strings(sortedHosts)
+
+		for _, host := range sortedHosts {
+			lines = append(lines, fmt.Sprintf("%s|%s|%s", proc, host, records[proc][host]))
+		}
+	}
 
 	this.Ui.Output(columnize.SimpleFormat(lines))
 	this.Ui.Output("")
@@ -288,6 +310,7 @@ Options:
 
     -versions
       Display kafka instances versions by host
+      Precondition: you MUST install consul on each broker host
 
     -maxbroker
       Display max broker.id and max port
