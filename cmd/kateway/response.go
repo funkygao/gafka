@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/gorilla/websocket"
 )
 
 func (this *Gateway) writeErrorResponse(w http.ResponseWriter, err string, code int) {

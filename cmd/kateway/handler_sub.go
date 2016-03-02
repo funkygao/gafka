@@ -491,6 +491,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
+// /groups/:appid/:topic/:ver/:group
 func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
