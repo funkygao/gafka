@@ -275,12 +275,17 @@ func (this *Brokers) doShowVersions() {
 	}
 	sort.Strings(sortedProceses)
 
+	procsWithSingleInstance := make([]string, 0)
 	for _, proc := range sortedProceses {
 		sortedHosts := make([]string, 0, len(records[proc]))
 		for host, _ := range records[proc] {
 			sortedHosts = append(sortedHosts, host)
 		}
 		sort.Strings(sortedHosts)
+
+		if len(sortedHosts) < 2 {
+			procsWithSingleInstance = append(procsWithSingleInstance, proc)
+		}
 
 		for _, host := range sortedHosts {
 			lines = append(lines, fmt.Sprintf("%s|%s|%s", proc, host, records[proc][host]))
@@ -291,6 +296,10 @@ func (this *Brokers) doShowVersions() {
 	this.Ui.Output("")
 	this.Ui.Output(fmt.Sprintf("TOTAL %d processes running on %d hosts",
 		len(lines)-1, len(hosts)))
+	if len(procsWithSingleInstance) > 0 {
+		this.Ui.Output(fmt.Sprintf("\nProcess with 1 SPOF: "))
+		this.Ui.Warn(fmt.Sprintf("%v", procsWithSingleInstance))
+	}
 }
 
 func (*Brokers) Synopsis() string {
