@@ -11,10 +11,10 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
-	"github.com/funkygao/metrics"
 )
 
 var (
