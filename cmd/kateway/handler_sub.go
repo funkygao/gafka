@@ -25,98 +25,6 @@ type SubStatus struct {
 	Consumed  int64  `json:"subd"`
 }
 
-// /status/:appid/:topic/:ver?group=xx
-// FIXME currently there might be in flight offsets because of batch offset commit
-func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	var (
-		topic    string
-		ver      string
-		myAppid  string
-		hisAppid string
-		group    string
-		err      error
-	)
-
-	query := r.URL.Query()
-	group = query.Get(UrlQueryGroup)
-	ver = params.ByName(UrlParamVersion)
-	topic = params.ByName(UrlParamTopic)
-	hisAppid = params.ByName(UrlParamAppid)
-	myAppid = r.Header.Get(HttpHeaderAppid)
-
-	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
-		log.Error("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
-
-		this.writeAuthFailure(w, err)
-		return
-	}
-
-	cluster, found := manager.Default.LookupCluster(hisAppid)
-	if !found {
-		log.Error("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
-
-		http.Error(w, "invalid appid", http.StatusBadRequest)
-		return
-	}
-
-	zkcluster := meta.Default.ZkCluster(cluster)
-	if group != "" {
-		group = myAppid + "." + group
-	}
-	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
-	consumersByGroup, err := zkcluster.ConsumerGroupsOfTopic(rawTopic)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	sortedGroups := make([]string, 0, len(consumersByGroup))
-	for grp, _ := range consumersByGroup {
-		sortedGroups = append(sortedGroups, grp)
-	}
-	sort.Strings(sortedGroups)
-
-	out := make([]SubStatus, 0, len(sortedGroups))
-
-	for _, grp := range sortedGroups {
-		if group != "" && grp != group {
-			continue
-		}
-
-		sortedTopicAndPartitionIds := make([]string, 0, len(consumersByGroup[grp]))
-		consumers := make(map[string]zk.ConsumerMeta)
-		for _, t := range consumersByGroup[grp] {
-			key := fmt.Sprintf("%s:%s", t.Topic, t.PartitionId)
-			sortedTopicAndPartitionIds = append(sortedTopicAndPartitionIds, key)
-
-			consumers[key] = t
-		}
-		sort.Strings(sortedTopicAndPartitionIds)
-
-		for _, topicAndPartitionId := range sortedTopicAndPartitionIds {
-			consumer := consumers[topicAndPartitionId]
-			if rawTopic != consumer.Topic {
-				continue
-			}
-
-			p := strings.SplitN(grp, ".", 2) // grp is like 'appid.groupname'
-			out = append(out, SubStatus{
-				Group:     p[1],
-				Partition: consumer.PartitionId,
-				Produced:  consumer.ProducerOffset,
-				Consumed:  consumer.ConsumerOffset,
-			})
-		}
-	}
-
-	this.writeKatewayHeader(w)
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
-	b, _ := json.Marshal(out)
-	w.Write(b)
-}
-
 // /topics/:appid/:topic/:ver?group=xx&limit=1&reset=newest
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
@@ -486,6 +394,94 @@ func (this *Gateway) wsWritePump(clientGone chan struct{}, ws *websocket.Conn, f
 
 }
 
-func (this *Gateway) writeWsError(ws *websocket.Conn, err string) {
-	ws.WriteMessage(websocket.CloseMessage, []byte(err))
+// /status/:appid/:topic/:ver?group=xx
+// FIXME currently there might be in flight offsets because of batch offset commit
+func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	var (
+		topic    string
+		ver      string
+		myAppid  string
+		hisAppid string
+		group    string
+		err      error
+	)
+
+	query := r.URL.Query()
+	group = query.Get(UrlQueryGroup)
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	hisAppid = params.ByName(UrlParamAppid)
+	myAppid = r.Header.Get(HttpHeaderAppid)
+
+	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+		log.Error("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+
+		this.writeAuthFailure(w, err)
+		return
+	}
+
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+
+		http.Error(w, "invalid appid", http.StatusBadRequest)
+		return
+	}
+
+	zkcluster := meta.Default.ZkCluster(cluster)
+	if group != "" {
+		group = myAppid + "." + group
+	}
+	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
+	consumersByGroup, err := zkcluster.ConsumerGroupsOfTopic(rawTopic)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	sortedGroups := make([]string, 0, len(consumersByGroup))
+	for grp, _ := range consumersByGroup {
+		sortedGroups = append(sortedGroups, grp)
+	}
+	sort.Strings(sortedGroups)
+
+	out := make([]SubStatus, 0, len(sortedGroups))
+
+	for _, grp := range sortedGroups {
+		if group != "" && grp != group {
+			continue
+		}
+
+		sortedTopicAndPartitionIds := make([]string, 0, len(consumersByGroup[grp]))
+		consumers := make(map[string]zk.ConsumerMeta)
+		for _, t := range consumersByGroup[grp] {
+			key := fmt.Sprintf("%s:%s", t.Topic, t.PartitionId)
+			sortedTopicAndPartitionIds = append(sortedTopicAndPartitionIds, key)
+
+			consumers[key] = t
+		}
+		sort.Strings(sortedTopicAndPartitionIds)
+
+		for _, topicAndPartitionId := range sortedTopicAndPartitionIds {
+			consumer := consumers[topicAndPartitionId]
+			if rawTopic != consumer.Topic {
+				continue
+			}
+
+			p := strings.SplitN(grp, ".", 2) // grp is like 'appid.groupname'
+			out = append(out, SubStatus{
+				Group:     p[1],
+				Partition: consumer.PartitionId,
+				Produced:  consumer.ProducerOffset,
+				Consumed:  consumer.ConsumerOffset,
+			})
+		}
+	}
+
+	this.writeKatewayHeader(w)
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
+	b, _ := json.Marshal(out)
+	w.Write(b)
 }

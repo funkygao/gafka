@@ -31,6 +31,10 @@ func (this *Gateway) writeAuthFailure(w http.ResponseWriter, err error) {
 	this.writeErrorResponse(w, err.Error(), http.StatusUnauthorized)
 }
 
+func (this *Gateway) writeWsError(ws *websocket.Conn, err string) {
+	ws.WriteMessage(websocket.CloseMessage, []byte(err))
+}
+
 func (this *Gateway) writeQuotaExceeded(w http.ResponseWriter) {
 	w.Header().Set("Connection", "close")
 
