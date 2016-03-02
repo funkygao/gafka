@@ -1,8 +1,10 @@
 package command
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,6 +16,8 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/golib/pipestream"
+	"github.com/ryanuber/columnize"
 )
 
 type Brokers struct {
@@ -22,6 +26,7 @@ type Brokers struct {
 
 	staleOnly     bool
 	maxBrokerMode bool
+	showVersions  bool
 	ipInNumber    bool
 }
 
@@ -36,9 +41,15 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.BoolVar(&this.staleOnly, "stale", false, "")
+	cmdFlags.BoolVar(&this.showVersions, "versions", false, "")
 	cmdFlags.BoolVar(&this.maxBrokerMode, "maxbroker", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	if this.showVersions {
+		this.doShowVersions()
+		return
 	}
 
 	if zone != "" {
@@ -182,6 +193,81 @@ func (this *Brokers) clusterBrokers(cluster string, brokers map[string]*zk.Broke
 	return lines, len(brokers)
 }
 
+func (this *Brokers) doShowVersions() {
+	kafkaVerExp := regexp.MustCompile(`/kafka_(?P<ver>[-\d.]*)\.jar`)
+	processExp := regexp.MustCompile(`kfk_(?P<process>\S*)/config/server.properties`)
+
+	cmd := pipestream.New("/usr/bin/consul", "exec",
+		"pgrep", "-lf", "java",
+		"|", "grep", "-w", "kafka",
+		"|", "grep", "-vw", "grep")
+	err := cmd.Open()
+	swallow(err)
+	defer cmd.Close()
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+
+	var (
+		line     string
+		lastLine string
+	)
+	hosts := make(map[string]struct{})
+	lines := make([]string, 0)
+	header := "Host|Process|Version"
+	lines = append(lines, header)
+	for scanner.Scan() {
+		line = scanner.Text()
+		if strings.Contains(line, "finished with exit code") {
+			continue
+		}
+
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+
+		if _, err := strconv.Atoi(fields[1]); err != nil {
+			// field 1 should be pid
+			// if not pid, it continues with last line
+			line = lastLine + strings.Join(fields[1:], " ")
+
+			// redo fields
+			fields := strings.Fields(line)
+			if len(fields) < 2 {
+				continue
+			}
+		}
+
+		lastLine = line
+
+		// version
+		matched := kafkaVerExp.FindStringSubmatch(line)
+		if len(matched) < 2 {
+			continue
+		}
+		ver := matched[1]
+
+		// process name
+		matched = processExp.FindStringSubmatch(line)
+		if len(matched) < 2 {
+			continue
+		}
+		process := matched[1]
+
+		// got a valid process record
+		host := fields[0][0 : len(fields[0])-1] // discard the ending ':'
+		hosts[host] = struct{}{}
+		lines = append(lines, fmt.Sprintf("%s|%s|%s", host, process, ver))
+	}
+	swallow(scanner.Err())
+
+	this.Ui.Output(columnize.SimpleFormat(lines))
+	this.Ui.Output("")
+	this.Ui.Output(fmt.Sprintf("TOTAL %d processes running on %d hosts",
+		len(lines)-1), len(hosts))
+}
+
 func (*Brokers) Synopsis() string {
 	return "Print online brokers from Zookeeper"
 }
@@ -199,6 +285,9 @@ Options:
 
     -c cluster name
       Only print brokers of this cluster
+
+    -versions
+      Display kafka instances versions by host
 
     -maxbroker
       Display max broker.id and max port
