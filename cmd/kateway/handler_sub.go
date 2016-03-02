@@ -503,7 +503,6 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 		err      error
 	)
 
-	query := r.URL.Query()
 	group = params.ByName(UrlParamGroup)
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
