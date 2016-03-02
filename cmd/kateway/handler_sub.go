@@ -490,3 +490,59 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	b, _ := json.Marshal(out)
 	w.Write(b)
 }
+
+func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	var (
+		topic    string
+		ver      string
+		myAppid  string
+		hisAppid string
+		group    string
+		err      error
+	)
+
+	query := r.URL.Query()
+	group = params.ByName(UrlParamGroup)
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	hisAppid = params.ByName(UrlParamAppid)
+	myAppid = r.Header.Get(HttpHeaderAppid)
+
+	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+		log.Error("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+
+		this.writeAuthFailure(w, err)
+		return
+	}
+
+	if !validateGroupName(group) {
+		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+
+		http.Error(w, "invalid group name", http.StatusBadRequest)
+		return
+	}
+
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+
+		http.Error(w, "invalid appid", http.StatusBadRequest)
+		return
+	}
+
+	zkcluster := meta.Default.ZkCluster(cluster)
+	if group != "" {
+		group = myAppid + "." + group
+	}
+	if err := zkcluster.ZkZone().DeleteRecursive(zkcluster.ConsumerGroupRoot(group)); err != nil {
+		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+	}
+
+	this.writeKatewayHeader(w)
+	w.Write(ResponseOk)
+}

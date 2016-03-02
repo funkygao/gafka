@@ -14,9 +14,11 @@ func (this *Gateway) buildRouting() {
 	this.manServer.Router().GET("/status", this.statusHandler)
 	this.manServer.Router().PUT("/options/:option/:value", this.setOptionHandler)
 	this.manServer.Router().PUT("/log/:level", this.setlogHandler)
+	this.manServer.Router().DELETE("/counter/:name", this.resetCounterHandler)
+
+	// api for pubsub manager
 	this.manServer.Router().GET("/partitions/:cluster/:appid/:topic/:ver", this.partitionsHandler)
 	this.manServer.Router().POST("/topics/:cluster/:appid/:topic/:ver", this.addTopicHandler)
-	this.manServer.Router().DELETE("/counter/:name", this.resetCounterHandler)
 
 	if this.pubServer != nil {
 		this.pubServer.Router().GET("/raw/topics/:topic/:ver", this.pubRawHandler)
@@ -28,9 +30,12 @@ func (this *Gateway) buildRouting() {
 	if this.subServer != nil {
 		this.subServer.Router().GET("/raw/topics/:appid/:topic/:ver", this.subRawHandler)
 		this.subServer.Router().GET("/topics/:appid/:topic/:ver", this.subHandler)
-		this.subServer.Router().GET("/status/:appid/:topic/:ver", this.subStatusHandler)
 		this.subServer.Router().GET("/ws/topics/:appid/:topic/:ver", this.subWsHandler)
 		this.subServer.Router().GET("/alive", this.checkAliveHandler)
+
+		// api for pubsub manager
+		this.subServer.Router().GET("/status/:appid/:topic/:ver", this.subStatusHandler)
+		this.subServer.Router().DELETE("/groups/:appid/:topic/:ver/:group", this.delSubGroupHandler)
 	}
 
 }

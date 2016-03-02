@@ -13,6 +13,7 @@ const (
 	UrlParamTopic   = "topic"
 	UrlParamVersion = "ver"
 	UrlParamAppid   = "appid"
+	UrlParamGroup   = "group"
 
 	UrlQueryKey   = "key"
 	UrlQueryReset = "reset"
