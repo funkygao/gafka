@@ -345,14 +345,14 @@ func (this *Deploy) chown(fp string) {
 }
 
 func (*Deploy) Synopsis() string {
-	return "Deploy a new kafka broker"
+	return "Deploy a new kafka broker on localhost"
 }
 
 func (this *Deploy) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s deploy -z zone -c cluster [options]
 
-    Deploy a new kafka broker
+    Deploy a new kafka broker on localhost
 
 Options:
 
