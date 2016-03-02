@@ -10,11 +10,11 @@ func TestMessageWriteString(t *testing.T) {
 	m := NewMessage(1029)
 	m.WriteString("hello")
 	m.WriteString("world")
-	assert.Equal(t, "helloworld", m.String())
+	assert.Equal(t, "helloworld", string(m.Bytes()))
 
 	m.Reset()
 	err := m.WriteString("yes")
-	assert.Equal(t, "yes", m.String())
+	assert.Equal(t, "yes", string(m.Bytes()))
 	assert.Equal(t, nil, err)
 }
 
