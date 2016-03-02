@@ -453,7 +453,6 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	sort.Strings(sortedGroups)
 
 	out := make([]SubStatus, 0, len(sortedGroups))
-
 	for _, grp := range sortedGroups {
 		if group != "" && grp != group {
 			continue
@@ -477,6 +476,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 
 			p := strings.SplitN(grp, ".", 2) // grp is like 'appid.groupname'
 			if myAppid != p[0] {
+				// this group does not belong to me
 				continue
 			}
 
