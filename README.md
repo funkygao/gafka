@@ -1,11 +1,7 @@
 # gafka 
-Unified multi-datacenter multi-cluster kafka swiss-knife management console powered by golang.
+A full ecosystem that is built around kafka powered by golang.
 
-### Features
-
-- bash-autocomplete, alias, history supported
-
-### Ecosystem
+### Components
 
 - gk
  
@@ -30,6 +26,9 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console powe
 ### Install
 
     go get github.com/funkygao/gafka
+    cd $GOPATH/src/github.com/funkygao/gafka
+    go get ./...
+    ./build -i
 
 ### Usage
 
