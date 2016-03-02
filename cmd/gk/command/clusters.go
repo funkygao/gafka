@@ -185,13 +185,13 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	// display mode
 	if zone != "" {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-		this.printClusters(zkzone)
+		this.printClusters(zkzone, clusterName)
 
 		printSwallowedErrors(this.Ui, zkzone)
 	} else {
 		// print all zones all clusters
 		forSortedZones(func(zkzone *zk.ZkZone) {
-			this.printClusters(zkzone)
+			this.printClusters(zkzone, clusterName)
 
 			printSwallowedErrors(this.Ui, zkzone)
 		})
@@ -263,7 +263,7 @@ func (this *Clusters) verifyBrokers(zkzone *zk.ZkZone) {
 	})
 }
 
-func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
+func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string) {
 	if this.registeredBrokers {
 		this.printRegisteredBrokers(zkzone)
 		return
@@ -282,6 +282,10 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone) {
 	}
 	clusters := make([]clusterInfo, 0)
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		if !patternMatched(zkcluster.Name(), clusterPattern) {
+			return
+		}
+
 		ci := clusterInfo{
 			name: zkcluster.Name(),
 			path: zkcluster.Chroot(),
