@@ -53,6 +53,10 @@ func (this *LsZk) printCluster(zkcluster *zk.ZkCluster) {
 
 	for _, c := range children {
 		this.Ui.Output(fmt.Sprintf("%s%s", strings.Repeat(" ", 4), c))
+		if strings.HasSuffix(c, "brokers") {
+			this.Ui.Output(fmt.Sprintf("%s%s/ids", strings.Repeat(" ", 4), c))
+			this.Ui.Output(fmt.Sprintf("%s%s/topics", strings.Repeat(" ", 4), c))
+		}
 	}
 }
 
