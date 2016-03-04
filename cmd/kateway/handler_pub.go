@@ -98,7 +98,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} too large partition key: %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, partitionKey)
 
-		http.Error(w, "too large partition key", http.StatusBadRequest)
+		this.writeBadRequest(w, "too large partition key")
 		return
 	}
 
@@ -112,7 +112,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
 
-		http.Error(w, "invalid appid", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -173,7 +173,7 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 	if !found {
 		log.Error("cluster not found for app: %s", appid)
 
-		http.Error(w, "invalid appid", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid appid")
 		return
 	}
 

@@ -116,7 +116,7 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	default:
 		log.Warn("invalid option:%s=%s", option, value)
 
-		http.Error(w, "invalid option", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid option")
 		return
 	}
 
@@ -185,7 +185,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("cluster[%s] %v", zkcluster.Name(), err)
 
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer kfk.Close()
@@ -195,7 +195,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
 			zkcluster.Name(), r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, err)
 
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -211,7 +211,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if !validateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)
 
-		http.Error(w, "illegal topic", http.StatusBadRequest)
+		this.writeBadRequest(w, "illegal topic")
 		return
 	}
 
@@ -238,7 +238,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if !info.Public {
 		log.Warn("app[%s] adding topic:%s in non-public cluster: %+v", hisAppid, topic, params)
 
-		http.Error(w, "invalid cluster", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid cluster")
 		return
 	}
 
@@ -261,7 +261,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
 
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -278,6 +278,6 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		w.Header().Set(ContentTypeHeader, ContentTypeJson)
 		w.Write(ResponseOk)
 	} else {
-		http.Error(w, strings.Join(lines, "\n"), http.StatusInternalServerError)
+		this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)
 	}
 }

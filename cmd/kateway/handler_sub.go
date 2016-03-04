@@ -25,7 +25,7 @@ type SubStatus struct {
 	Consumed  int64  `json:"subd"`
 }
 
-// /topics/:appid/:topic/:ver?group=xx&limit=1&reset=newest
+// /topics/:appid/:topic/:ver?group=xx&limit=1&reset=newest&qos=1
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -47,14 +47,14 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	reset = query.Get(UrlQueryReset)
 	limit, err := getHttpQueryInt(&query, "limit", 1)
 	if err != nil {
-		this.writeBadRequest(w, err)
+		this.writeBadRequest(w, err.Error())
 		return
 	}
 	if !validateGroupName(group) {
 		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		http.Error(w, "invalid group name", http.StatusBadRequest)
+		this.writeBadRequest(w, "illegal group")
 		return
 	}
 
@@ -88,7 +88,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		http.Error(w, "invalid appid", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -98,7 +98,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
-		this.writeBadRequest(w, err)
+		this.writeBadRequest(w, err.Error())
 		return
 	}
 
@@ -224,7 +224,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	if !found {
 		log.Error("cluster not found for subd app: %s", hisAppid)
 
-		http.Error(w, "invalid appid", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -432,7 +432,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		http.Error(w, "invalid appid", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -443,7 +443,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
 	consumersByGroup, err := zkcluster.ConsumerGroupsOfTopic(rawTopic)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	sortedGroups := make([]string, 0, len(consumersByGroup))
@@ -528,7 +528,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		http.Error(w, "invalid group name", http.StatusBadRequest)
+		this.writeBadRequest(w, "illegal group")
 		return
 	}
 
@@ -537,7 +537,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		http.Error(w, "invalid appid", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid appid")
 		return
 	}
 
