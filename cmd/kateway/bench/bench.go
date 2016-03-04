@@ -13,7 +13,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/golib/stress"
-	"github.com/funkygao/redigo/redis"
+	"github.com/garyburd/redigo/redis"
 )
 
 var (
