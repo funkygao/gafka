@@ -53,6 +53,13 @@ func init() {
 			}, nil
 		},
 
+		"status": func() (cli.Command, error) {
+			return &command.Status{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"config": func() (cli.Command, error) {
 			return &command.Config{
 				Ui:  ui,
