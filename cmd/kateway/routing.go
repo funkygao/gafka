@@ -11,7 +11,6 @@ func (this *Gateway) buildRouting() {
 	this.manServer.Router().GET("/alive", m(this.checkAliveHandler))
 	this.manServer.Router().GET("/clusters", m(this.clustersHandler))
 	this.manServer.Router().GET("/clients", m(this.clientsHandler))
-	this.manServer.Router().GET("/help", m(this.helpHandler))
 	this.manServer.Router().GET("/status", m(this.statusHandler))
 	this.manServer.Router().PUT("/options/:option/:value", m(this.setOptionHandler))
 	this.manServer.Router().PUT("/log/:level", m(this.setlogHandler))

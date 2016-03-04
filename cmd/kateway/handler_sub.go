@@ -43,8 +43,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	query := r.URL.Query()
-	group = query.Get(UrlQueryGroup)
-	reset = query.Get(UrlQueryReset)
+	group = query.Get("group")
+	reset = query.Get("reset")
 	limit, err := getHttpQueryInt(&query, "limit", 1)
 	if err != nil {
 		this.writeBadRequest(w, err.Error())
@@ -62,7 +62,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
-	if r.Header.Get(HttpHeaderConnection) == "close" {
+	if r.Header.Get("Connection") == "close" {
 		// sub should use keep-alive
 		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} not keep-alive",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
@@ -263,8 +263,8 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	)
 
 	query := r.URL.Query()
-	group = query.Get(UrlQueryGroup)
-	resetOffset = query.Get(UrlQueryReset)
+	group = query.Get("group")
+	resetOffset = query.Get("reset")
 	limit, err := getHttpQueryInt(&query, "limit", 1)
 	if err != nil {
 		this.writeWsError(ws, err.Error())
@@ -411,7 +411,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	query := r.URL.Query()
-	group = query.Get(UrlQueryGroup)
+	group = query.Get("group")
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)

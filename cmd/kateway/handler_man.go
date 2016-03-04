@@ -14,49 +14,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (this *Gateway) helpHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	w.Header().Set(ContentTypeHeader, ContentTypeText)
-	w.Write([]byte(strings.TrimSpace(fmt.Sprintf(`
-pub server: %s
-sub server: %s
-man server: %s
-dbg server: %s
-
-pub:
-POST /topics/:topic/:ver?key=msgkey&async=<0|1>
-POST /ws/topics/:topic/:ver
- GET /raw/topics/:topic/:ver
- GET /alive
-
-sub:
- GET /status/:appid/:topic/:ver?group=xx
-DELETE /groups/:appid/:topic/:ver/:group
- GET /topics/:appid/:topic/:ver?group=xx&limit=1&reset=<newest|oldest>&autocommit=<1|0>
- GET /ws/topics/:appid/:topic/:ver?group=xx
- GET /raw/topics/:appid/:topic/:ver
- GET /alive
-
-man:
- GET /help
- GET /status
- GET /clusters
- GET /clients
- GET /alive 
- PUT /options/:option/:value option=<accesslog|debug|clients|nometrics|ratelimit>
- PUT /log/:level  level=<info|debug|trace|warn|alarm|error>
-POST /topics/:cluster/:appid/:topic/:ver
- GET /partitions/:cluster/:appid/:topic/:ver
-
-dbg:
- GET /debug/pprof
- GET /debug/vars
-`,
-		options.PubHttpAddr, options.SubHttpAddr,
-		options.ManHttpAddr, options.DebugHttpAddr))))
-
-}
-
 func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	output := make(map[string]interface{})

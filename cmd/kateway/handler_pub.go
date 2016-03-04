@@ -43,11 +43,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	if false && r.Header.Get(HttpHeaderConnection) == "close" {
-		log.Debug("pub[%s] %s(%s) {topic:%s, ver:%s} better keep-alive",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
-	}
-
 	// get the raw POST message
 	msgLen := int(r.ContentLength)
 	switch {
@@ -94,7 +89,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	query := r.URL.Query() // reuse the query will save 100ns
-	partitionKey := query.Get(UrlQueryKey)
+	partitionKey := query.Get("key")
 	if len(partitionKey) > MaxPartitionKeyLen {
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} too large partition key: %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, partitionKey)
@@ -104,7 +99,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	pubMethod := store.DefaultPubStore.SyncPub
-	if query.Get(UrlQueryAsync) == "1" {
+	if query.Get("async") == "1" {
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
 
