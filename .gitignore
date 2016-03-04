@@ -25,6 +25,8 @@ _testmain.go
 
 .DS_Store
 *.swp
+
+access_log
 prof.cpu
 bindata.go
 *.test

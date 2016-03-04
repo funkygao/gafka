@@ -7,35 +7,36 @@ import (
 )
 
 func (this *Gateway) buildRouting() {
-	this.manServer.Router().GET("/alive", this.checkAliveHandler)
-	this.manServer.Router().GET("/clusters", this.clustersHandler)
-	this.manServer.Router().GET("/clients", this.clientsHandler)
-	this.manServer.Router().GET("/help", this.helpHandler)
-	this.manServer.Router().GET("/status", this.statusHandler)
-	this.manServer.Router().PUT("/options/:option/:value", this.setOptionHandler)
-	this.manServer.Router().PUT("/log/:level", this.setlogHandler)
-	this.manServer.Router().DELETE("/counter/:name", this.resetCounterHandler)
+	m := this.MiddlewareKateway
+	this.manServer.Router().GET("/alive", m(this.checkAliveHandler))
+	this.manServer.Router().GET("/clusters", m(this.clustersHandler))
+	this.manServer.Router().GET("/clients", m(this.clientsHandler))
+	this.manServer.Router().GET("/help", m(this.helpHandler))
+	this.manServer.Router().GET("/status", m(this.statusHandler))
+	this.manServer.Router().PUT("/options/:option/:value", m(this.setOptionHandler))
+	this.manServer.Router().PUT("/log/:level", m(this.setlogHandler))
+	this.manServer.Router().DELETE("/counter/:name", m(this.resetCounterHandler))
 
 	// api for pubsub manager
-	this.manServer.Router().GET("/partitions/:cluster/:appid/:topic/:ver", this.partitionsHandler)
-	this.manServer.Router().POST("/topics/:cluster/:appid/:topic/:ver", this.addTopicHandler)
+	this.manServer.Router().GET("/partitions/:cluster/:appid/:topic/:ver", m(this.partitionsHandler))
+	this.manServer.Router().POST("/topics/:cluster/:appid/:topic/:ver", m(this.addTopicHandler))
 
 	if this.pubServer != nil {
-		this.pubServer.Router().GET("/raw/topics/:topic/:ver", this.pubRawHandler)
-		this.pubServer.Router().POST("/topics/:topic/:ver", this.pubHandler)
-		this.pubServer.Router().POST("/ws/topics/:topic/:ver", this.pubWsHandler)
-		this.pubServer.Router().GET("/alive", this.checkAliveHandler)
+		this.pubServer.Router().GET("/raw/topics/:topic/:ver", m(this.pubRawHandler))
+		this.pubServer.Router().POST("/topics/:topic/:ver", m(this.pubHandler))
+		this.pubServer.Router().POST("/ws/topics/:topic/:ver", m(this.pubWsHandler))
+		this.pubServer.Router().GET("/alive", m(this.checkAliveHandler))
 	}
 
 	if this.subServer != nil {
-		this.subServer.Router().GET("/raw/topics/:appid/:topic/:ver", this.subRawHandler)
-		this.subServer.Router().GET("/topics/:appid/:topic/:ver", this.subHandler)
-		this.subServer.Router().GET("/ws/topics/:appid/:topic/:ver", this.subWsHandler)
-		this.subServer.Router().GET("/alive", this.checkAliveHandler)
+		this.subServer.Router().GET("/raw/topics/:appid/:topic/:ver", m(this.subRawHandler))
+		this.subServer.Router().GET("/topics/:appid/:topic/:ver", m(this.subHandler))
+		this.subServer.Router().GET("/ws/topics/:appid/:topic/:ver", m(this.subWsHandler))
+		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
 
 		// api for pubsub manager
-		this.subServer.Router().GET("/status/:appid/:topic/:ver", this.subStatusHandler)
-		this.subServer.Router().DELETE("/groups/:appid/:topic/:ver/:group", this.delSubGroupHandler)
+		this.subServer.Router().GET("/status/:appid/:topic/:ver", m(this.subStatusHandler))
+		this.subServer.Router().DELETE("/groups/:appid/:topic/:ver/:group", m(this.delSubGroupHandler))
 	}
 
 }
