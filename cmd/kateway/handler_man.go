@@ -44,7 +44,7 @@ man:
  GET /clusters
  GET /clients
  GET /alive 
- PUT /options/:option/:value
+ PUT /options/:option/:value option=<accesslog|debug|clients|nometrics|ratelimit>
  PUT /log/:level  level=<info|debug|trace|warn|alarm|error>
 POST /topics/:cluster/:appid/:topic/:ver
  GET /partitions/:cluster/:appid/:topic/:ver
@@ -60,29 +60,31 @@ dbg:
 
 func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	this.writeKatewayHeader(w)
+
 	output := make(map[string]interface{})
 	output["options"] = options
 	output["loglevel"] = logLevel.String()
 	output["pubserver.type"] = this.pubServer.name
 	b, _ := json.MarshalIndent(output, "", "    ")
 	w.Write(b)
-	w.Write([]byte{'\n'})
 }
 
 func (this *Gateway) clientsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	this.writeKatewayHeader(w)
 	w.Header().Set(ContentTypeHeader, ContentTypeJson)
+	this.writeKatewayHeader(w)
+
 	b, _ := json.Marshal(this.clientStates.Export())
 	w.Write(b)
 }
 
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	this.writeKatewayHeader(w)
 	w.Header().Set(ContentTypeHeader, ContentTypeJson)
-	w.WriteHeader(http.StatusOK)
+	this.writeKatewayHeader(w)
+
 	b, _ := json.Marshal(meta.Default.Clusters())
 	w.Write(b)
 }
@@ -108,6 +110,9 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	case "ratelimit":
 		options.Ratelimit = boolVal
 
+	case "accesslog":
+		options.EnableAccessLog = boolVal
+
 	default:
 		log.Warn("invalid option:%s=%s", option, value)
 
@@ -117,6 +122,7 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 
 	log.Info("set option:%s to %s, %#v", option, value, options)
 
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	this.writeKatewayHeader(w)
 	w.Write(ResponseOk)
 }
@@ -131,6 +137,7 @@ func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 		filter.Level = logLevel
 	}
 
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	this.writeKatewayHeader(w)
 	w.Write(ResponseOk)
 }
@@ -141,6 +148,7 @@ func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
 
 	_ = counterName // TODO
 
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	this.writeKatewayHeader(w)
 	w.Write(ResponseOk)
 }
@@ -155,6 +163,7 @@ func (this *Gateway) authAdmin(appid, pubkey string) (ok bool) {
 // /partitions/:cluster/:appid/:topic/:ver
 func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
+	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	this.writeKatewayHeader(w)
 
 	topic := params.ByName(UrlParamTopic)
@@ -190,7 +199,6 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	w.Write([]byte(fmt.Sprintf(`{"num": %d}`, len(partitions))))
 }
 
@@ -267,6 +275,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if ok {
+		w.Header().Set(ContentTypeHeader, ContentTypeJson)
 		w.Write(ResponseOk)
 	} else {
 		http.Error(w, strings.Join(lines, "\n"), http.StatusInternalServerError)
