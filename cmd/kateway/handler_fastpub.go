@@ -140,7 +140,7 @@ func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprout
 	}
 
 	b, _ := json.Marshal(out)
-	ctx.SetContentType(ContentTypeJson)
+	ctx.SetContentType("application/json; charset=utf8")
 	ctx.Write(b)
 }
 

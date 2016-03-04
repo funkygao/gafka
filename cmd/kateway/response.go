@@ -13,17 +13,7 @@ func (this *Gateway) writeErrorResponse(w http.ResponseWriter, err string, code 
 	}
 	b, _ := json.Marshal(out)
 
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
-	this.writeKatewayHeader(w)
 	http.Error(w, string(b), code)
-}
-
-func (this *Gateway) writeInvalidContentLength(w http.ResponseWriter) {
-	this.writeErrorResponse(w, "invalid content length", http.StatusBadRequest)
-}
-
-func (this *Gateway) writeKatewayHeader(w http.ResponseWriter) {
-	w.Header().Set("Server", "kateway")
 }
 
 func (this *Gateway) writeAuthFailure(w http.ResponseWriter, err error) {

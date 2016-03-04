@@ -228,14 +228,12 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	this.writeKatewayHeader(w)
 	var out = map[string]string{
 		"store": "kafka",
 		"zk":    meta.Default.ZkCluster(cluster).ZkConnectAddr(),
 		"topic": meta.KafkaTopic(hisAppid, topic, ver),
 	}
 	b, _ := json.Marshal(out)
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	w.Write(b)
 }
 
@@ -492,8 +490,6 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	log.Info("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s}",
 		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-	this.writeKatewayHeader(w)
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	b, _ := json.Marshal(out)
 	w.Write(b)
 }
@@ -552,6 +548,5 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 	}
 
-	this.writeKatewayHeader(w)
 	w.Write(ResponseOk)
 }

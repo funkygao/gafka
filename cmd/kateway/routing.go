@@ -43,6 +43,5 @@ func (this *Gateway) buildRouting() {
 
 func (this *Gateway) checkAliveHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	this.writeKatewayHeader(w)
 	w.Write(ResponseOk)
 }
