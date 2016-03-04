@@ -160,6 +160,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
+- [ ] to avoid consumer lose message, Sub client GET header include last received message offset
 - [ ] data needs to be enriched/sanitized before being consumed
 - [ ] check hack pkg
 - [ ] SLA of message retention
