@@ -25,10 +25,23 @@ A full ecosystem that is built around kafka powered by golang.
 
 ### Install
 
+    export PATH=$PATH:$GOPATH/bin
+
+    #========================================
+    # install go-bindata first
+    #========================================
+    go get github.com/jteeuwen/go-bindata
+    cd $GOPATH/src/github.com/jteeuwen/go-bindata/go-bindata
+    go install
+
+    #========================================
+    # instal gafka command 'gk'
+    #========================================
     go get github.com/funkygao/gafka
     cd $GOPATH/src/github.com/funkygao/gafka
     go get ./...
-    ./build -i
+    ./build -i -t gk
+    gk -h
 
 ### Usage
 
