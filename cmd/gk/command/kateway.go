@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/golib/pipestream"
 	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
@@ -33,6 +35,7 @@ type Kateway struct {
 	longFmt      bool
 	resetCounter string
 	listClients  bool
+	visualLog    string
 	checkup      bool
 }
 
@@ -47,6 +50,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.resetCounter, "reset", "", "")
 	cmdFlags.BoolVar(&this.listClients, "clients", false, "")
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "", "")
+	cmdFlags.StringVar(&this.visualLog, "visualog", "", "")
 	cmdFlags.BoolVar(&this.checkup, "checkup", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
@@ -335,6 +339,18 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 
 }
 
+func (this *Kateway) doVisualize() {
+	cmd := pipestream.New("/usr/local/bin/logstalgia", "-f", this.visualLog)
+	err := cmd.Open()
+	swallow(err)
+	defer cmd.Close()
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+	}
+}
+
 func (*Kateway) Synopsis() string {
 	return "List/Config online kateway instances"
 }
@@ -349,6 +365,10 @@ Options:
 
     -checkup
       Checkup for online kateway instances
+
+    -visualog filename
+      Visualize the kateway access log with Logstalgia
+      You must install Logstalgia beforehand
 
     -id kateway id
       Execute on a single kateway instance. By default, apply on all
