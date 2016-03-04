@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -169,7 +170,7 @@ func (this *Gateway) GetZkZone() *gzk.ZkZone {
 
 func (this *Gateway) Start() (err error) {
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
-		log.Info("received signal: %v", sig)
+		log.Info("received signal: %s", strings.ToUpper(sig.String()))
 		this.Stop()
 	}, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2) // yes we ignore HUP
 
