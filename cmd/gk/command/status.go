@@ -62,7 +62,7 @@ func (this *Status) Run(args []string) (exitCode int) {
 
 func (this *Status) printConsumersLag(zkcluster *zk.ZkCluster) {
 	lines := make([]string, 0)
-	header := "ConsumerGroup|Topic/Partition|Produced|Consumed|Lag|Committed|Host|Uptime"
+	header := "ConsumerGroup|Topic/Partition|Produced|Consumed|Lag|Committed|Uptime"
 	lines = append(lines, header)
 
 	// sort by group name
@@ -95,14 +95,13 @@ func (this *Status) printConsumersLag(zkcluster *zk.ZkCluster) {
 			}
 
 			lines = append(lines,
-				fmt.Sprintf("%s|%s/%s|%s|%s|%s|%s",
+				fmt.Sprintf("%s|%s/%s|%s|%s|%s|%s|%s",
 					group,
 					consumer.Topic, consumer.PartitionId,
 					gofmt.Comma(consumer.ProducerOffset),
 					gofmt.Comma(consumer.ConsumerOffset),
 					gofmt.Comma(consumer.Lag),
 					gofmt.PrettySince(consumer.Mtime.Time()),
-					consumer.ConsumerZnode.Host(),
 					gofmt.PrettySince(consumer.ConsumerZnode.Uptime())))
 		}
 	}
