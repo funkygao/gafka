@@ -166,7 +166,6 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - [ ] SLA of message retention
 - [ ] delayed pub
 - [ ] https, outer ip must https
-- [ ] https://github.com/corneldamian/httpway
 - [ ] Update to glibc 2.20 or higher
 - [ ] compress
   - gzip sub response

@@ -51,10 +51,10 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 
 	ver := params.ByName(UrlParamVersion)
 	queryArgs := ctx.Request.URI().QueryArgs()
-	key := queryArgs.Peek(UrlQueryKey)
-	asyncArg := queryArgs.Peek(UrlQueryAsync)
+	key := queryArgs.Peek("key")
+	asyncArg := queryArgs.Peek("async")
 	async := len(asyncArg) == 1 && asyncArg[0] == '1'
-	//delay := hack.String(queryArgs.Peek(UrlQueryDelay))
+	//delay := hack.String(queryArgs.Peek("delay"))
 
 	if options.Debug {
 		log.Debug("pub[%s] %s {topic:%s, ver:%s, key:%s, async:%+v} %s",
@@ -140,7 +140,7 @@ func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprout
 	}
 
 	b, _ := json.Marshal(out)
-	ctx.SetContentType(ContentTypeJson)
+	ctx.SetContentType("application/json; charset=utf8")
 	ctx.Write(b)
 }
 

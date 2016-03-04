@@ -4,7 +4,6 @@ const (
 	HttpHeaderAppid         = "Appid"
 	HttpHeaderPubkey        = "Pubkey"
 	HttpHeaderSubkey        = "Subkey"
-	HttpHeaderConnection    = "Connection"
 	HttpHeaderXForwardedFor = "X-Forwarded-For"
 	HttpHeaderPartition     = "X-Partition"
 	HttpHeaderOffset        = "X-Offset"
@@ -14,16 +13,6 @@ const (
 	UrlParamVersion = "ver"
 	UrlParamAppid   = "appid"
 	UrlParamGroup   = "group"
-
-	UrlQueryKey   = "key"
-	UrlQueryReset = "reset"
-	UrlQueryAsync = "async"
-	UrlQueryDelay = "delay"
-	UrlQueryGroup = "group"
-
-	ContentTypeHeader = "Content-Type"
-	ContentTypeJson   = "application/json; charset=utf8"
-	ContentTypeText   = "text/plain; charset=utf8"
 
 	CharBraceletLeft  = '{'
 	CharBraceletRight = '}'

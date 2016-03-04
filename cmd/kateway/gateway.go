@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	glog "log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -55,6 +57,7 @@ type Gateway struct {
 	subMetrics *subMetrics
 	svrMetrics *serverMetrics
 
+	accessLogger      *glog.Logger
 	guard             *guard
 	timer             *timewheel.TimeWheel
 	leakyBuckets      *ratelimiter.LeakyBuckets // TODO
@@ -82,6 +85,12 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	meta.Default = zkmeta.New(metaConf)
 	this.guard = newGuard(this)
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
+
+	if f, err := os.OpenFile("access_log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0660); err == nil {
+		this.accessLogger = glog.New(f, "", 0)
+	} else {
+		log.Error("open access_log: %v", err)
+	}
 
 	this.manServer = newManServer(options.ManHttpAddr, options.ManHttpsAddr,
 		options.MaxClients, this)
@@ -169,7 +178,7 @@ func (this *Gateway) GetZkZone() *gzk.ZkZone {
 
 func (this *Gateway) Start() (err error) {
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
-		log.Info("received signal: %v", sig)
+		log.Info("received signal: %s", strings.ToUpper(sig.String()))
 		this.Stop()
 	}, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2) // yes we ignore HUP
 

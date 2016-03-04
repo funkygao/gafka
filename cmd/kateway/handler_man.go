@@ -14,75 +14,24 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (this *Gateway) helpHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	this.writeKatewayHeader(w)
-	w.Header().Set(ContentTypeHeader, ContentTypeText)
-	w.Write([]byte(strings.TrimSpace(fmt.Sprintf(`
-pub server: %s
-sub server: %s
-man server: %s
-dbg server: %s
-
-pub:
-POST /topics/:topic/:ver?key=msgkey&async=<0|1>
-POST /ws/topics/:topic/:ver
- GET /raw/topics/:topic/:ver
- GET /alive
-
-sub:
- GET /status/:appid/:topic/:ver?group=xx
-DELETE /groups/:appid/:topic/:ver/:group
- GET /topics/:appid/:topic/:ver?group=xx&limit=1&reset=<newest|oldest>&autocommit=<1|0>
- GET /ws/topics/:appid/:topic/:ver?group=xx
- GET /raw/topics/:appid/:topic/:ver
- GET /alive
-
-man:
- GET /help
- GET /status
- GET /clusters
- GET /clients
- GET /alive 
- PUT /options/:option/:value
- PUT /log/:level  level=<info|debug|trace|warn|alarm|error>
-POST /topics/:cluster/:appid/:topic/:ver
- GET /partitions/:cluster/:appid/:topic/:ver
-
-dbg:
- GET /debug/pprof
- GET /debug/vars
-`,
-		options.PubHttpAddr, options.SubHttpAddr,
-		options.ManHttpAddr, options.DebugHttpAddr))))
-
-}
-
 func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	this.writeKatewayHeader(w)
 	output := make(map[string]interface{})
 	output["options"] = options
 	output["loglevel"] = logLevel.String()
 	output["pubserver.type"] = this.pubServer.name
 	b, _ := json.MarshalIndent(output, "", "    ")
 	w.Write(b)
-	w.Write([]byte{'\n'})
 }
 
 func (this *Gateway) clientsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	this.writeKatewayHeader(w)
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	b, _ := json.Marshal(this.clientStates.Export())
 	w.Write(b)
 }
 
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	this.writeKatewayHeader(w)
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
-	w.WriteHeader(http.StatusOK)
 	b, _ := json.Marshal(meta.Default.Clusters())
 	w.Write(b)
 }
@@ -108,16 +57,18 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	case "ratelimit":
 		options.Ratelimit = boolVal
 
+	case "accesslog":
+		options.EnableAccessLog = boolVal
+
 	default:
 		log.Warn("invalid option:%s=%s", option, value)
 
-		http.Error(w, "invalid option", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid option")
 		return
 	}
 
 	log.Info("set option:%s to %s, %#v", option, value, options)
 
-	this.writeKatewayHeader(w)
 	w.Write(ResponseOk)
 }
 
@@ -131,7 +82,6 @@ func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 		filter.Level = logLevel
 	}
 
-	this.writeKatewayHeader(w)
 	w.Write(ResponseOk)
 }
 
@@ -141,7 +91,6 @@ func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
 
 	_ = counterName // TODO
 
-	this.writeKatewayHeader(w)
 	w.Write(ResponseOk)
 }
 
@@ -155,8 +104,6 @@ func (this *Gateway) authAdmin(appid, pubkey string) (ok bool) {
 // /partitions/:cluster/:appid/:topic/:ver
 func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	this.writeKatewayHeader(w)
-
 	topic := params.ByName(UrlParamTopic)
 	cluster := params.ByName(UrlParamCluster)
 	hisAppid := params.ByName(UrlParamAppid)
@@ -176,7 +123,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("cluster[%s] %v", zkcluster.Name(), err)
 
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer kfk.Close()
@@ -186,24 +133,21 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
 			zkcluster.Name(), r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, err)
 
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	w.Write([]byte(fmt.Sprintf(`{"num": %d}`, len(partitions))))
 }
 
 // /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2
 func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	this.writeKatewayHeader(w)
-
 	topic := params.ByName(UrlParamTopic)
 	if !validateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)
 
-		http.Error(w, "illegal topic", http.StatusBadRequest)
+		this.writeBadRequest(w, "illegal topic")
 		return
 	}
 
@@ -218,7 +162,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
 	if !this.authAdmin(appid, pubkey) {
-		log.Warn("suspicous add topic from %s(s): {appid:%s, pubkey:%s, cluster:%s, topic:%s, ver:%s}",
+		log.Warn("suspicous add topic from %s(%s): {appid:%s, pubkey:%s, cluster:%s, topic:%s, ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
 		this.writeAuthFailure(w, manager.ErrPermDenied)
@@ -230,7 +174,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if !info.Public {
 		log.Warn("app[%s] adding topic:%s in non-public cluster: %+v", hisAppid, topic, params)
 
-		http.Error(w, "invalid cluster", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid cluster")
 		return
 	}
 
@@ -253,7 +197,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
 
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -269,6 +213,6 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if ok {
 		w.Write(ResponseOk)
 	} else {
-		http.Error(w, strings.Join(lines, "\n"), http.StatusInternalServerError)
+		this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)
 	}
 }

@@ -25,7 +25,7 @@ type SubStatus struct {
 	Consumed  int64  `json:"subd"`
 }
 
-// /topics/:appid/:topic/:ver?group=xx&limit=1&reset=newest
+// /topics/:appid/:topic/:ver?group=xx&limit=1&reset=newest&qos=1
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -43,18 +43,18 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	query := r.URL.Query()
-	group = query.Get(UrlQueryGroup)
-	reset = query.Get(UrlQueryReset)
+	group = query.Get("group")
+	reset = query.Get("reset")
 	limit, err := getHttpQueryInt(&query, "limit", 1)
 	if err != nil {
-		this.writeBadRequest(w, err)
+		this.writeBadRequest(w, err.Error())
 		return
 	}
 	if !validateGroupName(group) {
 		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		http.Error(w, "invalid group name", http.StatusBadRequest)
+		this.writeBadRequest(w, "illegal group")
 		return
 	}
 
@@ -62,7 +62,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
-	if r.Header.Get(HttpHeaderConnection) == "close" {
+	if r.Header.Get("Connection") == "close" {
 		// sub should use keep-alive
 		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} not keep-alive",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
@@ -88,7 +88,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		http.Error(w, "invalid appid", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -98,7 +98,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
-		this.writeBadRequest(w, err)
+		this.writeBadRequest(w, err.Error())
 		return
 	}
 
@@ -224,18 +224,16 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	if !found {
 		log.Error("cluster not found for subd app: %s", hisAppid)
 
-		http.Error(w, "invalid appid", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid appid")
 		return
 	}
 
-	this.writeKatewayHeader(w)
 	var out = map[string]string{
 		"store": "kafka",
 		"zk":    meta.Default.ZkCluster(cluster).ZkConnectAddr(),
 		"topic": meta.KafkaTopic(hisAppid, topic, ver),
 	}
 	b, _ := json.Marshal(out)
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	w.Write(b)
 }
 
@@ -265,8 +263,8 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	)
 
 	query := r.URL.Query()
-	group = query.Get(UrlQueryGroup)
-	resetOffset = query.Get(UrlQueryReset)
+	group = query.Get("group")
+	resetOffset = query.Get("reset")
 	limit, err := getHttpQueryInt(&query, "limit", 1)
 	if err != nil {
 		this.writeWsError(ws, err.Error())
@@ -413,7 +411,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	query := r.URL.Query()
-	group = query.Get(UrlQueryGroup)
+	group = query.Get("group")
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
@@ -432,7 +430,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		http.Error(w, "invalid appid", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -443,7 +441,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
 	consumersByGroup, err := zkcluster.ConsumerGroupsOfTopic(rawTopic)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	sortedGroups := make([]string, 0, len(consumersByGroup))
@@ -492,8 +490,6 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	log.Info("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s}",
 		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-	this.writeKatewayHeader(w)
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
 	b, _ := json.Marshal(out)
 	w.Write(b)
 }
@@ -528,7 +524,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		http.Error(w, "invalid group name", http.StatusBadRequest)
+		this.writeBadRequest(w, "illegal group")
 		return
 	}
 
@@ -537,7 +533,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		http.Error(w, "invalid appid", http.StatusBadRequest)
+		this.writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -552,6 +548,5 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 	}
 
-	this.writeKatewayHeader(w)
 	w.Write(ResponseOk)
 }
