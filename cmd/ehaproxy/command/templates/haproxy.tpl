@@ -33,8 +33,9 @@ defaults
     #option forwardfor   # X-Forwarded-For: remote client ip
     
     timeout client          10m  # 客户端侧最大非活动时间
-    timeout server          1m   # 服务器侧最大非活动时间
+    timeout server          10m  # 服务器侧最大非活动时间
     timeout connect         10s  # 连接服务器超时时间
+    #timeout tunnel          10m
     timeout http-keep-alive 6m   # ?
     timeout queue           1m   # 一个请求在队列里的超时时间
     timeout check           5s
