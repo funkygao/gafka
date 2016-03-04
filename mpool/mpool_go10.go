@@ -11,3 +11,11 @@ func BytesBufferGet() *bytes.Buffer {
 }
 
 func BytesBufferPut(b *bytes.Buffer) {}
+
+func AccessLogLineBufferGet() []byte {
+	return make([]byte, 0, accessLogLineMaxBytes)
+}
+
+func AccessLogLineBufferPut(b []byte) {
+	bytesPool.Put(b)
+}

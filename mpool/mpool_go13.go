@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	bsb sync.Pool
+	bsb           sync.Pool
+	accessLogPool sync.Pool
 )
 
 func init() {
@@ -16,6 +17,9 @@ func init() {
 		return &bytes.Buffer{}
 	}
 
+	accessLogPool.New = func() interface{} {
+		return make([]byte, 0, accessLogLineMaxBytes)
+	}
 }
 
 func BytesBufferGet() *bytes.Buffer {
@@ -24,4 +28,12 @@ func BytesBufferGet() *bytes.Buffer {
 
 func BytesBufferPut(b *bytes.Buffer) {
 	bsb.Put(b)
+}
+
+func AccessLogLineBufferGet() []byte {
+	return accessLogPool.Get().([]byte)
+}
+
+func AccessLogLineBufferPut(b []byte) {
+	accessLogPool.Put(b)
 }

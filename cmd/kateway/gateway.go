@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	glog "log"
 	"net/http"
 	"os"
 	"strings"
@@ -57,7 +56,7 @@ type Gateway struct {
 	subMetrics *subMetrics
 	svrMetrics *serverMetrics
 
-	accessLogger      *glog.Logger
+	accessLogger      *os.File
 	guard             *guard
 	timer             *timewheel.TimeWheel
 	leakyBuckets      *ratelimiter.LeakyBuckets // TODO
@@ -87,7 +86,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
 
 	if f, err := os.OpenFile("access_log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0660); err == nil {
-		this.accessLogger = glog.New(f, "", 0)
+		this.accessLogger = f
 	} else {
 		log.Error("open access_log: %v", err)
 	}
@@ -261,6 +260,12 @@ func (this *Gateway) Stop() {
 		log.Info("stopping kateway...")
 
 		close(this.shutdownCh)
+
+		if err := this.accessLogger.Close(); err != nil {
+			log.Error("access log close: %v", err)
+		} else {
+			log.Info("access log closed")
+		}
 	})
 
 }
