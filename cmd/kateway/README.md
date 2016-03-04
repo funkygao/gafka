@@ -164,6 +164,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - [ ] data needs to be enriched/sanitized before being consumed
 - [ ] check hack pkg
 - [ ] SLA of message retention
+- [ ] https://github.com/allinurl/goaccess
 - [ ] delayed pub
 - [ ] https, outer ip must https
 - [ ] Update to glibc 2.20 or higher

@@ -56,6 +56,11 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		return 2
 	}
 
+	if this.visualLog != "" {
+		this.doVisualize()
+		return
+	}
+
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	if this.configMode {
 		if this.logLevel != "" {
@@ -366,7 +371,7 @@ Options:
     -checkup
       Checkup for online kateway instances
 
-    -visualog filename
+    -visualog access log filename
       Visualize the kateway access log with Logstalgia
       You must install Logstalgia beforehand
 

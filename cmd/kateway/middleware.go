@@ -18,12 +18,23 @@ func (this *Gateway) MiddlewareKateway(h httprouter.Handle) httprouter.Handle {
 			return
 		}
 
-		t1 := time.Now()
-		h(w, r, params) // Delegate request to the given handle
-		if this.accessLogger != nil {
-			// r.URL.EscapedPath()
-			this.accessLogger.Printf("%s %s", r.RequestURI, time.Since(t1))
-		}
+		// TODO latency histogram here
 
+		// Delegate request to the given handle
+		h(w, r, params)
+
+		if this.accessLogger != nil {
+			// NCSA Common Log Format (CLF)
+			// host ident authuser date request status bytes
+
+			// FIXME status and bytes incorrect
+			// TODO replace printf with []byte with sync.Pool, github.com/gorilla/handlers
+			this.accessLogger.Printf(`%s - - [%s] "%s %s %s" 200 100`,
+				r.Header.Get(HttpHeaderAppid),
+				time.Now().Format("02/Jan/2006:15:04:05 -0700"),
+				r.Method,
+				r.RequestURI, // r.URL.EscapedPath()
+				r.Proto)
+		}
 	}
 }
