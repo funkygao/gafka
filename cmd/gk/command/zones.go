@@ -37,7 +37,13 @@ func (this *Zones) Run(args []string) (exitCode int) {
 
 	// print all by default
 	zones := make([][]string, 0)
+	defaultZone := ctx.ZkDefaultZone()
 	for _, zone := range ctx.SortedZones() {
+		if defaultZone == zone {
+			zones = append(zones, []string{zone + "*", ctx.NamedZoneZkAddrs(zone)})
+			continue
+		}
+
 		zones = append(zones, []string{zone, ctx.NamedZoneZkAddrs(zone)})
 	}
 
