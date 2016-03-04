@@ -110,7 +110,7 @@ It manages:
 - 100+ kafka brokers
 - 500+ kafka topics
 - 2000+ kafka partitions
-- 2B messages per day
+- 2Billion messages per day
 - peak load
-  - 0.6M message per second
+  - 0.6Million message per second
   - 5G+ bps network bandwidth
