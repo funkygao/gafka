@@ -226,7 +226,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
 	if !this.authAdmin(appid, pubkey) {
-		log.Warn("suspicous add topic from %s(s): {appid:%s, pubkey:%s, cluster:%s, topic:%s, ver:%s}",
+		log.Warn("suspicous add topic from %s(%s): {appid:%s, pubkey:%s, cluster:%s, topic:%s, ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
 		this.writeAuthFailure(w, manager.ErrPermDenied)
