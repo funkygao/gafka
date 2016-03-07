@@ -45,7 +45,11 @@ func (this *Gateway) MiddlewareKateway(h GatewayHandler) httprouter.Handle {
 }
 
 func (this *Gateway) buildCommonLogLine(buf []byte, r *http.Request, status, size int) []byte {
-	buf = append(buf, r.Header.Get(HttpHeaderAppid)...)
+	appid := r.Header.Get(HttpHeaderAppid)
+	if appid == "" {
+		appid = r.RemoteAddr
+	}
+	buf = append(buf, appid...)
 	buf = append(buf, " - - ["...)
 	buf = append(buf, time.Now().Format("02/Jan/2006:15:04:05 -0700")...)
 	buf = append(buf, `] "`...)
