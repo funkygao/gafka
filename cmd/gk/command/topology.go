@@ -191,9 +191,15 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 				}
 
 				latestOffset, err := kfk.GetOffset(topic, partitionID, sarama.OffsetNewest)
-				swallow(err)
+				if err != nil {
+					this.Ui.Error(fmt.Sprintf("%s %s %v", cluster, topic, err))
+					continue
+				}
 				oldestOffset, err := kfk.GetOffset(topic, partitionID, sarama.OffsetOldest)
-				swallow(err)
+				if err != nil {
+					this.Ui.Error(fmt.Sprintf("%s %s %v", cluster, topic, err))
+					continue
+				}
 
 				brokerInstances[cluster][host].topicMsgs[topic] += (latestOffset - oldestOffset)
 				brokerInstances[cluster][host].addTopicPartition(topic, partitionID)

@@ -348,7 +348,9 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 						continue topicLoop
 
 					default:
-						panic(err)
+						log.Warn("cluster[%s] topic[%s] partition:%s group[%s]: %v",
+							this.name, topic, partitionId, group, err)
+						continue topicLoop
 					}
 				}
 
