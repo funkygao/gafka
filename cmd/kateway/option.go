@@ -38,6 +38,7 @@ var (
 		DryRun                 bool
 		CpuAffinity            bool
 		EnableAccessLog        bool
+		EnableHttpPanicRecover bool
 		EnableClientStats      bool
 		GolangTrace            bool
 		Debug                  bool
@@ -103,6 +104,7 @@ func parseFlags() {
 	flag.BoolVar(&options.DryRun, "dryrun", false, "dry run mode")
 	flag.BoolVar(&options.CpuAffinity, "cpuaffinity", false, "enable cpu affinity")
 	flag.BoolVar(&options.Ratelimit, "raltelimit", false, "enable rate limit")
+	flag.BoolVar(&options.EnableHttpPanicRecover, "httppanic", false, "enable http handler panic recover")
 	flag.BoolVar(&options.DisableMetrics, "metricsoff", false, "disable metrics reporter")
 	flag.IntVar(&options.HttpHeaderMaxBytes, "maxheader", 4<<10, "http header max size in bytes")
 	flag.Int64Var(&options.MaxPubSize, "maxpub", 1<<20, "max Pub message size")
