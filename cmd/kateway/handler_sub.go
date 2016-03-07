@@ -107,7 +107,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	err = this.fetchMessages(w, fetcher, limit, myAppid, hisAppid, topic, ver)
+	err = this.pumpMessages(w, fetcher, limit, myAppid, hisAppid, topic, ver)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
@@ -119,7 +119,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	return
 }
 
-func (this *Gateway) fetchMessages(w http.ResponseWriter, fetcher store.Fetcher,
+func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 	limit int, myAppid, hisAppid, topic, ver string) (err error) {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
