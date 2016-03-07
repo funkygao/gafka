@@ -15,30 +15,39 @@ import (
 )
 
 func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+	params httprouter.Params) (status, size int) {
 	output := make(map[string]interface{})
 	output["options"] = options
 	output["loglevel"] = logLevel.String()
 	output["pubserver.type"] = this.pubServer.name
 	b, _ := json.MarshalIndent(output, "", "    ")
 	w.Write(b)
+
+	size = len(b)
+	return
 }
 
 func (this *Gateway) clientsHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+	params httprouter.Params) (status, size int) {
 	b, _ := json.Marshal(this.clientStates.Export())
 	w.Write(b)
+
+	size = len(b)
+	return
 }
 
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+	params httprouter.Params) (status, size int) {
 	b, _ := json.Marshal(meta.Default.Clusters())
 	w.Write(b)
+
+	size = len(b)
+	return
 }
 
 // /options/:option/:value
 func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+	params httprouter.Params) (status, size int) {
 	option := params.ByName("option")
 	value := params.ByName("value")
 	boolVal := value == "true"
@@ -70,11 +79,14 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	log.Info("set option:%s to %s, %#v", option, value, options)
 
 	w.Write(ResponseOk)
+
+	size = len(ResponseOk)
+	return
 }
 
 // /log/:level
 func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+	params httprouter.Params) (status, size int) {
 	logLevel = toLogLevel(params.ByName("level"))
 	for name, filter := range log.Global {
 		log.Info("log[%s] level: %s -> %s", name, filter.Level, logLevel)
@@ -83,15 +95,21 @@ func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	w.Write(ResponseOk)
+
+	size = len(ResponseOk)
+	return
 }
 
 func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+	params httprouter.Params) (status, size int) {
 	counterName := params.ByName("name")
 
 	_ = counterName // TODO
 
 	w.Write(ResponseOk)
+
+	size = len(ResponseOk)
+	return
 }
 
 func (this *Gateway) authAdmin(appid, pubkey string) (ok bool) {
@@ -103,7 +121,7 @@ func (this *Gateway) authAdmin(appid, pubkey string) (ok bool) {
 
 // /partitions/:cluster/:appid/:topic/:ver
 func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+	params httprouter.Params) (status, size int) {
 	topic := params.ByName(UrlParamTopic)
 	cluster := params.ByName(UrlParamCluster)
 	hisAppid := params.ByName(UrlParamAppid)
@@ -115,6 +133,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 			r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
 
 		this.writeAuthFailure(w, manager.ErrPermDenied)
+		status = http.StatusUnauthorized
 		return
 	}
 
@@ -124,6 +143,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("cluster[%s] %v", zkcluster.Name(), err)
 
 		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		status = http.StatusInternalServerError
 		return
 	}
 	defer kfk.Close()
@@ -134,25 +154,31 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 			zkcluster.Name(), r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, err)
 
 		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		status = http.StatusInternalServerError
 		return
 	}
 
 	w.Write([]byte(fmt.Sprintf(`{"num": %d}`, len(partitions))))
+
+	size = 10
+	return
 }
 
 // /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2
 func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+	params httprouter.Params) (status, size int) {
 	topic := params.ByName(UrlParamTopic)
 	if !validateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)
 
 		this.writeBadRequest(w, "illegal topic")
+		status = http.StatusBadRequest
 		return
 	}
 
 	if !this.throttleAddTopic.Pour(1) {
 		this.writeQuotaExceeded(w)
+		status = http.StatusNotAcceptable
 		return
 	}
 
@@ -166,6 +192,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
 		this.writeAuthFailure(w, manager.ErrPermDenied)
+		status = http.StatusUnauthorized
 		return
 	}
 
@@ -175,6 +202,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("app[%s] adding topic:%s in non-public cluster: %+v", hisAppid, topic, params)
 
 		this.writeBadRequest(w, "invalid cluster")
+		status = http.StatusBadRequest
 		return
 	}
 
@@ -198,6 +226,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
 
 		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		status = http.StatusInternalServerError
 		return
 	}
 
@@ -212,7 +241,11 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 
 	if ok {
 		w.Write(ResponseOk)
+		size = len(ResponseOk)
 	} else {
 		this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)
+		status = http.StatusInternalServerError
 	}
+
+	return
 }

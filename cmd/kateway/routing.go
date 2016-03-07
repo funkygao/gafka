@@ -41,6 +41,9 @@ func (this *Gateway) buildRouting() {
 }
 
 func (this *Gateway) checkAliveHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+	params httprouter.Params) (status, size int) {
 	w.Write(ResponseOk)
+
+	size = len(ResponseOk)
+	return
 }
