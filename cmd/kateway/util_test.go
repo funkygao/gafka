@@ -1,6 +1,10 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/funkygao/assert"
@@ -87,5 +91,27 @@ func BenchmarkValidateGroupName(b *testing.B) {
 func BenchmarkValidateTopicName(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		validateTopicName("asdfasdf-1")
+	}
+}
+
+// 73.4 ns/op
+func BenchmarkGetHttpRemoteIp(b *testing.B) {
+	httpReqRaw := strings.TrimSpace(fmt.Sprintf(`
+POST /topics/foobar/v1 HTTP/1.1
+Host: localhost:9191
+User-Agent: Go-http-client/1.1
+Content-Length: %d
+Content-Type: application/x-www-form-urlencoded
+Appid: myappid
+Pubkey: mypubkey
+X-Forwarded-For: 1.1.1.1
+Accept-Encoding: gzip`, 100)) + "\r\n\r\n"
+	r, err := http.ReadRequest(bufio.NewReader(strings.NewReader(httpReqRaw)))
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		getHttpRemoteIp(r)
 	}
 }

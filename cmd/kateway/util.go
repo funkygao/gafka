@@ -36,13 +36,13 @@ func getHttpQueryInt(query *url.Values, key string, defaultVal int) (int, error)
 }
 
 func getHttpRemoteIp(r *http.Request) string {
-	ip := r.Header.Get(HttpHeaderXForwardedFor) // client_ip,proxy_ip,proxy_ip,...
-	if ip == "" {
-		return r.RemoteAddr // ip:port
+	forwardFor := r.Header.Get(HttpHeaderXForwardedFor) // client_ip,proxy_ip,proxy_ip,...
+	if forwardFor == "" {
+		p := strings.SplitN(r.RemoteAddr, ":", 1)
+		return p[0]
 	}
 
-	p := strings.SplitN(ip, ",", 1)
-	return p[0]
+	return forwardFor // FIXME forwardFor might be comma seperated ip list, but here for performance ignore it
 }
 
 func validateTopicName(topic string) bool {
