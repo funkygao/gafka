@@ -3,7 +3,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -90,18 +89,7 @@ func runBenchmarkPub(b *testing.B, store string, msgSize int64) {
 
 	b.ReportAllocs()
 
-	httpReqRaw := strings.TrimSpace(fmt.Sprintf(`
-POST /topics/foobar/v1 HTTP/1.1
-Host: localhost:9191
-User-Agent: Go-http-client/1.1
-Content-Length: %d
-Content-Type: application/x-www-form-urlencoded
-Appid: myappid
-Pubkey: mypubkey
-Accept-Encoding: gzip`, msgSize)) + "\r\n\r\n"
-	b.SetBytes(msgSize + int64(len(httpReqRaw)))
-
-	req, err := http.ReadRequest(bufio.NewReader(strings.NewReader(httpReqRaw)))
+	req, err := buildHttpRequest()
 	if err != nil {
 		b.Fatal(err)
 	}
