@@ -38,6 +38,7 @@ func (this *Gateway) MiddlewareKateway(h GatewayHandler) httprouter.Handle {
 			// NCSA Common Log Format (CLF)
 			// host ident authuser date request status bytes
 
+			// TODO whitelist
 			buf := mpool.AccessLogLineBufferGet()[0:]
 			this.accessLogger.Write(this.buildCommonLogLine(buf, r, status, size))
 			mpool.AccessLogLineBufferPut(buf)
@@ -48,7 +49,7 @@ func (this *Gateway) MiddlewareKateway(h GatewayHandler) httprouter.Handle {
 func (this *Gateway) buildCommonLogLine(buf []byte, r *http.Request, status, size int) []byte {
 	appid := r.Header.Get(HttpHeaderAppid)
 	if appid == "" {
-		appid = r.RemoteAddr
+		appid = getHttpRemoteIp(r)
 	}
 	buf = append(buf, appid...)
 	buf = append(buf, " - - ["...)
