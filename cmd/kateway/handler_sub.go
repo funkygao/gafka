@@ -107,7 +107,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	err = this.pumpMessages(w, fetcher, limit, myAppid, hisAppid, topic, ver)
+	status, size, err = this.pumpMessages(w, fetcher, limit, myAppid, hisAppid, topic, ver)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
@@ -120,7 +120,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 }
 
 func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
-	limit int, myAppid, hisAppid, topic, ver string) (err error) {
+	limit int, myAppid, hisAppid, topic, ver string) (status, size int, err error) {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
 	var (
@@ -131,25 +131,31 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 	for {
 		select {
 		case <-clientGoneCh:
-			return ErrClientGone
+			status = http.StatusGone
+			err = ErrClientGone
+			return
 
 		case <-this.shutdownCh:
 			if !chunkedEver {
 				w.WriteHeader(http.StatusNoContent)
 				w.Write([]byte{})
 			}
-			return nil
+			status = http.StatusNoContent
+			return
 
 		case msg := <-fetcher.Messages():
 			// TODO when remote close silently, the write still ok
 			// which will lead to msg losing for sub
 			w.Header().Set(HttpHeaderPartition, strconv.FormatInt(int64(msg.Partition), 10))
 			w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
-			if _, err := w.Write(msg.Value); err != nil {
+			if _, err = w.Write(msg.Value); err != nil {
 				// TODO if cf.ChannelBufferSize > 0, client may lose message
 				// got message in chan, client not recv it but offset commited.
-				return err
+				status = http.StatusGone
+				return
 			}
+
+			size += len(msg.Value)
 
 			// client really got this msg, safe to commit
 			// TODO test case: client got chunk 2, then killed. should server commit offset?
@@ -163,7 +169,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 
 			n++
 			if n >= limit {
-				return nil
+				return
 			}
 
 			// http chunked: len in hex
@@ -184,7 +190,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			if chunkedEver {
 				// response already sent in chunk
 				log.Debug("await message timeout, chunk finished")
-				return nil
+				return
 			}
 
 			// never chunked, so send empty data
@@ -192,10 +198,12 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			w.WriteHeader(http.StatusNoContent)
 			// TODO write might fail, remote client might have died
 			w.Write([]byte{}) // without this, client cant get response
-			return nil
+			status = http.StatusNoContent
+			return
 
 		case err = <-fetcher.Errors():
 			// e,g. consume a non-existent topic
+			status = http.StatusInternalServerError
 			return
 		}
 	}
