@@ -25,7 +25,7 @@ type SubStatus struct {
 	Consumed  int64  `json:"subd"`
 }
 
-// /topics/:appid/:topic/:ver?group=xx&limit=1&reset=newest&qos=1
+// /topics/:appid/:topic/:ver?group=xx&&reset=newest&qos=1
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) (status, size int) {
 	var (
@@ -45,12 +45,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	query := r.URL.Query()
 	group = query.Get("group")
 	reset = query.Get("reset")
-	limit, err := getHttpQueryInt(&query, "limit", 1)
-	if err != nil {
-		this.writeBadRequest(w, err.Error())
-		status = http.StatusBadRequest
-		return
-	}
 	if !validateGroupName(group) {
 		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
@@ -107,7 +101,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	status, size, err = this.pumpMessages(w, fetcher, limit, myAppid, hisAppid, topic, ver)
+	status, size, err = this.pumpMessages(w, fetcher, myAppid, hisAppid, topic, ver)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
@@ -120,93 +114,54 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 }
 
 func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
-	limit int, myAppid, hisAppid, topic, ver string) (status, size int, err error) {
+	myAppid, hisAppid, topic, ver string) (status, size int, err error) {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
-	var (
-		chunkedBeforeTimeout = false
-		chunkedEver          = false
-		n                    = 0
-	)
-	for {
-		select {
-		case <-clientGoneCh:
+	select {
+	case <-clientGoneCh:
+		status = http.StatusGone
+		err = ErrClientGone
+
+	case <-this.shutdownCh:
+		w.WriteHeader(http.StatusNoContent)
+		w.Write([]byte{})
+		status = http.StatusNoContent
+
+	case <-this.timer.After(options.SubTimeout):
+		w.WriteHeader(http.StatusNoContent)
+		w.Write([]byte{}) // without this, client cant get response
+		status = http.StatusNoContent
+
+	case msg := <-fetcher.Messages():
+		// TODO when remote close silently, the write still ok
+		// which will lead to msg losing for sub
+		w.Header().Set(HttpHeaderPartition, strconv.FormatInt(int64(msg.Partition), 10))
+		w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
+		if _, err = w.Write(msg.Value); err != nil {
+			// TODO if cf.ChannelBufferSize > 0, client may lose message
+			// got message in chan, client not recv it but offset commited.
 			status = http.StatusGone
-			err = ErrClientGone
-			return
-
-		case <-this.shutdownCh:
-			if !chunkedEver {
-				w.WriteHeader(http.StatusNoContent)
-				w.Write([]byte{})
-			}
-			status = http.StatusNoContent
-			return
-
-		case msg := <-fetcher.Messages():
-			// TODO when remote close silently, the write still ok
-			// which will lead to msg losing for sub
-			w.Header().Set(HttpHeaderPartition, strconv.FormatInt(int64(msg.Partition), 10))
-			w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
-			if _, err = w.Write(msg.Value); err != nil {
-				// TODO if cf.ChannelBufferSize > 0, client may lose message
-				// got message in chan, client not recv it but offset commited.
-				status = http.StatusGone
-				return
-			}
-
-			size += len(msg.Value)
-
-			// client really got this msg, safe to commit
-			// TODO test case: client got chunk 2, then killed. should server commit offset?
-			log.Debug("commit offset: {T:%s, P:%d, O:%d}", msg.Topic, msg.Partition, msg.Offset)
-			if err = fetcher.CommitUpto(msg); err != nil {
-				log.Error("commit offset {T:%s, P:%d, O:%d}: %v", msg.Topic, msg.Partition, msg.Offset, err)
-			}
-
-			this.subMetrics.ConsumeOk(myAppid, topic, ver)
-			this.subMetrics.ConsumedOk(hisAppid, topic, ver)
-
-			n++
-			if n >= limit {
-				return
-			}
-
-			// http chunked: len in hex
-			// curl CURLOPT_HTTP_TRANSFER_DECODING will auto unchunk
-			w.(http.Flusher).Flush()
-
-			chunkedBeforeTimeout = true
-			chunkedEver = true
-
-		case <-this.timer.After(options.SubTimeout):
-			if chunkedBeforeTimeout {
-				log.Debug("await message timeout, chunked to next round")
-
-				chunkedBeforeTimeout = false
-				continue
-			}
-
-			if chunkedEver {
-				// response already sent in chunk
-				log.Debug("await message timeout, chunk finished")
-				return
-			}
-
-			// never chunked, so send empty data
-			log.Debug("await message timeout, writing empty data")
-			w.WriteHeader(http.StatusNoContent)
-			// TODO write might fail, remote client might have died
-			w.Write([]byte{}) // without this, client cant get response
-			status = http.StatusNoContent
-			return
-
-		case err = <-fetcher.Errors():
-			// e,g. consume a non-existent topic
-			status = http.StatusInternalServerError
 			return
 		}
+
+		size = len(msg.Value)
+
+		// client really got this msg, safe to commit
+		// TODO test case: client got chunk 2, then killed. should server commit offset?
+		log.Debug("commit offset: {T:%s, P:%d, O:%d}", msg.Topic, msg.Partition, msg.Offset)
+		if err = fetcher.CommitUpto(msg); err != nil {
+			log.Error("commit offset {T:%s, P:%d, O:%d}: %v", msg.Topic, msg.Partition, msg.Offset, err)
+		}
+
+		this.subMetrics.ConsumeOk(myAppid, topic, ver)
+		this.subMetrics.ConsumedOk(hisAppid, topic, ver)
+
+	case err = <-fetcher.Errors():
+		// e,g. consume a non-existent topic
+		status = http.StatusInternalServerError
 	}
+
+	return
 
 }
 
