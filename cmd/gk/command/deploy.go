@@ -261,7 +261,8 @@ func (this *Deploy) installKafka() {
 			0755, nil, false)
 	}
 
-	this.Ui.Output("kafka runtime installed")
+	this.Ui.Info("kafka runtime installed")
+	this.Ui.Warn("yum install -y jdk-1.7.0_65-fcs.x86_64")
 }
 
 func (this *Deploy) writeFileFromTemplate(tplSrc, dst string, perm os.FileMode,
