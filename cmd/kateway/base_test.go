@@ -16,7 +16,7 @@ Content-Length: %d
 Content-Type: application/x-www-form-urlencoded
 Appid: myappid
 Pubkey: mypubkey
-X-Forwarded-For: 1.1.1.1
+X-Forwarded-For: 1.1.1.12
 Accept-Encoding: gzip`, 100)) + "\r\n\r\n"
 	r, err := http.ReadRequest(bufio.NewReader(strings.NewReader(httpReqRaw)))
 	if err != nil {

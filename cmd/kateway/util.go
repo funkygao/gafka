@@ -38,7 +38,7 @@ func getHttpQueryInt(query *url.Values, key string, defaultVal int) (int, error)
 func getHttpRemoteIp(r *http.Request) string {
 	forwardFor := r.Header.Get(HttpHeaderXForwardedFor) // client_ip,proxy_ip,proxy_ip,...
 	if forwardFor == "" {
-		p := strings.SplitN(r.RemoteAddr, ":", 1)
+		p := strings.SplitN(r.RemoteAddr, ":", 2)
 		return p[0]
 	}
 

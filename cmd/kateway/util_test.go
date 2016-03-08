@@ -69,6 +69,19 @@ func TestExtractFromMetricsName(t *testing.T) {
 	assert.Equal(t, "", ver)
 }
 
+func TestGetHttpRemoteIp(t *testing.T) {
+	req, err := buildHttpRequest()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.RemoteAddr = "10.209.18.15:42395"
+	assert.Equal(t, "1.1.1.12", getHttpRemoteIp(req))
+
+	req.Header.Del(HttpHeaderXForwardedFor)
+	assert.Equal(t, "10.209.18.15", getHttpRemoteIp(req))
+}
+
 // 186 ns/op
 func BenchmarkExtractFromMetricsName(b *testing.B) {
 	for i := 0; i < b.N; i++ {

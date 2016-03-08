@@ -51,6 +51,7 @@ func (this *Gateway) buildCommonLogLine(buf []byte, r *http.Request, status, siz
 	if appid == "" {
 		appid = getHttpRemoteIp(r)
 	}
+
 	buf = append(buf, appid...)
 	buf = append(buf, " - - ["...)
 	buf = append(buf, time.Now().Format("02/Jan/2006:15:04:05 -0700")...)
