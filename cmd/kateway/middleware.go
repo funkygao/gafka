@@ -4,6 +4,7 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/funkygao/gafka/mpool"
@@ -58,7 +59,9 @@ func (this *Gateway) buildCommonLogLine(buf []byte, r *http.Request, status, siz
 	buf = append(buf, r.RequestURI...)
 	buf = append(buf, ' ')
 	buf = append(buf, r.Proto...)
-	buf = append(buf, `" 200 100`...)
+	buf = append(buf, `" `...)
+	buf = append(buf, strconv.Itoa(status)...)
+	buf = append(buf, (" " + strconv.Itoa(size))...)
 	buf = append(buf, "\n"...)
 	return buf
 }
