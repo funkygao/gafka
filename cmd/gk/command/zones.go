@@ -1,6 +1,7 @@
 package command
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -13,26 +14,16 @@ import (
 type Zones struct {
 	Ui  cli.Ui
 	Cmd string
+
+	ipInNumber bool
 }
 
 func (this *Zones) Run(args []string) (exitCode int) {
-	if len(args) > 0 {
-		// header
-		this.Ui.Output(fmt.Sprintf("%8s %-70s", "zone", "zookeeper ensemble"))
-		this.Ui.Output(fmt.Sprintf("%s %s",
-			strings.Repeat("-", 8),
-			strings.Repeat("-", 70)))
-
-		// user specified the zones to print
-		for _, zone := range args {
-			if zk, present := ctx.Zones()[zone]; present {
-				this.Ui.Output(fmt.Sprintf("%8s %s", zone, zk))
-			} else {
-				this.Ui.Output(fmt.Sprintf("%8s not defined", zone))
-			}
-		}
-
-		return
+	cmdFlags := flag.NewFlagSet("zones", flag.ContinueOnError)
+	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
+	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
+	if err := cmdFlags.Parse(args); err != nil {
+		return 2
 	}
 
 	// print all by default
@@ -40,11 +31,21 @@ func (this *Zones) Run(args []string) (exitCode int) {
 	defaultZone := ctx.ZkDefaultZone()
 	for _, zone := range ctx.SortedZones() {
 		if defaultZone == zone {
-			zones = append(zones, []string{zone + "*", ctx.NamedZoneZkAddrs(zone)})
+			if this.ipInNumber {
+				zones = append(zones, []string{zone + "*", ctx.ZoneZkAddrs(zone)})
+			} else {
+				zones = append(zones, []string{zone + "*", ctx.NamedZoneZkAddrs(zone)})
+			}
+
 			continue
 		}
 
-		zones = append(zones, []string{zone, ctx.NamedZoneZkAddrs(zone)})
+		if this.ipInNumber {
+			zones = append(zones, []string{zone, ctx.ZoneZkAddrs(zone)})
+		} else {
+			zones = append(zones, []string{zone, ctx.NamedZoneZkAddrs(zone)})
+		}
+
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
@@ -65,9 +66,14 @@ func (*Zones) Synopsis() string {
 
 func (this *Zones) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s zones [zone ...]
+Usage: %s zones [options]
 
     Print zones defined in $HOME/.gafka.cf
+
+Options:
+
+    -n
+      Show network addresses as numbers.
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }
