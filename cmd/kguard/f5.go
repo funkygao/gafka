@@ -63,7 +63,7 @@ func (this *MonitorF5) callWithF5WithGateway() {
 }
 
 func (this *MonitorF5) callWithoutF5WithoutGateway() {
-	url := "http://sub.sit.ffan.com:9191/alive"
+	url := "http://pub.sit.ffan.com:9191/alive"
 	this.callHttp(url, this.latencyWithoutF5WithoutGateway)
 }
 
