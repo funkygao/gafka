@@ -385,7 +385,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 		err      error
 	)
 
-	if !this.throttleSubStatus.Pour(1) {
+	if !this.throttleSubStatus.Pour(getHttpRemoteIp(r), 1) {
 		this.writeQuotaExceeded(w)
 		status = http.StatusNotAcceptable
 		return

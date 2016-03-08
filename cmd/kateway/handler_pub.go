@@ -27,7 +27,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		this.clientStates.RegisterPubClient(r)
 	}
 
-	if options.Ratelimit && !this.leakyBuckets.Pour(r.RemoteAddr, 1) {
+	if options.Ratelimit && !this.throttlePub.Pour(getHttpRemoteIp(r), 1) {
 		this.writeQuotaExceeded(w)
 		status = http.StatusNotAcceptable
 		return

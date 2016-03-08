@@ -59,9 +59,9 @@ type Gateway struct {
 	accessLogger      *os.File
 	guard             *guard
 	timer             *timewheel.TimeWheel
-	leakyBuckets      *ratelimiter.LeakyBuckets // TODO
-	throttleAddTopic  *ratelimiter.LeakyBucket
-	throttleSubStatus *ratelimiter.LeakyBucket
+	throttlePub       *ratelimiter.LeakyBuckets
+	throttleAddTopic  *ratelimiter.LeakyBuckets
+	throttleSubStatus *ratelimiter.LeakyBuckets
 }
 
 func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
@@ -69,9 +69,9 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		id:                id,
 		zone:              options.Zone,
 		shutdownCh:        make(chan struct{}),
-		leakyBuckets:      ratelimiter.NewLeakyBuckets(1000*60, time.Minute),
-		throttleAddTopic:  ratelimiter.NewLeakyBucket(60, time.Minute), // TODO multi-tenant
-		throttleSubStatus: ratelimiter.NewLeakyBucket(60, time.Minute),
+		throttlePub:       ratelimiter.NewLeakyBuckets(10000*60, time.Minute), // TODO
+		throttleAddTopic:  ratelimiter.NewLeakyBuckets(60, time.Minute),
+		throttleSubStatus: ratelimiter.NewLeakyBuckets(60, time.Minute),
 		certFile:          options.CertFile,
 		keyFile:           options.KeyFile,
 		clientStates:      NewClientStates(),

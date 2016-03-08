@@ -176,7 +176,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	if !this.throttleAddTopic.Pour(1) {
+	if !this.throttleAddTopic.Pour(getHttpRemoteIp(r), 1) {
 		this.writeQuotaExceeded(w)
 		status = http.StatusNotAcceptable
 		return
