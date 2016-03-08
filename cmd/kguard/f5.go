@@ -12,7 +12,7 @@ import (
 
 const (
 	MsInNano = 1000 * 1000
-	HttpLoop = 1000
+	HttpLoop = 200
 )
 
 // MonitorConsumers monitors num of online consumer groups over the time.
@@ -85,8 +85,7 @@ func (this *MonitorF5) callWithoutF5WithGateway() {
 			continue
 		}
 
-		req.Header.Set("Host", host)
-
+		req.Host = host
 		resp, err := this.httpConn.Do(req)
 		if err != nil {
 			log.Error("%s %v", url, err)
