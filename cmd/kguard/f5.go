@@ -68,7 +68,7 @@ func (this *MonitorF5) callWithoutF5WithoutGateway() {
 }
 
 func (this *MonitorF5) callWithoutF5WithGateway() {
-	url := "10.209.36.67/pubsub/v1/pub/alive"
+	url := "http://10.209.36.67/pubsub/v1/pub/alive"
 	host := "api.ffan.com"
 
 	buf := mpool.BytesBufferGet()
