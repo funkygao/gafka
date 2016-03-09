@@ -22,6 +22,8 @@ type Monitor struct {
 }
 
 func (this *Monitor) Init() {
+	var logFile string
+	flag.StringVar(&logFile, "log", "stdout", "log filename")
 	flag.StringVar(&this.zone, "z", "", "zone, required")
 	flag.StringVar(&this.influxdbAddr, "influxAddr", "", "influxdb addr, required")
 	flag.StringVar(&this.influxdbDbName, "db", "", "influxdb db name, required")
@@ -32,6 +34,16 @@ func (this *Monitor) Init() {
 	}
 
 	this.executors = make([]Executor, 0)
+
+	if logFile == "stdout" {
+		log.AddFilter("stdout", log.INFO, log.NewConsoleLogWriter())
+	} else {
+		log.DeleteFilter("stdout")
+
+		filer := log.NewFileLogWriter(logFile, false)
+		filer.SetFormat("[%d %T] [%L] (%S) %M")
+		log.AddFilter("file", log.INFO, filer)
+	}
 }
 
 func (this *Monitor) addExecutor(e Executor) {
