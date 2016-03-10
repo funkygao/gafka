@@ -28,6 +28,10 @@ type MonitorF5 struct {
 	httpConn *http.Client
 }
 
+func (this *MonitorF5) Init() {
+
+}
+
 func (this *MonitorF5) Run() {
 	defer this.wg.Done()
 

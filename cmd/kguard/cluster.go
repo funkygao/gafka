@@ -16,6 +16,8 @@ type MonitorClusters struct {
 	wg     *sync.WaitGroup
 }
 
+func (this *MonitorClusters) Init() {}
+
 func (this *MonitorClusters) Run() {
 	defer this.wg.Done()
 

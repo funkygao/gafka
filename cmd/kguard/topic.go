@@ -18,6 +18,8 @@ type MonitorTopics struct {
 	wg     *sync.WaitGroup
 }
 
+func (this *MonitorTopics) Init() {}
+
 func (this *MonitorTopics) Run() {
 	defer this.wg.Done()
 

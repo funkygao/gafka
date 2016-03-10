@@ -16,6 +16,8 @@ type MonitorConsumers struct {
 	wg     *sync.WaitGroup
 }
 
+func (this *MonitorConsumers) Init() {}
+
 func (this *MonitorConsumers) Run() {
 	defer this.wg.Done()
 
