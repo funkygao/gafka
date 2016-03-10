@@ -56,7 +56,7 @@ type Gateway struct {
 	subMetrics *subMetrics
 	svrMetrics *serverMetrics
 
-	accessLogger      *os.File
+	accessLogger      *AccessLogger
 	guard             *guard
 	timer             *timewheel.TimeWheel
 	throttlePub       *ratelimiter.LeakyBuckets
@@ -85,9 +85,8 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this.guard = newGuard(this)
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
 
-	if f, err := os.OpenFile("access_log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0660); err == nil {
-		this.accessLogger = f
-	} else {
+	var err error
+	if this.accessLogger, err = NewAccessLogger("access_log", 100); err != nil {
 		log.Error("open access_log: %v", err)
 	}
 
@@ -208,6 +207,8 @@ func (this *Gateway) Start() (err error) {
 	this.guard.Start()
 	log.Trace("guard started")
 
+	go this.accessLogger.Start()
+
 	this.buildRouting()
 	this.manServer.Start()
 
@@ -261,13 +262,8 @@ func (this *Gateway) Stop() {
 
 		close(this.shutdownCh)
 
-		if err := this.accessLogger.Close(); err != nil {
-			log.Error("access log close: %v", err)
-		} else {
-			log.Info("access log closed")
-		}
+		this.accessLogger.Stop()
 	})
-
 }
 
 func (this *Gateway) ServeForever() {

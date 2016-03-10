@@ -35,7 +35,7 @@ func (this *Gateway) MiddlewareKateway(h httprouter.Handle) httprouter.Handle {
 
 			// TODO whitelist
 			buf := mpool.AccessLogLineBufferGet()[0:]
-			this.accessLogger.Write(this.buildCommonLogLine(buf, r, ww.Status(), ww.BytesWritten()))
+			this.accessLogger.Log(this.buildCommonLogLine(buf, r, ww.Status(), ww.BytesWritten()))
 			mpool.AccessLogLineBufferPut(buf)
 		}
 	}
