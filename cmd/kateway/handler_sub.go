@@ -27,7 +27,7 @@ type SubStatus struct {
 
 // /topics/:appid/:topic/:ver?group=xx&&reset=newest&qos=1
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) (status, size int) {
+	params httprouter.Params) {
 	var (
 		topic    string
 		ver      string
@@ -50,7 +50,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 		this.writeBadRequest(w, "illegal group")
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -69,7 +68,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
 		this.writeAuthFailure(w, err)
-		status = http.StatusUnauthorized
 		return
 	}
 
@@ -86,7 +84,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 		this.writeBadRequest(w, "invalid appid")
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -97,11 +94,10 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
 		this.writeBadRequest(w, err.Error())
-		status = http.StatusBadRequest
 		return
 	}
 
-	status, size, err = this.pumpMessages(w, fetcher, myAppid, hisAppid, topic, ver)
+	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, topic, ver)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
@@ -114,23 +110,21 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 }
 
 func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
-	myAppid, hisAppid, topic, ver string) (status, size int, err error) {
+	myAppid, hisAppid, topic, ver string) (err error) {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
 	select {
 	case <-clientGoneCh:
-		status = http.StatusGone
+		// FIXME access log will not be able to record this behavior
 		err = ErrClientGone
 
 	case <-this.shutdownCh:
 		w.WriteHeader(http.StatusNoContent)
 		w.Write([]byte{})
-		status = http.StatusNoContent
 
 	case <-this.timer.After(options.SubTimeout):
 		w.WriteHeader(http.StatusNoContent)
 		w.Write([]byte{}) // without this, client cant get response
-		status = http.StatusNoContent
 
 	case msg := <-fetcher.Messages():
 		// TODO when remote close silently, the write still ok
@@ -140,11 +134,8 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 		if _, err = w.Write(msg.Value); err != nil {
 			// TODO if cf.ChannelBufferSize > 0, client may lose message
 			// got message in chan, client not recv it but offset commited.
-			status = http.StatusGone
 			return
 		}
-
-		size = len(msg.Value)
 
 		// client really got this msg, safe to commit
 		// TODO test case: client got chunk 2, then killed. should server commit offset?
@@ -158,7 +149,6 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 
 	case err = <-fetcher.Errors():
 		// e,g. consume a non-existent topic
-		status = http.StatusInternalServerError
 	}
 
 	return
@@ -168,7 +158,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 // /raw/topics/:appid/:topic/:ver
 // tells client how to sub in raw mode: how to connect kafka
 func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) (status, size int) {
+	params httprouter.Params) {
 	var (
 		topic    string
 		ver      string
@@ -186,7 +176,6 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, topic, ver, hisAppid, err)
 
 		this.writeAuthFailure(w, err)
-		status = http.StatusUnauthorized
 		return
 	}
 
@@ -195,7 +184,6 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("cluster not found for subd app: %s", hisAppid)
 
 		this.writeBadRequest(w, "invalid appid")
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -206,14 +194,11 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	}
 	b, _ := json.Marshal(out)
 	w.Write(b)
-
-	size = len(b)
-	return
 }
 
 // /ws/topics/:appid/:topic/:ver?group=xx
 func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) (status, size int) {
+	params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Error("%s: %v", r.RemoteAddr, err)
@@ -242,13 +227,11 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	limit, err := getHttpQueryInt(&query, "limit", 1)
 	if err != nil {
 		this.writeWsError(ws, err.Error())
-		status = http.StatusBadRequest
 		return
 	}
 	if !validateGroupName(group) {
 		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} invalid group",
 			r.RemoteAddr, topic, ver, group, limit)
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -261,7 +244,6 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, hisAppid, topic, ver, group, limit, err)
 
 		this.writeWsError(ws, "auth fail")
-		status = http.StatusUnauthorized
 		return
 	}
 
@@ -273,7 +255,6 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("cluster not found for subd app: %s", hisAppid)
 
 		this.writeWsError(ws, "invalid subd appid")
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -283,7 +264,6 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 
 		this.writeWsError(ws, err.Error())
-		status = http.StatusInternalServerError
 		return
 	}
 
@@ -375,7 +355,7 @@ func (this *Gateway) wsWritePump(clientGone chan struct{}, ws *websocket.Conn, f
 // /status/:appid/:topic/:ver?group=xx
 // FIXME currently there might be in flight offsets because of batch offset commit
 func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) (status, size int) {
+	params httprouter.Params) {
 	var (
 		topic    string
 		ver      string
@@ -387,7 +367,6 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 
 	if !this.throttleSubStatus.Pour(getHttpRemoteIp(r), 1) {
 		this.writeQuotaExceeded(w)
-		status = http.StatusNotAcceptable
 		return
 	}
 
@@ -403,7 +382,6 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
 		this.writeAuthFailure(w, err)
-		status = http.StatusUnauthorized
 		return
 	}
 
@@ -413,7 +391,6 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 		this.writeBadRequest(w, "invalid appid")
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -425,7 +402,6 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	consumersByGroup, err := zkcluster.ConsumerGroupsOfTopic(rawTopic)
 	if err != nil {
 		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
-		status = http.StatusInternalServerError
 		return
 	}
 	sortedGroups := make([]string, 0, len(consumersByGroup))
@@ -476,14 +452,11 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 
 	b, _ := json.Marshal(out)
 	w.Write(b)
-
-	size = len(b)
-	return
 }
 
 // /groups/:appid/:topic/:ver/:group
 func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) (status, size int) {
+	params httprouter.Params) {
 	var (
 		topic    string
 		ver      string
@@ -504,7 +477,6 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
 		this.writeAuthFailure(w, err)
-		status = http.StatusUnauthorized
 		return
 	}
 
@@ -513,7 +485,6 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 		this.writeBadRequest(w, "illegal group")
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -523,7 +494,6 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 		this.writeBadRequest(w, "invalid appid")
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -536,11 +506,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	if err := zkcluster.ZkZone().DeleteRecursive(zkcluster.ConsumerGroupRoot(group)); err != nil {
 		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
-		status = http.StatusInternalServerError
 	}
 
 	w.Write(ResponseOk)
-
-	size = len(ResponseOk)
-	return
 }

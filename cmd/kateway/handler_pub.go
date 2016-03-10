@@ -20,7 +20,7 @@ import (
 
 // /topics/:topic/:ver?key=mykey&async=1&delay=100
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) (status, size int) {
+	params httprouter.Params) {
 	t1 := time.Now()
 
 	if options.EnableClientStats { // TODO enable pub or sub client stats
@@ -29,7 +29,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 
 	if options.Ratelimit && !this.throttlePub.Pour(getHttpRemoteIp(r), 1) {
 		this.writeQuotaExceeded(w)
-		status = http.StatusNotAcceptable
 		return
 	}
 
@@ -41,7 +40,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 
 		this.writeAuthFailure(w, err)
-		status = http.StatusUnauthorized
 		return
 	}
 
@@ -53,21 +51,18 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
 
 		this.writeBadRequest(w, "invalid content length")
-		status = http.StatusBadRequest
 		return
 
 	case int64(msgLen) > options.MaxPubSize:
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} too big content length: %d",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
 		this.writeBadRequest(w, ErrTooBigPubMessage.Error())
-		status = http.StatusBadRequest
 		return
 
 	case msgLen < options.MinPubSize:
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} too small content length: %d",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
 		this.writeBadRequest(w, ErrTooSmallPubMessage.Error())
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -80,7 +75,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("pub[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 		this.writeBadRequest(w, ErrTooBigPubMessage.Error())
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -101,7 +95,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, partitionKey)
 
 		this.writeBadRequest(w, "too large partition key")
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -116,7 +109,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
 
 		this.writeBadRequest(w, "invalid appid")
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -132,7 +124,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("pub[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
-		status = http.StatusInternalServerError
 		return
 	}
 
@@ -151,12 +142,11 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 	}
 
-	return
 }
 
 // /raw/topics/:topic/:ver
 func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) (status, size int) {
+	params httprouter.Params) {
 	var (
 		topic string
 		ver   string
@@ -171,7 +161,6 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("app[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
 
 		this.writeAuthFailure(w, err)
-		status = http.StatusUnauthorized
 		return
 	}
 
@@ -180,7 +169,6 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("cluster not found for app: %s", appid)
 
 		this.writeBadRequest(w, "invalid appid")
-		status = http.StatusBadRequest
 		return
 	}
 
@@ -191,13 +179,11 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 	}
 	b, _ := json.Marshal(out)
 	w.Write(b)
-
-	return
 }
 
 // /ws/topics/:topic/:ver
 func (this *Gateway) pubWsHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) (status, size int) {
+	params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Error("%s: %v", r.RemoteAddr, err)
@@ -205,5 +191,4 @@ func (this *Gateway) pubWsHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	defer ws.Close()
-	return
 }

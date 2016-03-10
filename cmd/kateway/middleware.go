@@ -11,10 +11,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type GatewayHandler func(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) (status, size int)
-
-func (this *Gateway) MiddlewareKateway(h GatewayHandler) httprouter.Handle {
+func (this *Gateway) MiddlewareKateway(h httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		w.Header().Set("Server", "kateway")
 
@@ -29,10 +26,8 @@ func (this *Gateway) MiddlewareKateway(h GatewayHandler) httprouter.Handle {
 		// TODO latency histogram here
 
 		// Delegate request to the given handle
-		status, size := h(w, r, params)
-		if status == 0 {
-			status = http.StatusOK
-		}
+		ww := WrapWriter(w) // sniff the status and content size for logging
+		h(ww, r, params)
 
 		if this.accessLogger != nil {
 			// NCSA Common Log Format (CLF)
@@ -40,7 +35,7 @@ func (this *Gateway) MiddlewareKateway(h GatewayHandler) httprouter.Handle {
 
 			// TODO whitelist
 			buf := mpool.AccessLogLineBufferGet()[0:]
-			this.accessLogger.Write(this.buildCommonLogLine(buf, r, status, size))
+			this.accessLogger.Log(this.buildCommonLogLine(buf, r, ww.Status(), ww.BytesWritten()))
 			mpool.AccessLogLineBufferPut(buf)
 		}
 	}
