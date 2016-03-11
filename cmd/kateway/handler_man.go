@@ -10,6 +10,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/sla"
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
@@ -148,7 +149,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	w.Write([]byte(fmt.Sprintf(`{"num": %d}`, len(partitions))))
 }
 
-// /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2
+// /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2&retention.hours=72&retention.bytes=-1
 func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
@@ -186,22 +187,27 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	replicas, partitions := 2, 1
+	ts := sla.DefaultSla()
 	query := r.URL.Query()
-	partitionsArg := query.Get("partitions")
+	partitionsArg := query.Get(sla.SlaKeyPartitions)
 	if partitionsArg != "" {
-		partitions, _ = strconv.Atoi(partitionsArg)
+		ts.Partitions, _ = strconv.Atoi(partitionsArg)
 	}
-	replicasArg := query.Get("replicas")
+	replicasArg := query.Get(sla.SlaKeyReplicas)
 	if replicasArg != "" {
-		replicas, _ = strconv.Atoi(replicasArg)
+		ts.Replicas, _ = strconv.Atoi(replicasArg)
 	}
+	retentionBytes := query.Get(sla.SlaKeyRetentionBytes)
+	if retentionBytes != "" {
+		ts.RetentionBytes, _ = strconv.Atoi(retentionBytes)
+	}
+	ts.ParseRetentionHours(query.Get(sla.SlaKeyRetentionHours))
 
 	log.Info("app[%s] from %s(%s) add topic: {appid:%s, cluster:%s, topic:%s, ver:%s query:%s}",
 		appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
 
 	topic = meta.KafkaTopic(hisAppid, topic, ver)
-	lines, err := zkcluster.AddTopic(topic, replicas, partitions)
+	lines, err := zkcluster.AddTopic(topic, ts)
 	if err != nil {
 		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
 

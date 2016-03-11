@@ -9,6 +9,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
@@ -219,26 +220,10 @@ func (this *Topics) configTopic(zkcluster *zk.ZkCluster, topic string, retention
 		panic("less than 10 minutes?")
 	}
 
-	zkAddrs := zkcluster.ZkConnectAddr()
-	key := "retention.ms"
-	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
-		fmt.Sprintf("--zookeeper %s", zkAddrs),
-		fmt.Sprintf("--alter"),
-		fmt.Sprintf("--topic %s", topic),
-		fmt.Sprintf("--config %s=%d", key, retentionInMinute*1000*60),
-	)
-	err := cmd.Open()
+	ts := sla.DefaultSla()
+	ts.RetentionHours = float64(retentionInMinute) / 60
+	output, err := zkcluster.ConfigTopic(topic, ts)
 	swallow(err)
-	defer cmd.Close()
-
-	scanner := bufio.NewScanner(cmd.Reader())
-	scanner.Split(bufio.ScanLines)
-
-	output := make([]string, 0)
-	for scanner.Scan() {
-		output = append(output, scanner.Text())
-	}
-	swallow(scanner.Err())
 
 	path := zkcluster.GetTopicConfigPath(topic)
 	this.Ui.Info(path)
@@ -425,7 +410,10 @@ func (this *Topics) addTopic(zkcluster *zk.ZkCluster, topic string, replicas,
 	partitions int) error {
 	this.Ui.Info(fmt.Sprintf("creating kafka topic: %s", topic))
 
-	lines, err := zkcluster.AddTopic(topic, replicas, partitions)
+	ts := sla.DefaultSla()
+	ts.Partitions = partitions
+	ts.Replicas = replicas
+	lines, err := zkcluster.AddTopic(topic, ts)
 	if err != nil {
 		return err
 	}

@@ -13,7 +13,7 @@ const (
 )
 
 const (
-	defaultRetentionBytes = -1
+	defaultRetentionBytes = -1     // unlimited
 	defaultRetentionHours = 3 * 24 // 3 days
 	defaultPartitions     = 1
 	defaultReplicas       = 2

@@ -15,6 +15,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/golib/pipestream"
 	log "github.com/funkygao/log4go"
 	"github.com/samuel/go-zookeeper/zk"
@@ -437,22 +438,17 @@ func (this *ZkCluster) Broker(id int) (b *BrokerZnode) {
 	return
 }
 
-func (this *ZkCluster) AddTopic(topic string, replicas,
-	partitions int) (output []string, err error) {
-	if replicas < 1 || partitions < 1 {
-		return nil, errors.New("invalid replicas or partitions")
-	}
-
+func (this *ZkCluster) AddTopic(topic string, ts *sla.TopicSla) (output []string, err error) {
 	zkAddrs := this.ZkConnectAddr()
-	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
+	args := []string{
 		fmt.Sprintf("--zookeeper %s", zkAddrs),
 		fmt.Sprintf("--create"),
 		fmt.Sprintf("--topic %s", topic),
-		fmt.Sprintf("--partitions %d", partitions),
-		fmt.Sprintf("--replication-factor %d", replicas),
-	)
-	err = cmd.Open()
-	if err != nil {
+	}
+	args = append(args, ts.DumpForTopicsCli()...)
+	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
+		args...)
+	if err = cmd.Open(); err != nil {
 		return
 	}
 	defer cmd.Close()
@@ -464,8 +460,36 @@ func (this *ZkCluster) AddTopic(topic string, replicas,
 	for scanner.Scan() {
 		output = append(output, scanner.Text())
 	}
-	err = scanner.Err()
-	if err != nil {
+	if err = scanner.Err(); err != nil {
+		return
+	}
+
+	return
+}
+
+func (this *ZkCluster) ConfigTopic(topic string, ts *sla.TopicSla) (output []string, err error) {
+	zkAddrs := this.ZkConnectAddr()
+	args := []string{
+		fmt.Sprintf("--zookeeper %s", zkAddrs),
+		fmt.Sprintf("--alter"),
+		fmt.Sprintf("--topic %s", topic),
+	}
+	args = append(args, ts.DumpForTopicsCli()...)
+	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
+		args...)
+	if err = cmd.Open(); err != nil {
+		return
+	}
+	defer cmd.Close()
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+
+	output = make([]string, 0)
+	for scanner.Scan() {
+		output = append(output, scanner.Text())
+	}
+	if err = scanner.Err(); err != nil {
 		return
 	}
 
