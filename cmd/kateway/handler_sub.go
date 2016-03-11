@@ -14,14 +14,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type SubStatus struct {
-	Appid     string
-	Group     string `json:"group"`
-	Partition string `json:"partition"`
-	Produced  int64  `json:"pubd"`
-	Consumed  int64  `json:"subd"`
-}
-
 // /topics/:appid/:topic/:ver?group=xx&&reset=newest&qos=1
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {

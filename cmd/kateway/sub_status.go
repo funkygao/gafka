@@ -9,6 +9,14 @@ import (
 	"github.com/funkygao/gafka/zk"
 )
 
+type SubStatus struct {
+	Appid     string `json:"appid"`
+	Group     string `json:"group"`
+	Partition string `json:"partition"`
+	Produced  int64  `json:"pubd"`
+	Consumed  int64  `json:"subd"`
+}
+
 func (this *Gateway) topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
 	group string, onlyMine bool) ([]SubStatus, error) {
 	zkcluster := meta.Default.ZkCluster(cluster)
