@@ -19,13 +19,14 @@ import (
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
-		topic    string
-		ver      string
-		myAppid  string
-		hisAppid string
-		reset    string
-		group    string
-		err      error
+		topic     string
+		ver       string
+		myAppid   string
+		hisAppid  string
+		reset     string
+		group     string
+		guardName string
+		err       error
 	)
 
 	if options.EnableClientStats {
@@ -46,7 +47,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
-	guardName := query.Get("use")
+	guardName = query.Get("use")
 	myAppid = r.Header.Get(HttpHeaderAppid)
 	if r.Header.Get("Connection") == "close" {
 		// sub should use keep-alive
@@ -85,6 +86,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		topic = topic + "." + guardName
 	}
 	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
+
 	// pick a consumer from the consumer group
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {

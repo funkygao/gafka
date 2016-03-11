@@ -9,6 +9,7 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
@@ -252,6 +253,91 @@ func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 // /guard/:appid/:topic/:ver/:group
 func (this *Gateway) guardTopicHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
+	var (
+		topic    string
+		ver      string
+		myAppid  string
+		hisAppid string
+		group    string
+		err      error
+	)
+
+	query := r.URL.Query()
+	group = query.Get("group")
+	if !validateGroupName(group) {
+		log.Warn("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+
+		this.writeBadRequest(w, "illegal group")
+		return
+	}
+
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	hisAppid = params.ByName(UrlParamAppid)
+	myAppid = r.Header.Get(HttpHeaderAppid)
+
+	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), hisAppid, topic); err != nil {
+		log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+
+		this.writeAuthFailure(w, err)
+		return
+	}
+
+	log.Info("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s}",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+
+		this.writeBadRequest(w, "invalid appid")
+		return
+	}
+
+	zkcluster := meta.Default.ZkCluster(cluster)
+
+	createTopic := func(appid, topic, ver string, ts *sla.TopicSla) (ok bool, lines []string) {
+		topic = meta.KafkaTopic(appid, topic, ver)
+		var err error
+		lines, err = zkcluster.AddTopic(topic, ts)
+		if err != nil {
+			return
+		}
+
+		for _, l := range lines {
+			if strings.Contains(l, "Created topic") {
+				ok = true
+				break
+			}
+		}
+
+		return
+	}
+
+	ts := sla.DefaultSla()
+
+	ok, lines := createTopic(hisAppid, topic+"."+sla.SlaKeyRetryTopic, ver, ts)
+	if !ok {
+		log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} retry topic:%s",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, strings.Join(lines, ";"))
+
+		this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)
+		return
+	}
+	ok, lines = createTopic(hisAppid, topic+"."+sla.SlaKeyDeadLetterTopic, ver, ts)
+	if !ok {
+		log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} dead topic:%s",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, strings.Join(lines, ";"))
+
+		this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 	w.Write(ResponseOk)
 }
