@@ -30,7 +30,7 @@ func TestSlaDump(t *testing.T) {
 func TestSlaRententionHoursFloat(t *testing.T) {
 	sla := DefaultSla()
 	assert.Equal(t, nil, sla.ParseRetentionHours("3"))
-	sla.ParseRetentionHours("72")
+	sla.ParseRetentionHours("168")
 	assert.Equal(t, true, sla.IsDefault())
 
 	sla.ParseRetentionHours("0.5")

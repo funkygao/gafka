@@ -164,6 +164,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - [ ] register retry/dead topic for group
 - [ ] test add topic with params
 - [ ] sub ack=1
+- [ ] default retention 7d
 
 - [ ] to avoid consumer lose message, Sub client GET header include last received message offset
 - [ ] data needs to be enriched/sanitized before being consumed
