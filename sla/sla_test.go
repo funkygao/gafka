@@ -35,4 +35,9 @@ func TestSlaRententionHoursFloat(t *testing.T) {
 
 	sla.ParseRetentionHours("0.5")
 	t.Logf("%v", sla.DumpForTopicsCli())
+
+	assert.Equal(t, ErrNotNumber, sla.ParseRetentionHours("abc"))
+	assert.Equal(t, ErrEmptyArg, sla.ParseRetentionHours(""))
+	assert.Equal(t, ErrNotNumber, sla.ParseRetentionHours(" "))
+	assert.Equal(t, ErrNegative, sla.ParseRetentionHours("-9"))
 }

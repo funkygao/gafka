@@ -43,9 +43,13 @@ func (this *TopicSla) IsDefault() bool {
 }
 
 func (this *TopicSla) ParseRetentionHours(s string) error {
+	if len(s) == 0 {
+		return ErrEmptyArg
+	}
+
 	f, e := strconv.ParseFloat(s, 64)
 	if e != nil {
-		return e
+		return ErrNotNumber
 	}
 
 	if f < 0 {
