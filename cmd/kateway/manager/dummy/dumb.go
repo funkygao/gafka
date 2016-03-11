@@ -23,6 +23,10 @@ func (this *dummyStore) LookupCluster(appid string) (string, bool) {
 	return "me", true
 }
 
+func (this *dummyStore) IsGuardedTopic(appid, topic, ver, group string) bool {
+	return true
+}
+
 func (this *dummyStore) Start() {}
 
 func (this *dummyStore) Stop() {}

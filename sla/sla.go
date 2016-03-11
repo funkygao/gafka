@@ -10,6 +10,9 @@ const (
 	SlaKeyRetentionBytes = "retention.bytes"
 	SlaKeyPartitions     = "partitions"
 	SlaKeyReplicas       = "replicas"
+
+	SlaKeyRetryTopic      = "retry"
+	SlaKeyDeadLetterTopic = "dead"
 )
 
 const (

@@ -41,3 +41,10 @@ func TestSlaRententionHoursFloat(t *testing.T) {
 	assert.Equal(t, ErrNotNumber, sla.ParseRetentionHours(" "))
 	assert.Equal(t, ErrNegative, sla.ParseRetentionHours("-9"))
 }
+
+func TestValidateGuardName(t *testing.T) {
+	assert.Equal(t, true, ValidateGuardName("dead"))
+	assert.Equal(t, true, ValidateGuardName("retry"))
+	assert.Equal(t, false, ValidateGuardName(""))
+	assert.Equal(t, false, ValidateGuardName("foo"))
+}
