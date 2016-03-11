@@ -2,6 +2,7 @@ package sla
 
 import (
 	"fmt"
+	"strconv"
 )
 
 const (
@@ -13,13 +14,13 @@ const (
 
 const (
 	defaultRetentionBytes = -1
-	defaultRetentionHours = 3.
+	defaultRetentionHours = 3 * 24 // 3 days
 	defaultPartitions     = 1
 	defaultReplicas       = 2
 )
 
 type TopicSla struct {
-	RetentionHours float32
+	RetentionHours float64
 	RetentionBytes int
 	Partitions     int
 	Replicas       int
@@ -39,6 +40,21 @@ func (this *TopicSla) IsDefault() bool {
 		this.Partitions == defaultPartitions &&
 		this.RetentionBytes == defaultRetentionBytes &&
 		this.RetentionHours == defaultRetentionHours
+}
+
+func (this *TopicSla) ParseRetentionHours(s string) error {
+	f, e := strconv.ParseFloat(s, 64)
+	if e != nil {
+		return e
+	}
+
+	if f < 0 {
+		return ErrNegative
+	}
+
+	this.RetentionHours = f
+
+	return nil
 }
 
 // Dump the sla for kafka-topics.sh as arguments.

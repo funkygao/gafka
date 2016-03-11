@@ -26,3 +26,13 @@ func TestSlaDump(t *testing.T) {
 	sla.Partitions = -1 // invalid setter
 	assert.Equal(t, "--replication-factor 3 --config retention.ms=7200000", strings.Join(sla.DumpForTopicsCli(), " "))
 }
+
+func TestSlaRententionHoursFloat(t *testing.T) {
+	sla := DefaultSla()
+	assert.Equal(t, nil, sla.ParseRetentionHours("3"))
+	sla.ParseRetentionHours("72")
+	assert.Equal(t, true, sla.IsDefault())
+
+	sla.ParseRetentionHours("0.5")
+	t.Logf("%v", sla.DumpForTopicsCli())
+}
