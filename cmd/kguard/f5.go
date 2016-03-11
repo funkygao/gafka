@@ -12,7 +12,7 @@ import (
 
 const (
 	MsInNano = 1000 * 1000
-	HttpLoop = 200
+	HttpLoop = 100
 )
 
 // MonitorConsumers monitors num of online consumer groups over the time.
