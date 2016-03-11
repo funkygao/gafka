@@ -55,7 +55,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 	}
 
-	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), hisAppid, topic); err != nil {
+	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
+		hisAppid, topic); err != nil {
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
@@ -181,7 +182,8 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
-	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), hisAppid, topic); err != nil {
+	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
+		hisAppid, topic); err != nil {
 		log.Error("consumer[%s] %s {topic:%s, ver:%s, hisapp:%s}: %s",
 			myAppid, r.RemoteAddr, topic, ver, hisAppid, err)
 
@@ -249,7 +251,8 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
-	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), hisAppid, topic); err != nil {
+	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
+		hisAppid, topic); err != nil {
 		log.Error("consumer[%s] %s {hisapp:%s, topic:%s, ver:%s, group:%s, limit:%d}: %s",
 			myAppid, r.RemoteAddr, hisAppid, topic, ver, group, limit, err)
 
