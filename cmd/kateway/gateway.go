@@ -85,10 +85,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this.guard = newGuard(this)
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
 
-	var err error
-	if this.accessLogger, err = NewAccessLogger("access_log", 100); err != nil {
-		log.Error("open access_log: %v", err)
-	}
+	this.accessLogger = NewAccessLogger("access_log", 100)
 
 	this.manServer = newManServer(options.ManHttpAddr, options.ManHttpsAddr,
 		options.MaxClients, this)
@@ -207,7 +204,11 @@ func (this *Gateway) Start() (err error) {
 	this.guard.Start()
 	log.Trace("guard started")
 
-	go this.accessLogger.Start()
+	if options.EnableAccessLog {
+		if err := this.accessLogger.Start(); err != nil {
+			log.Error("access logger: %s", err)
+		}
+	}
 
 	this.buildRouting()
 	this.manServer.Start()

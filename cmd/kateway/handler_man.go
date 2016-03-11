@@ -58,6 +58,14 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 		options.Ratelimit = boolVal
 
 	case "accesslog":
+		if options.EnableAccessLog != boolVal {
+			// on/off switching
+			if boolVal {
+				this.accessLogger.Start()
+			} else {
+				this.accessLogger.Stop()
+			}
+		}
 		options.EnableAccessLog = boolVal
 
 	default:
