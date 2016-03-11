@@ -97,6 +97,7 @@ func (this *mysqlStore) refreshFromMysql() error {
 	}
 	defer db.Close()
 
+	// if mysql dies, keep old/stale manager records as it was
 	if err = this.fetchApplicationRecords(db); err != nil {
 		log.Error("mysql manager store: %v", err)
 		return err
