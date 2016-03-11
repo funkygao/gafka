@@ -44,16 +44,16 @@ func (this *TopicSla) IsDefault() bool {
 // Dump the sla for kafka-topics.sh as arguments.
 func (this *TopicSla) DumpForTopicsCli() []string {
 	r := make([]string, 0)
-	if this.Partitions != defaultPartitions {
+	if this.Partitions != defaultPartitions && this.Partitions > 0 {
 		r = append(r, fmt.Sprintf("--partitions %d", this.Partitions))
 	}
-	if this.Replicas != defaultReplicas {
+	if this.Replicas != defaultReplicas && this.Replicas > 0 {
 		r = append(r, fmt.Sprintf("--replication-factor %d", this.Replicas))
 	}
-	if this.RetentionBytes != defaultRetentionBytes {
+	if this.RetentionBytes != defaultRetentionBytes && this.RetentionBytes > 0 {
 		r = append(r, fmt.Sprintf("--config retention.bytes=%d", this.RetentionBytes))
 	}
-	if this.RetentionHours != defaultRetentionHours {
+	if this.RetentionHours != defaultRetentionHours && this.RetentionHours > 0 {
 		r = append(r, fmt.Sprintf("--config retention.ms=%d",
 			int(this.RetentionHours*1000*3600)))
 	}

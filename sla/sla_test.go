@@ -22,4 +22,7 @@ func TestSlaDump(t *testing.T) {
 	assert.Equal(t, "--config retention.ms=7200000", strings.Join(sla.DumpForTopicsCli(), " "))
 	sla.Replicas = 3
 	assert.Equal(t, "--replication-factor 3 --config retention.ms=7200000", strings.Join(sla.DumpForTopicsCli(), " "))
+
+	sla.Partitions = -1 // invalid setter
+	assert.Equal(t, "--replication-factor 3 --config retention.ms=7200000", strings.Join(sla.DumpForTopicsCli(), " "))
 }
