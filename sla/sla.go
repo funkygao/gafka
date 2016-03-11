@@ -17,6 +17,10 @@ const (
 	defaultRetentionHours = 3 * 24 // 3 days
 	defaultPartitions     = 1
 	defaultReplicas       = 2
+
+	maxReplicas       = 3
+	maxPartitions     = 20
+	maxRetentionHours = 7 * 24
 )
 
 type TopicSla struct {
@@ -64,16 +68,16 @@ func (this *TopicSla) ParseRetentionHours(s string) error {
 // Dump the sla for kafka-topics.sh as arguments.
 func (this *TopicSla) DumpForTopicsCli() []string {
 	r := make([]string, 0)
-	if this.Partitions != defaultPartitions && this.Partitions > 0 {
+	if this.Partitions != defaultPartitions && this.Partitions > 0 && this.Partitions <= maxPartitions {
 		r = append(r, fmt.Sprintf("--partitions %d", this.Partitions))
 	}
-	if this.Replicas != defaultReplicas && this.Replicas > 0 {
+	if this.Replicas != defaultReplicas && this.Replicas > 0 && this.Replicas <= maxReplicas {
 		r = append(r, fmt.Sprintf("--replication-factor %d", this.Replicas))
 	}
 	if this.RetentionBytes != defaultRetentionBytes && this.RetentionBytes > 0 {
 		r = append(r, fmt.Sprintf("--config retention.bytes=%d", this.RetentionBytes))
 	}
-	if this.RetentionHours != defaultRetentionHours && this.RetentionHours > 0 {
+	if this.RetentionHours != defaultRetentionHours && this.RetentionHours > 0 && this.RetentionHours <= maxRetentionHours {
 		r = append(r, fmt.Sprintf("--config retention.ms=%d",
 			int(this.RetentionHours*1000*3600)))
 	}
