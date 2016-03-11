@@ -15,7 +15,7 @@ import (
 )
 
 type SubStatus struct {
-	Appid     string `json:"appid"`
+	Appid     string `json:"appid,omitempty"`
 	Group     string `json:"group"`
 	Partition string `json:"partition"`
 	Produced  int64  `json:"pubd"`
@@ -67,13 +67,17 @@ func (this *Gateway) topicSubStatus(cluster string, myAppid, hisAppid, topic, ve
 				continue
 			}
 
-			out = append(out, SubStatus{
-				Appid:     p[0],
+			stat := SubStatus{
 				Group:     p[1],
 				Partition: consumer.PartitionId,
 				Produced:  consumer.ProducerOffset,
 				Consumed:  consumer.ConsumerOffset,
-			})
+			}
+			if !onlyMine {
+				stat.Appid = p[0]
+			}
+
+			out = append(out, stat)
 		}
 	}
 
