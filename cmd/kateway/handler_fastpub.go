@@ -23,7 +23,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 	header := ctx.Request.Header
 	appid := string(header.Peek(HttpHeaderAppid))
 	pubkey := string(header.Peek(HttpHeaderPubkey))
-	if err := manager.Default.AuthPub(appid, pubkey, topic); err != nil {
+	if err := manager.Default.OwnTopic(appid, pubkey, topic); err != nil {
 		log.Error("app[%s] %s %+v: %v", appid, ctx.RemoteAddr(), params, err)
 
 		ctx.SetConnectionClose()
@@ -117,7 +117,7 @@ func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprout
 	appid = string(header.Peek(HttpHeaderAppid))
 	pubkey = string(header.Peek(HttpHeaderPubkey))
 
-	if err := manager.Default.AuthPub(appid, pubkey, topic); err != nil {
+	if err := manager.Default.OwnTopic(appid, pubkey, topic); err != nil {
 		log.Error("app[%s] %s %+v: %v", appid, ctx.RemoteAddr(), params, err)
 
 		ctx.SetConnectionClose()

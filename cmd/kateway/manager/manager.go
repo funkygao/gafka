@@ -8,8 +8,13 @@ type Manager interface {
 	Start()
 	Stop()
 
-	AuthPub(appid, pubkey, topic string) error
-	AuthSub(appid, subkey, topic string) error
+	// OwnTopic checks if an appid owns a topic.
+	OwnTopic(appid, pubkey, topic string) error
+
+	// AuthSub checks if an appid is able to consume message from hisAppid.hisTopic.
+	AuthSub(appid, subkey, hisAppid, hisTopic string) error
+
+	// LookupCluster locate the cluster name of an appid.
 	LookupCluster(appid string) (cluster string, found bool)
 }
 

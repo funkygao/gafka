@@ -11,11 +11,11 @@ func (this *dummyStore) Name() string {
 	return "dummy"
 }
 
-func (this *dummyStore) AuthPub(appid, pubkey, topic string) error {
+func (this *dummyStore) OwnTopic(appid, pubkey, topic string) error {
 	return nil
 }
 
-func (this *dummyStore) AuthSub(appid, subkey, topic string) error {
+func (this *dummyStore) AuthSub(appid, subkey, hisAppid, hisTopic string) error {
 	return nil
 }
 

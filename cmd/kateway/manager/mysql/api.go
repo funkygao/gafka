@@ -4,7 +4,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 )
 
-func (this *mysqlStore) AuthPub(appid, pubkey, topic string) error {
+func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 	if appid == "" || topic == "" {
 		return manager.ErrEmptyParam
 	}
@@ -24,8 +24,8 @@ func (this *mysqlStore) AuthPub(appid, pubkey, topic string) error {
 	return manager.ErrAuthorizationFial
 }
 
-func (this *mysqlStore) AuthSub(appid, subkey, topic string) error {
-	if appid == "" || topic == "" {
+func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic string) error {
+	if appid == "" || hisTopic == "" {
 		return manager.ErrEmptyParam
 	}
 
@@ -36,7 +36,7 @@ func (this *mysqlStore) AuthSub(appid, subkey, topic string) error {
 
 	// authorization
 	if topics, present := this.appSubMap[appid]; present {
-		if _, present := topics[topic]; present {
+		if _, present := topics[hisTopic]; present {
 			return nil
 		}
 	}

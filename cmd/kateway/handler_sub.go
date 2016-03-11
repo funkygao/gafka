@@ -2,17 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
-	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/websocket"
 	"github.com/julienschmidt/httprouter"
@@ -64,7 +60,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 	}
 
-	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), hisAppid, topic); err != nil {
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
@@ -172,7 +168,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
-	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), hisAppid, topic); err != nil {
 		log.Error("consumer[%s] %s {topic:%s, ver:%s, hisapp:%s}: %s",
 			myAppid, r.RemoteAddr, topic, ver, hisAppid, err)
 
@@ -240,7 +236,7 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
-	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), hisAppid, topic); err != nil {
 		log.Error("consumer[%s] %s {hisapp:%s, topic:%s, ver:%s, group:%s, limit:%d}: %s",
 			myAppid, r.RemoteAddr, hisAppid, topic, ver, group, limit, err)
 
@@ -353,64 +349,6 @@ func (this *Gateway) wsWritePump(clientGone chan struct{}, ws *websocket.Conn, f
 
 }
 
-func (this *Gateway) topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
-	group string, onlyMine bool) ([]SubStatus, error) {
-	zkcluster := meta.Default.ZkCluster(cluster)
-	if group != "" {
-		group = myAppid + "." + group
-	}
-	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
-	consumersByGroup, err := zkcluster.ConsumerGroupsOfTopic(rawTopic)
-	if err != nil {
-		return nil, err
-	}
-	sortedGroups := make([]string, 0, len(consumersByGroup))
-	for grp, _ := range consumersByGroup {
-		sortedGroups = append(sortedGroups, grp)
-	}
-	sort.Strings(sortedGroups)
-
-	out := make([]SubStatus, 0, len(sortedGroups))
-	for _, grp := range sortedGroups {
-		if group != "" && grp != group {
-			continue
-		}
-
-		sortedTopicAndPartitionIds := make([]string, 0, len(consumersByGroup[grp]))
-		consumers := make(map[string]zk.ConsumerMeta)
-		for _, t := range consumersByGroup[grp] {
-			key := fmt.Sprintf("%s:%s", t.Topic, t.PartitionId)
-			sortedTopicAndPartitionIds = append(sortedTopicAndPartitionIds, key)
-
-			consumers[key] = t
-		}
-		sort.Strings(sortedTopicAndPartitionIds)
-
-		for _, topicAndPartitionId := range sortedTopicAndPartitionIds {
-			consumer := consumers[topicAndPartitionId]
-			if rawTopic != consumer.Topic {
-				continue
-			}
-
-			p := strings.SplitN(grp, ".", 2) // grp is like 'appid.groupname'
-			if onlyMine && myAppid != p[0] {
-				// this group does not belong to me
-				continue
-			}
-
-			out = append(out, SubStatus{
-				Appid:     p[0],
-				Group:     p[1],
-				Partition: consumer.PartitionId,
-				Produced:  consumer.ProducerOffset,
-				Consumed:  consumer.ConsumerOffset,
-			})
-		}
-	}
-
-	return out, nil
-}
-
 // /status/:appid/:topic/:ver?group=xx
 // FIXME currently there might be in flight offsets because of batch offset commit
 func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
@@ -436,7 +374,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
-	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), hisAppid, topic); err != nil {
 		log.Error("sub status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
@@ -484,7 +422,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
-	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), hisAppid, topic); err != nil {
 		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
@@ -546,7 +484,7 @@ func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	topic = params.ByName(UrlParamTopic)
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
-	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
+	if err = manager.Default.OwnTopic(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
 		log.Error("subd status[%s] %s(%s): {topic:%s, ver:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 
