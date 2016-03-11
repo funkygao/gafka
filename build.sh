@@ -4,6 +4,7 @@ VER=0.2.6rc
 GOVER=$(go version | cut -d' ' -f3 | cut -d'.' -f2)
 GIT_ID=$(git rev-parse HEAD | cut -c1-7)
 GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)
+BUILD_TIME=$(date '+%Y-%m-%d-%H:%M:%S')
 
 INSTALL="no"
 DEPLOY="no"
@@ -118,9 +119,9 @@ fi
 go generate ./...
 
 if [ $GOVER -gt 4 ]; then
-    go build $BUILD_FLAGS -ldflags "-X github.com/funkygao/gafka.Version=$VER -X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
+    go build $BUILD_FLAGS -ldflags "-X github.com/funkygao/gafka.BuiltAt=$BUILD_TIME -X github.com/funkygao/gafka.Version=$VER -X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
 else
-    go build $BUILD_FLAGS -ldflags "-X github.com/funkygao/gafka.Version $VER -X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
+    go build $BUILD_FLAGS -ldflags "-X github.com/funkygao/gafka.BuiltAt $BUILD_TIME -X github.com/funkygao/gafka.Version $VER -X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
 fi
 
 if [ $INSTALL == "yes" ]; then

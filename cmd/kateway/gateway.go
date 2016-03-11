@@ -149,6 +149,7 @@ func (this *Gateway) InstanceInfo() []byte {
 		Zone:      this.zone,
 		Ver:       gafka.Version,
 		Build:     gafka.BuildId,
+		BuiltAt:   gafka.BuiltAt,
 		Host:      ctx.Hostname(),
 		Cpu:       ctx.NumCPUStr(),
 		PubAddr:   options.PubHttpAddr,

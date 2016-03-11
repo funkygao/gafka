@@ -154,9 +154,10 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		this.Ui.Info(fmt.Sprintf("id:%-2s host:%s cpu:%-2s up:%s",
 			kw.Id, kw.Host, kw.Cpu,
 			gofmt.PrettySince(kw.Ctime)))
-		this.Ui.Output(fmt.Sprintf("    ver: %s\n    build: %s\n    log: %s\n    pub: %s\n    sub: %s\n    man: %s\n    dbg: %s",
+		this.Ui.Output(fmt.Sprintf("    ver: %s\n    build: %s\n    built: %s\n    log: %s\n    pub: %s\n    sub: %s\n    man: %s\n    dbg: %s",
 			kw.Ver,
 			kw.Build,
+			kw.BuiltAt,
 			this.getKatewayLogLevel(kw.ManAddr),
 			kw.PubAddr,
 			kw.SubAddr,
