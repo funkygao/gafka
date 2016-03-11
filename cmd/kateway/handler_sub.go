@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
@@ -19,14 +20,20 @@ import (
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
-		topic     string
-		ver       string
-		myAppid   string
-		hisAppid  string
-		reset     string
-		group     string
-		guardName string
-		err       error
+		topic      string
+		ver        string
+		myAppid    string
+		hisAppid   string
+		reset      string
+		group      string
+		guardName  string
+		partition  string
+		offset     string
+		offsetN    int64
+		partitionN int
+		ack        string
+		delayedAck bool
+		err        error
 	)
 
 	if options.EnableClientStats {
@@ -64,8 +71,41 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	log.Debug("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s}",
-		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+	delayedAck = query.Get("ack") == "1"
+	if delayedAck {
+		partition = r.Header.Get(HttpHeaderPartition)
+		offset = r.Header.Get(HttpHeaderOffset)
+		if partition == "" || offset == "" {
+			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} ack with empty offset",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+
+			this.writeBadRequest(w, "ack with empty offset or partition")
+			return
+		}
+
+		// convert partition and offset to int
+
+		offsetN, err = strconv.ParseInt(offset, 10, 64)
+		if err != nil || offsetN < 0 {
+			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} offset:%s",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, offset)
+
+			this.writeBadRequest(w, "ack with bad offset")
+			return
+		}
+		partitionN, err = strconv.Atoi(partition)
+		if err != nil || partitionN < 0 {
+			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} partition:%s",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, partition)
+
+			this.writeBadRequest(w, "ack with bad partition")
+			return
+		}
+	}
+
+	log.Debug("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s ack:%s, partition:%s, offset:%s}",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+		group, ack, partition, offset)
 
 	if guardName != "" {
 		if !sla.ValidateGuardName(guardName) {
@@ -108,7 +148,16 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, topic, ver)
+	if delayedAck {
+		msg := &sarama.ConsumerMessage{
+			Topic:     rawTopic,
+			Partition: int32(partitionN),
+			Offset:    offsetN,
+		}
+		fetcher.CommitUpto(msg)
+	}
+
+	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, topic, ver, delayedAck)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
@@ -121,7 +170,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 }
 
 func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
-	myAppid, hisAppid, topic, ver string) (err error) {
+	myAppid, hisAppid, topic, ver string, delayedAck bool) (err error) {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
 	select {
@@ -148,11 +197,11 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			return
 		}
 
-		// client really got this msg, safe to commit
-		// TODO test case: client got chunk 2, then killed. should server commit offset?
-		log.Debug("commit offset: {T:%s, P:%d, O:%d}", msg.Topic, msg.Partition, msg.Offset)
-		if err = fetcher.CommitUpto(msg); err != nil {
-			log.Error("commit offset {T:%s, P:%d, O:%d}: %v", msg.Topic, msg.Partition, msg.Offset, err)
+		if !delayedAck {
+			log.Debug("commit offset: {T:%s, P:%d, O:%d}", msg.Topic, msg.Partition, msg.Offset)
+			if err = fetcher.CommitUpto(msg); err != nil {
+				log.Error("commit offset {T:%s, P:%d, O:%d}: %v", msg.Topic, msg.Partition, msg.Offset, err)
+			}
 		}
 
 		this.subMetrics.ConsumeOk(myAppid, topic, ver)
