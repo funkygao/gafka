@@ -157,7 +157,7 @@ func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
 	topic = params.ByName(UrlParamTopic)
 	appid = r.Header.Get(HttpHeaderAppid)
 
-	if err := manager.Default.AuthSub(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
+	if err := manager.Default.AuthPub(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
 		log.Error("app[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
 
 		this.writeAuthFailure(w, err)
