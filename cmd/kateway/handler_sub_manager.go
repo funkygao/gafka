@@ -87,6 +87,7 @@ func (this *Gateway) topicSubStatus(cluster string, myAppid, hisAppid, topic, ve
 
 // /status/:appid/:topic/:ver?group=xx
 // FIXME currently there might be in flight offsets because of batch offset commit
+// TODO show guarded consumers too
 func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -142,6 +143,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // /groups/:appid/:topic/:ver/:group
+// TODO delete guarded consumers too
 func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
