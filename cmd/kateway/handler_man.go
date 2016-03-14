@@ -128,6 +128,14 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	zkcluster := meta.Default.ZkCluster(cluster)
+	if zkcluster == nil {
+		log.Error("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s} undefined cluster",
+			r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
+
+		this.writeBadRequest(w, "undefined cluster")
+		return
+	}
+
 	kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
 	if err != nil {
 		log.Error("cluster[%s] %v", zkcluster.Name(), err)
@@ -179,6 +187,14 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	zkcluster := meta.Default.ZkCluster(cluster)
+	if zkcluster == nil {
+		log.Error("add topic from %s(%s): {appid:%s, pubkey:%s, cluster:%s, topic:%s, ver:%s} undefined cluster",
+			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
+
+		this.writeBadRequest(w, "undefined cluster")
+		return
+	}
+
 	info := zkcluster.RegisteredInfo()
 	if !info.Public {
 		log.Warn("app[%s] adding topic:%s in non-public cluster: %+v", hisAppid, topic, params)
