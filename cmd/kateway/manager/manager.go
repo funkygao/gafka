@@ -16,6 +16,9 @@ type Manager interface {
 
 	// LookupCluster locate the cluster name of an appid.
 	LookupCluster(appid string) (cluster string, found bool)
+
+	// IsGuardedTopic checks if a topic has retry/dead sub topics.
+	IsGuardedTopic(appid, topic, ver, group string) bool
 }
 
 var Default Manager

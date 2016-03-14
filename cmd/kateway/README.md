@@ -144,11 +144,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 - what is limit of a pub message in size?
 
-  1MB
-
-- can I pub an empty message?
-
-  No
+  1 ~ 256KB
 
 - if sub with no arriving message, how long do client get http 204?
 
@@ -159,6 +155,13 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   yes, this is a trade off. You have to wait 5 minutes.
 
 ### TODO
+
+- [ ] sub /topics/:appid/:topic/:ver/:group register group beforehand
+- [ ] register retry/dead topic for group
+- [ ] test add topic with params
+- [ ] sub ack=1
+- [ ] default retention 7d
+- [ ] test delayed sub ack
 
 - [ ] to avoid consumer lose message, Sub client GET header include last received message offset
 - [ ] data needs to be enriched/sanitized before being consumed

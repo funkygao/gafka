@@ -265,6 +265,7 @@ func (this *Gateway) Stop() {
 		close(this.shutdownCh)
 
 		this.accessLogger.Stop()
+		log.Trace("access logger closed")
 	})
 }
 
@@ -291,14 +292,14 @@ func (this *Gateway) ServeForever() {
 		log.Info("all components shutdown complete")
 
 		this.svrMetrics.Flush()
-		log.Info("server metrics flushed")
+		log.Trace("server metrics flushed")
 		if this.pubMetrics != nil {
 			this.pubMetrics.Flush()
-			log.Info("pub metrics flushed")
+			log.Trace("pub metrics flushed")
 		}
 		if this.subMetrics != nil {
 			this.subMetrics.Flush()
-			log.Info("sub metrics flushed")
+			log.Trace("sub metrics flushed")
 		}
 
 		meta.Default.Stop()

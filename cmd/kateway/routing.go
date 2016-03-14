@@ -34,6 +34,7 @@ func (this *Gateway) buildRouting() {
 		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
 
 		// api for pubsub manager
+		this.subServer.Router().POST("/guard/:appid/:topic/:ver/:group", m(this.guardTopicHandler))
 		this.subServer.Router().GET("/subd/:topic/:ver", m(this.subdStatusHandler))
 		this.subServer.Router().GET("/status/:appid/:topic/:ver", m(this.subStatusHandler))
 		this.subServer.Router().DELETE("/groups/:appid/:topic/:ver/:group", m(this.delSubGroupHandler))
