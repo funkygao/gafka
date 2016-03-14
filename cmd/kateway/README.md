@@ -144,11 +144,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 - what is limit of a pub message in size?
 
-  1MB
-
-- can I pub an empty message?
-
-  No
+  1 ~ 256KB
 
 - if sub with no arriving message, how long do client get http 204?
 
