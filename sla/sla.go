@@ -69,7 +69,7 @@ func (this *TopicSla) ParseRetentionHours(s string) error {
 }
 
 // Dump the sla for kafka-topics.sh as arguments.
-func (this *TopicSla) DumpForTopicsCli() []string {
+func (this *TopicSla) DumpForCreateTopic() []string {
 	r := make([]string, 0)
 	if this.Partitions < 1 || this.Partitions > maxPartitions {
 		this.Partitions = defaultPartitions
@@ -80,6 +80,11 @@ func (this *TopicSla) DumpForTopicsCli() []string {
 	}
 	r = append(r, fmt.Sprintf("--replication-factor %d", this.Replicas))
 
+	return r
+}
+
+func (this *TopicSla) DumpForAlterTopic() []string {
+	r := make([]string, 0)
 	if this.RetentionBytes != defaultRetentionBytes && this.RetentionBytes > 0 {
 		r = append(r, fmt.Sprintf("--config retention.bytes=%d", this.RetentionBytes))
 	}
@@ -87,5 +92,6 @@ func (this *TopicSla) DumpForTopicsCli() []string {
 		r = append(r, fmt.Sprintf("--config retention.ms=%d",
 			int(this.RetentionHours*1000*3600)))
 	}
+
 	return r
 }

@@ -445,7 +445,7 @@ func (this *ZkCluster) AddTopic(topic string, ts *sla.TopicSla) (output []string
 		fmt.Sprintf("--create"),
 		fmt.Sprintf("--topic %s", topic),
 	}
-	args = append(args, ts.DumpForTopicsCli()...)
+	args = append(args, ts.DumpForCreateTopic()...)
 	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
 		args...)
 	if err = cmd.Open(); err != nil {
