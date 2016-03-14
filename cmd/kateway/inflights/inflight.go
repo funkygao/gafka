@@ -1,9 +1,9 @@
 package inflights
 
 type Inflights interface {
-	Land(topic, ver, group, partition string)
+	Land(cluster, topic, group, partition string)
 
-	TakeOff(topic, ver, group, partition string, offset int64) error
+	TakeOff(cluster, topic, group, partition string, offset int64) error
 }
 
 var Default Inflights
