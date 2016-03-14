@@ -75,9 +75,11 @@ func (this *TopicSla) DumpForTopicsCli() []string {
 		this.Partitions = defaultPartitions
 	}
 	r = append(r, fmt.Sprintf("--partitions %d", this.Partitions))
-	if this.Replicas != defaultReplicas && this.Replicas > 0 && this.Replicas <= maxReplicas {
-		r = append(r, fmt.Sprintf("--replication-factor %d", this.Replicas))
+	if this.Replicas < 1 || this.Replicas > maxReplicas {
+		this.Replicas = defaultReplicas
 	}
+	r = append(r, fmt.Sprintf("--replication-factor %d", this.Replicas))
+
 	if this.RetentionBytes != defaultRetentionBytes && this.RetentionBytes > 0 {
 		r = append(r, fmt.Sprintf("--config retention.bytes=%d", this.RetentionBytes))
 	}
