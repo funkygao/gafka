@@ -474,7 +474,13 @@ func (this *ZkCluster) ConfigTopic(topic string, ts *sla.TopicSla) (output []str
 		fmt.Sprintf("--alter"),
 		fmt.Sprintf("--topic %s", topic),
 	}
-	args = append(args, ts.DumpForTopicsCli()...)
+	configs := ts.DumpForAlterTopic()
+	if len(configs) == 0 {
+		err = errors.New("no alter topic configs")
+		return
+	}
+
+	args = append(args, configs...)
 	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
 		args...)
 	if err = cmd.Open(); err != nil {

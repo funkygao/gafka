@@ -231,16 +231,34 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	ok := false
+	createdOk := false
 	for _, l := range lines {
 		log.Trace("app[%s] add topic[%s] in cluster %s: %s", appid, topic, cluster, l)
 
 		if strings.Contains(l, "Created topic") {
-			ok = true
+			createdOk = true
 		}
 	}
 
-	if ok {
+	if createdOk {
+		alterConfig := ts.DumpForAlterTopic()
+		if len(alterConfig) == 0 {
+			w.Write(ResponseOk)
+			return
+		}
+
+		lines, err = zkcluster.ConfigTopic(topic, ts)
+		if err != nil {
+			log.Error("app[%s] %s alter topic: %s", appid, r.RemoteAddr, err.Error())
+
+			this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		for _, l := range lines {
+			log.Trace("app[%s] alter topic[%s] in cluster %s: %s", appid, topic, cluster, l)
+		}
+
 		w.Write(ResponseOk)
 	} else {
 		this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)

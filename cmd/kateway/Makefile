@@ -13,7 +13,7 @@ check:
 	go tool nm -size -sort=size kateway | head -n 50
 
 build:
-	go build -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY) -X github.com/funkygao/gafka.BuiltAt $(BUILD_TIME)"
+	go build -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY) -X github.com/funkygao/gafka.BuiltAt=$(BUILD_TIME)"
 
 kafka:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttps :9291 -manhttps :9293 -store dummy -id 1 -level debug -debughttp ":9194" -keyfile ssl/server.key -certfile ssl/server.pem -mstore dummy -accesslog
