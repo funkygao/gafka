@@ -423,7 +423,7 @@ Options:
 
     -public <0|1>
       Export the cluster for PubSub system or not.
-      e,g. gk cluster -z prod -c foo -s -public 1 -nickname foo
+      e,g. gk clusters -z prod -c foo -s -public 1 -nickname foo
 
     -retention n hours
       log.retention.hours of kafka.
