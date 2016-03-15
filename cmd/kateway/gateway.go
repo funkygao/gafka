@@ -13,6 +13,8 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/funkygao/gafka"
+	"github.com/funkygao/gafka/cmd/kateway/inflights"
+	"github.com/funkygao/gafka/cmd/kateway/inflights/mem"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	metadummy "github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	"github.com/funkygao/gafka/cmd/kateway/manager/mysql"
@@ -78,6 +80,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	}
 
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
+	inflights.Default = mem.New()
 
 	metaConf := zkmeta.DefaultConfig(this.zone)
 	metaConf.Refresh = metaRefreshInterval

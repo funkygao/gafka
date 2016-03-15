@@ -323,7 +323,6 @@ func (this *Gateway) guardTopicHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	ts := sla.DefaultSla()
-
 	ok, lines := createTopic(hisAppid, topic+"."+sla.SlaKeyRetryTopic, ver, ts)
 	if !ok {
 		log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} retry topic:%s",
