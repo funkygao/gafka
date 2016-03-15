@@ -103,13 +103,6 @@ func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
-func (this *Gateway) authAdmin(appid, pubkey string) (ok bool) {
-	if appid == "_psubAdmin_" && pubkey == "_wandafFan_" { // FIXME
-		ok = true
-	}
-	return
-}
-
 // /partitions/:cluster/:appid/:topic/:ver
 func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
@@ -119,7 +112,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	appid := r.Header.Get(HttpHeaderAppid)
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
-	if !this.authAdmin(appid, pubkey) {
+	if !manager.Default.AuthAdmin(appid, pubkey) {
 		log.Warn("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
 
@@ -178,7 +171,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	appid := r.Header.Get(HttpHeaderAppid)
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
-	if !this.authAdmin(appid, pubkey) {
+	if !manager.Default.AuthAdmin(appid, pubkey) {
 		log.Warn("suspicous add topic from %s(%s): {appid:%s, pubkey:%s, cluster:%s, topic:%s, ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 

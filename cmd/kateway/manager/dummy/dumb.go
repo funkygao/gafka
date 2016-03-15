@@ -11,6 +11,10 @@ func (this *dummyStore) Name() string {
 	return "dummy"
 }
 
+func (this *dummyStore) AuthAdmin(appid, pubkey string) bool {
+	return true
+}
+
 func (this *dummyStore) OwnTopic(appid, pubkey, topic string) error {
 	return nil
 }

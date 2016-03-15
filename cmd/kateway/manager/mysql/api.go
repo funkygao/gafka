@@ -4,6 +4,14 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 )
 
+func (this *mysqlStore) AuthAdmin(appid, pubkey string) bool {
+	if appid == "_psubAdmin_" && pubkey == "_wandafFan_" { // FIXME
+		return true
+	}
+
+	return false
+}
+
 func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 	if appid == "" || topic == "" {
 		return manager.ErrEmptyParam
