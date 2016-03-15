@@ -17,6 +17,10 @@ func TestBasic(t *testing.T) {
 	assert.Equal(t, nil, err)
 	err = m.TakeOff("cluster", "topic", "group", "partition", 2)
 	assert.Equal(t, inflights.ErrOutOfOrder, err)
+	err = m.Land("cluster", "topic", "group", "partition", 1)
+	assert.Equal(t, nil, err)
+	err = m.Land("cluster", "topic", "group", "partition", 2)
+	assert.Equal(t, inflights.ErrOutOfOrder, err)
 }
 
 func BenchmarkKey(b *testing.B) {
@@ -32,6 +36,6 @@ func BenchmarkTakeOffThenLand(b *testing.B) {
 	m := New()
 	for i := 0; i < b.N; i++ {
 		m.TakeOff("cluster", "topic", "group", "partition", 1)
-		m.Land("cluster", "topic", "group", "partition")
+		m.Land("cluster", "topic", "group", "partition", 1)
 	}
 }

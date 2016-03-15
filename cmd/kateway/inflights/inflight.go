@@ -1,7 +1,7 @@
 package inflights
 
 type Inflights interface {
-	Land(cluster, topic, group, partition string)
+	Land(cluster, topic, group, partition string, offset int64) error
 
 	TakeOff(cluster, topic, group, partition string, offset int64) error
 }

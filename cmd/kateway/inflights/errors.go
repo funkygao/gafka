@@ -5,5 +5,5 @@ import (
 )
 
 var (
-	ErrOutOfOrder = errors.New("out of order offset for the same partition")
+	ErrOutOfOrder = errors.New("out of order inflight offset")
 )
