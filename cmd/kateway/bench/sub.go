@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/api"
+	"github.com/funkygao/gafka/ctx"
 )
 
 var (
@@ -20,7 +21,8 @@ var (
 )
 
 func init() {
-	flag.StringVar(&addr, "addr", "http://10.1.114.159:9192", "sub kateway addr")
+	ip, _ := ctx.LocalIP()
+	flag.StringVar(&addr, "addr", fmt.Sprintf("http://%s:9192", ip), "sub kateway addr")
 	flag.StringVar(&group, "g", "mygroup1", "consumer group name")
 	flag.StringVar(&appid, "appid", "app1", "consume whose topic")
 	flag.IntVar(&step, "step", 1, "display progress step")
@@ -35,7 +37,7 @@ func main() {
 	c.Connect(addr)
 	i := 0
 	t0 := time.Now()
-	err := c.Subscribe(appid, topic, "v1", group, func(statusCode int, msg []byte) error {
+	err := c.AckedSubscribe(appid, topic, "v1", group, func(statusCode int, msg []byte) error {
 		i++
 		if n > 0 && i >= n {
 			return api.ErrSubStop
