@@ -145,12 +145,14 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if delayedAck && partitionN >= 0 && offsetN >= 0 {
-		msg := &sarama.ConsumerMessage{
+		if err = fetcher.CommitUpto(&sarama.ConsumerMessage{
 			Topic:     rawTopic,
 			Partition: int32(partitionN),
 			Offset:    offsetN,
+		}); err != nil {
+			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 		}
-		fetcher.CommitUpto(msg)
 
 		log.Debug("land {G:%s, T:%s, P:%s, O:%s}", group, rawTopic, partition, offset)
 		if err = inflights.Default.Land(cluster, rawTopic, group, partition, offsetN); err != nil {
@@ -218,6 +220,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 
 	case err = <-fetcher.Errors():
 		// e,g. consume a non-existent topic
+		// e,g. conn with broker is broken
 	}
 
 	return
