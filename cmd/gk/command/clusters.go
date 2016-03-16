@@ -257,7 +257,7 @@ func (this *Clusters) verifyBrokers(zkzone *zk.ZkZone) {
 			if !foundInLive {
 				// the broker is dead
 				this.Ui.Output(strings.Repeat(" ", 4) +
-					color.Red("broker %d %s is dead", b.Id, b.Addr()))
+					color.Red("cluster[%s] broker[%d] %s is dead", cluster, b.Id, b.Addr()))
 			}
 		}
 	})
