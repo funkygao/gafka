@@ -193,6 +193,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 	case msg := <-fetcher.Messages():
 		// TODO when remote close silently, the write still ok
 		// which will lead to msg losing for sub
+		w.Header().Set(HttpHeaderMsgKey, string(msg.Key))
 		w.Header().Set(HttpHeaderPartition, strconv.FormatInt(int64(msg.Partition), 10))
 		w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
 		if _, err = w.Write(msg.Value); err != nil {

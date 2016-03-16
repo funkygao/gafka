@@ -7,6 +7,7 @@ const (
 	HttpHeaderXForwardedFor = "X-Forwarded-For"
 	HttpHeaderPartition     = "X-Partition"
 	HttpHeaderOffset        = "X-Offset"
+	HttpHeaderMsgKey        = "X-Key"
 
 	UrlParamCluster = "cluster"
 	UrlParamTopic   = "topic"
