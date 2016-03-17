@@ -48,6 +48,7 @@ func main() {
 
 func pubGatewayLoop(seq int) {
 	cf := api.DefaultConfig()
+	cf.Debug = true
 	client := api.NewClient(appid, cf)
 	client.Connect(addr)
 

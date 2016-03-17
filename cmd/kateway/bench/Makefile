@@ -6,7 +6,8 @@ pub:pub.go
 
 sub:sub.go
 	@echo sub from kateway
-	go run sub.go -n 10 -t foobar -sleep 5s
+	go run sub.go -t foobar -sleep 5s
+	#go run sub.go -n 10 -t foobar #-sleep 5s
 
 kwsync:bench.go
 	@echo bench against kateway in sync pub mode

@@ -33,7 +33,9 @@ func init() {
 }
 
 func main() {
-	c := api.NewClient("app2", nil)
+	cf := api.DefaultConfig()
+	cf.Debug = true
+	c := api.NewClient("app2", cf)
 	c.Connect(addr)
 	i := 0
 	t0 := time.Now()
