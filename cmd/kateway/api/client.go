@@ -124,7 +124,9 @@ func (this *Client) Subscribe(appid, topic, ver, group string, h SubHandler) err
 		}
 
 		if this.cf.Debug {
-			log.Printf("got: [%s] %s", response.Status, string(b))
+			log.Printf("--> [%s] %s", response.Status, string(b))
+			log.Printf("Partition: %s, Offset: %s", response.Header.Get("X-Partition"),
+				response.Header.Get("X-Offset"))
 		}
 
 		// reuse the connection
@@ -148,9 +150,14 @@ func (this *Client) AckedSubscribe(appid, topic, ver, group string, h SubHandler
 			return errs[0]
 		}
 
+		if this.cf.Debug {
+			log.Printf("--> [%s] %s", response.Status, string(b))
+			log.Printf("Partition: %s, Offset: %s", response.Header.Get("X-Partition"),
+				response.Header.Get("X-Offset"))
+		}
+
 		req.Set("X-Partition", response.Header.Get("X-Partition"))
 		req.Set("X-Offset", response.Header.Get("X-Offset"))
-
 		if err := h(response.StatusCode, b); err != nil {
 			return err
 		}
