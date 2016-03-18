@@ -48,11 +48,17 @@ func (this *MonitorTopics) Run() {
 			if lastTotalOffsets > 0 {
 				if o-lastTotalOffsets > 0 {
 					pubQps.Mark(o - lastTotalOffsets)
+					lastTotalOffsets = o
 				} else {
+					// e,g. some topics are dead, so the next total offset < lastTotalOffset
+					// in this case, we skip this offset metric: only log warning
 					log.Warn("offset backwards: %d %d", o, lastTotalOffsets)
 				}
+			} else {
+				// the 1st run inside the loop
+				lastTotalOffsets = o
 			}
-			lastTotalOffsets = o
+
 		}
 	}
 
