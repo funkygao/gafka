@@ -231,6 +231,8 @@ func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit
 		log.Error(err.Error())
 	}
 
+	log.Trace("%s on %s listener closed", this.name, server.Addr)
+
 	// wait for active connections finish up to 4s
 	const maxWaitSeconds = 4
 	waitStart := time.Now()
