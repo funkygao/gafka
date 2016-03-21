@@ -99,7 +99,7 @@ func (this *Client) Publish(topic, ver, key string, msg []byte) (err error) {
 }
 
 func (this *Client) Subscribe(appid, topic, ver, group string, h SubHandler) error {
-	url := fmt.Sprintf("%s/topics/%s/%s/%s?group=%s&limit=1", this.addr,
+	url := fmt.Sprintf("%s/topics/%s/%s/%s?group=%s", this.addr,
 		appid, topic, ver, group)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -124,8 +124,8 @@ func (this *Client) Subscribe(appid, topic, ver, group string, h SubHandler) err
 		}
 
 		if this.cf.Debug {
-			log.Printf("--> [%s] %s", response.Status, string(b))
-			log.Printf("Partition: %s, Offset: %s", response.Header.Get("X-Partition"),
+			log.Printf("--> [%s]", response.Status)
+			log.Printf("Partition:%s Offset:%s", response.Header.Get("X-Partition"),
 				response.Header.Get("X-Offset"))
 		}
 
@@ -151,8 +151,8 @@ func (this *Client) AckedSubscribe(appid, topic, ver, group string, h SubHandler
 		}
 
 		if this.cf.Debug {
-			log.Printf("--> [%s] %s", response.Status, string(b))
-			log.Printf("Partition: %s, Offset: %s", response.Header.Get("X-Partition"),
+			log.Printf("--> [%s]", response.Status)
+			log.Printf("Partition:%s Offset:%s", response.Header.Get("X-Partition"),
 				response.Header.Get("X-Offset"))
 		}
 
