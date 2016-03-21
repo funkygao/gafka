@@ -145,6 +145,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if delayedAck && partitionN >= 0 && offsetN >= 0 {
+		// what if shutdown kateway now?
+		// the commit will be ok, and when pumpMessages, the conn will get http.StatusNoContent
 		if err = fetcher.CommitUpto(&sarama.ConsumerMessage{
 			Topic:     rawTopic,
 			Partition: int32(partitionN),
@@ -167,7 +169,10 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
-		go fetcher.Close() // wait cf.ProcessingTimeout FIXME go?
+		if err = fetcher.Close(); err != nil {
+			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+		}
 	}
 
 	return
@@ -191,14 +196,15 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 		w.Write([]byte{}) // without this, client cant get response
 
 	case msg := <-fetcher.Messages():
-		// TODO when remote close silently, the write still ok
-		// which will lead to msg losing for sub
+		partition := strconv.FormatInt(int64(msg.Partition), 10)
+
 		w.Header().Set(HttpHeaderMsgKey, string(msg.Key))
-		w.Header().Set(HttpHeaderPartition, strconv.FormatInt(int64(msg.Partition), 10))
+		w.Header().Set(HttpHeaderPartition, partition)
 		w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
+
+		// TODO when remote close silently, the write still ok
+		// which will lead to msg lost for sub
 		if _, err = w.Write(msg.Value); err != nil {
-			// TODO if cf.ChannelBufferSize > 0, client may lose message
-			// got message in chan, client not recv it but offset commited.
 			return
 		}
 
@@ -208,9 +214,9 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 				log.Error("commit offset {T:%s, P:%d, O:%d}: %v", msg.Topic, msg.Partition, msg.Offset, err)
 			}
 		} else {
-			log.Debug("takeoff {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
+			log.Debug("take off {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
 			if err = inflights.Default.TakeOff(cluster, hisAppid+"."+topic+"."+ver, group,
-				strconv.Itoa(int(msg.Partition)), msg.Offset); err != nil {
+				partition, msg.Offset); err != nil {
 				// TODO only log for now, do nothing
 				log.Error("take off {G:%s, T:%s, P:%d, O:%d} %v", group, msg.Topic, msg.Partition, msg.Offset, err)
 			}
