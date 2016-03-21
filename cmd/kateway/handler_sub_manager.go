@@ -266,8 +266,12 @@ func (this *Gateway) guardTopicHandler(w http.ResponseWriter, r *http.Request,
 		err      error
 	)
 
-	query := r.URL.Query()
-	group = query.Get("group")
+	group = params.ByName("group")
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	hisAppid = params.ByName(UrlParamAppid)
+	myAppid = r.Header.Get(HttpHeaderAppid)
+
 	if !validateGroupName(group) {
 		log.Warn("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
@@ -275,11 +279,6 @@ func (this *Gateway) guardTopicHandler(w http.ResponseWriter, r *http.Request,
 		this.writeBadRequest(w, "illegal group")
 		return
 	}
-
-	ver = params.ByName(UrlParamVersion)
-	topic = params.ByName(UrlParamTopic)
-	hisAppid = params.ByName(UrlParamAppid)
-	myAppid = r.Header.Get(HttpHeaderAppid)
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic); err != nil {
