@@ -7,12 +7,16 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kateway/inflights"
 	"github.com/funkygao/golib/cmap"
-	"github.com/funkygao/golib/io"
 )
 
-type record struct {
+type dumpRecord struct {
 	Key string
-	Val int64
+	Val message
+}
+
+type message struct {
+	Offset int64
+	Value  []byte
 }
 
 type memInflights struct {
@@ -36,7 +40,7 @@ func (this *memInflights) key(cluster, topic, group, partition string) string {
 func (this *memInflights) Land(cluster, topic, group, partition string, offset int64) error {
 	key := this.key(cluster, topic, group, partition)
 	o, found := this.offsets.Get(key)
-	if !found || o.(int64) != offset {
+	if !found || o.(message).Offset != offset {
 		return inflights.ErrOutOfOrder
 	}
 
@@ -44,22 +48,38 @@ func (this *memInflights) Land(cluster, topic, group, partition string, offset i
 	return nil
 }
 
-// FIXME not atomic, add CAS
-func (this *memInflights) TakeOff(cluster, topic, group, partition string, offset int64) error {
+func (this *memInflights) LandX(cluster, topic, group, partition string, offset int64) ([]byte, error) {
 	key := this.key(cluster, topic, group, partition)
 	o, found := this.offsets.Get(key)
-	if found && o.(int64) != offset {
+	if !found || o.(message).Offset != offset {
+		return nil, inflights.ErrOutOfOrder
+	}
+
+	msg := o.(message).Value
+
+	this.offsets.Remove(key)
+	return msg, nil
+}
+
+// FIXME not atomic, add CAS
+func (this *memInflights) TakeOff(cluster, topic, group, partition string, offset int64, msg []byte) error {
+	key := this.key(cluster, topic, group, partition)
+	o, found := this.offsets.Get(key)
+	if found && o.(message).Offset != offset {
 		return inflights.ErrOutOfOrder
 	}
 
-	this.offsets.Set(key, offset)
+	this.offsets.Set(key, message{
+		Offset: offset,
+		Value:  msg,
+	})
 	return nil
 }
 
 func (this *memInflights) TakenOff(cluster, topic, group, partition string, offset int64) bool {
 	key := this.key(cluster, topic, group, partition)
 	o, found := this.offsets.Get(key)
-	if found && o.(int64) == offset {
+	if found && o.(message).Offset == offset {
 		return true
 	}
 
@@ -71,16 +91,19 @@ func (this *memInflights) Init() error {
 		return nil
 	}
 
-	if !io.DirExists(this.snapshotFile) {
-		return nil
-	}
-
 	data, err := ioutil.ReadFile(this.snapshotFile)
 	if err != nil {
 		return err
 	}
 
-	return json.Unmarshal(data, &this.offsets)
+	dumps := make([]dumpRecord, 0)
+	if err = json.Unmarshal(data, &dumps); err != nil {
+		return err
+	}
+	for _, record := range dumps {
+		this.offsets.Set(record.Key, record.Val)
+	}
+	return nil
 }
 
 func (this *memInflights) Stop() error {
@@ -88,11 +111,11 @@ func (this *memInflights) Stop() error {
 		return nil
 	}
 
-	dumps := make([]record, 0, this.offsets.Count())
+	dumps := make([]dumpRecord, 0, this.offsets.Count())
 	for item := range this.offsets.Iter() {
-		dumps = append(dumps, record{
+		dumps = append(dumps, dumpRecord{
 			Key: item.Key,
-			Val: item.Val.(int64),
+			Val: item.Val.(message),
 		})
 	}
 	data, err := json.Marshal(dumps)
