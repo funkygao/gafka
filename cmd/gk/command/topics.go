@@ -92,7 +92,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	if configged {
 		// output header
-		this.Ui.Output(fmt.Sprintf("%25s %40s %15s", "cluster", "topic", "mtime"))
+		this.Ui.Output(fmt.Sprintf("%25s %-40s %15s", "cluster", "topic", "mtime"))
 		this.Ui.Output(fmt.Sprintf("%25s %40s %15s",
 			strings.Repeat("-", 25), strings.Repeat("-", 40), strings.Repeat("-", 15)))
 
@@ -134,7 +134,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	if !this.verbose {
 		// output header
-		this.Ui.Output(fmt.Sprintf("%30s %50s", "cluster", "topic"))
+		this.Ui.Output(fmt.Sprintf("%30s %-50s", "cluster", "topic"))
 		this.Ui.Output(fmt.Sprintf("%30s %50s",
 			strings.Repeat("-", 30), strings.Repeat("-", 50)))
 	}
@@ -341,7 +341,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		swallow(err)
 		if len(alivePartitions) != len(partions) {
 			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%30s %s %s P: %s/%+v",
-				zkcluster.Name(), color.Blue("%50s", topic), color.Red("partial dead"), color.Green("%+v", alivePartitions), partions), linesInTopicMode)
+				zkcluster.Name(), color.Blue("%-50s", topic), color.Red("partial dead"), color.Green("%+v", alivePartitions), partions), linesInTopicMode)
 		}
 
 		replicas, err := kfk.Replicas(topic, partions[0])
@@ -351,7 +351,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		if !this.verbose {
 			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%30s %s %3dP %dR %s",
 				zkcluster.Name(),
-				color.Blue("%50s", topic),
+				color.Blue("%-50s", topic),
 				len(partions), len(replicas),
 				gofmt.PrettySince(topicsCtime[topic])), linesInTopicMode)
 			continue
