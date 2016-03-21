@@ -92,7 +92,10 @@ func (this *Client) Publish(topic, ver, key string, msg []byte) (err error) {
 	}
 
 	if this.cf.Debug {
-		log.Printf("got: %s", string(b))
+		log.Printf("got: %s Partition:%s Offset:%s",
+			string(b),
+			response.Header.Get("X-Partition"),
+			response.Header.Get("X-Offset"))
 	}
 
 	return nil
