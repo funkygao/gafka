@@ -266,14 +266,14 @@ func (this *Gateway) guardTopicHandler(w http.ResponseWriter, r *http.Request,
 		err      error
 	)
 
-	group = params.ByName("group")
+	group = params.ByName(UrlParamGroup)
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
 	if !validateGroupName(group) {
-		log.Warn("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
+		log.Warn("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} illegal group name",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 		this.writeBadRequest(w, "illegal group")
@@ -301,16 +301,24 @@ func (this *Gateway) guardTopicHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	ts := sla.DefaultSla()
 	zkcluster := meta.Default.ZkCluster(cluster)
-
-	createTopic := func(appid, topic, ver string, ts *sla.TopicSla) (ok bool, lines []string) {
-		topic = meta.KafkaTopic(appid, topic, ver)
-		var err error
-		lines, err = zkcluster.AddTopic(topic, ts)
+	shadowTopics := []string{
+		meta.ShadowTopic(sla.SlaKeyRetryTopic, myAppid, hisAppid, topic, ver, group),
+		meta.ShadowTopic(sla.SlaKeyDeadLetterTopic, myAppid, hisAppid, topic, ver, group),
+	}
+	for _, t := range shadowTopics {
+		lines, err := zkcluster.AddTopic(t, ts)
 		if err != nil {
+			log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %s: %s",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				group, t, err.Error())
+
+			this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		ok := false
 		for _, l := range lines {
 			if strings.Contains(l, "Created topic") {
 				ok = true
@@ -318,27 +326,14 @@ func (this *Gateway) guardTopicHandler(w http.ResponseWriter, r *http.Request,
 			}
 		}
 
-		return
-	}
+		if !ok {
+			log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %s: %s",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				group, t, strings.Join(lines, ";"))
 
-	ts := sla.DefaultSla()
-	ok, lines := createTopic(hisAppid, topic+"."+sla.SlaKeyRetryTopic, ver, ts)
-	if !ok {
-		log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} retry topic:%s",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
-			group, strings.Join(lines, ";"))
-
-		this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)
-		return
-	}
-	ok, lines = createTopic(hisAppid, topic+"."+sla.SlaKeyDeadLetterTopic, ver, ts)
-	if !ok {
-		log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} dead topic:%s",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
-			group, strings.Join(lines, ";"))
-
-		this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)
-		return
+			this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusCreated)
