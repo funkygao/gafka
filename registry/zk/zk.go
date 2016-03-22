@@ -50,6 +50,8 @@ func (this *zkreg) keepalive() {
 			return
 
 		case evt := <-this.zkzone.SessionEvents():
+			// after zk conn lost, zklib will automatically reconnect
+			// but the ephemeral znodes have to be recreated by ourselves
 			if evt.State == zklib.StateHasSession {
 				this.zkzone.CreateEphemeralZnode(this.mypath(), this.data)
 

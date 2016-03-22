@@ -22,6 +22,7 @@ var (
 		ManHttpsAddr           string
 		DebugHttpAddr          string
 		Store                  string
+		InflightsSnapshot      string
 		ManagerStore           string
 		PidFile                string
 		CertFile               string
@@ -88,6 +89,7 @@ func parseFlags() {
 	flag.StringVar(&options.CrashLogFile, "crashlog", "", "crash log")
 	flag.StringVar(&options.CertFile, "certfile", "", "cert file path")
 	flag.StringVar(&options.PidFile, "pid", "", "pid file")
+	flag.StringVar(&options.InflightsSnapshot, "insnap", "snapshot", "inflights snapshot file name")
 	flag.StringVar(&options.KeyFile, "keyfile", "", "key file path")
 	flag.StringVar(&options.DebugHttpAddr, "debughttp", "", "debug http bind addr")
 	flag.StringVar(&options.Store, "store", "kafka", "backend store")

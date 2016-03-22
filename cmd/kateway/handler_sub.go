@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/cmd/kateway/inflights"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
@@ -21,6 +22,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic      string
+		origTopic  string
 		ver        string
 		myAppid    string
 		hisAppid   string
@@ -28,9 +30,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		group      string
 		guardName  string
 		partition  string
+		partitionN int = -1
 		offset     string
-		offsetN    int64
-		partitionN int
+		offsetN    int64 = -1
 		ack        string
 		delayedAck bool
 		err        error
@@ -44,17 +46,16 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	group = query.Get("group")
 	reset = query.Get("reset")
 	if !validateGroupName(group) {
-		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
-
 		this.writeBadRequest(w, "illegal group")
 		return
 	}
 
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
+	origTopic = topic
 	hisAppid = params.ByName(UrlParamAppid)
 	guardName = query.Get("use")
+	ack = query.Get("ack")
 	myAppid = r.Header.Get(HttpHeaderAppid)
 	if r.Header.Get("Connection") == "close" {
 		// sub should use keep-alive
@@ -71,35 +72,29 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	delayedAck = query.Get("ack") == "1"
+	delayedAck = ack == "1"
 	if delayedAck {
 		partition = r.Header.Get(HttpHeaderPartition)
 		offset = r.Header.Get(HttpHeaderOffset)
-		if partition == "" || offset == "" {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} ack with empty offset",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+		if partition != "" && offset != "" {
+			// convert partition and offset to int
 
-			this.writeBadRequest(w, "ack with empty offset or partition")
-			return
-		}
+			offsetN, err = strconv.ParseInt(offset, 10, 64)
+			if err != nil || offsetN < 0 {
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} offset:%s",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, offset)
 
-		// convert partition and offset to int
+				this.writeBadRequest(w, "ack with bad offset")
+				return
+			}
+			partitionN, err = strconv.Atoi(partition)
+			if err != nil || partitionN < 0 {
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} partition:%s",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, partition)
 
-		offsetN, err = strconv.ParseInt(offset, 10, 64)
-		if err != nil || offsetN < 0 {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} offset:%s",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, offset)
-
-			this.writeBadRequest(w, "ack with bad offset")
-			return
-		}
-		partitionN, err = strconv.Atoi(partition)
-		if err != nil || partitionN < 0 {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} partition:%s",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, partition)
-
-			this.writeBadRequest(w, "ack with bad partition")
-			return
+				this.writeBadRequest(w, "ack with bad partition")
+				return
+			}
 		}
 	}
 
@@ -148,29 +143,87 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	if delayedAck {
-		msg := &sarama.ConsumerMessage{
+	if delayedAck && partitionN >= 0 && offsetN >= 0 {
+		if shadow := r.Header.Get(HttpHeaderMsgMove); shadow != "" {
+			if shadow != sla.SlaKeyDeadLetterTopic && shadow != sla.SlaKeyRetryTopic {
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} illegal move: %s",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err, shadow)
+
+				this.writeBadRequest(w, "illegal move")
+				return
+			}
+
+			msg, err := inflights.Default.LandX(cluster, rawTopic, group, partition, offsetN)
+			if err != nil {
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+
+				// will deadloop? FIXME
+				this.writeBadRequest(w, err.Error())
+				return
+			}
+
+			shadowTopic := meta.ShadowTopic(shadow, myAppid, hisAppid, origTopic, ver, group)
+			_, _, err = store.DefaultPubStore.SyncPub(cluster, shadowTopic, nil, msg)
+			if err != nil {
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+
+				this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// skip this message in the master topic
+			if err = fetcher.CommitUpto(&sarama.ConsumerMessage{
+				Topic:     rawTopic,
+				Partition: int32(partitionN),
+				Offset:    offsetN,
+			}); err != nil {
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+			}
+
+			w.Write(ResponseOk)
+			return
+		}
+
+		// what if shutdown kateway now?
+		// the commit will be ok, and when pumpMessages, the conn will get http.StatusNoContent
+		if err = fetcher.CommitUpto(&sarama.ConsumerMessage{
 			Topic:     rawTopic,
 			Partition: int32(partitionN),
 			Offset:    offsetN,
+		}); err != nil {
+			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 		}
-		fetcher.CommitUpto(msg)
+
+		log.Debug("land {G:%s, T:%s, P:%s, O:%s}", group, rawTopic, partition, offset)
+		if err = inflights.Default.Land(cluster, rawTopic, group, partition, offsetN); err != nil {
+			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+		}
 	}
 
-	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, topic, ver, delayedAck)
+	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, cluster, topic, ver, group, delayedAck)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
-		go fetcher.Close() // wait cf.ProcessingTimeout FIXME go?
+		if err = fetcher.Close(); err != nil {
+			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+		}
+
+		this.writeErrorResponse(w, "store error encountered", http.StatusInternalServerError)
 	}
 
 	return
 }
 
 func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
-	myAppid, hisAppid, topic, ver string, delayedAck bool) (err error) {
+	myAppid, hisAppid, cluster, topic, ver, group string, delayedAck bool) (err error) {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
 	select {
@@ -187,18 +240,29 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 		w.Write([]byte{}) // without this, client cant get response
 
 	case msg := <-fetcher.Messages():
-		// TODO when remote close silently, the write still ok
-		// which will lead to msg losing for sub
-		w.Header().Set(HttpHeaderPartition, strconv.FormatInt(int64(msg.Partition), 10))
+		partition := strconv.FormatInt(int64(msg.Partition), 10)
+
+		if delayedAck {
+			log.Debug("take off {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
+			if err = inflights.Default.TakeOff(cluster, hisAppid+"."+topic+"."+ver, group,
+				partition, msg.Offset, msg.Value); err != nil {
+				// keep consuming the same message, offset never move ahead
+				return
+			}
+		}
+
+		w.Header().Set(HttpHeaderMsgKey, string(msg.Key))
+		w.Header().Set(HttpHeaderPartition, partition)
 		w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
+
+		// TODO when remote close silently, the write still ok
+		// which will lead to msg lost for sub
 		if _, err = w.Write(msg.Value); err != nil {
-			// TODO if cf.ChannelBufferSize > 0, client may lose message
-			// got message in chan, client not recv it but offset commited.
 			return
 		}
 
 		if !delayedAck {
-			log.Debug("commit offset: {T:%s, P:%d, O:%d}", msg.Topic, msg.Partition, msg.Offset)
+			log.Debug("commit offset {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
 			if err = fetcher.CommitUpto(msg); err != nil {
 				log.Error("commit offset {T:%s, P:%d, O:%d}: %v", msg.Topic, msg.Partition, msg.Offset, err)
 			}
@@ -209,6 +273,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 
 	case err = <-fetcher.Errors():
 		// e,g. consume a non-existent topic
+		// e,g. conn with broker is broken
 	}
 
 	return

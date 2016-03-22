@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/funkygao/gafka/mpool"
+	"github.com/funkygao/gorequest"
 )
 
 type SubHandler func(statusCode int, msg []byte) error
@@ -91,14 +92,17 @@ func (this *Client) Publish(topic, ver, key string, msg []byte) (err error) {
 	}
 
 	if this.cf.Debug {
-		log.Printf("got: %s", string(b))
+		log.Printf("got: %s Partition:%s Offset:%s",
+			string(b),
+			response.Header.Get("X-Partition"),
+			response.Header.Get("X-Offset"))
 	}
 
 	return nil
 }
 
 func (this *Client) Subscribe(appid, topic, ver, group string, h SubHandler) error {
-	url := fmt.Sprintf("%s/topics/%s/%s/%s?group=%s&limit=1", this.addr,
+	url := fmt.Sprintf("%s/topics/%s/%s/%s?group=%s", this.addr,
 		appid, topic, ver, group)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -123,13 +127,42 @@ func (this *Client) Subscribe(appid, topic, ver, group string, h SubHandler) err
 		}
 
 		if this.cf.Debug {
-			log.Printf("got: [%s] %s", response.Status, string(b))
+			log.Printf("--> [%s]", response.Status)
+			log.Printf("Partition:%s Offset:%s", response.Header.Get("X-Partition"),
+				response.Header.Get("X-Offset"))
 		}
 
 		// reuse the connection
 		response.Body.Close()
 
 		if err = h(response.StatusCode, b); err != nil {
+			return err
+		}
+	}
+
+}
+
+func (this *Client) AckedSubscribe(appid, topic, ver, group string, h SubHandler) error {
+	url := fmt.Sprintf("%s/topics/%s/%s/%s?group=%s&ack=1", this.addr,
+		appid, topic, ver, group)
+	req := gorequest.New()
+	req.Get(url).Set("AppId", this.cf.AppId).Set("Subkey", this.cf.Secret)
+	for {
+		response, b, errs := req.EndBytes()
+		if len(errs) > 0 {
+			return errs[0]
+		}
+
+		if this.cf.Debug {
+			log.Printf("--> [%s]", response.Status)
+			log.Printf("Partition:%s Offset:%s", response.Header.Get("X-Partition"),
+				response.Header.Get("X-Offset"))
+		}
+
+		req.Set("X-Partition", response.Header.Get("X-Partition"))
+		req.Set("X-Offset", response.Header.Get("X-Offset"))
+		//req.Set("X-Move", "retry")
+		if err := h(response.StatusCode, b); err != nil {
 			return err
 		}
 	}

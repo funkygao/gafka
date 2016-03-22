@@ -53,7 +53,7 @@ listen dashboard
 
 listen pub
     bind 0.0.0.0:10891
-    cookie PUB insert indirect
+    cookie PUB insert indirect # indirect means not sending cookie to backend
     #option httpchk GET /alive HTTP/1.1\r\nHost:pub.ffan.com
 {{range .Pub}}
     server {{.Name}} {{.Addr}} cookie {{.Name}} weight {{.Cpu}}

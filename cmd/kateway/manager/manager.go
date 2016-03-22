@@ -8,6 +8,9 @@ type Manager interface {
 	Start()
 	Stop()
 
+	// AuthAdmin check if an app with the key has admin rights.
+	AuthAdmin(appid, pubkey string) (ok bool)
+
 	// OwnTopic checks if an appid owns a topic.
 	OwnTopic(appid, pubkey, topic string) error
 

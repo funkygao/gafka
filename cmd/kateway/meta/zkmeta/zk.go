@@ -9,6 +9,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
+	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
 type zkMetaStore struct {
@@ -93,6 +94,7 @@ func (this *zkMetaStore) Start() {
 		ticker := time.NewTicker(this.cf.Refresh)
 		defer ticker.Stop()
 
+		booting := true
 		for {
 			select {
 			case <-ticker.C:
@@ -111,6 +113,17 @@ func (this *zkMetaStore) Start() {
 
 			case <-this.shutdownCh:
 				return
+
+			case evt := <-this.zkzone.SessionEvents():
+				// after zk conn lost, zklib will automatically reconnect:
+				// StateConnecting -> StateConnected -> StateHasSession
+				if evt.State == zklib.StateHasSession {
+					if booting {
+						booting = false
+					} else {
+						log.Warn("zk reconnected after session lost")
+					}
+				}
 			}
 		}
 	}()

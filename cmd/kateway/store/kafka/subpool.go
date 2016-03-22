@@ -64,12 +64,13 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	cf.Net.DialTimeout = time.Second * 10
 	cf.Net.WriteTimeout = time.Second * 10
 	cf.Net.ReadTimeout = time.Second * 10
-	cf.ChannelBufferSize = 0 // TODO
+	cf.ChannelBufferSize = 0
 	cf.Consumer.Return.Errors = true
-
 	cf.Zookeeper.Chroot = meta.Default.ZkChroot(cluster)
+	cf.Consumer.MaxProcessingTime = 100 * time.Millisecond // chan recv timeout
 	cf.Zookeeper.Timeout = zk.DefaultZkSessionTimeout()
-
+	cf.Offsets.CommitInterval = time.Minute
+	cf.Offsets.ProcessingTimeout = time.Second
 	switch resetOffset {
 	case "newest":
 		cf.Offsets.ResetOffsets = true
@@ -81,9 +82,6 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 		cf.Offsets.ResetOffsets = false
 		cf.Offsets.Initial = sarama.OffsetOldest
 	}
-	cf.Offsets.CommitInterval = time.Minute
-	// time to wait for all the offsets for a partition to be processed after stopping to consume from it.
-	cf.Offsets.ProcessingTimeout = time.Second * 10
 
 	for i := 0; i < 3; i++ {
 		// join group will async register zk owners znodes
@@ -108,13 +106,13 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 // For a given consumer client, it might be killed twice:
 // 1. on socket level, the socket is closed
 // 2. websocket/sub handler, conn closed or error occurs, explicitly kill the client
-func (this *subPool) killClient(remoteAddr string) {
+func (this *subPool) killClient(remoteAddr string) (err error) {
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 
 	this.rebalancing = true
 	if cg, present := this.clientMap[remoteAddr]; present {
-		cg.Close() // will flush offset, must wait, otherwise offset is not guanranteed
+		err = cg.Close() // will flush offset, must wait, otherwise offset is not guanranteed
 	} else {
 		// client quit before getting the chance to consume
 		// e,g. 1 partition, 2 clients, the 2nd will not get consume chance, then quit
@@ -126,7 +124,8 @@ func (this *subPool) killClient(remoteAddr string) {
 	delete(this.clientMap, remoteAddr)
 	this.rebalancing = false
 
-	log.Trace("consumer %s closed", remoteAddr)
+	log.Debug("consumer %s closed", remoteAddr)
+	return
 }
 
 func (this *subPool) Stop() {

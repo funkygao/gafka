@@ -16,7 +16,7 @@ build:
 	go build -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY) -X github.com/funkygao/gafka.BuiltAt=$(BUILD_TIME)"
 
 kafka:build
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttps :9291 -manhttps :9293 -store dummy -id 1 -level debug -debughttp ":9194" -keyfile ssl/server.key -certfile ssl/server.pem -mstore dummy -accesslog
+	GOGC=800 GODEBUG=gctrace=0 ./kateway -zone local -pubhttps :9291 -manhttps :9293 -store kafka -id 1 -level debug -debug -debughttp ":9194" -keyfile ssl/server.key -certfile ssl/server.pem -mstore dummy -accesslog -influxdbaddr= -httppanic 
 	#GOGC=800 GODEBUG="gctrace=1,schedtrace=1000,scheddetail=1" ./kateway -zone local -pubhttp :9191 -pubhttps :9291 -subhttp :9192 -manhttps :9293 -store kafka -id 1 -level trace -debughttp ":9194" -keyfile ssl/server.key -certfile ssl/server.pem -debug
 
 dummy:build

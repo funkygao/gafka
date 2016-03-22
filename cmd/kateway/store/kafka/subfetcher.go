@@ -10,6 +10,6 @@ type consumerFetcher struct {
 	store      *subStore
 }
 
-func (this *consumerFetcher) Close() {
-	this.store.subPool.killClient(this.remoteAddr)
+func (this *consumerFetcher) Close() error {
+	return this.store.subPool.killClient(this.remoteAddr)
 }

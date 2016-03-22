@@ -20,4 +20,6 @@ func (this *consumerFetcher) CommitUpto(*sarama.ConsumerMessage) error {
 	return nil
 }
 
-func (this *consumerFetcher) Close() {}
+func (this *consumerFetcher) Close() error {
+	return nil
+}

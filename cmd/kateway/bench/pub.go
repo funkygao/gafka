@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/api"
+	"github.com/funkygao/gafka/ctx"
 )
 
 var (
@@ -30,7 +31,8 @@ func main() {
 	flag.IntVar(&msgSize, "sz", 100, "msg size")
 	flag.StringVar(&appid, "appid", "app1", "app id")
 	flag.DurationVar(&sleep, "sleep", 0, "sleep between pub")
-	flag.StringVar(&addr, "h", "http://10.1.114.159:9191", "pub http addr")
+	ip, _ := ctx.LocalIP()
+	flag.StringVar(&addr, "h", fmt.Sprintf("http://%s:9191", ip.String()), "pub http addr")
 	flag.Int64Var(&step, "step", 1, "display progress step")
 	flag.StringVar(&key, "key", "", "message key")
 	flag.StringVar(&topic, "t", "foobar", "topic to pub")
@@ -46,6 +48,7 @@ func main() {
 
 func pubGatewayLoop(seq int) {
 	cf := api.DefaultConfig()
+	cf.Debug = true
 	client := api.NewClient(appid, cf)
 	client.Connect(addr)
 

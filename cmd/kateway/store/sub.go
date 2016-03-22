@@ -16,7 +16,7 @@ type Fetcher interface {
 	CommitUpto(*sarama.ConsumerMessage) error
 
 	// Close the Fetcher and do all the cleanups.
-	Close()
+	Close() error
 }
 
 // A SubStore is a generic data source that can be used to fetch messages.

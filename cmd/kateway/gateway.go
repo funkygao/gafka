@@ -13,6 +13,8 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/funkygao/gafka"
+	"github.com/funkygao/gafka/cmd/kateway/inflights"
+	"github.com/funkygao/gafka/cmd/kateway/inflights/mem"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	metadummy "github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	"github.com/funkygao/gafka/cmd/kateway/manager/mysql"
@@ -78,6 +80,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	}
 
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
+	inflights.Default = mem.New(options.InflightsSnapshot)
 
 	metaConf := zkmeta.DefaultConfig(this.zone)
 	metaConf.Refresh = metaRefreshInterval
@@ -196,6 +199,10 @@ func (this *Gateway) Start() (err error) {
 
 	this.startedAt = time.Now()
 
+	if err = inflights.Default.Init(); err != nil {
+		log.Error("inflights init: %v", err)
+	}
+
 	meta.Default.Start()
 	log.Trace("meta store[%s] started", meta.Default.Name())
 
@@ -206,7 +213,7 @@ func (this *Gateway) Start() (err error) {
 	log.Trace("guard started")
 
 	if options.EnableAccessLog {
-		if err := this.accessLogger.Start(); err != nil {
+		if err = this.accessLogger.Start(); err != nil {
 			log.Error("access logger: %s", err)
 		}
 	}
@@ -263,9 +270,6 @@ func (this *Gateway) Stop() {
 		log.Info("stopping kateway...")
 
 		close(this.shutdownCh)
-
-		this.accessLogger.Stop()
-		log.Trace("access logger closed")
 	})
 }
 
@@ -281,6 +285,11 @@ func (this *Gateway) ServeForever() {
 
 		log.Info("Deregister done, waiting for components shutdown...")
 		this.wg.Wait()
+
+		this.accessLogger.Stop()
+		log.Trace("access logger closed")
+
+		inflights.Default.Stop()
 
 		if store.DefaultPubStore != nil {
 			store.DefaultPubStore.Stop()
