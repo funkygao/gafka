@@ -22,6 +22,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic      string
+		origTopic  string
 		ver        string
 		myAppid    string
 		hisAppid   string
@@ -45,15 +46,13 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	group = query.Get("group")
 	reset = query.Get("reset")
 	if !validateGroupName(group) {
-		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
-
 		this.writeBadRequest(w, "illegal group")
 		return
 	}
 
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
+	origTopic = topic
 	hisAppid = params.ByName(UrlParamAppid)
 	guardName = query.Get("use")
 	ack = query.Get("ack")
@@ -145,6 +144,49 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if delayedAck && partitionN >= 0 && offsetN >= 0 {
+		if shadow := r.Header.Get(HttpHeaderMsgMove); shadow != "" {
+			if shadow != sla.SlaKeyDeadLetterTopic && shadow != sla.SlaKeyRetryTopic {
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} illegal move: %s",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err, shadow)
+
+				this.writeBadRequest(w, "illegal move")
+				return
+			}
+
+			msg, err := inflights.Default.LandX(cluster, rawTopic, group, partition, offsetN)
+			if err != nil {
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+
+				// will deadloop? FIXME
+				this.writeBadRequest(w, err.Error())
+				return
+			}
+
+			shadowTopic := meta.ShadowTopic(shadow, myAppid, hisAppid, origTopic, ver, group)
+			_, _, err = store.DefaultPubStore.SyncPub(cluster, shadowTopic, nil, msg)
+			if err != nil {
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+
+				this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// skip this message in the master topic
+			if err = fetcher.CommitUpto(&sarama.ConsumerMessage{
+				Topic:     rawTopic,
+				Partition: int32(partitionN),
+				Offset:    offsetN,
+			}); err != nil {
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+			}
+
+			w.Write(ResponseOk)
+			return
+		}
+
 		// what if shutdown kateway now?
 		// the commit will be ok, and when pumpMessages, the conn will get http.StatusNoContent
 		if err = fetcher.CommitUpto(&sarama.ConsumerMessage{
@@ -173,6 +215,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 		}
+
+		this.writeErrorResponse(w, "store error encountered", http.StatusInternalServerError)
 	}
 
 	return
@@ -198,6 +242,15 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 	case msg := <-fetcher.Messages():
 		partition := strconv.FormatInt(int64(msg.Partition), 10)
 
+		if delayedAck {
+			log.Debug("take off {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
+			if err = inflights.Default.TakeOff(cluster, hisAppid+"."+topic+"."+ver, group,
+				partition, msg.Offset, msg.Value); err != nil {
+				// keep consuming the same message, offset never move ahead
+				return
+			}
+		}
+
 		w.Header().Set(HttpHeaderMsgKey, string(msg.Key))
 		w.Header().Set(HttpHeaderPartition, partition)
 		w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
@@ -212,13 +265,6 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 			log.Debug("commit offset {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
 			if err = fetcher.CommitUpto(msg); err != nil {
 				log.Error("commit offset {T:%s, P:%d, O:%d}: %v", msg.Topic, msg.Partition, msg.Offset, err)
-			}
-		} else {
-			log.Debug("take off {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
-			if err = inflights.Default.TakeOff(cluster, hisAppid+"."+topic+"."+ver, group,
-				partition, msg.Offset); err != nil {
-				// TODO only log for now, do nothing
-				log.Error("take off {G:%s, T:%s, P:%d, O:%d} %v", group, msg.Topic, msg.Partition, msg.Offset, err)
 			}
 		}
 
