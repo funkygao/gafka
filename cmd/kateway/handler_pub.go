@@ -3,15 +3,12 @@
 package main
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
-	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/mpool"
 	log "github.com/funkygao/log4go"
@@ -142,43 +139,6 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 	}
 
-}
-
-// /raw/topics/:topic/:ver
-func (this *Gateway) pubRawHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	var (
-		topic string
-		ver   string
-		appid string
-	)
-
-	ver = params.ByName(UrlParamVersion)
-	topic = params.ByName(UrlParamTopic)
-	appid = r.Header.Get(HttpHeaderAppid)
-
-	if err := manager.Default.OwnTopic(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
-		log.Error("app[%s] %s %+v: %s", appid, r.RemoteAddr, params, err)
-
-		this.writeAuthFailure(w, err)
-		return
-	}
-
-	cluster, found := manager.Default.LookupCluster(appid)
-	if !found {
-		log.Error("cluster not found for app: %s", appid)
-
-		this.writeBadRequest(w, "invalid appid")
-		return
-	}
-
-	out := map[string]string{
-		"store":       "kafka",
-		"broker.list": strings.Join(meta.Default.BrokerList(cluster), ","),
-		"topic":       meta.KafkaTopic(appid, topic, ver),
-	}
-	b, _ := json.Marshal(out)
-	w.Write(b)
 }
 
 // /ws/topics/:topic/:ver

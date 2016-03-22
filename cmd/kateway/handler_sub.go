@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -278,48 +277,6 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 
 	return
 
-}
-
-// /raw/topics/:appid/:topic/:ver
-// tells client how to sub in raw mode: how to connect kafka
-func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	var (
-		topic    string
-		ver      string
-		hisAppid string
-		myAppid  string
-	)
-
-	ver = params.ByName(UrlParamVersion)
-	topic = params.ByName(UrlParamTopic)
-	hisAppid = params.ByName(UrlParamAppid)
-	myAppid = r.Header.Get(HttpHeaderAppid)
-
-	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
-		hisAppid, topic); err != nil {
-		log.Error("consumer[%s] %s {topic:%s, ver:%s, hisapp:%s}: %s",
-			myAppid, r.RemoteAddr, topic, ver, hisAppid, err)
-
-		this.writeAuthFailure(w, err)
-		return
-	}
-
-	cluster, found := manager.Default.LookupCluster(hisAppid)
-	if !found {
-		log.Error("cluster not found for subd app: %s", hisAppid)
-
-		this.writeBadRequest(w, "invalid appid")
-		return
-	}
-
-	var out = map[string]string{
-		"store": "kafka",
-		"zk":    meta.Default.ZkCluster(cluster).ZkConnectAddr(),
-		"topic": meta.KafkaTopic(hisAppid, topic, ver),
-	}
-	b, _ := json.Marshal(out)
-	w.Write(b)
 }
 
 // /ws/topics/:appid/:topic/:ver?group=xx
