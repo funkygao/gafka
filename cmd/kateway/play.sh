@@ -10,6 +10,9 @@ gk clusters -z local -c me -s -public 1 -nickname me
 # register a topic
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9193/topics/me/app1/foobar/v1?partitions=1&replicas=1'
 
+# register a shadow topic
+curl -i -XPOST -H'Appid: app14' -H'Subkey: mysubkey' http://localhost:9192/guard/app1/foobar/v1/mygroup1
+
 cd cmd/kateway/bench
 make pub
 make sub
