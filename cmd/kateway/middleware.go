@@ -25,9 +25,8 @@ func (this *Gateway) MiddlewareKateway(h httprouter.Handle) httprouter.Handle {
 
 		// TODO latency histogram here
 
-		// Delegate request to the given handle
 		ww := WrapWriter(w) // sniff the status and content size for logging
-		h(ww, r, params)
+		h(ww, r, params)    // delegate request to the given handle
 
 		if this.accessLogger != nil {
 			// NCSA Common Log Format (CLF)
