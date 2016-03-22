@@ -161,6 +161,7 @@ func (this *Client) AckedSubscribe(appid, topic, ver, group string, h SubHandler
 
 		req.Set("X-Partition", response.Header.Get("X-Partition"))
 		req.Set("X-Offset", response.Header.Get("X-Offset"))
+		//req.Set("X-Move", "retry")
 		if err := h(response.StatusCode, b); err != nil {
 			return err
 		}

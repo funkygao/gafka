@@ -154,8 +154,19 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
   yes, this is a trade off. You have to wait 5 minutes.
 
+
+### Migration
+
+    pub write both kafka and kateway
+    pub write EOF to kafka while writing START to kateway atomically (for multiple partitions?)
+        from then only pub write only to kateway
+    sub(kafka) handles messages till encounter EOF
+    sub(kateway) not handles message till encounter START
+
 ### TODO
 
+- [ ] why make sub with 15s sleep fails
+- [ ] ehaproxy session sticky
 - [ ] sub /topics/:appid/:topic/:ver/:group register group beforehand
 - [ ] register retry/dead topic for group
 - [ ] test add topic with params
