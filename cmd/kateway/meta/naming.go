@@ -16,3 +16,8 @@ func KafkaTopic(appid string, topic string, ver string) (r string) {
 	mpool.BytesBufferPut(b)
 	return
 }
+
+func ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group string) (r string) {
+	r = KafkaTopic(hisAppid, topic, ver)
+	return r + "." + myAppid + "." + group + "." + shadow
+}
