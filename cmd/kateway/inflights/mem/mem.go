@@ -7,6 +7,7 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kateway/inflights"
 	"github.com/funkygao/golib/cmap"
+	log "github.com/funkygao/log4go"
 )
 
 type dumpRecord struct {
@@ -23,24 +24,32 @@ type memInflights struct {
 	offsets cmap.ConcurrentMap
 
 	snapshotFile string
+	debug        bool
 }
 
-func New(fn string) *memInflights {
+func New(fn string, debug bool) *memInflights {
 	return &memInflights{
 		offsets:      cmap.New(),
 		snapshotFile: fn,
+		debug:        debug,
 	}
 }
 
+// FIXME bad perf
 func (this *memInflights) key(cluster, topic, group, partition string) string {
-	// FIXME bad perf
 	return fmt.Sprintf("%s:%s:%s:%s", cluster, topic, group, partition)
 }
 
 func (this *memInflights) Land(cluster, topic, group, partition string, offset int64) error {
 	key := this.key(cluster, topic, group, partition)
+	if this.debug {
+		log.Info("Land %s", key)
+	}
 	o, found := this.offsets.Get(key)
 	if !found || o.(message).Offset != offset {
+		if this.debug {
+			log.Info("out of order: %s", this)
+		}
 		return inflights.ErrOutOfOrder
 	}
 
@@ -50,8 +59,14 @@ func (this *memInflights) Land(cluster, topic, group, partition string, offset i
 
 func (this *memInflights) LandX(cluster, topic, group, partition string, offset int64) ([]byte, error) {
 	key := this.key(cluster, topic, group, partition)
+	if this.debug {
+		log.Info("LandX %s", key)
+	}
 	o, found := this.offsets.Get(key)
 	if !found || o.(message).Offset != offset {
+		if this.debug {
+			log.Info("out of order: %s", this)
+		}
 		return nil, inflights.ErrOutOfOrder
 	}
 
@@ -64,8 +79,14 @@ func (this *memInflights) LandX(cluster, topic, group, partition string, offset 
 // FIXME not atomic, add CAS
 func (this *memInflights) TakeOff(cluster, topic, group, partition string, offset int64, msg []byte) error {
 	key := this.key(cluster, topic, group, partition)
+	if this.debug {
+		log.Info("TakeOff %s", key)
+	}
 	o, found := this.offsets.Get(key)
 	if found && o.(message).Offset != offset {
+		if this.debug {
+			log.Info("out of order: %s", this)
+		}
 		return inflights.ErrOutOfOrder
 	}
 
@@ -79,11 +100,26 @@ func (this *memInflights) TakeOff(cluster, topic, group, partition string, offse
 func (this *memInflights) TakenOff(cluster, topic, group, partition string, offset int64) bool {
 	key := this.key(cluster, topic, group, partition)
 	o, found := this.offsets.Get(key)
+	if this.debug {
+		log.Info("TakenOff %s", key)
+	}
 	if found && o.(message).Offset == offset {
 		return true
 	}
 
 	return false
+}
+
+func (this *memInflights) String() string {
+	dumps := make([]dumpRecord, 0, this.offsets.Count())
+	for item := range this.offsets.Iter() {
+		dumps = append(dumps, dumpRecord{
+			Key: item.Key,
+			Val: item.Val.(message),
+		})
+	}
+	data, _ := json.Marshal(dumps)
+	return string(data)
 }
 
 func (this *memInflights) Init() error {
