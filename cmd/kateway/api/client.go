@@ -12,38 +12,52 @@ import (
 	"github.com/funkygao/gorequest"
 )
 
-type SubHandler func(statusCode int, msg []byte) error
+var (
+	ErrSubStop     = errors.New("sub stopped")
+	ErrInvalidMove = errors.New("invalid move name")
+)
+
+const (
+	ShadowRetry = "retry"
+	ShadowDead  = "dead"
+)
 
 type Client struct {
 	cf *Config
 
-	conn *http.Client
-	addr string
+	pubConn *http.Client
+	subConn *http.Client
 }
 
-func NewClient(appId string, cf *Config) *Client {
-	if cf == nil {
-		cf = DefaultConfig()
-	}
-	cf.AppId = appId
+// NewClient will create a PubSub client.
+func NewClient(cf *Config) *Client {
 	return &Client{
 		cf: cf,
-	}
-}
-
-func (this *Client) Connect(addr string) {
-	this.addr = addr
-	this.conn = &http.Client{
-		Timeout: this.cf.Timeout,
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: 1,
-			Proxy:               http.ProxyFromEnvironment,
-			Dial: (&net.Dialer{
-				Timeout: this.cf.Timeout,
-			}).Dial,
-			DisableKeepAlives:     false, // enable http conn reuse
-			ResponseHeaderTimeout: this.cf.Timeout,
-			TLSHandshakeTimeout:   this.cf.Timeout,
+		pubConn: &http.Client{
+			Timeout: cf.Timeout,
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: 1,
+				Proxy:               http.ProxyFromEnvironment,
+				Dial: (&net.Dialer{
+					Timeout: cf.Timeout,
+				}).Dial,
+				DisableKeepAlives:     false, // enable http conn reuse
+				ResponseHeaderTimeout: cf.Timeout,
+				TLSHandshakeTimeout:   cf.Timeout,
+			},
+		},
+		subConn: &http.Client{
+			Timeout: cf.Timeout,
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: 1,
+				Proxy:               http.ProxyFromEnvironment,
+				Dial: (&net.Dialer{
+					Timeout: cf.Timeout,
+				}).Dial,
+				DisableKeepAlives:     false, // enable http conn reuse
+				ResponseHeaderTimeout: cf.Timeout,
+				TLSHandshakeTimeout:   cf.Timeout,
+			},
 		},
 	}
 }
@@ -52,34 +66,35 @@ func (this *Client) Close() {
 	//	this.conn.Transport.RoundTrip().Close() TODO
 }
 
-// TODO async
-func (this *Client) Publish(topic, ver, key string, msg []byte) (err error) {
+// Pub publish a keyed message to specified versioned topic.
+func (this *Client) Pub(topic, ver string, key string, msg []byte) (err error) {
 	buf := mpool.BytesBufferGet()
 	defer mpool.BytesBufferPut(buf)
 
 	buf.Reset()
 	buf.Write(msg)
+
 	var req *http.Request
-	url := fmt.Sprintf("%s/topics/%s/%s?key=%s", this.addr, topic, ver, key)
+	url := fmt.Sprintf("%s/topics/%s/%s?key=%s",
+		this.cf.PubEndpoint,
+		topic, ver, key)
 	req, err = http.NewRequest("POST", url, buf)
 	if err != nil {
 		return
-	}
-
-	if this.cf.Debug {
-		log.Printf("pub: %s", url)
 	}
 
 	req.Header.Set("AppId", this.cf.AppId)
 	req.Header.Set("Pubkey", this.cf.Secret)
 
 	var response *http.Response
-	response, err = this.conn.Do(req)
+	response, err = this.pubConn.Do(req)
 	if err != nil {
 		return
 	}
 
-	b, err := ioutil.ReadAll(response.Body)
+	// TODO if 201, needn't read body
+	var b []byte
+	b, err = ioutil.ReadAll(response.Body)
 	if err != nil {
 		return
 	}
@@ -92,8 +107,8 @@ func (this *Client) Publish(topic, ver, key string, msg []byte) (err error) {
 	}
 
 	if this.cf.Debug {
-		log.Printf("got: %s Partition:%s Offset:%s",
-			string(b),
+		log.Printf("--> [%s]", response.Status)
+		log.Printf("Partition:%s Offset:%s",
 			response.Header.Get("X-Partition"),
 			response.Header.Get("X-Offset"))
 	}
@@ -101,8 +116,11 @@ func (this *Client) Publish(topic, ver, key string, msg []byte) (err error) {
 	return nil
 }
 
-func (this *Client) Subscribe(appid, topic, ver, group string, h SubHandler) error {
-	url := fmt.Sprintf("%s/topics/%s/%s/%s?group=%s", this.addr,
+type SubHandler func(statusCode int, msg []byte) error
+
+func (this *Client) Sub(appid, topic, ver, group string, h SubHandler) error {
+	url := fmt.Sprintf("%s/topics/%s/%s/%s?group=%s",
+		this.cf.SubEndpoint,
 		appid, topic, ver, group)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -112,11 +130,7 @@ func (this *Client) Subscribe(appid, topic, ver, group string, h SubHandler) err
 	req.Header.Set("AppId", this.cf.AppId)
 	req.Header.Set("Subkey", this.cf.Secret)
 	for {
-		if this.cf.Debug {
-			log.Printf("sub: %s", url)
-		}
-
-		response, err := this.conn.Do(req)
+		response, err := this.subConn.Do(req)
 		if err != nil {
 			return err
 		}
@@ -128,7 +142,8 @@ func (this *Client) Subscribe(appid, topic, ver, group string, h SubHandler) err
 
 		if this.cf.Debug {
 			log.Printf("--> [%s]", response.Status)
-			log.Printf("Partition:%s Offset:%s", response.Header.Get("X-Partition"),
+			log.Printf("Partition:%s Offset:%s",
+				response.Header.Get("X-Partition"),
 				response.Header.Get("X-Offset"))
 		}
 
@@ -142,28 +157,57 @@ func (this *Client) Subscribe(appid, topic, ver, group string, h SubHandler) err
 
 }
 
-func (this *Client) AckedSubscribe(appid, topic, ver, group string, h SubHandler) error {
-	url := fmt.Sprintf("%s/topics/%s/%s/%s?group=%s&ack=1", this.addr,
+type SubXHandler func(statusCode int, msg []byte, r *SubXResult) error
+type SubXResult struct {
+	Move string
+}
+
+func (this *SubXResult) Reset() {
+	this.Move = ""
+}
+
+// SubX is advanced Sub with features of delayed ack and shadow move.
+func (this *Client) SubX(appid, topic, ver, group string, guard string, h SubXHandler) error {
+	url := fmt.Sprintf("%s/topics/%s/%s/%s?group=%s&ack=1", this.cf.SubEndpoint,
 		appid, topic, ver, group)
+	if guard != "" {
+		url = fmt.Sprintf("%s&use=%s", url, guard)
+	}
 	req := gorequest.New()
 	req.Get(url).Set("AppId", this.cf.AppId).Set("Subkey", this.cf.Secret)
+	r := &SubXResult{}
 	for {
 		response, b, errs := req.EndBytes()
 		if len(errs) > 0 {
 			return errs[0]
 		}
 
+		// reset the request header
+		req.Set("X-Partition", "")
+		req.Set("X-Offset", "")
+		req.Set("X-Move", "")
+
 		if this.cf.Debug {
 			log.Printf("--> [%s]", response.Status)
-			log.Printf("Partition:%s Offset:%s", response.Header.Get("X-Partition"),
+			log.Printf("Partition:%s Offset:%s",
+				response.Header.Get("X-Partition"),
 				response.Header.Get("X-Offset"))
+		}
+
+		r.Reset()
+		if err := h(response.StatusCode, b, r); err != nil {
+			return err
 		}
 
 		req.Set("X-Partition", response.Header.Get("X-Partition"))
 		req.Set("X-Offset", response.Header.Get("X-Offset"))
-		//req.Set("X-Move", "retry")
-		if err := h(response.StatusCode, b); err != nil {
-			return err
+
+		if r.Move != "" {
+			if r.Move != ShadowRetry && r.Move != ShadowDead {
+				return ErrInvalidMove
+			}
+
+			req.Set("X-Move", r.Move)
 		}
 	}
 

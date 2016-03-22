@@ -11,6 +11,9 @@ type Config struct {
 	Timeout   time.Duration
 	KeepAlive time.Duration
 
+	PubEndpoint string // host:port
+	SubEndpoint string // host:port
+
 	Debug bool
 }
 
