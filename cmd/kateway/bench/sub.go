@@ -10,6 +10,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/api"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
+	rd "github.com/funkygao/golib/rand"
 )
 
 var (
@@ -34,6 +35,8 @@ func init() {
 	flag.DurationVar(&sleep, "sleep", 0, "sleep between pub")
 	flag.IntVar(&n, "n", 1000000, "run sub how many times")
 	flag.Parse()
+
+	rd.RandSeedWithTime()
 }
 
 func main() {
@@ -67,16 +70,18 @@ func main() {
 				log.Println(color.Green("ok"))
 			} else {
 				// this msg was not successfully handled
-				if rand.Int()%5 == 0 {
+				if rand.Int()%2 == 0 {
 					// after retry several times, give up
 					r.Move = api.ShadowRetry
 					log.Println(color.Red("shadow"))
 				} else {
 					// simulate handle msg successfully after retry
 					time.Sleep(time.Second * 10)
-					log.Println(color.Yellow("retry"))
+					log.Println(color.Yellow("retried 10s"))
 				}
 			}
+
+			log.Println()
 
 			return nil
 		})
