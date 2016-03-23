@@ -48,9 +48,10 @@ func main() {
 
 func pubGatewayLoop(seq int) {
 	cf := api.DefaultConfig()
+	cf.AppId = appid
+	cf.PubEndpoint = addr
 	cf.Debug = true
-	client := api.NewClient(appid, cf)
-	client.Connect(addr)
+	client := api.NewClient(cf)
 
 	var (
 		err error
@@ -63,9 +64,10 @@ func pubGatewayLoop(seq int) {
 		sz = msgSize + rand.Intn(msgSize)
 		no = atomic.AddInt64(&n, 1)
 
-		msg = fmt.Sprintf("w:%s seq:%-2d no:%-10d payload:%s",
+		msg = fmt.Sprintf("%s w:%s seq:%-2d no:%-10d payload:%s",
+			time.Now(),
 			workerId, seq, no, strings.Repeat("X", sz))
-		err = client.Publish(topic, "v1", key, []byte(msg))
+		err = client.Pub(topic, "v1", key, []byte(msg))
 		if err != nil {
 			fmt.Println(err)
 			no = atomic.AddInt64(&n, -1)

@@ -5,10 +5,12 @@ pub:pub.go
 	@go run pub.go -t foobar -c 1 -sz 50
 	#@go run pub.go -t foobar -sleep 1s -c 1 -sz 50
 
-sub:sub.go
+subx:sub.go
 	@echo sub from kateway
-	go run sub.go -t foobar -sleep 5s
-	#go run sub.go -n 10 -t foobar #-sleep 5s
+	go run sub.go -t foobar -mode subx -sleep 5s
+
+sub:sub.go
+	go run sub.go -t foobar -mode sub -sleep 1s
 
 kwsync:bench.go
 	@echo bench against kateway in sync pub mode

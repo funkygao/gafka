@@ -4,10 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/api"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/golib/color"
 )
 
 var (
@@ -16,6 +18,7 @@ var (
 	appid string
 	group string
 	topic string
+	mode  string
 	step  int
 	sleep time.Duration
 )
@@ -26,6 +29,7 @@ func init() {
 	flag.StringVar(&group, "g", "mygroup1", "consumer group name")
 	flag.StringVar(&appid, "appid", "app1", "consume whose topic")
 	flag.IntVar(&step, "step", 1, "display progress step")
+	flag.StringVar(&mode, "mode", "subx", "sub mode")
 	flag.StringVar(&topic, "t", "foobar", "topic to sub")
 	flag.DurationVar(&sleep, "sleep", 0, "sleep between pub")
 	flag.IntVar(&n, "n", 1000000, "run sub how many times")
@@ -35,30 +39,70 @@ func init() {
 func main() {
 	cf := api.DefaultConfig()
 	cf.Debug = true
-	c := api.NewClient("app2", cf)
-	c.Connect(addr)
+	cf.AppId = "app2"
+	cf.SubEndpoint = addr
+	c := api.NewClient(cf)
 	i := 0
 	t0 := time.Now()
-	err := c.AckedSubscribe(appid, topic, "v1", group, func(statusCode int, msg []byte) error {
-		i++
-		if n > 0 && i >= n {
-			return api.ErrSubStop
-		}
+	var err error
+	if mode == "subx" {
+		err = c.SubX(appid, topic, "v1", group, "", func(statusCode int, msg []byte,
+			r *api.SubXResult) error {
+			i++
+			if n > 0 && i >= n {
+				return api.ErrSubStop
+			}
 
-		if i%step == 0 {
-			log.Println(statusCode, string(msg))
-		}
+			if i%step == 0 {
+				log.Println(statusCode, string(msg))
+			}
 
-		if sleep > 0 {
-			time.Sleep(sleep)
-		}
+			if sleep > 0 {
+				time.Sleep(sleep)
+			}
 
-		return nil
-	})
+			// handle the msg here
+			if rand.Int()%2 == 0 {
+				// simulate handle this msg successfully
+				log.Println(color.Green("ok"))
+			} else {
+				// this msg was not successfully handled
+				if rand.Int()%5 == 0 {
+					// after retry several times, give up
+					r.Move = api.ShadowRetry
+					log.Println(color.Red("shadow"))
+				} else {
+					// simulate handle msg successfully after retry
+					time.Sleep(time.Second * 10)
+					log.Println(color.Yellow("retry"))
+				}
+			}
+
+			return nil
+		})
+	} else {
+		err = c.Sub(appid, topic, "v1", group, func(statusCode int, msg []byte) error {
+			i++
+			if n > 0 && i >= n {
+				return api.ErrSubStop
+			}
+
+			if i%step == 0 {
+				log.Println(statusCode, string(msg))
+			}
+
+			if sleep > 0 {
+				time.Sleep(sleep)
+			}
+
+			return nil
+		})
+	}
+
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	elapsed := time.Since(t0)
-	fmt.Printf("%d msgs in %s, tps: %.2f\n", n, elapsed, float64(n)/elapsed.Seconds())
+	log.Printf("%d msgs in %s, tps: %.2f\n", n, elapsed, float64(n)/elapsed.Seconds())
 }
