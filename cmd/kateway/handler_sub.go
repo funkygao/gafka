@@ -144,6 +144,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	if delayedAck && partitionN >= 0 && offsetN >= 0 {
 		if shadow := r.Header.Get(HttpHeaderMsgMove); shadow != "" {
+			// move message to shadow topic and pump next message
 			if shadow != sla.SlaKeyDeadLetterTopic && shadow != sla.SlaKeyRetryTopic {
 				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} illegal move: %s",
 					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err, shadow)
@@ -181,27 +182,25 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 			}
+		} else {
+			// what if shutdown kateway now?
+			// the commit will be ok, and when pumpMessages, the conn will get http.StatusNoContent
+			if err = fetcher.CommitUpto(&sarama.ConsumerMessage{
+				Topic:     rawTopic,
+				Partition: int32(partitionN),
+				Offset:    offsetN,
+			}); err != nil {
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+			}
 
-			w.Write(ResponseOk)
-			return
+			log.Debug("land {G:%s, T:%s, P:%s, O:%s}", group, rawTopic, partition, offset)
+			if err = inflights.Default.Land(cluster, rawTopic, group, partition, offsetN); err != nil {
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+			}
 		}
 
-		// what if shutdown kateway now?
-		// the commit will be ok, and when pumpMessages, the conn will get http.StatusNoContent
-		if err = fetcher.CommitUpto(&sarama.ConsumerMessage{
-			Topic:     rawTopic,
-			Partition: int32(partitionN),
-			Offset:    offsetN,
-		}); err != nil {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
-		}
-
-		log.Debug("land {G:%s, T:%s, P:%s, O:%s}", group, rawTopic, partition, offset)
-		if err = inflights.Default.Land(cluster, rawTopic, group, partition, offsetN); err != nil {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
-		}
 	}
 
 	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, cluster, rawTopic, ver, group, delayedAck)
