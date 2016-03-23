@@ -76,8 +76,10 @@ func main() {
 					log.Println(color.Red("shadow"))
 				} else {
 					// simulate handle msg successfully after retry
-					time.Sleep(time.Second * 10)
-					log.Println(color.Yellow("retried 10s"))
+					if sleep > 0 {
+						time.Sleep(sleep)
+					}
+					log.Println(color.Yellow("retried"))
 				}
 			}
 
