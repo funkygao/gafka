@@ -21,7 +21,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic      string
-		origTopic  string
 		ver        string
 		myAppid    string
 		hisAppid   string
@@ -51,7 +50,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
-	origTopic = topic
 	hisAppid = params.ByName(UrlParamAppid)
 	guardName = query.Get("use")
 	ack = query.Get("ack")
@@ -101,6 +99,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 		group, ack, partition, offset)
 
+	var rawTopic string
 	if guardName != "" {
 		if !sla.ValidateGuardName(guardName) {
 			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} invalid guard name",
@@ -118,9 +117,10 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			return
 		}
 
-		topic = topic + "." + guardName
+		rawTopic = meta.ShadowTopic(guardName, myAppid, hisAppid, topic, ver, group)
+	} else {
+		rawTopic = meta.KafkaTopic(hisAppid, topic, ver)
 	}
-	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
 
 	// pick a consumer from the consumer group
 	cluster, found := manager.Default.LookupCluster(hisAppid)
@@ -162,7 +162,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 				return
 			}
 
-			shadowTopic := meta.ShadowTopic(shadow, myAppid, hisAppid, origTopic, ver, group)
+			shadowTopic := meta.ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group)
 			_, _, err = store.DefaultPubStore.SyncPub(cluster, shadowTopic, nil, msg)
 			if err != nil {
 				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
@@ -204,18 +204,18 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		}
 	}
 
-	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, cluster, topic, ver, group, delayedAck)
+	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, cluster, rawTopic, ver, group, delayedAck)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+
 		if err = fetcher.Close(); err != nil {
 			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 		}
-
-		this.writeErrorResponse(w, "store error encountered", http.StatusInternalServerError)
 	}
 
 	return
@@ -243,7 +243,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 
 		if delayedAck {
 			log.Debug("take off {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
-			if err = inflights.Default.TakeOff(cluster, hisAppid+"."+topic+"."+ver, group,
+			if err = inflights.Default.TakeOff(cluster, topic, group,
 				partition, msg.Offset, msg.Value); err != nil {
 				// keep consuming the same message, offset never move ahead
 				return
