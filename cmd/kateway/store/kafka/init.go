@@ -7,6 +7,6 @@ import (
 
 func init() {
 	sarama.PanicHandler = func(err interface{}) {
-		log.Warn("sarama got panic: %v", err)
+		log.Warn("sarama got panic: %+v", err)
 	}
 }

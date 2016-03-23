@@ -15,8 +15,9 @@ type pubPool struct {
 	nextId     uint64
 	brokerList []string
 
-	syncPool  *pool.ResourcePool
-	asyncPool *pool.ResourcePool
+	syncPool    *pool.ResourcePool
+	syncAllPool *pool.ResourcePool
+	asyncPool   *pool.ResourcePool
 }
 
 func newPubPool(store *pubStore, cluster string, brokerList []string, size int) *pubPool {
@@ -35,6 +36,8 @@ func (this *pubPool) buildPools() {
 	// idleTimeout=0 means each kafka conn will last forever
 	this.syncPool = pool.NewResourcePool(this.syncProducerFactory,
 		this.size, this.size, 0)
+	this.syncAllPool = pool.NewResourcePool(this.syncAllProducerFactory,
+		30, 30, 0) // should be enough TODO
 	this.asyncPool = pool.NewResourcePool(this.asyncProducerFactory,
 		this.size, this.size, 0)
 }
@@ -69,8 +72,21 @@ func (this *pubPool) Close() {
 	this.syncPool.Close()
 	this.syncPool = nil
 
+	this.syncAllPool.Close()
+	this.syncAllPool = nil
+
 	this.asyncPool.Close()
 	this.asyncPool = nil
+}
+
+func (this *pubPool) GetSyncAllProducer() (*syncProducerClient, error) {
+	ctx := context.Background()
+	k, err := this.syncAllPool.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return k.(*syncProducerClient), nil
 }
 
 func (this *pubPool) GetSyncProducer() (*syncProducerClient, error) {
