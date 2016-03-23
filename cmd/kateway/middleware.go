@@ -3,8 +3,10 @@
 package main
 
 import (
+	"compress/gzip"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/funkygao/gafka/mpool"
@@ -18,15 +20,33 @@ func (this *Gateway) MiddlewareKateway(h httprouter.Handle) httprouter.Handle {
 		// kateway response is always json, including error reponse
 		w.Header().Set("Content-Type", "application/json; charset=utf8")
 
+		var gz *gzip.Writer = nil
+		var writer http.ResponseWriter = w
+		if options.EnableGzip && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			w.Header().Set("Content-Encoding", "gzip")
+
+			gz = gzip.NewWriter(w) // TODO only gzip more than N bytes response body
+			writer = gzipResponseWriter{Writer: gz, ResponseWriter: w}
+		}
+
 		if !options.EnableAccessLog {
-			h(w, r, params)
+			h(writer, r, params)
+
+			if gz != nil {
+				gz.Close()
+			}
+
 			return
 		}
 
 		// TODO latency histogram here
 
-		ww := WrapWriter(w) // sniff the status and content size for logging
-		h(ww, r, params)    // delegate request to the given handle
+		ww := SniffWriter(writer) // sniff the status and content size for logging
+		h(ww, r, params)          // delegate request to the given handle
+
+		if gz != nil {
+			gz.Close()
+		}
 
 		if this.accessLogger != nil {
 			// NCSA Common Log Format (CLF)
