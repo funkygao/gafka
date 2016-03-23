@@ -80,7 +80,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	}
 
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
-	inflights.Default = mem.New(options.InflightsSnapshot)
+	inflights.Default = mem.New(options.InflightsSnapshot, options.DebugSnapshot)
 
 	metaConf := zkmeta.DefaultConfig(this.zone)
 	metaConf.Refresh = metaRefreshInterval

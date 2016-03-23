@@ -38,6 +38,7 @@ var (
 		DisableMetrics         bool
 		DryRun                 bool
 		CpuAffinity            bool
+		DebugSnapshot          bool
 		EnableAccessLog        bool
 		EnableHttpPanicRecover bool
 		EnableClientStats      bool
@@ -104,6 +105,7 @@ func parseFlags() {
 	flag.BoolVar(&options.EnableAccessLog, "accesslog", false, "en(dis)able access log")
 	flag.BoolVar(&options.EnableClientStats, "clientsmap", false, "record online pub/sub clients")
 	flag.BoolVar(&options.DryRun, "dryrun", false, "dry run mode")
+	flag.BoolVar(&options.DebugSnapshot, "debugsnapshot", false, "snapshot in debug mode")
 	flag.BoolVar(&options.CpuAffinity, "cpuaffinity", false, "enable cpu affinity")
 	flag.BoolVar(&options.Ratelimit, "raltelimit", false, "enable rate limit")
 	flag.BoolVar(&options.EnableHttpPanicRecover, "httppanic", false, "enable http handler panic recover")
