@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"errors"
 	"sync/atomic"
 	"time"
 
@@ -10,14 +11,24 @@ import (
 	pool "github.com/youtube/vitess/go/pools"
 )
 
-func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
+func (this *pubPool) newSyncProducer(requiredAcks sarama.RequiredAcks) (pool.Resource, error) {
 	if len(this.brokerList) == 0 {
 		return nil, store.ErrEmptyBrokers
 	}
 
 	spc := &syncProducerClient{
-		pool: this,
-		id:   atomic.AddUint64(&this.nextId, 1),
+		cluster: this.cluster,
+		id:      atomic.AddUint64(&this.nextId, 1),
+	}
+	switch requiredAcks {
+	case sarama.WaitForAll:
+		spc.rp = this.syncAllPool
+
+	case sarama.WaitForLocal:
+		spc.rp = this.syncPool
+
+	default:
+		return nil, errors.New("illegal ack type")
 	}
 
 	var err error
@@ -31,7 +42,8 @@ func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
 	cf.Metadata.Retry.Max = 3
 	cf.Metadata.Retry.Backoff = time.Second
 
-	cf.Producer.RequiredAcks = sarama.WaitForLocal
+	cf.Producer.Timeout = time.Second * 10
+	cf.Producer.RequiredAcks = requiredAcks
 	cf.Producer.Partitioner = sarama.NewHashPartitioner
 	cf.Producer.Return.Successes = false
 	cf.Producer.Retry.Max = 3
@@ -52,14 +64,23 @@ func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
 	return spc, err
 }
 
+func (this *pubPool) syncAllProducerFactory() (pool.Resource, error) {
+	return this.newSyncProducer(sarama.WaitForAll)
+}
+
+func (this *pubPool) syncProducerFactory() (pool.Resource, error) {
+	return this.newSyncProducer(sarama.WaitForLocal)
+}
+
 func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
 	if len(this.brokerList) == 0 {
 		return nil, store.ErrEmptyBrokers
 	}
 
 	apc := &asyncProducerClient{
-		pool: this,
-		id:   atomic.AddUint64(&this.nextId, 1),
+		rp:      this.asyncPool,
+		cluster: this.cluster,
+		id:      atomic.AddUint64(&this.nextId, 1),
 	}
 
 	var err error

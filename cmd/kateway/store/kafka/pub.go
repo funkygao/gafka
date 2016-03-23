@@ -127,7 +127,8 @@ func (this *pubStore) doRefresh() {
 	this.lastRefreshedAt = time.Now()
 }
 
-func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (partition int32, offset int64, err error) {
+func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
+	key, msg []byte) (partition int32, offset int64, err error) {
 	this.poolsLock.RLock()
 	pool, present := this.pubPools[cluster]
 	this.poolsLock.RUnlock()
@@ -145,21 +146,25 @@ func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (partition
 		keyEncoder = sarama.ByteEncoder(key) // will use hash partition
 	}
 
-	// TODO can be pooled, see msgpool
 	producerMsg := &sarama.ProducerMessage{
 		Topic: topic,
 		Key:   keyEncoder,
 		Value: sarama.ByteEncoder(msg),
 	}
 
+	getProducer := pool.GetSyncProducer
+	if allAck {
+		getProducer = pool.GetSyncAllProducer
+	}
+
 	if this.dryRun {
 		// ignore kafka I/O
-		producer, err = pool.GetSyncProducer()
+		producer, err = getProducer()
 		producer.Recycle()
 		return
 	}
 
-	producer, err = pool.GetSyncProducer()
+	producer, err = getProducer()
 	if err != nil {
 		// e,g the connection is idle too long, so when get, will trigger
 		// factory method, which might lead to kafka connection error
@@ -213,6 +218,14 @@ func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (partition
 	}
 
 	return
+}
+
+func (this *pubStore) SyncAllPub(cluster, topic string, key, msg []byte) (partition int32, offset int64, err error) {
+	return this.doSyncPub(true, cluster, topic, key, msg)
+}
+
+func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (partition int32, offset int64, err error) {
+	return this.doSyncPub(false, cluster, topic, key, msg)
 }
 
 // FIXME not fully fault tolerant like SyncPub.

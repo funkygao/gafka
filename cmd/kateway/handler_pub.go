@@ -15,7 +15,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// /topics/:topic/:ver?key=mykey&async=1&delay=100
+// /topics/:topic/:ver?key=mykey&async=1&delay=100&ack=all
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	t1 := time.Now()
@@ -98,6 +98,9 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	pubMethod := store.DefaultPubStore.SyncPub
 	if query.Get("async") == "1" {
 		pubMethod = store.DefaultPubStore.AsyncPub
+	}
+	if query.Get("ack") == "all" {
+		pubMethod = store.DefaultPubStore.SyncAllPub
 	}
 
 	cluster, found := manager.Default.LookupCluster(appid)

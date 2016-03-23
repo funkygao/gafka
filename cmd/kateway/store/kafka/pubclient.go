@@ -3,12 +3,14 @@ package kafka
 import (
 	"github.com/Shopify/sarama"
 	log "github.com/funkygao/log4go"
+	pool "github.com/youtube/vitess/go/pools"
 )
 
 type syncProducerClient struct {
-	pool *pubPool
+	rp *pool.ResourcePool
 
-	id uint64
+	cluster string
+	id      uint64
 	sarama.SyncProducer
 	closed bool
 }
@@ -19,7 +21,7 @@ func (this *syncProducerClient) Id() uint64 {
 
 // Close must be called before Recycle
 func (this *syncProducerClient) Close() {
-	log.Trace("cluster[%s] closing kafka sync client: %d", this.pool.cluster, this.id)
+	log.Trace("cluster[%s] closing kafka sync client: %d", this.cluster, this.id)
 
 	// will close the producer and the kafka tcp conn
 	this.SyncProducer.Close()
@@ -28,9 +30,9 @@ func (this *syncProducerClient) Close() {
 
 func (this *syncProducerClient) Recycle() {
 	if this.closed {
-		this.pool.syncPool.Put(nil)
+		this.rp.Put(nil)
 	} else {
-		this.pool.syncPool.Put(this)
+		this.rp.Put(this)
 	}
 }
 
@@ -40,14 +42,15 @@ func (this *syncProducerClient) CloseAndRecycle() {
 }
 
 type asyncProducerClient struct {
-	pool *pubPool
+	rp *pool.ResourcePool
 
-	id uint64
+	cluster string
+	id      uint64
 	sarama.AsyncProducer
 }
 
 func (this *asyncProducerClient) Close() {
-	log.Trace("cluster[%s] closing kafka async client: %d", this.pool.cluster, this.id)
+	log.Trace("cluster[%s] closing kafka async client: %d", this.cluster, this.id)
 
 	// will flush any buffered message
 	this.AsyncProducer.AsyncClose()
@@ -58,5 +61,5 @@ func (this *asyncProducerClient) Id() uint64 {
 }
 
 func (this *asyncProducerClient) Recycle() {
-	this.pool.asyncPool.Put(this)
+	this.rp.Put(this)
 }
