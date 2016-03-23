@@ -330,16 +330,16 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 		cf.AppId = myApp
 		cf.Debug = false
 		cf.Secret = secret
-		cli := api.NewClient(myApp, cf)
-		cli.Connect(fmt.Sprintf("http://%s", kw.PubAddr))
+		cf.PubEndpoint = fmt.Sprintf("http://%s", kw.PubAddr)
+		cf.SubEndpoint = fmt.Sprintf("http://%s", kw.SubAddr)
+		cli := api.NewClient(cf)
 		msgId := rand.Int()
 		msg := fmt.Sprintf("smoke %d", msgId)
 		this.Ui.Output(fmt.Sprintf("Pub: %s", msg))
-		err := cli.Publish(topic, ver, "", []byte(msg))
+		err := cli.Pub(topic, ver, "", []byte(msg))
 		swallow(err)
 
-		cli.Connect(fmt.Sprintf("http://%s", kw.SubAddr))
-		cli.Subscribe(hisApp, topic, ver, "__smoketestonly__", func(statusCode int, msg []byte) error {
+		cli.Sub(hisApp, topic, ver, "__smoketestonly__", func(statusCode int, msg []byte) error {
 			if statusCode == http.StatusNoContent {
 				this.Ui.Output("no content, sub again")
 				return nil
