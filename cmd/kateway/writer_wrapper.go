@@ -7,6 +7,19 @@ import (
 	"net/http"
 )
 
+type gzipResponseWriter struct {
+	io.Writer
+	http.ResponseWriter
+}
+
+func (w gzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+func (w gzipResponseWriter) CloseNotify() <-chan bool {
+	return w.ResponseWriter.(http.CloseNotifier).CloseNotify()
+}
+
 type WriterWrapper interface {
 	http.ResponseWriter
 
@@ -18,14 +31,13 @@ type WriterWrapper interface {
 	BytesWritten() int
 }
 
-func WrapWriter(w http.ResponseWriter) WriterWrapper {
-	_, cn := w.(http.CloseNotifier)
+func SniffWriter(w http.ResponseWriter) WriterWrapper {
 	_, hj := w.(http.Hijacker)
 	_, rf := w.(io.ReaderFrom)
 	_, fl := w.(http.Flusher)
 
 	bw := basicWriter{ResponseWriter: w}
-	if cn && fl && hj && rf {
+	if fl && hj && rf {
 		return &fancyWriter{flushWriter{bw}}
 	}
 	if fl {
@@ -40,6 +52,10 @@ type basicWriter struct {
 	wroteHeader bool
 	code        int
 	bytes       int
+}
+
+func (this *basicWriter) CloseNotify() <-chan bool {
+	return this.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }
 
 func (this *basicWriter) Write(buf []byte) (int, error) {
