@@ -43,7 +43,7 @@ func (this *memInflights) key(cluster, topic, group, partition string) string {
 func (this *memInflights) Land(cluster, topic, group, partition string, offset int64) error {
 	key := this.key(cluster, topic, group, partition)
 	if this.debug {
-		log.Info("Land %s", key)
+		log.Info("Land %s => %d", key, offset)
 	}
 	o, found := this.offsets.Get(key)
 	if !found || o.(message).Offset != offset {
@@ -60,7 +60,7 @@ func (this *memInflights) Land(cluster, topic, group, partition string, offset i
 func (this *memInflights) LandX(cluster, topic, group, partition string, offset int64) ([]byte, error) {
 	key := this.key(cluster, topic, group, partition)
 	if this.debug {
-		log.Info("LandX %s", key)
+		log.Info("LandX %s => %d", key, offset)
 	}
 	o, found := this.offsets.Get(key)
 	if !found || o.(message).Offset != offset {
@@ -80,7 +80,7 @@ func (this *memInflights) LandX(cluster, topic, group, partition string, offset 
 func (this *memInflights) TakeOff(cluster, topic, group, partition string, offset int64, msg []byte) error {
 	key := this.key(cluster, topic, group, partition)
 	if this.debug {
-		log.Info("TakeOff %s", key)
+		log.Info("TakeOff %s => %d", key, offset)
 	}
 	o, found := this.offsets.Get(key)
 	if found && o.(message).Offset != offset {
@@ -101,7 +101,7 @@ func (this *memInflights) TakenOff(cluster, topic, group, partition string, offs
 	key := this.key(cluster, topic, group, partition)
 	o, found := this.offsets.Get(key)
 	if this.debug {
-		log.Info("TakenOff %s", key)
+		log.Info("TakenOff %s => %d", key, offset)
 	}
 	if found && o.(message).Offset == offset {
 		return true
