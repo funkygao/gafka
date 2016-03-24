@@ -25,8 +25,8 @@ var messagePool = []slabClass{
 	{maxSize: 1024, ch: make(chan *Message, 50<<10)},    // 50MB  = 1K * 50K
 	{maxSize: 2 << 10, ch: make(chan *Message, 50<<10)}, // 100MB = 2K * 50K
 	{maxSize: 4 << 10, ch: make(chan *Message, 50<<10)}, // 200MB = 4K * 50K
-	{maxSize: 8 << 10, ch: make(chan *Message, 1<<10)},  // 8MB   = 8K * 1K
-	{maxSize: 64 << 10, ch: make(chan *Message, 1<<8)},  // 16MB  = 64K * 256
+	{maxSize: 8 << 10, ch: make(chan *Message, 4<<10)},  // 32MB  = 8K * 4K
+	{maxSize: 64 << 10, ch: make(chan *Message, 1<<10)}, // 64MB  = 64K * 1K
 	{maxSize: 256 << 10, ch: make(chan *Message, 1<<7)}, // 32MB  = 256K * 128
 }
 
