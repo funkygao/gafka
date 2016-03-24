@@ -172,7 +172,10 @@ func (this *Top) drawDashboard() {
 		this.showAndResetCounters()
 		if round%maxRound == (maxRound - 5) {
 			this.mu.Lock()
-			this.totalMps = this.totalMps[0:]
+			tailLen := len(this.totalMps) - 2
+			tail := this.totalMps[tailLen:]
+			this.totalMps = make([]float64, tailLen, 1000)
+			copy(this.totalMps, tail)
 			this.mu.Unlock()
 		}
 		return this.totalMps
@@ -181,7 +184,10 @@ func (this *Top) drawDashboard() {
 	refreshConsumerData := func(round int) []float64 {
 		if round%maxRound == (maxRound - 5) {
 			this.mu.Lock()
-			this.totalConsumerMps = this.totalConsumerMps[0:]
+			tailLen := len(this.totalConsumerMps) - 2
+			tail := this.totalConsumerMps[tailLen:]
+			this.totalConsumerMps = make([]float64, tailLen, 1000)
+			copy(this.totalConsumerMps, tail)
 			this.mu.Unlock()
 		}
 		return this.totalConsumerMps
