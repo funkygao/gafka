@@ -14,7 +14,7 @@ import (
 
 var (
 	ErrSubStop     = errors.New("sub stopped")
-	ErrInvalidMove = errors.New("invalid move name")
+	ErrInvalidBury = errors.New("invalid bury name")
 )
 
 const (
@@ -159,14 +159,14 @@ func (this *Client) Sub(appid, topic, ver, group string, h SubHandler) error {
 
 type SubXHandler func(statusCode int, msg []byte, r *SubXResult) error
 type SubXResult struct {
-	Move string
+	Bury string
 }
 
 func (this *SubXResult) Reset() {
-	this.Move = ""
+	this.Bury = ""
 }
 
-// SubX is advanced Sub with features of delayed ack and shadow move.
+// SubX is advanced Sub with features of delayed ack and shadow bury.
 func (this *Client) SubX(appid, topic, ver, group string, guard string, h SubXHandler) error {
 	url := fmt.Sprintf("%s/topics/%s/%s/%s?group=%s&ack=1", this.cf.SubEndpoint,
 		appid, topic, ver, group)
@@ -185,7 +185,7 @@ func (this *Client) SubX(appid, topic, ver, group string, guard string, h SubXHa
 		// reset the request header
 		req.Set("X-Partition", "")
 		req.Set("X-Offset", "")
-		req.Set("X-Move", "")
+		req.Set("X-Bury", "")
 
 		if this.cf.Debug {
 			log.Printf("--> [%s]", response.Status)
@@ -202,12 +202,12 @@ func (this *Client) SubX(appid, topic, ver, group string, guard string, h SubXHa
 		req.Set("X-Partition", response.Header.Get("X-Partition"))
 		req.Set("X-Offset", response.Header.Get("X-Offset"))
 
-		if r.Move != "" {
-			if r.Move != ShadowRetry && r.Move != ShadowDead {
-				return ErrInvalidMove
+		if r.Bury != "" {
+			if r.Bury != ShadowRetry && r.Bury != ShadowDead {
+				return ErrInvalidBury
 			}
 
-			req.Set("X-Move", r.Move)
+			req.Set("X-Bury", r.Bury)
 		}
 	}
 

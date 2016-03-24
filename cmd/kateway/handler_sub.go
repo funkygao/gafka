@@ -143,13 +143,13 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if delayedAck && partitionN >= 0 && offsetN >= 0 {
-		if shadow := r.Header.Get(HttpHeaderMsgMove); shadow != "" {
-			// move message to shadow topic and pump next message
+		if shadow := r.Header.Get(HttpHeaderMsgBury); shadow != "" {
+			// bury message to shadow topic and pump next message
 			if shadow != sla.SlaKeyDeadLetterTopic && shadow != sla.SlaKeyRetryTopic {
-				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} illegal move: %s",
+				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} illegal bury: %s",
 					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err, shadow)
 
-				this.writeBadRequest(w, "illegal move")
+				this.writeBadRequest(w, "illegal bury")
 				return
 			}
 

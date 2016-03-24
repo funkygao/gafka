@@ -72,7 +72,7 @@ func main() {
 				// this msg was not successfully handled
 				if rand.Int()%2 == 0 {
 					// after retry several times, give up
-					r.Move = api.ShadowRetry
+					r.Bury = api.ShadowRetry
 					log.Println(color.Red("shadow"))
 				} else {
 					// simulate handle msg successfully after retry
