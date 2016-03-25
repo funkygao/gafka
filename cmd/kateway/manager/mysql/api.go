@@ -14,7 +14,7 @@ func (this *mysqlStore) AuthAdmin(appid, pubkey string) bool {
 
 func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 	if appid == "" || topic == "" {
-		return manager.ErrEmptyParam
+		return manager.ErrEmptyIdentity
 	}
 
 	// authentication
@@ -34,7 +34,7 @@ func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 
 func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic string) error {
 	if appid == "" || hisTopic == "" {
-		return manager.ErrEmptyParam
+		return manager.ErrEmptyIdentity
 	}
 
 	// authentication
