@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 
 	"github.com/funkygao/gafka/mpool"
 	"github.com/funkygao/gorequest"
@@ -75,10 +76,15 @@ func (this *Client) Pub(topic, ver string, key string, msg []byte) (err error) {
 	buf.Write(msg)
 
 	var req *http.Request
-	url := fmt.Sprintf("%s/topics/%s/%s?key=%s",
-		this.cf.PubEndpoint,
-		topic, ver, key)
-	req, err = http.NewRequest("POST", url, buf)
+	var u url.URL
+	u.Scheme = "http"
+	u.Host = this.cf.PubEndpoint
+	u.Path = fmt.Sprintf("/topics/%s/%s", topic, ver)
+	q := u.Query()
+	q.Set("key", key)
+	u.RawQuery = q.Encode()
+
+	req, err = http.NewRequest("POST", u.String(), buf)
 	if err != nil {
 		return
 	}
@@ -119,10 +125,14 @@ func (this *Client) Pub(topic, ver string, key string, msg []byte) (err error) {
 type SubHandler func(statusCode int, msg []byte) error
 
 func (this *Client) Sub(appid, topic, ver, group string, h SubHandler) error {
-	url := fmt.Sprintf("%s/topics/%s/%s/%s?group=%s",
-		this.cf.SubEndpoint,
-		appid, topic, ver, group)
-	req, err := http.NewRequest("GET", url, nil)
+	var u url.URL
+	u.Scheme = "http"
+	u.Host = this.cf.SubEndpoint
+	u.Path = fmt.Sprintf("/topics/%s/%s/%s", appid, topic, ver)
+	q := u.Query()
+	q.Set("group", group)
+	u.RawQuery = q.Encode()
+	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return err
 	}
@@ -168,13 +178,20 @@ func (this *SubXResult) Reset() {
 
 // SubX is advanced Sub with features of delayed ack and shadow bury.
 func (this *Client) SubX(appid, topic, ver, group string, guard string, h SubXHandler) error {
-	url := fmt.Sprintf("%s/topics/%s/%s/%s?group=%s&ack=1", this.cf.SubEndpoint,
-		appid, topic, ver, group)
+	var u url.URL
+	u.Scheme = "http"
+	u.Host = this.cf.SubEndpoint
+	u.Path = fmt.Sprintf("/topics/%s/%s/%s", appid, topic, ver)
+	q := u.Query()
+	q.Set("group", group)
+	q.Set("ack", "1")
 	if guard != "" {
-		url = fmt.Sprintf("%s&use=%s", url, guard)
+		q.Set("use", guard)
 	}
+	u.RawQuery = q.Encode()
+
 	req := gorequest.New()
-	req.Get(url).Set("AppId", this.cf.AppId).Set("Subkey", this.cf.Secret)
+	req.Get(u.String()).Set("AppId", this.cf.AppId).Set("Subkey", this.cf.Secret)
 	r := &SubXResult{}
 	for {
 		response, b, errs := req.EndBytes()
