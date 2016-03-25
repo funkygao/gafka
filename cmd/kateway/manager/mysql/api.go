@@ -29,7 +29,7 @@ func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 		}
 	}
 
-	return manager.ErrAuthorizationFial
+	return manager.ErrAuthorizationFail
 }
 
 func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic string) error {
@@ -54,7 +54,7 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic string) error 
 		}
 	}
 
-	return manager.ErrAuthorizationFial
+	return manager.ErrAuthorizationFail
 }
 
 func (this *mysqlStore) LookupCluster(appid string) (string, bool) {
