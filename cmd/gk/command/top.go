@@ -174,7 +174,7 @@ func (this *Top) drawDashboard() {
 			this.mu.Lock()
 			tailLen := len(this.totalMps) - 2
 			tail := this.totalMps[tailLen:]
-			this.totalMps = make([]float64, tailLen, 1000)
+			this.totalMps = make([]float64, 2, 1000)
 			copy(this.totalMps, tail)
 			this.mu.Unlock()
 		}
@@ -186,7 +186,7 @@ func (this *Top) drawDashboard() {
 			this.mu.Lock()
 			tailLen := len(this.totalConsumerMps) - 2
 			tail := this.totalConsumerMps[tailLen:]
-			this.totalConsumerMps = make([]float64, tailLen, 1000)
+			this.totalConsumerMps = make([]float64, 2, 1000)
 			copy(this.totalConsumerMps, tail)
 			this.mu.Unlock()
 		}
