@@ -25,13 +25,15 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if options.Ratelimit && !this.throttlePub.Pour(getHttpRemoteIp(r), 1) {
+		log.Warn("%s(%s) rate limit reached", r.RemoteAddr, getHttpRemoteIp(r))
+
 		this.writeQuotaExceeded(w)
 		return
 	}
 
 	appid := r.Header.Get(HttpHeaderAppid)
-	topic := params.ByName(UrlParamTopic) // params[0].Value
-	ver := params.ByName(UrlParamVersion) // params[1].Value
+	topic := params.ByName(UrlParamTopic)
+	ver := params.ByName(UrlParamVersion)
 	if err := manager.Default.OwnTopic(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
@@ -142,16 +144,4 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		this.pubMetrics.PubLatency.Update(time.Since(t1).Nanoseconds() / 1e6) // in ms
 	}
 
-}
-
-// /ws/topics/:topic/:ver
-func (this *Gateway) pubWsHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	ws, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Error("%s: %v", r.RemoteAddr, err)
-		return
-	}
-
-	defer ws.Close()
 }
