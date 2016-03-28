@@ -29,6 +29,7 @@ _testmain.go
 access_log
 prof.cpu
 bindata.go
+snapshot
 *.test
 cmd/kateway/kateway
 cmd/kateway/prof.cpu
