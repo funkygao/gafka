@@ -24,7 +24,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		hisAppid   string
 		reset      string
 		group      string
-		guardName  string
+		shadow     string
 		partition  string
 		partitionN int = -1
 		offset     string
@@ -49,7 +49,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
-	guardName = query.Get("use")
+	shadow = query.Get("use")
 	ack = query.Get("ack")
 	myAppid = r.Header.Get(HttpHeaderAppid)
 	if r.Header.Get("Connection") == "close" {
@@ -98,24 +98,24 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		group, ack, partition, offset)
 
 	var rawTopic string
-	if guardName != "" {
-		if !sla.ValidateGuardName(guardName) {
+	if shadow != "" {
+		if !sla.ValidateShadowName(shadow) {
 			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} invalid guard name",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, guardName)
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, shadow)
 
-			this.writeBadRequest(w, "invalid guard name")
+			this.writeBadRequest(w, "invalid shadow name")
 			return
 		}
 
 		if !manager.Default.IsGuardedTopic(hisAppid, topic, ver, group) {
 			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} not a guarded topic",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, guardName)
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, shadow)
 
-			this.writeBadRequest(w, "register guard before sub guarded topic")
+			this.writeBadRequest(w, "register shadow first")
 			return
 		}
 
-		rawTopic = meta.ShadowTopic(guardName, myAppid, hisAppid, topic, ver, group)
+		rawTopic = meta.ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group)
 	} else {
 		rawTopic = meta.KafkaTopic(hisAppid, topic, ver)
 	}
@@ -141,11 +141,11 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if delayedAck && partitionN >= 0 && offsetN >= 0 {
-		if shadow := r.Header.Get(HttpHeaderMsgBury); shadow != "" {
+		if bury := r.Header.Get(HttpHeaderMsgBury); bury != "" {
 			// bury message to shadow topic and pump next message
-			if shadow != sla.SlaKeyDeadLetterTopic && shadow != sla.SlaKeyRetryTopic {
+			if !sla.ValidateShadowName(bury) {
 				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} illegal bury: %s",
-					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err, shadow)
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err, bury)
 
 				this.writeBadRequest(w, "illegal bury")
 				return
@@ -161,7 +161,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 				return
 			}
 
-			shadowTopic := meta.ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group)
+			shadowTopic := meta.ShadowTopic(bury, myAppid, hisAppid, topic, ver, group)
 			_, _, err = store.DefaultPubStore.SyncPub(cluster, shadowTopic, nil, msg)
 			if err != nil {
 				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",

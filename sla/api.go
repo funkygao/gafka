@@ -1,6 +1,6 @@
 package sla
 
-func ValidateGuardName(name string) bool {
+func ValidateShadowName(name string) bool {
 	if name != SlaKeyRetryTopic && name != SlaKeyDeadLetterTopic {
 		return false
 	}
