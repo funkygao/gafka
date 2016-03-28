@@ -77,8 +77,8 @@ func (this *Client) Pub(topic, ver string, key string, msg []byte) (err error) {
 
 	var req *http.Request
 	var u url.URL
-	u.Scheme = "http"
-	u.Host = this.cf.PubEndpoint
+	u.Scheme = this.cf.Pub.Scheme
+	u.Host = this.cf.Pub.Endpoint
 	u.Path = fmt.Sprintf("/topics/%s/%s", topic, ver)
 	q := u.Query()
 	q.Set("key", key)
@@ -126,8 +126,8 @@ type SubHandler func(statusCode int, msg []byte) error
 
 func (this *Client) Sub(appid, topic, ver, group string, h SubHandler) error {
 	var u url.URL
-	u.Scheme = "http"
-	u.Host = this.cf.SubEndpoint
+	u.Scheme = this.cf.Sub.Scheme
+	u.Host = this.cf.Sub.Endpoint
 	u.Path = fmt.Sprintf("/topics/%s/%s/%s", appid, topic, ver)
 	q := u.Query()
 	q.Set("group", group)
@@ -179,8 +179,8 @@ func (this *SubXResult) Reset() {
 // SubX is advanced Sub with features of delayed ack and shadow bury.
 func (this *Client) SubX(appid, topic, ver, group string, guard string, h SubXHandler) error {
 	var u url.URL
-	u.Scheme = "http"
-	u.Host = this.cf.SubEndpoint
+	u.Scheme = this.cf.Sub.Scheme
+	u.Host = this.cf.Sub.Endpoint
 	u.Path = fmt.Sprintf("/topics/%s/%s/%s", appid, topic, ver)
 	q := u.Query()
 	q.Set("group", group)

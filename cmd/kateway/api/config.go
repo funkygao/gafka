@@ -11,16 +11,28 @@ type Config struct {
 	Timeout   time.Duration
 	KeepAlive time.Duration
 
-	PubEndpoint string // host:port
-	SubEndpoint string // host:port
+	Sub struct {
+		Scheme   string // https or http
+		Endpoint string // host:port
+	}
+
+	Pub struct {
+		Scheme   string // http or https
+		Endpoint string // host:port
+	}
 
 	Debug bool
 }
 
-func DefaultConfig() *Config {
-	return &Config{
+func DefaultConfig(appid, secret string) *Config {
+	cf := &Config{
+		AppId:     appid,
+		Secret:    secret,
 		Timeout:   time.Second * 120, // FIXME
 		KeepAlive: time.Minute,
 		Debug:     false,
 	}
+	cf.Sub.Scheme = "http"
+	cf.Pub.Scheme = "http"
+	return cf
 }

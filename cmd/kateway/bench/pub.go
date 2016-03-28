@@ -47,9 +47,8 @@ func main() {
 }
 
 func pubGatewayLoop(seq int) {
-	cf := api.DefaultConfig()
-	cf.AppId = appid
-	cf.PubEndpoint = addr
+	cf := api.DefaultConfig(appid, "mysecret")
+	cf.Pub.Endpoint = addr
 	cf.Debug = true
 	client := api.NewClient(cf)
 

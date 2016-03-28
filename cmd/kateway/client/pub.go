@@ -14,7 +14,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&addr, "addr", "http://localhost:9191", "pub kateway addr")
+	flag.StringVar(&addr, "addr", "localhost:9191", "pub kateway addr")
 	flag.IntVar(&n, "n", 50, "run pub how many times")
 	flag.StringVar(&msgKey, "key", "", "pub message key")
 
@@ -23,10 +23,11 @@ func init() {
 }
 
 func main() {
-	c := api.NewClient("demo", nil)
-	c.Connect(addr)
+	cf := api.DefaultConfig("app1", "mykey")
+	cf.Pub.Endpoint = addr
+	c := api.NewClient(cf)
 	for i := 0; i < n; i++ {
-		err := c.Publish("foobar", "v1", "", []byte("hello world"))
+		err := c.Pub("foobar", "v1", "", []byte("hello world"))
 		fmt.Println(err)
 	}
 }

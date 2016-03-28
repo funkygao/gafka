@@ -40,10 +40,9 @@ func init() {
 }
 
 func main() {
-	cf := api.DefaultConfig()
+	cf := api.DefaultConfig("app2", "mysecret")
 	cf.Debug = true
-	cf.AppId = "app2"
-	cf.SubEndpoint = addr
+	cf.Sub.Endpoint = addr
 	c := api.NewClient(cf)
 	i := 0
 	t0 := time.Now()
