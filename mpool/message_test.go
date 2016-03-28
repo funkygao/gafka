@@ -24,3 +24,11 @@ func TestMessageBytes(t *testing.T) {
 	m.WriteString("world")
 	assert.Equal(t, "helloworld", string(m.Bytes()))
 }
+
+func TestMessageWrite(t *testing.T) {
+	m := NewMessage(102)
+	m.Write([]byte("hello"))
+	m.Write([]byte(" "))
+	m.Write([]byte("world"))
+	assert.Equal(t, "hello world", string(m.Bytes()))
+}

@@ -69,6 +69,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	delayedAck = ack == "1"
 	if delayedAck {
+		// consumers use explicit acknowledges in order to signal a message as processed successfully
+		// if consumers fail to ACK, the message hangs and server will refuse to move ahead
+
 		// get the partitionN and offsetN from client header
 		partition = r.Header.Get(HttpHeaderPartition)
 		offset = r.Header.Get(HttpHeaderOffset)

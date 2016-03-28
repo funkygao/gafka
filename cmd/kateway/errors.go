@@ -5,7 +5,8 @@ import (
 )
 
 var (
-	ErrClientGone         = errors.New("remote client gone")
-	ErrTooBigPubMessage   = errors.New("too big message")
-	ErrTooSmallPubMessage = errors.New("too small message")
+	ErrClientGone           = errors.New("remote client gone")
+	ErrTooBigPubMessage     = errors.New("too big message")
+	ErrIllegalTaggedMessage = errors.New("illegal tagged message")
+	ErrTooSmallPubMessage   = errors.New("too small message")
 )
