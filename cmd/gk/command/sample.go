@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 )
 
 type Sample struct {
@@ -16,9 +17,9 @@ type Sample struct {
 }
 
 func (this *Sample) Run(args []string) (exitCode int) {
-	cmdFlags := flag.NewFlagSet("consumers", flag.ContinueOnError)
+	cmdFlags := flag.NewFlagSet("sample", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.mode, "m", "c", "")
+	cmdFlags.StringVar(&this.mode, "mode", "c", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -44,15 +45,15 @@ public class KafkaProducer {
  
     private KafkaProducer(){
         Properties props = new Properties();
-        props.put("metadata.broker.list", "192.168.193.148:9092,192.168.193.149:9092");
+        props.put("%s", "k10101a.wdds.kfk.com:10101,k10101b.wdds.kfk.com:10101");
         props.put("serializer.class", "kafka.serializer.StringEncoder");
         props.put("key.serializer.class", "kafka.serializer.StringEncoder");
  
-        //request.required.acks
-        //0, which means that the producer never waits for an acknowledgement from the broker (the same behavior as 0.7). This option provides the lowest latency but the weakest durability guarantees (some data will be lost when a server fails).
-        //1, which means that the producer gets an acknowledgement after the leader replica has received the data. This option provides better durability as the client waits until the server acknowledges the request as successful (only messages that were written to the now-dead leader but not yet replicated will be lost).
-        //-1, which means that the producer gets an acknowledgement after all in-sync replicas have received the data. This option provides the best durability, we guarantee that no messages will be lost as long as at least one in sync replica remains.
-        props.put("request.required.acks","-1");
+        // %s
+        // 0, means that the producer never waits for an acknowledgement from the broker
+        // 1, means that the producer gets an acknowledgement after the leader replica has received the data
+        //-1, means that the producer gets an acknowledgement after all in-sync replicas have received the data
+        props.put("%s", "1"); // 1 is enough in most cases
  
         producer = new Producer<String, String>(new ProducerConfig(props));
     }
@@ -64,7 +65,7 @@ public class KafkaProducer {
         while (messageNo < COUNT) {
             String key = String.valueOf(messageNo);
             String data = "hello kafka message " + key;
-            producer.send(new KeyedMessage<String, String>(TOPIC, key ,data));
+            producer.send(new KeyedMessage<String, String>(TOPIC, key, data));
             messageNo ++;
         }
     }
@@ -73,23 +74,25 @@ public class KafkaProducer {
         new KafkaProducer().produce();
     }
 }
-		`)
+        `,
+		color.Cyan("metadata.broker.list"),
+		color.Cyan("request.required.acks"),
+		color.Cyan("request.required.acks"))
 }
 
 func (*Sample) consumeSample() string {
 	return fmt.Sprintf(`
 public class KafkaConsumer {
-
     private final ConsumerConnector consumer;
 
     private KafkaConsumer() {
         Properties props = new Properties();
-        props.put("zookeeper.connect", "12.1.12.12:2181,12.1.12.13:2181:12.1.12.13:2181/kafka");
-        props.put("group.id", "group1");
+        props.put("%s", "zk2181a.wdds.zk.com:2181,zk2181b.wdds.zk.com:2181,zk2181c.wdds.zk.com:2181/kafka");
+        props.put("%s", "group1");
         props.put("zookeeper.session.timeout.ms", "4000");
         props.put("zookeeper.sync.time.ms", "200");
         props.put("auto.commit.interval.ms", "60000"); // 1m
-        props.put("auto.offset.reset", "smallest");    // largest|smallest
+        //props.put("auto.offset.reset", "smallest");    // largest | smallest
         props.put("serializer.class", "kafka.serializer.StringEncoder");
         ConsumerConfig config = new ConsumerConfig(props);
 
@@ -97,19 +100,23 @@ public class KafkaConsumer {
     }
 
     public void shutdown() {
-        if (consumer != null) consumer.shutdown();
+        if (consumer != null) {
+            consumer.shutdown();
+        }
    }
 
-    void consume(String topic, int threads) {
-    	// VERY important!
+    void consume(String topic, int %s) {
+        // %s
+        // %s
+        // %s
         Runtime.getRuntime().addShutdownHook(new Thread() {
-        	public void run() {
-        		example.shutdown();
-        	}
+            public void run() {
+                example.shutdown();
+            }
         });
 
-    	Map<String, Integer> topicCountMap = new HashMap<String, Integer>();
-        topicCountMap.put(topic, threads);
+        Map<String, Integer> topicCountMap = new HashMap<String, Integer>();
+        topicCountMap.put(topic, %s);
 
         StringDecoder keyDecoder = new StringDecoder(new VerifiableProperties());
         StringDecoder valueDecoder = new StringDecoder(new VerifiableProperties());
@@ -126,24 +133,32 @@ public class KafkaConsumer {
     public static void main(String[] args) {
         new KafkaConsumer().consume();
     }
-}	
-		`)
+}   
+        `,
+		color.Cyan("zookeeper.connect"),
+		color.Cyan("group.id"),
+		color.Green("threads"),
+		color.Red("VERY important!"),
+		color.Red("graceful shutdown the consumer group to commit consumed offset"),
+		color.Red("avoid consuming duplicated message when restarting the same consumer group"),
+		color.Green("threads"))
 }
 
 func (*Sample) Synopsis() string {
-	return "Sample code of kafka producer/consumer in Java"
+	return "Java sample code of producer/consumer"
 }
 
 func (this *Sample) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s sample -m mode
+Usage: %s sample -mode mode
 
-    Sample code of kafka producer/consumer in Java
+    Java sample code of producer/consumer
 
 Options:
 
-    -m <c|p>
-      c=consume, p=produce
+    -mode <c|p>
+      c: consumer 
+      p: producer
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
