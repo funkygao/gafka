@@ -24,6 +24,8 @@ func TestTagMessage(t *testing.T) {
 	rawMsg, err := UntagMessage(m.Body, &tags)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, string(msg), string(rawMsg))
+	assert.Equal(t, "b", tags["a"])
+	assert.Equal(t, "d", tags["c"])
 
 	m.Free()
 }
