@@ -10,6 +10,7 @@ import (
 )
 
 // /ws/topics/:topic/:ver
+// TODO not implemented yet
 func (this *Gateway) pubWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
