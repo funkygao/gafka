@@ -69,6 +69,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	delayedAck = ack == "1"
 	if delayedAck {
+		// get the partitionN and offsetN from client header
 		partition = r.Header.Get(HttpHeaderPartition)
 		offset = r.Header.Get(HttpHeaderOffset)
 		if partition != "" && offset != "" {
