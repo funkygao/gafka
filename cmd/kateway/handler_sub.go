@@ -100,15 +100,15 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	var rawTopic string
 	if shadow != "" {
 		if !sla.ValidateShadowName(shadow) {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} invalid guard name",
+			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} invalid shadow name",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, shadow)
 
 			this.writeBadRequest(w, "invalid shadow name")
 			return
 		}
 
-		if !manager.Default.IsGuardedTopic(hisAppid, topic, ver, group) {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} not a guarded topic",
+		if !manager.Default.IsShadowedTopic(hisAppid, topic, ver, group) {
+			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} not a shadowed topic",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, shadow)
 
 			this.writeBadRequest(w, "register shadow first")

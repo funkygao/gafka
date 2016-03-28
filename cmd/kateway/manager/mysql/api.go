@@ -65,7 +65,7 @@ func (this *mysqlStore) LookupCluster(appid string) (string, bool) {
 	return "", false
 }
 
-func (this *mysqlStore) IsGuardedTopic(appid, topic, ver, group string) bool {
+func (this *mysqlStore) IsShadowedTopic(appid, topic, ver, group string) bool {
 	// TODO
 	return true
 }
