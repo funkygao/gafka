@@ -47,8 +47,14 @@ func main() {
 	i := 0
 	t0 := time.Now()
 	var err error
+	opt := api.SubOption{
+		AppId: appid,
+		Topic: topic,
+		Ver:   "v1",
+		Group: group,
+	}
 	if mode == "subx" {
-		err = c.SubX(appid, topic, "v1", group, "", func(statusCode int, msg []byte,
+		err = c.SubX(opt, func(statusCode int, msg []byte,
 			r *api.SubXResult) error {
 			i++
 			if n > 0 && i >= n {
@@ -87,7 +93,7 @@ func main() {
 			return nil
 		})
 	} else {
-		err = c.Sub(appid, topic, "v1", group, func(statusCode int, msg []byte) error {
+		err = c.Sub(opt, func(statusCode int, msg []byte) error {
 			i++
 			if n > 0 && i >= n {
 				return api.ErrSubStop

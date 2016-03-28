@@ -26,8 +26,12 @@ func main() {
 	cf := api.DefaultConfig("app1", "mykey")
 	cf.Pub.Endpoint = addr
 	c := api.NewClient(cf)
+	opt := api.PubOption{
+		Topic: "foobar",
+		Ver:   "v1",
+	}
 	for i := 0; i < n; i++ {
-		err := c.Pub("foobar", "v1", "", []byte("hello world"))
+		err := c.Pub("", []byte("hello world"), opt)
 		fmt.Println(err)
 	}
 }

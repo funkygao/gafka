@@ -8,8 +8,10 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/funkygao/gafka/mpool"
+	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/gorequest"
 )
 
@@ -67,8 +69,15 @@ func (this *Client) Close() {
 	//	this.conn.Transport.RoundTrip().Close() TODO
 }
 
+type PubOption struct {
+	Topic, Ver string
+	Delay      int
+	Async      bool
+	AckAll     bool
+}
+
 // Pub publish a keyed message to specified versioned topic.
-func (this *Client) Pub(topic, ver string, key string, msg []byte) (err error) {
+func (this *Client) Pub(key string, msg []byte, opt PubOption) (err error) {
 	buf := mpool.BytesBufferGet()
 	defer mpool.BytesBufferPut(buf)
 
@@ -79,9 +88,18 @@ func (this *Client) Pub(topic, ver string, key string, msg []byte) (err error) {
 	var u url.URL
 	u.Scheme = this.cf.Pub.Scheme
 	u.Host = this.cf.Pub.Endpoint
-	u.Path = fmt.Sprintf("/topics/%s/%s", topic, ver)
+	u.Path = fmt.Sprintf("/topics/%s/%s", opt.Topic, opt.Ver)
 	q := u.Query()
 	q.Set("key", key)
+	if opt.Delay > 0 {
+		q.Set("delay", strconv.Itoa(opt.Delay))
+	}
+	if opt.AckAll {
+		q.Set("ack", "all")
+	}
+	if opt.Async {
+		q.Set("async", "1")
+	}
 	u.RawQuery = q.Encode()
 
 	req, err = http.NewRequest("POST", u.String(), buf)
@@ -122,15 +140,29 @@ func (this *Client) Pub(topic, ver string, key string, msg []byte) (err error) {
 	return nil
 }
 
+type SubOption struct {
+	AppId      string
+	Topic, Ver string
+	Group      string
+	Reset      string // newest | oldest
+	Shadow     string
+}
+
 type SubHandler func(statusCode int, msg []byte) error
 
-func (this *Client) Sub(appid, topic, ver, group string, h SubHandler) error {
+func (this *Client) Sub(opt SubOption, h SubHandler) error {
 	var u url.URL
 	u.Scheme = this.cf.Sub.Scheme
 	u.Host = this.cf.Sub.Endpoint
-	u.Path = fmt.Sprintf("/topics/%s/%s/%s", appid, topic, ver)
+	u.Path = fmt.Sprintf("/topics/%s/%s/%s", opt.AppId, opt.Topic, opt.Ver)
 	q := u.Query()
-	q.Set("group", group)
+	q.Set("group", opt.Group)
+	if opt.Shadow != "" && sla.ValidateShadowName(opt.Shadow) {
+		q.Set("use", opt.Shadow)
+	}
+	if opt.Reset != "" {
+		q.Set("reset", opt.Reset)
+	}
 	u.RawQuery = q.Encode()
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
@@ -177,16 +209,19 @@ func (this *SubXResult) Reset() {
 }
 
 // SubX is advanced Sub with features of delayed ack and shadow bury.
-func (this *Client) SubX(appid, topic, ver, group string, guard string, h SubXHandler) error {
+func (this *Client) SubX(opt SubOption, h SubXHandler) error {
 	var u url.URL
 	u.Scheme = this.cf.Sub.Scheme
 	u.Host = this.cf.Sub.Endpoint
-	u.Path = fmt.Sprintf("/topics/%s/%s/%s", appid, topic, ver)
+	u.Path = fmt.Sprintf("/topics/%s/%s/%s", opt.AppId, opt.Topic, opt.Ver)
 	q := u.Query()
-	q.Set("group", group)
+	q.Set("group", opt.Group)
 	q.Set("ack", "1")
-	if guard != "" {
-		q.Set("use", guard)
+	if opt.Shadow != "" && sla.ValidateShadowName(opt.Shadow) {
+		q.Set("use", opt.Shadow)
+	}
+	if opt.Reset != "" {
+		q.Set("reset", opt.Reset)
 	}
 	u.RawQuery = q.Encode()
 

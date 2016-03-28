@@ -27,7 +27,13 @@ func main() {
 	cf.Sub.Endpoint = addr
 	c := api.NewClient(cf)
 	i := 0
-	err := c.Sub(appid, "foobar", "ver", group, func(statusCode int, msg []byte) error {
+	opt := api.SubOption{
+		AppId: appid,
+		Topic: "foobar",
+		Ver:   "ver",
+		Group: group,
+	}
+	err := c.Sub(opt, func(statusCode int, msg []byte) error {
 		fmt.Printf("%10d: %s\n", i+1, string(msg))
 
 		i++

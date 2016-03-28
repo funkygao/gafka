@@ -59,6 +59,9 @@ func pubGatewayLoop(seq int) {
 		sz  int
 	)
 
+	var opt api.PubOption
+	opt.Topic = topic
+	opt.Ver = "v1"
 	for {
 		sz = msgSize + rand.Intn(msgSize)
 		no = atomic.AddInt64(&n, 1)
@@ -66,7 +69,7 @@ func pubGatewayLoop(seq int) {
 		msg = fmt.Sprintf("%s w:%s seq:%-2d no:%-10d payload:%s",
 			time.Now(),
 			workerId, seq, no, strings.Repeat("X", sz))
-		err = client.Pub(topic, "v1", key, []byte(msg))
+		err = client.Pub(key, []byte(msg), opt)
 		if err != nil {
 			fmt.Println(err)
 			no = atomic.AddInt64(&n, -1)
