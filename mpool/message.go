@@ -70,6 +70,17 @@ func (this *Message) WriteString(s string) error {
 	return nil
 }
 
+func (this *Message) Write(b []byte) error {
+	if len(b)+this.offset > cap(this.bodyBuf) {
+		return ErrorMessageOverflow
+	}
+
+	this.Body = this.Body[0 : this.offset+len(b)]
+	copy(this.Body[this.offset:], b)
+	this.offset += len(b)
+	return nil
+}
+
 func (this *Message) Bytes() []byte {
 	return this.Body[0:]
 }
