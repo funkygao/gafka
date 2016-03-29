@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/funkygao/assert"
@@ -28,4 +29,18 @@ func TestTagMessage(t *testing.T) {
 	assert.Equal(t, "d", tags["c"])
 
 	m.Free()
+}
+
+func BenchmarkTagMessage(b *testing.B) {
+	msg := []byte(strings.Repeat("X", 1250))
+	tags := map[string]string{
+		"a": "b",
+		"c": "d",
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		m := TagMessage(tags, msg)
+		m.Free()
+	}
+	b.SetBytes(1250)
 }
