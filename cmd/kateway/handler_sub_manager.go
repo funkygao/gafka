@@ -87,7 +87,7 @@ func (this *Gateway) topicSubStatus(cluster string, myAppid, hisAppid, topic, ve
 
 // /status/:appid/:topic/:ver?group=xx
 // FIXME currently there might be in flight offsets because of batch offset commit
-// TODO show guarded consumers too
+// TODO show shadow consumers too
 func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -143,7 +143,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // /groups/:appid/:topic/:ver/:group
-// TODO delete guarded consumers too
+// TODO delete shadow consumers too
 func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -254,8 +254,8 @@ func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// /guard/:appid/:topic/:ver/:group
-func (this *Gateway) guardTopicHandler(w http.ResponseWriter, r *http.Request,
+// /shadow/:appid/:topic/:ver/:group
+func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic    string
@@ -273,7 +273,7 @@ func (this *Gateway) guardTopicHandler(w http.ResponseWriter, r *http.Request,
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
 	if !validateGroupName(group) {
-		log.Warn("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} illegal group name",
+		log.Warn("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} illegal group name",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 		this.writeBadRequest(w, "illegal group")
@@ -282,19 +282,19 @@ func (this *Gateway) guardTopicHandler(w http.ResponseWriter, r *http.Request,
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic); err != nil {
-		log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+		log.Error("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
 		this.writeAuthFailure(w, err)
 		return
 	}
 
-	log.Info("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s}",
+	log.Info("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s}",
 		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
+		log.Error("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 		this.writeBadRequest(w, "invalid appid")
@@ -310,7 +310,7 @@ func (this *Gateway) guardTopicHandler(w http.ResponseWriter, r *http.Request,
 	for _, t := range shadowTopics {
 		lines, err := zkcluster.AddTopic(t, ts)
 		if err != nil {
-			log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %s: %s",
+			log.Error("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %s: %s",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, t, err.Error())
 
@@ -327,7 +327,7 @@ func (this *Gateway) guardTopicHandler(w http.ResponseWriter, r *http.Request,
 		}
 
 		if !ok {
-			log.Error("guard sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %s: %s",
+			log.Error("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %s: %s",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, t, strings.Join(lines, ";"))
 
