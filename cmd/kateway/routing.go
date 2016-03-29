@@ -21,14 +21,16 @@ func (this *Gateway) buildRouting() {
 	this.manServer.Router().POST("/topics/:cluster/:appid/:topic/:ver", m(this.addTopicHandler))
 
 	if this.pubServer != nil {
-		this.pubServer.Router().POST("/topics/:topic/:ver", m(this.pubHandler))
-		this.pubServer.Router().POST("/ws/topics/:topic/:ver", m(this.pubWsHandler))
+		this.pubServer.Router().POST("/topics/:topic/:ver", m(this.pubHandler)) // TODO topics->msgs
+		this.pubServer.Router().POST("/ws/msgs/:topic/:ver", m(this.pubWsHandler))
+		this.pubServer.Router().POST("/jobs/:topic/:ver", m(this.addJobHandler))
+		this.pubServer.Router().DELETE("/jobs/:id", m(this.deleteJobHandler))
 		this.pubServer.Router().GET("/alive", m(this.checkAliveHandler))
 	}
 
 	if this.subServer != nil {
-		this.subServer.Router().GET("/topics/:appid/:topic/:ver", m(this.subHandler))
-		this.subServer.Router().GET("/ws/topics/:appid/:topic/:ver", m(this.subWsHandler))
+		this.subServer.Router().GET("/topics/:appid/:topic/:ver", m(this.subHandler)) // TODO topics->msgs
+		this.subServer.Router().GET("/ws/msgs/:appid/:topic/:ver", m(this.subWsHandler))
 		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
 
 		// api for pubsub manager
