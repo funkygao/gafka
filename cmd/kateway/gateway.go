@@ -206,7 +206,9 @@ func (this *Gateway) Start() (err error) {
 	meta.Default.Start()
 	log.Trace("meta store[%s] started", meta.Default.Name())
 
-	manager.Default.Start()
+	if err = manager.Default.Start(); err != nil {
+		return
+	}
 	log.Trace("manager store[%s] started", manager.Default.Name())
 
 	this.guard.Start()
