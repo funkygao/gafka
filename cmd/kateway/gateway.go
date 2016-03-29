@@ -13,8 +13,8 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/funkygao/gafka"
-	"github.com/funkygao/gafka/cmd/kateway/inflights"
-	"github.com/funkygao/gafka/cmd/kateway/inflights/mem"
+	"github.com/funkygao/gafka/cmd/kateway/inflight"
+	"github.com/funkygao/gafka/cmd/kateway/inflight/mem"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	metadummy "github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	"github.com/funkygao/gafka/cmd/kateway/manager/mysql"
@@ -35,18 +35,17 @@ import (
 
 // Gateway is a distributed kafka Pub/Sub HTTP endpoint.
 type Gateway struct {
-	id        string
-	startedAt time.Time
-	zone      string
+	id     string // must be unique across the cluster
+	zone   string
+	zkzone *gzk.ZkZone // load/resume/flush counter metrics to zk
 
+	startedAt    time.Time
 	shutdownOnce sync.Once
 	shutdownCh   chan struct{}
 	wg           sync.WaitGroup
 
 	certFile string
 	keyFile  string
-
-	zkzone *gzk.ZkZone // load/resume/flush counter metrics to zk
 
 	pubServer *pubServer
 	subServer *subServer
@@ -71,7 +70,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		id:                id,
 		zone:              options.Zone,
 		shutdownCh:        make(chan struct{}),
-		throttlePub:       ratelimiter.NewLeakyBuckets(10000*60, time.Minute), // TODO
+		throttlePub:       ratelimiter.NewLeakyBuckets(options.PubQpsLimit, time.Minute),
 		throttleAddTopic:  ratelimiter.NewLeakyBuckets(60, time.Minute),
 		throttleSubStatus: ratelimiter.NewLeakyBuckets(60, time.Minute),
 		certFile:          options.CertFile,
@@ -80,7 +79,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	}
 
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
-	inflights.Default = mem.New(options.InflightsSnapshot, options.DebugSnapshot)
+	inflight.Default = mem.New(options.InflightsSnapshot, options.DebugSnapshot)
 
 	metaConf := zkmeta.DefaultConfig(this.zone)
 	metaConf.Refresh = metaRefreshInterval
@@ -199,8 +198,8 @@ func (this *Gateway) Start() (err error) {
 
 	this.startedAt = time.Now()
 
-	if err = inflights.Default.Init(); err != nil {
-		log.Error("inflights init: %v", err)
+	if err = inflight.Default.Init(); err != nil {
+		log.Error("inflight init: %v", err)
 	}
 
 	meta.Default.Start()
@@ -291,7 +290,7 @@ func (this *Gateway) ServeForever() {
 		this.accessLogger.Stop()
 		log.Trace("access logger closed")
 
-		inflights.Default.Stop()
+		inflight.Default.Stop()
 
 		if store.DefaultPubStore != nil {
 			store.DefaultPubStore.Stop()

@@ -1,6 +1,6 @@
-package inflights
+package inflight
 
-type Inflights interface {
+type Inflight interface {
 	Land(cluster, topic, group, partition string, offset int64) error
 
 	LandX(cluster, topic, group, partition string, offset int64) ([]byte, error)
@@ -11,4 +11,4 @@ type Inflights interface {
 	Stop() error
 }
 
-var Default Inflights
+var Default Inflight

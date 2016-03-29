@@ -1,4 +1,4 @@
-package inflights
+package inflight
 
 import (
 	"errors"

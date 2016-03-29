@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/Shopify/sarama"
-	"github.com/funkygao/gafka/cmd/kateway/inflights"
+	"github.com/funkygao/gafka/cmd/kateway/inflight"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
@@ -155,7 +155,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 				return
 			}
 
-			msg, err := inflights.Default.LandX(cluster, rawTopic, group, partition, offsetN)
+			msg, err := inflight.Default.LandX(cluster, rawTopic, group, partition, offsetN)
 			if err != nil {
 				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
@@ -197,7 +197,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			}
 
 			log.Debug("land {G:%s, T:%s, P:%s, O:%s}", group, rawTopic, partition, offset)
-			if err = inflights.Default.Land(cluster, rawTopic, group, partition, offsetN); err != nil {
+			if err = inflight.Default.Land(cluster, rawTopic, group, partition, offsetN); err != nil {
 				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 			}
@@ -244,7 +244,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 
 		if delayedAck {
 			log.Debug("take off {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
-			if err = inflights.Default.TakeOff(cluster, topic, group,
+			if err = inflight.Default.TakeOff(cluster, topic, group,
 				partition, msg.Offset, msg.Value); err != nil {
 				// keep consuming the same message, offset never move ahead
 				return

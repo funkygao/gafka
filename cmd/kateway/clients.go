@@ -8,6 +8,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+// ClientStates keeps the active Pub/Sub client state info, so that
+// we can list online Pub/Sub remote addresses.
 type ClientStates struct {
 	// client states TODO differetiate ws and normal client
 	pubMap         map[string]string   // haproxyHostPort=>realHostPort

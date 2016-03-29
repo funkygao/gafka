@@ -1,4 +1,4 @@
-// Package inflights provides storage for manipulating inflight
+// Package inflight provides storage for manipulating inflight
 // message offsets.
 //
 //  server               client
@@ -18,4 +18,4 @@
 //    |        Sub/Land(2) |
 //    |<-------------------|
 //    |                    |
-package inflights
+package inflight

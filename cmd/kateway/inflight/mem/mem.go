@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/funkygao/gafka/cmd/kateway/inflights"
+	"github.com/funkygao/gafka/cmd/kateway/inflight"
 	"github.com/funkygao/golib/cmap"
 	log "github.com/funkygao/log4go"
 )
@@ -21,15 +21,15 @@ type message struct {
 	Value  []byte
 }
 
-type memInflights struct {
+type memInflight struct {
 	offsets cmap.ConcurrentMap
 
 	snapshotFile string
 	debug        bool
 }
 
-func New(fn string, debug bool) *memInflights {
-	return &memInflights{
+func New(fn string, debug bool) *memInflight {
+	return &memInflight{
 		offsets:      cmap.New(),
 		snapshotFile: fn,
 		debug:        debug,
@@ -37,11 +37,11 @@ func New(fn string, debug bool) *memInflights {
 }
 
 // FIXME bad perf
-func (this *memInflights) key(cluster, topic, group, partition string) string {
+func (this *memInflight) key(cluster, topic, group, partition string) string {
 	return fmt.Sprintf("%s:%s:%s:%s", cluster, topic, group, partition)
 }
 
-func (this *memInflights) Land(cluster, topic, group, partition string, offset int64) error {
+func (this *memInflight) Land(cluster, topic, group, partition string, offset int64) error {
 	key := this.key(cluster, topic, group, partition)
 	if this.debug {
 		log.Debug("Land %s => %d", key, offset)
@@ -51,14 +51,14 @@ func (this *memInflights) Land(cluster, topic, group, partition string, offset i
 		if this.debug {
 			log.Error("out of order: %s", this)
 		}
-		return inflights.ErrOutOfOrder
+		return inflight.ErrOutOfOrder
 	}
 
 	this.offsets.Remove(key)
 	return nil
 }
 
-func (this *memInflights) LandX(cluster, topic, group, partition string, offset int64) ([]byte, error) {
+func (this *memInflight) LandX(cluster, topic, group, partition string, offset int64) ([]byte, error) {
 	key := this.key(cluster, topic, group, partition)
 	if this.debug {
 		log.Debug("LandX %s => %d", key, offset)
@@ -68,7 +68,7 @@ func (this *memInflights) LandX(cluster, topic, group, partition string, offset 
 		if this.debug {
 			log.Error("out of order: %s", this)
 		}
-		return nil, inflights.ErrOutOfOrder
+		return nil, inflight.ErrOutOfOrder
 	}
 
 	msg := o.(message).Value
@@ -78,7 +78,7 @@ func (this *memInflights) LandX(cluster, topic, group, partition string, offset 
 }
 
 // FIXME not atomic, add CAS
-func (this *memInflights) TakeOff(cluster, topic, group, partition string, offset int64, msg []byte) error {
+func (this *memInflight) TakeOff(cluster, topic, group, partition string, offset int64, msg []byte) error {
 	key := this.key(cluster, topic, group, partition)
 	if this.debug {
 		log.Debug("TakeOff %s => %d", key, offset)
@@ -88,7 +88,7 @@ func (this *memInflights) TakeOff(cluster, topic, group, partition string, offse
 		if this.debug {
 			log.Error("out of order: %s", this)
 		}
-		return inflights.ErrOutOfOrder
+		return inflight.ErrOutOfOrder
 	}
 
 	this.offsets.Set(key, message{
@@ -98,7 +98,7 @@ func (this *memInflights) TakeOff(cluster, topic, group, partition string, offse
 	return nil
 }
 
-func (this *memInflights) String() string {
+func (this *memInflight) String() string {
 	dumps := make([]dumpRecord, 0, this.offsets.Count())
 	for item := range this.offsets.Iter() {
 		dumps = append(dumps, dumpRecord{
@@ -110,7 +110,7 @@ func (this *memInflights) String() string {
 	return string(data)
 }
 
-func (this *memInflights) Init() error {
+func (this *memInflight) Init() error {
 	if this.snapshotFile == "" {
 		return nil
 	}
@@ -133,7 +133,7 @@ func (this *memInflights) Init() error {
 	return nil
 }
 
-func (this *memInflights) Stop() error {
+func (this *memInflight) Stop() error {
 	if this.snapshotFile == "" {
 		return nil
 	}

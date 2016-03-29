@@ -49,6 +49,7 @@ var (
 		MaxPubSize             int64
 		MinPubSize             int
 		MaxPubRetries          int
+		PubQpsLimit            int
 		MaxClients             int
 		PubPoolCapcity         int
 		PubPoolIdleTimeout     time.Duration
@@ -116,6 +117,7 @@ func parseFlags() {
 	flag.Int64Var(&options.MaxPubSize, "maxpub", 256<<10, "max Pub message size")
 	flag.IntVar(&options.MinPubSize, "minpub", 1, "min Pub message size")
 	flag.IntVar(&options.MaxPubRetries, "pubretry", 5, "max retries when Pub fails")
+	flag.IntVar(&options.PubQpsLimit, "publimit", 60*10000, "pub qps limit per minute per ip")
 	flag.IntVar(&options.PubPoolCapcity, "pubpool", 100, "pub connection pool capacity")
 	flag.IntVar(&options.MaxClients, "maxclient", 100000, "max concurrent connections")
 	flag.DurationVar(&options.OffsetCommitInterval, "offsetcommit", time.Minute, "consumer offset commit interval")

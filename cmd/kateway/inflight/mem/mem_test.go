@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/funkygao/assert"
-	"github.com/funkygao/gafka/cmd/kateway/inflights"
+	"github.com/funkygao/gafka/cmd/kateway/inflight"
 )
 
-var _ inflights.Inflights = &memInflights{}
+var _ inflight.Inflight = &memInflight{}
 
 var msg = []byte("hello world")
 
@@ -19,13 +19,13 @@ func TestBasic(t *testing.T) {
 	err = m.TakeOff("cluster", "topic", "group", "partition", 1, msg) // reentrant is ok
 	assert.Equal(t, nil, err)
 	err = m.TakeOff("cluster", "topic", "group", "partition", 2, msg)
-	assert.Equal(t, inflights.ErrOutOfOrder, err)
+	assert.Equal(t, inflight.ErrOutOfOrder, err)
 	var m1 []byte
 	m1, err = m.LandX("cluster", "topic", "group", "partition", 1)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "hello world", string(m1))
 	err = m.Land("cluster", "topic", "group", "partition", 2)
-	assert.Equal(t, inflights.ErrOutOfOrder, err)
+	assert.Equal(t, inflight.ErrOutOfOrder, err)
 }
 
 func TestInitAndStop(t *testing.T) {
