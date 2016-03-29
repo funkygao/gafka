@@ -31,6 +31,8 @@ func (this *dummyStore) IsShadowedTopic(appid, topic, ver, group string) bool {
 	return true
 }
 
-func (this *dummyStore) Start() {}
+func (this *dummyStore) Start() error {
+	return nil
+}
 
 func (this *dummyStore) Stop() {}

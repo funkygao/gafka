@@ -5,7 +5,7 @@ type Manager interface {
 	// Name of the manager implementation.
 	Name() string
 
-	Start()
+	Start() error
 	Stop()
 
 	// AuthAdmin check if an app with the key has admin rights.

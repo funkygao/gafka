@@ -56,10 +56,10 @@ type appSubscribeRecord struct {
 	AppId, TopicName string
 }
 
-func (this *mysqlStore) Start() {
+func (this *mysqlStore) Start() error {
 	if err := this.refreshFromMysql(); err != nil {
 		// refuse to start if mysql conn fails
-		panic(err)
+		return err
 	}
 
 	go func() {
@@ -78,6 +78,8 @@ func (this *mysqlStore) Start() {
 			}
 		}
 	}()
+
+	return nil
 }
 
 func (this *mysqlStore) Stop() {
