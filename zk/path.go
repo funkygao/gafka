@@ -11,6 +11,7 @@ const (
 	KatewayIdsRoot     = "/_kateway/ids"
 	katewayMetricsRoot = "/_kateway/metrics"
 	KatewayMysqlPath   = "/_kateway/mysql"
+	KatewayDisquePath  = "/_kateway/disque"
 
 	ConsumersPath           = "/consumers"
 	BrokerIdsPath           = "/brokers/ids"
