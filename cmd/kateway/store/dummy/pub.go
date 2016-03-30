@@ -2,6 +2,7 @@ package dummy
 
 import (
 	"sync"
+	"time"
 )
 
 type pubStore struct {
@@ -19,6 +20,10 @@ func (this *pubStore) Stop() {}
 
 func (this *pubStore) Name() string {
 	return "dummy"
+}
+
+func (*pubStore) AddJob(cluster, topic string, payload []byte, delay time.Duration) (jobId string, err error) {
+	return "", nil
 }
 
 func (this *pubStore) SyncAllPub(cluster string, topic string, key,

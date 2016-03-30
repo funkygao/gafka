@@ -1,137 +1,32 @@
 package kafka
 
 import (
-	l "log"
-	"os"
-	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/eapache/go-resiliency/breaker"
-	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
-	"github.com/funkygao/gafka/ctx"
-	"github.com/funkygao/golib/color"
 	log "github.com/funkygao/log4go"
 )
 
-type pubStore struct {
-	shutdownCh chan struct{}
-
-	maxRetries int
-	wg         *sync.WaitGroup
-	hostname   string // used as kafka client id
-	dryRun     bool
-
-	pubPools     map[string]*pubPool // key is cluster, each cluster maintains a conn pool
-	poolsCapcity int
-	poolsLock    sync.RWMutex
-	idleTimeout  time.Duration
-
-	// to avoid too frequent refresh
-	// TODO refresh by cluster: current implementation will refresh zone
-	lastRefreshedAt time.Time
-}
-
-func NewPubStore(poolCapcity int, maxRetries int, idleTimeout time.Duration,
-	wg *sync.WaitGroup, debug bool, dryRun bool) *pubStore {
-	if debug {
-		sarama.Logger = l.New(os.Stdout, color.Green("[Sarama]"),
-			l.LstdFlags|l.Lshortfile)
-	}
-
-	return &pubStore{
-		hostname:     ctx.Hostname(),
-		maxRetries:   maxRetries,
-		idleTimeout:  idleTimeout,
-		poolsCapcity: poolCapcity,
-		pubPools:     make(map[string]*pubPool),
-		wg:           wg,
-		dryRun:       dryRun,
-		shutdownCh:   make(chan struct{}),
-	}
-}
-
-func (this *pubStore) Name() string {
-	return "kafka"
-}
-
-func (this *pubStore) Start() (err error) {
-	this.wg.Add(1)
-	defer this.wg.Done()
-
-	// warmup: create pools according the current kafka topology
-	for _, cluster := range meta.Default.ClusterNames() {
-		this.pubPools[cluster] = newPubPool(this, cluster,
-			meta.Default.BrokerList(cluster), this.poolsCapcity)
-	}
-
-	go func() {
-		for {
-			select {
-			case <-meta.Default.RefreshEvent():
-				this.doRefresh()
-
-			case <-this.shutdownCh:
-				log.Trace("pub store[%s] stopped", this.Name())
-				return
-			}
-		}
-	}()
-
-	return
-}
-
-func (this *pubStore) Stop() {
-	this.poolsLock.Lock()
-	defer this.poolsLock.Unlock()
-
-	// close all kafka connections
-	for _, pool := range this.pubPools {
-		pool.Close()
-	}
-
-	close(this.shutdownCh)
-}
-
-func (this *pubStore) doRefresh() {
-	// TODO the lock is too big, should consider cluster level refresh
-	this.poolsLock.Lock()
-	defer this.poolsLock.Unlock()
-
-	if time.Since(this.lastRefreshedAt) <= time.Second*5 {
-		log.Warn("ignored too frequent refresh: %s", time.Since(this.lastRefreshedAt))
+func (this *pubStore) AddJob(cluster, topic string, payload []byte,
+	delay time.Duration) (jobId string, err error) {
+	this.jobPoolsLock.RLock()
+	pool, present := this.jobPools[cluster]
+	this.jobPoolsLock.RUnlock()
+	if !present {
+		err = store.ErrInvalidCluster
 		return
 	}
 
-	activeClusters := make(map[string]struct{})
-	for _, cluster := range meta.Default.ClusterNames() {
-		activeClusters[cluster] = struct{}{}
-		if _, present := this.pubPools[cluster]; !present {
-			this.pubPools[cluster] = newPubPool(this, cluster,
-				meta.Default.BrokerList(cluster), this.poolsCapcity)
-		} else {
-			this.pubPools[cluster].RefreshBrokerList(meta.Default.BrokerList(cluster))
-		}
-	}
-
-	// shutdown the dead clusters
-	for cluster, pool := range this.pubPools {
-		if _, present := activeClusters[cluster]; !present {
-			// this cluster is dead or removed forever
-			pool.Close()
-			delete(this.pubPools, cluster)
-		}
-	}
-
-	this.lastRefreshedAt = time.Now()
+	return pool.AddJob(topic, payload, delay)
 }
 
 func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 	key, msg []byte) (partition int32, offset int64, err error) {
-	this.poolsLock.RLock()
+	this.pubPoolsLock.RLock()
 	pool, present := this.pubPools[cluster]
-	this.poolsLock.RUnlock()
+	this.pubPoolsLock.RUnlock()
 	if !present {
 		err = store.ErrInvalidCluster
 		return
@@ -231,9 +126,9 @@ func (this *pubStore) SyncPub(cluster, topic string, key, msg []byte) (partition
 // FIXME not fully fault tolerant like SyncPub.
 func (this *pubStore) AsyncPub(cluster string, topic string, key []byte,
 	msg []byte) (partition int32, offset int64, err error) {
-	this.poolsLock.RLock()
+	this.pubPoolsLock.RLock()
 	pool, present := this.pubPools[cluster]
-	this.poolsLock.RUnlock()
+	this.pubPoolsLock.RUnlock()
 	if !present {
 		err = store.ErrInvalidCluster
 		return
