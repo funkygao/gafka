@@ -68,6 +68,8 @@ func (this *pubStore) Start() (err error) {
 			meta.Default.BrokerList(cluster), this.pubPoolsCapcity)
 	}
 
+	this.refreshJobPoolNodes()
+
 	go func() {
 		for {
 			select {
@@ -96,19 +98,7 @@ func (this *pubStore) Stop() {
 	close(this.shutdownCh)
 }
 
-func (this *pubStore) doRefresh() {
-	// TODO the lock is too big, should consider cluster level refresh
-	this.pubPoolsLock.Lock()
-	defer this.pubPoolsLock.Unlock()
-	this.jobPoolsLock.Lock()
-	defer this.jobPoolsLock.Unlock()
-
-	if time.Since(this.lastRefreshedAt) <= time.Second*5 {
-		log.Warn("ignored too frequent refresh: %s", time.Since(this.lastRefreshedAt))
-		return
-	}
-
-	// job pools
+func (this *pubStore) refreshJobPoolNodes() {
 	if disqueAddrs, err := meta.Default.KatewayDisqueAddrs(); err == nil {
 		log.Debug("disques: %+v", disqueAddrs)
 
@@ -130,6 +120,22 @@ func (this *pubStore) doRefresh() {
 		// just log, still using the current pools
 		log.Error("disque addrs fetch: %v", err)
 	}
+}
+
+func (this *pubStore) doRefresh() {
+	// TODO the lock is too big, should consider cluster level refresh
+	this.pubPoolsLock.Lock()
+	defer this.pubPoolsLock.Unlock()
+	this.jobPoolsLock.Lock()
+	defer this.jobPoolsLock.Unlock()
+
+	if time.Since(this.lastRefreshedAt) <= time.Second*5 {
+		log.Warn("ignored too frequent refresh: %s", time.Since(this.lastRefreshedAt))
+		return
+	}
+
+	// job pools
+	this.refreshJobPoolNodes()
 
 	// pub pool
 	activeClusters := make(map[string]struct{})
