@@ -9,6 +9,7 @@ const (
 	HttpHeaderOffset        = "X-Offset"
 	HttpHeaderMsgBury       = "X-Bury"
 	HttpHeaderMsgKey        = "X-Key"
+	HttpHeaderJobId         = "X-Job-Id"
 
 	UrlParamCluster = "cluster"
 	UrlParamTopic   = "topic"
