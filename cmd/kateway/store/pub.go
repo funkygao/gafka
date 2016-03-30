@@ -15,6 +15,9 @@ type PubStore interface {
 	// AddJob pub a schedulable message(job) synchronously.
 	AddJob(cluster, topic string, payload []byte, delay time.Duration) (jobId string, err error)
 
+	// DeleteJob removes a job by jobId.
+	DeleteJob(cluster, jobId string) error
+
 	// SyncPub pub a keyed message to a topic of a cluster synchronously.
 	SyncPub(cluster, topic string, key, msg []byte) (partition int32, offset int64, err error)
 

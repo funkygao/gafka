@@ -26,6 +26,10 @@ func (*pubStore) AddJob(cluster, topic string, payload []byte, delay time.Durati
 	return "", nil
 }
 
+func (*pubStore) DeleteJob(cluster, jobId string) error {
+	return nil
+}
+
 func (this *pubStore) SyncAllPub(cluster string, topic string, key,
 	msg []byte) (partition int32, offset int64, err error) {
 	return

@@ -45,3 +45,15 @@ func (this *jobPool) AddJob(topic string, payload []byte, delay time.Duration) (
 	c.Close() // recycle to pool
 	return
 }
+
+func (this *jobPool) DeleteJob(jobId string) error {
+	c, err := this.pool.Get()
+	if err != nil {
+		return err
+	}
+
+	err = c.FastAck(jobId)
+
+	c.Close()
+	return err
+}

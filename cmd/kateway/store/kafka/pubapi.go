@@ -22,6 +22,17 @@ func (this *pubStore) AddJob(cluster, topic string, payload []byte,
 	return pool.AddJob(topic, payload, delay)
 }
 
+func (this *pubStore) DeleteJob(cluster, jobId string) error {
+	this.jobPoolsLock.RLock()
+	pool, present := this.jobPools[cluster]
+	this.jobPoolsLock.RUnlock()
+	if !present {
+		return store.ErrInvalidCluster
+	}
+
+	return pool.DeleteJob(jobId)
+}
+
 func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 	key, msg []byte) (partition int32, offset int64, err error) {
 	this.pubPoolsLock.RLock()
