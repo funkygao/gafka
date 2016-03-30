@@ -110,6 +110,8 @@ func (this *pubStore) doRefresh() {
 
 	// job pools
 	if disqueAddrs, err := meta.Default.KatewayDisqueAddrs(); err == nil {
+		log.Debug("disques: %+v", disqueAddrs)
+
 		for cluster, addrs := range disqueAddrs {
 			if _, present := this.jobPools[cluster]; !present {
 				// found a new cluster of disque
