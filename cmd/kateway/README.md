@@ -23,6 +23,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 - REST API
   - http/https/websocket/http2 interface for Pub/Sub
+- Support both FIFO and Priority queue
 - Systemic Quality Requirements
   - Performance & Throughput
     - > 100K msg/sec delivery on a single host
