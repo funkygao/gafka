@@ -37,6 +37,10 @@ fasthttp:fasthttpd.go
 	GOGC=800 GODEBUG=gctrace=1 ./fasthttpdserver &
 	go run bench.go -neat -mode http
 
+disque:bench.go
+	@echo bench again disque
+	@go run bench.go -neat -mode disque
+
 redis:bench.go
 	@echo bench against redis set/get
 	@go run bench.go -neat -mode redis -noerr=true

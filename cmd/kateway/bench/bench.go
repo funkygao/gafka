@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/EverythingMe/go-disque/disque"
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/golib/stress"
 	"github.com/garyburd/redigo/redis"
@@ -58,6 +59,9 @@ func main() {
 
 	case "redis":
 		stress.RunStress(redisLoop)
+
+	case "disque":
+		stress.RunStress(disqueLoop)
 
 	case "http":
 		http.DefaultClient.Timeout = time.Second * 30
@@ -111,6 +115,41 @@ func pubKafkaLoop(seq int) {
 		}
 	}
 
+}
+
+func dial(addr string) (redis.Conn, error) {
+	return redis.Dial("tcp", addr)
+}
+
+func disqueLoop(seq int) {
+	pool := disque.NewPool(disque.DialFunc(dial), "localhost:7711")
+	c, err := pool.Get()
+	if err != nil {
+		stress.IncCounter("fail", 1)
+		log.Println(err)
+		return
+	}
+
+	defer c.Close()
+	for i := 0; i < loops; i++ {
+		_, err = c.Add(disque.AddRequest{
+			Job: disque.Job{
+				Queue: "demo",
+				Data:  []byte(fmt.Sprintf("hello world from %d:%d", seq, i)),
+			},
+			Delay:   time.Minute,
+			Timeout: time.Millisecond * 100,
+		})
+
+		if err == nil {
+			stress.IncCounter("ok", 1)
+		} else {
+			if !suppressError {
+				log.Println(err)
+			}
+			stress.IncCounter("fail", 1)
+		}
+	}
 }
 
 func redisLoop(seq int) {
