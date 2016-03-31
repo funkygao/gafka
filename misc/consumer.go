@@ -4,9 +4,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/kafka-cg/consumergroup"
 )
 
@@ -25,6 +28,9 @@ func init() {
 	if topic == "" {
 		panic("topic must be provided")
 	}
+
+	sarama.Logger = log.New(os.Stdout, color.Green("[Sarama]"),
+		log.LstdFlags|log.Lshortfile)
 }
 
 func main() {
@@ -39,7 +45,6 @@ func main() {
 	cf.Zookeeper.Timeout = time.Second
 	cf.Offsets.CommitInterval = time.Minute
 	cf.Offsets.ProcessingTimeout = time.Second
-	cf.Offsets.ResetOffsets = true
 	cf.Offsets.Initial = sarama.OffsetOldest
 	cg, err := consumergroup.JoinConsumerGroup("group1", []string{topic},
 		[]string{zk}, cf)
@@ -52,6 +57,8 @@ func main() {
 	for msg := range cg.Messages() {
 		fmt.Println(i, string(msg.Value))
 		i++
+
+		cg.CommitUpto(msg)
 	}
 
 }
