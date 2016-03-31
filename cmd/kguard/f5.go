@@ -15,7 +15,7 @@ const (
 	HttpLoop = 100
 )
 
-// MonitorConsumers monitors num of online consumer groups over the time.
+// MonitorF5 monitors latency of F5 load balancer vibration.
 type MonitorF5 struct {
 	stop chan struct{}
 	tick time.Duration
