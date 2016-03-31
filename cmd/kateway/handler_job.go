@@ -116,7 +116,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 
 	msg.Free()
 
-	w.Header().Set(HttpHeaderOffset, jobId)
+	w.Header().Set(HttpHeaderJobId, jobId)
 	w.WriteHeader(http.StatusCreated)
 
 	if _, err = w.Write(ResponseOk); err != nil {
@@ -130,7 +130,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// /jobs/:topic/:ver/:id
+// /jobs/:topic/:ver?id=D-1d13f5e8-9NVhoRqjowkLy6iTE/QnZw/l-05a1
 func (this *Gateway) deleteJobHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	appid := r.Header.Get(HttpHeaderAppid)
@@ -153,17 +153,19 @@ func (this *Gateway) deleteJobHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	jobId := params.ByName("id")
-	if len(jobId) < 10 { // FIXME
+	jobId := r.URL.Query().Get("id")
+	if len(jobId) < 30 { // jobId e,g. D-1d13f5e8-W6ZuLg2WVrIo6KblpXlycpze-05a1
 		this.writeBadRequest(w, "invalid job id")
 		return
 	}
 
-	if err := store.DefaultPubStore.DeleteJob(cluster, jobId); err == nil {
+	if err := store.DefaultPubStore.DeleteJob(cluster, jobId); err != nil {
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %v",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 
 		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	w.Write(ResponseOk)
 }
