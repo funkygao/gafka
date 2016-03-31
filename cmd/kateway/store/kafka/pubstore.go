@@ -107,7 +107,7 @@ func (this *pubStore) refreshJobPoolNodes() {
 				// found a new cluster of disque
 				this.jobPools[cluster] = newJobPool(addrs)
 				if e := this.jobPools[cluster].RefreshNodes(); e != nil {
-					log.Error("dique refresh nodes: %v", e)
+					log.Error("disque[%s] refresh nodes: %v", cluster, e)
 
 					// unload this problemetic cluster
 					delete(this.jobPools, cluster)
