@@ -156,6 +156,15 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		}
 		this.Ui.Output(fmt.Sprintf("zone[%s] manager db: %s", color.Blue(zkzone.Name()), mysqlDsn))
 
+		disques, err := zkzone.KatewayDisqueAddrs()
+		if err != nil {
+			this.Ui.Error(err.Error())
+			this.Ui.Warn(fmt.Sprintf("kateway[%s] disque not set on zk:%s", this.zone,
+				zk.KatewayDisquePath))
+			return
+		}
+		this.Ui.Output(fmt.Sprintf("zone[%s]     disque: %+v", color.Blue(zkzone.Name()), disques))
+
 		kateways, err := zkzone.KatewayInfos()
 		if err != nil {
 			if err == zklib.ErrNoNode {
@@ -326,20 +335,26 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 			continue
 		}
 
-		cf := api.DefaultConfig()
-		cf.AppId = myApp
-		cf.Debug = false
-		cf.Secret = secret
-		cf.PubEndpoint = fmt.Sprintf("http://%s", kw.PubAddr)
-		cf.SubEndpoint = fmt.Sprintf("http://%s", kw.SubAddr)
+		cf := api.DefaultConfig(myApp, secret)
+		cf.Pub.Endpoint = kw.PubAddr
+		cf.Sub.Endpoint = kw.SubAddr
 		cli := api.NewClient(cf)
 		msgId := rand.Int()
 		msg := fmt.Sprintf("smoke %d", msgId)
 		this.Ui.Output(fmt.Sprintf("Pub: %s", msg))
-		err := cli.Pub(topic, ver, "", []byte(msg))
+
+		err := cli.Pub("", []byte(msg), api.PubOption{
+			Topic: topic,
+			Ver:   ver,
+		})
 		swallow(err)
 
-		cli.Sub(hisApp, topic, ver, "__smoketestonly__", func(statusCode int, msg []byte) error {
+		cli.Sub(api.SubOption{
+			AppId: hisApp,
+			Topic: topic,
+			Ver:   ver,
+			Group: "__smoketestonly__",
+		}, func(statusCode int, msg []byte) error {
 			if statusCode == http.StatusNoContent {
 				this.Ui.Output("no content, sub again")
 				return nil
