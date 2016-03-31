@@ -45,6 +45,10 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		this.writeBadRequest(w, "illegal group")
 		return
 	}
+	if group == SmoketestGroup && r.Header.Get(HttpHeaderOrigin) != OriginSmoketest {
+		this.writeBadRequest(w, "smoketest group reserved")
+		return
+	}
 
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
