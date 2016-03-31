@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	"github.com/funkygao/gafka/mpool"
 	"github.com/funkygao/gafka/sla"
@@ -71,7 +70,6 @@ func (this *Client) Close() {
 
 type PubOption struct {
 	Topic, Ver string
-	Delay      int
 	Async      bool
 	AckAll     bool
 }
@@ -91,9 +89,6 @@ func (this *Client) Pub(key string, msg []byte, opt PubOption) (err error) {
 	u.Path = fmt.Sprintf("/topics/%s/%s", opt.Topic, opt.Ver)
 	q := u.Query()
 	q.Set("key", key)
-	if opt.Delay > 0 {
-		q.Set("delay", strconv.Itoa(opt.Delay))
-	}
 	if opt.AckAll {
 		q.Set("ack", "all")
 	}
