@@ -19,7 +19,7 @@ func (this *dummyStore) OwnTopic(appid, pubkey, topic string) error {
 	return nil
 }
 
-func (this *dummyStore) AuthSub(appid, subkey, hisAppid, hisTopic string) error {
+func (this *dummyStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string) error {
 	return nil
 }
 

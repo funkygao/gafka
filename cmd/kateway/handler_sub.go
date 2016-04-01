@@ -63,7 +63,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
-		hisAppid, topic); err != nil {
+		hisAppid, topic, group); err != nil {
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 

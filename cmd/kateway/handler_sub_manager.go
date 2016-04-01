@@ -112,7 +112,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
-		hisAppid, topic); err != nil {
+		hisAppid, topic, group); err != nil {
 		log.Error("sub status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
@@ -162,7 +162,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
-		hisAppid, topic); err != nil {
+		hisAppid, topic, group); err != nil {
 		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
@@ -281,7 +281,7 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
-		hisAppid, topic); err != nil {
+		hisAppid, topic, group); err != nil {
 		log.Error("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 

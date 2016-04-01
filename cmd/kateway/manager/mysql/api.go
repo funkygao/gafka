@@ -32,7 +32,7 @@ func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 	return manager.ErrAuthorizationFail
 }
 
-func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic string) error {
+func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string) error {
 	if appid == "" || hisTopic == "" {
 		return manager.ErrEmptyIdentity
 	}
