@@ -365,10 +365,16 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string) {
 
 			this.Ui.Output(fmt.Sprintf("%30s: %s",
 				c.name, c.path))
+			brokers := ""
+			for _, broker := range c.brokerInfos {
+				brokers += fmt.Sprintf("%d/%s:%d ", broker.Id, broker.Host, broker.Port)
+			}
+			this.Ui.Output(fmt.Sprintf("%32s", brokers))
+
 			this.Ui.Output(strings.Repeat(" ", 4) +
-				color.Blue("nick:%s public:%v topics:%d partitions:%d replicas:%d retention:%dh brokers:%+v",
+				color.Green("nick:%s public:%v topics:%d partitions:%d replicas:%d retention:%dh",
 					c.nickname, c.public,
-					c.topicN, c.partitionN, c.replicas, c.retention, c.brokerInfos))
+					c.topicN, c.partitionN, c.replicas, c.retention))
 		}
 
 		return
@@ -377,6 +383,11 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string) {
 	// not verbose mode
 	for _, c := range clusters {
 		this.Ui.Output(fmt.Sprintf("%30s: %s", c.name, c.path))
+		brokers := ""
+		for _, broker := range c.brokerInfos {
+			brokers += fmt.Sprintf("%d/%s:%d ", broker.Id, broker.Host, broker.Port)
+		}
+		this.Ui.Output(fmt.Sprintf("%32s", brokers))
 	}
 
 }
