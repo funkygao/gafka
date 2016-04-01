@@ -124,6 +124,35 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
            +----+   +------------------+        +---------------+
 
 
+### API
+
+#### Management
+
+    GET /alive
+    GET /status
+    GET /clusters
+    GET /partitions/:cluster/:appid/:topic/:ver
+    POST /topics/:cluster/:appid/:topic/:ver
+
+#### Pub
+
+    POST    /msgs/:topic/:ver
+    POST /ws/msgs/:topic/:ver
+
+    POST    /jobs/:topic/:ver
+    POST /ws/jobs/:topic/:ver
+    DELETE /jobs/:topic/:ver
+
+#### Sub
+
+    GET    /msgs/:appid/:topic/:ver
+    GET /ws/msgs/:appid/:topic/:ver
+
+    POST /shadow/:appid/:topic/:ver/:group
+    DELETE /groups/:appid/:topic/:ver/:group
+
+    GET /subd/:topic/:ver
+    GET /status/:appid/:topic/:ver
 
 ### FAQ
 
