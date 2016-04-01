@@ -1,25 +1,26 @@
 # gafka 
+
 A full ecosystem that is built around kafka powered by golang.
 
 ### Components
 
-- gk
+- [gk](https://github.com/funkygao/gafka/tree/master/cmd/gk)
  
   Unified multi-datacenter multi-cluster kafka swiss-knife management console.
 
-- zk
+- [zk](https://github.com/funkygao/gafka/tree/master/cmd/zk)
 
   A handy zookeeper CLI that supports recursive query.
 
-- ehaproxy
+- [ehaproxy](https://github.com/funkygao/gafka/tree/master/cmd/ehaproxy)
 
   Elastic haproxy that sits in front of kateway.
 
-- kateway
+- [kateway](https://github.com/funkygao/gafka/tree/master/cmd/kateway)
 
-  A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming message service.
+  A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming message/job service.
 
-- kguard
+- [kguard](https://github.com/funkygao/gafka/tree/master/cmd/kguard)
 
   Kafka clusters body guard that emits health info to InfluxDB.
 

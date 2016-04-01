@@ -1,3 +1,4 @@
 # ehaproxy
 
-Elastic haproxy that is based upon zookeeper.
+Elastic haproxy that sits in front of kateway.
+

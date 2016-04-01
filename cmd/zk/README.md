@@ -1,6 +1,6 @@
 # zk
 
-zk is a CLI for zookeeper designed to be user friendly, easy to install.
+A handy zookeeper CLI that supports recursive query.
 
 ### Usage
 

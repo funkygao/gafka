@@ -1,3 +1,4 @@
 # kguard
 
-Kafka related ecosystem guard/monitor system.
+Kafka clusters body guard that emits health info to InfluxDB.
+
