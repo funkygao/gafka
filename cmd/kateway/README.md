@@ -128,14 +128,6 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### API
 
-#### Management
-
-    GET /alive
-    GET /status
-    GET /clusters
-    GET /partitions/:cluster/:appid/:topic/:ver
-    POST /topics/:cluster/:appid/:topic/:ver
-
 #### Pub
 
     POST    /msgs/:topic/:ver
@@ -155,6 +147,14 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
     GET /subd/:topic/:ver
     GET /status/:appid/:topic/:ver
+
+#### Management
+
+    GET /alive
+    GET /status
+    GET /clusters
+    GET /partitions/:cluster/:appid/:topic/:ver
+    POST /topics/:cluster/:appid/:topic/:ver
 
 ### FAQ
 
@@ -181,11 +181,6 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - if sub with no arriving message, how long do client get http 204?
 
   30s
-
-- after I subscribe a topic on manager ui, why my client got http 401?
-
-  yes, this is a trade off. You have to wait 5 minutes.
-
 
 ### Migration
 
