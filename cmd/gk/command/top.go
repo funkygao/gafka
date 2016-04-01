@@ -144,11 +144,11 @@ func (this *Top) Run(args []string) (exitCode int) {
 		// header
 		if this.longFmt {
 			this.Ui.Output(fmt.Sprintf("%-9s %15s %-30s %35s %20s %15s",
-				this.who, "cluster", "brokers", "topic", "num", "mps")) // mps=msg per second
+				this.who, "cluster", "brokers", "topic", "cum num", "mps")) // mps=msg per second
 			this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 129)))
 		} else {
 			this.Ui.Output(fmt.Sprintf("%-9s %20s %50s %20s %15s",
-				this.who, "cluster", "topic", "num", "mps")) // mps=msg per second
+				this.who, "cluster", "topic", "cum num", "mps")) // mps=msg per second
 			this.Ui.Output(fmt.Sprintf(strings.Repeat("-", 118)))
 		}
 
