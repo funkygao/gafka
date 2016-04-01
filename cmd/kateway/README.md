@@ -108,6 +108,8 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
         +------------+                      +------------+                      
         | meta       |                      | meta       |  
         +------------+                      +------------+                      
+        | manager    |                      | manager    |  
+        +------------+                      +------------+                      
             |                                     |    
             |    +----------------------+         |  
             |----| ZK or other ensemble |---------| 
@@ -158,7 +160,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 - why named kateway?
 
-  Admittedly, it is not a good name. Just short for kafka gateway.
+  Admittedly, it is not a good name. Just short for kafka gateway
 
 - how to batch messages in Pub?
 
@@ -196,20 +198,10 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 ### TODO
 
 - [ ] why make sub with 15s sleep fails
-- [ ] ehaproxy session sticky
-- [ ] sub /topics/:appid/:topic/:ver/:group register group beforehand
-- [ ] register retry/dead topic for group
-- [ ] test add topic with params
-- [ ] sub ack=1
-- [ ] default retention 7d
-- [ ] test delayed sub ack
-
-- [ ] to avoid consumer lose message, Sub client GET header include last received message offset
-- [ ] data needs to be enriched/sanitized before being consumed
+- [ ] sub then subx will fail on inflight
+- [ ] message tag
 - [ ] check hack pkg
-- [ ] SLA of message retention
 - [ ] https://github.com/allinurl/goaccess
-- [ ] delayed pub
 - [ ] https, outer ip must https
 - [ ] Update to glibc 2.20 or higher
 - [ ] compress

@@ -50,9 +50,8 @@ A full ecosystem that is built around kafka powered by golang.
 
 ### Status
 
-Currently gafka ecosystem is widely used on production environment for daily jobs.
+Currently gafka manages:
 
-It manages:
 - 4 data centers 
 - 50+ kafka clusters
 - 100+ kafka brokers
