@@ -138,7 +138,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	}
 	defer kfk.Close()
 
-	partitions, err := kfk.Partitions(meta.KafkaTopic(hisAppid, topic, ver))
+	partitions, err := kfk.Partitions(manager.KafkaTopic(hisAppid, topic, ver))
 	if err != nil {
 		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
 			zkcluster.Name(), r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, err)
@@ -215,7 +215,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	log.Info("app[%s] from %s(%s) add topic: {appid:%s, cluster:%s, topic:%s, ver:%s query:%s}",
 		appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
 
-	topic = meta.KafkaTopic(hisAppid, topic, ver)
+	topic = manager.KafkaTopic(hisAppid, topic, ver)
 	lines, err := zkcluster.AddTopic(topic, ts)
 	if err != nil {
 		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())

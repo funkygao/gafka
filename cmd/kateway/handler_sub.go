@@ -7,7 +7,6 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/inflight"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
-	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/sla"
 	log "github.com/funkygao/log4go"
@@ -119,9 +118,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			return
 		}
 
-		rawTopic = meta.ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group)
+		rawTopic = manager.ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group)
 	} else {
-		rawTopic = meta.KafkaTopic(hisAppid, topic, ver)
+		rawTopic = manager.KafkaTopic(hisAppid, topic, ver)
 	}
 
 	// pick a consumer from the consumer group
@@ -165,7 +164,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 				return
 			}
 
-			shadowTopic := meta.ShadowTopic(bury, myAppid, hisAppid, topic, ver, group)
+			shadowTopic := manager.ShadowTopic(bury, myAppid, hisAppid, topic, ver, group)
 			_, _, err = store.DefaultPubStore.SyncPub(cluster, shadowTopic, nil, msg)
 			if err != nil {
 				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",

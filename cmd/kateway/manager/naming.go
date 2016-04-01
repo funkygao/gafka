@@ -1,4 +1,4 @@
-package meta
+package manager
 
 import (
 	"github.com/funkygao/gafka/mpool"

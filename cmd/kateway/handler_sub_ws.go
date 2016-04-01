@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
-	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/websocket"
@@ -66,7 +65,7 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 
 	log.Debug("sub[%s] %s: %+v", myAppid, r.RemoteAddr, params)
 
-	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
+	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
 		log.Error("cluster not found for subd app: %s", hisAppid)

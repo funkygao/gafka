@@ -29,7 +29,7 @@ func (this *Gateway) topicSubStatus(cluster string, myAppid, hisAppid, topic, ve
 	if group != "" {
 		group = myAppid + "." + group
 	}
-	rawTopic := meta.KafkaTopic(hisAppid, topic, ver)
+	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
 	consumersByGroup, err := zkcluster.ConsumerGroupsOfTopic(rawTopic)
 	if err != nil {
 		return nil, err
@@ -304,8 +304,8 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 	ts := sla.DefaultSla()
 	zkcluster := meta.Default.ZkCluster(cluster)
 	shadowTopics := []string{
-		meta.ShadowTopic(sla.SlaKeyRetryTopic, myAppid, hisAppid, topic, ver, group),
-		meta.ShadowTopic(sla.SlaKeyDeadLetterTopic, myAppid, hisAppid, topic, ver, group),
+		manager.ShadowTopic(sla.SlaKeyRetryTopic, myAppid, hisAppid, topic, ver, group),
+		manager.ShadowTopic(sla.SlaKeyDeadLetterTopic, myAppid, hisAppid, topic, ver, group),
 	}
 	for _, t := range shadowTopics {
 		lines, err := zkcluster.AddTopic(t, ts)
