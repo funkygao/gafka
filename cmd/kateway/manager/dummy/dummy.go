@@ -1,5 +1,9 @@
 package dummy
 
+import (
+	"net/http"
+)
+
 type dummyStore struct {
 }
 
@@ -12,6 +16,14 @@ func (this *dummyStore) Name() string {
 }
 
 func (this *dummyStore) AuthAdmin(appid, pubkey string) bool {
+	return true
+}
+
+func (this *dummyStore) ValidateTopicName(topic string) bool {
+	return true
+}
+
+func (this *dummyStore) ValidateGroupName(header http.Header, group string) bool {
 	return true
 }
 

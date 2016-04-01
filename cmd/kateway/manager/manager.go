@@ -1,5 +1,9 @@
 package manager
 
+import (
+	"net/http"
+)
+
 // Manager is the interface that integrates with pubsub manager UI.
 type Manager interface {
 	// Name of the manager implementation.
@@ -22,6 +26,9 @@ type Manager interface {
 
 	// IsShadowedTopic checks if a topic has retry/dead sub/shadow topics.
 	IsShadowedTopic(appid, topic, ver, group string) bool
+
+	ValidateTopicName(topic string) bool
+	ValidateGroupName(header http.Header, group string) bool
 }
 
 var Default Manager

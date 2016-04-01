@@ -1,8 +1,37 @@
 package mysql
 
 import (
+	"net/http"
+	"regexp"
+
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 )
+
+var (
+	topicNameRegex = regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
+)
+
+func (this *mysqlStore) ValidateTopicName(topic string) bool {
+	return len(topicNameRegex.FindAllString(topic, -1)) == 1
+}
+
+func (this *mysqlStore) ValidateGroupName(header http.Header, group string) bool {
+	if len(group) == 0 {
+		return false
+	}
+
+	for _, c := range group {
+		if !(c == '_' || c == '-' || (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+			return false
+		}
+	}
+
+	if group == "__smoketest__" && header.Get("X-Origin") != "smoketest" {
+		return false
+	}
+
+	return true
+}
 
 func (this *mysqlStore) AuthAdmin(appid, pubkey string) bool {
 	if appid == "_psubAdmin_" && pubkey == "_wandafFan_" { // FIXME

@@ -5,17 +5,12 @@ import (
 	"net/http"
 	"net/url"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/go-metrics"
-)
-
-var (
-	topicNameRegex = regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 )
 
 func isBrokerError(err error) bool {
@@ -43,24 +38,6 @@ func getHttpRemoteIp(r *http.Request) string {
 	}
 
 	return forwardFor // FIXME forwardFor might be comma seperated ip list, but here for performance ignore it
-}
-
-func validateTopicName(topic string) bool {
-	return len(topicNameRegex.FindAllString(topic, -1)) == 1
-}
-
-func validateGroupName(group string) bool {
-	if len(group) == 0 {
-		return false
-	}
-
-	for _, c := range group {
-		if !(c == '_' || c == '-' || (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
-			return false
-		}
-	}
-
-	return true
 }
 
 func checkUlimit(min int) {

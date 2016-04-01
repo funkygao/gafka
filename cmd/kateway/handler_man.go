@@ -154,7 +154,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
-	if !validateTopicName(topic) {
+	if !manager.Default.ValidateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)
 
 		this.writeBadRequest(w, "illegal topic")

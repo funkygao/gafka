@@ -45,7 +45,7 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 		this.writeWsError(ws, err.Error())
 		return
 	}
-	if !validateGroupName(group) {
+	if !manager.Default.ValidateGroupName(r.Header, group) {
 		log.Warn("consumer %s{topic:%s, ver:%s, group:%s, limit:%d} invalid group",
 			r.RemoteAddr, topic, ver, group, limit)
 		return

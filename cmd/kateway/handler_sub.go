@@ -41,12 +41,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	query := r.URL.Query()
 	group = query.Get("group")
 	reset = query.Get("reset")
-	if !validateGroupName(group) {
+	if !manager.Default.ValidateGroupName(r.Header, group) {
 		this.writeBadRequest(w, "illegal group")
-		return
-	}
-	if group == SmoketestGroup && r.Header.Get(HttpHeaderOrigin) != OriginSmoketest {
-		this.writeBadRequest(w, "smoketest group reserved")
 		return
 	}
 

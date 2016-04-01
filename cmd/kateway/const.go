@@ -10,16 +10,12 @@ const (
 	HttpHeaderMsgBury       = "X-Bury"
 	HttpHeaderMsgKey        = "X-Key"
 	HttpHeaderJobId         = "X-Job-Id"
-	HttpHeaderOrigin        = "X-Origin"
 
 	UrlParamCluster = "cluster"
 	UrlParamTopic   = "topic"
 	UrlParamVersion = "ver"
 	UrlParamAppid   = "appid"
 	UrlParamGroup   = "group"
-
-	SmoketestGroup  = "__smoketest__"
-	OriginSmoketest = "smoketest"
 
 	CharBraceletLeft  = '{'
 	CharBraceletRight = '}'
