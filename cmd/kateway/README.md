@@ -26,7 +26,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - Support both FIFO and Priority queue
 - Systemic Quality Requirements
   - Performance & Throughput
-    - > 100K msg/sec delivery on a single host
+    - > 100K msg/sec delivery on a single host without batch
   - Scalability
     - scales to 1M msg/sec
     - elastic scales
@@ -43,8 +43,8 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - Create versioned topics, subscribe to topics
   - Dedicated real-time metrics and fully-functional dashboard 
   - Easy trouble shooting
+  - Visualize message flow
   - [ ] Managed integration service via Webhooks
-  - [ ] Visualize message flow
 - Communication can be 
   - one-to-many (fan-out)
   - many-to-one (fan-in)
@@ -55,12 +55,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - Enables sophisticated streaming data processing
   - because one app may emit kateway stream data into another kateway stream
 - [ ] Quotas and rate limit, QoS
-  - Flow control: Dynamic rate limiting 
-- [ ] Plugins
-  - authentication and authorization
-  - transform
-  - hooks
-  - other stuff related to message-oriented middleware
+  - Flow control: Dynamic rate limiting
 - [ ] Encryption of all message data on the wire
 
 
@@ -126,7 +121,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
            +----+   +------------------+        +---------------+
 
 
-### API
+### APIs
 
 #### Pub
 
@@ -195,6 +190,11 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - [ ] why make sub with 15s sleep fails
 - [ ] sub then subx will fail on inflight
 - [ ] message tag
+- [ ] Plugins
+  - authentication and authorization
+  - transform
+  - hooks
+  - other stuff related to message-oriented middleware
 - [ ] check hack pkg
 - [ ] https://github.com/allinurl/goaccess
 - [ ] https, outer ip must https
