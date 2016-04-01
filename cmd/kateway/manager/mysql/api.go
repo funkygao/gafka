@@ -47,6 +47,11 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 		return manager.ErrAuthenticationFail
 	}
 
+	// group verification
+	if _, present := this.appConsumerGroupMap[appid]; !present {
+		return manager.ErrInvalidGroup
+	}
+
 	// authorization
 	if topics, present := this.appSubMap[appid]; present {
 		if _, present := topics[hisTopic]; present {

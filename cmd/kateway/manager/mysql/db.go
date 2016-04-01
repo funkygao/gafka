@@ -18,10 +18,11 @@ type mysqlStore struct {
 
 	// mysql store, initialized on refresh
 	// TODO https://github.com/hashicorp/go-memdb
-	appClusterMap map[string]string              // appid:cluster
-	appSecretMap  map[string]string              // appid:secret
-	appSubMap     map[string]map[string]struct{} // appid:topics
-	appPubMap     map[string]map[string]struct{} // appid:subscribed topics
+	appClusterMap       map[string]string              // appid:cluster
+	appSecretMap        map[string]string              // appid:secret
+	appSubMap           map[string]map[string]struct{} // appid:topics
+	appPubMap           map[string]map[string]struct{} // appid:subscribed topics
+	appConsumerGroupMap map[string]string              // appid:group
 }
 
 func New(cf *config) *mysqlStore {
@@ -54,6 +55,10 @@ type appTopicRecord struct {
 
 type appSubscribeRecord struct {
 	AppId, TopicName string
+}
+
+type appConsumerGroupRecord struct {
+	Appid, GroupName string
 }
 
 func (this *mysqlStore) Start() error {
@@ -116,6 +121,34 @@ func (this *mysqlStore) refreshFromMysql() error {
 		return err
 	}
 
+	if err = this.fetchAppGroupRecords(db); err != nil {
+		log.Error("mysql manager store: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (this *mysqlStore) fetchAppGroupRecords(db *sql.DB) error {
+	rows, err := db.Query("SELECT AppId,GroupName FROM application_group WHERE Status=1")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var group appConsumerGroupRecord
+	appGroupMap := make(map[string]string)
+	for rows.Next() {
+		err = rows.Scan(&group.Appid, &group.GroupName)
+		if err != nil {
+			log.Error("mysql manager store: %v", err)
+			continue
+		}
+
+		appGroupMap[group.Appid] = group.GroupName
+	}
+
+	this.appConsumerGroupMap = appGroupMap
 	return nil
 }
 
