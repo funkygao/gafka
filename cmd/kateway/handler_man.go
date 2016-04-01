@@ -55,6 +55,9 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	case "nometrics":
 		options.DisableMetrics = boolVal
 
+	case "gzip":
+		options.EnableGzip = boolVal
+
 	case "ratelimit":
 		options.Ratelimit = boolVal
 
