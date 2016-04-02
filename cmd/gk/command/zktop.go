@@ -6,6 +6,7 @@ import (
 	"math"
 	"net"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,22 +21,28 @@ import (
 type Zktop struct {
 	Ui  cli.Ui
 	Cmd string
+
+	refreshInterval time.Duration
+	lastSents       map[string]string
+	lastRecvs       map[string]string
 }
 
 func (this *Zktop) Run(args []string) (exitCode int) {
 	var (
-		zone            string
-		graph           bool
-		refreshInterval time.Duration
+		zone  string
+		graph bool
 	)
 	cmdFlags := flag.NewFlagSet("zktop", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
-	cmdFlags.DurationVar(&refreshInterval, "i", time.Second*10, "")
+	cmdFlags.DurationVar(&this.refreshInterval, "i", time.Second*5, "")
 	cmdFlags.BoolVar(&graph, "g", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
 	}
+
+	this.lastRecvs = make(map[string]string)
+	this.lastSents = make(map[string]string)
 
 	if graph {
 		var zkzones = make([]*zk.ZkZone, 0)
@@ -64,7 +71,7 @@ func (this *Zktop) Run(args []string) (exitCode int) {
 			this.displayZoneTop(zkzone)
 		}
 
-		time.Sleep(refreshInterval)
+		time.Sleep(this.refreshInterval)
 	}
 
 	return
@@ -72,7 +79,7 @@ func (this *Zktop) Run(args []string) (exitCode int) {
 
 func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 	this.Ui.Output(color.Green(zkzone.Name()))
-	header := "VER             SERVER           PORT M      OUTST        RECVD         SENT CONNS  ZNODES LAT(MIN/AVG/MAX)"
+	header := "VER             SERVER           PORT M  OUTST            RECVD             SENT CONNS  ZNODES LAT(MIN/AVG/MAX)"
 	this.Ui.Output(header)
 
 	stats := zkzone.RunZkFourLetterCommand("stat")
@@ -94,17 +101,31 @@ func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 		} else if stat.mode == "L" {
 			stat.mode = color.Blue(stat.mode)
 		}
-		this.Ui.Output(fmt.Sprintf("%-15s %-15s %5s %1s %10s %12s %12s %5s %7s %s",
-			stat.ver,
-			host, port,
-			stat.mode,
-			stat.outstanding,
-			stat.received,
-			stat.sent,
-			stat.connections,
-			stat.znodes,
+		var sentQps, recvQps int
+		if lastRecv, present := this.lastRecvs[hostPort]; present {
+			r1, _ := strconv.Atoi(stat.received)
+			r0, _ := strconv.Atoi(lastRecv)
+			recvQps = (r1 - r0) / int(this.refreshInterval.Seconds())
+
+			s1, _ := strconv.Atoi(stat.sent)
+			s0, _ := strconv.Atoi(this.lastSents[hostPort])
+			sentQps = (s1 - s0) / int(this.refreshInterval.Seconds())
+		}
+		this.Ui.Output(fmt.Sprintf("%-15s %-15s %5s %1s %6s %16s %16s %5s %7s %s",
+			stat.ver,                                     // 15
+			host,                                         // 15
+			port,                                         // 5
+			stat.mode,                                    // 1
+			stat.outstanding,                             // 6
+			fmt.Sprintf("%s/%d", stat.received, recvQps), // 16
+			fmt.Sprintf("%s/%d", stat.sent, sentQps),     // 16
+			stat.connections,                             // 5
+			stat.znodes,                                  // 7
 			stat.latency,
 		))
+
+		this.lastRecvs[hostPort] = stat.received
+		this.lastSents[hostPort] = stat.sent
 	}
 }
 
