@@ -18,6 +18,7 @@ type Clusters struct {
 	Cmd string
 
 	verbose           bool
+	neat              bool
 	registeredBrokers bool
 	publicOnly        bool
 }
@@ -51,6 +52,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.IntVar(&replicas, "replicas", -1, "")
 	cmdFlags.StringVar(&delCluster, "del", "", "")
+	cmdFlags.BoolVar(&this.neat, "neat", false, "")
 	cmdFlags.IntVar(&retentionHours, "retention", -1, "")
 	cmdFlags.IntVar(&priority, "priority", -1, "")
 	cmdFlags.IntVar(&public, "public", -1, "")
@@ -290,7 +292,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string) {
 			name: zkcluster.Name(),
 			path: zkcluster.Chroot(),
 		}
-		if !this.verbose {
+		if this.neat {
 			clusters = append(clusters, ci)
 			return
 		}
@@ -299,6 +301,17 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string) {
 		brokerList := zkcluster.BrokerList()
 		if len(brokerList) == 0 {
 			ci.err = "no live brokers"
+			clusters = append(clusters, ci)
+			return
+		}
+
+		info := zkcluster.RegisteredInfo()
+		if this.publicOnly && !info.Public {
+			return
+		}
+
+		if !this.verbose {
+			ci.brokerInfos = info.Roster
 			clusters = append(clusters, ci)
 			return
 		}
@@ -327,10 +340,6 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string) {
 			partitionN += len(partitions)
 		}
 
-		info := zkcluster.RegisteredInfo()
-		if this.publicOnly && !info.Public {
-			return
-		}
 		clusters = append(clusters, clusterInfo{
 			name:        zkcluster.Name(),
 			nickname:    info.Nickname,
@@ -369,7 +378,9 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string) {
 			for _, broker := range c.brokerInfos {
 				brokers += fmt.Sprintf("%d/%s:%d ", broker.Id, broker.Host, broker.Port)
 			}
-			this.Ui.Output(fmt.Sprintf("%32s", brokers))
+			if brokers != "" {
+				this.Ui.Output(fmt.Sprintf("%31s %s", " ", brokers))
+			}
 
 			this.Ui.Output(strings.Repeat(" ", 4) +
 				color.Green("nick:%s public:%v topics:%d partitions:%d replicas:%d retention:%dh",
@@ -387,7 +398,10 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string) {
 		for _, broker := range c.brokerInfos {
 			brokers += fmt.Sprintf("%d/%s:%d ", broker.Id, broker.Host, broker.Port)
 		}
-		this.Ui.Output(fmt.Sprintf("%32s", brokers))
+		if brokers != "" {
+			this.Ui.Output(fmt.Sprintf("%31s %s", " ", brokers))
+		}
+
 	}
 
 }
@@ -412,6 +426,9 @@ Options:
 
     -l
       Use a long listing format.
+
+    -neat
+      Use short listing format.
 
     -po
       Display only public clusters.

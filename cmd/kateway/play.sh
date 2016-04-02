@@ -4,6 +4,7 @@
 #----------------------
 
 # register the demo cluster 'me'
+zk create -p /kafka_pubsub
 gk clusters -z local -add me -p /kafka_pubsub
 gk clusters -z local -c me -s -public 1 -nickname me
 
