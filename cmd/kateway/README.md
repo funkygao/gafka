@@ -69,6 +69,12 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - Data streaming from various processes or devices
 - Reliability improvement
 
+### Design philosophy
+
+kateway is designed as an open system that can easily integrate with other system.
+
+It is designed to be programmer friendly.
+
 ### Architecture
 
            +----+      +-----------------+          
