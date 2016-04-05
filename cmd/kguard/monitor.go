@@ -9,12 +9,15 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
+	"github.com/julienschmidt/httprouter"
 )
 
 type Monitor struct {
 	zone           string
 	influxdbAddr   string
 	influxdbDbName string
+
+	router *httprouter.Router
 
 	stop chan struct{}
 
@@ -34,6 +37,8 @@ func (this *Monitor) Init() {
 	}
 
 	this.executors = make([]Executor, 0)
+	this.router = httprouter.New()
+	this.router.GET("/metrics", this.metricsHandler)
 
 	if logFile == "stdout" {
 		log.AddFilter("stdout", log.INFO, log.NewConsoleLogWriter())
