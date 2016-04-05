@@ -46,6 +46,7 @@ func (this *Start) Run(args []string) (exitCode int) {
 }
 
 func (this *Start) main() {
+	this.runManager()
 
 }
 
