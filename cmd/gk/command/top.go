@@ -331,7 +331,7 @@ func (this *Top) showAndResetCounters() {
 			}
 			this.Ui.Output(fmt.Sprintf("%25s %-30d %35s %20s %15.2f",
 				"--TOTAL--", len(distinctBrokerList),
-				"--TOTAL--",
+				fmt.Sprintf("--TOTAL-- %d", len(this.counters)),
 				gofmt.Comma(int64(totalNum)),
 				totalMps))
 
