@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/funkygao/gafka/cmd/webhook/command"
+	"github.com/funkygao/gafka/cmd/webhook/command/start"
 	"github.com/funkygao/gocli"
 )
 
@@ -24,7 +24,7 @@ func init() {
 
 	commands = map[string]cli.CommandFactory{
 		"start": func() (cli.Command, error) {
-			return &command.Start{
+			return &start.Start{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
