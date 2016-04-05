@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -16,6 +18,7 @@ type Monitor struct {
 	zone           string
 	influxdbAddr   string
 	influxdbDbName string
+	httpAddr       string
 
 	router *httprouter.Router
 
@@ -28,6 +31,7 @@ func (this *Monitor) Init() {
 	var logFile string
 	flag.StringVar(&logFile, "log", "stdout", "log filename")
 	flag.StringVar(&this.zone, "z", "", "zone, required")
+	flag.StringVar(&this.httpAddr, "http", ":100025", "http server addr")
 	flag.StringVar(&this.influxdbAddr, "influxAddr", "", "influxdb addr, required")
 	flag.StringVar(&this.influxdbDbName, "db", "", "influxdb db name, required")
 	flag.Parse()
@@ -67,6 +71,17 @@ func (this *Monitor) ServeForever() {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	defer zkzone.Close()
+
+	httpServer := &http.Server{
+		Addr:    this.httpAddr,
+		Handler: this.router,
+	}
+	httpListener, err := net.Listen("tcp", this.httpAddr)
+	if err == nil {
+		go httpServer.Serve(httpListener)
+	} else {
+		log.Error("http server: %v", err)
+	}
 
 	wg := new(sync.WaitGroup)
 	this.addExecutor(&MonitorTopics{zkzone: zkzone, tick: time.Minute, stop: this.stop, wg: wg})
