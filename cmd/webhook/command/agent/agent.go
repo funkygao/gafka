@@ -1,4 +1,4 @@
-package start
+package agent
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/funkygao/gocli"
 )
 
-type Start struct {
+type Agent struct {
 	Ui  cli.Ui
 	Cmd string
 
@@ -22,15 +22,15 @@ type Start struct {
 	callbackConn *http.Client
 }
 
-func (this *Start) Synopsis() string {
-	return "Start webhook worker on localhost"
+func (this *Agent) Synopsis() string {
+	return "Start webhook agent on localhost"
 }
 
-func (this *Start) Help() string {
+func (this *Agent) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s start [options]
+Usage: %s agent [options]
 
-    Start webhook worker on localhost
+    Start webhook agent on localhost
 
 Options:
 

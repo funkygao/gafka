@@ -1,4 +1,4 @@
-package start
+package agent
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-func (this *Start) Callback(endpoint string, msg *sarama.ConsumerMessage) error {
+func (this *Agent) Callback(endpoint string, msg *sarama.ConsumerMessage) error {
 	buf := mpool.BytesBufferGet()
 	defer mpool.BytesBufferPut(buf)
 

@@ -1,4 +1,4 @@
-package start
+package agent
 
 import (
 	"flag"
@@ -13,7 +13,7 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-func (this *Start) Run(args []string) (exitCode int) {
+func (this *Agent) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("start", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.logfile, "log", "stdout", "")
@@ -51,11 +51,11 @@ func (this *Start) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Start) main() {
+func (this *Agent) main() {
 	this.runManager()
 
 }
 
-func (this *Start) shutdown() {
+func (this *Agent) shutdown() {
 	close(this.quitCh)
 }

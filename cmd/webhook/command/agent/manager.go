@@ -1,4 +1,4 @@
-package start
+package agent
 
 import (
 	"time"
@@ -8,7 +8,7 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-func (this *Start) runManager() {
+func (this *Agent) runManager() {
 	cf := mysql.DefaultConfig(this.zone)
 	cf.Refresh = time.Minute * 5
 	manager.Default = mysql.New(cf)
