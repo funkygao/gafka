@@ -133,6 +133,7 @@ func (this *ZkCluster) RegisteredInfo() ZkCluster {
 	cluster.name = this.name
 	cluster.path = this.path
 	cluster.zone = this.zone
+	// TODO sort Roster by broker id
 	return cluster
 }
 
