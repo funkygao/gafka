@@ -31,7 +31,7 @@ func (this *Monitor) Init() {
 	var logFile string
 	flag.StringVar(&logFile, "log", "stdout", "log filename")
 	flag.StringVar(&this.zone, "z", "", "zone, required")
-	flag.StringVar(&this.httpAddr, "http", ":100025", "http server addr")
+	flag.StringVar(&this.httpAddr, "http", ":10025", "http server addr")
 	flag.StringVar(&this.influxdbAddr, "influxAddr", "", "influxdb addr, required")
 	flag.StringVar(&this.influxdbDbName, "db", "", "influxdb db name, required")
 	flag.Parse()
