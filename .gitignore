@@ -40,6 +40,7 @@ cmd/ehaproxy/ehaproxy
 cmd/ehaproxy/.haproxy.cf
 cmd/kateway/bench/bench
 cmd/kateway/bench/httpdserver
+cmd/webhook/webhook
 cmd/zk/zk
 panic.dump
 cmd/gk/gk

@@ -11,6 +11,10 @@ var (
 	topicNameRegex = regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 )
 
+func (this *mysqlStore) Refreshed() <-chan struct{} {
+	return this.refreshCh
+}
+
 func (this *mysqlStore) ValidateTopicName(topic string) bool {
 	return len(topicNameRegex.FindAllString(topic, -1)) == 1
 }
@@ -31,6 +35,10 @@ func (this *mysqlStore) ValidateGroupName(header http.Header, group string) bool
 	}
 
 	return true
+}
+
+func (this *mysqlStore) WebHooks() ([]manager.WebHook, error) {
+	return nil, nil
 }
 
 func (this *mysqlStore) AuthAdmin(appid, pubkey string) bool {

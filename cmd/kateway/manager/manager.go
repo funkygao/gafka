@@ -24,6 +24,12 @@ type Manager interface {
 	// LookupCluster locate the cluster name of an appid.
 	LookupCluster(appid string) (cluster string, found bool)
 
+	// WebHooks returns all registered webhooks object.
+	WebHooks() ([]WebHook, error)
+
+	// Refreshed will get empty msg each time manager refreshes data.
+	Refreshed() <-chan struct{}
+
 	// IsShadowedTopic checks if a topic has retry/dead sub/shadow topics.
 	IsShadowedTopic(appid, topic, ver, group string) bool
 

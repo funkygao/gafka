@@ -15,6 +15,7 @@ type mysqlStore struct {
 	zkzone *zk.ZkZone
 
 	shutdownCh chan struct{}
+	refreshCh  chan struct{}
 
 	// mysql store, initialized on refresh
 	// TODO https://github.com/hashicorp/go-memdb
@@ -38,6 +39,7 @@ func New(cf *config) *mysqlStore {
 		cf:         cf,
 		zkzone:     zk.NewZkZone(zk.DefaultConfig(cf.Zone, zkAddrs)), // TODO session timeout
 		shutdownCh: make(chan struct{}),
+		refreshCh:  make(chan struct{}),
 	}
 }
 
@@ -76,6 +78,11 @@ func (this *mysqlStore) Start() error {
 			case <-ticker.C:
 				this.refreshFromMysql()
 				log.Info("manager refreshed from mysql")
+
+				select {
+				case this.refreshCh <- struct{}{}:
+				default:
+				}
 
 			case <-this.shutdownCh:
 				log.Info("mysql manager stopped")
