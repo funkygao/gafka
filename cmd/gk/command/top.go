@@ -325,12 +325,12 @@ func (this *Top) showAndResetCounters() {
 				othersMps))
 
 			// total row
-			distinceBrokerList := make(map[string]struct{})
+			distinctBrokerList := make(map[string]struct{})
 			for _, bs := range this.brokers {
-				distinceBrokerList[strings.Join(bs, ",")] = struct{}{}
+				distinctBrokerList[strings.Join(bs, ",")] = struct{}{}
 			}
 			this.Ui.Output(fmt.Sprintf("%25s %-30d %35s %20s %15.2f",
-				"--TOTAL--", len(distinceBrokerList),
+				"--TOTAL--", len(distinctBrokerList),
 				"--TOTAL--",
 				gofmt.Comma(int64(totalNum)),
 				totalMps))
