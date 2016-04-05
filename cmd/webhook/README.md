@@ -7,6 +7,8 @@ Webhooks allow you to build or set up integrations which subscribe to certain ev
 
 When one of those events is triggered, we'll send a HTTP POST payload to the webhook's configured URL. 
 
+Used with [djob](http://github.com/funkygao/djob) for distributed cluster management.
+
 ### Payload
 
 #### Delivery Headers
