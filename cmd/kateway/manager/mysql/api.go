@@ -33,7 +33,7 @@ func (this *mysqlStore) ValidateGroupName(header http.Header, group string) bool
 	return true
 }
 
-func (this *mysqlStore) WebHooks() ([]WebHook, error) {
+func (this *mysqlStore) WebHooks() ([]manager.WebHook, error) {
 	return nil, nil
 }
 

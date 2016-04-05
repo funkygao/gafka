@@ -2,6 +2,8 @@ package dummy
 
 import (
 	"net/http"
+
+	"github.com/funkygao/gafka/cmd/kateway/manager"
 )
 
 type dummyStore struct {
@@ -15,7 +17,7 @@ func (this *dummyStore) Name() string {
 	return "dummy"
 }
 
-func (this *dummyStore) WebHooks() ([]WebHook, error) {
+func (this *dummyStore) WebHooks() ([]manager.WebHook, error) {
 	return nil, nil
 }
 
