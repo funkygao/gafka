@@ -21,6 +21,10 @@ func (this *dummyStore) WebHooks() ([]manager.WebHook, error) {
 	return nil, nil
 }
 
+func (this *dummyStore) Refreshed() <-chan struct{} {
+	return nil
+}
+
 func (this *dummyStore) AuthAdmin(appid, pubkey string) bool {
 	return true
 }

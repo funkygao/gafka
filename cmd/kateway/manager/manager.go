@@ -27,6 +27,9 @@ type Manager interface {
 	// WebHooks returns all registered webhooks object.
 	WebHooks() ([]WebHook, error)
 
+	// Refreshed will get empty msg each time manager refreshes data.
+	Refreshed() <-chan struct{}
+
 	// IsShadowedTopic checks if a topic has retry/dead sub/shadow topics.
 	IsShadowedTopic(appid, topic, ver, group string) bool
 
