@@ -10,6 +10,10 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+var (
+	logLevel log.Level
+)
+
 func toLogLevel(levelStr string) log.Level {
 	level := log.TRACE
 	switch levelStr {
