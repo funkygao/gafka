@@ -16,4 +16,4 @@ Used with [djob](http://github.com/funkygao/djob) for distributed cluster manage
 || Header || Description ||
 || X-Partition || Partition id of this message ||
 || X-Offset || Offset of this message ||
-|| User-Agent || kateway-webhook/{version} ||
+|| User-Agent || webhooker/{version} ||
