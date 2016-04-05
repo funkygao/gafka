@@ -33,6 +33,10 @@ func (this *mysqlStore) ValidateGroupName(header http.Header, group string) bool
 	return true
 }
 
+func (this *mysqlStore) WebHooks() ([]WebHook, error) {
+	return nil, nil
+}
+
 func (this *mysqlStore) AuthAdmin(appid, pubkey string) bool {
 	if appid == "_psubAdmin_" && pubkey == "_wandafFan_" { // FIXME
 		return true

@@ -15,6 +15,10 @@ func (this *dummyStore) Name() string {
 	return "dummy"
 }
 
+func (this *dummyStore) WebHooks() ([]WebHook, error) {
+	return nil, nil
+}
+
 func (this *dummyStore) AuthAdmin(appid, pubkey string) bool {
 	return true
 }
