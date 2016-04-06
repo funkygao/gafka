@@ -87,15 +87,18 @@ func (this *TopBroker) showAndResetCounters() {
 	sort.Strings(sortedHost)
 
 	this.Ui.Output(fmt.Sprintf("%20s %8s", "host", "mps"))
+	totalQps := .0
 	for _, host := range sortedHost {
 		offset := this.offsets[host]
 		qps := float64(0)
 		if lastOffset, present := this.lastOffsets[host]; present {
 			qps = float64(offset-lastOffset) / d
 		}
+		totalQps += qps
 
-		this.Ui.Output(fmt.Sprintf("%20s %8.1f", host, qps))
+		this.Ui.Output(fmt.Sprintf("%20s %10.1f", host, qps))
 	}
+	this.Ui.Output(fmt.Sprintf("%20s %10.1f", "-TOTAL-", totalQps))
 
 	for host, offset := range this.offsets {
 		this.lastOffsets[host] = offset
