@@ -117,7 +117,7 @@ func (this *Monitor) ServeForever() {
 	}
 
 	ip, _ := ctx.LocalIP()
-	candidate := leadership.NewCandidate(backend, "_kguard/leader", ip.String(), 15*time.Second)
+	candidate := leadership.NewCandidate(backend, zk.KguardLeaderPath, ip.String(), 15*time.Second)
 	electedCh, _, err := candidate.RunForElection()
 	if err != nil {
 		panic("Cannot run for election, store is probably down")
