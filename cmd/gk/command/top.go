@@ -60,7 +60,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.DurationVar(&this.topInterval, "i", time.Second*5, "refresh interval")
 	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
 	cmdFlags.IntVar(&this.limit, "n", 33, "")
-	cmdFlags.BoolVar(&this.skipIpPrefix, "noiphead", true, "")
+	cmdFlags.BoolVar(&this.skipIpPrefix, "shortip", true, "")
 	cmdFlags.StringVar(&this.who, "who", "producer", "")
 	cmdFlags.BoolVar(&this.dashboardGraph, "d", false, "")
 	cmdFlags.BoolVar(&this.longFmt, "l", true, "")
@@ -483,8 +483,7 @@ func (this *Top) discardPortOfBrokerAddr(brokerList []string) []string {
 	for _, addr := range brokerList {
 		host, _, _ := net.SplitHostPort(addr)
 		if this.skipIpPrefix {
-			parts := strings.SplitN(host, ".", 4)
-			host = strings.Join(parts[2:], ".")
+			host = shortIp(host)
 		}
 		r = append(r, host)
 	}
@@ -492,14 +491,14 @@ func (this *Top) discardPortOfBrokerAddr(brokerList []string) []string {
 }
 
 func (*Top) Synopsis() string {
-	return "Unix “top” like utility for kafka"
+	return "Unix “top” like utility for kafka topics"
 }
 
 func (this *Top) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s top [options]
 
-    Unix “top” like utility for kafka
+    Unix “top” like utility for kafka topics
 
 Options:
 
@@ -519,7 +518,7 @@ Options:
     -l
       Display long format. Print broker host.
 
-    -noiphead
+    -shortip
       Used with -l, broker host 10.20.30.40 will display as 30.40
 
     -d
