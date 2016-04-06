@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -79,7 +80,15 @@ func (this *TopBroker) showAndResetCounters() {
 	defer this.mu.Unlock()
 
 	d := this.interval.Seconds()
-	for host, offset := range this.offsets {
+	sortedHost := make([]string, 0, len(this.offsets))
+	for host, _ := range this.offsets {
+		sortedHost = append(sortedHost, host)
+	}
+	sort.Strings(sortedHost)
+
+	this.Ui.Output(fmt.Sprintf("%20s mps", "host"))
+	for _, host := range sortedHost {
+		offset := this.offsets[host]
 		qps := float64(0)
 		if lastOffset, present := this.lastOffsets[host]; present {
 			qps = float64(offset-lastOffset) / d
