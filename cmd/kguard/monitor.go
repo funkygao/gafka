@@ -18,7 +18,6 @@ import (
 )
 
 type Monitor struct {
-	zone           string
 	influxdbAddr   string
 	influxdbDbName string
 	apiAddr        string
@@ -33,19 +32,19 @@ type Monitor struct {
 }
 
 func (this *Monitor) Init() {
-	var logFile string
+	var logFile, zone string
 	flag.StringVar(&logFile, "log", "stdout", "log filename")
-	flag.StringVar(&this.zone, "z", "", "zone, required")
+	flag.StringVar(&zone, "z", "", "zone, required")
 	flag.StringVar(&this.apiAddr, "http", ":10025", "api http server addr")
 	flag.StringVar(&this.influxdbAddr, "influxAddr", "", "influxdb addr, required")
 	flag.StringVar(&this.influxdbDbName, "db", "", "influxdb db name, required")
 	flag.Parse()
 
-	if this.zone == "" || this.influxdbDbName == "" || this.influxdbAddr == "" {
+	if zone == "" || this.influxdbDbName == "" || this.influxdbAddr == "" {
 		panic("run help ")
 	}
 
-	this.zkzone = zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	this.zkzone = zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	this.router = httprouter.New()
 	this.router.GET("/metrics", this.metricsHandler)
 
