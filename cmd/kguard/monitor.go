@@ -44,6 +44,7 @@ func (this *Monitor) Init() {
 		panic("run help ")
 	}
 
+	ctx.LoadFromHome()
 	this.zkzone = zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	this.router = httprouter.New()
 	this.router.GET("/metrics", this.metricsHandler)
@@ -96,8 +97,6 @@ func (this *Monitor) Start() {
 
 func (this *Monitor) ServeForever() {
 	defer this.zkzone.Close()
-
-	ctx.LoadFromHome()
 
 	// start the api server
 	apiServer := &http.Server{
