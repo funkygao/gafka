@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -17,9 +18,12 @@ type TopBroker struct {
 	Ui  cli.Ui
 	Cmd string
 
+	mu sync.Mutex
+
 	zone, cluster, topic string
 	drawMode             bool
 	interval             time.Duration
+	shortIp              bool
 
 	offsets     map[string]int64 // host => offset sum
 	lastOffsets map[string]int64
@@ -32,6 +36,7 @@ func (this *TopBroker) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.StringVar(&this.topic, "t", "", "")
 	cmdFlags.BoolVar(&this.drawMode, "g", false, "")
+	cmdFlags.BoolVar(&this.shortIp, "shortip", false, "")
 	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "refresh interval")
 
 	if err := cmdFlags.Parse(args); err != nil {
@@ -70,6 +75,9 @@ func (this *TopBroker) Run(args []string) (exitCode int) {
 }
 
 func (this *TopBroker) showAndResetCounters() {
+	this.mu.Lock()
+	defer this.mu.Unlock()
+
 	d := this.interval.Seconds()
 	for host, offset := range this.offsets {
 		qps := float64(0)
@@ -117,11 +125,16 @@ func (this *TopBroker) clusterTopProducers(zkcluster *zk.ZkCluster) {
 				host, _, err := net.SplitHostPort(leader.Addr())
 				swallow(err)
 
-				host = shortIp(host)
+				if this.shortIp {
+					host = shortIp(host)
+				}
+
+				this.mu.Lock()
 				if _, present := this.offsets[host]; !present {
 					this.offsets[host] = 0
 				}
 				this.offsets[host] += latestOffset
+				this.mu.Unlock()
 			}
 		}
 
@@ -152,6 +165,8 @@ Options:
     -i interval
       Refresh interval in seconds.
       e,g. 5s    
+
+    -shortip
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
