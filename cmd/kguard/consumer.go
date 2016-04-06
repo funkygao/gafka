@@ -27,7 +27,6 @@ func (this *MonitorConsumers) Run() {
 	consumerGroupsOnline := metrics.NewRegisteredGauge("consumer.groups.online", nil)
 	consumerGroupsOffline := metrics.NewRegisteredGauge("consumer.groups.offline", nil)
 	for {
-
 		select {
 		case <-this.stop:
 			return
