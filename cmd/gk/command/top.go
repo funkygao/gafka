@@ -483,8 +483,7 @@ func (this *Top) discardPortOfBrokerAddr(brokerList []string) []string {
 	for _, addr := range brokerList {
 		host, _, _ := net.SplitHostPort(addr)
 		if this.skipIpPrefix {
-			parts := strings.SplitN(host, ".", 4)
-			host = strings.Join(parts[2:], ".")
+			host = shortIp(host)
 		}
 		r = append(r, host)
 	}

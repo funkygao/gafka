@@ -191,6 +191,11 @@ func printSwallowedErrors(ui cli.Ui, zkzone *zk.ZkZone) {
 	}
 }
 
+func shortIp(host string) string {
+	parts := strings.SplitN(host, ".", 4)
+	return strings.Join(parts[2:], ".")
+}
+
 func toLogLevel(levelStr string) log.Level {
 	level := log.TRACE
 	switch levelStr {
