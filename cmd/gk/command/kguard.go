@@ -27,9 +27,9 @@ func (this *Kguard) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
-	data, stat, err := zkzone.Conn().Get(zk.KguardLeaderPath)
+	data, stat, err := zkzone.Conn().Get("/" + zk.KguardLeaderPath)
 	if err != nil {
-		this.Ui.Error(err.Error())
+		this.Ui.Error(fmt.Sprintf("%s %v", zk.KguardLeaderPath, err.Error()))
 		return
 	}
 
