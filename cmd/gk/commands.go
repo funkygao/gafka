@@ -151,6 +151,13 @@ func init() {
 			}, nil
 		},
 
+		"topbroker": func() (cli.Command, error) {
+			return &command.TopBroker{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"console": func() (cli.Command, error) {
 			return &command.Console{
 				Ui:   ui,
