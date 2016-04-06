@@ -51,11 +51,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	shadow = query.Get("use")
 	ack = query.Get("ack")
 	myAppid = r.Header.Get(HttpHeaderAppid)
-	if r.Header.Get("Connection") == "close" {
-		// sub should use keep-alive
-		log.Warn("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} not keep-alive",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
-	}
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
