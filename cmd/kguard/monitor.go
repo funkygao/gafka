@@ -18,7 +18,7 @@ type Monitor struct {
 	zone           string
 	influxdbAddr   string
 	influxdbDbName string
-	httpAddr       string
+	apiAddr        string
 
 	router *httprouter.Router
 
@@ -31,7 +31,7 @@ func (this *Monitor) Init() {
 	var logFile string
 	flag.StringVar(&logFile, "log", "stdout", "log filename")
 	flag.StringVar(&this.zone, "z", "", "zone, required")
-	flag.StringVar(&this.httpAddr, "http", ":10025", "http server addr")
+	flag.StringVar(&this.apiAddr, "http", ":10025", "api http server addr")
 	flag.StringVar(&this.influxdbAddr, "influxAddr", "", "influxdb addr, required")
 	flag.StringVar(&this.influxdbDbName, "db", "", "influxdb db name, required")
 	flag.Parse()
@@ -72,15 +72,15 @@ func (this *Monitor) ServeForever() {
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	defer zkzone.Close()
 
-	httpServer := &http.Server{
-		Addr:    this.httpAddr,
+	apiServer := &http.Server{
+		Addr:    this.apiAddr,
 		Handler: this.router,
 	}
-	httpListener, err := net.Listen("tcp", this.httpAddr)
+	apiListener, err := net.Listen("tcp", this.apiAddr)
 	if err == nil {
-		go httpServer.Serve(httpListener)
+		go apiServer.Serve(apiListener)
 	} else {
-		log.Error("http server: %v", err)
+		log.Error("api http server: %v", err)
 	}
 
 	wg := new(sync.WaitGroup)
