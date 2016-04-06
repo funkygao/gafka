@@ -13,6 +13,8 @@ const (
 	KatewayMysqlPath   = "/_kateway/mysql"
 	KatewayDisquePath  = "/_kateway/disque"
 
+	KguardLeaderPath = "_kguard/leader"
+
 	ConsumersPath           = "/consumers"
 	BrokerIdsPath           = "/brokers/ids"
 	BrokerTopicsPath        = "/brokers/topics"

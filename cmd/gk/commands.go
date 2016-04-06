@@ -109,6 +109,13 @@ func init() {
 			}, nil
 		},
 
+		"kguard": func() (cli.Command, error) {
+			return &command.Kguard{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"deploy": func() (cli.Command, error) {
 			return &command.Deploy{
 				Ui:  ui,

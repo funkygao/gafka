@@ -20,6 +20,7 @@ type reporter struct {
 	username string
 	password string
 
+	stop   chan struct{}
 	client *client.Client
 }
 
@@ -28,7 +29,7 @@ type reporter struct {
 // SHOW RETENTION POLICIES ON food_data
 // CREATE CONTINUOUS QUERY cq_30m ON food_data BEGIN SELECT mean(website) AS mean_website,mean(phone) AS mean_phone INTO food_data."default".downsampled_orders FROM orders GROUP BY time(30m) END
 func InfluxDB(hostname string, r metrics.Registry, interval time.Duration,
-	url, database, username, password string) {
+	url, database, username, password string, stop chan struct{}) {
 	u, err := uurl.Parse(url)
 	if err != nil {
 		log.Error("unable to parse InfluxDB url %s. err=%v", url, err)
@@ -38,6 +39,7 @@ func InfluxDB(hostname string, r metrics.Registry, interval time.Duration,
 	rep := &reporter{
 		reg:      r,
 		interval: interval,
+		stop:     stop,
 		url:      *u,
 		database: database,
 		hostname: hostname,
@@ -70,6 +72,9 @@ func (r *reporter) run() {
 	for {
 		select {
 		// TODO on shutdown, flush all metrics
+
+		case <-r.stop:
+			return
 
 		case <-intervalTicker:
 			if err := r.send(); err != nil {

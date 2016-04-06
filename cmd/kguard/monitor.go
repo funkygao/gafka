@@ -7,6 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/docker/leadership"
+	"github.com/docker/libkv/store"
+	"github.com/docker/libkv/store/zookeeper"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
@@ -15,32 +18,33 @@ import (
 )
 
 type Monitor struct {
-	zone           string
 	influxdbAddr   string
 	influxdbDbName string
-	httpAddr       string
+	apiAddr        string
 
 	router *httprouter.Router
+	zkzone *zk.ZkZone
 
-	stop chan struct{}
+	stop   chan struct{}
+	leader bool
 
 	executors []Executor
 }
 
 func (this *Monitor) Init() {
-	var logFile string
+	var logFile, zone string
 	flag.StringVar(&logFile, "log", "stdout", "log filename")
-	flag.StringVar(&this.zone, "z", "", "zone, required")
-	flag.StringVar(&this.httpAddr, "http", ":10025", "http server addr")
+	flag.StringVar(&zone, "z", "", "zone, required")
+	flag.StringVar(&this.apiAddr, "http", ":10025", "api http server addr")
 	flag.StringVar(&this.influxdbAddr, "influxAddr", "", "influxdb addr, required")
 	flag.StringVar(&this.influxdbDbName, "db", "", "influxdb db name, required")
 	flag.Parse()
 
-	if this.zone == "" || this.influxdbDbName == "" || this.influxdbAddr == "" {
+	if zone == "" || this.influxdbDbName == "" || this.influxdbAddr == "" {
 		panic("run help ")
 	}
 
-	this.executors = make([]Executor, 0)
+	this.zkzone = zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	this.router = httprouter.New()
 	this.router.GET("/metrics", this.metricsHandler)
 
@@ -63,34 +67,20 @@ func (this *Monitor) Stop() {
 	close(this.stop)
 }
 
-func (this *Monitor) ServeForever() {
-	ctx.LoadFromHome()
+func (this *Monitor) Start() {
+	this.stop = make(chan struct{})
 
 	go InfluxDB(ctx.Hostname(), metrics.DefaultRegistry, time.Minute,
-		this.influxdbAddr, this.influxdbDbName, "", "")
+		this.influxdbAddr, this.influxdbDbName, "", "", this.stop)
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
-	defer zkzone.Close()
-
-	httpServer := &http.Server{
-		Addr:    this.httpAddr,
-		Handler: this.router,
-	}
-	httpListener, err := net.Listen("tcp", this.httpAddr)
-	if err == nil {
-		go httpServer.Serve(httpListener)
-	} else {
-		log.Error("http server: %v", err)
-	}
-
+	this.executors = make([]Executor, 0)
 	wg := new(sync.WaitGroup)
-	this.addExecutor(&MonitorTopics{zkzone: zkzone, tick: time.Minute, stop: this.stop, wg: wg})
-	this.addExecutor(&MonitorBrokers{zkzone: zkzone, tick: time.Minute, stop: this.stop, wg: wg})
-	this.addExecutor(&MonitorReplicas{zkzone: zkzone, tick: time.Minute, stop: this.stop, wg: wg})
-	this.addExecutor(&MonitorConsumers{zkzone: zkzone, tick: time.Minute, stop: this.stop, wg: wg})
-	this.addExecutor(&MonitorClusters{zkzone: zkzone, tick: time.Minute, stop: this.stop, wg: wg})
+	this.addExecutor(&MonitorTopics{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
+	this.addExecutor(&MonitorBrokers{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
+	this.addExecutor(&MonitorReplicas{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
+	this.addExecutor(&MonitorConsumers{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
+	this.addExecutor(&MonitorClusters{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
 	this.addExecutor(&MonitorF5{tick: time.Minute, stop: this.stop, wg: wg})
-
 	for _, e := range this.executors {
 		wg.Add(1)
 		go e.Run()
@@ -100,4 +90,53 @@ func (this *Monitor) ServeForever() {
 
 	<-this.stop
 	wg.Wait()
+
+	log.Info("all executors stopped")
+}
+
+func (this *Monitor) ServeForever() {
+	defer this.zkzone.Close()
+
+	ctx.LoadFromHome()
+
+	// start the api server
+	apiServer := &http.Server{
+		Addr:    this.apiAddr,
+		Handler: this.router,
+	}
+	apiListener, err := net.Listen("tcp", this.apiAddr)
+	if err == nil {
+		go apiServer.Serve(apiListener)
+	} else {
+		log.Error("api http server: %v", err)
+	}
+
+	backend, err := zookeeper.New(this.zkzone.ZkAddrList(), &store.Config{})
+	if err != nil {
+		panic(err)
+	}
+
+	ip, _ := ctx.LocalIP()
+	candidate := leadership.NewCandidate(backend, zk.KguardLeaderPath, ip.String(), 15*time.Second)
+	electedCh, _, err := candidate.RunForElection()
+	if err != nil {
+		panic("Cannot run for election, store is probably down")
+	}
+
+	for isElected := range electedCh {
+		if isElected {
+			log.Info("Won the election, starting all executors")
+
+			this.leader = true
+			this.Start()
+		} else {
+			log.Warn("Lost the election, watching election events...")
+
+			if this.leader {
+				this.Stop()
+			}
+			this.leader = false
+		}
+	}
+
 }
