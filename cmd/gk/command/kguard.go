@@ -34,7 +34,7 @@ func (this *Kguard) Run(args []string) (exitCode int) {
 		return
 	}
 
-	this.Ui.Output(fmt.Sprintf("%s %s", color.Green(data),
+	this.Ui.Output(fmt.Sprintf("%s %s", color.Green(string(data)),
 		gofmt.PrettySince(zk.ZkTimestamp(stat.Mtime).Time())))
 
 	return
