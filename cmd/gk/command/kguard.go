@@ -8,6 +8,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 )
 
@@ -33,7 +34,7 @@ func (this *Kguard) Run(args []string) (exitCode int) {
 		return
 	}
 
-	this.Ui.Output(fmt.Sprintf("%s %s", string(data),
+	this.Ui.Output(fmt.Sprintf("%s %s", color.Green(data),
 		gofmt.PrettySince(zk.ZkTimestamp(stat.Mtime).Time())))
 
 	return
