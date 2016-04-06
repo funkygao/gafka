@@ -8,6 +8,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/gofmt"
 )
 
 type Kguard struct {
@@ -26,9 +27,14 @@ func (this *Kguard) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
-	if zkzone == nil {
-
+	data, stat, err := zkzone.Conn().Get(zk.KguardLeaderPath)
+	if err != nil {
+		this.Ui.Error(err.Error())
+		return
 	}
+
+	this.Ui.Output(fmt.Sprintf("%s %s", string(data),
+		gofmt.PrettySince(zk.ZkTimestamp(stat.Mtime).Time())))
 
 	return
 }
