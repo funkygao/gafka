@@ -106,7 +106,7 @@ func (this *TopBroker) drawDashboard() {
 				}
 				w := int(data.qps*100/maxQps) * maxWidth / 100
 				this.Ui.Output(fmt.Sprintf("%20s %s", data.host,
-					strings.Repeat(color.Green("="), w)))
+					strings.Repeat(color.Green("|"), w)))
 			}
 
 		}
