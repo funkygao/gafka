@@ -13,7 +13,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// /topics/:appid/:topic/:ver?group=xx&&reset=<newest|oldest>&ack=1&use=<dead|retry>
+// /topics/:appid/:topic/:ver?group=xx&&reset=<newest|oldest>&ack=1&q=<dead|retry>
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -48,7 +48,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
-	shadow = query.Get("use")
+	shadow = query.Get("q")
 	ack = query.Get("ack")
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
