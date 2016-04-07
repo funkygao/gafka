@@ -27,6 +27,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	if options.Ratelimit && !this.throttlePub.Pour(getHttpRemoteIp(r), 1) {
 		log.Warn("%s(%s) rate limit reached", r.RemoteAddr, getHttpRemoteIp(r))
 
+		this.pubMetrics.ClientError.Inc(1)
 		this.writeQuotaExceeded(w)
 		return
 	}
@@ -38,6 +39,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 
+		this.pubMetrics.ClientError.Inc(1)
 		this.writeAuthFailure(w, err)
 		return
 	}
@@ -49,18 +51,23 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} invalid content length: %d",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
 
+		this.pubMetrics.ClientError.Inc(1)
 		this.writeBadRequest(w, "invalid content length")
 		return
 
 	case int64(msgLen) > options.MaxPubSize:
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} too big content length: %d",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
+
+		this.pubMetrics.ClientError.Inc(1)
 		this.writeBadRequest(w, ErrTooBigPubMessage.Error())
 		return
 
 	case msgLen < options.MinPubSize:
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} too small content length: %d",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
+
+		this.pubMetrics.ClientError.Inc(1)
 		this.writeBadRequest(w, ErrTooSmallPubMessage.Error())
 		return
 	}
@@ -73,6 +80,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 
 		log.Error("pub[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
+
+		this.pubMetrics.ClientError.Inc(1)
 		this.writeBadRequest(w, ErrTooBigPubMessage.Error())
 		return
 	}
@@ -93,6 +102,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} too large partition key: %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, partitionKey)
 
+		this.pubMetrics.ClientError.Inc(1)
 		this.writeBadRequest(w, "too large partition key")
 		return
 	}
@@ -110,6 +120,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
 
+		this.pubMetrics.ClientError.Inc(1)
 		this.writeBadRequest(w, "invalid appid")
 		return
 	}
