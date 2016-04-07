@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 )
 
 type TopBroker struct {
@@ -36,7 +37,7 @@ func (this *TopBroker) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.StringVar(&this.topic, "t", "", "")
-	cmdFlags.BoolVar(&this.drawMode, "g", false, "")
+	cmdFlags.BoolVar(&this.drawMode, "d", false, "")
 	cmdFlags.BoolVar(&this.shortIp, "shortip", false, "")
 	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "refresh interval")
 
@@ -60,6 +61,11 @@ func (this *TopBroker) Run(args []string) (exitCode int) {
 		go this.clusterTopProducers(zkcluster)
 	})
 
+	if this.drawMode {
+		this.drawDashboard()
+		return
+	}
+
 	ticker := time.NewTicker(this.interval)
 	defer ticker.Stop()
 
@@ -67,7 +73,7 @@ func (this *TopBroker) Run(args []string) (exitCode int) {
 		select {
 		case <-ticker.C:
 			refreshScreen()
-			this.showAndResetCounters()
+			this.showAndResetCounters(true)
 
 		}
 	}
@@ -75,7 +81,45 @@ func (this *TopBroker) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *TopBroker) showAndResetCounters() {
+func (this *TopBroker) drawDashboard() {
+	ticker := time.NewTicker(this.interval)
+	defer ticker.Stop()
+
+	var maxQps float64
+	width := 140 // TODO
+	for {
+		select {
+		case <-ticker.C:
+			refreshScreen()
+			datas := this.showAndResetCounters(false)
+			maxQps = .0
+			for _, data := range datas {
+				if data.qps > maxQps {
+					maxQps = data.qps
+				}
+			}
+
+			maxWidth := width - 22
+			for _, data := range datas {
+				if data.qps < 0 {
+					data.qps = -data.qps // FIXME
+				}
+				w := int(data.qps*100/maxQps) * maxWidth / 100
+				this.Ui.Output(fmt.Sprintf("%20s %s", data.host,
+					strings.Repeat(color.Green("="), w)))
+			}
+
+		}
+	}
+
+}
+
+type brokerQps struct {
+	host string
+	qps  float64
+}
+
+func (this *TopBroker) showAndResetCounters(show bool) []brokerQps {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
@@ -86,24 +130,37 @@ func (this *TopBroker) showAndResetCounters() {
 	}
 	sort.Strings(sortedHost)
 
-	this.Ui.Output(fmt.Sprintf("%20s %8s", "host", "mps"))
+	if show {
+		this.Ui.Output(fmt.Sprintf("%20s %8s", "host", "mps"))
+	}
+
 	totalQps := .0
+	r := make([]brokerQps, 0, len(sortedHost))
 	for _, host := range sortedHost {
 		offset := this.offsets[host]
 		qps := float64(0)
 		if lastOffset, present := this.lastOffsets[host]; present {
 			qps = float64(offset-lastOffset) / d
 		}
+
+		r = append(r, brokerQps{host, qps})
 		totalQps += qps
 
-		this.Ui.Output(fmt.Sprintf("%20s %10.1f", host, qps))
+		if show {
+			this.Ui.Output(fmt.Sprintf("%20s %10.1f", host, qps))
+		}
 	}
-	this.Ui.Output(fmt.Sprintf("%20s %10.1f", "-TOTAL-", totalQps))
+
+	if show {
+		this.Ui.Output(fmt.Sprintf("%20s %10.1f", "-TOTAL-", totalQps))
+	}
 
 	for host, offset := range this.offsets {
 		this.lastOffsets[host] = offset
 	}
 	this.offsets = make(map[string]int64)
+
+	return r
 }
 
 func (this *TopBroker) clusterTopProducers(zkcluster *zk.ZkCluster) {
@@ -178,8 +235,11 @@ Options:
       Refresh interval in seconds.
       e,g. 5s    
 
+    -d
+      Draw dashboard in graph.  
+
     -shortip
 
-`, this.Cmd)
+`, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }
