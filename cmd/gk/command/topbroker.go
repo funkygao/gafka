@@ -13,7 +13,6 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
-	"github.com/funkygao/golib/color"
 )
 
 type TopBroker struct {
@@ -87,6 +86,7 @@ func (this *TopBroker) drawDashboard() {
 
 	var maxQps float64
 	width := 140 // TODO
+	maxWidth := width - 23
 	for {
 		select {
 		case <-ticker.C:
@@ -99,14 +99,18 @@ func (this *TopBroker) drawDashboard() {
 				}
 			}
 
-			maxWidth := width - 22
+			if maxQps < 1 {
+				continue
+			}
+
 			for _, data := range datas {
 				if data.qps < 0 {
 					data.qps = -data.qps // FIXME
 				}
 				w := int(data.qps*100/maxQps) * maxWidth / 100
-				this.Ui.Output(fmt.Sprintf("%20s %s", data.host,
-					strings.Repeat(color.Green("|"), w)))
+				this.Ui.Output(fmt.Sprintf("%20s [%-118s]",
+					data.host,
+					strings.Repeat("|", w)))
 			}
 
 		}
