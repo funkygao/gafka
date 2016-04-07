@@ -83,52 +83,56 @@ func (this *TopBroker) Run(args []string) (exitCode int) {
 }
 
 func (this *TopBroker) drawDashboard() {
-	ticker := time.NewTicker(this.interval)
-	defer ticker.Stop()
-
 	termui.Init()
 	width := termui.TermWidth()
+	height := termui.TermHeight()
 	termui.Close()
 	maxWidth := width - 23
 	var maxQps float64
 	for {
-		select {
-		case <-ticker.C:
-			refreshScreen()
-			datas := this.showAndResetCounters(false)
-			maxQps = .0
-			for _, data := range datas {
-				if data.qps > maxQps {
-					maxQps = data.qps
-				}
+		refreshScreen()
+		datas := this.showAndResetCounters(false)
+		maxQps = .0
+		for _, data := range datas {
+			if data.qps > maxQps {
+				maxQps = data.qps
 			}
-
-			if maxQps < 1 {
-				continue
-			}
-
-			for _, data := range datas {
-				if data.qps < 0 {
-					data.qps = -data.qps // FIXME
-				}
-
-				w := int(data.qps*100/maxQps) * maxWidth / 100
-				qps := fmt.Sprintf("%.1f", data.qps)
-				bar := ""
-				barColorLen := 0
-				for i := 0; i < w-len(qps); i++ {
-					bar += color.Green("|")
-					barColorLen += 9 // color.Green will add extra 9 chars
-				}
-				bar += qps
-				for i := len(bar) - barColorLen; i < maxWidth; i++ {
-					bar += " "
-				}
-
-				this.Ui.Output(fmt.Sprintf("%20s [%-s]", data.host, bar))
-			}
-
 		}
+
+		if maxQps < 1 {
+			// draw empty lines
+			for _, data := range datas {
+				this.Ui.Output(fmt.Sprintf("%20s", data.host))
+			}
+			continue
+		}
+
+		for idx, data := range datas {
+			if idx >= height-1 {
+				break
+			}
+
+			if data.qps < 0 {
+				data.qps = -data.qps // FIXME
+			}
+
+			w := int(data.qps*100/maxQps) * maxWidth / 100
+			qps := fmt.Sprintf("%.1f", data.qps)
+			bar := ""
+			barColorLen := 0
+			for i := 0; i < w-len(qps); i++ {
+				bar += color.Green("|")
+				barColorLen += 9 // color.Green will add extra 9 chars
+			}
+			bar += qps
+			for i := len(bar) - barColorLen; i < maxWidth; i++ {
+				bar += " "
+			}
+
+			this.Ui.Output(fmt.Sprintf("%20s [%-s]", data.host, bar))
+		}
+
+		time.Sleep(this.interval)
 	}
 
 }
