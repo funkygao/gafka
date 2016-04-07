@@ -4,17 +4,37 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/funkygao/gafka/cmd/kateway/api"
+)
+
+var (
+	client *api.Client
 )
 
 func main() {
+	cf := api.DefaultConfig("30", "32f02594f55743eeb1efcf75db6dd8a0")
+	cf.Pub.Endpoint = "pub.intra.ffan.com"
+	client = api.NewClient(cf)
+
 	http.HandleFunc("/", handle)
 	log.Fatal(http.ListenAndServe(":10001", nil))
-
 }
 
 func handle(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	body, err := ioutil.ReadAll(r.Body)
-	log.Printf("%s %s %s %v", r.Method, r.RequestURI, string(body), err)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Printf("%s %s %s", r.Method, r.RequestURI, string(body))
+
+	var opt api.PubOption
+	opt.Topic = "gitlab_events"
+	opt.Ver = "v1"
+	if err = client.Pub("", body, opt); err != nil {
+		log.Println(err)
+	}
 }
