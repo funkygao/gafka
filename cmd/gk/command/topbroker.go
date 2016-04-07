@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/termui"
 )
 
 type TopBroker struct {
@@ -84,9 +85,11 @@ func (this *TopBroker) drawDashboard() {
 	ticker := time.NewTicker(this.interval)
 	defer ticker.Stop()
 
-	var maxQps float64
-	width := 140 // TODO
+	termui.Init()
+	width := termui.TermWidth()
+	termui.Close()
 	maxWidth := width - 23
+	var maxQps float64
 	for {
 		select {
 		case <-ticker.C:
