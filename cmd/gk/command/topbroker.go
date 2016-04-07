@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/termui"
 )
 
@@ -110,10 +111,21 @@ func (this *TopBroker) drawDashboard() {
 				if data.qps < 0 {
 					data.qps = -data.qps // FIXME
 				}
+
 				w := int(data.qps*100/maxQps) * maxWidth / 100
-				this.Ui.Output(fmt.Sprintf("%20s [%-118s]",
-					data.host,
-					strings.Repeat("|", w)))
+				qps := fmt.Sprintf("%.1f", data.qps)
+				bar := ""
+				barColorLen := 0
+				for i := 0; i < w-len(qps); i++ {
+					bar += color.Green("|")
+					barColorLen += 9 // color.Green will add extra 9 chars
+				}
+				bar += qps
+				for i := len(bar) - barColorLen; i < maxWidth; i++ {
+					bar += " "
+				}
+
+				this.Ui.Output(fmt.Sprintf("%20s [%-s]", data.host, bar))
 			}
 
 		}
