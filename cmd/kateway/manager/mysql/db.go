@@ -24,6 +24,7 @@ type mysqlStore struct {
 	appSubMap           map[string]map[string]struct{} // appid:topics
 	appPubMap           map[string]map[string]struct{} // appid:subscribed topics
 	appConsumerGroupMap map[string]string              // appid:group
+	shadowQueueMap      map[string]string              // appid.topic.ver:group
 }
 
 func New(cf *config) *mysqlStore {
@@ -60,7 +61,12 @@ type appSubscribeRecord struct {
 }
 
 type appConsumerGroupRecord struct {
-	Appid, GroupName string
+	AppId, GroupName string
+}
+
+type shadowQueueRecord struct {
+	AppId, TopicName, Ver string
+	Group                 string
 }
 
 func (this *mysqlStore) Start() error {
@@ -133,6 +139,38 @@ func (this *mysqlStore) refreshFromMysql() error {
 		return err
 	}
 
+	if err = this.fetchShadowQueueRecords(db); err != nil {
+		log.Error("mysql manager store: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (this *mysqlStore) shadowKey(appid, topic, ver string) string {
+	return appid + "." + topic + "." + ver
+}
+
+func (this *mysqlStore) fetchShadowQueueRecords(db *sql.DB) error {
+	rows, err := db.Query("SELECT AppId,TopicName,Version,GroupName FROM group_shadow WHERE Status=1")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var shadow shadowQueueRecord
+	shadowQueueMap := make(map[string]string)
+	for rows.Next() {
+		err = rows.Scan(&shadow.AppId, &shadow.TopicName, &shadow.Ver, &shadow.Group)
+		if err != nil {
+			log.Error("mysql manager store: %v", err)
+			continue
+		}
+
+		shadowQueueMap[this.shadowKey(shadow.AppId, shadow.TopicName, shadow.Ver)] = shadow.Group
+	}
+
+	this.shadowQueueMap = shadowQueueMap
 	return nil
 }
 
@@ -146,13 +184,13 @@ func (this *mysqlStore) fetchAppGroupRecords(db *sql.DB) error {
 	var group appConsumerGroupRecord
 	appGroupMap := make(map[string]string)
 	for rows.Next() {
-		err = rows.Scan(&group.Appid, &group.GroupName)
+		err = rows.Scan(&group.AppId, &group.GroupName)
 		if err != nil {
 			log.Error("mysql manager store: %v", err)
 			continue
 		}
 
-		appGroupMap[group.Appid] = group.GroupName
+		appGroupMap[group.AppId] = group.GroupName
 	}
 
 	this.appConsumerGroupMap = appGroupMap
