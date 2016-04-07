@@ -114,7 +114,7 @@ func parseFlags() {
 	flag.BoolVar(&options.EnableHttpPanicRecover, "httppanic", false, "enable http handler panic recover")
 	flag.BoolVar(&options.DisableMetrics, "metricsoff", false, "disable metrics reporter")
 	flag.IntVar(&options.HttpHeaderMaxBytes, "maxheader", 4<<10, "http header max size in bytes")
-	flag.Int64Var(&options.MaxPubSize, "maxpub", 256<<10, "max Pub message size")
+	flag.Int64Var(&options.MaxPubSize, "maxpub", 1<<20, "max Pub message size")
 	flag.IntVar(&options.MinPubSize, "minpub", 1, "min Pub message size")
 	flag.IntVar(&options.MaxPubRetries, "pubretry", 5, "max retries when Pub fails")
 	flag.IntVar(&options.PubQpsLimit, "publimit", 60*10000, "pub qps limit per minute per ip")
