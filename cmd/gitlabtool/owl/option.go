@@ -5,5 +5,6 @@ var (
 		stream string
 		topic  string
 		debug  bool
+		mock   bool
 	}
 )

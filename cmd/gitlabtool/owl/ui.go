@@ -1,10 +1,6 @@
 package main
 
 import (
-	//"fmt"
-	//"time"
-
-	//tm "github.com/buger/goterm"
 	"github.com/nsf/termbox-go"
 )
 

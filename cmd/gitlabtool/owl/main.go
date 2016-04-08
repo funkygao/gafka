@@ -11,6 +11,7 @@ func init() {
 	flag.StringVar(&options.stream, "s", "webhook", "usage")
 	flag.StringVar(&options.topic, "t", "30.gitlab_events.v1", "topic")
 	flag.BoolVar(&options.debug, "d", false, "debug")
+	flag.BoolVar(&options.mock, "m", false, "mock mode")
 	flag.Parse()
 }
 
@@ -26,7 +27,11 @@ func main() {
 	quit = make(chan struct{})
 	newEvt = make(chan struct{}, 10)
 	ready = make(chan struct{})
-	go subLoop()
+	if options.mock {
+		go mockEvents()
+	} else {
+		go subLoop()
+	}
 
 	if options.debug {
 		time.Sleep(time.Second * 5)
