@@ -52,6 +52,12 @@ func handleEvents(eventChan chan termbox.Event) {
 
 			case termbox.KeyEnter:
 				// detail page
+				if detailView {
+					redrawAll()
+				} else {
+					drawDetail()
+				}
+				detailView = !detailView
 
 			case termbox.KeyArrowDown, termbox.Key('j'):
 				selectedRow++

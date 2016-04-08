@@ -26,9 +26,10 @@ func redrawAll() {
 	termbox.Clear(coldef, coldef)
 	refreshSize()
 
-	x, y := 1, 0
+	x, y := 0, 0
 	lock.Lock()
-	for i := len(events) - 1; i >= 0; i-- {
+	reorderEvents()
+	for i := 0; i < len(events); i++ {
 		evt := events[i]
 		drawEvent(x, y, evt)
 		y++
@@ -38,6 +39,55 @@ func redrawAll() {
 	lock.Unlock()
 
 	termbox.Flush()
+}
+
+func drawDetail() {
+	evt := events[selectedRow]
+	if _, ok := evt.(*Webhook); !ok {
+		return
+	}
+
+	termbox.Clear(coldef, coldef)
+
+	hook := evt.(*Webhook)
+
+	y := 1
+	fg, bg := coldef, coldef
+	row := fmt.Sprintf("%7s: %s (%s)",
+		"Repo",
+		hook.Repository.Name, hook.Repository.Description)
+	drawRow(row, y, fg, bg)
+	y++
+
+	row = fmt.Sprintf("%7s: %s",
+		"Ref",
+		hook.Ref)
+	drawRow(row, y, fg, bg)
+	y++
+
+	row = fmt.Sprintf("%7s: %d",
+		"Commits",
+		hook.Total_commits_count)
+	drawRow(row, y, fg, bg)
+	y += 2
+
+	for _, c := range hook.Commits {
+		row = fmt.Sprintf("%14s %20s %s", since(c.Timestamp), c.Author.Email, c.Message)
+		drawRow(row, y, termbox.ColorGreen, bg)
+		y++
+
+		row = fmt.Sprintf("%s", c.Url)
+		drawRow(row, y, fg, bg)
+		y += 2
+	}
+
+	termbox.Flush()
+}
+
+func drawRow(row string, y int, fg, bg termbox.Attribute) {
+	for i, c := range row {
+		termbox.SetCell(1+i, y, c, fg, bg)
+	}
 }
 
 func drawEvent(x, y int, evt interface{}) {
@@ -51,28 +101,31 @@ func drawEvent(x, y int, evt interface{}) {
 	case *Webhook:
 		var row string
 		if len(hook.Commits) == 0 {
-			row = fmt.Sprintf("%10s %20s %25s %d",
+			row = fmt.Sprintf("%14s %20s %25s %d",
 				" ",
 				hook.User_name,
 				hook.Repository.Name,
 				hook.Total_commits_count)
 		} else {
-			row = fmt.Sprintf("%10s %20s %25s %s",
+			row = fmt.Sprintf("%14s %20s %25s %s",
 				since(hook.Commits[0].Timestamp),
 				hook.User_name,
 				hook.Repository.Name,
 				hook.Commits[0].Message)
 		}
 
-		for i, c := range row {
-			termbox.SetCell(1+i, y, c, fg_col, bg_col)
-		}
-
+		drawRow(row, y, fg_col, bg_col)
 		if y == selectedRow {
 			for i := len(row); i < w; i++ {
 				termbox.SetCell(1+i, y, ' ', fg_col, bg_col)
 			}
 		}
+
+	case *SystemHookProjectCreate:
+	case *SystemHookUserCreate:
+	case *SystemHookUserAddToGroup:
+	case *SystemHookUserAddToTeam:
+	case *SystemHookUnknown:
 	}
 }
 
@@ -88,7 +141,7 @@ func drawSplash() {
 
 func drawFooter() {
 	s := calculateStats()
-	help := " Esc:Back   Enter:Detail"
+	help := "Esc:Back   Enter:Detail"
 	stats := fmt.Sprintf("[events:%d repo:%d staff:%d commit:%d]",
 		s.eventN,
 		s.repoN,
