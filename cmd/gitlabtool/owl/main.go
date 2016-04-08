@@ -19,11 +19,13 @@ var (
 	newEvt chan struct{}
 	events []interface{}
 	quit   chan struct{}
+	ready  chan struct{}
 )
 
 func main() {
 	quit = make(chan struct{})
 	newEvt = make(chan struct{}, 10)
+	ready = make(chan struct{})
 	go subLoop()
 
 	if options.debug {

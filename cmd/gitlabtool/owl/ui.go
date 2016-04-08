@@ -2,7 +2,7 @@ package main
 
 import (
 	//"fmt"
-	"time"
+	//"time"
 
 	//tm "github.com/buger/goterm"
 	"github.com/nsf/termbox-go"
@@ -16,7 +16,9 @@ func runUILoop() {
 	defer termbox.Close()
 
 	termbox.SetInputMode(termbox.InputEsc)
-	time.Sleep(time.Second * 5)
+
+	drawSplash()
+	<-ready
 	redrawAll()
 
 	// capture and process events from the CLI
@@ -46,19 +48,26 @@ func handleEvents(eventChan chan termbox.Event) {
 		switch ev.Type {
 		case termbox.EventKey:
 			switch ev.Key {
+			case termbox.Key('b'):
+				// page up
+
 			case termbox.KeySpace:
+				// page down
+
 			case termbox.KeyEnter:
-			case termbox.KeyArrowDown:
+				// detail page
+
+			case termbox.KeyArrowDown, termbox.Key('j'):
 				selectedRow++
 				redrawAll()
 
-			case termbox.KeyArrowUp:
+			case termbox.KeyArrowUp, termbox.Key('k'):
 				if selectedRow > 0 {
 					selectedRow--
 					redrawAll()
 				}
 
-			case termbox.KeyEsc, termbox.KeyCtrlQ:
+			case termbox.KeyEsc, termbox.Key('q'):
 				close(quit)
 				return
 

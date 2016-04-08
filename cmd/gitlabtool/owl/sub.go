@@ -16,11 +16,12 @@ func subLoop() {
 	s, _ := c.ConsumePartition(options.topic, 0, sarama.OffsetOldest)
 	defer s.Close()
 
-	readyForStream := false
+	loaded := false
 	for {
 		select {
 		case <-time.After(time.Second * 10):
-			readyForStream = true
+			loaded = true
+			close(ready)
 
 		case msg := <-s.Messages():
 			event := string(msg.Value)
@@ -54,7 +55,7 @@ func subLoop() {
 			lock.Lock()
 			events = append(events, hook)
 			lock.Unlock()
-			if readyForStream {
+			if loaded {
 				newEvt <- struct{}{}
 			}
 
