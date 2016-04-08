@@ -9,6 +9,7 @@ import (
 
 var (
 	w, h        int
+	page        int
 	pageSize    int
 	selectedRow = 0
 	detailView  = false
@@ -30,7 +31,7 @@ func redrawAll() {
 	x, y := 0, 0
 	lock.Lock()
 	reorderEvents()
-	for i := 0; i < len(events); i++ {
+	for i := page * pageSize; i < len(events); i++ {
 		evt := events[i]
 		drawEvent(x, y, evt)
 		y++
@@ -91,9 +92,13 @@ func drawRow(row string, y int, fg, bg termbox.Attribute) {
 	}
 }
 
+func isSelectedRow(y int) bool {
+	return y == selectedRow-(pageSize*page)
+}
+
 func drawEvent(x, y int, evt interface{}) {
 	fg_col, bg_col := coldef, coldef
-	if y == selectedRow {
+	if isSelectedRow(y) {
 		fg_col = termbox.ColorBlack
 		bg_col = termbox.ColorYellow
 	}
@@ -108,11 +113,11 @@ func drawEvent(x, y int, evt interface{}) {
 				hook.Repository.Name,
 				hook.Total_commits_count)
 		} else {
-			row = fmt.Sprintf("%14s %s %-25s %s",
+			row = fmt.Sprintf("%14s %s %-25s %s y=%d,%d",
 				since(hook.Commits[0].Timestamp),
 				wideStr(hook.User_name, 20),
 				hook.Repository.Name,
-				hook.Commits[0].Message)
+				hook.Commits[0].Message, y, selectedRow-(pageSize*page))
 		}
 
 	case *SystemHookProjectCreate:
@@ -145,7 +150,7 @@ func drawEvent(x, y int, evt interface{}) {
 	}
 
 	drawRow(row, y, fg_col, bg_col)
-	if y == selectedRow {
+	if isSelectedRow(y) {
 		for i := len(row); i < w; i++ {
 			termbox.SetCell(1+i, y, ' ', fg_col, bg_col)
 		}
@@ -165,8 +170,10 @@ func drawSplash() {
 func drawFooter() {
 	s := calculateStats()
 	help := "q:Close  d:Detail  j:Next  k:Previous  Space:PageDown b:PageUp"
-	stats := fmt.Sprintf("[events:%d repo:%d staff:%d commit:%d]",
+	stats := fmt.Sprintf("[events:%d/%d page:%d repo:%d staff:%d commit:%d]",
+		selectedRow,
 		s.eventN,
+		page,
 		s.repoN,
 		s.staffN,
 		s.commitN)

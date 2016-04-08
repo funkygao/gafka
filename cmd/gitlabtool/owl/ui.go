@@ -48,6 +48,18 @@ func handleEvents(eventChan chan termbox.Event) {
 			switch ev.Key {
 			case termbox.KeySpace:
 				// page down
+				if !detailView {
+					selectedRow += h
+					lock.Lock()
+					totalN := len(events)
+					lock.Unlock()
+					if selectedRow > totalN {
+						selectedRow = totalN
+					} else {
+						page++
+					}
+					redrawAll()
+				}
 				continue
 
 			case termbox.KeyEsc:
@@ -62,11 +74,22 @@ func handleEvents(eventChan chan termbox.Event) {
 
 			switch ev.Ch {
 			case 'j':
-				selectedRow++
-				redrawAll()
+				lock.Lock()
+				totalN := len(events)
+				lock.Unlock()
+				if selectedRow < totalN {
+					selectedRow++
+					if selectedRow%pageSize == 0 {
+						page++
+					}
+					redrawAll()
+				}
 
 			case 'k':
 				if selectedRow > 0 {
+					if selectedRow%pageSize == 0 {
+						page--
+					}
 					selectedRow--
 					redrawAll()
 				}
@@ -82,6 +105,15 @@ func handleEvents(eventChan chan termbox.Event) {
 
 			case 'b':
 				// page up
+				if !detailView {
+					selectedRow -= pageSize
+					if selectedRow < 0 {
+						selectedRow = 0
+					} else {
+						page--
+					}
+					redrawAll()
+				}
 
 			case 'q':
 				if detailView {
