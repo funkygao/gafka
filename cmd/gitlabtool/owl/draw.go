@@ -67,22 +67,11 @@ func drawEvent(x, y int, evt interface{}) {
 		for i, c := range row {
 			termbox.SetCell(1+i, y, c, fg_col, bg_col)
 		}
-		return
 
-		for _, c := range hook.Commits {
-			row := fmt.Sprintf("%10s %15s %10s %s",
-				since(c.Timestamp),
-				hook.User_name,
-				hook.Repository.Name,
-				c.Message)
-			if len(row) > w {
-				//row = row[:w]
+		if y == selectedRow {
+			for i := len(row); i < w; i++ {
+				termbox.SetCell(1+i, y, ' ', fg_col, bg_col)
 			}
-
-			for i, c := range row {
-				termbox.SetCell(1+i, y, c, fg_col, bg_col)
-			}
-			y++
 		}
 	}
 }
@@ -98,8 +87,18 @@ func drawSplash() {
 }
 
 func drawFooter() {
-	footerText := fmt.Sprintf(" Esc:Back   Enter:Detail projects: events:%d row:%d",
-		len(events), selectedRow)
+	s := calculateStats()
+	help := " Esc:Back   Enter:Detail"
+	stats := fmt.Sprintf("[events:%d repo:%d staff:%d commit:%d]",
+		s.eventN,
+		s.repoN,
+		s.staffN,
+		s.commitN)
+	footerText := help
+	for i := 0; i < w-len(help)-len(stats); i++ {
+		footerText += " "
+	}
+	footerText += stats
 	for i := 0; i < w; i++ {
 		termbox.SetCell(i, h-1, ' ', coldef, termbox.ColorBlue)
 	}
