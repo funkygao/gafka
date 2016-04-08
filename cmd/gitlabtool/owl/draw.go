@@ -97,35 +97,57 @@ func drawEvent(x, y int, evt interface{}) {
 		bg_col = termbox.ColorYellow
 	}
 
+	var row string
 	switch hook := evt.(type) {
 	case *Webhook:
-		var row string
 		if len(hook.Commits) == 0 {
-			row = fmt.Sprintf("%14s %20s %25s %d",
+			row = fmt.Sprintf("%14s %20s %-25s %d",
 				" ",
 				hook.User_name,
 				hook.Repository.Name,
 				hook.Total_commits_count)
 		} else {
-			row = fmt.Sprintf("%14s %20s %25s %s",
+			row = fmt.Sprintf("%14s %20s %-25s %s",
 				since(hook.Commits[0].Timestamp),
 				hook.User_name,
 				hook.Repository.Name,
 				hook.Commits[0].Message)
 		}
 
-		drawRow(row, y, fg_col, bg_col)
-		if y == selectedRow {
-			for i := len(row); i < w; i++ {
-				termbox.SetCell(1+i, y, ' ', fg_col, bg_col)
-			}
-		}
-
 	case *SystemHookProjectCreate:
+		row = fmt.Sprintf("%14s %20s created project(%s)",
+			since(hook.Created_at),
+			hook.Owner_name,
+			hook.Name)
+
 	case *SystemHookUserCreate:
+		row = fmt.Sprintf("%14s %20s %s signup",
+			since(hook.Created_at),
+			hook.Name,
+			hook.Email)
+
 	case *SystemHookUserAddToGroup:
+		row = fmt.Sprintf("%14s %20s join group(%s)",
+			since(hook.Created_at),
+			hook.User_name,
+			hook.Group_name)
+
 	case *SystemHookUserAddToTeam:
+		row = fmt.Sprintf("%14s %20s join project(%s)",
+			since(hook.Created_at),
+			hook.User_name,
+			hook.Project_name)
+
 	case *SystemHookUnknown:
+		row = fmt.Sprintf("%14s %20s unkown event",
+			"", "")
+	}
+
+	drawRow(row, y, fg_col, bg_col)
+	if y == selectedRow {
+		for i := len(row); i < w; i++ {
+			termbox.SetCell(1+i, y, ' ', fg_col, bg_col)
+		}
 	}
 }
 

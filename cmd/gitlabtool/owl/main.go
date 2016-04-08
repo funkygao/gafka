@@ -4,12 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"sync"
-	"time"
 )
 
 func init() {
-	flag.StringVar(&options.stream, "s", "webhook", "usage")
-	flag.StringVar(&options.topic, "t", "30.gitlab_events.v1", "topic")
+	flag.StringVar(&options.topic, "t", "30.gitlab_events.v1", "event topic")
 	flag.BoolVar(&options.debug, "d", false, "debug")
 	flag.BoolVar(&options.mock, "m", false, "mock mode")
 	flag.Parse()
@@ -34,7 +32,7 @@ func main() {
 	}
 
 	if options.debug {
-		time.Sleep(time.Second * 5)
+		<-ready
 		lock.Lock()
 		for _, evt := range events {
 			fmt.Printf("%#v\n\n", evt)
