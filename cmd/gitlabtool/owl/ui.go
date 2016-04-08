@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/nsf/termbox-go"
 )
 
@@ -43,14 +45,18 @@ func handleEvents(eventChan chan termbox.Event) {
 	for ev := range eventChan {
 		switch ev.Type {
 		case termbox.EventKey:
-			switch ev.Key {
-			case termbox.Key('b'):
-				// page up
+			switch ev.Ch {
+			case 'j':
+				selectedRow++
+				redrawAll()
 
-			case termbox.KeySpace:
-				// page down
+			case 'k':
+				if selectedRow > 0 {
+					selectedRow--
+					redrawAll()
+				}
 
-			case termbox.KeyEnter:
+			case 'd':
 				// detail page
 				if detailView {
 					redrawAll()
@@ -59,24 +65,26 @@ func handleEvents(eventChan chan termbox.Event) {
 				}
 				detailView = !detailView
 
-			case termbox.KeyArrowDown, termbox.Key('j'):
-				selectedRow++
-				redrawAll()
+			case 'f':
+				// page down
 
-			case termbox.KeyArrowUp, termbox.Key('k'):
-				if selectedRow > 0 {
-					selectedRow--
+			case 'b':
+				// page up
+
+			case 'q':
+				if detailView {
+					detailView = false
 					redrawAll()
+				} else {
+					termbox.Close()
+					os.Exit(0)
 				}
-
-			case termbox.KeyEsc, termbox.Key('q'):
-				close(quit)
-				return
 
 			}
 
 		case termbox.EventError:
 			panic(ev.Err)
+
 		}
 	}
 }
