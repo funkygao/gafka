@@ -1,3 +1,5 @@
+// webhookd is a webhook endpoint that is integrated with gitlab.
+// it accepts events from gitlab hook and send it to pubsub system.
 package main
 
 import (

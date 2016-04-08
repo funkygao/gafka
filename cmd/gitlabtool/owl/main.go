@@ -2,13 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/Shopify/sarama"
+	tm "github.com/buger/goterm"
 	"github.com/funkygao/golib/gofmt"
-	// /"github.com/funkygao/golib/color"
 )
 
 //GitlabRepository represents repository information from the webhook
@@ -53,7 +54,14 @@ type SystemHookUserAddToTeam struct {
 	Created_at, Project_name, User_name, User_email string
 }
 
+func init() {
+	flag.Parse()
+}
+
 func main() {
+	demoTerm()
+	time.Sleep(time.Second * 5)
+
 	c, _ := sarama.NewConsumer([]string{
 		"10.209.18.65:11004",
 		"10.209.18.65:11004",
@@ -110,4 +118,14 @@ func main() {
 func since(timestamp string) string {
 	t, _ := time.Parse(time.RFC3339, timestamp)
 	return gofmt.PrettySince(t)
+}
+
+func demoTerm() {
+	tm.Clear()
+	tm.MoveCursor(1, 1)
+	for i := 0; i < 10; i++ {
+		tm.Println("hello world, haha")
+	}
+	tm.Println(tm.HighlightRegion("str", 1, 3, tm.GREEN))
+	tm.Flush()
 }
