@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"strings"
+	"time"
 )
 
 func decode(msg []byte) interface{} {
@@ -28,6 +29,10 @@ func decode(msg []byte) interface{} {
 	case strings.HasPrefix(event, `{"object_kind":"push"`):
 		hook = &Webhook{}
 		json.Unmarshal(msg, &hook)
+		h := hook.(*Webhook)
+		if len(h.Commits) == 0 {
+			h.ctime = time.Now()
+		}
 
 	default:
 		hook = &SystemHookUnknown{}

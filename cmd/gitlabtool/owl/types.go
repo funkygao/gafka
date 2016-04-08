@@ -1,5 +1,9 @@
 package main
 
+import (
+	"time"
+)
+
 //GitlabRepository represents repository information from the webhook
 type GitlabRepository struct {
 	Name, Url, Description, Home string
@@ -23,6 +27,8 @@ type Webhook struct {
 	Repository          GitlabRepository
 	Commits             []Commit
 	Total_commits_count int
+
+	ctime time.Time
 }
 
 type SystemHookProjectCreate struct {

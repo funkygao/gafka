@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/funkygao/golib/bjtime"
 	"github.com/nsf/termbox-go"
 )
 
@@ -101,15 +102,15 @@ func drawEvent(x, y int, evt interface{}) {
 	switch hook := evt.(type) {
 	case *Webhook:
 		if len(hook.Commits) == 0 {
-			row = fmt.Sprintf("%14s %20s %-25s %d",
-				" ",
-				hook.User_name,
+			row = fmt.Sprintf("%14s %s %-25s %d",
+				bjtime.TimeToString(hook.ctime),
+				wideStr(hook.User_name, 20),
 				hook.Repository.Name,
 				hook.Total_commits_count)
 		} else {
-			row = fmt.Sprintf("%14s %20s %-25s %s",
+			row = fmt.Sprintf("%14s %s %-25s %s",
 				since(hook.Commits[0].Timestamp),
-				hook.User_name,
+				wideStr(hook.User_name, 20),
 				hook.Repository.Name,
 				hook.Commits[0].Message)
 		}
