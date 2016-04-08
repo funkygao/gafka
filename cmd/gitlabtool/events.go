@@ -71,22 +71,22 @@ func main() {
 		case strings.Contains(event, `"event_name":"project_create",`):
 			hook := &SystemHookProjectCreate{}
 			json.Unmarshal(msg.Value, hook)
-			fmt.Printf("%15s %10s %s", hook.Owner_name, "create", hook.Name)
+			fmt.Printf("%15s %15s %10s %s", hook.Owner_name, since(hook.Created_at), "create", hook.Name)
 
 		case strings.Contains(event, `"event_name":"user_add_to_team"`):
 			hook := &SystemHookUserAddToTeam{}
 			json.Unmarshal(msg.Value, hook)
-			fmt.Printf("%15s %10s %s", hook.User_name, "join", hook.Project_name)
+			fmt.Printf("%15s %15s %10s %s", hook.User_name, since(hook.Created_at), "join", hook.Project_name)
 
 		case strings.Contains(event, `"event_name":"user_add_to_group"`):
 			hook := &SystemHookUserAddToGroup{}
 			json.Unmarshal(msg.Value, hook)
-			fmt.Printf("%15s %10s %s", hook.User_name, "group", hook.Group_name)
+			fmt.Printf("%15s %15s %10s %s", hook.User_name, since(hook.Created_at), "group", hook.Group_name)
 
 		case strings.Contains(event, `"event_name":"user_create"`):
 			hook := &SystemHookUserCreate{}
 			json.Unmarshal(msg.Value, hook)
-			fmt.Printf("%15s %10s %s", hook.Name, "signup", hook.Email)
+			fmt.Printf("%15s %15s %10s %s", hook.Name, since(hook.Created_at), "signup", hook.Email)
 
 		case strings.Contains(event, `"object_kind":"push"`):
 			hook := &Webhook{}
