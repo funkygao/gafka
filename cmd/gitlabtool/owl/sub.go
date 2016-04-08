@@ -8,7 +8,7 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-func subLoop(quit chan struct{}) {
+func subLoop() {
 	c, _ := sarama.NewConsumer([]string{
 		"10.209.18.65:11004",
 		"10.209.18.65:11004",
@@ -41,19 +41,19 @@ func subLoop(quit chan struct{}) {
 			case strings.HasPrefix(event, `{"event_name":"user_create"`):
 				hook = &SystemHookUserCreate{}
 				json.Unmarshal(msg.Value, hook)
-				events = append(events, hook)
 
 			case strings.HasPrefix(event, `{"object_kind":"push"`):
 				hook = &Webhook{}
 				json.Unmarshal(msg.Value, &hook)
-				events = append(events, hook)
 
 			default:
 				hook = &SystemHookUnknown{}
 
 			}
 
+			lock.Lock()
 			events = append(events, hook)
+			lock.Unlock()
 			if readyForStream {
 				newEvt <- struct{}{}
 			}

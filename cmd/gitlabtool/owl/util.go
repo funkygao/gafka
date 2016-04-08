@@ -3,10 +3,10 @@ package main
 import (
 	"time"
 
-	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/golib/bjtime"
 )
 
 func since(timestamp string) string {
 	t, _ := time.Parse(time.RFC3339, timestamp)
-	return gofmt.PrettySince(t)
+	return bjtime.TimeToString(t)
 }

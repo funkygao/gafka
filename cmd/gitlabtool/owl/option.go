@@ -4,5 +4,6 @@ var (
 	options struct {
 		stream string
 		topic  string
+		debug  bool
 	}
 )

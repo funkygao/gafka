@@ -1,11 +1,14 @@
 package main
 
 import (
+	//"fmt"
+	"time"
+
 	//tm "github.com/buger/goterm"
 	"github.com/nsf/termbox-go"
 )
 
-func runUILoop(quit chan struct{}) {
+func runUILoop() {
 	err := termbox.Init()
 	if err != nil {
 		panic(err)
@@ -13,6 +16,7 @@ func runUILoop(quit chan struct{}) {
 	defer termbox.Close()
 
 	termbox.SetInputMode(termbox.InputEsc)
+	time.Sleep(time.Second * 5)
 	redrawAll()
 
 	// capture and process events from the CLI
@@ -43,9 +47,20 @@ func handleEvents(eventChan chan termbox.Event) {
 		case termbox.EventKey:
 			switch ev.Key {
 			case termbox.KeySpace:
+			case termbox.KeyEnter:
 			case termbox.KeyArrowDown:
+				selectedRow++
+				redrawAll()
+
 			case termbox.KeyArrowUp:
-			case termbox.KeyEsc:
+				if selectedRow > 0 {
+					selectedRow--
+					redrawAll()
+				}
+
+			case termbox.KeyEsc, termbox.KeyCtrlQ:
+				close(quit)
+				return
 
 			}
 
