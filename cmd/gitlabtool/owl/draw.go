@@ -141,7 +141,7 @@ func drawSplash() {
 
 func drawFooter() {
 	s := calculateStats()
-	help := "Esc:Back   Enter:Detail"
+	help := "q:Close  d:Detail  j:Next  k:Previous  Space:PageDown b:PageUp"
 	stats := fmt.Sprintf("[events:%d repo:%d staff:%d commit:%d]",
 		s.eventN,
 		s.repoN,

@@ -45,6 +45,21 @@ func handleEvents(eventChan chan termbox.Event) {
 	for ev := range eventChan {
 		switch ev.Type {
 		case termbox.EventKey:
+			switch ev.Key {
+			case termbox.KeySpace:
+				// page down
+				continue
+
+			case termbox.KeyEsc:
+				if detailView {
+					detailView = false
+					redrawAll()
+				} else {
+					termbox.Close()
+					os.Exit(0)
+				}
+			}
+
 			switch ev.Ch {
 			case 'j':
 				selectedRow++
@@ -64,9 +79,6 @@ func handleEvents(eventChan chan termbox.Event) {
 					drawDetail()
 				}
 				detailView = !detailView
-
-			case 'f':
-				// page down
 
 			case 'b':
 				// page up
