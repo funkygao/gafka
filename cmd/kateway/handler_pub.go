@@ -15,6 +15,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// /msgs/:topic/:ver?key=mykey&async=1&ack=all
 // /topics/:topic/:ver?key=mykey&async=1&ack=all
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {

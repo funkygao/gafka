@@ -21,7 +21,8 @@ func (this *Gateway) buildRouting() {
 	this.manServer.Router().POST("/topics/:cluster/:appid/:topic/:ver", m(this.addTopicHandler))
 
 	if this.pubServer != nil {
-		this.pubServer.Router().POST("/topics/:topic/:ver", m(this.pubHandler)) // TODO topics->msgs
+		this.pubServer.Router().POST("/topics/:topic/:ver", m(this.pubHandler)) // TOOD deprecated
+		this.pubServer.Router().POST("/msgs/:topic/:ver", m(this.pubHandler))
 		this.pubServer.Router().POST("/ws/msgs/:topic/:ver", m(this.pubWsHandler))
 		this.pubServer.Router().POST("/jobs/:topic/:ver", m(this.addJobHandler))
 		this.pubServer.Router().DELETE("/jobs/:topic/:ver", m(this.deleteJobHandler))
