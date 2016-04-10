@@ -124,7 +124,7 @@ func (this *TopBroker) drawDashboard() {
 				bar += color.Green("|")
 				barColorLen += 9 // color.Green will add extra 9 chars
 			}
-			bar += qps
+			bar += qps // TODO qps at the end, space in the middle
 			for i := len(bar) - barColorLen; i < maxWidth; i++ {
 				bar += " "
 			}
