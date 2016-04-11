@@ -2,8 +2,8 @@ package main
 
 import (
 	"time"
-	"unicode/utf8"
 
+	"github.com/mattn/go-runewidth"
 	"github.com/funkygao/golib/bjtime"
 )
 
@@ -14,9 +14,12 @@ func since(timestamp string) string {
 
 func wideStr(str string, width int) string {
 	var size int
-	for _, s := range str {
-		_, l := utf8.DecodeRuneInString(string(s))
-		size += l
+	for _, r := range str {
+		w := runewidth.RuneWidth(r)
+		if w == 0 || (w == 2 && runewidth.IsAmbiguousWidth(r)) {
+			w = 1
+		}
+		size += w	
 	}
 
 	r := ""
