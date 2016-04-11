@@ -40,11 +40,16 @@ A full ecosystem that is built around kafka powered by golang.
     go install
 
     #========================================
-    # instal gafka command 'gk'
+    # install gafka
     #========================================
     go get github.com/funkygao/gafka
     cd $GOPATH/src/github.com/funkygao/gafka
     go get ./...
+    ./build.sh -h
+
+    #========================================
+    # install gafka command 'gk'
+    #========================================
     ./build -i -t gk
 
     #========================================
