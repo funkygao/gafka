@@ -30,9 +30,9 @@ func redrawAll() {
 
 	x, y := 0, 0
 	lock.Lock()
-	reorderEvents()
-	for i := page * pageSize; i < len(events); i++ {
-		evt := events[i]
+	evts := reorderEvents()
+	for i := page * pageSize; i < len(evts); i++ {
+		evt := evts[i]
 		drawEvent(x, y, evt)
 		y++
 	}
