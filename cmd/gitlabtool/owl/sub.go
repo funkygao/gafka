@@ -26,6 +26,11 @@ func subLoop() {
 
 		case msg := <-s.Messages():
 			hook := decode(msg.Value)
+			if options.webhookOnly {
+				if _, ok := hook.(*Webhook); !ok {
+					continue
+				}
+			}
 
 			lock.Lock()
 			events = append(events, hook)

@@ -2,9 +2,10 @@ package main
 
 var (
 	options struct {
-		topic   string
-		logfile string
-		debug   bool
-		mock    bool
+		topic       string
+		logfile     string
+		webhookOnly bool
+		debug       bool
+		mock        bool
 	}
 )
