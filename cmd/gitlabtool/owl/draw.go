@@ -214,16 +214,18 @@ func drawNotify() {
 		termbox.SetCell(x+i, y, c, termbox.ColorGreen, coldef)
 	}
 	termbox.Flush()
+	println("\a") // beep
 }
 
 func drawFooter() {
 	s := calculateStats()
 	help := "q:Close d:Detail j:Next k:Previous Space:PageDown b:PageUp /:Find"
-	stats := fmt.Sprintf("[events:%d/%d-%d page:%d repo:%d staff:%d commit:%d]",
+	stats := fmt.Sprintf("[events:%d/%d-%d page:%d/%d repo:%d staff:%d commit:%d]",
 		selectedRow,
 		loadedN,
 		s.eventN,
 		page,
+		s.eventN/pageSize,
 		s.repoN,
 		s.staffN,
 		s.commitN)

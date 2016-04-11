@@ -56,18 +56,29 @@ func handleEvents(eventChan chan termbox.Event) {
 		switch ev.Type {
 		case termbox.EventKey:
 			switch ev.Key {
+			case termbox.KeyArrowUp:
+
+			case termbox.KeyArrowDown:
+
 			case termbox.KeySpace:
 				// page down
+				lock.Lock()
+				totalN := len(events)
+				lock.Unlock()
+				if selectedRow >= totalN-1 {
+					// the last event
+					continue
+				}
+
 				if !detailView {
-					selectedRow += h
-					lock.Lock()
-					totalN := len(events)
-					lock.Unlock()
-					if selectedRow >= totalN {
-						selectedRow = totalN - 1
-					} else {
-						page++
+					if selectedRow/pageSize == totalN/pageSize {
+						// already the last page, do nothing
+						continue
 					}
+
+					selectedRow += pageSize
+					page++
+
 					redrawAll()
 				}
 				continue
