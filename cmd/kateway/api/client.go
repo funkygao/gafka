@@ -241,7 +241,7 @@ func (this *Client) Sub(opt SubOption, h SubHandler) error {
 	var u url.URL
 	u.Scheme = this.cf.Sub.Scheme
 	u.Host = this.cf.Sub.Endpoint
-	u.Path = fmt.Sprintf("/topics/%s/%s/%s", opt.AppId, opt.Topic, opt.Ver)
+	u.Path = fmt.Sprintf("/msgs/%s/%s/%s", opt.AppId, opt.Topic, opt.Ver)
 	q := u.Query()
 	q.Set("group", opt.Group)
 	if opt.Shadow != "" && sla.ValidateShadowName(opt.Shadow) {
