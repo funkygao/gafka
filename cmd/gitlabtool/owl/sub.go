@@ -17,7 +17,7 @@ func subLoop() {
 	loaded := false
 	for {
 		select {
-		case <-time.After(time.Second * 5):
+		case <-time.After(time.Second * 3):
 			if !loaded {
 				loaded = true
 				close(ready)

@@ -127,8 +127,15 @@ func drawEvent(x, y int, evt interface{}) {
 			hook.Owner_name,
 			hook.Name)
 
+	case *SystemHookGroupCreate:
+		fg_col = termbox.ColorRed
+		row = fmt.Sprintf("%14s %20s created group(%s)",
+			since(hook.Created_at),
+			hook.Owner_name,
+			hook.Name)
+
 	case *SystemHookUserCreate:
-		fg_col = termbox.ColorGreen
+		fg_col = termbox.ColorRed
 		row = fmt.Sprintf("%14s %20s %s signup",
 			since(hook.Created_at),
 			hook.Name,
@@ -150,8 +157,7 @@ func drawEvent(x, y int, evt interface{}) {
 
 	case *SystemHookUnknown:
 		fg_col = termbox.ColorMagenta
-		row = fmt.Sprintf("%14s %20s unkown event",
-			"", "")
+		row = fmt.Sprintf("%s", hook.Evt)
 	}
 
 	drawRow(row, y, fg_col, bg_col)
@@ -174,7 +180,7 @@ func drawSplash() {
 
 func drawFooter() {
 	s := calculateStats()
-	help := "q:Close  d:Detail  j:Next  k:Previous  Space:PageDown b:PageUp"
+	help := "q:Close d:Detail j:Next k:Previous Space:PageDown b:PageUp /:Find"
 	stats := fmt.Sprintf("[events:%d/%d page:%d repo:%d staff:%d commit:%d]",
 		selectedRow,
 		s.eventN,

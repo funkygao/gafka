@@ -10,8 +10,12 @@ func decode(msg []byte) interface{} {
 	var hook interface{}
 	event := string(msg)
 	switch {
-	case strings.HasPrefix(event, `{"event_name":"project_create",`):
+	case strings.HasPrefix(event, `{"event_name":"project_create"`):
 		hook = &SystemHookProjectCreate{}
+		json.Unmarshal(msg, hook)
+
+	case strings.HasPrefix(event, `{"event_name":"group_create"`):
+		hook = &SystemHookGroupCreate{}
 		json.Unmarshal(msg, hook)
 
 	case strings.HasPrefix(event, `{"event_name":"user_add_to_team"`):
@@ -35,7 +39,7 @@ func decode(msg []byte) interface{} {
 		}
 
 	default:
-		hook = &SystemHookUnknown{}
+		hook = &SystemHookUnknown{Evt: event}
 	}
 
 	return hook
