@@ -36,6 +36,12 @@ type SystemHookProjectCreate struct {
 	Name, Owner_name string
 }
 
+type SystemHookProjectDestroy struct {
+	Created_at          string
+	Name, Owner_name    string
+	Path_with_namespace string
+}
+
 type SystemHookUserCreate struct {
 	Created_at, Name, Email string
 }

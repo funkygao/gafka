@@ -32,6 +32,10 @@ func decode(msg []byte) interface{} {
 		hook = &SystemHookUserCreate{}
 		json.Unmarshal(msg, hook)
 
+	case strings.HasPrefix(event, `{"event_name":"project_destroy"`):
+		hook = &SystemHookProjectDestroy{}
+		json.Unmarshal(msg, hook)
+
 	case strings.HasPrefix(event, `{"object_kind":"push"`):
 		hook = &Webhook{}
 		json.Unmarshal(msg, &hook)

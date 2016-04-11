@@ -129,6 +129,13 @@ func drawEvent(x, y int, evt interface{}) {
 			hook.Owner_name,
 			hook.Name)
 
+	case *SystemHookProjectDestroy:
+		fg_col = termbox.ColorRed
+		row = fmt.Sprintf("%14s %20s destroy project(%s)",
+			since(hook.Created_at),
+			hook.Owner_name,
+			hook.Path_with_namespace)
+
 	case *SystemHookGroupCreate:
 		fg_col = termbox.ColorRed
 		row = fmt.Sprintf("%14s %20s created group(%s)",
