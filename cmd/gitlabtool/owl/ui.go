@@ -62,8 +62,8 @@ func handleEvents(eventChan chan termbox.Event) {
 					lock.Lock()
 					totalN := len(events)
 					lock.Unlock()
-					if selectedRow > totalN {
-						selectedRow = totalN
+					if selectedRow >= totalN {
+						selectedRow = totalN - 1
 					} else {
 						page++
 					}
