@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"strings"
 	"time"
 )
@@ -9,6 +10,7 @@ import (
 func decode(msg []byte) interface{} {
 	var hook interface{}
 	event := string(msg)
+	log.Println(event)
 	switch {
 	case strings.HasPrefix(event, `{"event_name":"project_create"`):
 		hook = &SystemHookProjectCreate{}
