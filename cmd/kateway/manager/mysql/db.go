@@ -120,27 +120,27 @@ func (this *mysqlStore) refreshFromMysql() error {
 
 	// if mysql dies, keep old/stale manager records as it was
 	if err = this.fetchApplicationRecords(db); err != nil {
-		log.Error("mysql manager store: %v", err)
+		log.Error("apps: %v", err)
 		return err
 	}
 
 	if err = this.fetchTopicRecords(db); err != nil {
-		log.Error("mysql manager store: %v", err)
+		log.Error("topics: %v", err)
 		return err
 	}
 
 	if err = this.fetchSubscribeRecords(db); err != nil {
-		log.Error("mysql manager store: %v", err)
+		log.Error("subs: %v", err)
 		return err
 	}
 
 	if err = this.fetchAppGroupRecords(db); err != nil {
-		log.Error("mysql manager store: %v", err)
+		log.Error("app groups: %v", err)
 		return err
 	}
 
 	if err = this.fetchShadowQueueRecords(db); err != nil {
-		log.Error("mysql manager store: %v", err)
+		log.Error("shadow queues: %v", err)
 		return err
 	}
 
