@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/funkygao/golib/bjtime"
+	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 )
 
@@ -94,8 +95,30 @@ func drawDetail() {
 }
 
 func drawRow(row string, y int, fg, bg termbox.Attribute) {
+	drawWideRow(row, y, fg, bg)
+	return
+
 	for i, c := range row {
 		termbox.SetCell(1+i, y, c, fg, bg)
+	}
+}
+
+func drawWideRow(row string, y int, fg, bg termbox.Attribute) {
+	x := 1
+	for _, r := range row {
+		termbox.SetCell(x, y, r, fg, bg)
+		w := runewidth.RuneWidth(r)
+		if w == 0 || (w == 2 && runewidth.IsAmbiguousWidth(r)) {
+			w = 1
+		}
+		x += w
+	}
+
+	if isSelectedRow(y) {
+		// highlight the whole line with spaces
+		for i := x; i < w; i++ {
+			termbox.SetCell(i, y, ' ', fg, bg)
+		}
 	}
 }
 
@@ -188,11 +211,7 @@ func drawEvent(x, y int, evt interface{}) {
 	}
 
 	drawRow(row, y, fg_col, bg_col)
-	if isSelectedRow(y) {
-		for i := len(row); i < w; i++ {
-			termbox.SetCell(1+i, y, ' ', fg_col, bg_col)
-		}
-	}
+	
 }
 
 func drawSplash() {
