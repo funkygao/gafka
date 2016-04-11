@@ -139,9 +139,11 @@ func (this *mysqlStore) refreshFromMysql() error {
 		return err
 	}
 
-	if err = this.fetchShadowQueueRecords(db); err != nil {
-		log.Error("shadow queues: %v", err)
-		return err
+	if false {
+		if err = this.fetchShadowQueueRecords(db); err != nil {
+			log.Error("shadow queues: %v", err)
+			return err
+		}
 	}
 
 	return nil

@@ -193,6 +193,7 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] fetchShadowQueueRecords enable
 - [ ] gk topbroker metrics has problem
 - [ ] why make sub with 15s sleep fails
 - [ ] sub then subx will fail on inflight
