@@ -41,7 +41,7 @@ cmd/ehaproxy/.haproxy.cf
 cmd/kateway/bench/bench
 cmd/kateway/bench/httpdserver
 cmd/webhook/webhook
-cmd/gitlabtool/owl/owl
+cmd/gitlabtool/gtop/gtop
 cmd/zk/zk
 panic.dump
 cmd/gk/gk
