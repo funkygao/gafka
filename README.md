@@ -24,6 +24,10 @@ A full ecosystem that is built around kafka powered by golang.
 
   Kafka clusters body guard that emits health info to InfluxDB.
 
+- [gitlabtool](https://github.com/funkygao/gafka/tree/master/cmd/gitlabtool)
+
+  A Pub/Sub sample application that watch all events on gitlab and evaluate KPI of programmers.
+
 ### Install
 
     export PATH=$PATH:$GOPATH/bin
