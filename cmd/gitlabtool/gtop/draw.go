@@ -95,18 +95,10 @@ func drawDetail() {
 }
 
 func drawRow(row string, y int, fg, bg termbox.Attribute) {
-	drawWideRow(row, y, fg, bg)
-	return
-
-	for i, c := range row {
-		termbox.SetCell(1+i, y, c, fg, bg)
-	}
-}
-
-func drawWideRow(row string, y int, fg, bg termbox.Attribute) {
 	x := 1
 	for _, r := range row {
 		termbox.SetCell(x, y, r, fg, bg)
+		// wide string must be considered
 		w := runewidth.RuneWidth(r)
 		if w == 0 || (w == 2 && runewidth.IsAmbiguousWidth(r)) {
 			w = 1
