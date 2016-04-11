@@ -31,7 +31,7 @@ func redrawAll() {
 	x, y := 0, 0
 	lock.Lock()
 	evts := reorderEvents()
-	for i := page * pageSize; i < len(evts); i++ {
+	for i := page * pageSize; i < len(evts) && i < (page+1)*pageSize; i++ {
 		evt := evts[i]
 		drawEvent(x, y, evt)
 		y++
@@ -44,7 +44,8 @@ func redrawAll() {
 }
 
 func drawDetail() {
-	evt := events[selectedRow]
+	evts := reorderEvents()
+	evt := evts[selectedRow]
 	if _, ok := evt.(*Webhook); !ok {
 		return
 	}
@@ -73,7 +74,8 @@ func drawDetail() {
 	drawRow(row, y, fg, bg)
 	y += 2
 
-	for _, c := range hook.Commits {
+	for i := len(hook.Commits) - 1; i >= 0; i-- {
+		c := hook.Commits[i]
 		row = fmt.Sprintf("%14s %20s %s", since(c.Timestamp), c.Author.Email, c.Message)
 		drawRow(row, y, termbox.ColorGreen, bg)
 		y++
@@ -107,17 +109,17 @@ func drawEvent(x, y int, evt interface{}) {
 	switch hook := evt.(type) {
 	case *Webhook:
 		if len(hook.Commits) == 0 {
-			row = fmt.Sprintf("%14s %s %-25s %d",
+			row = fmt.Sprintf("%14s %s %-25s",
 				bjtime.TimeToString(hook.ctime),
 				wideStr(hook.User_name, 20),
-				hook.Repository.Name,
-				hook.Total_commits_count)
+				hook.Repository.Name)
 		} else {
-			row = fmt.Sprintf("%14s %s %-25s %s y=%d,%d",
-				since(hook.Commits[0].Timestamp),
+			commit := hook.Commits[len(hook.Commits)-1] // the most recent commit
+			row = fmt.Sprintf("%14s %s %-25s %s",
+				since(commit.Timestamp),
 				wideStr(hook.User_name, 20),
 				hook.Repository.Name,
-				hook.Commits[0].Message, y, selectedRow-(pageSize*page))
+				commit.Message)
 		}
 
 	case *SystemHookProjectCreate:
