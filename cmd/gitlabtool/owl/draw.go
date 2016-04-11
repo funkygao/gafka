@@ -121,30 +121,35 @@ func drawEvent(x, y int, evt interface{}) {
 		}
 
 	case *SystemHookProjectCreate:
+		fg_col = termbox.ColorRed
 		row = fmt.Sprintf("%14s %20s created project(%s)",
 			since(hook.Created_at),
 			hook.Owner_name,
 			hook.Name)
 
 	case *SystemHookUserCreate:
+		fg_col = termbox.ColorGreen
 		row = fmt.Sprintf("%14s %20s %s signup",
 			since(hook.Created_at),
 			hook.Name,
 			hook.Email)
 
 	case *SystemHookUserAddToGroup:
+		fg_col = termbox.ColorGreen
 		row = fmt.Sprintf("%14s %20s join group(%s)",
 			since(hook.Created_at),
 			hook.User_name,
 			hook.Group_name)
 
 	case *SystemHookUserAddToTeam:
+		fg_col = termbox.ColorGreen
 		row = fmt.Sprintf("%14s %20s join project(%s)",
 			since(hook.Created_at),
 			hook.User_name,
 			hook.Project_name)
 
 	case *SystemHookUnknown:
+		fg_col = termbox.ColorMagenta
 		row = fmt.Sprintf("%14s %20s unkown event",
 			"", "")
 	}
