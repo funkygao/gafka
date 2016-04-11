@@ -123,19 +123,18 @@ func (this *pubStore) refreshJobPoolNodes() {
 }
 
 func (this *pubStore) doRefresh() {
-	// TODO the lock is too big, should consider cluster level refresh
-	this.pubPoolsLock.Lock()
-	defer this.pubPoolsLock.Unlock()
-	this.jobPoolsLock.Lock()
-	defer this.jobPoolsLock.Unlock()
-
 	if time.Since(this.lastRefreshedAt) <= time.Second*5 {
 		log.Warn("ignored too frequent refresh: %s", time.Since(this.lastRefreshedAt))
 		return
 	}
 
 	// job pools
+	this.jobPoolsLock.Lock()
 	this.refreshJobPoolNodes()
+	this.jobPoolsLock.Unlock()
+
+	this.pubPoolsLock.Lock()
+	defer this.pubPoolsLock.Unlock()
 
 	// pub pool
 	activeClusters := make(map[string]struct{})
