@@ -86,7 +86,7 @@ func (this *Client) Pub(key string, msg []byte, opt PubOption) (err error) {
 	var u url.URL
 	u.Scheme = this.cf.Pub.Scheme
 	u.Host = this.cf.Pub.Endpoint
-	u.Path = fmt.Sprintf("/topics/%s/%s", opt.Topic, opt.Ver)
+	u.Path = fmt.Sprintf("/msgs/%s/%s", opt.Topic, opt.Ver)
 	q := u.Query()
 	q.Set("key", key)
 	if opt.AckAll {
@@ -300,7 +300,7 @@ func (this *Client) SubX(opt SubOption, h SubXHandler) error {
 	var u url.URL
 	u.Scheme = this.cf.Sub.Scheme
 	u.Host = this.cf.Sub.Endpoint
-	u.Path = fmt.Sprintf("/topics/%s/%s/%s", opt.AppId, opt.Topic, opt.Ver)
+	u.Path = fmt.Sprintf("/msgs/%s/%s/%s", opt.AppId, opt.Topic, opt.Ver)
 	q := u.Query()
 	q.Set("group", opt.Group)
 	q.Set("ack", "1")
