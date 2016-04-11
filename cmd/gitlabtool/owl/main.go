@@ -19,6 +19,7 @@ func init() {
 
 var (
 	lock   sync.Mutex
+	errCh  chan error
 	newEvt chan struct{}
 	events []interface{}
 	quit   chan struct{}
@@ -28,6 +29,7 @@ var (
 func main() {
 	quit = make(chan struct{})
 	newEvt = make(chan struct{}, 10)
+	errCh = make(chan error)
 	ready = make(chan struct{})
 	if options.logfile == "" {
 		log.SetOutput(ioutil.Discard)

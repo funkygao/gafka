@@ -33,6 +33,9 @@ func subLoop() {
 				newEvt <- struct{}{}
 			}
 
+		case err := <-s.Errors():
+			errCh <- err.Err
+
 		case <-quit:
 			return
 		}

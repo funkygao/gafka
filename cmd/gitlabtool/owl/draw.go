@@ -180,6 +180,17 @@ func drawSplash() {
 	termbox.Flush()
 }
 
+func drawNotify() {
+	refreshSize()
+	termbox.Clear(coldef, coldef)
+	row := "Got a new event from gitlab!"
+	x, y := w/2-len(row)/2, h/2+1
+	for i, c := range row {
+		termbox.SetCell(x+i, y, c, termbox.ColorGreen, coldef)
+	}
+	termbox.Flush()
+}
+
 func drawFooter() {
 	s := calculateStats()
 	help := "q:Close d:Detail j:Next k:Previous Space:PageDown b:PageUp /:Find"

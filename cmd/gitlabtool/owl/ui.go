@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/nsf/termbox-go"
 )
@@ -32,7 +34,14 @@ func runUILoop() {
 	for {
 		select {
 		case <-newEvt:
+			drawNotify()
+			time.Sleep(time.Second)
 			redrawAll()
+
+		case err := <-errCh:
+			termbox.Close()
+			fmt.Println(err)
+			return
 
 		case <-quit:
 			return
