@@ -112,6 +112,7 @@ func handleEvents(eventChan chan termbox.Event) {
 					lock.Lock()
 					totalN := len(events)
 					lock.Unlock()
+
 					if selectedRow < totalN {
 						selectedRow++
 						if selectedRow%pageSize == 0 {
@@ -119,6 +120,42 @@ func handleEvents(eventChan chan termbox.Event) {
 						}
 						redrawAll()
 					}
+				}
+
+			case 'M':
+				if !detailView {
+					lock.Lock()
+					totalN := len(events)
+					lock.Unlock()
+
+					if selectedRow/pageSize == totalN/pageSize {
+						// already the last page, do nothing
+						continue
+					}
+
+					selectedRow = page*pageSize + pageSize/2
+					redrawAll()
+				}
+
+			case 'H':
+				if !detailView {
+					selectedRow = page * pageSize
+					redrawAll()
+				}
+
+			case 'L':
+				if !detailView {
+					lock.Lock()
+					totalN := len(events)
+					lock.Unlock()
+
+					if selectedRow/pageSize == totalN/pageSize {
+						// already the last page, do nothing
+						continue
+					}
+
+					selectedRow = page*pageSize + pageSize - 1
+					redrawAll()
 				}
 
 			case 'k':

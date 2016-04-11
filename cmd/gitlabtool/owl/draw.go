@@ -213,8 +213,8 @@ func drawNotify() {
 	for i, c := range row {
 		termbox.SetCell(x+i, y, c, termbox.ColorGreen, coldef)
 	}
+	//println("\a") // beep
 	termbox.Flush()
-	println("\a") // beep
 }
 
 func drawFooter() {
