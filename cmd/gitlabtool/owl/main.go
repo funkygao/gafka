@@ -18,12 +18,13 @@ func init() {
 }
 
 var (
-	lock   sync.Mutex
-	errCh  chan error
-	newEvt chan struct{}
-	events []interface{}
-	quit   chan struct{}
-	ready  chan struct{}
+	lock    sync.Mutex
+	loadedN int
+	errCh   chan error
+	newEvt  chan struct{}
+	events  []interface{}
+	quit    chan struct{}
+	ready   chan struct{}
 )
 
 func main() {

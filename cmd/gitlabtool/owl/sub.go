@@ -19,6 +19,7 @@ func subLoop() {
 		select {
 		case <-time.After(time.Second * 3):
 			if !loaded {
+				loadedN = len(events)
 				loaded = true
 				close(ready)
 			}

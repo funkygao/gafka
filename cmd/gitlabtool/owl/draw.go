@@ -144,14 +144,14 @@ func drawEvent(x, y int, evt interface{}) {
 			hook.Email)
 
 	case *SystemHookUserAddToGroup:
-		fg_col = termbox.ColorGreen
+		fg_col = termbox.ColorRed
 		row = fmt.Sprintf("%14s %20s join group(%s)",
 			since(hook.Created_at),
 			hook.User_name,
 			hook.Group_name)
 
 	case *SystemHookUserAddToTeam:
-		fg_col = termbox.ColorGreen
+		fg_col = termbox.ColorRed
 		row = fmt.Sprintf("%14s %20s join project(%s)",
 			since(hook.Created_at),
 			hook.User_name,
@@ -194,8 +194,9 @@ func drawNotify() {
 func drawFooter() {
 	s := calculateStats()
 	help := "q:Close d:Detail j:Next k:Previous Space:PageDown b:PageUp /:Find"
-	stats := fmt.Sprintf("[events:%d/%d page:%d repo:%d staff:%d commit:%d]",
+	stats := fmt.Sprintf("[events:%d/%d-%d page:%d repo:%d staff:%d commit:%d]",
 		selectedRow,
+		loadedN,
 		s.eventN,
 		page,
 		s.repoN,
