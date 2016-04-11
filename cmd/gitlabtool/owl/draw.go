@@ -8,11 +8,13 @@ import (
 )
 
 var (
-	w, h        int
-	page        int
-	pageSize    int
-	selectedRow = 0
-	detailView  = false
+	w, h           int
+	page           int
+	pageSize       int
+	selectedRow    = 0
+	selectedCommit = 0
+	currentWebHook *Webhook
+	detailView     = false
 )
 
 const (
@@ -46,8 +48,10 @@ func redrawAll() {
 func drawDetail() {
 	evts := reorderEvents()
 	evt := evts[selectedRow]
-	if _, ok := evt.(*Webhook); !ok {
+	if webhook, ok := evt.(*Webhook); !ok {
 		return
+	} else {
+		currentWebHook = webhook
 	}
 
 	termbox.Clear(coldef, coldef)
@@ -62,15 +66,10 @@ func drawDetail() {
 	drawRow(row, y, fg, bg)
 	y++
 
-	row = fmt.Sprintf("%7s: %s",
-		"Ref",
-		hook.Ref)
-	drawRow(row, y, fg, bg)
-	y++
-
-	row = fmt.Sprintf("%7s: %d",
-		"Commits",
-		hook.Total_commits_count)
+	row = fmt.Sprintf("%7s: %s    %7s: %s    %7s: %d    %7s: %d",
+		"Ref", hook.Ref,
+		"User", hook.User_name,
+		"Commits", hook.Total_commits_count, "Project", hook.Project_id)
 	drawRow(row, y, fg, bg)
 	y += 2
 
@@ -81,8 +80,14 @@ func drawDetail() {
 		y++
 
 		row = fmt.Sprintf("%s", c.Url)
-		drawRow(row, y, fg, bg)
-		y += 2
+		if selectedCommit == len(hook.Commits)-1-i {
+			// selected commit row
+			drawRow(row, y, termbox.ColorBlack, termbox.ColorYellow)
+		} else {
+			drawRow(row, y, fg, bg)
+		}
+
+		y++
 	}
 
 	termbox.Flush()

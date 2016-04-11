@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/nsf/termbox-go"
+	"github.com/pkg/browser"
 )
 
 func runUILoop() {
@@ -71,6 +72,12 @@ func handleEvents(eventChan chan termbox.Event) {
 				}
 				continue
 
+			case termbox.KeyEnter:
+				if detailView {
+					browser.OpenURL(currentWebHook.Commits[len(currentWebHook.Commits)-selectedCommit-1].Url)
+				}
+				continue
+
 			case termbox.KeyEsc:
 				if detailView {
 					detailView = false
@@ -83,24 +90,42 @@ func handleEvents(eventChan chan termbox.Event) {
 
 			switch ev.Ch {
 			case 'j':
-				lock.Lock()
-				totalN := len(events)
-				lock.Unlock()
-				if selectedRow < totalN {
-					selectedRow++
-					if selectedRow%pageSize == 0 {
-						page++
+				if detailView {
+					if selectedCommit < len(currentWebHook.Commits)-1 {
+						selectedCommit++
+					} else {
+						selectedCommit = 0 // rewind
 					}
-					redrawAll()
+					drawDetail()
+				} else {
+					lock.Lock()
+					totalN := len(events)
+					lock.Unlock()
+					if selectedRow < totalN {
+						selectedRow++
+						if selectedRow%pageSize == 0 {
+							page++
+						}
+						redrawAll()
+					}
 				}
 
 			case 'k':
-				if selectedRow > 0 {
-					if selectedRow%pageSize == 0 {
-						page--
+				if detailView {
+					if selectedCommit > 0 {
+						selectedCommit--
+					} else {
+						selectedCommit = len(currentWebHook.Commits) - 1
 					}
-					selectedRow--
-					redrawAll()
+					drawDetail()
+				} else {
+					if selectedRow > 0 {
+						if selectedRow%pageSize == 0 {
+							page--
+						}
+						selectedRow--
+						redrawAll()
+					}
 				}
 
 			case 'd':
@@ -132,6 +157,7 @@ func handleEvents(eventChan chan termbox.Event) {
 					termbox.Close()
 					os.Exit(0)
 				}
+				selectedCommit = 0
 
 			}
 
