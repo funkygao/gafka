@@ -15,7 +15,7 @@ It accepts events from gitlab hook and send it to pubsub system.
 
 gitlab top.
 
-Same operation mode with `tig` except:
+Same operation mode with [tig](https://github.com/jonas/tig) except:
 - it support multiple repositories
 - it consumes events from kafka and on each gitlab event, it displays on top
 
