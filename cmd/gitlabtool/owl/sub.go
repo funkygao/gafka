@@ -32,6 +32,12 @@ func subLoop() {
 				}
 			}
 
+			if options.nonWebhookOnly {
+				if _, ok := hook.(*Webhook); ok {
+					continue
+				}
+			}
+
 			lock.Lock()
 			events = append(events, hook)
 			lock.Unlock()

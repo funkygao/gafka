@@ -169,6 +169,13 @@ func drawEvent(x, y int, evt interface{}) {
 			hook.User_name,
 			hook.Project_name)
 
+	case *SystemHookUserRemovedFromTeam:
+		fg_col = termbox.ColorRed
+		row = fmt.Sprintf("%14s %20s kicked from project(%s)",
+			since(hook.Created_at),
+			hook.User_name,
+			hook.Project_name)
+
 	case *SystemHookUnknown:
 		fg_col = termbox.ColorMagenta
 		row = fmt.Sprintf("%s", hook.Evt)

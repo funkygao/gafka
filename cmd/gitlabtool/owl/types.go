@@ -59,6 +59,10 @@ type SystemHookUserAddToTeam struct {
 	Created_at, Project_name, User_name, User_email string
 }
 
+type SystemHookUserRemovedFromTeam struct {
+	Created_at, Project_name, Project_path, User_name string
+}
+
 type SystemHookUnknown struct {
 	Evt string
 }

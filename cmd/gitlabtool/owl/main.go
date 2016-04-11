@@ -14,6 +14,7 @@ func init() {
 	flag.BoolVar(&options.debug, "d", false, "debug")
 	flag.BoolVar(&options.mock, "m", false, "mock mode")
 	flag.BoolVar(&options.webhookOnly, "web", false, "webhook only")
+	flag.BoolVar(&options.nonWebhookOnly, "noweb", false, "non-webhook only")
 	flag.StringVar(&options.logfile, "l", "", "log file")
 	flag.Parse()
 }
