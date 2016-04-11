@@ -18,8 +18,10 @@ func subLoop() {
 	for {
 		select {
 		case <-time.After(time.Second * 5):
-			loaded = true
-			close(ready)
+			if !loaded {
+				loaded = true
+				close(ready)
+			}
 
 		case msg := <-s.Messages():
 			hook := decode(msg.Value)
