@@ -77,6 +77,10 @@ func handleEvents(eventChan chan termbox.Event) {
 					}
 
 					selectedRow += pageSize
+					if selectedRow > totalN-1 {
+						// can't be beyond the range
+						selectedRow = totalN - 1
+					}
 					page++
 
 					redrawAll()

@@ -211,7 +211,7 @@ func drawEvent(x, y int, evt interface{}) {
 	}
 
 	drawRow(row, y, fg_col, bg_col)
-	
+
 }
 
 func drawSplash() {
