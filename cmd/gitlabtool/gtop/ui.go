@@ -37,6 +37,8 @@ func runUILoop() {
 		case <-newEvt:
 			drawNotify()
 			time.Sleep(time.Second)
+			detailView = false
+			dashboardView = false
 			redrawAll()
 
 		case err := <-errCh:
@@ -213,6 +215,9 @@ func handleEvents(eventChan chan termbox.Event) {
 			case 'q':
 				if detailView {
 					detailView = false
+					redrawAll()
+				} else if dashboardView {
+					dashboardView = false
 					redrawAll()
 				} else {
 					termbox.Close()

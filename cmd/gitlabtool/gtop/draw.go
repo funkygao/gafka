@@ -32,9 +32,6 @@ func refreshSize() {
 }
 
 func redrawAll() {
-	dashboardView = false
-	detailView = false
-
 	termbox.Clear(coldef, coldef)
 	refreshSize()
 
