@@ -21,6 +21,7 @@ var (
 	currentWebHook     *Webhook
 	detailView         = false
 	dashboardView      = false
+	userSummaryView    = false
 	projectSummaryView = false
 )
 
@@ -48,6 +49,43 @@ func redrawAll() {
 
 	drawFooter()
 	lock.Unlock()
+
+	termbox.Flush()
+}
+
+func drawDashboardByUser() {
+	lock.Lock()
+	commitByUsers := make(map[string]int)
+	for _, evt := range events {
+		if hook, ok := evt.(*Webhook); ok {
+			for _, c := range hook.Commits {
+				if _, present := commitByUsers[c.Author.Email]; !present {
+					commitByUsers[c.Author.Email] = 1
+				} else {
+					commitByUsers[c.Author.Email] += 1
+				}
+			}
+		}
+	}
+	lock.Unlock()
+
+	type user struct {
+		name    string
+		commits int
+	}
+	users := make([]user, 0, len(commitByUsers))
+	for name, n := range commitByUsers {
+		users = append(users, user{name: name, commits: n})
+	}
+	sortutil.DescByField(users, "commits")
+
+	termbox.Clear(coldef, coldef)
+	y := 0
+	for _, p := range users {
+		row := fmt.Sprintf("%40s: %3d", p.name, p.commits)
+		drawRow(row, y, coldef, coldef)
+		y++
+	}
 
 	termbox.Flush()
 }

@@ -40,6 +40,7 @@ func runUILoop() {
 			detailView = false
 			dashboardView = false
 			projectSummaryView = false
+			userSummaryView = false
 			redrawAll()
 
 		case err := <-errCh:
@@ -112,6 +113,14 @@ func handleEvents(eventChan chan termbox.Event) {
 					drawDashboardByProject()
 				}
 				projectSummaryView = !projectSummaryView
+
+			case termbox.KeyCtrlU:
+				if userSummaryView {
+					redrawAll()
+				} else {
+					drawDashboardByUser()
+				}
+				userSummaryView = !userSummaryView
 
 			case termbox.KeyEsc:
 				if detailView {
@@ -230,6 +239,9 @@ func handleEvents(eventChan chan termbox.Event) {
 					redrawAll()
 				} else if projectSummaryView {
 					projectSummaryView = false
+					redrawAll()
+				} else if userSummaryView {
+					userSummaryView = false
 					redrawAll()
 				} else {
 					termbox.Close()
