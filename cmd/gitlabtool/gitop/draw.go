@@ -9,17 +9,19 @@ import (
 	"github.com/funkygao/termui"
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
+	"github.com/pmylund/sortutil"
 )
 
 var (
-	w, h           int
-	page           int
-	pageSize       int
-	selectedRow    = 0
-	selectedCommit = 0
-	currentWebHook *Webhook
-	detailView     = false
-	dashboardView  = false
+	w, h               int
+	page               int
+	pageSize           int
+	selectedRow        = 0
+	selectedCommit     = 0
+	currentWebHook     *Webhook
+	detailView         = false
+	dashboardView      = false
+	projectSummaryView = false
 )
 
 const (
@@ -46,6 +48,41 @@ func redrawAll() {
 
 	drawFooter()
 	lock.Unlock()
+
+	termbox.Flush()
+}
+
+func drawDashboardByProject() {
+	lock.Lock()
+	commitByProjects := make(map[string]int)
+	for _, evt := range events {
+		if hook, ok := evt.(*Webhook); ok {
+			if _, present := commitByProjects[hook.Repository.Homepage]; !present {
+				commitByProjects[hook.Repository.Homepage] = hook.Total_commits_count
+			} else {
+				commitByProjects[hook.Repository.Homepage] += hook.Total_commits_count
+			}
+		}
+	}
+	lock.Unlock()
+
+	type project struct {
+		name    string
+		commits int
+	}
+	projects := make([]project, 0, len(commitByProjects))
+	for name, n := range commitByProjects {
+		projects = append(projects, project{name: name, commits: n})
+	}
+	sortutil.DescByField(projects, "commits")
+
+	termbox.Clear(coldef, coldef)
+	y := 0
+	for _, p := range projects {
+		row := fmt.Sprintf("%80s: %3d", p.name, p.commits)
+		drawRow(row, y, coldef, coldef)
+		y++
+	}
 
 	termbox.Flush()
 }

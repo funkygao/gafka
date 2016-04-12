@@ -39,6 +39,7 @@ func runUILoop() {
 			time.Sleep(time.Second)
 			detailView = false
 			dashboardView = false
+			projectSummaryView = false
 			redrawAll()
 
 		case err := <-errCh:
@@ -103,6 +104,14 @@ func handleEvents(eventChan chan termbox.Event) {
 					drawDashboardByHour()
 				}
 				dashboardView = !dashboardView
+
+			case termbox.KeyCtrlP:
+				if projectSummaryView {
+					redrawAll()
+				} else {
+					drawDashboardByProject()
+				}
+				projectSummaryView = !projectSummaryView
 
 			case termbox.KeyEsc:
 				if detailView {
@@ -219,12 +228,14 @@ func handleEvents(eventChan chan termbox.Event) {
 				} else if dashboardView {
 					dashboardView = false
 					redrawAll()
+				} else if projectSummaryView {
+					projectSummaryView = false
+					redrawAll()
 				} else {
 					termbox.Close()
 					os.Exit(0)
 				}
 				selectedCommit = 0
-
 			}
 
 		case termbox.EventError:
