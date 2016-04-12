@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"sort"
+	"time"
 
 	"github.com/funkygao/golib/bjtime"
 	"github.com/mattn/go-runewidth"
@@ -16,6 +18,7 @@ var (
 	selectedCommit = 0
 	currentWebHook *Webhook
 	detailView     = false
+	dashboardView  = false
 )
 
 const (
@@ -42,6 +45,43 @@ func redrawAll() {
 
 	drawFooter()
 	lock.Unlock()
+
+	termbox.Flush()
+}
+
+func drawDashboardByHour() {
+	lock.Lock()
+	defer lock.Unlock()
+
+	commitByHours := make(map[int]int)
+	for _, evt := range events {
+		if hook, ok := evt.(*Webhook); ok {
+			for _, cmt := range hook.Commits {
+				t, _ := time.Parse(time.RFC3339, cmt.Timestamp)
+				if _, present := commitByHours[t.Hour()]; present {
+					commitByHours[t.Hour()]++
+				} else {
+					commitByHours[t.Hour()] = 1
+				}
+			}
+		}
+	}
+
+	termbox.Clear(coldef, coldef)
+	sortedHours := make([]int, 0, len(commitByHours))
+	for hour, _ := range commitByHours {
+		sortedHours = append(sortedHours, hour)
+	}
+	sort.Ints(sortedHours)
+
+	y := 1
+	drawRow("Commits by hour", y, termbox.ColorGreen, coldef)
+	y += 2
+	for _, hour := range sortedHours {
+		row := fmt.Sprintf("%02d: %3d", hour, commitByHours[hour])
+		drawRow(row, y, coldef, coldef)
+		y++
+	}
 
 	termbox.Flush()
 }

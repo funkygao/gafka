@@ -93,6 +93,15 @@ func handleEvents(eventChan chan termbox.Event) {
 				}
 				continue
 
+			case termbox.KeyCtrlD:
+				// dashboard page
+				if dashboardView {
+					redrawAll()
+				} else {
+					drawDashboardByHour()
+				}
+				dashboardView = !dashboardView
+
 			case termbox.KeyEsc:
 				if detailView {
 					detailView = false
