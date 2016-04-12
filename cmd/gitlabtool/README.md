@@ -11,7 +11,7 @@ will send this event to PubSub system.
 Webhookd is a webhook endpoint that is integrated with gitlab.
 It accepts events from gitlab hook and send it to pubsub system.
 
-### [gtop](https://github.com/funkygao/gafka/tree/master/cmd/gitlabtool/gtop)
+### [gitop](https://github.com/funkygao/gafka/tree/master/cmd/gitlabtool/gitop)
 
 gitlab top.
 
