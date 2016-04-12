@@ -31,7 +31,7 @@ type Manager interface {
 	Refreshed() <-chan struct{}
 
 	// IsShadowedTopic checks if a topic has retry/dead sub/shadow topics.
-	IsShadowedTopic(appid, topic, ver, group string) bool
+	IsShadowedTopic(hisAppid, topic, ver, myAppid, group string) bool
 
 	ValidateTopicName(topic string) bool
 	ValidateGroupName(header http.Header, group string) bool

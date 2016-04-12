@@ -49,7 +49,7 @@ func (this *dummyStore) LookupCluster(appid string) (string, bool) {
 	return "me", true
 }
 
-func (this *dummyStore) IsShadowedTopic(appid, topic, ver, group string) bool {
+func (this *dummyStore) IsShadowedTopic(hisAppid, topic, ver, myAppid, group string) bool {
 	return true
 }
 

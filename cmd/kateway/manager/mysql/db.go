@@ -24,7 +24,7 @@ type mysqlStore struct {
 	appSubMap           map[string]map[string]struct{} // appid:topics
 	appPubMap           map[string]map[string]struct{} // appid:subscribed topics
 	appConsumerGroupMap map[string]string              // appid:group
-	shadowQueueMap      map[string]string              // appid.topic.ver:group
+	shadowQueueMap      map[string]string              // hisappid.topic.ver.myappid:group
 }
 
 func New(cf *config) *mysqlStore {
@@ -65,8 +65,8 @@ type appConsumerGroupRecord struct {
 }
 
 type shadowQueueRecord struct {
-	AppId, TopicName, Ver string
-	Group                 string
+	HisAppId, TopicName, Ver string
+	MyAppid, Group           string
 }
 
 func (this *mysqlStore) Start() error {
@@ -149,12 +149,12 @@ func (this *mysqlStore) refreshFromMysql() error {
 	return nil
 }
 
-func (this *mysqlStore) shadowKey(appid, topic, ver string) string {
-	return appid + "." + topic + "." + ver
+func (this *mysqlStore) shadowKey(hisAppid, topic, ver, myAppid string) string {
+	return hisAppid + "." + topic + "." + ver + "." + myAppid
 }
 
 func (this *mysqlStore) fetchShadowQueueRecords(db *sql.DB) error {
-	rows, err := db.Query("SELECT AppId,TopicName,Version,GroupName FROM group_shadow WHERE Status=1")
+	rows, err := db.Query("SELECT HisAppId,TopicName,Version,MyAppid,GroupName FROM group_shadow WHERE Status=1")
 	if err != nil {
 		return err
 	}
@@ -163,13 +163,13 @@ func (this *mysqlStore) fetchShadowQueueRecords(db *sql.DB) error {
 	var shadow shadowQueueRecord
 	shadowQueueMap := make(map[string]string)
 	for rows.Next() {
-		err = rows.Scan(&shadow.AppId, &shadow.TopicName, &shadow.Ver, &shadow.Group)
+		err = rows.Scan(&shadow.HisAppId, &shadow.TopicName, &shadow.Ver, &shadow.MyAppid, &shadow.Group)
 		if err != nil {
 			log.Error("mysql manager store: %v", err)
 			continue
 		}
 
-		shadowQueueMap[this.shadowKey(shadow.AppId, shadow.TopicName, shadow.Ver)] = shadow.Group
+		shadowQueueMap[this.shadowKey(shadow.HisAppId, shadow.TopicName, shadow.Ver, shadow.MyAppid)] = shadow.Group
 	}
 
 	this.shadowQueueMap = shadowQueueMap

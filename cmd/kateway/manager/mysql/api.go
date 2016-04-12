@@ -107,8 +107,8 @@ func (this *mysqlStore) LookupCluster(appid string) (string, bool) {
 	return "", false
 }
 
-func (this *mysqlStore) IsShadowedTopic(appid, topic, ver, group string) bool {
-	if _, present := this.shadowQueueMap[this.shadowKey(appid, topic, ver)]; present {
+func (this *mysqlStore) IsShadowedTopic(hisAppid, topic, ver, myAppid, group string) bool {
+	if _, present := this.shadowQueueMap[this.shadowKey(hisAppid, topic, ver, myAppid)]; present {
 		return true
 	}
 

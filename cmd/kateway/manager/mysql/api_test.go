@@ -12,6 +12,11 @@ func validateTopicName(topic string) bool {
 	return m.ValidateTopicName(topic)
 }
 
+func TestShadowKey(t *testing.T) {
+	m := mysqlStore{}
+	assert.Equal(t, "hisAppid.topic.ver.myAppid", m.shadowKey("hisAppid", "topic", "ver", "myAppid"))
+}
+
 func TestValidateTopicName(t *testing.T) {
 	assert.Equal(t, false, validateTopicName("")) // topic cannot be empty
 	assert.Equal(t, true, validateTopicName("topic"))

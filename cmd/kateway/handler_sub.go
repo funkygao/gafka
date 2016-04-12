@@ -105,7 +105,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			return
 		}
 
-		if !manager.Default.IsShadowedTopic(hisAppid, topic, ver, group) {
+		if !manager.Default.IsShadowedTopic(hisAppid, topic, ver, myAppid, group) {
 			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} not a shadowed topic",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, shadow)
 
