@@ -32,6 +32,9 @@ func refreshSize() {
 }
 
 func redrawAll() {
+	dashboardView = false
+	detailView = false
+
 	termbox.Clear(coldef, coldef)
 	refreshSize()
 
@@ -116,6 +119,10 @@ func drawDetail() {
 	drawRow(row, y, fg, bg)
 	y++
 
+	row = fmt.Sprintf("%7s: %s", "Home", hook.Repository.Homepage)
+	drawRow(row, y, fg, bg)
+	y++
+
 	row = fmt.Sprintf("%7s: %s    %7s: %s    %7s: %d    %7s: %d",
 		"Ref", hook.Ref,
 		"User", hook.User_name,
@@ -144,7 +151,7 @@ func drawDetail() {
 }
 
 func drawRow(row string, y int, fg, bg termbox.Attribute) {
-	x := 1
+	x := 0
 	for _, r := range row {
 		termbox.SetCell(x, y, r, fg, bg)
 		// wide string must be considered
