@@ -32,6 +32,10 @@ func decode(msg []byte) interface{} {
 		hook = &SystemHookUserAddToGroup{}
 		json.Unmarshal(msg, hook)
 
+	case strings.HasPrefix(event, `{"event_name":"user_remove_from_group"`):
+		hook = &SystemHookUserRemovedFromGroup{}
+		json.Unmarshal(msg, hook)
+
 	case strings.HasPrefix(event, `{"event_name":"user_create"`):
 		hook = &SystemHookUserCreate{}
 		json.Unmarshal(msg, hook)

@@ -56,6 +56,10 @@ type SystemHookUserAddToGroup struct {
 	Created_at, Group_name, User_name, User_email string
 }
 
+type SystemHookUserRemovedFromGroup struct {
+	Created_at, Group_name, User_name string
+}
+
 type SystemHookUserAddToTeam struct {
 	Created_at, Project_name, User_name, User_email string
 }
