@@ -6,7 +6,8 @@ import (
 
 //GitlabRepository represents repository information from the webhook
 type GitlabRepository struct {
-	Name, Url, Description, Home string
+	Name, Url, Description, Homepage string
+	Git_http_url, Git_ssh_url        string
 }
 
 //Commit represents commit information from the webhook
