@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/funkygao/golib/bjtime"
+	"github.com/funkygao/termui"
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 )
@@ -51,8 +52,6 @@ func redrawAll() {
 
 func drawDashboardByHour() {
 	lock.Lock()
-	defer lock.Unlock()
-
 	commitByHours := make(map[int]int)
 	for _, evt := range events {
 		if hook, ok := evt.(*Webhook); ok {
@@ -66,24 +65,34 @@ func drawDashboardByHour() {
 			}
 		}
 	}
+	lock.Unlock()
 
-	termbox.Clear(coldef, coldef)
 	sortedHours := make([]int, 0, len(commitByHours))
 	for hour, _ := range commitByHours {
 		sortedHours = append(sortedHours, hour)
 	}
 	sort.Ints(sortedHours)
 
-	y := 1
-	drawRow("Commits by hour", y, termbox.ColorGreen, coldef)
-	y += 2
-	for _, hour := range sortedHours {
-		row := fmt.Sprintf("%02d: %3d", hour, commitByHours[hour])
-		drawRow(row, y, coldef, coldef)
-		y++
-	}
+	termbox.Clear(coldef, coldef)
 
-	termbox.Flush()
+	termui.UseTheme("helloworld")
+	bc := termui.NewBarChart()
+	data := []int{}
+	bclabels := []string{}
+	for _, hour := range sortedHours {
+		data = append(data, commitByHours[hour])
+		bclabels = append(bclabels, fmt.Sprintf("%02d", hour))
+	}
+	bc.Border.Label = "Commit by hour"
+	bc.Data = data
+	bc.Width = w
+	bc.Height = h
+	bc.DataLabels = bclabels
+	bc.TextColor = termui.ColorGreen
+	bc.BarColor = termui.ColorRed
+	bc.NumColor = termui.ColorYellow
+
+	termui.Render(bc)
 }
 
 func drawDetail() {
