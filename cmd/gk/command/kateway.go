@@ -158,12 +158,11 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 		disques, err := zkzone.KatewayDisqueAddrs()
 		if err != nil {
-			this.Ui.Error(err.Error())
 			this.Ui.Warn(fmt.Sprintf("kateway[%s] disque not set on zk:%s", this.zone,
 				zk.KatewayDisquePath))
-			return
+		} else {
+			this.Ui.Output(fmt.Sprintf("zone[%s]     disque: %+v", color.Blue(zkzone.Name()), disques))
 		}
-		this.Ui.Output(fmt.Sprintf("zone[%s]     disque: %+v", color.Blue(zkzone.Name()), disques))
 
 		kateways, err := zkzone.KatewayInfos()
 		if err != nil {
