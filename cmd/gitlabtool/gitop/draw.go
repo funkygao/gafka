@@ -19,6 +19,7 @@ var (
 	selectedRow        = 0
 	selectedCommit     = 0
 	currentWebHook     *Webhook
+	mainView           bool
 	detailView         = false
 	dashboardView      = false
 	userSummaryView    = false
@@ -35,6 +36,8 @@ func refreshSize() {
 }
 
 func redrawAll() {
+	mainView = true
+
 	termbox.Clear(coldef, coldef)
 	refreshSize()
 
@@ -59,10 +62,11 @@ func drawDashboardByUser() {
 	for _, evt := range events {
 		if hook, ok := evt.(*Webhook); ok {
 			for _, c := range hook.Commits {
-				if _, present := commitByUsers[c.Author.Email]; !present {
-					commitByUsers[c.Author.Email] = 1
+				key := fmt.Sprintf("%s %s", c.Author.Name, c.Author.Email)
+				if _, present := commitByUsers[key]; !present {
+					commitByUsers[key] = 1
 				} else {
-					commitByUsers[c.Author.Email] += 1
+					commitByUsers[key] += 1
 				}
 			}
 		}
@@ -81,10 +85,14 @@ func drawDashboardByUser() {
 
 	termbox.Clear(coldef, coldef)
 	y := 0
-	for _, p := range users {
-		row := fmt.Sprintf("%40s: %3d", p.name, p.commits)
+	for i, u := range users {
+		row := fmt.Sprintf("%s: %5d", wideStr(u.name, 60), u.commits)
 		drawRow(row, y, coldef, coldef)
 		y++
+
+		if i >= h {
+			break
+		}
 	}
 
 	termbox.Flush()
@@ -116,10 +124,14 @@ func drawDashboardByProject() {
 
 	termbox.Clear(coldef, coldef)
 	y := 0
-	for _, p := range projects {
-		row := fmt.Sprintf("%80s: %3d", p.name, p.commits)
+	for i, p := range projects {
+		row := fmt.Sprintf("%80s: %5d", p.name, p.commits)
 		drawRow(row, y, coldef, coldef)
 		y++
+
+		if i >= h {
+			break
+		}
 	}
 
 	termbox.Flush()
