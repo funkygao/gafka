@@ -155,6 +155,28 @@ func handleEvents(eventChan chan termbox.Event) {
 					}
 				}
 
+			case 'K':
+				if mainView {
+					page = 0
+					selectedRow = 0
+					redrawAll()
+				}
+
+			case 'G':
+				if mainView {
+					lock.Lock()
+					totalN := len(events)
+					lock.Unlock()
+
+					page = totalN / pageSize
+					if totalN%pageSize == 0 {
+						page--
+					}
+
+					selectedRow = totalN - 1
+					redrawAll()
+				}
+
 			case 'M':
 				if !detailView {
 					lock.Lock()

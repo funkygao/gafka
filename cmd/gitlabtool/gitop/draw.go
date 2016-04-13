@@ -377,7 +377,7 @@ func drawNotify() {
 
 func drawFooter() {
 	s := calculateStats()
-	help := "q:Close d:Detail j:Next k:Previous Space:PageDown b:PageUp /:Find"
+	help := "q:Close d:Detail G:End K:Top Space:PageDown b:PageUp"
 	stats := fmt.Sprintf("[events:%d/%d-%d page:%d/%d repo:%d staff:%d commit:%d]",
 		selectedRow,
 		loadedN,
