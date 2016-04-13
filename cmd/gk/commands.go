@@ -53,13 +53,6 @@ func init() {
 			}, nil
 		},
 
-		"status": func() (cli.Command, error) {
-			return &command.Status{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
 		"config": func() (cli.Command, error) {
 			return &command.Config{
 				Ui:  ui,
@@ -69,6 +62,13 @@ func init() {
 
 		"lszk": func() (cli.Command, error) {
 			return &command.LsZk{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"webhook": func() (cli.Command, error) {
+			return &command.Webhook{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil

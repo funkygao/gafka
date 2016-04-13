@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/golib/progress"
+	"github.com/ryanuber/columnize"
 )
 
 type Lags struct {
@@ -24,6 +25,7 @@ type Lags struct {
 	topicPattern    string
 	watchMode       bool
 	problematicMode bool
+	tableFmt        bool
 	lagThreshold    int
 }
 
@@ -41,6 +43,7 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.problematicMode, "p", false, "")
 	cmdFlags.StringVar(&this.groupPattern, "g", "", "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
+	cmdFlags.BoolVar(&this.tableFmt, "table", false, "")
 	cmdFlags.BoolVar(&this.watchMode, "w", false, "")
 	cmdFlags.IntVar(&this.lagThreshold, "lag", 5000, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -61,7 +64,11 @@ func (this *Lags) Run(args []string) (exitCode int) {
 		for {
 			zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 				this.Ui.Output(zkcluster.Name())
-				this.printConsumersLag(zkcluster)
+				if this.tableFmt {
+					this.printConsumersLagTable(zkcluster)
+				} else {
+					this.printConsumersLag(zkcluster)
+				}
 			})
 
 			if this.watchMode {
@@ -82,7 +89,11 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	for {
 		this.Ui.Output(cluster)
 		zkcluster := zkzone.NewCluster(cluster) // panic if invalid cluster
-		this.printConsumersLag(zkcluster)
+		if this.tableFmt {
+			this.printConsumersLagTable(zkcluster)
+		} else {
+			this.printConsumersLag(zkcluster)
+		}
 
 		if this.watchMode {
 			for i := 1; i <= secondsInMinute; i++ {
@@ -98,6 +109,59 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Lags) printConsumersLagTable(zkcluster *zk.ZkCluster) {
+	lines := make([]string, 0)
+	header := "ConsumerGroup|Topic/Partition|Produced|Consumed|Lag|Committed|Uptime"
+	lines = append(lines, header)
+
+	// sort by group name
+	consumersByGroup := zkcluster.ConsumersByGroup(this.groupPattern)
+	sortedGroups := make([]string, 0, len(consumersByGroup))
+	for group, _ := range consumersByGroup {
+		sortedGroups = append(sortedGroups, group)
+	}
+	sort.Strings(sortedGroups)
+
+	for _, group := range sortedGroups {
+		if !patternMatched(group, this.groupPattern) {
+			continue
+		}
+
+		sortedTopicAndPartitionIds := make([]string, 0, len(consumersByGroup[group]))
+		consumers := make(map[string]zk.ConsumerMeta)
+		for _, t := range consumersByGroup[group] {
+			key := fmt.Sprintf("%s:%s", t.Topic, t.PartitionId)
+			sortedTopicAndPartitionIds = append(sortedTopicAndPartitionIds, key)
+
+			consumers[key] = t
+		}
+		sort.Strings(sortedTopicAndPartitionIds)
+
+		for _, topicAndPartitionId := range sortedTopicAndPartitionIds {
+			consumer := consumers[topicAndPartitionId]
+
+			if !patternMatched(consumer.Topic, this.topicPattern) {
+				continue
+			}
+			if !consumer.Online {
+				continue
+			}
+
+			lines = append(lines,
+				fmt.Sprintf("%s|%s/%s|%s|%s|%s|%s|%s",
+					group,
+					consumer.Topic, consumer.PartitionId,
+					gofmt.Comma(consumer.ProducerOffset),
+					gofmt.Comma(consumer.ConsumerOffset),
+					gofmt.Comma(consumer.Lag),
+					gofmt.PrettySince(consumer.Mtime.Time()),
+					gofmt.PrettySince(consumer.ConsumerZnode.Uptime())))
+		}
+	}
+
+	this.Ui.Output(columnize.SimpleFormat(lines))
 }
 
 func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
@@ -188,14 +252,14 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 }
 
 func (*Lags) Synopsis() string {
-	return "Display high level consumers lag for each topic/partition"
+	return "Display online high level consumers lag on a topic"
 }
 
 func (this *Lags) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s lags [options]
 
-    Display high level consumers lag for each topic/partition
+    Display online high level consumers lag on a topic
 
 Options:
 
@@ -219,6 +283,9 @@ Options:
 
     -p
       Only show problematic consumers.
+
+    -table
+      Display in table format.
 
 `, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
