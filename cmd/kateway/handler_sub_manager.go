@@ -23,68 +23,6 @@ type SubStatus struct {
 	Consumed  int64  `json:"subd"`
 }
 
-func (this *Gateway) topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
-	group string, onlyMine bool) ([]SubStatus, error) {
-	zkcluster := meta.Default.ZkCluster(cluster)
-	if group != "" {
-		group = myAppid + "." + group
-	}
-	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
-	consumersByGroup, err := zkcluster.ConsumerGroupsOfTopic(rawTopic)
-	if err != nil {
-		return nil, err
-	}
-	sortedGroups := make([]string, 0, len(consumersByGroup))
-	for grp, _ := range consumersByGroup {
-		sortedGroups = append(sortedGroups, grp)
-	}
-	sort.Strings(sortedGroups)
-
-	out := make([]SubStatus, 0, len(sortedGroups))
-	for _, grp := range sortedGroups {
-		if group != "" && grp != group {
-			continue
-		}
-
-		sortedTopicAndPartitionIds := make([]string, 0, len(consumersByGroup[grp]))
-		consumers := make(map[string]zk.ConsumerMeta)
-		for _, t := range consumersByGroup[grp] {
-			key := fmt.Sprintf("%s:%s", t.Topic, t.PartitionId)
-			sortedTopicAndPartitionIds = append(sortedTopicAndPartitionIds, key)
-
-			consumers[key] = t
-		}
-		sort.Strings(sortedTopicAndPartitionIds)
-
-		for _, topicAndPartitionId := range sortedTopicAndPartitionIds {
-			consumer := consumers[topicAndPartitionId]
-			if rawTopic != consumer.Topic {
-				continue
-			}
-
-			p := strings.SplitN(grp, ".", 2) // grp is like 'appid.groupname'
-			if onlyMine && myAppid != p[0] {
-				// this group does not belong to me
-				continue
-			}
-
-			stat := SubStatus{
-				Group:     p[1],
-				Partition: consumer.PartitionId,
-				Produced:  consumer.ProducerOffset,
-				Consumed:  consumer.ConsumerOffset,
-			}
-			if !onlyMine {
-				stat.Appid = p[0]
-			}
-
-			out = append(out, stat)
-		}
-	}
-
-	return out, nil
-}
-
 // /status/:appid/:topic/:ver?group=xx
 // FIXME currently there might be in flight offsets because of batch offset commit
 // TODO show shadow consumers too
@@ -205,7 +143,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
-// /status/:topic/:ver
+// /subd/:topic/:ver
 func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -338,4 +276,67 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write(ResponseOk)
+}
+
+// a helper func
+func (this *Gateway) topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
+	group string, onlyMine bool) ([]SubStatus, error) {
+	zkcluster := meta.Default.ZkCluster(cluster)
+	if group != "" {
+		group = myAppid + "." + group
+	}
+	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
+	consumersByGroup, err := zkcluster.ConsumerGroupsOfTopic(rawTopic)
+	if err != nil {
+		return nil, err
+	}
+	sortedGroups := make([]string, 0, len(consumersByGroup))
+	for grp, _ := range consumersByGroup {
+		sortedGroups = append(sortedGroups, grp)
+	}
+	sort.Strings(sortedGroups)
+
+	out := make([]SubStatus, 0, len(sortedGroups))
+	for _, grp := range sortedGroups {
+		if group != "" && grp != group {
+			continue
+		}
+
+		sortedTopicAndPartitionIds := make([]string, 0, len(consumersByGroup[grp]))
+		consumers := make(map[string]zk.ConsumerMeta)
+		for _, t := range consumersByGroup[grp] {
+			key := fmt.Sprintf("%s:%s", t.Topic, t.PartitionId)
+			sortedTopicAndPartitionIds = append(sortedTopicAndPartitionIds, key)
+
+			consumers[key] = t
+		}
+		sort.Strings(sortedTopicAndPartitionIds)
+
+		for _, topicAndPartitionId := range sortedTopicAndPartitionIds {
+			consumer := consumers[topicAndPartitionId]
+			if rawTopic != consumer.Topic {
+				continue
+			}
+
+			p := strings.SplitN(grp, ".", 2) // grp is like 'appid.groupname'
+			if onlyMine && myAppid != p[0] {
+				// this group does not belong to me
+				continue
+			}
+
+			stat := SubStatus{
+				Group:     p[1],
+				Partition: consumer.PartitionId,
+				Produced:  consumer.ProducerOffset,
+				Consumed:  consumer.ConsumerOffset,
+			}
+			if !onlyMine {
+				stat.Appid = p[0]
+			}
+
+			out = append(out, stat)
+		}
+	}
+
+	return out, nil
 }
