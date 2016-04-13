@@ -24,6 +24,7 @@ type MonitorF5 struct {
 	latencyWithF5WithGateway       metrics.Histogram
 	latencyWithoutF5WithoutGateway metrics.Histogram
 	latencyWithoutF5WithGateway    metrics.Histogram
+	latencyF5DirectBackend         metrics.Histogram
 
 	httpConn *http.Client
 }
@@ -48,6 +49,8 @@ func (this *MonitorF5) Run() {
 	this.latencyWithF5WithGateway = metrics.NewRegisteredHistogram("latency.api.f5yes.gwyes", nil, metrics.NewExpDecaySample(1028, 0.015))
 	this.latencyWithoutF5WithoutGateway = metrics.NewRegisteredHistogram("latency.api.f5no.gwno", nil, metrics.NewExpDecaySample(1028, 0.015))
 	this.latencyWithoutF5WithGateway = metrics.NewRegisteredHistogram("latency.api.f5no.gwyes", nil, metrics.NewExpDecaySample(1028, 0.015))
+	this.latencyF5DirectBackend = metrics.NewRegisteredHistogram("latency.api.f5.backend", nil, metrics.NewExpDecaySample(1028, 0.015))
+
 	for {
 		select {
 		case <-this.stop:
@@ -57,20 +60,30 @@ func (this *MonitorF5) Run() {
 			this.callWithF5WithGateway()
 			this.callWithoutF5WithoutGateway()
 			this.callWithoutF5WithGateway()
+			this.callWithF5DirectToBackend()
 		}
 	}
 }
 
+// client -> F5 -> [nginx] -> gateway -> F5 -> nginx -> backend
 func (this *MonitorF5) callWithF5WithGateway() {
 	url := "http://api.ffan.com/pubsub/v1/pub/alive"
 	this.callHttp(url, this.latencyWithF5WithGateway)
 }
 
+// client -> F5 -> backend
+func (this *MonitorF5) callWithF5DirectToBackend() {
+	url := "http://10.208.224.47/alive"
+	this.callHttp(url, this.latencyF5DirectBackend)
+}
+
+// client -> backend
 func (this *MonitorF5) callWithoutF5WithoutGateway() {
 	url := "http://pub.sit.ffan.com:9191/alive"
 	this.callHttp(url, this.latencyWithoutF5WithoutGateway)
 }
 
+// client -> nginx -> gateway -> backend
 func (this *MonitorF5) callWithoutF5WithGateway() {
 	url := "http://10.209.36.67/pubsub/v1/pub/alive"
 	host := "api.ffan.com"
