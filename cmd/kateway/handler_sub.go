@@ -61,6 +61,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	//tag := r.Header.Get(HttpHeaderMsgTag)
+
 	delayedAck = ack == "1"
 	if delayedAck {
 		// consumers use explicit acknowledges in order to signal a message as processed successfully
