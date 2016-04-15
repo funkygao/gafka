@@ -27,7 +27,9 @@ func subLoop() {
 		case msg := <-s.Messages():
 			hook := decode(msg.Value)
 			if options.webhookOnly {
-				if _, ok := hook.(*Webhook); !ok {
+				if h, ok := hook.(*Webhook); !ok {
+					continue
+				} else if options.project != "" && options.project != h.Repository.Name {
 					continue
 				}
 			}

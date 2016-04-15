@@ -8,5 +8,6 @@ var (
 		nonWebhookOnly bool
 		debug          bool
 		mock           bool
+		project        string
 	}
 )

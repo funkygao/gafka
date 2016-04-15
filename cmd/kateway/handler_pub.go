@@ -74,8 +74,15 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	lbr := io.LimitReader(r.Body, options.MaxPubSize+1)
-	msg := mpool.NewMessage(msgLen)
-	msg.Body = msg.Body[0:msgLen]
+	var msg *mpool.Message
+	tag := r.Header.Get(HttpHeaderMsgTag)
+	if tag != "" {
+		msg = mpool.NewMessage(tagLen(tag) + msgLen)
+		msg.Body = msg.Body[0 : tagLen(tag)+msgLen]
+	} else {
+		msg = mpool.NewMessage(msgLen)
+		msg.Body = msg.Body[0:msgLen]
+	}
 	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
 		msg.Free()
 
@@ -85,6 +92,10 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		this.pubMetrics.ClientError.Inc(1)
 		this.writeBadRequest(w, ErrTooBigPubMessage.Error())
 		return
+	}
+
+	if tag != "" {
+		AddTagToMessage(msg, tag)
 	}
 
 	if options.Debug {

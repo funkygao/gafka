@@ -32,3 +32,10 @@ func TestMessageWrite(t *testing.T) {
 	m.Write([]byte("world"))
 	assert.Equal(t, "hello world", string(m.Bytes()))
 }
+
+func TestMessageMixeWriteAndWriteString(t *testing.T) {
+	m := NewMessage(102)
+	m.Write([]byte("hello"))
+	m.WriteString(" world")
+	assert.Equal(t, "hello world", string(m.Bytes()))
+}

@@ -74,11 +74,6 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 		return manager.ErrEmptyIdentity
 	}
 
-	if appid == hisAppid {
-		// sub my own topic is always ok
-		return nil
-	}
-
 	// authentication
 	if secret, present := this.appSecretMap[appid]; !present || subkey != secret {
 		return manager.ErrAuthenticationFail
@@ -87,6 +82,11 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 	// group verification
 	if _, present := this.appConsumerGroupMap[appid]; !present {
 		return manager.ErrInvalidGroup
+	}
+
+	if appid == hisAppid {
+		// sub my own topic is always authorized
+		return nil
 	}
 
 	// authorization

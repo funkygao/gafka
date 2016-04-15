@@ -5,42 +5,42 @@ import (
 	"testing"
 
 	"github.com/funkygao/assert"
+	"github.com/funkygao/gafka/mpool"
 )
 
-func TestTagMessage(t *testing.T) {
-	msg := []byte("hello world")
-	tags := map[string]string{
-		"a": "b",
-		"c": "d",
-	}
+func TestAddTagToMessage(t *testing.T) {
+	m := mpool.NewMessage(1000)
+	body := "hello world"
+	m.Write([]byte(body))
 
-	m := TagMessage(tags, msg)
-	t.Logf("%s", string(m.Body))
-	assert.Equal(t, `{"a":"b","c":"d"}hello world`, string(m.Body[1:]))
-	assert.Equal(t, byte(0), m.Body[0])
+	t.Logf("%s  %+v %d", string(m.Body), m.Body, len(m.Body))
+	AddTagToMessage(m, "a=b;c=d")
+	t.Logf("%s  %+v %d", string(m.Body), m.Body, len(m.Body))
+	assert.Equal(t, TagMarkStart, m.Body[0])
 
-	assert.Equal(t, true, isTaggedMessage(m.Body))
-
-	// untag
-	rawMsg, err := UntagMessage(m.Body, &tags)
+	// extract tag
+	tags, i, err := ExtractMessageTag(m.Body)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, string(msg), string(rawMsg))
-	assert.Equal(t, "b", tags["a"])
-	assert.Equal(t, "d", tags["c"])
+	assert.Equal(t, body, string(m.Body[i:]))
+	assert.Equal(t, 2, len(tags))
+	t.Logf("%+v", tags)
+}
 
-	m.Free()
+func TestParseMessageTag(t *testing.T) {
+	tags := parseMessageTag("a=b;xx_=y_;")
+	assert.Equal(t, 2, len(tags))
+	assert.Equal(t, "a", tags[0].Name)
+	assert.Equal(t, "y_", tags[1].Value)
 }
 
 func BenchmarkTagMessage(b *testing.B) {
-	msg := []byte(strings.Repeat("X", 1250))
-	tags := map[string]string{
-		"a": "b",
-		"c": "d",
-	}
 	b.ReportAllocs()
+	m := mpool.NewMessage(1024)
+	m.Body = m.Body[:1024]
+	tag := "a=b;c=d"
+	m.Body = []byte(strings.Repeat("X", 900))
 	for i := 0; i < b.N; i++ {
-		m := TagMessage(tags, msg)
-		m.Free()
+		AddTagToMessage(m, tag)
 	}
-	b.SetBytes(1250)
+	b.SetBytes(int64(tagLen(tag)) + 900)
 }

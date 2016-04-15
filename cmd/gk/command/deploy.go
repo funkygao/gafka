@@ -210,7 +210,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		fmt.Sprintf("%s/config/log4j.properties", this.instanceDir()), 0644, data, true)
 
 	this.Ui.Warn(fmt.Sprintf("NOW, please run the following command:"))
-	this.Ui.Output(color.Red("update kafka_home in $HOME/.gafka.cf"))
+	this.Ui.Output(color.Red("confirm log.retention.hours"))
 	this.Ui.Output(color.Red("chkconfig --add %s", this.clusterName()))
 	this.Ui.Output(color.Red("/etc/init.d/%s start", this.clusterName()))
 

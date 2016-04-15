@@ -53,6 +53,13 @@ func init() {
 			}, nil
 		},
 
+		"mirror": func() (cli.Command, error) {
+			return &command.Mirror{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"config": func() (cli.Command, error) {
 			return &command.Config{
 				Ui:  ui,
