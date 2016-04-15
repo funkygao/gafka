@@ -84,6 +84,11 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 		return manager.ErrInvalidGroup
 	}
 
+	if appid == hisAppid {
+		// sub my own topic is always authorized
+		return nil
+	}
+
 	// authorization
 	if topics, present := this.appSubMap[appid]; present {
 		if _, present := topics[hisTopic]; present {
