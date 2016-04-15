@@ -13,10 +13,16 @@ func init() {
 	flag.StringVar(&options.topic, "t", "30.gitlab_events.v1", "event topic")
 	flag.BoolVar(&options.debug, "d", false, "debug")
 	flag.BoolVar(&options.mock, "m", false, "mock mode")
+	flag.StringVar(&options.project, "p", "", "display only a single project events")
 	flag.BoolVar(&options.webhookOnly, "web", false, "webhook only")
 	flag.BoolVar(&options.nonWebhookOnly, "noweb", false, "non-webhook only")
 	flag.StringVar(&options.logfile, "l", "", "log file")
 	flag.Parse()
+
+	if options.project != "" {
+		options.webhookOnly = true
+		options.nonWebhookOnly = false
+	}
 }
 
 var (
