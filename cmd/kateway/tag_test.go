@@ -8,7 +8,7 @@ import (
 	"github.com/funkygao/gafka/mpool"
 )
 
-func TestAddTagToMessage(t *testing.T) {
+func TestAddAndExtractMessageTag(t *testing.T) {
 	m := mpool.NewMessage(1000)
 	body := "hello world"
 	m.Write([]byte(body))
@@ -33,7 +33,7 @@ func TestParseMessageTag(t *testing.T) {
 	assert.Equal(t, "y_", tags[1].Value)
 }
 
-func BenchmarkTagMessage(b *testing.B) {
+func BenchmarkAddTagToMessage(b *testing.B) {
 	b.ReportAllocs()
 	m := mpool.NewMessage(1024)
 	m.Body = m.Body[:1024]
@@ -43,4 +43,17 @@ func BenchmarkTagMessage(b *testing.B) {
 		AddTagToMessage(m, tag)
 	}
 	b.SetBytes(int64(tagLen(tag)) + 900)
+}
+
+func BenchmarkExtractMessageTag(b *testing.B) {
+	b.ReportAllocs()
+	m := mpool.NewMessage(1024)
+	m.Body = m.Body[:1024]
+	tag := "a=b;c=d"
+	m.Body = []byte(strings.Repeat("X", 900))
+	AddTagToMessage(m, tag)
+	for i := 0; i < b.N; i++ {
+		ExtractMessageTag(m.Body)
+	}
+	b.SetBytes(int64(len(m.Body)))
 }
