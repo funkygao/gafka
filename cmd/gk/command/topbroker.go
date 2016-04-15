@@ -104,6 +104,7 @@ func (this *TopBroker) drawDashboard() {
 			for _, data := range datas {
 				this.Ui.Output(fmt.Sprintf("%20s", data.host))
 			}
+
 			continue
 		}
 
@@ -124,12 +125,12 @@ func (this *TopBroker) drawDashboard() {
 				bar += color.Green("|")
 				barColorLen += 9 // color.Green will add extra 9 chars
 			}
-			bar += qps // TODO qps at the end, space in the middle
-			for i := len(bar) - barColorLen; i < maxWidth; i++ {
+			for i := len(bar) - barColorLen; i < maxWidth-len(qps); i++ {
 				bar += " "
 			}
+			bar += qps
 
-			this.Ui.Output(fmt.Sprintf("%20s [%-s]", data.host, bar))
+			this.Ui.Output(fmt.Sprintf("%20s [%s]", data.host, bar))
 		}
 
 		time.Sleep(this.interval)
