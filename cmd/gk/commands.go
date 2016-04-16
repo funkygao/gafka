@@ -46,6 +46,13 @@ func init() {
 			}, nil
 		},
 
+		"verify": func() (cli.Command, error) {
+			return &command.Verify{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"sample": func() (cli.Command, error) {
 			return &command.Sample{
 				Ui:  ui,
