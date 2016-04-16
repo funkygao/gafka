@@ -30,6 +30,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		offsetN    int64 = -1
 		ack        string
 		delayedAck bool
+		tagFilters []MsgTag = nil
 		err        error
 	)
 
@@ -61,7 +62,10 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	//tag := r.Header.Get(HttpHeaderMsgTag)
+	tag := r.Header.Get(HttpHeaderMsgTag)
+	if tag != "" {
+		tagFilters = parseMessageTag(tag)
+	}
 
 	delayedAck = ack == "1"
 	if delayedAck {
@@ -201,7 +205,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	}
 
-	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, cluster, rawTopic, ver, group, delayedAck)
+	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, cluster,
+		rawTopic, ver, group, delayedAck, tagFilters)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
@@ -219,7 +224,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 }
 
 func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
-	myAppid, hisAppid, cluster, topic, ver, group string, delayedAck bool) (err error) {
+	myAppid, hisAppid, cluster, topic, ver, group string,
+	delayedAck bool, tagFilters []MsgTag) (err error) {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
 	select {

@@ -11,11 +11,19 @@ const (
 	TagMarkStart = byte(1)
 	TagMarkEnd   = byte(2)
 	TagSeperator = ";" // follow cookie rules a=b;c=d
+
+	TagOperatorEqual       TagOperator = "="
+	TagOperatorNotEqual    TagOperator = "!"
+	TagOperatorGreaterThan TagOperator = ">"
+	TagOperatorLessThan    TagOperator = "<"
 )
 
+type TagOperator string
+
 type MsgTag struct {
-	Name  string
-	Value string
+	Name     string
+	Value    string
+	Operator TagOperator
 }
 
 // TODO perf
