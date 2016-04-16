@@ -28,7 +28,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		partitionN int = -1
 		offset     string
 		offsetN    int64 = -1
-		ack        string
 		delayedAck bool
 		tagFilters []MsgTag = nil
 		err        error
@@ -50,7 +49,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	shadow = query.Get("q")
-	ack = query.Get("ack")
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
@@ -67,7 +65,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		tagFilters = parseMessageTag(tag)
 	}
 
-	delayedAck = ack == "1"
+	delayedAck = query.Get("ack") == "1"
 	if delayedAck {
 		// consumers use explicit acknowledges in order to signal a message as processed successfully
 		// if consumers fail to ACK, the message hangs and server will refuse to move ahead
@@ -94,12 +92,19 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 				this.writeBadRequest(w, "ack with bad partition")
 				return
 			}
+		} else if len(partition+offset) != 0 {
+			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s partition:%s, offset:%s} partial ack",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				group, partition, offset)
+
+			this.writeBadRequest(w, "partial ack not allowed")
+			return
 		}
 	}
 
 	log.Debug("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s ack:%s, partition:%s, offset:%s}",
 		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
-		group, ack, partition, offset)
+		group, query.Get("ack"), partition, offset)
 
 	var rawTopic string
 	if shadow != "" {
@@ -124,7 +129,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		rawTopic = manager.KafkaTopic(hisAppid, topic, ver)
 	}
 
-	// pick a consumer from the consumer group
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
