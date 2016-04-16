@@ -38,10 +38,9 @@ func (this *TopBroker) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.StringVar(&this.topic, "t", "", "")
-	cmdFlags.BoolVar(&this.drawMode, "d", false, "")
+	cmdFlags.BoolVar(&this.drawMode, "d", true, "")
 	cmdFlags.BoolVar(&this.shortIp, "shortip", false, "")
 	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "refresh interval")
-
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -147,7 +146,6 @@ func (this *TopBroker) showAndResetCounters(show bool) []brokerQps {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
-	d := this.interval.Seconds()
 	sortedHost := make([]string, 0, len(this.offsets))
 	for host, _ := range this.offsets {
 		sortedHost = append(sortedHost, host)
@@ -164,7 +162,7 @@ func (this *TopBroker) showAndResetCounters(show bool) []brokerQps {
 		offset := this.offsets[host]
 		qps := float64(0)
 		if lastOffset, present := this.lastOffsets[host]; present {
-			qps = float64(offset-lastOffset) / d
+			qps = float64(offset-lastOffset) / this.interval.Seconds()
 		}
 
 		r = append(r, brokerQps{host, qps})
@@ -182,7 +180,7 @@ func (this *TopBroker) showAndResetCounters(show bool) []brokerQps {
 	for host, offset := range this.offsets {
 		this.lastOffsets[host] = offset
 	}
-	this.offsets = make(map[string]int64)
+	this.offsets = make(map[string]int64) // reset
 
 	return r
 }
@@ -211,13 +209,10 @@ func (this *TopBroker) clusterTopProducers(zkcluster *zk.ZkCluster) {
 
 				latestOffset, err := kfk.GetOffset(topic, partitionID,
 					sarama.OffsetNewest)
-				if err != nil {
-					panic(err)
-				}
+				swallow(err)
 
 				host, _, err := net.SplitHostPort(leader.Addr())
 				swallow(err)
-
 				if this.shortIp {
 					host = shortIp(host)
 				}
