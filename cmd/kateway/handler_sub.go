@@ -24,6 +24,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		reset      string
 		group      string
 		shadow     string
+		rawTopic   string
 		partition  string
 		partitionN int = -1
 		offset     string
@@ -48,9 +49,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
-	shadow = query.Get("q")
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
+	// auth
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
@@ -60,11 +61,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	tag := r.Header.Get(HttpHeaderMsgTag)
-	if tag != "" {
-		tagFilters = parseMessageTag(tag)
-	}
-
+	// fetch the client ack partition and offset
 	delayedAck = query.Get("ack") == "1"
 	if delayedAck {
 		// consumers use explicit acknowledges in order to signal a message as processed successfully
@@ -102,11 +99,13 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		}
 	}
 
-	log.Debug("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s ack:%s, partition:%s, offset:%s}",
-		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+	shadow = query.Get("q")
+
+	log.Debug("sub[%s] %s(%s): {app:%s, shadow:%s topic:%s, ver:%s, group:%s ack:%s, partition:%s, offset:%s}",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, shadow, topic, ver,
 		group, query.Get("ack"), partition, offset)
 
-	var rawTopic string
+	// calculate raw topic according to shadow
 	if shadow != "" {
 		if !sla.ValidateShadowName(shadow) {
 			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} invalid shadow name",
@@ -148,6 +147,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	// commit the acked offset
 	if delayedAck && partitionN >= 0 && offsetN >= 0 {
 		if bury := r.Header.Get(HttpHeaderMsgBury); bury != "" {
 			// bury message to shadow topic and pump next message
@@ -207,6 +207,11 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			}
 		}
 
+	}
+
+	tag := r.Header.Get(HttpHeaderMsgTag)
+	if tag != "" {
+		tagFilters = parseMessageTag(tag)
 	}
 
 	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, cluster,
