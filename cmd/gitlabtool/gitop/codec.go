@@ -48,6 +48,10 @@ func decode(msg []byte) interface{} {
 		hook = &SystemHookKeyCreate{}
 		json.Unmarshal(msg, hook)
 
+	case strings.HasPrefix(event, `{"event_name":"key_destroy"`):
+		hook = &SystemHookKeyDesctroy{}
+		json.Unmarshal(msg, hook)
+
 	case strings.HasPrefix(event, `{"object_kind":"push"`):
 		hook = &Webhook{}
 		json.Unmarshal(msg, &hook)

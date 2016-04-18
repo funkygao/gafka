@@ -155,7 +155,7 @@ func handleEvents(eventChan chan termbox.Event) {
 					}
 				}
 
-			case 'K':
+			case 'K', 'T':
 				if mainView {
 					page = 0
 					selectedRow = 0

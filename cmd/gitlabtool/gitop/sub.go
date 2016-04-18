@@ -34,7 +34,7 @@ func subLoop() {
 				}
 			}
 
-			if options.nonWebhookOnly {
+			if options.syshookOnly {
 				if _, ok := hook.(*Webhook); ok {
 					continue
 				}
