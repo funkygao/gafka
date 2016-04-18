@@ -267,7 +267,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	// calculate raw topic according to shadow
 	if shadow != "" {
 		if !sla.ValidateShadowName(shadow) {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} invalid shadow name",
+			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s shadow:%s} invalid shadow name",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, shadow)
 
 			this.writeBadRequest(w, "invalid shadow name")
