@@ -193,11 +193,13 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] features confirm
+  - delayed job
+  - bury
+  - msg tag
 - [ ] fetchShadowQueueRecords enable
 - [ ] gk topbroker metrics has problem
 - [ ] why make sub with 15s sleep fails
-- [ ] sub then subx will fail on inflight
-- [ ] message tag
 - [ ] Plugins
   - authentication and authorization
   - transform
