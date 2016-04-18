@@ -22,7 +22,6 @@ var (
 		ManHttpsAddr           string
 		DebugHttpAddr          string
 		Store                  string
-		InflightsSnapshot      string
 		ManagerStore           string
 		PidFile                string
 		CertFile               string
@@ -39,7 +38,6 @@ var (
 		EnableGzip             bool
 		DryRun                 bool
 		CpuAffinity            bool
-		DebugSnapshot          bool
 		EnableAccessLog        bool
 		EnableHttpPanicRecover bool
 		EnableClientStats      bool
@@ -92,7 +90,6 @@ func parseFlags() {
 	flag.StringVar(&options.CrashLogFile, "crashlog", "", "crash log")
 	flag.StringVar(&options.CertFile, "certfile", "", "cert file path")
 	flag.StringVar(&options.PidFile, "pid", "", "pid file")
-	flag.StringVar(&options.InflightsSnapshot, "insnap", "snapshot", "inflights snapshot file name")
 	flag.StringVar(&options.KeyFile, "keyfile", "", "key file path")
 	flag.StringVar(&options.DebugHttpAddr, "debughttp", "", "debug http bind addr")
 	flag.StringVar(&options.Store, "store", "kafka", "backend store")
@@ -108,7 +105,6 @@ func parseFlags() {
 	flag.BoolVar(&options.EnableClientStats, "clientsmap", false, "record online pub/sub clients")
 	flag.BoolVar(&options.DryRun, "dryrun", false, "dry run mode")
 	flag.BoolVar(&options.EnableGzip, "gzip", true, "enable http response gzip")
-	flag.BoolVar(&options.DebugSnapshot, "debugsnapshot", false, "snapshot in debug mode")
 	flag.BoolVar(&options.CpuAffinity, "cpuaffinity", false, "enable cpu affinity")
 	flag.BoolVar(&options.Ratelimit, "raltelimit", false, "enable rate limit")
 	flag.BoolVar(&options.EnableHttpPanicRecover, "httppanic", false, "enable http handler panic recover")

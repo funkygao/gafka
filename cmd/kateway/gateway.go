@@ -13,8 +13,6 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/funkygao/gafka"
-	"github.com/funkygao/gafka/cmd/kateway/inflight"
-	"github.com/funkygao/gafka/cmd/kateway/inflight/mem"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	metadummy "github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	"github.com/funkygao/gafka/cmd/kateway/manager/mysql"
@@ -79,7 +77,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	}
 
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
-	inflight.Default = mem.New(options.InflightsSnapshot, options.DebugSnapshot)
 
 	metaConf := zkmeta.DefaultConfig(this.zone)
 	metaConf.Refresh = metaRefreshInterval
@@ -198,10 +195,6 @@ func (this *Gateway) Start() (err error) {
 
 	this.startedAt = time.Now()
 
-	if err = inflight.Default.Init(); err != nil {
-		log.Error("inflight init: %v", err)
-	}
-
 	meta.Default.Start()
 	log.Trace("meta store[%s] started", meta.Default.Name())
 
@@ -289,8 +282,6 @@ func (this *Gateway) ServeForever() {
 
 		this.accessLogger.Stop()
 		log.Trace("access logger closed")
-
-		inflight.Default.Stop()
 
 		if store.DefaultPubStore != nil {
 			store.DefaultPubStore.Stop()
