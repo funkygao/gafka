@@ -316,9 +316,12 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		}); err != nil {
 			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
-		}
 
-		log.Debug("land {G:%s, T:%s, P:%s, O:%s}", group, rawTopic, partition, offset)
+			this.writeBadRequest(w, err.Error())
+			return
+		} else {
+			log.Debug("land {G:%s, T:%s, P:%s, O:%s}", group, rawTopic, partition, offset)
+		}
 	}
 
 	tag := r.Header.Get(HttpHeaderMsgTag)
