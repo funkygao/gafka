@@ -47,6 +47,7 @@ type Peek struct {
 	Cmd string
 
 	offset   int64
+	lastN    int64 // peek the most recent N messages
 	colorize bool
 	limit    int
 }
@@ -66,6 +67,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&topicPattern, "t", "", "")
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
 	cmdFlags.BoolVar(&this.colorize, "color", true, "")
+	cmdFlags.Int64Var(&this.lastN, "last", -1, "")
 	cmdFlags.IntVar(&this.limit, "limit", -1, "")
 	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
 	cmdFlags.BoolVar(&silence, "s", false, "")
@@ -169,18 +171,36 @@ func (this *Peek) simpleConsumeTopic(kfk sarama.Client, topic string, partitionI
 		}
 
 		for _, p := range partitions {
-			go this.consumePartition(kfk, consumer, topic, p, msgCh)
+			offset := this.offset
+			if this.lastN > 0 {
+				latestOffset, err := kfk.GetOffset(topic, p, sarama.OffsetNewest)
+				swallow(err)
+				offset = latestOffset - this.lastN
+				if offset < 0 {
+					offset = sarama.OffsetOldest
+				}
+			}
+			go this.consumePartition(kfk, consumer, topic, p, msgCh, offset)
 		}
 
 	} else {
-		this.consumePartition(kfk, consumer, topic, partitionId, msgCh)
+		offset := this.offset
+		if this.lastN > 0 {
+			latestOffset, err := kfk.GetOffset(topic, partitionId, sarama.OffsetNewest)
+			swallow(err)
+			offset = latestOffset - this.lastN
+			if offset < 0 {
+				offset = sarama.OffsetOldest
+			}
+		}
+		this.consumePartition(kfk, consumer, topic, partitionId, msgCh, offset)
 	}
 
 }
 
 func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
-	topic string, partitionId int32, msgCh chan *sarama.ConsumerMessage) {
-	p, err := consumer.ConsumePartition(topic, partitionId, this.offset)
+	topic string, partitionId int32, msgCh chan *sarama.ConsumerMessage, offset int64) {
+	p, err := consumer.ConsumePartition(topic, partitionId, offset)
 	if err != nil {
 		this.Ui.Error(fmt.Sprintf("%s/%d: %v", topic, partitionId, err))
 		os.Exit(1)
@@ -216,6 +236,9 @@ Options:
     
     -p partition id
       -1 will peek all partitions of a topic
+
+    -last n
+      Peek the most recent N messages
 
     -offset message offset value
       -1 OffsetNewest, -2 OffsetOldest. 
