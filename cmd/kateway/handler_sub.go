@@ -230,9 +230,10 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		offset = r.Header.Get(HttpHeaderOffset)
 		if partition != "" && offset != "" {
 			// convert partition and offset to int
+			// during the handshake phase, client will pass partition=-1, offset=-1
 
 			offsetN, err = strconv.ParseInt(offset, 10, 64)
-			if err != nil || offsetN < 0 {
+			if err != nil {
 				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} offset:%s",
 					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, offset)
 
@@ -240,7 +241,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 				return
 			}
 			partitionN, err = strconv.Atoi(partition)
-			if err != nil || partitionN < 0 {
+			if err != nil {
 				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} partition:%s",
 					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, partition)
 
