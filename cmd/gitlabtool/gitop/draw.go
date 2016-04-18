@@ -344,6 +344,12 @@ func drawEvent(x, y int, evt interface{}) {
 			since(hook.Created_at),
 			hook.Username)
 
+	case *SystemHookKeyDesctroy:
+		fg_col = termbox.ColorRed
+		row = fmt.Sprintf("%14s %20s destroy ssh key",
+			since(hook.Created_at),
+			hook.Username)
+
 	case *SystemHookUnknown:
 		fg_col = termbox.ColorMagenta
 		row = fmt.Sprintf("%s", hook.Evt)

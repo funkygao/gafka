@@ -35,6 +35,7 @@ func (this *Gateway) buildRouting() {
 
 		this.subServer.Router().GET("/msgs/:appid/:topic/:ver", m(this.subHandler))
 		this.subServer.Router().GET("/ws/msgs/:appid/:topic/:ver", m(this.subWsHandler))
+		this.subServer.Router().PUT("/bury/:appid/:topic/:ver", m(this.buryHandler))
 		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
 
 		// api for pubsub manager

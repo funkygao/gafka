@@ -1,3 +1,4 @@
+// Deprecated pkg
 // Package inflight provides storage for manipulating inflight
 // message offsets.
 //

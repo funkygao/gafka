@@ -72,6 +72,10 @@ type SystemHookKeyCreate struct {
 	Created_at, Username string
 }
 
+type SystemHookKeyDesctroy struct {
+	Created_at, Username string
+}
+
 type SystemHookUnknown struct {
 	Evt string
 }
