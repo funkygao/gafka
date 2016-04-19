@@ -12,7 +12,6 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
-	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
@@ -25,6 +24,56 @@ type SubStatus struct {
 	Partition string `json:"partition"`
 	Produced  int64  `json:"pubd"`
 	Consumed  int64  `json:"subd"`
+}
+
+// /raw/msgs/:appid/:topic/:ver?group=xx
+// tells client how to sub in raw mode: how to connect kafka
+func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	var (
+		topic    string
+		ver      string
+		hisAppid string
+		myAppid  string
+		group    string
+	)
+
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	hisAppid = params.ByName(UrlParamAppid)
+	myAppid = r.Header.Get(HttpHeaderAppid)
+
+	query := r.URL.Query()
+	group = query.Get("group")
+	if !manager.Default.ValidateGroupName(r.Header, group) {
+		this.writeBadRequest(w, "illegal group")
+		return
+	}
+
+	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
+		hisAppid, topic, group); err != nil {
+		log.Error("raw[%s] %s {topic:%s, ver:%s, hisapp:%s}: %s",
+			myAppid, r.RemoteAddr, topic, ver, hisAppid, err)
+
+		this.writeAuthFailure(w, err)
+		return
+	}
+
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("cluster not found for raw subd app: %s", hisAppid)
+
+		this.writeBadRequest(w, "invalid appid")
+		return
+	}
+
+	var out = map[string]string{
+		"store": "kafka",
+		"zk":    meta.Default.ZkCluster(cluster).ZkConnectAddr(),
+		"topic": manager.KafkaTopic(hisAppid, topic, ver),
+	}
+	b, _ := json.Marshal(out)
+	w.Write(b)
 }
 
 // /peek/:appid/:topic/:ver?n=10&q=retry&wait=5s
@@ -76,9 +125,7 @@ func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	rawTopic = manager.KafkaTopic(hisAppid, topic, ver)
-	zkzone := zk.NewZkZone(zk.DefaultConfig(options.Zone, ctx.ZoneZkAddrs(options.Zone)))
-	zkcluster := zkzone.NewCluster(cluster)
-	defer zkzone.Close()
+	zkcluster := meta.Default.ZkCluster(cluster)
 
 	kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
 	if err != nil {

@@ -102,7 +102,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 	}
 }
 
-// /raw/topics/:topic/:ver
+// /raw/msgs/:topic/:ver
 func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.Params) {
 	var (
 		topic  string
