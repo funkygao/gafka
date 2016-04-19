@@ -132,8 +132,9 @@ LOOP:
 			break LOOP
 
 		case err = <-errs:
-			log.Error("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d} %+v",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, err)
+			log.Error("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d} cluster:%s topicraw:%s %+v",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN,
+				cluster, rawTopic, err)
 
 			this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 			return
