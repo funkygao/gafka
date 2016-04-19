@@ -194,6 +194,8 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] verify
+- [ ] add v1 to all routing URI
 - [ ] features confirm
   - delayed job
   - bury
