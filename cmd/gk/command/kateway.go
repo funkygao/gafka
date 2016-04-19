@@ -184,7 +184,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 				gofmt.PrettySince(kw.Ctime)))
 			this.Ui.Output(fmt.Sprintf("    ver: %s\n    build: %s\n    built: %s\n    log: %s\n    pub: %s\n    sub: %s\n    man: %s\n    dbg: %s",
 				kw.Ver,
-				kw.Build,
+				color.Red(kw.Build),
 				kw.BuiltAt,
 				this.getKatewayLogLevel(kw.ManAddr),
 				kw.PubAddr,
