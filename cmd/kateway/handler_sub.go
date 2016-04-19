@@ -187,7 +187,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		partitionN int = -1
 		offset     string
 		offsetN    int64 = -1
-		delayedAck bool
+		delayedAck bool // explicit application level acknowledgement
 		tagFilters []MsgTag = nil
 		err        error
 	)
