@@ -226,12 +226,13 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		// if consumers fail to ACK, the message hangs and server will refuse to move ahead
 
 		// get the partitionN and offsetN from client header
+		// client will ack with partition=-1, offset=-1:
+		// 1. handshake phase
+		// 2. when 204 No Content
 		partition = r.Header.Get(HttpHeaderPartition)
 		offset = r.Header.Get(HttpHeaderOffset)
 		if partition != "" && offset != "" {
 			// convert partition and offset to int
-			// during the handshake phase, client will pass partition=-1, offset=-1
-
 			offsetN, err = strconv.ParseInt(offset, 10, 64)
 			if err != nil {
 				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} offset:%s",
