@@ -140,6 +140,11 @@ func ensureZoneValid(zone string) {
 
 func forSortedZones(fn func(zkzone *zk.ZkZone)) {
 	for _, zone := range ctx.SortedZones() {
+		if strings.HasPrefix(zone, "z_") {
+			// zk only
+			continue
+		}
+
 		zkAddrs := ctx.ZoneZkAddrs(zone)
 		if strings.TrimSpace(zkAddrs) == "" {
 			continue
