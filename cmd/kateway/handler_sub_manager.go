@@ -27,7 +27,7 @@ type SubStatus struct {
 	Consumed  int64  `json:"subd"`
 }
 
-// /peek/:appid/:topic/:ver?n=10&q=retry
+// /peek/:appid/:topic/:ver?n=10&q=retry&wait=5s
 func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -55,6 +55,17 @@ func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 		// if n is not a number, lastN will be 0
 		this.writeBadRequest(w, "invalid n param")
 		return
+	}
+	waitParam := q.Get("wait")
+	defaultWait := time.Second * 3
+	var wait time.Duration = defaultWait
+	if waitParam != "" {
+		wait, _ = time.ParseDuration(waitParam)
+		if wait.Seconds() < 1 {
+			wait = defaultWait
+		} else if wait.Seconds() > 10. {
+			wait = defaultWait
+		}
 	}
 
 	log.Info("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d}",
@@ -91,10 +102,15 @@ func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 				errs <- err
 				return
 			}
+			oldestOffset, err := kfk.GetOffset(rawTopic, p, sarama.OffsetOldest)
+			if err != nil {
+				errs <- err
+				return
+			}
 
 			offset := latestOffset - int64(lastN)
-			if offset < 0 {
-				offset = sarama.OffsetOldest
+			if offset < oldestOffset {
+				offset = oldestOffset
 			}
 
 			go func(partitionId int32, offset int64) {
@@ -105,7 +121,7 @@ func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 				}
 				defer consumer.Close()
 
-				p, err := consumer.ConsumePartition(topic, partitionId, offset)
+				p, err := consumer.ConsumePartition(rawTopic, partitionId, offset)
 				if err != nil {
 					errs <- err
 					return
@@ -128,13 +144,12 @@ func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 LOOP:
 	for {
 		select {
-		case <-time.After(time.Second * 5):
+		case <-time.After(wait):
 			break LOOP
 
 		case err = <-errs:
-			log.Error("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d} cluster:%s topicraw:%s %+v",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN,
-				cluster, rawTopic, err)
+			log.Error("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d} %+v",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, err)
 
 			this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 			return
