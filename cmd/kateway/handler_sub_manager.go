@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
@@ -21,6 +25,131 @@ type SubStatus struct {
 	Partition string `json:"partition"`
 	Produced  int64  `json:"pubd"`
 	Consumed  int64  `json:"subd"`
+}
+
+// /peek/:appid/:topic/:ver?n=10&q=retry
+func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	var (
+		myAppid  string
+		hisAppid string
+		topic    string
+		ver      string
+		lastN    int
+		rawTopic string
+	)
+
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	hisAppid = params.ByName(UrlParamAppid)
+
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		this.writeBadRequest(w, "invalid appid")
+		return
+	}
+
+	q := r.URL.Query()
+	lastN, _ = strconv.Atoi(q.Get("n"))
+	if lastN == 0 {
+		// if n is not a number, lastN will be 0
+		this.writeBadRequest(w, "invalid n param")
+		return
+	}
+
+	log.Info("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d}",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN)
+
+	if lastN > 100 {
+		lastN = 100
+	}
+
+	rawTopic = manager.KafkaTopic(hisAppid, topic, ver)
+	zkzone := zk.NewZkZone(zk.DefaultConfig(options.Zone, ctx.ZoneZkAddrs(options.Zone)))
+	zkcluster := zkzone.NewCluster(cluster)
+	defer zkzone.Close()
+
+	kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
+	if err != nil {
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	msgChan := make(chan *sarama.ConsumerMessage, 10)
+	errs := make(chan error)
+
+	go func() {
+		partitions, err := kfk.Partitions(rawTopic)
+		if err != nil {
+			errs <- err
+			return
+		}
+
+		for _, p := range partitions {
+			latestOffset, err := kfk.GetOffset(rawTopic, p, sarama.OffsetNewest)
+			if err != nil {
+				errs <- err
+				return
+			}
+
+			offset := latestOffset - int64(lastN)
+			if offset < 0 {
+				offset = sarama.OffsetOldest
+			}
+
+			go func(partitionId int32, offset int64) {
+				consumer, err := sarama.NewConsumerFromClient(kfk)
+				if err != nil {
+					errs <- err
+					return
+				}
+				defer consumer.Close()
+
+				p, err := consumer.ConsumePartition(topic, partitionId, offset)
+				if err != nil {
+					errs <- err
+					return
+				}
+				defer p.Close()
+
+				for {
+					select {
+					case msg := <-p.Messages():
+						msgChan <- msg
+					}
+				}
+
+			}(p, offset)
+		}
+	}()
+
+	n := 0
+	msgs := make([][]byte, 0, lastN)
+LOOP:
+	for {
+		select {
+		case <-time.After(time.Second * 5):
+			break LOOP
+
+		case err = <-errs:
+			log.Error("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d} %+v",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, err)
+
+			this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+			return
+
+		case msg := <-msgChan:
+			msgs = append(msgs, msg.Value)
+
+			n++
+			if n >= lastN {
+				break LOOP
+			}
+		}
+	}
+
+	d, _ := json.Marshal(msgs)
+	w.Write(d)
 }
 
 // /status/:appid/:topic/:ver?group=xx
