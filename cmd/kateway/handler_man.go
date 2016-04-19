@@ -204,6 +204,12 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	partitionsArg := query.Get(sla.SlaKeyPartitions)
 	if partitionsArg != "" {
 		ts.Partitions, _ = strconv.Atoi(partitionsArg)
+		if ts.Partitions > 100 || ts.Partitions == 0 {
+			log.Warn("app[%s] adding topic:%s in non-public cluster: %+v invalid partition", hisAppid, topic, params)
+
+			this.writeBadRequest(w, "invalid partition")
+			return
+		}
 	}
 	replicasArg := query.Get(sla.SlaKeyReplicas)
 	if replicasArg != "" {
