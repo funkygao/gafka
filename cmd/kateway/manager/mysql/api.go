@@ -16,7 +16,7 @@ func (this *mysqlStore) Refreshed() <-chan struct{} {
 }
 
 func (this *mysqlStore) ValidateTopicName(topic string) bool {
-	return len(topic)<=100 && len(topicNameRegex.FindAllString(topic, -1)) == 1
+	return len(topic) <= 100 && len(topicNameRegex.FindAllString(topic, -1)) == 1
 }
 
 func (this *mysqlStore) ValidateGroupName(header http.Header, group string) bool {
