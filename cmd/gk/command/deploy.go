@@ -299,22 +299,27 @@ func (this *Deploy) demo() {
 	)
 
 	this.zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
-		for _, broker := range liveBrokers {
-			if cluster == this.cluster {
-				myPort = broker.Port
+		if cluster != this.cluster {
+			return
+		}
 
-				bid, _ := strconv.Atoi(broker.Id)
-				if bid >= myBrokerId {
-					myBrokerId = bid + 1
-				}
-				return
+		maxBrokerId := -1
+		for _, broker := range liveBrokers {
+			myPort = broker.Port
+
+			bid, _ := strconv.Atoi(broker.Id)
+			if bid > maxBrokerId {
+				maxBrokerId = bid
 			}
 
 			// another cluster
 			if maxPort < broker.Port {
 				maxPort = broker.Port
 			}
+
 		}
+
+		myBrokerId = maxBrokerId + 1 // next deployable id
 	})
 
 	ip, err := ctx.LocalIP()
