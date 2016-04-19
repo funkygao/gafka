@@ -169,7 +169,11 @@ func (this *Migrate) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s migrate -z zone -c cluster [options]
 
-    Migrate given topic partition to specified broker ids.    
+    Migrate given topic partition to specified broker ids.   
+
+    e,g. migrate partition 0 of order to broker 2 as master and 3 as replica, then verify
+      gk migrate -z prod -c trade -t order -p 0 -brokers 2,3
+      gk migrate -z prod -c trade -t order -p 0 -brokers 2,3 -verify
 
 Options:
 
