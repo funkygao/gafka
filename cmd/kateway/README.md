@@ -13,6 +13,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 - google Cloud Pub/Sub
 - amazon kenesis
+- IBM Bluemix Message Hub
 - misc
   - pubnub
   - pusher
