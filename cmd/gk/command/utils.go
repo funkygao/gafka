@@ -155,6 +155,18 @@ func forSortedZones(fn func(zkzone *zk.ZkZone)) {
 	}
 }
 
+func forAllSortedZones(fn func(zkzone *zk.ZkZone)) {
+	for _, zone := range ctx.SortedZones() {
+		zkAddrs := ctx.ZoneZkAddrs(zone)
+		if strings.TrimSpace(zkAddrs) == "" {
+			continue
+		}
+
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, zkAddrs))
+		fn(zkzone)
+	}
+}
+
 func swallow(err error) {
 	if err != nil {
 		panic(err)
