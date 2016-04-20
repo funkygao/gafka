@@ -91,6 +91,7 @@ func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
+	myAppid = r.Header.Get(HttpHeaderAppid)
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
