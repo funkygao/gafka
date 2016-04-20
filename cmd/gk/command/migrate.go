@@ -2,10 +2,12 @@ package command
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -47,7 +49,7 @@ func (this *Migrate) Run(args []string) (exitCode int) {
 	}
 
 	if validateArgs(this, this.Ui).
-		require("-z", "-c").
+		require("-z", "-c", "-t").
 		invalid(args) {
 		return 2
 	}
@@ -60,6 +62,7 @@ func (this *Migrate) Run(args []string) (exitCode int) {
 		this.Ui.Info(fmt.Sprintf("After verify ok, modify producer/consumer to point to new brokers!"))
 
 		for {
+			this.Ui.Output(fmt.Sprintf("%s", time.Now().String()))
 			this.verify()
 
 			time.Sleep(time.Second * 2)
@@ -103,11 +106,45 @@ func (this *Migrate) ensureBrokersAreAlive() {
 // generate reassignment-node.json
 func (this *Migrate) generateReassignFile() string {
 	// {"version":1,"partitions":[{"topic":"fortest1","partition":0,"replicas":[3,4]}
-	data := strings.TrimSpace(fmt.Sprintf(`
-{"version":1, "partitions":[{"topic":"%s","partition":%s,"replicas":[%s]}]}
-		`, this.topic, this.partition, this.brokerId))
-	swallow(ioutil.WriteFile(reassignNodeFilename, []byte(data), 0644))
-	return data
+
+	type PartitionMeta struct {
+		Topic     string `json:"topic"`
+		Partition int    `json:"partition"`
+		Replicas  []int  `json:"replicas"`
+	}
+	type ReassignMeta struct {
+		Version    int             `json:"version"`
+		Partitions []PartitionMeta `json:"partitions"`
+	}
+
+	var js ReassignMeta
+	js.Version = 1
+	js.Partitions = make([]PartitionMeta, 0)
+	for _, p := range strings.Split(this.partition, ",") {
+		p = strings.TrimSpace(p)
+		pid, err := strconv.Atoi(p)
+		swallow(err)
+
+		pmeta := PartitionMeta{
+			Topic:     this.topic,
+			Partition: pid,
+			Replicas:  make([]int, 0),
+		}
+		for _, b := range strings.Split(this.brokerId, ",") {
+			b = strings.TrimSpace(b)
+			bid, err := strconv.Atoi(b)
+			swallow(err)
+
+			pmeta.Replicas = append(pmeta.Replicas, bid)
+		}
+
+		js.Partitions = append(js.Partitions, pmeta)
+	}
+
+	b, err := json.Marshal(js)
+	swallow(err)
+	swallow(ioutil.WriteFile(reassignNodeFilename, b, 0644))
+	return string(b)
 }
 
 func (this *Migrate) executeReassignment() {
@@ -179,7 +216,9 @@ Options:
 
     -t topic
 
-    -p partitionId      
+    -p partitionId   
+      Multiple partition ids seperated by comma.
+      e,g. -p 0,1
 
     -brokers id1,id2,idN
       Migrate the topic to given broker ids.
