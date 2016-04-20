@@ -17,15 +17,15 @@ const (
             zk: "10.209.33.69:2181,10.209.37.19:2181,10.209.37.68:2181"
         }
         {
-            name: "z_payment_test"
+            name: "z_app_test"
             zk: "10.213.43.69:2181,10.213.43.70:2181,10.213.43.72:2181"
         }
         {
-            name: "z_payment_sit"
+            name: "z_app_sit"
             zk: "10.213.57.247:2181,10.213.34.37:2181,10.213.57.245:2181"
         }
         {
-            name: "z_payment_prod"
+            name: "z_app_prod"
             zk: "10.213.1.225:2181,10.213.10.140:2181,10.213.18.207:2181,10.213.10.145:2181,10.213.18.215:2181"
         }
     ]
@@ -55,6 +55,23 @@ const (
         "z2181a.sit.wdds.zk.com:10.213.33.154"
         "z2181b.sit.wdds.zk.com:10.213.42.48"
         "z2181c.sit.wdds.zk.com:10.213.42.49"
+
+        // test app zk
+        "z2181a_app.test.wdds.zk.com:10.213.43.69"
+        "z2181b_app.test.wdds.zk.com:10.213.43.70"
+        "z2181c_app.test.wdds.zk.com:10.213.43.72"
+
+        // sit app zk
+        "z2181a_app.sit.wdds.zk.com:10.213.57.247"
+        "z2181b_app.sit.wdds.zk.com:10.213.34.37"
+        "z2181c_app.sit.wdds.zk.com:10.213.57.245"
+
+        // prod app zk
+        "z2181a_app.wdds.zk.com:"
+        "z2181b_app.wdds.zk.com:"
+        "z2181c_app.wdds.zk.com:"
+        "z2181d_app.wdds.zk.com:"
+        "z2181e_app.wdds.zk.com:"
         
         // sit kafka brokers
         "k10101a.sit.wdds.kfk.com:10.213.33.148"
