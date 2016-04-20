@@ -67,11 +67,11 @@ const (
         "z2181c_app.sit.wdds.zk.com:10.213.57.245"
 
         // prod app zk
-        "z2181a_app.wdds.zk.com:"
-        "z2181b_app.wdds.zk.com:"
-        "z2181c_app.wdds.zk.com:"
-        "z2181d_app.wdds.zk.com:"
-        "z2181e_app.wdds.zk.com:"
+        "z2181a_app.wdds.zk.com:10.213.1.225"
+        "z2181b_app.wdds.zk.com10.213.10.140"
+        "z2181c_app.wdds.zk.com:10.213.18.207"
+        "z2181d_app.wdds.zk.com:10.213.10.145"
+        "z2181e_app.wdds.zk.com:10.213.18.215"
         
         // sit kafka brokers
         "k10101a.sit.wdds.kfk.com:10.213.33.148"
