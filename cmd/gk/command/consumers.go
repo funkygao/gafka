@@ -11,6 +11,7 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/ryanuber/columnize"
 	gozk "github.com/samuel/go-zookeeper/zk"
 )
 
@@ -22,6 +23,7 @@ type Consumers struct {
 	groupPattern string
 	byHost       bool
 	cleanup      bool
+	tableFmt     bool
 	topicPattern string
 }
 
@@ -35,7 +37,8 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.StringVar(&this.groupPattern, "g", "", "")
-	cmdFlags.BoolVar(&this.onlineOnly, "l", false, "")
+	cmdFlags.BoolVar(&this.tableFmt, "table", false, "")
+	cmdFlags.BoolVar(&this.onlineOnly, "online", false, "")
 	cmdFlags.BoolVar(&this.byHost, "byhost", false, "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
 	cmdFlags.BoolVar(&this.cleanup, "cleanup", false, "")
@@ -57,7 +60,11 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 			case this.byHost:
 				this.printConsumersByHost(zkzone, cluster)
 			default:
-				this.printConsumersByGroup(zkzone, cluster)
+				if this.tableFmt {
+					this.printConsumersByGroupTable(zkzone, cluster)
+				} else {
+					this.printConsumersByGroup(zkzone, cluster)
+				}
 			}
 		})
 
@@ -71,7 +78,11 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	case this.byHost:
 		this.printConsumersByHost(zkzone, cluster)
 	default:
-		this.printConsumersByGroup(zkzone, cluster)
+		if this.tableFmt {
+			this.printConsumersByGroupTable(zkzone, cluster)
+		} else {
+			this.printConsumersByGroup(zkzone, cluster)
+		}
 	}
 
 	return
@@ -162,6 +173,75 @@ func (this *Consumers) printConsumersByHost(zkzone *zk.ZkZone, clusterPattern st
 	}
 }
 
+func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPattern string) {
+	lines := make([]string, 0)
+	header := "Zone|Cluster|M|Host|ConsumerGroup|Topic/Partition|Offset|Uptime"
+	lines = append(lines, header)
+
+	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		if !patternMatched(zkcluster.Name(), clusterPattern) {
+			return
+		}
+
+		consumerGroups := zkcluster.ConsumerGroups()
+		sortedGroups := make([]string, 0, len(consumerGroups))
+		for group, _ := range consumerGroups {
+			if !patternMatched(group, this.groupPattern) {
+				continue
+			}
+
+			sortedGroups = append(sortedGroups, group)
+		}
+
+		sort.Strings(sortedGroups)
+		for _, group := range sortedGroups {
+			consumers := consumerGroups[group]
+			if this.onlineOnly && len(consumers) == 0 {
+				continue
+			}
+
+			if len(consumers) > 0 {
+				// sort by host
+				sortedIds := make([]string, 0)
+				consumersMap := make(map[string]*zk.ConsumerZnode)
+				for _, c := range consumers {
+					sortedIds = append(sortedIds, c.Id)
+					consumersMap[c.Id] = c
+				}
+				sort.Strings(sortedIds)
+
+				for _, id := range sortedIds {
+					for _, offset := range this.displayGroupOffsets(zkcluster, group, false) {
+						c := consumersMap[id]
+						lines = append(lines,
+							fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
+								zkzone.Name(), zkcluster.Name(),
+								"☀︎",
+								c.Host(),
+								group,
+								fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),
+								offset.offset,
+								gofmt.PrettySince(c.Uptime())))
+					}
+				}
+			} else {
+				// offline
+				for _, offset := range this.displayGroupOffsets(zkcluster, group, false) {
+					lines = append(lines,
+						fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
+							zkzone.Name(), zkcluster.Name(),
+							"☔︎",
+							" ",
+							group, fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),
+							offset.offset, " "))
+				}
+			}
+		}
+	})
+
+	this.Ui.Output(columnize.SimpleFormat(lines))
+}
+
 // Print all consumers of all clusters within a zone.
 func (this *Consumers) printConsumersByGroup(zkzone *zk.ZkZone, clusterPattern string) {
 	this.Ui.Output(color.Blue(zkzone.Name()))
@@ -203,19 +283,26 @@ func (this *Consumers) printConsumersByGroup(zkzone *zk.ZkZone, clusterPattern s
 				this.Ui.Output(fmt.Sprintf("\t%s %s", color.Yellow("☔︎"), group))
 			}
 
-			this.displayGroupOffsets(zkcluster, group)
+			this.displayGroupOffsets(zkcluster, group, true)
 		}
 	})
 
 }
 
-func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, group string) {
+type consumerGroupOffset struct {
+	topic, partitionId string
+	offset             string // comma fmt
+}
+
+func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, group string, echo bool) []consumerGroupOffset {
 	offsetMap := zkcluster.ConsumerOffsetsOfGroup(group)
 	sortedTopics := make([]string, 0, len(offsetMap))
 	for topic, _ := range offsetMap {
 		sortedTopics = append(sortedTopics, topic)
 	}
 	sort.Strings(sortedTopics)
+
+	r := make([]consumerGroupOffset, 0)
 
 	for _, topic := range sortedTopics {
 		if !patternMatched(topic, this.topicPattern) {
@@ -229,10 +316,21 @@ func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, group string
 		sort.Strings(sortedPartitionIds)
 
 		for _, partitionId := range sortedPartitionIds {
-			this.Ui.Output(fmt.Sprintf("\t\t%s/%s Offset:%s",
-				topic, partitionId, gofmt.Comma(offsetMap[topic][partitionId])))
+			r = append(r, consumerGroupOffset{
+				topic:       topic,
+				partitionId: partitionId,
+				offset:      gofmt.Comma(offsetMap[topic][partitionId]),
+			})
+
+			if echo {
+				this.Ui.Output(fmt.Sprintf("\t\t%s/%s Offset:%s",
+					topic, partitionId, gofmt.Comma(offsetMap[topic][partitionId])))
+			}
+
 		}
 	}
+
+	return r
 
 }
 
@@ -257,8 +355,11 @@ Options:
 
     -t topic pattern
 
-    -l 
+    -online
       Only show online consumer groups.
+
+    -table
+      Display in table format.
 
     -cleanup
       Cleanup the stale consumer groups after confirmation.
