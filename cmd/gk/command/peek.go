@@ -175,11 +175,21 @@ func (this *Peek) simpleConsumeTopic(kfk sarama.Client, topic string, partitionI
 			if this.lastN > 0 {
 				latestOffset, err := kfk.GetOffset(topic, p, sarama.OffsetNewest)
 				swallow(err)
+
+				oldestOffset, err := kfk.GetOffset(topic, p, sarama.OffsetOldest)
+				swallow(err)
+
 				offset = latestOffset - this.lastN
-				if offset < 0 {
-					offset = sarama.OffsetOldest
+				if offset < oldestOffset {
+					offset = oldestOffset
+				}
+
+				if offset == 0 {
+					// no message in store
+					return
 				}
 			}
+
 			go this.consumePartition(kfk, consumer, topic, p, msgCh, offset)
 		}
 
@@ -202,15 +212,21 @@ func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
 	topic string, partitionId int32, msgCh chan *sarama.ConsumerMessage, offset int64) {
 	p, err := consumer.ConsumePartition(topic, partitionId, offset)
 	if err != nil {
-		this.Ui.Error(fmt.Sprintf("%s/%d: %v", topic, partitionId, err))
-		os.Exit(1)
+		this.Ui.Error(fmt.Sprintf("%s/%d: offset=%d %v", topic, partitionId, offset, err))
+		return
 	}
 	defer p.Close()
 
+	n := int64(0)
 	for {
 		select {
 		case msg := <-p.Messages():
 			msgCh <- msg
+
+			n++
+			if this.lastN > 0 && n >= this.lastN {
+				return
+			}
 		}
 	}
 }
