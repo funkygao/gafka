@@ -23,7 +23,6 @@ type Clusters struct {
 	publicOnly        bool
 }
 
-// TODO cluster info will contain desciption,owner,etc.
 func (this *Clusters) Run(args []string) (exitCode int) {
 	var (
 		addCluster     string
@@ -39,7 +38,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		replicas       int
 		addBroker      string
 		nickname       string
-		delBroker      int
+		delBroker      string
 	)
 	cmdFlags := flag.NewFlagSet("clusters", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -58,7 +57,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&public, "public", -1, "")
 	cmdFlags.StringVar(&addBroker, "addbroker", "", "")
 	cmdFlags.StringVar(&nickname, "nickname", "", "")
-	cmdFlags.IntVar(&delBroker, "delbroker", -1, "")
+	cmdFlags.StringVar(&delBroker, "delbroker", "", "")
 	cmdFlags.BoolVar(&this.registeredBrokers, "registered", false, "")
 	cmdFlags.BoolVar(&verifyMode, "verify", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -153,12 +152,16 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 			swallow(err)
 			port, err := strconv.Atoi(parts[2])
 			swallow(err)
-			err = zkcluster.RegisterBroker(brokerId, parts[1], port)
-			swallow(err)
+			swallow(zkcluster.RegisterBroker(brokerId, parts[1], port))
 			return
 
-		case delBroker != -1:
-			this.Ui.Error("not implemented yet")
+		case delBroker != "":
+			for _, bid := range strings.Split(delBroker, ",") {
+				brokerId, err := strconv.Atoi(strings.TrimSpace(bid))
+				swallow(err)
+				swallow(zkcluster.UnregisterBroker(brokerId))
+			}
+			return
 
 		default:
 			return
@@ -466,7 +469,7 @@ Options:
     -addbroker id:host:port
       Register a permanent broker to a cluster.
 
-    -delbroker id TODO
+    -delbroker comma seperated broker ids
       Delete a broker from a cluster.
 
     -registered

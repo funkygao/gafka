@@ -191,6 +191,20 @@ func (this *ZkCluster) RegisterBroker(id int, host string, port int) error {
 	return this.zone.setZnode(this.ClusterInfoPath(), data)
 }
 
+func (this *ZkCluster) UnregisterBroker(id int) error {
+	c := this.RegisteredInfo()
+	rosters := make([]BrokerInfo, 0, len(c.Roster))
+	for _, info := range c.Roster {
+		if id != info.Id {
+			rosters = append(rosters, info)
+		}
+	}
+
+	c.Roster = rosters
+	data, _ := json.Marshal(c)
+	return this.zone.setZnode(this.ClusterInfoPath(), data)
+}
+
 // Returns {groupName: {consumerId: consumer}}
 func (this *ZkCluster) ConsumerGroups() map[string]map[string]*ConsumerZnode {
 	r := make(map[string]map[string]*ConsumerZnode)
