@@ -68,7 +68,7 @@ const (
 
         // prod app zk
         "z2181a_app.wdds.zk.com:10.213.1.225"
-		"z2181b_app.wdds.zk.com:10.213.10.140"
+        "z2181b_app.wdds.zk.com:10.213.10.140"
         "z2181c_app.wdds.zk.com:10.213.18.207"
         "z2181d_app.wdds.zk.com:10.213.10.145"
         "z2181e_app.wdds.zk.com:10.213.18.215"
