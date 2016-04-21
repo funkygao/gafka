@@ -24,25 +24,23 @@ type Brokers struct {
 	Ui  cli.Ui
 	Cmd string
 
-	staleOnly     bool
-	maxBrokerMode bool
-	showVersions  bool
-	ipInNumber    bool
+	staleOnly    bool
+	showVersions bool
+	ipInNumber   bool
+	cluster      string
 }
 
 func (this *Brokers) Run(args []string) (exitCode int) {
 	var (
-		zone    string
-		cluster string
+		zone string
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
-	cmdFlags.StringVar(&cluster, "c", "", "")
+	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.BoolVar(&this.staleOnly, "stale", false, "")
 	cmdFlags.BoolVar(&this.showVersions, "versions", false, "")
-	cmdFlags.BoolVar(&this.maxBrokerMode, "maxbroker", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -56,26 +54,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 		ensureZoneValid(zone)
 
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-		if cluster != "" {
-			if this.maxBrokerMode {
-				maxBrokerId := this.maxBrokerId(zkzone, cluster)
-				this.Ui.Output(fmt.Sprintf("%d", maxBrokerId))
-				return
-			}
-
-			zkcluster := zkzone.NewCluster(cluster)
-			lines, _ := this.clusterBrokers(cluster, zkcluster.Brokers())
-			for _, l := range lines {
-				this.Ui.Output(l)
-			}
-
-			printSwallowedErrors(this.Ui, zkzone)
-
-			return
-		}
-
 		this.displayZoneBrokers(zkzone)
-		printSwallowedErrors(this.Ui, zkzone)
 
 		return
 	}
@@ -83,8 +62,6 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	// print all brokers on all zones by default
 	forSortedZones(func(zkzone *zk.ZkZone) {
 		this.displayZoneBrokers(zkzone)
-
-		printSwallowedErrors(this.Ui, zkzone)
 	})
 
 	return
@@ -108,58 +85,45 @@ func (this *Brokers) maxBrokerId(zkzone *zk.ZkZone, clusterName string) int {
 
 func (this *Brokers) displayZoneBrokers(zkzone *zk.ZkZone) {
 	lines := make([]string, 0)
+	header := "Zone|Cluster|Id|Broker|Uptime"
+	lines = append(lines, header)
+
 	n := 0
 	zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
-		if this.maxBrokerMode {
-			maxBrokerId := 0
-			maxPort := 0
-			for _, b := range liveBrokers {
-				id, _ := strconv.Atoi(b.Id)
-				if id > maxBrokerId {
-					maxBrokerId = id
-				}
-				if b.Port > maxPort {
-					maxPort = b.Port
-				}
-			}
-			lines = append(lines, fmt.Sprintf("%40s max.broker.id:%-2d max.port:%d",
-				color.Blue(cluster), maxBrokerId, maxPort))
-			return
-		}
-
-		outputs, count := this.clusterBrokers(cluster, liveBrokers)
+		outputs := this.clusterBrokers(zkzone.Name(), cluster, liveBrokers)
+		n += len(outputs)
 		lines = append(lines, outputs...)
-		n += count
 	})
-	this.Ui.Output(fmt.Sprintf("%s: %d", zkzone.Name(), n))
-	for _, l := range lines {
-		this.Ui.Output(l)
-	}
+	this.Ui.Info(fmt.Sprintf("%d brokers in zone[%s]", n, zkzone.Name()))
+	this.Ui.Output(columnize.SimpleFormat(lines))
 }
 
-func (this *Brokers) clusterBrokers(cluster string, brokers map[string]*zk.BrokerZnode) ([]string, int) {
+func (this *Brokers) clusterBrokers(zone, cluster string, brokers map[string]*zk.BrokerZnode) []string {
+	if !patternMatched(cluster, this.cluster) {
+		return nil
+	}
+
 	if brokers == nil || len(brokers) == 0 {
-		return []string{fmt.Sprintf("%s%s %s", strings.Repeat(" ", 4),
-			cluster, color.Red("empty brokers"))}, 0
+		return []string{fmt.Sprintf("%s|%s|%s|%s|%s",
+			zone, cluster, " ", color.Red("empty brokers"), " ")}
 	}
 
 	lines := make([]string, 0, len(brokers))
-	lines = append(lines, strings.Repeat(" ", 4)+cluster)
 	if this.staleOnly {
 		// try each broker's aliveness
-		n := 0
 		for brokerId, broker := range brokers {
 			kfk, err := sarama.NewClient([]string{broker.Addr()}, sarama.NewConfig())
 			if err != nil {
-				n++
-				lines = append(lines, color.Yellow("%8s %s %s",
-					brokerId, broker, err.Error()))
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s",
+					zone, cluster,
+					brokerId, broker.Addr(),
+					gofmt.PrettySince(broker.Uptime())))
 			} else {
 				kfk.Close()
 			}
 		}
 
-		return lines, n
+		return lines
 	}
 
 	// sort by broker id
@@ -176,21 +140,19 @@ func (this *Brokers) clusterBrokers(cluster string, brokers map[string]*zk.Broke
 			uptime = color.Green(uptime)
 		}
 		if this.ipInNumber {
-			lines = append(lines, fmt.Sprintf("\t%8s %21s jmx:%-2d ver:%-2d uptime:%s",
-				brokerId,
-				b.Addr(),
-				b.JmxPort,
-				b.Version, uptime))
+			lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s",
+				zone, cluster,
+				brokerId, b.Addr(),
+				gofmt.PrettySince(b.Uptime())))
 		} else {
-			lines = append(lines, fmt.Sprintf("\t%8s %21s jmx:%-2d ver:%-2d uptime:%s",
-				brokerId,
-				b.NamedAddr(),
-				b.JmxPort,
-				b.Version, uptime))
+			lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s",
+				zone, cluster,
+				brokerId, b.NamedAddr(),
+				gofmt.PrettySince(b.Uptime())))
 		}
 
 	}
-	return lines, len(brokers)
+	return lines
 }
 
 func (this *Brokers) doShowVersions() {
@@ -322,10 +284,7 @@ Options:
 
     -versions
       Display kafka instances versions by host
-      Precondition: you MUST install consul on each broker host
-
-    -maxbroker
-      Display max broker.id and max port
+      Precondition: you MUST install consul on each broker host    
 
     -n
       Show network addresses as numbers
