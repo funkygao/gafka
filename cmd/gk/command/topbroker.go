@@ -90,10 +90,10 @@ func (this *TopBroker) drawDashboard() {
 	height := termui.TermHeight()
 	termui.Close()
 	maxWidth := width - 23
+
 	var totalMaxQps, totalMaxBrokerQps float64
 	for {
 		time.Sleep(this.interval)
-		refreshScreen()
 
 		this.startAll()
 		this.collectAll()
@@ -114,6 +114,8 @@ func (this *TopBroker) drawDashboard() {
 		if totalQps > totalMaxQps {
 			totalMaxQps = totalQps
 		}
+
+		refreshScreen()
 
 		for idx, data := range datas {
 			if idx >= height-2 {
@@ -263,6 +265,7 @@ Options:
       e,g. 5s    
 
     -shortip
+	  Print ending portion of broker ip address.
 
 `, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
