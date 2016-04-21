@@ -135,6 +135,6 @@ fi
 
 
 if [ $DEPLOY == "yes" ]; then
-    echo "nc -k -l 10001 < $TARGET"
-    nc -k -l 10001 < $TARGET
+    echo "nc -l 10001 < $TARGET"
+    nc -l 10001 < $TARGET
 fi
