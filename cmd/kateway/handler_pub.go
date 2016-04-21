@@ -99,8 +99,9 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if options.Debug {
-		log.Debug("pub[%s] %s(%s) {topic:%s, ver:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, string(msg.Body))
+		log.Debug("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} %s",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver,
+			string(msg.Body), r.Header.Get("User-Agent"))
 	}
 
 	if !options.DisableMetrics {

@@ -93,8 +93,9 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 
 	shadow = query.Get("q")
 
-	log.Debug("bury[%s] %s(%s): {app:%s, bury:%s shadow=%s topic:%s, ver:%s, group:%s partition:%s, offset:%s}",
-		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, bury, shadow, topic, ver, partition, offset)
+	log.Debug("bury[%s] %s(%s): {app:%s bury:%s shadow=%s topic:%s ver:%s group:%s partition:%s offset:%s UA:%s}",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, bury, shadow, topic, ver,
+		partition, offset, r.Header.Get("User-Agent"))
 
 	msgLen := int(r.ContentLength)
 	msg := make([]byte, 0, msgLen)
@@ -186,8 +187,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		partition  string
 		partitionN int = -1
 		offset     string
-		offsetN    int64 = -1
-		delayedAck bool // explicit application level acknowledgement
+		offsetN    int64    = -1
+		delayedAck bool     // explicit application level acknowledgement
 		tagFilters []MsgTag = nil
 		err        error
 	)
@@ -261,9 +262,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	shadow = query.Get("q")
 
-	log.Debug("sub[%s] %s(%s): {app:%s, shadow:%s topic:%s, ver:%s, group:%s ack:%s, partition:%s, offset:%s}",
+	log.Debug("sub[%s] %s(%s): {app:%s shadow:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s}",
 		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, shadow, topic, ver,
-		group, query.Get("ack"), partition, offset)
+		group, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"))
 
 	// calculate raw topic according to shadow
 	if shadow != "" {
