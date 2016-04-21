@@ -85,7 +85,7 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 	}
 
 	if appid == hisAppid {
-		// sub my own topic is always authorized
+		// sub my own topic is always authorized FIXME what if the topic is disabled?
 		return nil
 	}
 
