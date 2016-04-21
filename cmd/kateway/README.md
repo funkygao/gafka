@@ -195,13 +195,12 @@ It is designed to be programmer friendly.
 ### TODO
 
 - [ ] verify
-- [ ] add v1 to all routing URI
+- [ ] pub/sub a disabled topic, discard?
 - [ ] features confirm
   - delayed job
   - bury
   - msg tag
 - [ ] fetchShadowQueueRecords enable
-- [ ] gk topbroker metrics has problem
 - [ ] why make sub with 15s sleep fails
 - [ ] Plugins
   - authentication and authorization

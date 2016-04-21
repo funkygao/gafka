@@ -23,6 +23,7 @@ func (this *Gateway) buildRouting() {
 	if this.pubServer != nil {
 		this.pubServer.Router().POST("/topics/:topic/:ver", m(this.pubHandler)) // TODO deprecated
 
+		// TODO /v1/msgs/:topic/:ver
 		this.pubServer.Router().POST("/msgs/:topic/:ver", m(this.pubHandler))
 		this.pubServer.Router().POST("/ws/msgs/:topic/:ver", m(this.pubWsHandler))
 		this.pubServer.Router().POST("/jobs/:topic/:ver", m(this.addJobHandler))
