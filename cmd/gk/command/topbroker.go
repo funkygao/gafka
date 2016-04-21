@@ -6,7 +6,6 @@ import (
 	"net"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -21,15 +20,15 @@ type TopBroker struct {
 	Ui  cli.Ui
 	Cmd string
 
-	mu sync.Mutex
-
 	zone, cluster, topic string
-	drawMode             bool
 	interval             time.Duration
 	shortIp              bool
 
 	offsets     map[string]int64 // host => offset sum
 	lastOffsets map[string]int64
+
+	hostOffsetCh chan map[string]int64
+	signalsCh    map[string]chan struct{}
 }
 
 func (this *TopBroker) Run(args []string) (exitCode int) {
@@ -38,12 +37,14 @@ func (this *TopBroker) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.StringVar(&this.topic, "t", "", "")
-	cmdFlags.BoolVar(&this.drawMode, "d", true, "")
 	cmdFlags.BoolVar(&this.shortIp, "shortip", false, "")
 	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "refresh interval")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
+
+	this.signalsCh = make(map[string]chan struct{})
+	this.hostOffsetCh = make(chan map[string]int64)
 
 	this.offsets = make(map[string]int64)
 	this.lastOffsets = make(map[string]int64)
@@ -58,27 +59,29 @@ func (this *TopBroker) Run(args []string) (exitCode int) {
 			return
 		}
 
+		this.signalsCh[zkcluster.Name()] = make(chan struct{})
+
 		go this.clusterTopProducers(zkcluster)
 	})
 
-	if this.drawMode {
-		this.drawDashboard()
-		return
-	}
-
-	ticker := time.NewTicker(this.interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			refreshScreen()
-			this.showAndResetCounters(true)
-
-		}
-	}
+	this.drawDashboard()
 
 	return
+}
+
+func (this *TopBroker) startAll() {
+	for _, ch := range this.signalsCh {
+		ch <- struct{}{}
+	}
+}
+
+func (this *TopBroker) collectAll() {
+	for _, _ = range this.signalsCh {
+		offsets := <-this.hostOffsetCh
+		for host, offsetSum := range offsets {
+			this.offsets[host] += offsetSum
+		}
+	}
 }
 
 func (this *TopBroker) drawDashboard() {
@@ -87,17 +90,15 @@ func (this *TopBroker) drawDashboard() {
 	height := termui.TermHeight()
 	termui.Close()
 	maxWidth := width - 23
-	var maxQps float64
+	var totalMaxQps, totalMaxBrokerQps float64
 	for {
+		time.Sleep(this.interval)
 		refreshScreen()
-		datas := this.showAndResetCounters(false)
-		maxQps = .0
-		for _, data := range datas {
-			if data.qps > maxQps {
-				maxQps = data.qps
-			}
-		}
 
+		this.startAll()
+		this.collectAll()
+
+		datas, maxQps, totalQps := this.showAndResetCounters()
 		if maxQps < 1 {
 			// draw empty lines
 			for _, data := range datas {
@@ -107,34 +108,47 @@ func (this *TopBroker) drawDashboard() {
 			continue
 		}
 
+		if maxQps > totalMaxBrokerQps {
+			totalMaxBrokerQps = maxQps
+		}
+		if totalQps > totalMaxQps {
+			totalMaxQps = totalQps
+		}
+
 		for idx, data := range datas {
-			if idx >= height-1 {
+			if idx >= height-2 {
 				break
 			}
 
 			if data.qps < 0 {
-				data.qps = -data.qps // FIXME
+				panic("negative qps")
 			}
 
-			w := int(data.qps*100/maxQps) * maxWidth / 100
-			qps := fmt.Sprintf("%.1f", data.qps)
-			bar := ""
-			barColorLen := 0
-			for i := 0; i < w-len(qps); i++ {
-				bar += color.Green("|")
-				barColorLen += 9 // color.Green will add extra 9 chars
-			}
-			for i := len(bar) - barColorLen; i < maxWidth-len(qps); i++ {
-				bar += " "
-			}
-			bar += qps
-
-			this.Ui.Output(fmt.Sprintf("%20s [%s]", data.host, bar))
+			this.renderQpsRow(data.host, data.qps, maxQps, maxWidth)
 		}
 
-		time.Sleep(this.interval)
+		this.Ui.Output(fmt.Sprintf("%20s brokers:%d total:%s cum max[broker:%.1f total:%.1f]",
+			"-SUMMARY-",
+			len(datas), color.Green("%.1f", totalQps), totalMaxBrokerQps, totalMaxQps))
 	}
 
+}
+
+func (this *TopBroker) renderQpsRow(host string, qps, maxQps float64, maxWidth int) {
+	w := int(qps*100/maxQps) * maxWidth / 100
+	qpsStr := fmt.Sprintf("%.1f", qps)
+	bar := ""
+	barColorLen := 0
+	for i := 0; i < w-len(qpsStr); i++ {
+		bar += color.Green("|")
+		barColorLen += 9 // color.Green will add extra 9 chars
+	}
+	for i := len(bar) - barColorLen; i < maxWidth-len(qpsStr); i++ {
+		bar += " "
+	}
+	bar += qpsStr
+
+	this.Ui.Output(fmt.Sprintf("%20s [%s]", host, bar))
 }
 
 type brokerQps struct {
@@ -142,39 +156,30 @@ type brokerQps struct {
 	qps  float64
 }
 
-func (this *TopBroker) showAndResetCounters(show bool) []brokerQps {
-	this.mu.Lock()
-	defer this.mu.Unlock()
-
+func (this *TopBroker) showAndResetCounters() ([]brokerQps, float64, float64) {
 	sortedHost := make([]string, 0, len(this.offsets))
 	for host, _ := range this.offsets {
 		sortedHost = append(sortedHost, host)
 	}
 	sort.Strings(sortedHost)
 
-	if show {
-		this.Ui.Output(fmt.Sprintf("%20s %8s", "host", "mps"))
-	}
-
-	totalQps := .0
+	totalQps, maxHostQps := .0, .0
 	r := make([]brokerQps, 0, len(sortedHost))
 	for _, host := range sortedHost {
 		offset := this.offsets[host]
 		qps := float64(0)
 		if lastOffset, present := this.lastOffsets[host]; present {
 			qps = float64(offset-lastOffset) / this.interval.Seconds()
+		} else {
+			continue
 		}
 
 		r = append(r, brokerQps{host, qps})
+
 		totalQps += qps
-
-		if show {
-			this.Ui.Output(fmt.Sprintf("%20s %10.1f", host, qps))
+		if qps > maxHostQps {
+			maxHostQps = qps
 		}
-	}
-
-	if show {
-		this.Ui.Output(fmt.Sprintf("%20s %10.1f", "-TOTAL-", totalQps))
 	}
 
 	for host, offset := range this.offsets {
@@ -182,7 +187,7 @@ func (this *TopBroker) showAndResetCounters(show bool) []brokerQps {
 	}
 	this.offsets = make(map[string]int64) // reset
 
-	return r
+	return r, maxHostQps, totalQps
 }
 
 func (this *TopBroker) clusterTopProducers(zkcluster *zk.ZkCluster) {
@@ -193,8 +198,12 @@ func (this *TopBroker) clusterTopProducers(zkcluster *zk.ZkCluster) {
 	defer kfk.Close()
 
 	for {
+		hostOffsets := make(map[string]int64)
+
 		topics, err := kfk.Topics()
 		swallow(err)
+
+		<-this.signalsCh[zkcluster.Name()]
 
 		for _, topic := range topics {
 			if !patternMatched(topic, this.topic) {
@@ -217,16 +226,15 @@ func (this *TopBroker) clusterTopProducers(zkcluster *zk.ZkCluster) {
 					host = shortIp(host)
 				}
 
-				this.mu.Lock()
-				if _, present := this.offsets[host]; !present {
-					this.offsets[host] = 0
+				if _, present := hostOffsets[host]; !present {
+					hostOffsets[host] = 0
 				}
-				this.offsets[host] += latestOffset
-				this.mu.Unlock()
+				hostOffsets[host] += latestOffset
 			}
 		}
 
-		time.Sleep(time.Second)
+		this.hostOffsetCh <- hostOffsets
+
 		kfk.RefreshMetadata(topics...)
 	}
 }
@@ -253,9 +261,6 @@ Options:
     -i interval
       Refresh interval in seconds.
       e,g. 5s    
-
-    -d
-      Draw dashboard in graph.  
 
     -shortip
 
