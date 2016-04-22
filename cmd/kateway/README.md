@@ -195,6 +195,8 @@ It is designed to be programmer friendly.
 ### TODO
 
 - [ ] verify
+- [ ] max request for a single persitent connection
+  - make load balancer distribute req more evenly
 - [ ] pub/sub a disabled topic, discard?
 - [ ] features confirm
   - delayed job
