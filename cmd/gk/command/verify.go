@@ -3,7 +3,9 @@ package command
 import (
 	"flag"
 	"fmt"
+	"math"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -30,12 +32,13 @@ type Verify struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone      string
-	zkzone    *zk.ZkZone
-	cluster   string
-	interval  time.Duration
-	confirmed bool
-	mode      string
+	zone       string
+	zkzone     *zk.ZkZone
+	cluster    string
+	zkclusters map[string]*zk.ZkCluster // cluster:zkcluster
+	interval   time.Duration
+	confirmed  bool
+	mode       string
 
 	db *dbx.DB
 
@@ -69,7 +72,10 @@ func (this *Verify) Run(args []string) (exitCode int) {
 	this.kafkaTopics = make(map[string]string)
 	this.kfkClients = make(map[string]sarama.Client)
 	this.psubClient = make(map[string]sarama.Client)
+	this.zkclusters = make(map[string]*zk.ZkCluster)
 	this.zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		this.zkclusters[zkcluster.Name()] = zkcluster
+
 		kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
 		swallow(err)
 
@@ -202,7 +208,72 @@ func (this *Verify) pubOffsetDiff(kafkaTopic, kafkaCluster, psubTopic, psubClust
 }
 
 func (this *Verify) verifySub() {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Topic", "KafkaGroup", "PubSubGroup"})
+	for _, t := range this.topics {
+		if t.KafkaTopicName == "" {
+			continue
+		}
+		kafkaCluster := this.kafkaTopics[t.KafkaTopicName]
+		if kafkaCluster == "" {
+			this.Ui.Warn(fmt.Sprintf("invalid kafka topic: %s", t.KafkaTopicName))
+			continue
+		}
 
+		psubTopic := manager.KafkaTopic(t.AppId, t.TopicName, "v1")
+		psubGroups := this.fetchConsumerGroups(psubTopic, this.cluster)
+		kfkGroups := this.fetchConsumerGroups(t.KafkaTopicName, kafkaCluster)
+		pN, kN := len(psubGroups), len(kfkGroups)
+		max := int(math.Max(float64(pN), float64(kN)))
+		for i := 0; i < max; i++ {
+			var kg, pg string
+			if i >= pN {
+				pg = ""
+			} else {
+				pg = psubGroups[i]
+			}
+
+			if i >= kN {
+				kg = ""
+			} else {
+				kg = kfkGroups[i]
+			}
+
+			table.Append([]string{t.KafkaTopicName, kg, pg})
+		}
+
+	}
+	table.Render()
+}
+
+func (this *Verify) fetchConsumerGroups(topic, cluster string) []string {
+	consumerGroups := this.zkclusters[cluster].ConsumerGroups()
+	sortedGroups := make([]string, 0, len(consumerGroups))
+	for group, _ := range consumerGroups {
+		sortedGroups = append(sortedGroups, group)
+	}
+
+	r := make([]string, 0, len(sortedGroups))
+	sort.Strings(sortedGroups)
+	includedGroups := make(map[string]struct{})
+	for _, group := range sortedGroups {
+		consumers := consumerGroups[group]
+		if len(consumers) == 0 {
+			// show only online consumers
+			continue
+		}
+
+		for _, c := range consumers {
+			if c.Topics()[0] == topic {
+				if _, present := includedGroups[group]; !present {
+					r = append(r, group)
+					includedGroups[group] = struct{}{}
+				}
+			}
+		}
+	}
+
+	return r
 }
 
 func (this *Verify) loadFromManager(dsn string) {
