@@ -209,7 +209,7 @@ func (this *Verify) pubOffsetDiff(kafkaTopic, kafkaCluster, psubTopic, psubClust
 
 func (this *Verify) verifySub() {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Topic", "KafkaGroup", "PubSubGroup"})
+	table.SetHeader([]string{"Topic", "Kafka Consumer Group", "PubSub Consumer Group"})
 	for _, t := range this.topics {
 		if t.KafkaTopicName == "" {
 			continue
