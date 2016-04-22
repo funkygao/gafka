@@ -35,21 +35,22 @@ CREATE TABLE `application_category` (
 
 DROP TABLE IF EXISTS `topics`;
 CREATE TABLE `topics` (
-  `TopicId` bigint(18) NOT NULL AUTO_INCREMENT,
-  `AppId` bigint(18) NOT NULL,
-  `CategoryId` int(11) NOT NULL COMMENT 'APP分类ID',
-  `TopicName` varchar(64) NOT NULL COMMENT '主题名称',
-  `TopicIntro` varchar(255) NOT NULL COMMENT '主题描述',
-  `IDC` varchar(255) NOT NULL COMMENT '主题产生地（数据中心）',
-  `CreateById` bigint(18) NOT NULL DEFAULT '0',
-  `CreateBy` varchar(64) NOT NULL,
-  `CreateTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `Status` tinyint(2) NOT NULL COMMENT '状态：正常|废弃',
-  PRIMARY KEY (`TopicId`),
-  KEY `AppId` (`AppId`),
-  KEY `CategoryId` (`CategoryId`),
-  KEY `TopicName` (`TopicName`)
-) ENGINE=InnoDB AUTO_INCREMENT=89 DEFAULT CHARSET=utf8;
+`TopicId` bigint(20) NOT NULL AUTO_INCREMENT,
+`AppId` bigint(18) NOT NULL,
+`CategoryId` int(11) NOT NULL COMMENT 'APP分类ID',
+`TopicName` varchar(64) NOT NULL COMMENT '主题名称',
+`TopicIntro` varchar(255) NOT NULL COMMENT '主题描述',
+`IDC` varchar(255) NOT NULL COMMENT '主题产生地（数据中心）',
+`CreateById` bigint(18) NOT NULL DEFAULT '0',
+`CreateBy` varchar(64) NOT NULL,
+`CreateTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+`Status` tinyint(2) NOT NULL COMMENT '状态：正常|废弃',
+`KafkaTopicName` varchar(64) NOT NULL DEFAULT '',
+PRIMARY KEY (`TopicId`),
+KEY `AppId` (`AppId`),
+KEY `CategoryId` (`CategoryId`),
+KEY `TopicName` (`TopicName`)
+) ENGINE=InnoDB AUTO_INCREMENT=146120251934146126 DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `topics_subscriber`;
 CREATE TABLE `topics_subscriber` (
