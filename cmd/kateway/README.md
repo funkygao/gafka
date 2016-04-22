@@ -207,6 +207,7 @@ It is designed to be programmer friendly.
   - transform
   - hooks
   - other stuff related to message-oriented middleware
+- [ ] schema registry with Avro
 - [ ] check hack pkg
 - [ ] https://github.com/allinurl/goaccess
 - [ ] https, outer ip must https
