@@ -31,12 +31,11 @@ type Verify struct {
 	Cmd string
 
 	zone      string
+	zkzone    *zk.ZkZone
 	cluster   string
 	interval  time.Duration
 	confirmed bool
-
-	mode     string
-	mysqlDsn string
+	mode      string
 
 	db *dbx.DB
 
@@ -45,7 +44,6 @@ type Verify struct {
 	kafkaTopics map[string]string        // topic:cluster
 	kfkClients  map[string]sarama.Client // cluster:client
 	psubClient  map[string]sarama.Client // cluster:client
-	zkzone      *zk.ZkZone
 }
 
 func (this *Verify) Run(args []string) (exitCode int) {
@@ -94,8 +92,7 @@ func (this *Verify) Run(args []string) (exitCode int) {
 		"test": "pubsub:pubsub@tcp(10.209.44.14:10044)/pubsub?charset=utf8&timeout=10s",
 	}
 
-	this.mysqlDsn = mysqlDsns[this.zone]
-
+	this.loadFromManager(mysqlDsns[this.zone])
 	switch this.mode {
 	case "p":
 		this.verifyPub()
@@ -111,8 +108,6 @@ func (this *Verify) Run(args []string) (exitCode int) {
 }
 
 func (this *Verify) showTable() {
-	this.loadFromManager()
-
 	table := tablewriter.NewWriter(os.Stdout)
 	for _, t := range this.topics {
 		kafkaTopic := t.KafkaTopicName
@@ -140,8 +135,6 @@ func (this *Verify) showTable() {
 }
 
 func (this *Verify) verifyPub() {
-	this.loadFromManager()
-
 	for {
 		refreshScreen()
 
@@ -212,8 +205,8 @@ func (this *Verify) verifySub() {
 
 }
 
-func (this *Verify) loadFromManager() {
-	db, err := dbx.Open("mysql", this.mysqlDsn)
+func (this *Verify) loadFromManager(dsn string) {
+	db, err := dbx.Open("mysql", dsn)
 	swallow(err)
 
 	this.db = db
