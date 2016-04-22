@@ -159,11 +159,18 @@ func (this *Verify) verifyPub() {
 			psubTopic := manager.KafkaTopic(t.AppId, t.TopicName, "v1")
 			offsets := this.pubOffsetDiff(t.KafkaTopicName, kafkaCluster,
 				psubTopic, this.cluster)
+			var diff string
+			if offsets[0] == 0 && offsets[1] != 0 {
+				diff = color.Yellow("%d", offsets[1]-offsets[0])
+			} else if math.Abs(float64(offsets[0]-offsets[1])) < 20 {
+				diff = color.Green("%d", offsets[1]-offsets[0])
+			} else {
+				diff = color.Red("%d", offsets[1]-offsets[0])
+			}
 
 			table.Append([]string{
 				t.KafkaTopicName, fmt.Sprintf("%d", offsets[0]),
-				t.TopicName, fmt.Sprintf("%d", offsets[1]),
-				color.Red("%d", offsets[1]-offsets[0])})
+				t.TopicName, fmt.Sprintf("%d", offsets[1]), diff})
 		}
 		table.Render()
 
