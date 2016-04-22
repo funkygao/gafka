@@ -447,7 +447,7 @@ Options:
       e,g. gk clusters -z prod -add foo -p /kafka/services/trade
 
     -s
-      Setup a cluster info.
+      Enter cluster info setup mode.
     
     -priority n
       Set the priority of a cluster.
@@ -464,13 +464,16 @@ Options:
       e,g. gk clusters -z prod -c foo -s -nickname bar
 
     -replicas n
-      Set the default replicas of a cluster.
+      Set the default replicas of a cluster. 
+      Only works on meta data. To make kafka replica updated, use 'gk migrate'
 
     -addbroker id:host:port
       Register a permanent broker to a cluster.
+      e,g. gk clusters -z prod -c foo -s -addbroker 0:10.1.2.3:10001
 
     -delbroker comma seperated broker ids
       Delete a broker from a cluster.
+      e,g. gk clusters -z prod -c foo -s -delbroker 5,6
 
     -registered
       Display registered permanent brokers info.
