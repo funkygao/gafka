@@ -7,7 +7,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
@@ -36,7 +35,6 @@ type Verify struct {
 	zkzone     *zk.ZkZone
 	cluster    string
 	zkclusters map[string]*zk.ZkCluster // cluster:zkcluster
-	interval   time.Duration
 	confirmed  bool
 	mode       string
 
@@ -56,7 +54,6 @@ func (this *Verify) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.cluster, "c", "bigtopic", "")
 	cmdFlags.BoolVar(&this.confirmed, "go", false, "")
 	cmdFlags.StringVar(&this.mode, "mode", "p", "")
-	cmdFlags.DurationVar(&this.interval, "i", time.Minute, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -88,6 +85,10 @@ func (this *Verify) Run(args []string) (exitCode int) {
 		swallow(err)
 
 		for _, t := range topics {
+			if c, present := this.kafkaTopics[t]; present {
+				this.Ui.Warn(fmt.Sprintf("topic[%s] dup cluster:",
+					t, c, zkcluster.Name()))
+			}
 			this.kafkaTopics[t] = zkcluster.Name()
 		}
 	})
@@ -141,41 +142,37 @@ func (this *Verify) showTable() {
 }
 
 func (this *Verify) verifyPub() {
-	for {
-		refreshScreen()
 
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Kafka", "Stock", "PubSub", "Stock", "Diff"})
-		for _, t := range this.topics {
-			if t.KafkaTopicName == "" {
-				continue
-			}
-			kafkaCluster := this.kafkaTopics[t.KafkaTopicName]
-			if kafkaCluster == "" {
-				this.Ui.Warn(fmt.Sprintf("invalid kafka topic: %s", t.KafkaTopicName))
-				continue
-			}
-
-			psubTopic := manager.KafkaTopic(t.AppId, t.TopicName, "v1")
-			offsets := this.pubOffsetDiff(t.KafkaTopicName, kafkaCluster,
-				psubTopic, this.cluster)
-			var diff string
-			if offsets[0] == 0 && offsets[1] != 0 {
-				diff = color.Yellow("%d", offsets[1]-offsets[0])
-			} else if math.Abs(float64(offsets[0]-offsets[1])) < 20 {
-				diff = color.Green("%d", offsets[1]-offsets[0])
-			} else {
-				diff = color.Red("%d", offsets[1]-offsets[0])
-			}
-
-			table.Append([]string{
-				t.KafkaTopicName, fmt.Sprintf("%d", offsets[0]),
-				t.TopicName, fmt.Sprintf("%d", offsets[1]), diff})
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Kafka", "Stock", "PubSub", "Stock", "Diff"})
+	for _, t := range this.topics {
+		if t.KafkaTopicName == "" {
+			continue
 		}
-		table.Render()
+		kafkaCluster := this.kafkaTopics[t.KafkaTopicName]
+		if kafkaCluster == "" {
+			this.Ui.Warn(fmt.Sprintf("invalid kafka topic: %s", t.KafkaTopicName))
+			continue
+		}
 
-		time.Sleep(this.interval)
+		psubTopic := manager.KafkaTopic(t.AppId, t.TopicName, "v1")
+		offsets := this.pubOffsetDiff(t.KafkaTopicName, kafkaCluster,
+			psubTopic, this.cluster)
+		var diff string
+		if offsets[0] == 0 && offsets[1] != 0 {
+			diff = color.Yellow("%d", offsets[1]-offsets[0])
+		} else if math.Abs(float64(offsets[0]-offsets[1])) < 20 {
+			diff = color.Green("%d", offsets[1]-offsets[0])
+		} else {
+			diff = color.Red("%d", offsets[1]-offsets[0])
+		}
+
+		table.Append([]string{
+			t.KafkaTopicName, fmt.Sprintf("%d", offsets[0]),
+			t.TopicName, fmt.Sprintf("%d", offsets[1]), diff})
 	}
+
+	table.Render()
 }
 
 func (this *Verify) pubOffsetDiff(kafkaTopic, kafkaCluster, psubTopic, psubCluster string) []int64 {
@@ -311,10 +308,7 @@ Options:
 
     -c cluster
 
-    -mode <p|s|t>
-
-    -i interval
-      e,g. 10s
+    -mode <p|s|t>   
 
     -go
       Confirmed to update KafkaTopicName in table topics.
