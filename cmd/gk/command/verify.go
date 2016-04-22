@@ -19,6 +19,7 @@ import (
 )
 
 type TopicInfo struct {
+	TopicId        string `db:"TopicId"`
 	AppId          string `db:"AppId"`
 	TopicName      string `db:"TopicName"`
 	TopicIntro     string `db:"TopicIntro"`
@@ -29,12 +30,15 @@ type Verify struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone     string
-	cluster  string
-	interval time.Duration
+	zone      string
+	cluster   string
+	interval  time.Duration
+	confirmed bool
 
 	mode     string
 	mysqlDsn string
+
+	db *dbx.DB
 
 	topics []TopicInfo
 
@@ -49,8 +53,9 @@ func (this *Verify) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "bigtopic", "")
+	cmdFlags.BoolVar(&this.confirmed, "go", false, "")
 	cmdFlags.StringVar(&this.mode, "mode", "p", "")
-	cmdFlags.DurationVar(&this.interval, "i", time.Second*10, "")
+	cmdFlags.DurationVar(&this.interval, "i", time.Minute, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -110,9 +115,27 @@ func (this *Verify) showTable() {
 
 	table := tablewriter.NewWriter(os.Stdout)
 	for _, t := range this.topics {
-		table.Append([]string{t.AppId, t.TopicName, t.TopicIntro, t.KafkaTopicName})
+		kafkaTopic := t.KafkaTopicName
+		if kafkaTopic == "" {
+			// try find its counterpart in raw kafka
+			var q *dbx.Query
+			if _, present := this.kafkaTopics[t.TopicName]; present {
+				kafkaTopic = "[" + t.TopicName + "]"
+
+				q = this.db.NewQuery(fmt.Sprintf("UPDATE topics SET KafkaTopicName='%s' WHERE TopicId=%s",
+					t.TopicName, t.TopicId))
+				this.Ui.Output(q.SQL())
+			}
+
+			if q != nil && this.confirmed {
+				_, err := q.Execute()
+				swallow(err)
+			}
+		}
+
+		table.Append([]string{t.AppId, t.TopicName, t.TopicIntro, kafkaTopic})
 	}
-	table.SetHeader([]string{"Id", "Topic", "Desc", "Kafka"})
+	table.SetHeader([]string{"AppId", "Topic", "Desc", "Kafka"})
 	table.Render()
 }
 
@@ -141,7 +164,7 @@ func (this *Verify) verifyPub() {
 			table.Append([]string{
 				t.KafkaTopicName, fmt.Sprintf("%d", offsets[0]),
 				t.TopicName, fmt.Sprintf("%d", offsets[1]),
-				color.Red("%d", offsets[0]-offsets[1])})
+				color.Red("%d", offsets[1]-offsets[0])})
 		}
 		table.Render()
 
@@ -167,7 +190,10 @@ func (this *Verify) pubOffsetDiff(kafkaTopic, kafkaCluster, psubTopic, psubClust
 	}
 
 	psp, err := psub.Partitions(psubTopic)
-	swallow(err)
+	if err != nil {
+		this.Ui.Error(fmt.Sprintf("psub: %s", psubTopic))
+		return []int64{0, 0}
+	}
 	pN := int64(0)
 	for _, p := range psp {
 		hi, err := psub.GetOffset(psubTopic, p, sarama.OffsetNewest)
@@ -190,8 +216,10 @@ func (this *Verify) loadFromManager() {
 	db, err := dbx.Open("mysql", this.mysqlDsn)
 	swallow(err)
 
+	this.db = db
+
 	// TODO fetch from topics_version
-	q := db.NewQuery("SELECT AppId, TopicName, TopicIntro, KafkaTopicName FROM topics WHERE Status = 1 ORDER BY CategoryId, TopicName")
+	q := db.NewQuery("SELECT TopicId, AppId, TopicName, TopicIntro, KafkaTopicName FROM topics WHERE Status = 1 ORDER BY AppId, CategoryId, TopicName")
 	swallow(q.All(&this.topics))
 }
 
@@ -216,6 +244,9 @@ Options:
 
     -i interval
       e,g. 10s
+
+    -go
+      Confirmed to update KafkaTopicName in table topics.
 
 
 `, this.Cmd, ctx.ZkDefaultZone())
