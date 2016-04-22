@@ -42,9 +42,10 @@ type Verify struct {
 
 	topics []TopicInfo
 
-	kafkaTopics map[string]string        // topic:cluster
-	kfkClients  map[string]sarama.Client // cluster:client
-	psubClient  map[string]sarama.Client // cluster:client
+	problemeticTopics map[string]struct{}
+	kafkaTopics       map[string]string        // topic:cluster
+	kfkClients        map[string]sarama.Client // cluster:client
+	psubClient        map[string]sarama.Client // cluster:client
 }
 
 func (this *Verify) Run(args []string) (exitCode int) {
@@ -67,6 +68,7 @@ func (this *Verify) Run(args []string) (exitCode int) {
 	ensureZoneValid(this.zone)
 	this.zkzone = zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	this.kafkaTopics = make(map[string]string)
+	this.problemeticTopics = make(map[string]struct{})
 	this.kfkClients = make(map[string]sarama.Client)
 	this.psubClient = make(map[string]sarama.Client)
 	this.zkclusters = make(map[string]*zk.ZkCluster)
@@ -85,13 +87,17 @@ func (this *Verify) Run(args []string) (exitCode int) {
 		swallow(err)
 
 		for _, t := range topics {
-			if c, present := this.kafkaTopics[t]; present {
-				this.Ui.Warn(fmt.Sprintf("topic[%s] dup cluster:",
-					t, c, zkcluster.Name()))
+			if _, present := this.kafkaTopics[t]; present {
+				this.problemeticTopics[t] = struct{}{}
 			}
+
 			this.kafkaTopics[t] = zkcluster.Name()
 		}
 	})
+
+	for topic, _ := range this.problemeticTopics {
+		this.Ui.Warn(fmt.Sprintf("dup clusters found for topic: %s", topic))
+	}
 
 	mysqlDsns := map[string]string{
 		"prod": "user_pubsub:p0nI7mEL6OLW@tcp(m3342.wdds.mysqldb.com:3342)/pubsub?charset=utf8&timeout=10s",
@@ -116,6 +122,8 @@ func (this *Verify) Run(args []string) (exitCode int) {
 
 func (this *Verify) showTable() {
 	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"AppId", "PubSub Topic", "Desc", "Kafka Topic", "?"})
+
 	for _, t := range this.topics {
 		kafkaTopic := t.KafkaTopicName
 		if kafkaTopic == "" {
@@ -135,16 +143,20 @@ func (this *Verify) showTable() {
 			}
 		}
 
-		table.Append([]string{t.AppId, t.TopicName, t.TopicIntro, kafkaTopic})
+		problem := "N"
+		if _, present := this.problemeticTopics[kafkaTopic]; present {
+			problem = color.Yellow("Y")
+		}
+
+		table.Append([]string{t.AppId, t.TopicName, t.TopicIntro, kafkaTopic, problem})
 	}
-	table.SetHeader([]string{"AppId", "Topic", "Desc", "Kafka"})
+
 	table.Render()
 }
 
 func (this *Verify) verifyPub() {
-
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Kafka", "Stock", "PubSub", "Stock", "Diff"})
+	table.SetHeader([]string{"Kafka", "Stock", "PubSub", "Stock", "Diff", "?"})
 	for _, t := range this.topics {
 		if t.KafkaTopicName == "" {
 			continue
@@ -167,9 +179,14 @@ func (this *Verify) verifyPub() {
 			diff = color.Red("%d", offsets[1]-offsets[0])
 		}
 
+		problem := "N"
+		if _, present := this.problemeticTopics[t.KafkaTopicName]; present {
+			problem = color.Yellow("Y")
+		}
+
 		table.Append([]string{
 			t.KafkaTopicName, fmt.Sprintf("%d", offsets[0]),
-			t.TopicName, fmt.Sprintf("%d", offsets[1]), diff})
+			t.TopicName, fmt.Sprintf("%d", offsets[1]), diff, problem})
 	}
 
 	table.Render()
