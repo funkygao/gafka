@@ -49,6 +49,7 @@ var (
 		MaxPubRetries          int
 		PubQpsLimit            int
 		MaxClients             int
+		MaxRequestPerConn      int // to make load balancer distribute request even for persistent conn
 		PubPoolCapcity         int
 		PubPoolIdleTimeout     time.Duration
 		SubTimeout             time.Duration
@@ -113,6 +114,7 @@ func parseFlags() {
 	flag.Int64Var(&options.MaxPubSize, "maxpub", 1<<20, "max Pub message size")
 	flag.IntVar(&options.MinPubSize, "minpub", 1, "min Pub message size")
 	flag.IntVar(&options.MaxPubRetries, "pubretry", 5, "max retries when Pub fails")
+	flag.IntVar(&options.MaxRequestPerConn, "maxreq", -1, "max request per connection")
 	flag.IntVar(&options.PubQpsLimit, "publimit", 60*10000, "pub qps limit per minute per ip")
 	flag.IntVar(&options.PubPoolCapcity, "pubpool", 100, "pub connection pool capacity")
 	flag.IntVar(&options.MaxClients, "maxclient", 100000, "max concurrent connections")

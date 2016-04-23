@@ -61,6 +61,9 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	case "ratelimit":
 		options.Ratelimit = boolVal
 
+	case "maxreq":
+		options.MaxRequestPerConn, _ = strconv.Atoi(value)
+
 	case "accesslog":
 		if options.EnableAccessLog != boolVal {
 			// on/off switching
