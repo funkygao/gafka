@@ -14,3 +14,40 @@ func initZk() *ZkClient {
 func (this *ZkClient) FetchAllTopicConfigs() {
 
 }
+
+func (this *ZkClient) getAllBrokersInCluster() []Broker {
+
+}
+
+func (this *ZkClient) getBrokerInfo(brokerId int) Broker {
+
+}
+
+func (this *ZkClient) getAllTopics() []string {
+
+}
+
+func (this *ZkClient) getAllPartitions() []TopicAndPartition {
+
+}
+
+func (this *ZkClient) getReplicaAssignmentForTopics(topics []string) {
+
+}
+
+func (this *ZkClient) subscribeChildChanges(path string, handleChildChange func()) {
+
+}
+
+func (this *ZkClient) subscribeDataChanges(path string, handleDataChange func()) {
+
+}
+
+// session expires
+func (this *ZkClient) subscribeStateChanges(func()) {
+
+}
+
+func (this *ZkClient) deletePath(path string) {
+
+}

@@ -15,3 +15,7 @@ func (this *LogSegment) delete() {
 	this.log.delete()
 	this.index.delete()
 }
+
+func (this *LogSegment) append() {
+
+}

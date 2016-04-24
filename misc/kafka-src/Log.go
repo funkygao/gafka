@@ -17,7 +17,8 @@ type Log struct {
 	recoveryPoint int64 // offset
 	scheduler     *KafkaScheduler
 
-	segments map[int64]LogSegment // startOffset:LogSegment
+	segments   map[int64]LogSegment // startOffset:LogSegment
+	nextOffset int64
 }
 
 func (this *Log) deleteOldSegments(predicate func(LogSegment) bool) int {
@@ -56,4 +57,13 @@ func (this *Log) asyncDeleteSegment(seg LogSegment) {
 
 func (this *Log) roll() {
 
+}
+
+func (this *Log) maybeRoll() *LogSegment {
+
+}
+
+func (this *Log) append(msg MessageSet) {
+	segment := this.maybeRoll()
+	segment.append()
 }
