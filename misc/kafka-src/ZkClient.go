@@ -5,7 +5,8 @@ type ZkClient struct {
 
 func initZk() *ZkClient {
 	// setup common znode paths
-	for path := range []string{ConsumersPath, BrokerIdsPath, BrokerTopicsPath, TopicConfigChangesPath, TopicConfigPath, DeleteTopicsPath} {
+	for path := range []string{ConsumersPath, BrokerIdsPath, BrokerTopicsPath,
+		TopicConfigChangesPath, TopicConfigPath, DeleteTopicsPath} {
 		makeSurePersistentPathExists(path)
 	}
 	return &ZkClient{}
@@ -16,6 +17,10 @@ func (this *ZkClient) FetchAllTopicConfigs() {
 }
 
 func (this *ZkClient) getAllBrokersInCluster() []Broker {
+
+}
+
+func (this *ZkClient) getController() int {
 
 }
 

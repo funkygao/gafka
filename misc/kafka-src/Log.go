@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -19,6 +20,56 @@ type Log struct {
 
 	segments   map[int64]LogSegment // startOffset:LogSegment
 	nextOffset int64
+}
+
+func (this *Log) loadSegments() {
+	files, _ := this.dir.Readdir(0)
+	// first pass:  remove any temporary files and complete any interrupted swap operations
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+
+		if strings.HasSuffix(f.Name(), ".deleted") || strings.HasSuffix(f.Name(), ".cleaned") {
+			os.Remove(d.Name())
+		} else if strings.HasSuffix(f.Name(), ".swap") {
+			// we crashed in the middle of a swap operation, to recover:
+			// if a log, swap it in and delete the .index file
+			// if an index just delete it, it will be rebuilt
+		}
+	}
+
+	// second pass: load all the .log and .index files
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+
+		switch {
+		case strings.HasSuffix(f.Name(), ".index"):
+			// if found an orphaned index file, delete it
+
+		case strings.HasSuffix(f.Name(), ".log"):
+			start := extractStartOffsetFromLogFilename(f.Name())
+			seg := LogSegment{
+				dir:                this.dir,
+				baseOffset:         start,
+				indexIntervalBytes: config.getInt("index.interval.bytes", 4096),
+				maxIndexSize:       config.getInt("segment.index.bytes", 2<<10),
+			}
+			this.segments[start] = seg
+		}
+	}
+
+	if len(this.segments) == 0 {
+		// create an empty segment at offset 0
+	} else {
+		this.recoverLog()
+	}
+}
+
+func (this *Log) recoverLog() {
+
 }
 
 func (this *Log) deleteOldSegments(predicate func(LogSegment) bool) int {

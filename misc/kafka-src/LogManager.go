@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+/*
+			   TopicAndPartition	  baseOffset
+	LogManager -----------------> Log ----------> LogSegment ---> FileMessageSet
+
+*/
 type LogManager struct {
 	logDirs                  []os.File
 	logs                     map[TopicAndPartition]Log
@@ -17,12 +22,10 @@ type LogManager struct {
 }
 
 func (this *LogManager) Startup() {
-	this.createAndValidateLogDirs()
-	this.loadLogs()
-
 	this.zkClient.FetchAllTopicConfigs()
 
-	this.kafkaScheduler.Schedule("kafka-log-retention", this.cleanupLogs, 0, 0)
+	this.kafkaScheduler.Schedule("kafka-log-retention", this.cleanupLogs, time.Second*30,
+		config.getDuration("log.retention.check.interval.ms", time.Minute*5))
 	this.kafkaScheduler.Schedule("kafka-log-flusher", this.flushDirtyLogs, 0, 0)
 	this.kafkaScheduler.Schedule("kafka-recovery-point-checkpoint", this.checkpointRecoveryPointOffsets, 0, 0)
 
@@ -81,6 +84,7 @@ func (this *LogManager) loadLogs() {
 				recoveryPoint: this.recoveryPointCheckpoints[dir][tp],
 				scheduler:     this.kafkaScheduler,
 			}
+			this.logs[tp].loadSegments()
 		}
 	}
 

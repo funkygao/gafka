@@ -19,6 +19,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - pusher
   - firebase
   - parse
+  - pubsubhubbub
 
 ### Features
 
