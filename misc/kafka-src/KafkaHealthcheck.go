@@ -11,5 +11,5 @@ func (this *KafkaHealthcheck) Startup() {
 }
 
 func (this *KafkaHealthcheck) register() {
-	this.zkClient.registerBrokerId()
+	this.zkClient.registerBrokerInZk()
 }

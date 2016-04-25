@@ -6,7 +6,13 @@ type PartitionStateMachine struct {
 }
 
 func (this *PartitionStateMachine) registerListeners() {
+	this.zkClient.subscribeChildChanges("/brokers/topics", func() {
+		this.controller.onNewTopicCreation(topics, newPartitions)
+	})
 
+	if config.deleteTopicEnable {
+		registerDeleteTopicListener()
+	}
 }
 
 func (this *PartitionStateMachine) Startup() {

@@ -36,6 +36,10 @@ func (this *ZkClient) getAllPartitions() []TopicAndPartition {
 
 }
 
+func (this *ZkClient) getCluster() Cluster {
+	getChildrenParentMayNotExist("/brokers/ids")
+}
+
 func (this *ZkClient) getReplicaAssignmentForTopics(topics []string) {
 
 }

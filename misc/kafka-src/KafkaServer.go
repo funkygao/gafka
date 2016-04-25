@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"sync/atomic"
 )
 
@@ -28,14 +29,27 @@ func (this *KafkaServer) Startup() {
 
 	this.logManager.createAndValidateLogDirs()
 	this.logManager.loadLogs()
-	this.logManager.Startup() // schedule
+	this.logManager.Startup() // schedule retention,etc
 
-	this.socketServer.Startup()
+	this.socketServer.Startup() // read to accept new conn
+
+	this.apis = KafkaApis{}
+	// request handler will dispatch request to KafkaApis
+	this.requestHandlerPool = KafkaRequestHandlerPool{
+		brokerId: config.brokerId,
+		sock:     this.socketServer,
+	}
+
 	this.replicaManager.Startup()
 	this.kafkaController.Startup()
+
 	this.topicConfigManager.Startup()
+
+	// tell everyone we are alive: /brokers/ids/{brokerId}
+	// only controller watch /brokers/ids children changes
 	this.kafkaHealthcheck.Startup()
 
+	log.Println("started")
 }
 
 func (this *KafkaServer) controlledShutdown() {

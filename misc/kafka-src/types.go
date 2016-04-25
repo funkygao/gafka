@@ -1,6 +1,8 @@
 package main
 
 type KafkaRequestHandlerPool struct {
+	brokerId int
+	sock     *SocketServer
 }
 
 type TopicAndPartition struct {

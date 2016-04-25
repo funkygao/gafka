@@ -6,9 +6,14 @@ import (
 	"time"
 )
 
+type EventHandler interface {
+	handle([]KeyedMessage)
+	close()
+}
+
 type DefaultEventHandler struct {
-	topicMetadataRefreshInterval time.Duration // 10m by default
-	brokerPartitionInfo          BrokerPartitionInfo
+	topicMetadataRefreshInterval time.Duration       // 10m by default
+	brokerPartitionInfo          BrokerPartitionInfo // local meta data info
 	producerPool                 map[int]SyncProducer
 }
 

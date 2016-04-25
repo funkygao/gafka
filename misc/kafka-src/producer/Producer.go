@@ -1,22 +1,12 @@
 package main
 
-import (
-	"time"
-)
-
-type EventHandler interface {
-	handle([]KeyedMessage)
-	close()
-}
-
 type Producer struct {
 	sync bool
 
 	correlationId int64
 
-	queue                        chan KeyedMessage
-	eventHandler                 EventHandler
-	topicMetadataRefreshInterval time.Duration
+	queue        chan KeyedMessage
+	eventHandler EventHandler
 }
 
 func NewProducer(config KafkaConfig) *Producer {
@@ -35,9 +25,6 @@ func NewProducer(config KafkaConfig) *Producer {
 }
 
 func (this *Producer) producerSendThread() {
-	this.topicMetadataRefreshInterval = config.getDuration("topic.metadata.refresh.interval.ms",
-		time.Minute*10)
-
 	events := make([]KeyedMessage, 0)
 	batchSize := config.getInt("batch.num.messages", 200)
 	for msg := range this.queue {
