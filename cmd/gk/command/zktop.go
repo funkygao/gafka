@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/bjtime"
 	"github.com/funkygao/golib/color"
 )
 
@@ -19,6 +21,7 @@ type Zktop struct {
 	Ui  cli.Ui
 	Cmd string
 
+	batchMode       bool
 	refreshInterval time.Duration
 	lastSents       map[string]string
 	lastRecvs       map[string]string
@@ -31,6 +34,7 @@ func (this *Zktop) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("zktop", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	cmdFlags.DurationVar(&this.refreshInterval, "i", time.Second*5, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
@@ -39,8 +43,18 @@ func (this *Zktop) Run(args []string) (exitCode int) {
 	this.lastRecvs = make(map[string]string)
 	this.lastSents = make(map[string]string)
 
+	if this.batchMode {
+		this.Ui = &cli.BasicUi{
+			Writer:      os.Stdout,
+			Reader:      os.Stdin,
+			ErrorWriter: os.Stderr,
+		}
+	}
+
 	for {
-		refreshScreen()
+		if !this.batchMode {
+			refreshScreen()
+		}
 
 		if zone == "" {
 			forAllSortedZones(func(zkzone *zk.ZkZone) {
@@ -58,7 +72,12 @@ func (this *Zktop) Run(args []string) (exitCode int) {
 }
 
 func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
-	this.Ui.Output(color.Green(zkzone.Name()))
+	if this.batchMode {
+		this.Ui.Output(fmt.Sprintf("%s %s", zkzone.Name(), bjtime.NowBj()))
+	} else {
+		this.Ui.Output(color.Green(zkzone.Name()))
+	}
+
 	header := "VER             SERVER           PORT M  OUTST            RECVD             SENT CONNS  ZNODES LAT(MIN/AVG/MAX)"
 	this.Ui.Output(header)
 
@@ -77,8 +96,12 @@ func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 
 		stat := this.parsedStat(stats[hostPort])
 		if stat.mode == "" {
-			stat.mode = color.Red("E")
-		} else if stat.mode == "L" {
+			if this.batchMode {
+				stat.mode = "E"
+			} else {
+				stat.mode = color.Red("E")
+			}
+		} else if stat.mode == "L" && !this.batchMode {
 			stat.mode = color.Blue(stat.mode)
 		}
 		var sentQps, recvQps int
@@ -176,6 +199,9 @@ Options:
     -i interval
       Refresh interval in seconds.
       e,g. 5s
+
+    -b
+      Batch mode operation.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
