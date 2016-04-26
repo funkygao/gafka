@@ -9,5 +9,6 @@ var (
 		debug       bool
 		mock        bool
 		project     string
+		noUI        bool
 	}
 )

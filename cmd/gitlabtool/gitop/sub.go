@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -21,6 +22,9 @@ func subLoop() {
 			if !loaded {
 				loadedN = len(events)
 				loaded = true
+				if options.noUI {
+					log.Println("events loaded, ready for new events...")
+				}
 				close(ready)
 			}
 
@@ -40,11 +44,19 @@ func subLoop() {
 				}
 			}
 
+			if options.noUI {
+				if loaded {
+					displayNotify(eventContent(msg), "Glass")
+				}
+
+				continue
+			}
+
 			lock.Lock()
 			events = append(events, hook)
 			lock.Unlock()
 			if loaded {
-				newEvt <- struct{}{}
+				newEvt <- hook
 			}
 
 		case err := <-s.Errors():

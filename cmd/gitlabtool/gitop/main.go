@@ -16,6 +16,7 @@ func init() {
 	flag.StringVar(&options.project, "p", "", "display only a single project events")
 	flag.BoolVar(&options.webhookOnly, "web", false, "webhook only")
 	flag.BoolVar(&options.syshookOnly, "sys", false, "system hook only")
+	flag.BoolVar(&options.noUI, "plain", false, "without UI mode")
 	flag.StringVar(&options.logfile, "l", "", "log file")
 	flag.Parse()
 
@@ -29,7 +30,7 @@ var (
 	lock    sync.Mutex
 	loadedN int
 	errCh   chan error
-	newEvt  chan struct{}
+	newEvt  chan interface{}
 	events  []interface{}
 	quit    chan struct{}
 	ready   chan struct{}
@@ -37,7 +38,7 @@ var (
 
 func main() {
 	quit = make(chan struct{})
-	newEvt = make(chan struct{}, 10)
+	newEvt = make(chan interface{}, 10)
 	errCh = make(chan error)
 	ready = make(chan struct{})
 	if options.logfile == "" {
@@ -69,5 +70,10 @@ func main() {
 		return
 	}
 
-	runUILoop()
+	if options.noUI {
+		select {}
+	} else {
+		runUILoop()
+	}
+
 }

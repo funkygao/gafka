@@ -34,8 +34,8 @@ func runUILoop() {
 
 	for {
 		select {
-		case <-newEvt:
-			drawNotify()
+		case evt := <-newEvt:
+			drawNotify(eventContent(evt))
 			time.Sleep(time.Second)
 			detailView = false
 			dashboardView = false

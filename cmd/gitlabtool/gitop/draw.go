@@ -369,10 +369,9 @@ func drawSplash() {
 	termbox.Flush()
 }
 
-func drawNotify() {
+func drawNotify(row string) {
 	refreshSize()
 	termbox.Clear(coldef, coldef)
-	row := "Got a new event from gitlab!"
 	x, y := w/2-len(row)/2, h/2+1
 	for i, c := range row {
 		termbox.SetCell(x+i, y, c, termbox.ColorGreen, coldef)
