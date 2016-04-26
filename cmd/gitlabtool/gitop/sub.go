@@ -46,7 +46,9 @@ func subLoop() {
 
 			if options.noUI {
 				if loaded {
-					displayNotify(eventContent(msg), "Glass")
+					event := eventContent(msg)
+					log.Println(event)
+					displayNotify(event, "Glass")
 				}
 
 				continue
