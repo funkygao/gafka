@@ -42,7 +42,9 @@ func main() {
 	errCh = make(chan error)
 	ready = make(chan struct{})
 	if options.logfile == "" {
-		log.SetOutput(ioutil.Discard)
+		if !options.noUI {
+			log.SetOutput(ioutil.Discard)
+		}
 	} else {
 		f, err := os.OpenFile(options.logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
