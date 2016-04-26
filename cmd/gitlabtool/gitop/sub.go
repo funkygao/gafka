@@ -15,6 +15,7 @@ func subLoop() {
 	s, _ := c.ConsumePartition(options.topic, 0, sarama.OffsetOldest)
 	defer s.Close()
 
+	t0 := time.Now()
 	loaded := false
 	for {
 		select {
@@ -23,7 +24,8 @@ func subLoop() {
 				loadedN = len(events)
 				loaded = true
 				if options.noUI {
-					log.Println("events loaded, ready for new events...")
+					log.Printf("events loaded in %s, ready for new events...",
+						time.Since(t0))
 				}
 				close(ready)
 			}

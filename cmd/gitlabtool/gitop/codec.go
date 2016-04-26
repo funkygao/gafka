@@ -82,7 +82,9 @@ func eventContent(evt interface{}) string {
 func decode(msg []byte) interface{} {
 	var hook interface{}
 	event := string(msg)
-	log.Println(event)
+	if options.debug {
+		log.Println(event)
+	}
 	switch {
 	case strings.HasPrefix(event, `{"event_name":"project_create"`):
 		hook = &SystemHookProjectCreate{}
