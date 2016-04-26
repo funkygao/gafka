@@ -377,8 +377,9 @@ func drawNotify() {
 	for i, c := range row {
 		termbox.SetCell(x+i, y, c, termbox.ColorGreen, coldef)
 	}
-	//println("\a") // beep
 	termbox.Flush()
+
+	displayNotify(row, "Glass")
 }
 
 func drawFooter() {
