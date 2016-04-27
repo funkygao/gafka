@@ -21,6 +21,8 @@ func TestPatternMatched(t *testing.T) {
 	assert.Equal(t, true, patternMatched("orderstatus", "order"))
 	assert.Equal(t, false, patternMatched("orderstatus", "~order"))
 	assert.Equal(t, true, patternMatched("flashtrade_web", "~svc_hippo"))
+	assert.Equal(t, false, patternMatched("34.StrollSearchRuleMsg.v1", "laxinRiskControl"))
+	assert.Equal(t, true, patternMatched("34.laxinRiskControl.v1", "laxinRiskControl"))
 }
 
 func TestShortIp(t *testing.T) {
