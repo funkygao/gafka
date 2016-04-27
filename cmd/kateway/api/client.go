@@ -288,7 +288,9 @@ func (this *Client) Sub(opt SubOption, h SubHandler) error {
 
 type SubXHandler func(statusCode int, msg []byte, r *SubXResult) error
 type SubXResult struct {
-	Bury string
+	Bury      string
+	Offset    string
+	Partition string
 }
 
 func (this *SubXResult) Reset() {
@@ -334,12 +336,14 @@ func (this *Client) SubX(opt SubOption, h SubXHandler) error {
 		}
 
 		r.Reset()
+		r.Partition = response.Header.Get("X-Partition")
+		r.Offset = response.Header.Get("X-Offset")
 		if err := h(response.StatusCode, b, r); err != nil {
 			return err
 		}
 
-		req.Set("X-Partition", response.Header.Get("X-Partition"))
-		req.Set("X-Offset", response.Header.Get("X-Offset"))
+		req.Set("X-Partition", r.Partition)
+		req.Set("X-Offset", r.Offset)
 
 		if r.Bury != "" {
 			if r.Bury != ShadowRetry && r.Bury != ShadowDead {
