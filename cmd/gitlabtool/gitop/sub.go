@@ -64,6 +64,7 @@ func subLoop() {
 			}
 
 		case err := <-s.Errors():
+			log.Println(err.Error())
 			errCh <- err.Err
 
 		case <-quit:
