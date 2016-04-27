@@ -37,7 +37,7 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.StringVar(&this.groupPattern, "g", "", "")
-	cmdFlags.BoolVar(&this.tableFmt, "table", false, "")
+	cmdFlags.BoolVar(&this.tableFmt, "table", true, "")
 	cmdFlags.BoolVar(&this.onlineOnly, "online", false, "")
 	cmdFlags.BoolVar(&this.byHost, "byhost", false, "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
@@ -216,7 +216,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 						lines = append(lines,
 							fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
 								zkzone.Name(), zkcluster.Name(),
-								"☀︎",
+								"◉",
 								c.Host(),
 								group,
 								fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),
@@ -230,7 +230,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 					lines = append(lines,
 						fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
 							zkzone.Name(), zkcluster.Name(),
-							"☔︎",
+							"◎",
 							" ",
 							group, fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),
 							offset.offset, " "))
