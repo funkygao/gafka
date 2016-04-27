@@ -41,6 +41,7 @@ func main() {
 	newEvt = make(chan interface{}, 10)
 	errCh = make(chan error)
 	ready = make(chan struct{})
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
 	if options.logfile == "" {
 		if !options.noUI {
 			log.SetOutput(ioutil.Discard)
