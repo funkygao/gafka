@@ -126,6 +126,7 @@ public class KafkaConsumer {
         KafkaStream<String, String> stream = consumerMap.get(topic).get(0);
         ConsumerIterator<String, String> it = stream.iterator();
         while (it.hasNext()) {
+            // consumer.commitOffsets(); // manually commit offsets
             System.out.println(it.next().message());
         }
     }
