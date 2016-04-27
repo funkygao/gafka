@@ -91,7 +91,7 @@ public class KafkaConsumer {
         props.put("%s", "group1");
         props.put("zookeeper.session.timeout.ms", "4000");
         props.put("zookeeper.sync.time.ms", "200");
-        props.put("auto.commit.interval.ms", "60000"); // 1m
+        props.put("auto.commit.interval.ms", "60000");   // 1m
         //props.put("auto.offset.reset", "smallest");    // largest | smallest
         props.put("serializer.class", "kafka.serializer.StringEncoder");
         ConsumerConfig config = new ConsumerConfig(props);
@@ -111,7 +111,7 @@ public class KafkaConsumer {
         // %s
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                example.shutdown();
+                consumer.shutdown();
             }
         });
 
