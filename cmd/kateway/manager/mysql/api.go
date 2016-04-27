@@ -80,8 +80,10 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 	}
 
 	// group verification
-	if _, present := this.appConsumerGroupMap[appid]; !present {
-		return manager.ErrInvalidGroup
+	if group != "__smoketest__" {
+		if _, present := this.appConsumerGroupMap[appid]; !present {
+			return manager.ErrInvalidGroup
+		}
 	}
 
 	if appid == hisAppid {
