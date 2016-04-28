@@ -94,92 +94,42 @@ func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 			panic(err)
 		}
 
-		stat := this.parsedStat(stats[hostPort])
-		if stat.mode == "" {
+		stat := zk.ParseStatResult(stats[hostPort])
+		if stat.Mode == "" {
 			if this.batchMode {
-				stat.mode = "E"
+				stat.Mode = "E"
 			} else {
-				stat.mode = color.Red("E")
+				stat.Mode = color.Red("E")
 			}
-		} else if stat.mode == "L" && !this.batchMode {
-			stat.mode = color.Blue(stat.mode)
+		} else if stat.Mode == "L" && !this.batchMode {
+			stat.Mode = color.Blue(stat.Mode)
 		}
 		var sentQps, recvQps int
 		if lastRecv, present := this.lastRecvs[hostPort]; present {
-			r1, _ := strconv.Atoi(stat.received)
+			r1, _ := strconv.Atoi(stat.Received)
 			r0, _ := strconv.Atoi(lastRecv)
 			recvQps = (r1 - r0) / int(this.refreshInterval.Seconds())
 
-			s1, _ := strconv.Atoi(stat.sent)
+			s1, _ := strconv.Atoi(stat.Sent)
 			s0, _ := strconv.Atoi(this.lastSents[hostPort])
 			sentQps = (s1 - s0) / int(this.refreshInterval.Seconds())
 		}
 		this.Ui.Output(fmt.Sprintf("%-15s %-15s %5s %1s %6s %16s %16s %5s %7s %s",
-			stat.ver,                                     // 15
+			stat.Version,                                 // 15
 			host,                                         // 15
 			port,                                         // 5
-			stat.mode,                                    // 1
-			stat.outstanding,                             // 6
-			fmt.Sprintf("%s/%d", stat.received, recvQps), // 16
-			fmt.Sprintf("%s/%d", stat.sent, sentQps),     // 16
-			stat.connections,                             // 5
-			stat.znodes,                                  // 7
-			stat.latency,
+			stat.Mode,                                    // 1
+			stat.Outstanding,                             // 6
+			fmt.Sprintf("%s/%d", stat.Received, recvQps), // 16
+			fmt.Sprintf("%s/%d", stat.Sent, sentQps),     // 16
+			stat.Connections,                             // 5
+			stat.Znodes,                                  // 7
+			stat.Latency,
 		))
 
-		this.lastRecvs[hostPort] = stat.received
-		this.lastSents[hostPort] = stat.sent
+		this.lastRecvs[hostPort] = stat.Received
+		this.lastSents[hostPort] = stat.Sent
 	}
-}
-
-type zkStat struct {
-	ver            string
-	latency        string
-	connections    string
-	outstanding    string
-	mode           string
-	znodes         string
-	received, sent string
-}
-
-func (this *Zktop) parsedStat(s string) (stat zkStat) {
-	lines := strings.Split(s, "\n")
-	for _, l := range lines {
-		switch {
-		case strings.HasPrefix(l, "Zookeeper version:"):
-			p := strings.SplitN(l, ":", 2)
-			p = strings.SplitN(p[1], ",", 2)
-			stat.ver = strings.TrimSpace(p[0])
-
-		case strings.HasPrefix(l, "Latency"):
-			stat.latency = this.extractStatValue(l)
-
-		case strings.HasPrefix(l, "Sent"):
-			stat.sent = this.extractStatValue(l)
-
-		case strings.HasPrefix(l, "Received"):
-			stat.received = this.extractStatValue(l)
-
-		case strings.HasPrefix(l, "Connections"):
-			stat.connections = this.extractStatValue(l)
-
-		case strings.HasPrefix(l, "Mode"):
-			stat.mode = strings.ToUpper(this.extractStatValue(l)[:1])
-
-		case strings.HasPrefix(l, "Node count"):
-			stat.znodes = this.extractStatValue(l)
-
-		case strings.HasPrefix(l, "Outstanding"):
-			stat.outstanding = this.extractStatValue(l)
-
-		}
-	}
-	return
-}
-
-func (this *Zktop) extractStatValue(l string) string {
-	p := strings.SplitN(l, ":", 2)
-	return strings.TrimSpace(p[1])
 }
 
 func (*Zktop) Synopsis() string {
