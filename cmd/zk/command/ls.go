@@ -74,11 +74,11 @@ func (this *Ls) showChildrenRecursively(conn *zk.Conn, path string) {
 		}
 
 		znode := path + "/" + child
-		if this.likePattern != "" && !strings.Contains(znode, this.likePattern) {
-			continue
+
+		if patternMatched(znode, this.likePattern) {
+			this.Ui.Output(znode)
 		}
 
-		this.Ui.Output(znode)
 		this.showChildrenRecursively(conn, znode)
 	}
 }

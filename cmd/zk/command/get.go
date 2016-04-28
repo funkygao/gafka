@@ -84,20 +84,21 @@ func (this *Get) showChildrenRecursively(conn *zk.Conn, path string) {
 		}
 
 		znode := fmt.Sprintf("%s/%s", path, child)
-		if this.likePattern != "" && !strings.Contains(znode, this.likePattern) {
-			continue
-		}
 
 		// display znode content
 		data, stat, err := conn.Get(znode)
 		must(err)
 		if stat.EphemeralOwner > 0 {
-			this.Ui.Output(color.Yellow(znode))
+			if patternMatched(znode, this.likePattern) {
+				this.Ui.Output(color.Yellow(znode))
+			}
 		} else {
-			this.Ui.Output(color.Green(znode))
+			if patternMatched(znode, this.likePattern) {
+				this.Ui.Output(color.Green(znode))
+			}
 		}
 
-		if len(data) > 0 {
+		if len(data) > 0 && patternMatched(znode, this.likePattern) {
 			if this.verbose {
 				this.Ui.Output(fmt.Sprintf("%s %#v",
 					strings.Repeat(" ", 3), stat))

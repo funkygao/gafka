@@ -139,3 +139,11 @@ func must(err error) {
 		os.Exit(1)
 	}
 }
+
+func patternMatched(s, pattern string) bool {
+	if pattern != "" && !strings.Contains(s, pattern) {
+		return false
+	}
+
+	return true
+}
