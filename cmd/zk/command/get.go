@@ -17,10 +17,11 @@ type Get struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone      string
-	path      string
-	verbose   bool
-	recursive bool
+	zone        string
+	path        string
+	verbose     bool
+	recursive   bool
+	likePattern string
 }
 
 func (this *Get) Run(args []string) (exitCode int) {
@@ -29,6 +30,7 @@ func (this *Get) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.BoolVar(&this.recursive, "R", false, "")
+	cmdFlags.StringVar(&this.likePattern, "like", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -82,6 +84,9 @@ func (this *Get) showChildrenRecursively(conn *zk.Conn, path string) {
 		}
 
 		znode := fmt.Sprintf("%s/%s", path, child)
+		if this.likePattern != "" && !strings.Contains(znode, this.likePattern) {
+			continue
+		}
 
 		// display znode content
 		data, stat, err := conn.Get(znode)
@@ -126,6 +131,9 @@ Options:
 
     -l
       Use a long display format.
+
+    -like pattern
+      Only display znode whose path is like this pattern.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

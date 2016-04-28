@@ -16,9 +16,10 @@ type Ls struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone      string
-	path      string
-	recursive bool
+	zone        string
+	path        string
+	recursive   bool
+	likePattern string
 }
 
 func (this *Ls) Run(args []string) (exitCode int) {
@@ -26,6 +27,7 @@ func (this *Ls) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&this.recursive, "R", false, "")
+	cmdFlags.StringVar(&this.likePattern, "like", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -71,8 +73,13 @@ func (this *Ls) showChildrenRecursively(conn *zk.Conn, path string) {
 			path = ""
 		}
 
-		this.Ui.Output(path + "/" + child)
-		this.showChildrenRecursively(conn, path+"/"+child)
+		znode := path + "/" + child
+		if this.likePattern != "" && !strings.Contains(znode, this.likePattern) {
+			continue
+		}
+
+		this.Ui.Output(znode)
+		this.showChildrenRecursively(conn, znode)
 	}
 }
 
@@ -91,7 +98,10 @@ Options:
     -z zone
 
     -R
-      Recursively list subdirectories encountered.    
+      Recursively list subdirectories encountered.
+
+    -like pattern
+      Only display znode whose path is like this pattern.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
