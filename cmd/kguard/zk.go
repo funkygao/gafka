@@ -16,6 +16,8 @@ type MonitorZk struct {
 	stop   chan struct{}
 	tick   time.Duration
 	wg     *sync.WaitGroup
+
+	lastReceived int64
 }
 
 func (this *MonitorZk) Init() {
@@ -28,7 +30,7 @@ func (this *MonitorZk) Run() {
 	ticker := time.NewTicker(this.tick)
 	defer ticker.Stop()
 
-	qps := metrics.NewRegisteredMeter("zk.qps", nil)
+	qps := metrics.NewRegisteredGauge("zk.qps", nil)
 	conns := metrics.NewRegisteredGauge("zk.conns", nil)
 	znodes := metrics.NewRegisteredGauge("zk.znodes", nil)
 	for {
@@ -38,7 +40,11 @@ func (this *MonitorZk) Run() {
 
 		case <-ticker.C:
 			r, c, z := this.collectMetrics()
-			qps.Mark(r)
+			if this.lastReceived > 0 {
+				qps.Update((r - this.lastReceived) / int64(this.tick.Seconds()))
+			}
+			this.lastReceived = r
+
 			conns.Update(c)
 			znodes.Update(z)
 		}
