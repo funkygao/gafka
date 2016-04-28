@@ -317,8 +317,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			Partition: int32(partitionN),
 			Offset:    offsetN,
 		}); err != nil {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s partition:%s offset:%s} %v",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, partition, offset, err)
+			log.Error("sub commit[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s partition:%s offset:%s T:%s} %v",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				group, partition, offset, rawTopic, err)
 
 			this.writeBadRequest(w, err.Error())
 			return
