@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	tickTime          = 3000 // zoo.cfg, default 3s
+	tickTime          = 2000 // zoo.cfg
 	minSessionTimeout = -1   // zoo.cfg
 	maxSessionTimeout = -1   // zoo.cfg
 )
@@ -63,7 +63,7 @@ func getRealSessionTimeout(clientSessionTimeout int) int {
 func main() {
 	var clientConfiggedSessionTimeout int
 	flag.IntVar(&clientConfiggedSessionTimeout, "c", 30*1000, "client side zk session timeout, which will be sent to zk for negotiation")
-	flag.IntVar(&tickTime, "t", 3000, "tickTime in zoo.cfg")
+	flag.IntVar(&tickTime, "t", 2000, "tickTime in zoo.cfg")
 	flag.Parse()
 
 	fmt.Printf("tickTime=%ds\n", tickTime/1000)
