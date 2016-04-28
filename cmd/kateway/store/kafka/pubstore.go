@@ -68,6 +68,7 @@ func (this *pubStore) Start() (err error) {
 			meta.Default.BrokerList(cluster), this.pubPoolsCapcity)
 	}
 
+	// TODO watch KatewayDisqueAddrs znode
 	this.refreshJobPoolNodes()
 
 	go func() {
