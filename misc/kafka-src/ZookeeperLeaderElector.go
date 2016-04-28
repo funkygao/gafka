@@ -17,6 +17,8 @@ type ZookeeperLeaderElector struct {
 
 func (this *ZookeeperLeaderElector) Startup() {
 	this.leaderId = -1
+	// /controller是临时节点，谁先创建了，谁就是controller了
+	this.electionPath = "/controller"
 
 	this.zkClient.subscribeDataChanges(this.electionPath, this.leaderChangeListener)
 
@@ -36,13 +38,12 @@ func (this *ZookeeperLeaderElector) elect() {
 				log.Printf("A leader has been elected but just resigned, this will result in another round of election")
 				return
 			} else {
-				log.Printf("Broker %d was elected as leader", this.leaderId)
+				log.Printf("Broker %d was elected as leader instead of me", this.leaderId)
 			}
 		} else {
 			// unkown err
 			this.resign()
 		}
-
 	}
 
 }

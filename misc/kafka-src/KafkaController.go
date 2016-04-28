@@ -1,5 +1,9 @@
 package main
 
+import (
+	"log"
+)
+
 // will connect to each broker in the cluster
 // watch /brokers/ids to know most recent topology
 type KafkaController struct {
@@ -24,18 +28,27 @@ type KafkaController struct {
 }
 
 func (this *KafkaController) Startup() {
-	registerControllerChangedListener()
-
-	this.zkclient.subscribeStateChanges(func() {
-
+	// epoch listener
+	this.zkclient.subscribeDataChanges("/controller_epoch", func(epoch int, epochZkVersion int) {
+		this.controllerContext.epoch = epoch
+		this.controllerContext.epochZkVersion = epochZkVersion
 	})
 
+	this.zkclient.subscribeStateChanges(func() {
+		log.Println("ZK expired; shut down all controller components and try to re-elect")
+		this.onControllerResignation()
+		this.controllerElector.elect()
+	})
+
+	// 监视/controller的变化
+	// 发现/controller被删除时，选举自己；/controller数据变化时，获取新的controller id
 	this.controllerElector = ZookeeperLeaderElector{"/controller", this.onBecomingLeader,
 		this.onControllerResignation, config.brokerId}
 	this.controllerElector.Startup()
 
 }
 
+// named as onControllerFailover in kafka
 func (this *KafkaController) onBecomingLeader() {
 	incrementControllerEpoch(this.zkclient)
 	registerReassignedPartitionsListener()
@@ -91,8 +104,9 @@ func (this *KafkaController) shutdownBroker(brokerId int) {
 
 }
 
+// /brokers/ids 发现有新增的broker id
 func (this *KafkaController) onBrokerStartup(newBrokers []int) {
-
+	sendUpdateMetadataRequest(newBrokers)
 }
 
 func (this *KafkaController) onBrokerFailure(deadBrokers []int) {
