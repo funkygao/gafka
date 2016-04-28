@@ -56,7 +56,7 @@ listen pub
     #cookie PUB insert indirect # indirect means not sending cookie to backend
     #option httpchk GET /alive HTTP/1.1\r\nHost:pub.ffan.com
 {{range .Pub}}
-    server {{.Name}} {{.Addr}} cookie {{.Name}} weight {{.Cpu}}
+    server {{.Name}} {{.Addr}} weight {{.Cpu}}
 {{end}}
 
 listen sub
@@ -67,7 +67,7 @@ listen sub
     #cookie SUB insert indirect
     #option httpchk GET /alive HTTP/1.1\r\nHost:sub.ffan.com
 {{range .Sub}}
-    server {{.Name}} {{.Addr}} cookie {{.Name}} weight {{.Cpu}}
+    server {{.Name}} {{.Addr}} weight {{.Cpu}}
 {{end}}
 
 listen man
