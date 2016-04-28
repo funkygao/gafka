@@ -8,6 +8,8 @@ import (
 	"github.com/funkygao/go-metrics"
 )
 
+var _ Executor = &MonitorClusters{}
+
 // MonitorClusters montor num of clusters over the time.
 type MonitorClusters struct {
 	zkzone *zk.ZkZone

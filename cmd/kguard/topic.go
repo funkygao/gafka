@@ -10,6 +10,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+var _ Executor = &MonitorTopics{}
+
 // MonitorTopics montor total msg count over time.
 type MonitorTopics struct {
 	zkzone *zk.ZkZone

@@ -10,6 +10,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+var _ Executor = &MonitorReplicas{}
+
 // MonitorReplicas reports out of sync partitions num over time.
 type MonitorReplicas struct {
 	zkzone *zk.ZkZone

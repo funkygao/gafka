@@ -9,6 +9,8 @@ import (
 	"github.com/funkygao/go-metrics"
 )
 
+var _ Executor = &MonitorBrokers{}
+
 // MonitorBrokers monitors aliveness of brokers.
 type MonitorBrokers struct {
 	zkzone *zk.ZkZone

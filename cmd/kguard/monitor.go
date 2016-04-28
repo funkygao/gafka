@@ -81,6 +81,7 @@ func (this *Monitor) Start() {
 	this.addExecutor(&MonitorReplicas{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
 	this.addExecutor(&MonitorConsumers{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
 	this.addExecutor(&MonitorClusters{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
+	this.addExecutor(&MonitorZk{zkzone: this.zkzone, tick: time.Second * 20, stop: this.stop, wg: wg})
 	this.addExecutor(&MonitorF5{tick: time.Minute, stop: this.stop, wg: wg})
 	for _, e := range this.executors {
 		wg.Add(1)

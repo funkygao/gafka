@@ -8,6 +8,8 @@ import (
 	"github.com/funkygao/go-metrics"
 )
 
+var _ Executor = &MonitorConsumers{}
+
 // MonitorConsumers monitors num of online consumer groups over the time.
 type MonitorConsumers struct {
 	zkzone *zk.ZkZone
