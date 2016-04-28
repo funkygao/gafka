@@ -9,7 +9,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// /ws/msgs/:topic/:ver
+// POST /ws/msgs/:topic/:ver
 // TODO not implemented yet
 func (this *Gateway) pubWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {

@@ -26,8 +26,8 @@ type SubStatus struct {
 	Consumed  int64  `json:"subd"`
 }
 
-// /raw/msgs/:appid/:topic/:ver?group=xx
-// tells client how to sub in raw mode: how to connect kafka
+// GET /raw/msgs/:appid/:topic/:ver?group=xx
+// tells client how to sub in raw mode: how to connect directly to kafka
 func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -76,7 +76,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// /peek/:appid/:topic/:ver?n=10&q=retry&wait=5s
+// GET /peek/:appid/:topic/:ver?n=10&q=retry&wait=5s
 func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -216,7 +216,7 @@ LOOP:
 	w.Write(d)
 }
 
-// /status/:appid/:topic/:ver?group=xx
+// GET /status/:appid/:topic/:ver?group=xx
 // FIXME currently there might be in flight offsets because of batch offset commit
 // TODO show shadow consumers too
 func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
@@ -273,7 +273,13 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// /groups/:appid/:topic/:ver/:group
+// PUT
+func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+
+}
+
+// DELETE /groups/:appid/:topic/:ver/:group
 // TODO delete shadow consumers too
 func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
@@ -336,7 +342,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
-// /subd/:topic/:ver
+// GET /subd/:topic/:ver
 func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -385,7 +391,7 @@ func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// /shadow/:appid/:topic/:ver/:group
+// POST /shadow/:appid/:topic/:ver/:group
 func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (

@@ -13,7 +13,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// /bury/:appid/:topic/:ver?group=xx&q=yy
+// PUT /bury/:appid/:topic/:ver?group=xx&q=yy
 func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -172,7 +172,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// /msgs/:appid/:topic/:ver?group=xx&&reset=<newest|oldest>&ack=1&q=<dead|retry>
+// GET /msgs/:appid/:topic/:ver?group=xx&&reset=<newest|oldest>&ack=1&q=<dead|retry>
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
