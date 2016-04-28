@@ -343,6 +343,11 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 
 		topicLoop:
 			for partitionId, offsetData := range this.zone.ChildrenWithData(this.consumerGroupOffsetOfTopicPath(group, topic)) {
+				if _, present := consumerInstances[partitionId]; !present {
+					// found no consumer instance on this partition
+					continue
+				}
+
 				consumerOffset, err := strconv.ParseInt(string(offsetData.data), 10, 64)
 				if err != nil {
 					log.Error("kafka[%s] %s P:%s %v", this.name, topic, partitionId, err)
