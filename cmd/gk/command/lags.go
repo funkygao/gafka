@@ -202,14 +202,14 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 				if consumer.Online {
 					symbol = color.Yellow("⚠︎︎")
 				} else {
-					symbol = color.Yellow("☔︎︎")
+					symbol = color.Yellow("◎")
 				}
 			} else {
 				lagOutput = color.Blue("%15s", gofmt.Comma(consumer.Lag))
 				if consumer.Online {
-					symbol = color.Green("☀︎")
+					symbol = color.Green("◉")
 				} else {
-					symbol = color.Yellow("☔︎︎")
+					symbol = color.Yellow("◎")
 				}
 			}
 
