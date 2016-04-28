@@ -334,7 +334,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, cluster,
-		rawTopic, ver, group, delayedAck, tagFilters)
+		topic, ver, group, delayedAck, tagFilters)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
