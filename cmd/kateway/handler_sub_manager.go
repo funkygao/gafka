@@ -273,10 +273,84 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// PUT
+// PUT /offset/:appid/:topic/:ver/:group/:partition?offset=xx
 func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
+	var (
+		topic     string
+		ver       string
+		partition string
+		myAppid   string
+		hisAppid  string
+		offset    string
+		offsetN   int64
+		group     string
+		err       error
+	)
 
+	if !this.throttleSubStatus.Pour(getHttpRemoteIp(r), 1) {
+		this.writeQuotaExceeded(w)
+		return
+	}
+
+	offset = r.URL.Query().Get("offset")
+	group = params.ByName(UrlParamGroup)
+	partition = params.ByName("partition")
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	hisAppid = params.ByName(UrlParamAppid)
+	myAppid = r.Header.Get(HttpHeaderAppid)
+
+	offsetN, err = strconv.ParseInt(offset, 10, 64)
+	if err != nil {
+		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset, err)
+
+		this.writeBadRequest(w, err.Error())
+		return
+	}
+	if offsetN < 0 {
+		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} negative offset",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset)
+
+		this.writeBadRequest(w, "offset must be positive")
+		return
+	}
+
+	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
+		hisAppid, topic, group); err != nil {
+		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset, err)
+
+		this.writeAuthFailure(w, err)
+		return
+	}
+
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} cluster not found",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset)
+
+		this.writeBadRequest(w, "invalid appid")
+		return
+	}
+
+	log.Info("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s}",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset)
+
+	zkcluster := meta.Default.ZkCluster(cluster)
+	realGroup := myAppid + "." + group
+	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
+	err = zkcluster.ResetConsumerGroupOffset(rawTopic, realGroup, partition, offsetN)
+	if err != nil {
+		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset, err)
+
+		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(ResponseOk)
 }
 
 // DELETE /groups/:appid/:topic/:ver/:group
