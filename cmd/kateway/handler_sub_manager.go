@@ -26,7 +26,7 @@ type SubStatus struct {
 	Consumed  int64  `json:"subd"`
 }
 
-// GET /raw/msgs/:appid/:topic/:ver?group=xx
+// GET /v1/raw/msgs/:appid/:topic/:ver?group=xx
 // tells client how to sub in raw mode: how to connect directly to kafka
 func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
@@ -76,7 +76,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// GET /peek/:appid/:topic/:ver?n=10&q=retry&wait=5s
+// GET /v1/peek/:appid/:topic/:ver?n=10&q=retry&wait=5s
 func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -216,7 +216,7 @@ LOOP:
 	w.Write(d)
 }
 
-// GET /status/:appid/:topic/:ver?group=xx
+// GET /v1/status/:appid/:topic/:ver?group=xx
 // FIXME currently there might be in flight offsets because of batch offset commit
 // TODO show shadow consumers too
 func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
@@ -353,7 +353,7 @@ func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Reques
 	w.Write(ResponseOk)
 }
 
-// DELETE /groups/:appid/:topic/:ver/:group
+// DELETE /v1/groups/:appid/:topic/:ver/:group
 // TODO delete shadow consumers too
 func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
@@ -416,7 +416,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
-// GET /subd/:topic/:ver
+// GET /v1/subd/:topic/:ver
 func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -465,7 +465,7 @@ func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// POST /shadow/:appid/:topic/:ver/:group
+// POST /v1/shadow/:appid/:topic/:ver/:group
 func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (

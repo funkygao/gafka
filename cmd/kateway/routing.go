@@ -10,43 +10,49 @@ func (this *Gateway) buildRouting() {
 	m := this.MiddlewareKateway
 
 	this.manServer.Router().GET("/alive", m(this.checkAliveHandler))
-	this.manServer.Router().GET("/clusters", m(this.clustersHandler))
-	this.manServer.Router().GET("/clients", m(this.clientsHandler))
-	this.manServer.Router().GET("/status", m(this.statusHandler))
-	this.manServer.Router().PUT("/options/:option/:value", m(this.setOptionHandler))
-	this.manServer.Router().PUT("/log/:level", m(this.setlogHandler))
-	this.manServer.Router().DELETE("/counter/:name", m(this.resetCounterHandler))
+
+	// api for 'gk kateway'
+	this.manServer.Router().GET("/v1/clusters", m(this.clustersHandler))
+	this.manServer.Router().GET("/v1/clients", m(this.clientsHandler))
+	this.manServer.Router().GET("/v1/status", m(this.statusHandler))
+	this.manServer.Router().PUT("/v1/options/:option/:value", m(this.setOptionHandler))
+	this.manServer.Router().PUT("/v1/log/:level", m(this.setlogHandler))
+	this.manServer.Router().DELETE("/v1/counter/:name", m(this.resetCounterHandler))
 
 	// api for pubsub manager
-	this.manServer.Router().GET("/partitions/:cluster/:appid/:topic/:ver", m(this.partitionsHandler))
-	this.manServer.Router().POST("/topics/:cluster/:appid/:topic/:ver", m(this.addTopicHandler))
+	this.manServer.Router().GET("/v1/partitions/:cluster/:appid/:topic/:ver",
+		m(this.partitionsHandler))
+	this.manServer.Router().POST("/v1/topics/:cluster/:appid/:topic/:ver",
+		m(this.addTopicHandler))
 
 	if this.pubServer != nil {
+		this.pubServer.Router().GET("/alive", m(this.checkAliveHandler))
+
 		this.pubServer.Router().POST("/topics/:topic/:ver", m(this.pubHandler)) // TODO deprecated
 
 		// TODO /v1/msgs/:topic/:ver
-		this.pubServer.Router().POST("/msgs/:topic/:ver", m(this.pubHandler))
-		this.pubServer.Router().POST("/ws/msgs/:topic/:ver", m(this.pubWsHandler))
-		this.pubServer.Router().POST("/jobs/:topic/:ver", m(this.addJobHandler))
-		this.pubServer.Router().DELETE("/jobs/:topic/:ver", m(this.deleteJobHandler))
-		this.pubServer.Router().GET("/alive", m(this.checkAliveHandler))
+		this.pubServer.Router().POST("/v1/msgs/:topic/:ver", m(this.pubHandler))
+		this.pubServer.Router().POST("/v1/ws/msgs/:topic/:ver", m(this.pubWsHandler))
+		this.pubServer.Router().POST("/v1/jobs/:topic/:ver", m(this.addJobHandler))
+		this.pubServer.Router().DELETE("/v1/jobs/:topic/:ver", m(this.deleteJobHandler))
 	}
 
 	if this.subServer != nil {
-		this.subServer.Router().GET("/topics/:appid/:topic/:ver", m(this.subHandler)) // TODO deprecated
-
-		this.subServer.Router().GET("/msgs/:appid/:topic/:ver", m(this.subHandler))
-		this.subServer.Router().GET("/ws/msgs/:appid/:topic/:ver", m(this.subWsHandler))
-		this.subServer.Router().PUT("/bury/:appid/:topic/:ver", m(this.buryHandler))
 		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
 
+		this.subServer.Router().GET("/topics/:appid/:topic/:ver", m(this.subHandler)) // TODO deprecated
+
+		this.subServer.Router().GET("/v1/msgs/:appid/:topic/:ver", m(this.subHandler))
+		this.subServer.Router().GET("/v1/ws/msgs/:appid/:topic/:ver", m(this.subWsHandler))
+		this.subServer.Router().PUT("/v1/bury/:appid/:topic/:ver", m(this.buryHandler))
+
 		// api for pubsub manager
-		this.subServer.Router().GET("/raw/msgs/:appid/:topic/:ver", m(this.subRawHandler))
-		this.subServer.Router().GET("/peek/:appid/:topic/:ver", m(this.peekHandler))
-		this.subServer.Router().POST("/shadow/:appid/:topic/:ver/:group", m(this.addTopicShadowHandler))
-		this.subServer.Router().GET("/subd/:topic/:ver", m(this.subdStatusHandler))
-		this.subServer.Router().GET("/status/:appid/:topic/:ver", m(this.subStatusHandler))
-		this.subServer.Router().DELETE("/groups/:appid/:topic/:ver/:group", m(this.delSubGroupHandler))
+		this.subServer.Router().GET("/v1/raw/msgs/:appid/:topic/:ver", m(this.subRawHandler))
+		this.subServer.Router().GET("/v1/peek/:appid/:topic/:ver", m(this.peekHandler))
+		this.subServer.Router().POST("/v1/shadow/:appid/:topic/:ver/:group", m(this.addTopicShadowHandler))
+		this.subServer.Router().GET("/v1/subd/:topic/:ver", m(this.subdStatusHandler))
+		this.subServer.Router().GET("/v1/status/:appid/:topic/:ver", m(this.subStatusHandler))
+		this.subServer.Router().DELETE("/v1/groups/:appid/:topic/:ver/:group", m(this.delSubGroupHandler))
 		this.subServer.Router().PUT("/v1/offset/:appid/:topic/:ver/:group/:partition", m(this.resetSubOffsetHandler))
 	}
 

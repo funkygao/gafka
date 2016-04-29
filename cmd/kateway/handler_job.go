@@ -12,7 +12,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// POST /jobs/:topic/:ver?delay=100s
+// POST /v1/jobs/:topic/:ver?delay=100s
 func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	t1 := time.Now()
@@ -130,7 +130,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// DELETE /jobs/:topic/:ver?id=D-1d13f5e8-9NVhoRqjowkLy6iTE/QnZw/l-05a1
+// DELETE /v1/jobs/:topic/:ver?id=D-1d13f5e8-9NVhoRqjowkLy6iTE/QnZw/l-05a1
 func (this *Gateway) deleteJobHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	appid := r.Header.Get(HttpHeaderAppid)

@@ -15,7 +15,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// GET /status
+// GET /v1/status
 func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	output := make(map[string]interface{})
@@ -26,21 +26,21 @@ func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// GET /clients
+// GET /v1/clients
 func (this *Gateway) clientsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	b, _ := json.Marshal(this.clientStates.Export())
 	w.Write(b)
 }
 
-// GET /clusters
+// GET /v1/clusters
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	b, _ := json.Marshal(meta.Default.Clusters())
 	w.Write(b)
 }
 
-// PUT /options/:option/:value
+// PUT /v1/options/:option/:value
 func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	option := params.ByName("option")
@@ -90,7 +90,7 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
-// PUT /log/:level
+// PUT /v1/log/:level
 func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	logLevel = toLogLevel(params.ByName("level"))
@@ -103,7 +103,7 @@ func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
-// DELETE /counter/:name
+// DELETE /v1/counter/:name
 func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	counterName := params.ByName("name")
@@ -113,7 +113,7 @@ func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
-// GET /partitions/:cluster/:appid/:topic/:ver
+// GET /v1/partitions/:cluster/:appid/:topic/:ver
 func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
@@ -160,7 +160,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	w.Write([]byte(fmt.Sprintf(`{"num": %d}`, len(partitions))))
 }
 
-// POST /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2&retention.hours=72&retention.bytes=-1
+// POST /v1/topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2&retention.hours=72&retention.bytes=-1
 func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)

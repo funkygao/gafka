@@ -77,12 +77,12 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 					panic(fmt.Sprintf("kateway %s invalid entry found in zk", this.id))
 				}
 
-				this.callKateway(kw, "PUT", fmt.Sprintf("log/%s", this.logLevel))
+				this.callKateway(kw, "PUT", fmt.Sprintf("v1/log/%s", this.logLevel))
 			} else {
 				// apply on all kateways
 				kws, _ := zkzone.KatewayInfos()
 				for _, kw := range kws {
-					this.callKateway(kw, "PUT", fmt.Sprintf("log/%s", this.logLevel))
+					this.callKateway(kw, "PUT", fmt.Sprintf("v1/log/%s", this.logLevel))
 				}
 			}
 		}
@@ -94,12 +94,12 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 					panic(fmt.Sprintf("kateway %d invalid entry found in zk", this.id))
 				}
 
-				this.callKateway(kw, "DELETE", fmt.Sprintf("counter/%s", this.resetCounter))
+				this.callKateway(kw, "DELETE", fmt.Sprintf("v1/counter/%s", this.resetCounter))
 			} else {
 				// apply on all kateways
 				kws, _ := zkzone.KatewayInfos()
 				for _, kw := range kws {
-					this.callKateway(kw, "DELETE", fmt.Sprintf("counter/%s", this.resetCounter))
+					this.callKateway(kw, "DELETE", fmt.Sprintf("v1/counter/%s", this.resetCounter))
 				}
 			}
 		}
@@ -113,12 +113,12 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 					panic(fmt.Sprintf("kateway %d invalid entry found in zk", this.id))
 				}
 
-				this.callKateway(kw, "PUT", fmt.Sprintf("options/%s/%s", k, v))
+				this.callKateway(kw, "PUT", fmt.Sprintf("v1/options/%s/%s", k, v))
 			} else {
 				// apply on all kateways
 				kws, _ := zkzone.KatewayInfos()
 				for _, kw := range kws {
-					this.callKateway(kw, "PUT", fmt.Sprintf("options/%s/%s", k, v))
+					this.callKateway(kw, "PUT", fmt.Sprintf("v1/options/%s/%s", k, v))
 				}
 			}
 		}
@@ -224,7 +224,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 }
 
 func (this *Kateway) getClientsInfo(url string) map[string][]string {
-	url = fmt.Sprintf("http://%s/clients", url)
+	url = fmt.Sprintf("http://%s/v1/clients", url)
 	body, err := this.callHttp(url, "GET")
 	if err != nil {
 		return nil
@@ -236,7 +236,7 @@ func (this *Kateway) getClientsInfo(url string) map[string][]string {
 }
 
 func (this Kateway) getKatewayStatus(url string) string {
-	url = fmt.Sprintf("http://%s/status", url)
+	url = fmt.Sprintf("http://%s/v1/status", url)
 	body, err := this.callHttp(url, "GET")
 	if err != nil {
 		return err.Error()
@@ -246,7 +246,7 @@ func (this Kateway) getKatewayStatus(url string) string {
 }
 
 func (this *Kateway) getKatewayLogLevel(url string) string {
-	url = fmt.Sprintf("http://%s/status", url)
+	url = fmt.Sprintf("http://%s/v1/status", url)
 	body, err := this.callHttp(url, "GET")
 	if err != nil {
 		return err.Error()
