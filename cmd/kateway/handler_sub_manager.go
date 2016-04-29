@@ -130,7 +130,7 @@ func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 
 	kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
 	if err != nil {
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -199,7 +199,7 @@ LOOP:
 			log.Error("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d} %+v",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, err)
 
-			this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+			this.writeServerError(w, err.Error())
 			return
 
 		case msg := <-msgChan:
@@ -265,7 +265,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 
 	out, err := this.topicSubStatus(cluster, myAppid, hisAppid, topic, ver, group, true)
 	if err != nil {
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -346,7 +346,7 @@ func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Reques
 		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset, err)
 
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -409,7 +409,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -457,7 +457,7 @@ func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 
 	out, err := this.topicSubStatus(cluster, myAppid, myAppid, topic, ver, "", false)
 	if err != nil {
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -525,7 +525,7 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, t, err.Error())
 
-			this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+			this.writeServerError(w, err.Error())
 			return
 		}
 
@@ -542,7 +542,7 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, t, strings.Join(lines, ";"))
 
-			this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)
+			this.writeServerError(w, strings.Join(lines, ";"))
 			return
 		}
 	}

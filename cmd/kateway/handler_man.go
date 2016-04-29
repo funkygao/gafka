@@ -143,7 +143,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("cluster[%s] %v", zkcluster.Name(), err)
 
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 	defer kfk.Close()
@@ -153,7 +153,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
 			zkcluster.Name(), r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, err)
 
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -236,7 +236,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
 
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -260,7 +260,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		if err != nil {
 			log.Error("app[%s] %s alter topic: %s", appid, r.RemoteAddr, err.Error())
 
-			this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+			this.writeServerError(w, err.Error())
 			return
 		}
 
@@ -270,6 +270,6 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 
 		w.Write(ResponseOk)
 	} else {
-		this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)
+		this.writeServerError(w, strings.Join(lines, ";"))
 	}
 }

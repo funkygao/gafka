@@ -110,7 +110,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 
 		log.Error("+job[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -163,7 +163,7 @@ func (this *Gateway) deleteJobHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %v",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
