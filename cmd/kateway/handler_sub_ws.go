@@ -11,7 +11,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// GET /ws/msgs/:appid/:topic/:ver?group=xx
+// GET /v1/ws/msgs/:appid/:topic/:ver?group=xx
 func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)

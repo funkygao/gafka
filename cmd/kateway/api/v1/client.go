@@ -87,7 +87,7 @@ func (this *Client) Pub(key string, msg []byte, opt PubOption) (err error) {
 	var u url.URL
 	u.Scheme = this.cf.Pub.Scheme
 	u.Host = this.cf.Pub.Endpoint
-	u.Path = fmt.Sprintf("/msgs/%s/%s", opt.Topic, opt.Ver)
+	u.Path = fmt.Sprintf("/v1/msgs/%s/%s", opt.Topic, opt.Ver)
 	q := u.Query()
 	q.Set("key", key)
 	if opt.AckAll {
@@ -147,7 +147,7 @@ func (this *Client) AddJob(payload []byte, delay string, opt PubOption) (err err
 	var u url.URL
 	u.Scheme = this.cf.Pub.Scheme
 	u.Host = this.cf.Pub.Endpoint
-	u.Path = fmt.Sprintf("/jobs/%s/%s", opt.Topic, opt.Ver)
+	u.Path = fmt.Sprintf("/v1/jobs/%s/%s", opt.Topic, opt.Ver)
 	q := u.Query()
 	q.Set("delay", delay)
 	u.RawQuery = q.Encode()
@@ -193,7 +193,7 @@ func (this *Client) DeleteJob(jobId string, opt PubOption) (err error) {
 	var u url.URL
 	u.Scheme = this.cf.Pub.Scheme
 	u.Host = this.cf.Pub.Endpoint
-	u.Path = fmt.Sprintf("/jobs/%s/%s", opt.Topic, opt.Ver)
+	u.Path = fmt.Sprintf("/v1/jobs/%s/%s", opt.Topic, opt.Ver)
 	q := u.Query()
 	q.Set("id", jobId)
 	u.RawQuery = q.Encode()
@@ -242,7 +242,7 @@ func (this *Client) Sub(opt SubOption, h SubHandler) error {
 	var u url.URL
 	u.Scheme = this.cf.Sub.Scheme
 	u.Host = this.cf.Sub.Endpoint
-	u.Path = fmt.Sprintf("/msgs/%s/%s/%s", opt.AppId, opt.Topic, opt.Ver)
+	u.Path = fmt.Sprintf("/v1/msgs/%s/%s/%s", opt.AppId, opt.Topic, opt.Ver)
 	q := u.Query()
 	q.Set("group", opt.Group)
 	if opt.Shadow != "" && sla.ValidateShadowName(opt.Shadow) {
@@ -303,7 +303,7 @@ func (this *Client) SubX(opt SubOption, h SubXHandler) error {
 	var u url.URL
 	u.Scheme = this.cf.Sub.Scheme
 	u.Host = this.cf.Sub.Endpoint
-	u.Path = fmt.Sprintf("/msgs/%s/%s/%s", opt.AppId, opt.Topic, opt.Ver)
+	u.Path = fmt.Sprintf("/v1/msgs/%s/%s/%s", opt.AppId, opt.Topic, opt.Ver)
 	q := u.Query()
 	q.Set("group", opt.Group)
 	q.Set("ack", "1")

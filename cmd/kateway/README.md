@@ -133,31 +133,33 @@ It is designed to be programmer friendly.
 
 #### Pub
 
-    POST    /msgs/:topic/:ver
-    POST /ws/msgs/:topic/:ver
+    POST    /v1/msgs/:topic/:ver
+    POST /v1/ws/msgs/:topic/:ver
 
-    POST    /jobs/:topic/:ver
-    POST /ws/jobs/:topic/:ver
-    DELETE /jobs/:topic/:ver
+    POST    /v1/jobs/:topic/:ver
+    POST /v1/ws/jobs/:topic/:ver
+    DELETE  /v1/jobs/:topic/:ver
 
 #### Sub
 
-    GET    /msgs/:appid/:topic/:ver
-    GET /ws/msgs/:appid/:topic/:ver
+    GET    /v1/msgs/:appid/:topic/:ver
+    GET /v1/ws/msgs/:appid/:topic/:ver
 
-    POST /shadow/:appid/:topic/:ver/:group
-    DELETE /groups/:appid/:topic/:ver/:group
+    POST   /v1/shadow/:appid/:topic/:ver/:group
+    DELETE /v1/groups/:appid/:topic/:ver/:group
 
-    GET /subd/:topic/:ver
-    GET /status/:appid/:topic/:ver
+    GET /v1/subd/:topic/:ver
+    GET /v1/status/:appid/:topic/:ver
 
 #### Management
 
-    GET /alive
-    GET /status
-    GET /clusters
-    GET /partitions/:cluster/:appid/:topic/:ver
-    POST /topics/:cluster/:appid/:topic/:ver
+    GET    /alive
+    GET    /v1/status
+    GET    /v1/clusters
+    GET    /v1/clients
+    GET    /v1/partitions/:cluster/:appid/:topic/:ver
+    POST   /v1/topics/:cluster/:appid/:topic/:ver
+    DELETE /v1/counter/:name
 
 ### FAQ
 
@@ -195,6 +197,7 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] refactor api pkg
 - [ ] bugs
   - [ ] sit 36.topic-owl-biz.v1 has 20 partitions, cg only consumes part of it
   - [ ] kateway/clients.go need work for w-haproxy
