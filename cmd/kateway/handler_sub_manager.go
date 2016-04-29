@@ -273,7 +273,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// PUT /offset/:appid/:topic/:ver/:group/:partition?offset=xx
+// PUT /v1/offset/:appid/:topic/:ver/:group/:partition?offset=xx
 func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
