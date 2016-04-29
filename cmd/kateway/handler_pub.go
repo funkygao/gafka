@@ -86,8 +86,9 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
 		msg.Free()
 
-		log.Error("pub[%s] %s(%s) {topic:%s, ver:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
+		log.Error("pub[%s] %s(%s) {topic:%s, ver:%s, UA:%s} %s",
+			appid, r.RemoteAddr, getHttpRemoteIp(r),
+			topic, ver, r.Header.Get("User-Agent"), err)
 
 		this.pubMetrics.ClientError.Inc(1)
 		this.writeBadRequest(w, ErrTooBigPubMessage.Error())

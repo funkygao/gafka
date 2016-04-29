@@ -52,9 +52,6 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	onlineN := meta.Default.OnlineConsumersCount(cluster, topic, group)
 	partitionN := len(meta.Default.TopicPartitions(cluster, topic))
 	if partitionN > 0 && onlineN >= partitionN {
-		log.Warn("cluster[%s] topic=%s group=%s online groups:%d >= partitions:%d, remote addr: %s",
-			cluster, topic, group,
-			onlineN, partitionN, remoteAddr)
 		err = store.ErrTooManyConsumers
 		return
 	}

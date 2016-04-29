@@ -301,8 +301,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
 		myAppid+"."+group, r.RemoteAddr, reset)
 	if err != nil {
-		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s, UA:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, r.Header.Get("User-Agent"), err)
 
 		this.writeBadRequest(w, err.Error())
 		return
@@ -317,9 +318,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			Partition: int32(partitionN),
 			Offset:    offsetN,
 		}); err != nil {
-			log.Error("sub commit[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s partition:%s offset:%s T:%s} %v",
+			log.Error("sub commit[%s] %s(%s): {app:%s topic:%s ver:%s group:%s partition:%s offset:%s T:%s UA:%s} %v",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
-				group, partition, offset, rawTopic, err)
+				group, partition, offset, rawTopic, r.Header.Get("User-Agent"), err)
 
 			this.writeBadRequest(w, err.Error())
 			return
@@ -337,8 +338,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		topic, ver, group, delayedAck, tagFilters)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
-		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s, UA:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, r.Header.Get("User-Agent"), err)
 
 		this.writeServerError(w, err.Error())
 
@@ -400,5 +402,4 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 	}
 
 	return
-
 }
