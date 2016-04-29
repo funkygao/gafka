@@ -9,7 +9,7 @@ import (
 // 764 ns/op 96 B/op 4 allocs/op
 func BenchmarkBuildCommonLogLine(b *testing.B) {
 	gw := &Gateway{}
-	r, err := buildHttpRequest()
+	r, err := mockHttpRequest()
 	if err != nil {
 		b.Fatal(err)
 	}

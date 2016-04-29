@@ -30,9 +30,11 @@ func getHttpQueryInt(query *url.Values, key string, defaultVal int) (int, error)
 	return strconv.Atoi(valStr)
 }
 
+// getHttpRemoteIp returns ip only, without remote port.
 func getHttpRemoteIp(r *http.Request) string {
 	forwardFor := r.Header.Get(HttpHeaderXForwardedFor) // client_ip,proxy_ip,proxy_ip,...
 	if forwardFor == "" {
+		// not behind haproxy, directly connected
 		p := strings.SplitN(r.RemoteAddr, ":", 2)
 		return p[0]
 	}

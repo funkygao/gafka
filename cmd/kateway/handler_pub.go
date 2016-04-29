@@ -15,7 +15,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// /msgs/:topic/:ver?key=mykey&async=1&ack=all
+// POST /msgs/:topic/:ver?key=mykey&async=1&ack=all
 // /topics/:topic/:ver?key=mykey&async=1&ack=all
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
@@ -141,15 +141,16 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	partition, offset, err := pubMethod(cluster, appid+"."+topic+"."+ver,
 		[]byte(partitionKey), msg.Body)
 	if err != nil {
+		log.Error("pub[%s] %s(%s) {topic:%s, ver:%s} %s",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
+
 		msg.Free() // defer is costly
 
 		if !options.DisableMetrics {
 			this.pubMetrics.PubFail(appid, topic, ver)
 		}
 
-		log.Error("pub[%s] %s(%s) {topic:%s, ver:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 

@@ -8,6 +8,7 @@ import (
 
 func (this *Gateway) buildRouting() {
 	m := this.MiddlewareKateway
+
 	this.manServer.Router().GET("/alive", m(this.checkAliveHandler))
 	this.manServer.Router().GET("/clusters", m(this.clustersHandler))
 	this.manServer.Router().GET("/clients", m(this.clientsHandler))
@@ -46,6 +47,7 @@ func (this *Gateway) buildRouting() {
 		this.subServer.Router().GET("/subd/:topic/:ver", m(this.subdStatusHandler))
 		this.subServer.Router().GET("/status/:appid/:topic/:ver", m(this.subStatusHandler))
 		this.subServer.Router().DELETE("/groups/:appid/:topic/:ver/:group", m(this.delSubGroupHandler))
+		this.subServer.Router().PUT("/v1/offset/:appid/:topic/:ver/:group/:partition", m(this.resetSubOffsetHandler))
 	}
 
 }

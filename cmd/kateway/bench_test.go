@@ -89,7 +89,7 @@ func runBenchmarkPub(b *testing.B, store string, msgSize int64) {
 
 	b.ReportAllocs()
 
-	req, err := buildHttpRequest()
+	req, err := mockHttpRequest()
 	if err != nil {
 		b.Fatal(err)
 	}

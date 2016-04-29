@@ -27,7 +27,7 @@ func TestExtractFromMetricsName(t *testing.T) {
 }
 
 func TestGetHttpRemoteIp(t *testing.T) {
-	req, err := buildHttpRequest()
+	req, err := mockHttpRequest()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func BenchmarkExtractFromMetricsName(b *testing.B) {
 
 // 73.4 ns/op
 func BenchmarkGetHttpRemoteIp(b *testing.B) {
-	r, err := buildHttpRequest()
+	r, err := mockHttpRequest()
 	if err != nil {
 		b.Fatal(err)
 	}

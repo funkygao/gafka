@@ -195,6 +195,9 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] bugs
+  - [ ] sit 36.topic-owl-biz.v1 has 20 partitions, cg only consumes part of it
+  - [ ] kateway/clients.go need work for w-haproxy
 - [ ] verify
 - [ ] max request for a single persitent connection
   - make load balancer distribute req more evenly

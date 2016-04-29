@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/funkygao/gafka/cmd/webhook/command/agent"
+	"github.com/funkygao/gafka/cmd/kateway/webhook/command/agent"
 	"github.com/funkygao/gocli"
 )
 

@@ -12,7 +12,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// /jobs/:topic/:ver?delay=100s
+// POST /jobs/:topic/:ver?delay=100s
 func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	t1 := time.Now()
@@ -110,7 +110,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 
 		log.Error("+job[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -130,7 +130,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// /jobs/:topic/:ver?id=D-1d13f5e8-9NVhoRqjowkLy6iTE/QnZw/l-05a1
+// DELETE /jobs/:topic/:ver?id=D-1d13f5e8-9NVhoRqjowkLy6iTE/QnZw/l-05a1
 func (this *Gateway) deleteJobHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	appid := r.Header.Get(HttpHeaderAppid)
@@ -163,7 +163,7 @@ func (this *Gateway) deleteJobHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %v",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 

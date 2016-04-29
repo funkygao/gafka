@@ -22,6 +22,7 @@ var (
 const (
 	ShadowRetry = "retry"
 	ShadowDead  = "dead"
+	UserAgent   = "pubsub-go v0.1"
 )
 
 type Client struct {
@@ -307,7 +308,7 @@ func (this *Client) SubX(opt SubOption, h SubXHandler) error {
 	q.Set("group", opt.Group)
 	q.Set("ack", "1")
 	if opt.Shadow != "" && sla.ValidateShadowName(opt.Shadow) {
-		q.Set("use", opt.Shadow)
+		q.Set("q", opt.Shadow)
 	}
 	if opt.Reset != "" {
 		q.Set("reset", opt.Reset)
@@ -315,7 +316,10 @@ func (this *Client) SubX(opt SubOption, h SubXHandler) error {
 	u.RawQuery = q.Encode()
 
 	req := gorequest.New()
-	req.Get(u.String()).Set("AppId", this.cf.AppId).Set("Subkey", this.cf.Secret)
+	req.Get(u.String()).
+		Set("AppId", this.cf.AppId).Set("Subkey", this.cf.Secret).
+		Set("User-Agent", UserAgent).
+		Set("X-Partition", "-1").Set("X-Offset", "-1")
 	r := &SubXResult{}
 	for {
 		response, b, errs := req.EndBytes()

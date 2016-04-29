@@ -33,6 +33,10 @@ func (this *Gateway) writeQuotaExceeded(w http.ResponseWriter) {
 	this.writeErrorResponse(w, "quota exceeded", http.StatusNotAcceptable)
 }
 
+func (this *Gateway) writeServerError(w http.ResponseWriter, err string) {
+	this.writeErrorResponse(w, err, http.StatusInternalServerError)
+}
+
 func (this *Gateway) writeBadRequest(w http.ResponseWriter, err string) {
 	w.Header().Set("Connection", "close")
 

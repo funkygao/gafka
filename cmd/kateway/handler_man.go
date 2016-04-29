@@ -15,6 +15,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// GET /status
 func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	output := make(map[string]interface{})
@@ -25,19 +26,21 @@ func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
+// GET /clients
 func (this *Gateway) clientsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	b, _ := json.Marshal(this.clientStates.Export())
 	w.Write(b)
 }
 
+// GET /clusters
 func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	b, _ := json.Marshal(meta.Default.Clusters())
 	w.Write(b)
 }
 
-// /options/:option/:value
+// PUT /options/:option/:value
 func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	option := params.ByName("option")
@@ -87,7 +90,7 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
-// /log/:level
+// PUT /log/:level
 func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	logLevel = toLogLevel(params.ByName("level"))
@@ -100,6 +103,7 @@ func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
+// DELETE /counter/:name
 func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	counterName := params.ByName("name")
@@ -109,7 +113,7 @@ func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
-// /partitions/:cluster/:appid/:topic/:ver
+// GET /partitions/:cluster/:appid/:topic/:ver
 func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
@@ -139,7 +143,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("cluster[%s] %v", zkcluster.Name(), err)
 
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 	defer kfk.Close()
@@ -149,14 +153,14 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
 			zkcluster.Name(), r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, err)
 
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
 	w.Write([]byte(fmt.Sprintf(`{"num": %d}`, len(partitions))))
 }
 
-// /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2&retention.hours=72&retention.bytes=-1
+// POST /topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2&retention.hours=72&retention.bytes=-1
 func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
@@ -232,7 +236,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
 
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -256,7 +260,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		if err != nil {
 			log.Error("app[%s] %s alter topic: %s", appid, r.RemoteAddr, err.Error())
 
-			this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+			this.writeServerError(w, err.Error())
 			return
 		}
 
@@ -266,6 +270,6 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 
 		w.Write(ResponseOk)
 	} else {
-		this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)
+		this.writeServerError(w, strings.Join(lines, ";"))
 	}
 }

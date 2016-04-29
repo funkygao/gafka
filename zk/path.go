@@ -95,6 +95,10 @@ func (this *ZkCluster) consumerGroupOffsetOfTopicPath(group, topic string) strin
 	return this.ConsumerGroupOffsetPath(group) + "/" + topic
 }
 
+func (this *ZkCluster) consumerGroupOffsetOfTopicPartitionPath(group, topic, partition string) string {
+	return this.consumerGroupOffsetOfTopicPath(group, topic) + "/" + partition
+}
+
 func (this *ZkCluster) consumerGroupOwnerOfTopicPath(group, topic string) string {
 	return this.ConsumerGroupRoot(group) + "/owners/" + topic
 }

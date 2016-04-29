@@ -59,9 +59,7 @@ func (this *ClientStates) RegisterPubClient(r *http.Request) {
 	this.pubClientsLock.Unlock()
 }
 
-func (this *ClientStates) UnregisterPubClient(c net.Conn) {
-	haproxyHostPort := c.RemoteAddr().String()
-
+func (this *ClientStates) UnregisterPubClient(haproxyHostPort string) {
 	this.pubClientsLock.Lock()
 	realHostPort := this.pubMap[haproxyHostPort]
 	if realHostPort == "" {
@@ -91,9 +89,7 @@ func (this *ClientStates) RegisterSubClient(r *http.Request) {
 	this.subClientsLock.Unlock()
 }
 
-func (this *ClientStates) UnregisterSubClient(c net.Conn) {
-	haproxyHostPort := c.RemoteAddr().String()
-
+func (this *ClientStates) UnregisterSubClient(haproxyHostPort string) {
 	this.subClientsLock.Lock()
 	realHostPort := this.subMap[haproxyHostPort]
 	if realHostPort == "" {

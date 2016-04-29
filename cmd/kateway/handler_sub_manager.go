@@ -26,8 +26,8 @@ type SubStatus struct {
 	Consumed  int64  `json:"subd"`
 }
 
-// /raw/msgs/:appid/:topic/:ver?group=xx
-// tells client how to sub in raw mode: how to connect kafka
+// GET /raw/msgs/:appid/:topic/:ver?group=xx
+// tells client how to sub in raw mode: how to connect directly to kafka
 func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -76,7 +76,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// /peek/:appid/:topic/:ver?n=10&q=retry&wait=5s
+// GET /peek/:appid/:topic/:ver?n=10&q=retry&wait=5s
 func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -130,7 +130,7 @@ func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 
 	kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
 	if err != nil {
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -199,7 +199,7 @@ LOOP:
 			log.Error("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d} %+v",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, err)
 
-			this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+			this.writeServerError(w, err.Error())
 			return
 
 		case msg := <-msgChan:
@@ -216,7 +216,7 @@ LOOP:
 	w.Write(d)
 }
 
-// /status/:appid/:topic/:ver?group=xx
+// GET /status/:appid/:topic/:ver?group=xx
 // FIXME currently there might be in flight offsets because of batch offset commit
 // TODO show shadow consumers too
 func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
@@ -265,7 +265,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 
 	out, err := this.topicSubStatus(cluster, myAppid, hisAppid, topic, ver, group, true)
 	if err != nil {
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -273,7 +273,87 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// /groups/:appid/:topic/:ver/:group
+// PUT /v1/offset/:appid/:topic/:ver/:group/:partition?offset=xx
+func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	var (
+		topic     string
+		ver       string
+		partition string
+		myAppid   string
+		hisAppid  string
+		offset    string
+		offsetN   int64
+		group     string
+		err       error
+	)
+
+	if !this.throttleSubStatus.Pour(getHttpRemoteIp(r), 1) {
+		this.writeQuotaExceeded(w)
+		return
+	}
+
+	offset = r.URL.Query().Get("offset")
+	group = params.ByName(UrlParamGroup)
+	partition = params.ByName("partition")
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	hisAppid = params.ByName(UrlParamAppid)
+	myAppid = r.Header.Get(HttpHeaderAppid)
+
+	offsetN, err = strconv.ParseInt(offset, 10, 64)
+	if err != nil {
+		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset, err)
+
+		this.writeBadRequest(w, err.Error())
+		return
+	}
+	if offsetN < 0 {
+		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} negative offset",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset)
+
+		this.writeBadRequest(w, "offset must be positive")
+		return
+	}
+
+	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
+		hisAppid, topic, group); err != nil {
+		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset, err)
+
+		this.writeAuthFailure(w, err)
+		return
+	}
+
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} cluster not found",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset)
+
+		this.writeBadRequest(w, "invalid appid")
+		return
+	}
+
+	log.Info("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s}",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset)
+
+	zkcluster := meta.Default.ZkCluster(cluster)
+	realGroup := myAppid + "." + group
+	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
+	err = zkcluster.ResetConsumerGroupOffset(rawTopic, realGroup, partition, offsetN)
+	if err != nil {
+		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset, err)
+
+		this.writeServerError(w, err.Error())
+		return
+	}
+
+	w.Write(ResponseOk)
+}
+
+// DELETE /groups/:appid/:topic/:ver/:group
 // TODO delete shadow consumers too
 func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
@@ -329,14 +409,14 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
 	w.Write(ResponseOk)
 }
 
-// /subd/:topic/:ver
+// GET /subd/:topic/:ver
 func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -377,7 +457,7 @@ func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 
 	out, err := this.topicSubStatus(cluster, myAppid, myAppid, topic, ver, "", false)
 	if err != nil {
-		this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		this.writeServerError(w, err.Error())
 		return
 	}
 
@@ -385,7 +465,7 @@ func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(b)
 }
 
-// /shadow/:appid/:topic/:ver/:group
+// POST /shadow/:appid/:topic/:ver/:group
 func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -445,7 +525,7 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, t, err.Error())
 
-			this.writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+			this.writeServerError(w, err.Error())
 			return
 		}
 
@@ -462,7 +542,7 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, t, strings.Join(lines, ";"))
 
-			this.writeErrorResponse(w, strings.Join(lines, ";"), http.StatusInternalServerError)
+			this.writeServerError(w, strings.Join(lines, ";"))
 			return
 		}
 	}
