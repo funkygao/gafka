@@ -545,8 +545,10 @@ func (this *ZkCluster) TotalConsumerOffsets(topicPattern string) (total int64) {
 	return
 }
 
-func (this *ZkCluster) ResetConsumerGroupOffset(topic, group string) {
-	// TODO
+func (this *ZkCluster) ResetConsumerGroupOffset(topic, group, partition string, offset int64) error {
+	path := this.consumerGroupOffsetOfTopicPartitionPath(group, topic, partition)
+	data := fmt.Sprintf("%d", offset)
+	return this.zone.setZnode(path, []byte(data))
 }
 
 func (this *ZkCluster) ListChildren(recursive bool) ([]string, error) {
