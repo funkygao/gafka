@@ -147,21 +147,21 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 		mysqlDsn, err := zkzone.KatewayMysqlDsn()
 		if err != nil {
-			this.Ui.Error(err.Error())
-			this.Ui.Warn(fmt.Sprintf("kateway[%s] mysql DSN not set on zk yet", this.zone))
-			this.Ui.Output("e,g.")
-			this.Ui.Output(fmt.Sprintf("%s pubsub:pubsub@tcp(10.77.135.217:10010)/pubsub?charset=utf8&timeout=10s",
+			this.Ui.Warn(fmt.Sprintf("kateway[%s] mysql DSN not set on zk yet", zkzone.Name()))
+			this.Ui.Output(fmt.Sprintf("e,g. %s -> pubsub:pubsub@tcp(10.77.135.217:10010)/pubsub?charset=utf8&timeout=10s",
 				zk.KatewayMysqlPath))
 			return
 		}
-		this.Ui.Output(fmt.Sprintf("zone[%s] manager db: %s", color.Blue(zkzone.Name()), mysqlDsn))
+		this.Ui.Output(fmt.Sprintf("zone[%s] manager db: %s",
+			color.Cyan(zkzone.Name()), mysqlDsn))
 
 		disques, err := zkzone.KatewayDisqueAddrs()
 		if err != nil {
-			this.Ui.Warn(fmt.Sprintf("kateway[%s] disque not set on zk:%s", this.zone,
+			this.Ui.Warn(fmt.Sprintf("kateway[%s] disque not set on zk:%s", zkzone.Name(),
 				zk.KatewayDisquePath))
 		} else {
-			this.Ui.Output(fmt.Sprintf("zone[%s]     disque: %+v", color.Blue(zkzone.Name()), disques))
+			this.Ui.Output(fmt.Sprintf("zone[%s]     disque: %+v",
+				color.Cyan(zkzone.Name()), disques))
 		}
 
 		kateways, err := zkzone.KatewayInfos()
@@ -313,7 +313,7 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 		ver    string = "v1"
 		topic  string = "smoketestonly"
 	)
-	switch this.zone {
+	switch zkzone.Name() {
 	case "sit":
 		myApp = "35"
 		hisApp = "35"
