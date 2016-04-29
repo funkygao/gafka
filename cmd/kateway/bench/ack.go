@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/api"
@@ -48,21 +49,31 @@ func main() {
 	}
 	err = c.SubX(opt, func(statusCode int, msg []byte, r *api.SubXResult) error {
 		log.Printf("i=%d, status:%d, r:%+v msg:%s", i, statusCode, *r, string(msg))
-		if i != 2 {
+
+		offset, _ := strconv.Atoi(r.Offset)
+		if false && i < 3 {
+			i++
 			r.Partition = "-1"
 			r.Offset = "-1"
-			continue
+			return nil
+		} else {
+			r.Offset = fmt.Sprintf("%d", offset+10)
+			log.Println("try error: commit too large offset")
+		}
+
+		if i == 4 {
+			r.Offset = fmt.Sprintf("%d", offset-10)
+			log.Println("try error: commit too small offset")
 		}
 
 		i++
-		if i == 4 {
-			//
-			r.Partition = "0"
-			r.Offset = "161"
-			log.Println("try error commit offset 161")
+		if i > 2 {
+			return api.ErrSubStop
 		}
 
-		time.Sleep(time.Second * 2)
+		if false {
+			time.Sleep(time.Second * 2)
+		}
 
 		return nil
 	})
