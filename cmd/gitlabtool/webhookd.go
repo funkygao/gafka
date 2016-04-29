@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/funkygao/gafka/cmd/kateway/api"
+	"github.com/funkygao/gafka/cmd/kateway/api/v1"
 )
 
 var (
