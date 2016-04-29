@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/funkygao/gafka/cmd/kateway/api"
+	"github.com/funkygao/gafka/cmd/kateway/api/v1"
 	"github.com/funkygao/gafka/ctx"
 )
 

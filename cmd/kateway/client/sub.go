@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/funkygao/gafka/cmd/kateway/api"
+	"github.com/funkygao/gafka/cmd/kateway/api/v1"
 )
 
 var (

@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/funkygao/gafka/cmd/kateway/api"
+	"github.com/funkygao/gafka/cmd/kateway/api/v1"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
 	rd "github.com/funkygao/golib/rand"
