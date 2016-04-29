@@ -32,6 +32,7 @@ bindata.go
 snapshot
 *.test
 cmd/kateway/kateway
+cmd/kateway/webhook/webhook
 cmd/kateway/prof.cpu
 cmd/kateway/prof.mem
 cmd/kateway/ssl
