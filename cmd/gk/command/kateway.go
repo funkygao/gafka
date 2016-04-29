@@ -150,10 +150,10 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			this.Ui.Warn(fmt.Sprintf("kateway[%s] mysql DSN not set on zk yet", zkzone.Name()))
 			this.Ui.Output(fmt.Sprintf("e,g. %s -> pubsub:pubsub@tcp(10.77.135.217:10010)/pubsub?charset=utf8&timeout=10s",
 				zk.KatewayMysqlPath))
-			return
+		} else {
+			this.Ui.Output(fmt.Sprintf("zone[%s] manager db: %s",
+				color.Cyan(zkzone.Name()), mysqlDsn))
 		}
-		this.Ui.Output(fmt.Sprintf("zone[%s] manager db: %s",
-			color.Cyan(zkzone.Name()), mysqlDsn))
 
 		disques, err := zkzone.KatewayDisqueAddrs()
 		if err != nil {
