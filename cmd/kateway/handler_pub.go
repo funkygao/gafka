@@ -19,25 +19,33 @@ import (
 // POST /topics/:topic/:ver?key=mykey&async=1&ack=all
 func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	t1 := time.Now()
+	var (
+		appid        string
+		topic        string
+		ver          string
+		tag          string
+		partitionKey string
+		t1           = time.Now()
+	)
 
 	if options.EnableClientStats { // TODO enable pub or sub client stats
 		this.clientStates.RegisterPubClient(r)
 	}
 
 	if options.Ratelimit && !this.throttlePub.Pour(getHttpRemoteIp(r), 1) {
-		log.Warn("%s(%s) rate limit reached", r.RemoteAddr, getHttpRemoteIp(r))
+		log.Warn("%s(%s) rate limit reached: %d/s", r.RemoteAddr, getHttpRemoteIp(r),
+			options.PubQpsLimit)
 
 		this.pubMetrics.ClientError.Inc(1)
 		this.writeQuotaExceeded(w)
 		return
 	}
 
-	appid := r.Header.Get(HttpHeaderAppid)
-	topic := params.ByName(UrlParamTopic)
-	ver := params.ByName(UrlParamVersion)
+	appid = r.Header.Get(HttpHeaderAppid)
+	topic = params.ByName(UrlParamTopic)
+	ver = params.ByName(UrlParamVersion)
 	if err := manager.Default.OwnTopic(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
-		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} %s",
+		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 
 		this.pubMetrics.ClientError.Inc(1)
@@ -45,19 +53,10 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	// get the raw POST message
 	msgLen := int(r.ContentLength)
 	switch {
-	case msgLen == -1:
-		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} invalid content length: %d",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
-
-		this.pubMetrics.ClientError.Inc(1)
-		this.writeBadRequest(w, "invalid content length")
-		return
-
 	case int64(msgLen) > options.MaxPubSize:
-		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} too big content length: %d",
+		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s} too big content length: %d",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
 
 		this.pubMetrics.ClientError.Inc(1)
@@ -65,7 +64,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		return
 
 	case msgLen < options.MinPubSize:
-		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} too small content length: %d",
+		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s} too small content length: %d",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
 
 		this.pubMetrics.ClientError.Inc(1)
@@ -73,9 +72,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	lbr := io.LimitReader(r.Body, options.MaxPubSize+1)
 	var msg *mpool.Message
-	tag := r.Header.Get(HttpHeaderMsgTag)
+	tag = r.Header.Get(HttpHeaderMsgTag)
 	if tag != "" {
 		msg = mpool.NewMessage(tagLen(tag) + msgLen)
 		msg.Body = msg.Body[0 : tagLen(tag)+msgLen]
@@ -83,10 +81,13 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 		msg = mpool.NewMessage(msgLen)
 		msg.Body = msg.Body[0:msgLen]
 	}
+
+	// get the raw POST message
+	lbr := io.LimitReader(r.Body, options.MaxPubSize+1)
 	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
 		msg.Free()
 
-		log.Error("pub[%s] %s(%s) {topic:%s, ver:%s, UA:%s} %s",
+		log.Error("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r),
 			topic, ver, r.Header.Get("User-Agent"), err)
 
@@ -111,13 +112,13 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	query := r.URL.Query() // reuse the query will save 100ns
-	partitionKey := query.Get("key")
+	partitionKey = query.Get("key")
 	if len(partitionKey) > MaxPartitionKeyLen {
-		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} too large partition key: %s",
+		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s} too big key: %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, partitionKey)
 
 		this.pubMetrics.ClientError.Inc(1)
-		this.writeBadRequest(w, "too large partition key")
+		this.writeBadRequest(w, "too big key")
 		return
 	}
 
@@ -131,7 +132,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 
 	cluster, found := manager.Default.LookupCluster(appid)
 	if !found {
-		log.Warn("pub[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
+		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s} cluster not found",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
 
 		this.pubMetrics.ClientError.Inc(1)
@@ -142,7 +143,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	partition, offset, err := pubMethod(cluster, appid+"."+topic+"."+ver,
 		[]byte(partitionKey), msg.Body)
 	if err != nil {
-		log.Error("pub[%s] %s(%s) {topic:%s, ver:%s} %s",
+		log.Error("pub[%s] %s(%s) {topic:%s ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 
 		msg.Free() // defer is costly
