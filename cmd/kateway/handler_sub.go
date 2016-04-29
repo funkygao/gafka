@@ -372,8 +372,6 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 		}
 	}
-
-	return
 }
 
 func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
