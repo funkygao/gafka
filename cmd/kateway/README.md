@@ -197,6 +197,7 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] test max body/header size limit
 - [ ] refactor api pkg
 - [ ] bugs
   - [ ] sit 36.topic-owl-biz.v1 has 20 partitions, cg only consumes part of it

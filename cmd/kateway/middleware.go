@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/mpool"
+	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -27,6 +28,22 @@ func (this *Gateway) MiddlewareKateway(h httprouter.Handle) httprouter.Handle {
 
 			gz = gzip.NewWriter(w) // TODO only gzip more than N bytes response body
 			writer = gzipResponseWriter{Writer: gz, ResponseWriter: w}
+		}
+
+		// max request per connetion
+		if options.MaxRequestPerConn > 1 {
+			this.connectionsMu.Lock()
+
+			if n, present := this.connections[r.RemoteAddr]; present && n >= options.MaxRequestPerConn {
+				log.Debug("%s max req per conn reached: %d", r.RemoteAddr, n)
+
+				w.Header().Set("Connection", "close")
+				delete(this.connections, r.RemoteAddr)
+			} else {
+				this.connections[r.RemoteAddr]++ // in golang, works even when present=false
+			}
+
+			this.connectionsMu.Unlock()
 		}
 
 		if !options.EnableAccessLog {
