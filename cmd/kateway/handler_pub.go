@@ -45,8 +45,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	topic = params.ByName(UrlParamTopic)
 	ver = params.ByName(UrlParamVersion)
 	if err := manager.Default.OwnTopic(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
-		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
+		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} %s",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, r.Header.Get("User-Agent"), err)
 
 		this.pubMetrics.ClientError.Inc(1)
 		this.writeAuthFailure(w, err)
@@ -56,16 +56,16 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	msgLen := int(r.ContentLength)
 	switch {
 	case int64(msgLen) > options.MaxPubSize:
-		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s} too big content length: %d",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
+		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} too big content length: %d",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, r.Header.Get("User-Agent"), msgLen)
 
 		this.pubMetrics.ClientError.Inc(1)
 		this.writeBadRequest(w, ErrTooBigPubMessage.Error())
 		return
 
 	case msgLen < options.MinPubSize:
-		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s} too small content length: %d",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
+		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} too small content length: %d",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, r.Header.Get("User-Agent"), msgLen)
 
 		this.pubMetrics.ClientError.Inc(1)
 		this.writeBadRequest(w, ErrTooSmallPubMessage.Error())
@@ -114,8 +114,9 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	query := r.URL.Query() // reuse the query will save 100ns
 	partitionKey = query.Get("key")
 	if len(partitionKey) > MaxPartitionKeyLen {
-		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s} too big key: %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, partitionKey)
+		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} too big key: %s",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver,
+			r.Header.Get("User-Agent"), partitionKey)
 
 		this.pubMetrics.ClientError.Inc(1)
 		this.writeBadRequest(w, "too big key")
@@ -132,8 +133,8 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 
 	cluster, found := manager.Default.LookupCluster(appid)
 	if !found {
-		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s} cluster not found",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
+		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} cluster not found",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, r.Header.Get("User-Agent"), ver)
 
 		this.pubMetrics.ClientError.Inc(1)
 		this.writeBadRequest(w, "invalid appid")

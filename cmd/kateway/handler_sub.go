@@ -50,8 +50,9 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 
 	bury = r.Header.Get(HttpHeaderMsgBury)
 	if !sla.ValidateShadowName(bury) {
-		log.Error("bury[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} illegal bury: %s",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err, bury)
+		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} illegal bury: %s",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, r.Header.Get("User-Agent"), bury)
 
 		this.writeBadRequest(w, "illegal bury")
 		return
@@ -60,8 +61,9 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 	// auth
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
-		log.Error("bury[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, r.Header.Get("User-Agent"), err)
 
 		this.writeAuthFailure(w, err)
 		return
@@ -70,22 +72,28 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 	partition = r.Header.Get(HttpHeaderPartition)
 	offset = r.Header.Get(HttpHeaderOffset)
 	if partition == "" || offset == "" {
+		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} empty offset or partition",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, r.Header.Get("User-Agent"))
+
 		this.writeBadRequest(w, "empty offset or partition")
 		return
 	}
 
 	offsetN, err = strconv.ParseInt(offset, 10, 64)
 	if err != nil || offsetN < 0 {
-		log.Error("bury[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} offset:%s",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, offset)
+		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} illegal offset:%s",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, r.Header.Get("User-Agent"), offset)
 
 		this.writeBadRequest(w, "bad offset")
 		return
 	}
 	partitionN, err = strconv.Atoi(partition)
 	if err != nil || partitionN < 0 {
-		log.Error("bury[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} partition:%s",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, partition)
+		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} illegal partition:%s",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, r.Header.Get("User-Agent"), partition)
 
 		this.writeBadRequest(w, "bad partition")
 		return
@@ -100,8 +108,9 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 	msgLen := int(r.ContentLength)
 	msg := make([]byte, 0, msgLen)
 	if _, err := io.ReadAtLeast(r.Body, msg, msgLen); err != nil {
-		log.Error("bury[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, r.Header.Get("User-Agent"), err)
 
 		this.writeBadRequest(w, err.Error())
 		return
@@ -109,8 +118,9 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("bury[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} invalid appid:%s",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, r.Header.Get("User-Agent"), hisAppid)
 
 		this.writeBadRequest(w, "invalid appid")
 		return
@@ -119,16 +129,18 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 	// calculate raw topic according to shadow
 	if shadow != "" {
 		if !sla.ValidateShadowName(shadow) {
-			log.Error("bury[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} invalid shadow name",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, shadow)
+			log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s q:%s UA:%s} invalid shadow name",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				group, shadow, r.Header.Get("User-Agent"))
 
 			this.writeBadRequest(w, "invalid shadow name")
 			return
 		}
 
 		if !manager.Default.IsShadowedTopic(hisAppid, topic, ver, myAppid, group) {
-			log.Error("bury[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} not a shadowed topic",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, shadow)
+			log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s q:%s UA:%s} not a shadowed topic",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				group, shadow, r.Header.Get("User-Agent"))
 
 			this.writeBadRequest(w, "register shadow first")
 			return
@@ -142,34 +154,39 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
 		myAppid+"."+group, r.RemoteAddr, "")
 	if err != nil {
-		log.Error("bury[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, r.Header.Get("User-Agent"), err)
 
 		this.writeBadRequest(w, err.Error())
 		return
 	}
 
+	// step1: pub
 	shadowTopic := manager.ShadowTopic(bury, myAppid, hisAppid, topic, ver, group)
 	_, _, err = store.DefaultPubStore.SyncPub(cluster, shadowTopic, nil, msg)
 	if err != nil {
-		log.Error("bury[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
 		this.writeServerError(w, err.Error())
 		return
 	}
 
-	// skip this message in the master topic
+	// step2: skip this message in the master topic TODO atomic with step1
 	if err = fetcher.CommitUpto(&sarama.ConsumerMessage{
-		Topic:     rawTopic,
+		Topic:     rawTopic, // FIXME it's wrong!!!
 		Partition: int32(partitionN),
 		Offset:    offsetN,
 	}); err != nil {
-		log.Error("bury[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
 		this.writeServerError(w, err.Error())
+		return
 	}
+
+	w.Write(ResponseOk)
 }
 
 // GET /v1/msgs/:appid/:topic/:ver?group=xx&&reset=<newest|oldest>&ack=1&q=<dead|retry>
@@ -213,8 +230,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	// auth
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
-		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, r.Header.Get("User-Agent"), err)
 
 		this.writeAuthFailure(w, err)
 		return
@@ -236,24 +254,26 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			// convert partition and offset to int
 			offsetN, err = strconv.ParseInt(offset, 10, 64)
 			if err != nil {
-				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} offset:%s",
-					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, offset)
+				log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} offset:%s",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+					group, r.Header.Get("User-Agent"), offset)
 
 				this.writeBadRequest(w, "ack with bad offset")
 				return
 			}
 			partitionN, err = strconv.Atoi(partition)
 			if err != nil {
-				log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} partition:%s",
-					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, partition)
+				log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} partition:%s",
+					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+					group, r.Header.Get("User-Agent"), partition)
 
 				this.writeBadRequest(w, "ack with bad partition")
 				return
 			}
 		} else if len(partition+offset) != 0 {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s partition:%s, offset:%s} partial ack",
+			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s partition:%s offset:%s UA:%s} partial ack",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
-				group, partition, offset)
+				group, partition, offset, r.Header.Get("User-Agent"))
 
 			this.writeBadRequest(w, "partial ack not allowed")
 			return
@@ -262,23 +282,25 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	shadow = query.Get("q")
 
-	log.Debug("sub[%s] %s(%s): {app:%s shadow:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s}",
+	log.Debug("sub[%s] %s(%s): {app:%s q:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s}",
 		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, shadow, topic, ver,
 		group, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"))
 
 	// calculate raw topic according to shadow
 	if shadow != "" {
 		if !sla.ValidateShadowName(shadow) {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s shadow:%s} invalid shadow name",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, shadow)
+			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s q:%s UA:%s} invalid shadow name",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				group, shadow, r.Header.Get("User-Agent"))
 
 			this.writeBadRequest(w, "invalid shadow name")
 			return
 		}
 
 		if !manager.Default.IsShadowedTopic(hisAppid, topic, ver, myAppid, group) {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s use:%s} not a shadowed topic",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, shadow)
+			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s q:%s UA:%s} not a shadowed topic",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				group, shadow, r.Header.Get("User-Agent"))
 
 			this.writeBadRequest(w, "register shadow first")
 			return
@@ -291,8 +313,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} cluster not found",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			group, r.Header.Get("User-Agent"))
 
 		this.writeBadRequest(w, "invalid appid")
 		return
@@ -301,7 +324,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
 		myAppid+"."+group, r.RemoteAddr, reset)
 	if err != nil {
-		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s, UA:%s} %v",
+		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
@@ -338,14 +361,14 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		topic, ver, group, delayedAck, tagFilters)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
-		log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s, UA:%s} %v",
+		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
 		this.writeServerError(w, err.Error())
 
 		if err = fetcher.Close(); err != nil {
-			log.Error("sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 		}
 	}
