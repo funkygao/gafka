@@ -27,7 +27,7 @@ func (this *Offset) Run(args []string) (exitCode int) {
 	)
 	cmdFlags := flag.NewFlagSet("offset", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.StringVar(&topic, "t", "", "")
 	cmdFlags.StringVar(&group, "g", "", "")
@@ -38,7 +38,7 @@ func (this *Offset) Run(args []string) (exitCode int) {
 	}
 
 	if validateArgs(this, this.Ui).
-		require("-z", "-c", "-t", "-g", "p", "offset").
+		require("-z", "-c", "-t", "-g", "-p", "-offset").
 		requireAdminRights("-z").
 		invalid(args) {
 		return 2
