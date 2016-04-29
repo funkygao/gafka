@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func buildHttpRequest() (*http.Request, error) {
+func mockHttpRequest() (*http.Request, error) {
 	httpReqRaw := strings.TrimSpace(fmt.Sprintf(`
 POST /topics/foobar/v1 HTTP/1.1
 Host: localhost:9191
