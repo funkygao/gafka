@@ -13,7 +13,7 @@ type guard struct {
 
 	refreshCh chan struct{}
 
-	cpuStat cpu.CPUTimesStat
+	cpuStat cpu.TimesStat
 
 	win *window.MovingWindow
 }
@@ -41,7 +41,7 @@ func (this *guard) mainLoop() {
 	defer alarmTicker.Stop()
 
 	refresh := func() {
-		if v, err := cpu.CPUTimes(false); err == nil {
+		if v, err := cpu.Times(false); err == nil {
 			this.cpuStat = v[0]
 		}
 
