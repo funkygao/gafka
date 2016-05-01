@@ -53,6 +53,7 @@ listen dashboard
 
 listen pub
     bind 0.0.0.0:10891
+    balance source
     #cookie PUB insert indirect # indirect means not sending cookie to backend
     #option httpchk GET /alive HTTP/1.1\r\nHost:pub.ffan.com
 {{range .Pub}}
@@ -61,6 +62,7 @@ listen pub
 
 listen sub
     bind 0.0.0.0:10892
+    balance source
     #balance source # uri
     #compression algo gzip
     #compression type text/html text/plain application/json
