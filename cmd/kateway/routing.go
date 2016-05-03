@@ -24,6 +24,8 @@ func (this *Gateway) buildRouting() {
 		m(this.partitionsHandler))
 	this.manServer.Router().POST("/v1/topics/:cluster/:appid/:topic/:ver",
 		m(this.addTopicHandler))
+	this.manServer.Router().PUT("/v1/topics/:cluster/:appid/:topic/:ver",
+		m(this.updateTopicHandler))
 
 	if this.pubServer != nil {
 		this.pubServer.Router().GET("/alive", m(this.checkAliveHandler))

@@ -487,7 +487,7 @@ func (this *ZkCluster) AddTopic(topic string, ts *sla.TopicSla) (output []string
 	return
 }
 
-func (this *ZkCluster) ConfigTopic(topic string, ts *sla.TopicSla) (output []string, err error) {
+func (this *ZkCluster) AlterTopic(topic string, ts *sla.TopicSla) (output []string, err error) {
 	zkAddrs := this.ZkConnectAddr()
 	args := []string{
 		fmt.Sprintf("--zookeeper %s", zkAddrs),

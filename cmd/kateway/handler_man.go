@@ -182,7 +182,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
 	if !manager.Default.AuthAdmin(appid, pubkey) {
-		log.Warn("suspicous add topic from %s(%s): {appid:%s, pubkey:%s, cluster:%s, topic:%s, ver:%s}",
+		log.Warn("suspicous add topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
 		this.writeAuthFailure(w, manager.ErrPermDenied)
@@ -191,7 +191,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
-		log.Error("add topic from %s(%s): {appid:%s, pubkey:%s, cluster:%s, topic:%s, ver:%s} undefined cluster",
+		log.Error("add topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
 		this.writeBadRequest(w, "undefined cluster")
@@ -208,27 +208,26 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 
 	ts := sla.DefaultSla()
 	query := r.URL.Query()
-	partitionsArg := query.Get(sla.SlaKeyPartitions)
-	if partitionsArg != "" {
+	if partitionsArg := query.Get(sla.SlaKeyPartitions); partitionsArg != "" {
 		ts.Partitions, _ = strconv.Atoi(partitionsArg)
-		if ts.Partitions > 100 || ts.Partitions == 0 {
-			log.Warn("app[%s] adding topic:%s in non-public cluster: %+v invalid partition", hisAppid, topic, params)
-
-			this.writeBadRequest(w, "invalid partition")
-			return
-		}
 	}
-	replicasArg := query.Get(sla.SlaKeyReplicas)
-	if replicasArg != "" {
+	if replicasArg := query.Get(sla.SlaKeyReplicas); replicasArg != "" {
 		ts.Replicas, _ = strconv.Atoi(replicasArg)
 	}
-	retentionBytes := query.Get(sla.SlaKeyRetentionBytes)
-	if retentionBytes != "" {
+	if retentionBytes := query.Get(sla.SlaKeyRetentionBytes); retentionBytes != "" {
 		ts.RetentionBytes, _ = strconv.Atoi(retentionBytes)
 	}
 	ts.ParseRetentionHours(query.Get(sla.SlaKeyRetentionHours))
 
-	log.Info("app[%s] from %s(%s) add topic: {appid:%s, cluster:%s, topic:%s, ver:%s query:%s}",
+	// validate the sla
+	if err := ts.Validate(); err != nil {
+		log.Error("app[%s] update topic:%s %s: %+v", hisAppid, topic, query.Encode(), err)
+
+		this.writeBadRequest(w, err.Error())
+		return
+	}
+
+	log.Info("app[%s] from %s(%s) add topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
 		appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
 
 	topic = manager.KafkaTopic(hisAppid, topic, ver)
@@ -256,7 +255,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 			return
 		}
 
-		lines, err = zkcluster.ConfigTopic(topic, ts)
+		lines, err = zkcluster.AlterTopic(topic, ts)
 		if err != nil {
 			log.Error("app[%s] %s alter topic: %s", appid, r.RemoteAddr, err.Error())
 
@@ -272,4 +271,97 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	} else {
 		this.writeServerError(w, strings.Join(lines, ";"))
 	}
+}
+
+// PUT /v1/topics/:cluster/:appid/:topic/:ver?partitions=1&retention.hours=72&retention.bytes=-1
+func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	topic := params.ByName(UrlParamTopic)
+	if !manager.Default.ValidateTopicName(topic) {
+		log.Warn("illegal topic: %s", topic)
+
+		this.writeBadRequest(w, "illegal topic")
+		return
+	}
+
+	if !this.throttleAddTopic.Pour(getHttpRemoteIp(r), 1) {
+		this.writeQuotaExceeded(w)
+		return
+	}
+
+	cluster := params.ByName(UrlParamCluster)
+	hisAppid := params.ByName(UrlParamAppid)
+	appid := r.Header.Get(HttpHeaderAppid)
+	pubkey := r.Header.Get(HttpHeaderPubkey)
+	ver := params.ByName(UrlParamVersion)
+	if !manager.Default.AuthAdmin(appid, pubkey) {
+		log.Warn("suspicous update topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
+			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
+
+		this.writeAuthFailure(w, manager.ErrPermDenied)
+		return
+	}
+
+	zkcluster := meta.Default.ZkCluster(cluster)
+	if zkcluster == nil {
+		log.Error("update topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
+			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
+
+		this.writeBadRequest(w, "undefined cluster")
+		return
+	}
+
+	info := zkcluster.RegisteredInfo()
+	if !info.Public {
+		log.Warn("app[%s] update topic:%s in non-public cluster: %+v", hisAppid, topic, params)
+
+		this.writeBadRequest(w, "invalid cluster")
+		return
+	}
+
+	ts := sla.DefaultSla()
+	query := r.URL.Query()
+	if partitionsArg := query.Get(sla.SlaKeyPartitions); partitionsArg != "" {
+		ts.Partitions, _ = strconv.Atoi(partitionsArg)
+	}
+	if retentionBytes := query.Get(sla.SlaKeyRetentionBytes); retentionBytes != "" {
+		ts.RetentionBytes, _ = strconv.Atoi(retentionBytes)
+	}
+	ts.ParseRetentionHours(query.Get(sla.SlaKeyRetentionHours))
+
+	// validate the sla
+	if err := ts.Validate(); err != nil {
+		log.Error("app[%s] update topic:%s %s: %+v", hisAppid, topic, query.Encode(), err)
+
+		this.writeBadRequest(w, err.Error())
+		return
+	}
+
+	log.Info("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
+		appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
+
+	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
+	alterConfig := ts.DumpForAlterTopic()
+	if len(alterConfig) == 0 {
+		log.Warn("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} nothing updated",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
+
+		w.Write(ResponseOk)
+		return
+	}
+
+	lines, err := zkcluster.AlterTopic(rawTopic, ts)
+	if err != nil {
+		log.Error("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} %v",
+			appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode(), err)
+
+		this.writeServerError(w, err.Error())
+		return
+	}
+
+	for _, l := range lines {
+		log.Trace("app[%s] update topic[%s] in cluster %s: %s", appid, rawTopic, cluster, l)
+	}
+
+	w.Write(ResponseOk)
 }

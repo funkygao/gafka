@@ -49,6 +49,14 @@ func (this *TopicSla) IsDefault() bool {
 		this.RetentionHours == defaultRetentionHours
 }
 
+func (this *TopicSla) Validate() error {
+	if this.Partitions > 50 {
+		return ErrTooBigPartitions
+	}
+
+	return nil
+}
+
 func (this *TopicSla) ParseRetentionHours(s string) error {
 	if len(s) == 0 {
 		return ErrEmptyArg
