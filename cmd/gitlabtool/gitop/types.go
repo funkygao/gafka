@@ -52,6 +52,11 @@ type SystemHookGroupCreate struct {
 	Name, Owner_name string
 }
 
+type SystemHookGroupDestroy struct {
+	Created_at       string
+	Name, Owner_name string
+}
+
 type SystemHookUserAddToGroup struct {
 	Created_at, Group_name, User_name, User_email string
 }

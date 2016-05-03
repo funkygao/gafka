@@ -39,6 +39,11 @@ func eventContent(evt interface{}) string {
 			hook.Owner_name,
 			hook.Name)
 
+	case *SystemHookGroupDestroy:
+		row = fmt.Sprintf("%s destroy group(%s)",
+			hook.Owner_name,
+			hook.Name)
+
 	case *SystemHookUserCreate:
 		row = fmt.Sprintf("%s %s signup",
 			hook.Name,
@@ -92,6 +97,10 @@ func decode(msg []byte) interface{} {
 
 	case strings.HasPrefix(event, `{"event_name":"group_create"`):
 		hook = &SystemHookGroupCreate{}
+		json.Unmarshal(msg, hook)
+
+	case strings.HasPrefix(event, `{"event_name":"group_destroy"`):
+		hook = &SystemHookGroupDestroy{}
 		json.Unmarshal(msg, hook)
 
 	case strings.HasPrefix(event, `{"event_name":"user_add_to_team"`):
