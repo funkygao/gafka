@@ -9,26 +9,30 @@ import (
 func (this *Gateway) buildRouting() {
 	m := this.MiddlewareKateway
 
-	this.manServer.Router().GET("/alive", m(this.checkAliveHandler))
+	if this.manServer != nil {
+		this.manServer.Router().GET("/alive", m(this.checkAliveHandler))
+		this.manServer.Router().NotFound = http.HandlerFunc(this.notFoundHandler)
 
-	// api for 'gk kateway'
-	this.manServer.Router().GET("/v1/clusters", m(this.clustersHandler))
-	this.manServer.Router().GET("/v1/clients", m(this.clientsHandler))
-	this.manServer.Router().GET("/v1/status", m(this.statusHandler))
-	this.manServer.Router().PUT("/v1/options/:option/:value", m(this.setOptionHandler))
-	this.manServer.Router().PUT("/v1/log/:level", m(this.setlogHandler))
-	this.manServer.Router().DELETE("/v1/counter/:name", m(this.resetCounterHandler))
+		// api for 'gk kateway'
+		this.manServer.Router().GET("/v1/clusters", m(this.clustersHandler))
+		this.manServer.Router().GET("/v1/clients", m(this.clientsHandler))
+		this.manServer.Router().GET("/v1/status", m(this.statusHandler))
+		this.manServer.Router().PUT("/v1/options/:option/:value", m(this.setOptionHandler))
+		this.manServer.Router().PUT("/v1/log/:level", m(this.setlogHandler))
+		this.manServer.Router().DELETE("/v1/counter/:name", m(this.resetCounterHandler))
 
-	// api for pubsub manager
-	this.manServer.Router().GET("/v1/partitions/:cluster/:appid/:topic/:ver",
-		m(this.partitionsHandler))
-	this.manServer.Router().POST("/v1/topics/:cluster/:appid/:topic/:ver",
-		m(this.addTopicHandler))
-	this.manServer.Router().PUT("/v1/topics/:cluster/:appid/:topic/:ver",
-		m(this.updateTopicHandler))
+		// api for pubsub manager
+		this.manServer.Router().GET("/v1/partitions/:cluster/:appid/:topic/:ver",
+			m(this.partitionsHandler))
+		this.manServer.Router().POST("/v1/topics/:cluster/:appid/:topic/:ver",
+			m(this.addTopicHandler))
+		this.manServer.Router().PUT("/v1/topics/:cluster/:appid/:topic/:ver",
+			m(this.updateTopicHandler))
+	}
 
 	if this.pubServer != nil {
 		this.pubServer.Router().GET("/alive", m(this.checkAliveHandler))
+		this.pubServer.Router().NotFound = http.HandlerFunc(this.notFoundHandler)
 
 		// TODO /v1/msgs/:topic/:ver
 		this.pubServer.Router().POST("/v1/msgs/:topic/:ver", m(this.pubHandler))
@@ -42,6 +46,7 @@ func (this *Gateway) buildRouting() {
 
 	if this.subServer != nil {
 		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
+		this.subServer.Router().NotFound = http.HandlerFunc(this.notFoundHandler)
 
 		this.subServer.Router().GET("/v1/msgs/:appid/:topic/:ver", m(this.subHandler))
 		this.subServer.Router().GET("/v1/ws/msgs/:appid/:topic/:ver", m(this.subWsHandler))
