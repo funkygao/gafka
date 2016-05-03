@@ -60,6 +60,13 @@ func init() {
 			}, nil
 		},
 
+		"zkinstall": func() (cli.Command, error) {
+			return &command.ZkInstall{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"mirror": func() (cli.Command, error) {
 			return &command.Mirror{
 				Ui:  ui,
