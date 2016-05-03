@@ -30,19 +30,18 @@ func (this *Gateway) buildRouting() {
 	if this.pubServer != nil {
 		this.pubServer.Router().GET("/alive", m(this.checkAliveHandler))
 
-		this.pubServer.Router().POST("/topics/:topic/:ver", m(this.pubHandler)) // TODO deprecated
-
 		// TODO /v1/msgs/:topic/:ver
 		this.pubServer.Router().POST("/v1/msgs/:topic/:ver", m(this.pubHandler))
 		this.pubServer.Router().POST("/v1/ws/msgs/:topic/:ver", m(this.pubWsHandler))
 		this.pubServer.Router().POST("/v1/jobs/:topic/:ver", m(this.addJobHandler))
 		this.pubServer.Router().DELETE("/v1/jobs/:topic/:ver", m(this.deleteJobHandler))
+
+		// TODO deprecated
+		this.pubServer.Router().POST("/topics/:topic/:ver", m(this.pubHandler))
 	}
 
 	if this.subServer != nil {
 		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
-
-		this.subServer.Router().GET("/topics/:appid/:topic/:ver", m(this.subHandler)) // TODO deprecated
 
 		this.subServer.Router().GET("/v1/msgs/:appid/:topic/:ver", m(this.subHandler))
 		this.subServer.Router().GET("/v1/ws/msgs/:appid/:topic/:ver", m(this.subWsHandler))
@@ -56,6 +55,9 @@ func (this *Gateway) buildRouting() {
 		this.subServer.Router().GET("/v1/status/:appid/:topic/:ver", m(this.subStatusHandler))
 		this.subServer.Router().DELETE("/v1/groups/:appid/:topic/:ver/:group", m(this.delSubGroupHandler))
 		this.subServer.Router().PUT("/v1/offset/:appid/:topic/:ver/:group/:partition", m(this.resetSubOffsetHandler))
+
+		// TODO deprecated
+		this.subServer.Router().GET("/topics/:appid/:topic/:ver", m(this.subHandler))
 	}
 
 }
