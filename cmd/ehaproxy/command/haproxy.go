@@ -26,6 +26,12 @@ func (this *BackendServers) reset() {
 	this.Man = make([]Backend, 0)
 }
 
+func (this *BackendServers) sort() {
+	this.Pub = sortBackendByName(this.Pub)
+	this.Sub = sortBackendByName(this.Sub)
+	this.Man = sortBackendByName(this.Man)
+}
+
 type Backend struct {
 	Name string
 	Addr string
@@ -33,6 +39,7 @@ type Backend struct {
 }
 
 func (this *Start) createConfigFile(servers BackendServers) error {
+	servers.sort()
 	log.Info("backends: %+v", servers)
 
 	tmpFile := fmt.Sprintf("%s.tmp", configFile)
