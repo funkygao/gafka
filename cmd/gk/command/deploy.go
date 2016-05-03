@@ -1,15 +1,12 @@
 package command
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/user"
 	"strconv"
 	"strings"
-	"text/template"
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
@@ -118,7 +115,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	}
 	err = os.MkdirAll(fmt.Sprintf("%s/bin", this.instanceDir()), 0755)
 	swallow(err)
-	this.chown(fmt.Sprintf("%s/bin", this.instanceDir()))
+	chown(fmt.Sprintf("%s/bin", this.instanceDir()), this.userInfo)
 
 	if this.dryRun {
 		this.Ui.Output(fmt.Sprintf("mkdir %s/config and chown to %s",
@@ -126,7 +123,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	}
 	err = os.MkdirAll(fmt.Sprintf("%s/config", this.instanceDir()), 0755)
 	swallow(err)
-	this.chown(fmt.Sprintf("%s/config", this.instanceDir()))
+	chown(fmt.Sprintf("%s/config", this.instanceDir()), this.userInfo)
 
 	if this.dryRun {
 		this.Ui.Output(fmt.Sprintf("mkdir %s/logs and chown to %s",
@@ -134,7 +131,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	}
 	err = os.MkdirAll(fmt.Sprintf("%s/logs", this.instanceDir()), 0755)
 	swallow(err)
-	this.chown(fmt.Sprintf("%s/logs", this.instanceDir()))
+	chown(fmt.Sprintf("%s/logs", this.instanceDir()), this.userInfo)
 
 	type templateVar struct {
 		KafkaBase      string
@@ -176,7 +173,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		}
 
 		swallow(os.MkdirAll(logDir, 0755))
-		this.chown(logDir)
+		chown(logDir, this.userInfo)
 	}
 
 	// package the kafka runtime together
@@ -185,29 +182,29 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	}
 
 	// bin
-	this.writeFileFromTemplate("template/bin/kafka-topics.sh",
-		fmt.Sprintf("%s/bin/kafka-topics.sh", this.instanceDir()), 0755, nil, true)
-	this.writeFileFromTemplate("template/bin/kafka-reassign-partitions.sh",
-		fmt.Sprintf("%s/bin/kafka-reassign-partitions.sh", this.instanceDir()), 0755, nil, true)
-	this.writeFileFromTemplate("template/bin/kafka-preferred-replica-election.sh",
-		fmt.Sprintf("%s/bin/kafka-preferred-replica-election.sh", this.instanceDir()), 0755, nil, true)
+	writeFileFromTemplate("template/bin/kafka-topics.sh",
+		fmt.Sprintf("%s/bin/kafka-topics.sh", this.instanceDir()), 0755, nil, this.userInfo)
+	writeFileFromTemplate("template/bin/kafka-reassign-partitions.sh",
+		fmt.Sprintf("%s/bin/kafka-reassign-partitions.sh", this.instanceDir()), 0755, nil, this.userInfo)
+	writeFileFromTemplate("template/bin/kafka-preferred-replica-election.sh",
+		fmt.Sprintf("%s/bin/kafka-preferred-replica-election.sh", this.instanceDir()), 0755, nil, this.userInfo)
 
-	this.writeFileFromTemplate("template/bin/kafka-run-class.sh",
-		fmt.Sprintf("%s/bin/kafka-run-class.sh", this.instanceDir()), 0755, data, true)
-	this.writeFileFromTemplate("template/bin/kafka-server-start.sh",
-		fmt.Sprintf("%s/bin/kafka-server-start.sh", this.instanceDir()), 0755, data, true)
-	this.writeFileFromTemplate("template/bin/setenv.sh",
-		fmt.Sprintf("%s/bin/setenv.sh", this.instanceDir()), 0755, data, true)
+	writeFileFromTemplate("template/bin/kafka-run-class.sh",
+		fmt.Sprintf("%s/bin/kafka-run-class.sh", this.instanceDir()), 0755, data, this.userInfo)
+	writeFileFromTemplate("template/bin/kafka-server-start.sh",
+		fmt.Sprintf("%s/bin/kafka-server-start.sh", this.instanceDir()), 0755, data, this.userInfo)
+	writeFileFromTemplate("template/bin/setenv.sh",
+		fmt.Sprintf("%s/bin/setenv.sh", this.instanceDir()), 0755, data, this.userInfo)
 
 	// /etc/init.d/
-	this.writeFileFromTemplate("template/init.d/kafka",
-		fmt.Sprintf("/etc/init.d/%s", this.clusterName()), 0755, data, false)
+	writeFileFromTemplate("template/init.d/kafka",
+		fmt.Sprintf("/etc/init.d/%s", this.clusterName()), 0755, data, nil)
 
 	// config
-	this.writeFileFromTemplate("template/config/server.properties",
-		fmt.Sprintf("%s/config/server.properties", this.instanceDir()), 0644, data, true)
-	this.writeFileFromTemplate("template/config/log4j.properties",
-		fmt.Sprintf("%s/config/log4j.properties", this.instanceDir()), 0644, data, true)
+	writeFileFromTemplate("template/config/server.properties",
+		fmt.Sprintf("%s/config/server.properties", this.instanceDir()), 0644, data, this.userInfo)
+	writeFileFromTemplate("template/config/log4j.properties",
+		fmt.Sprintf("%s/config/log4j.properties", this.instanceDir()), 0644, data, this.userInfo)
 
 	this.Ui.Warn(fmt.Sprintf("NOW, please run the following command:"))
 	this.Ui.Output(color.Red("confirm log.retention.hours"))
@@ -244,10 +241,10 @@ func (this *Deploy) installKafka() {
 	jars, err := AssetDir(kafkaLibTemplateDir)
 	swallow(err)
 	for _, jar := range jars {
-		this.writeFileFromTemplate(
+		writeFileFromTemplate(
 			fmt.Sprintf("%s/%s", kafkaLibTemplateDir, jar),
 			fmt.Sprintf("%s/libs/%s", this.kafkaBaseDir, jar),
-			0644, nil, false)
+			0644, nil, nil)
 	}
 
 	// install kafka bin
@@ -255,39 +252,14 @@ func (this *Deploy) installKafka() {
 	scripts, err := AssetDir(kafkaBinTemplateDir)
 	swallow(err)
 	for _, script := range scripts {
-		this.writeFileFromTemplate(
+		writeFileFromTemplate(
 			fmt.Sprintf("%s/%s", kafkaBinTemplateDir, script),
 			fmt.Sprintf("%s/bin/%s", this.kafkaBaseDir, script),
-			0755, nil, false)
+			0755, nil, nil)
 	}
 
 	this.Ui.Info("kafka runtime installed")
 	this.Ui.Warn("yum install -y jdk-1.7.0_65-fcs.x86_64")
-}
-
-func (this *Deploy) writeFileFromTemplate(tplSrc, dst string, perm os.FileMode,
-	data interface{}, chown bool) {
-	b, err := Asset(tplSrc)
-	swallow(err)
-	if data != nil {
-		wr := &bytes.Buffer{}
-		t := template.Must(template.New(tplSrc).Parse(string(b)))
-		err = t.Execute(wr, data)
-		swallow(err)
-
-		err = ioutil.WriteFile(dst, wr.Bytes(), perm)
-		swallow(err)
-
-		return
-	}
-
-	// no template, just file copy
-	err = ioutil.WriteFile(dst, b, perm)
-	swallow(err)
-
-	if chown {
-		this.chown(dst)
-	}
 }
 
 func (this *Deploy) demo() {
@@ -342,12 +314,6 @@ func (this *Deploy) demo() {
 		ip.String(),
 		strings.Join(logDirs, ",")))
 
-}
-
-func (this *Deploy) chown(fp string) {
-	uid, _ := strconv.Atoi(this.userInfo.Uid)
-	gid, _ := strconv.Atoi(this.userInfo.Gid)
-	swallow(os.Chown(fp, uid, gid))
 }
 
 func (*Deploy) Synopsis() string {
