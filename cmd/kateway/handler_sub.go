@@ -341,9 +341,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			Partition: int32(partitionN),
 			Offset:    offsetN,
 		}); err != nil {
-			log.Error("sub commit[%s] %s(%s): {app:%s topic:%s ver:%s group:%s partition:%s offset:%s T:%s UA:%s} %v",
+			log.Error("sub commit[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:1 partition:%s offset:%s UA:%s} %v",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
-				group, partition, offset, rawTopic, r.Header.Get("User-Agent"), err)
+				group, partition, offset, r.Header.Get("User-Agent"), err)
 
 			this.writeBadRequest(w, err.Error())
 			return
@@ -361,9 +361,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		topic, ver, group, delayedAck, tagFilters)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
-		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
+		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
-			group, r.Header.Get("User-Agent"), err)
+			group, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"), err)
 
 		this.writeServerError(w, err.Error())
 
@@ -408,7 +408,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 		if !delayedAck {
 			log.Debug("commit offset {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
 			if err = fetcher.CommitUpto(msg); err != nil {
-				log.Error("commit offset {T:%s, P:%d, O:%d}: %v", msg.Topic, msg.Partition, msg.Offset, err)
+				return
 			}
 		} else {
 			log.Debug("take off {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
