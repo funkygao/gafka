@@ -13,7 +13,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-type AppInfo struct {
+type WhoisAppInfo struct {
 	AppId            string `db:"AppId"`
 	ApplicationName  string `db:"ApplicationName"`
 	ApplicationIntro string `db:"ApplicationIntro"`
@@ -21,6 +21,26 @@ type AppInfo struct {
 	CreateBy         string `db:"CreateBy"`
 	CreateTime       string `db:"CreateTime"`
 	Status           string `db:"Status"`
+}
+
+type WhoisTopicInfo struct {
+	AppId      string `db:"AppId"`
+	AppName    string
+	TopicName  string `db:"TopicName"`
+	TopicIntro string `db:"TopicIntro"`
+	CreateBy   string `db:"CreateBy"`
+	CreateTime string `db:"CreateTime"`
+	Status     string `db:"Status"`
+}
+
+type WhoisGroupInfo struct {
+	AppId      string `db:"AppId"`
+	AppName    string
+	GroupName  string `db:"GroupName"`
+	GroupIntro string `db:"GroupIntro"`
+	CreateBy   string `db:"CreateBy"`
+	CreateTime string `db:"CreateTime"`
+	Status     string `db:"Status"`
 }
 
 type Whois struct {
@@ -32,9 +52,9 @@ type Whois struct {
 	topic string
 	group string
 
-	db *dbx.DB
-
-	appInfos []AppInfo
+	appInfos   []WhoisAppInfo
+	topicInfos []WhoisTopicInfo
+	groupInfos []WhoisGroupInfo
 }
 
 func (this *Whois) Run(args []string) (exitCode int) {
@@ -67,8 +87,16 @@ func (this *Whois) Run(args []string) (exitCode int) {
 		}
 
 	case this.topic != "":
+		table.SetHeader([]string{"topic", "desc", "app", "owner", "ctime"})
+		for _, ti := range this.topicInfos {
+			table.Append([]string{ti.TopicName, ti.TopicIntro, ti.AppName, ti.CreateBy, ti.CreateTime})
+		}
 
 	case this.group != "":
+		table.SetHeader([]string{"group", "desc", "app", "owner", "ctime"})
+		for _, gi := range this.groupInfos {
+			table.Append([]string{gi.GroupName, gi.GroupIntro, gi.AppName, gi.CreateBy, gi.CreateTime})
+		}
 
 	case this.topic != "" && this.group != "":
 		this.Ui.Error("-t and -g cannot be set at the same time！")
@@ -84,8 +112,6 @@ func (this *Whois) loadFromManager(dsn string) {
 	db, err := dbx.Open("mysql", dsn)
 	swallow(err)
 
-	this.db = db
-
 	// TODO fetch from topics_version
 	sql := "SELECT AppId,ApplicationName,ApplicationIntro,Cluster,CreateBy,CreateTime,Status FROM application"
 	if this.app != "" {
@@ -95,6 +121,35 @@ func (this *Whois) loadFromManager(dsn string) {
 	q := db.NewQuery(sql)
 
 	swallow(q.All(&this.appInfos))
+
+	appName := func(appId string) string {
+		for _, ai := range this.appInfos {
+			if ai.AppId == appId {
+				return ai.ApplicationName
+			}
+		}
+
+		return "NotFound"
+	}
+
+	if this.topic != "" {
+		sql = fmt.Sprintf("SELECT AppId,TopicName,TopicIntro,CreateBy,CreateTime,Status FROM topics WHERE TopicName='%s'", this.topic)
+		q = db.NewQuery(sql)
+		swallow(q.All(&this.topicInfos))
+
+		for _, ti := range this.topicInfos {
+			ti.AppName = appName(ti.AppId)
+		}
+	}
+
+	if this.group != "" {
+		sql = fmt.Sprintf("SELECT AppId,GroupName,GroupIntro,CreateBy,CreateTime,Status FROM application_group WHERE GroupName='%s'", this.group)
+		q = db.NewQuery(sql)
+		swallow(q.All(&this.groupInfos))
+		for _, gi := range this.groupInfos {
+			gi.AppName = appName(gi.AppId)
+		}
+	}
 }
 
 func (*Whois) Synopsis() string {
