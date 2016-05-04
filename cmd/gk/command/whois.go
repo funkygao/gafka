@@ -137,8 +137,8 @@ func (this *Whois) loadFromManager(dsn string) {
 		q = db.NewQuery(sql)
 		swallow(q.All(&this.topicInfos))
 
-		for _, ti := range this.topicInfos {
-			ti.AppName = this.appName(ti.AppId)
+		for i, ti := range this.topicInfos {
+			this.topicInfos[i].AppName = this.appName(ti.AppId)
 		}
 	}
 
@@ -150,8 +150,8 @@ func (this *Whois) loadFromManager(dsn string) {
 			op, this.group)
 		q = db.NewQuery(sql)
 		swallow(q.All(&this.groupInfos))
-		for _, gi := range this.groupInfos {
-			gi.AppName = this.appName(gi.AppId)
+		for i, gi := range this.groupInfos {
+			this.groupInfos[i].AppName = this.appName(gi.AppId)
 		}
 	}
 }
