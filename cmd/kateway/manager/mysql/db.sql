@@ -113,3 +113,15 @@ CREATE TABLE `user_role` (
   KEY `UserName` (`UserName`,`Role`,`ResourceType`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE `application_group` (
+`GroupId` bigint(20) NOT NULL,
+`AppId` bigint(20) NOT NULL,
+`GroupName` varchar(64) NOT NULL COMMENT '组名称',
+`GroupIntro` varchar(255) NOT NULL COMMENT '组作用描述',
+`CreateById` bigint(18) NOT NULL DEFAULT '0',
+`CreateBy` varchar(64) NOT NULL,
+`CreateTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+`Status` tinyint(2) NOT NULL COMMENT '状态：1正常|-2废弃',
+PRIMARY KEY (`GroupId`),
+UNIQUE KEY `AppId` (`AppId`,`GroupName`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8

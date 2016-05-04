@@ -27,8 +27,10 @@ type Whois struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone string
-	app  string
+	zone  string
+	app   string
+	topic string
+	group string
 
 	db *dbx.DB
 
@@ -40,6 +42,8 @@ func (this *Whois) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.app, "app", "", "")
+	cmdFlags.StringVar(&this.group, "g", "", "")
+	cmdFlags.StringVar(&this.topic, "t", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -54,10 +58,23 @@ func (this *Whois) Run(args []string) (exitCode int) {
 	this.loadFromManager(mysqlDsns[this.zone])
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Id", "Name", "Desc", "Who", "Ctime"})
-	for _, ai := range this.appInfos {
-		table.Append([]string{ai.AppId, ai.ApplicationName, ai.ApplicationIntro, ai.CreateBy, ai.CreateTime})
+	switch {
+	case this.topic+this.group == "":
+		// list apps
+		table.SetHeader([]string{"Id", "Name", "Cluster", "Ctime"})
+		for _, ai := range this.appInfos {
+			table.Append([]string{ai.AppId, ai.ApplicationName, ai.Cluster, ai.CreateTime})
+		}
+
+	case this.topic != "":
+
+	case this.group != "":
+
+	case this.topic != "" && this.group != "":
+		this.Ui.Error("-t and -g cannot be set at the same time！")
+		return 1
 	}
+
 	table.Render()
 
 	return
@@ -70,12 +87,13 @@ func (this *Whois) loadFromManager(dsn string) {
 	this.db = db
 
 	// TODO fetch from topics_version
-	sql := "SELECT AppId,ApplicationName,ApplicationIntro,Cluster,CreateBy,CreateTime,Status FROM application ORDER BY AppId"
+	sql := "SELECT AppId,ApplicationName,ApplicationIntro,Cluster,CreateBy,CreateTime,Status FROM application"
 	if this.app != "" {
 		sql += " WHERE AppId IN (" + this.app + ")"
 	}
 	sql += " ORDER BY AppId"
 	q := db.NewQuery(sql)
+
 	swallow(q.All(&this.appInfos))
 }
 
@@ -85,13 +103,19 @@ func (*Whois) Synopsis() string {
 
 func (this *Whois) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s whois -z zone [options]
+Usage: %s whois [options]
 
     Lookup PubSub App Information
 
 Options:
 
-    -app comma seperated appId    
+    -z zone
+
+    -app comma seperated appId
+
+    -g group
+
+    -t topic
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
