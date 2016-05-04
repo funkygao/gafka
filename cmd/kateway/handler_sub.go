@@ -348,7 +348,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			this.writeBadRequest(w, err.Error())
 			return
 		} else {
-			log.Debug("land {G:%s, T:%s, P:%s, O:%s}", group, rawTopic, partition, offset)
+			log.Debug("sub land %s(%s): {G:%s, T:%s, P:%s, O:%s}",
+				r.RemoteAddr, getHttpRemoteIp(r),
+				group, rawTopic, partition, offset)
 		}
 	}
 
@@ -357,7 +359,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		tagFilters = parseMessageTag(tag)
 	}
 
-	err = this.pumpMessages(w, fetcher, myAppid, hisAppid, cluster,
+	err = this.pumpMessages(w, r, fetcher, myAppid, hisAppid, cluster,
 		topic, ver, group, delayedAck, tagFilters)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
@@ -374,7 +376,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
+func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
+	fetcher store.Fetcher,
 	myAppid, hisAppid, cluster, topic, ver, group string,
 	delayedAck bool, tagFilters []MsgTag) (err error) {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
@@ -406,12 +409,14 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, fetcher store.Fetcher,
 		}
 
 		if !delayedAck {
-			log.Debug("commit offset {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
+			log.Debug("sub commit offset {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
 			if err = fetcher.CommitUpto(msg); err != nil {
 				return
 			}
 		} else {
-			log.Debug("take off {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
+			log.Debug("sub take off %s(%s): {G:%s, T:%s, P:%d, O:%d}",
+				r.RemoteAddr, getHttpRemoteIp(r),
+				group, msg.Topic, msg.Partition, msg.Offset)
 		}
 
 		this.subMetrics.ConsumeOk(myAppid, topic, ver)
