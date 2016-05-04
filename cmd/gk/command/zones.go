@@ -16,12 +16,14 @@ type Zones struct {
 	Cmd string
 
 	ipInNumber bool
+	plain      bool
 }
 
 func (this *Zones) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("zones", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
+	cmdFlags.BoolVar(&this.plain, "plain", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
 	}
@@ -48,9 +50,17 @@ func (this *Zones) Run(args []string) (exitCode int) {
 
 	}
 
+	if this.plain {
+		for _, z := range zones {
+			this.Ui.Output(fmt.Sprintf("%s:", z[0]))
+			this.Ui.Output(fmt.Sprintf("%s\n", z[1]))
+		}
+		return
+	}
+
 	table := tablewriter.NewWriter(os.Stdout)
-	for _, v := range zones {
-		table.Append(v)
+	for _, z := range zones {
+		table.Append(z)
 	}
 	table.SetHeader([]string{"Zone", "ZK ensemble"})
 	table.SetFooter([]string{"Total", fmt.Sprintf("%d", len(zones))})
@@ -74,6 +84,9 @@ Options:
 
     -n
       Show network addresses as numbers.
+
+    -plain
+      Display in non-table format.
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }
