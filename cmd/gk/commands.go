@@ -53,6 +53,13 @@ func init() {
 			}, nil
 		},
 
+		"whois": func() (cli.Command, error) {
+			return &command.Whois{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"sample": func() (cli.Command, error) {
 			return &command.Sample{
 				Ui:  ui,
