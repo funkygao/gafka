@@ -47,10 +47,11 @@ type Whois struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone  string
-	app   string
-	topic string
-	group string
+	zone     string
+	app      string
+	topic    string
+	group    string
+	likeMode bool
 
 	appInfos   []WhoisAppInfo
 	topicInfos []WhoisTopicInfo
@@ -64,6 +65,7 @@ func (this *Whois) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.app, "app", "", "")
 	cmdFlags.StringVar(&this.group, "g", "", "")
 	cmdFlags.StringVar(&this.topic, "t", "", "")
+	cmdFlags.BoolVar(&this.likeMode, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -122,34 +124,46 @@ func (this *Whois) loadFromManager(dsn string) {
 
 	swallow(q.All(&this.appInfos))
 
-	appName := func(appId string) string {
-		for _, ai := range this.appInfos {
-			if ai.AppId == appId {
-				return ai.ApplicationName
-			}
-		}
-
-		return "NotFound"
+	op := "="
+	if this.likeMode {
+		op = "LIKE"
 	}
-
 	if this.topic != "" {
-		sql = fmt.Sprintf("SELECT AppId,TopicName,TopicIntro,CreateBy,CreateTime,Status FROM topics WHERE TopicName='%s'", this.topic)
+		if this.likeMode {
+			this.topic = "%" + this.topic + "%"
+		}
+		sql = fmt.Sprintf("SELECT AppId,TopicName,TopicIntro,CreateBy,CreateTime,Status FROM topics WHERE TopicName %s '%s'",
+			op, this.topic)
 		q = db.NewQuery(sql)
 		swallow(q.All(&this.topicInfos))
 
 		for _, ti := range this.topicInfos {
-			ti.AppName = appName(ti.AppId)
+			ti.AppName = this.appName(ti.AppId)
 		}
 	}
 
 	if this.group != "" {
-		sql = fmt.Sprintf("SELECT AppId,GroupName,GroupIntro,CreateBy,CreateTime,Status FROM application_group WHERE GroupName='%s'", this.group)
+		if this.likeMode {
+			this.group = "%" + this.group + "%"
+		}
+		sql = fmt.Sprintf("SELECT AppId,GroupName,GroupIntro,CreateBy,CreateTime,Status FROM application_group WHERE GroupName %s '%s'",
+			op, this.group)
 		q = db.NewQuery(sql)
 		swallow(q.All(&this.groupInfos))
 		for _, gi := range this.groupInfos {
-			gi.AppName = appName(gi.AppId)
+			gi.AppName = this.appName(gi.AppId)
 		}
 	}
+}
+
+func (this *Whois) appName(appId string) string {
+	for _, ai := range this.appInfos {
+		if ai.AppId == appId {
+			return ai.ApplicationName
+		}
+	}
+
+	return "NotFound"
 }
 
 func (*Whois) Synopsis() string {
@@ -171,6 +185,10 @@ Options:
     -g group
 
     -t topic
+
+    -l
+      Like mode. 
+      Pattern wildcard match of group or topic name.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
