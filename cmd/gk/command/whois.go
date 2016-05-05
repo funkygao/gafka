@@ -89,15 +89,17 @@ func (this *Whois) Run(args []string) (exitCode int) {
 		}
 
 	case this.topic != "":
-		table.SetHeader([]string{"topic", "desc", "app", "owner", "ctime"})
+		table.SetHeader([]string{"topic", "desc", "aid", "app", "owner", "ctime"})
 		for _, ti := range this.topicInfos {
-			table.Append([]string{ti.TopicName, ti.TopicIntro, ti.AppName, ti.CreateBy, ti.CreateTime})
+			table.Append([]string{ti.TopicName, ti.TopicIntro,
+				ti.AppId, ti.AppName, ti.CreateBy, ti.CreateTime})
 		}
 
 	case this.group != "":
-		table.SetHeader([]string{"group", "desc", "app", "owner", "ctime"})
+		table.SetHeader([]string{"group", "desc", "aid", "app", "owner", "ctime"})
 		for _, gi := range this.groupInfos {
-			table.Append([]string{gi.GroupName, gi.GroupIntro, gi.AppName, gi.CreateBy, gi.CreateTime})
+			table.Append([]string{gi.GroupName, gi.GroupIntro,
+				gi.AppId, gi.AppName, gi.CreateBy, gi.CreateTime})
 		}
 
 	case this.topic != "" && this.group != "":
