@@ -198,6 +198,9 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] gk deploy kateway
+  - logstash install
+  - logrotate config
 - [ ] test max body/header size limit
 - [ ] refactor api pkg
 - [ ] bugs
