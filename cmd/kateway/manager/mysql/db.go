@@ -23,7 +23,7 @@ type mysqlStore struct {
 	appSecretMap        map[string]string              // appid:secret
 	appSubMap           map[string]map[string]struct{} // appid:subscribed topics
 	appPubMap           map[string]map[string]struct{} // appid:topics
-	appConsumerGroupMap map[string]string              // appid:group
+	appConsumerGroupMap map[string]map[string]struct{} // appid:groups
 	shadowQueueMap      map[string]string              // hisappid.topic.ver.myappid:group
 }
 
@@ -186,7 +186,7 @@ func (this *mysqlStore) fetchAppGroupRecords(db *sql.DB) error {
 	defer rows.Close()
 
 	var group appConsumerGroupRecord
-	appGroupMap := make(map[string]string)
+	appGroupMap := make(map[string]map[string]struct{})
 	for rows.Next() {
 		err = rows.Scan(&group.AppId, &group.GroupName)
 		if err != nil {
@@ -194,7 +194,11 @@ func (this *mysqlStore) fetchAppGroupRecords(db *sql.DB) error {
 			continue
 		}
 
-		appGroupMap[group.AppId] = group.GroupName
+		if _, present := appGroupMap[group.AppId]; !present {
+			appGroupMap[group.AppId] = make(map[string]struct{})
+		}
+
+		appGroupMap[group.AppId][group.GroupName] = struct{}{}
 	}
 
 	this.appConsumerGroupMap = appGroupMap
