@@ -56,14 +56,13 @@ func (this *Zktop) Run(args []string) (exitCode int) {
 			refreshScreen()
 		}
 
-		if zone == "" {
-			forAllSortedZones(func(zkzone *zk.ZkZone) {
-				this.displayZoneTop(zkzone)
-			})
-		} else {
-			zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+		forAllSortedZones(func(zkzone *zk.ZkZone) {
+			if !patternMatched(zkzone.Name(), zone) {
+				return
+			}
+
 			this.displayZoneTop(zkzone)
-		}
+		})
 
 		time.Sleep(this.refreshInterval)
 	}
@@ -144,7 +143,7 @@ Usage: %s zktop [options]
 
 Options:
 
-    -z zone   
+    -z zone pattern      
 
     -i interval
       Refresh interval in seconds.
