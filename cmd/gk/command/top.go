@@ -59,7 +59,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
 	cmdFlags.DurationVar(&this.topInterval, "i", time.Second*5, "refresh interval")
 	cmdFlags.StringVar(&this.clusterPattern, "c", "", "")
-	cmdFlags.IntVar(&this.limit, "n", 33, "")
+	cmdFlags.IntVar(&this.limit, "n", 0, "")
 	cmdFlags.BoolVar(&this.skipIpPrefix, "shortip", true, "")
 	cmdFlags.StringVar(&this.who, "who", "producer", "")
 	cmdFlags.BoolVar(&this.dashboardGraph, "d", false, "")
@@ -67,6 +67,12 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	if this.limit == 0 {
+		termui.Init()
+		this.limit = termui.TermHeight() - 6 // 5=header+footer+cursor line
+		termui.Close()
 	}
 
 	if this.dashboardGraph {
