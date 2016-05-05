@@ -28,6 +28,19 @@ const (
             name: "z_app_prod"
             zk: "10.213.1.225:2181,10.213.10.140:2181,10.213.18.207:2181,10.213.10.145:2181,10.213.18.215:2181"
         }
+        {
+            // Qconf
+            name: "z_qc_test"
+            zk: "10.213.43.87:2181,10.213.43.89:2181,10.213.43.90"
+        }
+        {
+            name: "z_qc_sit"
+            zk: "10.213.43.86:2181,10.213.43.88:2181,10.213.34.78:2181"
+        }
+        {
+            name: "z_qc_prod"
+            zk: "10.213.2.3:2181,10.213.18.238:2181,10.213.18.233:2181,10.213.18.234:2181,10.213.18.235:2181"
+        }
     ]
 
     zk_default_zone: "prod"
@@ -42,19 +55,37 @@ const (
     ]
 
     reverse_dns: [
-        // test zk
-        "z12181a.test.wdds.zk.com:10.213.42.140"
-        "z12181b.test.wdds.zk.com:10.213.42.141"
-        "z12181c.test.wdds.zk.com:10.213.42.142"
+        // prod qconf zk
+        "z2181a-qc.wdds.zk.com:10.213.2.3"
+        "z2181b-qc.wdds.zk.com:10.213.18.238"
+        "z2181c-qc.wdds.zk.com:10.213.18.233"
+        "z2181d-qc.wdds.zk.com:10.213.18.234"
+        "z2181e-qc.wdds.zk.com:10.213.18.235"
+        
+        // sit qconf zk
+        "z2181a-qc.sit.wdds.zk.com:10.213.43.86"
+        "z2181b-qc.sit.wdds.zk.com:10.213.43.88"
+        "z2181c-qc.sit.wdds.zk.com:10.213.34.78"
+        
+        // test qconf zk
+        "z2181a-qc.test.wdds.zk.com:10.213.43.87"
+        "z2181b-qc.test.wdds.zk.com:10.213.43.89"
+        "z2181c-qc.test.wdds.zk.com:10.213.43.90"
 
-        // test kafka brokers
-        "k10001a.test.wdds.kfk.com:10.213.57.156"
-        "k10001b.test.wdds.kfk.com:10.213.42.135"
+        // prod kafka zk
+        "zk2181a.wdds.zk.com:10.209.33.69"
+        "zk2181b.wdds.zk.com:10.209.37.19"
+        "zk2181c.wdds.zk.com:10.209.37.68"
 
-        // sit zk
+        // sit kafka zk
         "z2181a.sit.wdds.zk.com:10.213.33.154"
         "z2181b.sit.wdds.zk.com:10.213.42.48"
         "z2181c.sit.wdds.zk.com:10.213.42.49"
+
+        // test kafka zk
+        "z12181a.test.wdds.zk.com:10.213.42.140"
+        "z12181b.test.wdds.zk.com:10.213.42.141"
+        "z12181c.test.wdds.zk.com:10.213.42.142"
 
         // test app zk
         "z2181a-app.test.wdds.zk.com:10.213.43.69"
@@ -73,6 +104,10 @@ const (
         "z2181d-app.wdds.zk.com:10.213.10.145"
         "z2181e-app.wdds.zk.com:10.213.18.215"
         
+        // test kafka brokers
+        "k10001a.test.wdds.kfk.com:10.213.57.156"
+        "k10001b.test.wdds.kfk.com:10.213.42.135"
+
         // sit kafka brokers
         "k10101a.sit.wdds.kfk.com:10.213.33.148"
         "k10101b.sit.wdds.kfk.com:10.213.33.149"
@@ -114,11 +149,6 @@ const (
         "k11000b.sit.wdds.kfk.com:10.213.33.149"
         "k11001a.sit.wdds.kfk.com:10.213.33.148"
         "k11001b.sit.wdds.kfk.com:10.213.33.149"
-        
-        // prod zk
-        "zk2181a.wdds.zk.com:10.209.33.69"
-        "zk2181b.wdds.zk.com:10.209.37.19"
-        "zk2181c.wdds.zk.com:10.209.37.68"
         
         // prod kafka brokers
         "k10101a.wdds.kfk.com:10.209.37.39"
