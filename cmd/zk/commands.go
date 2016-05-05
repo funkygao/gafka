@@ -37,6 +37,13 @@ func init() {
 			}, nil
 		},
 
+		"top": func() (cli.Command, error) {
+			return &command.Zktop{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"acl": func() (cli.Command, error) {
 			return &command.Acl{
 				Ui:  ui,

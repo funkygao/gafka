@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
 
+	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 )
@@ -19,6 +22,12 @@ const (
 var (
 	Authenticator AuthFunc
 )
+
+func refreshScreen() {
+	c := exec.Command("clear")
+	c.Stdout = os.Stdout
+	c.Run()
+}
 
 func init() {
 	// default auth component, caller can override this
@@ -146,4 +155,16 @@ func patternMatched(s, pattern string) bool {
 	}
 
 	return true
+}
+
+func forAllSortedZones(fn func(zkzone *zk.ZkZone)) {
+	for _, zone := range ctx.SortedZones() {
+		zkAddrs := ctx.ZoneZkAddrs(zone)
+		if strings.TrimSpace(zkAddrs) == "" {
+			continue
+		}
+
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, zkAddrs))
+		fn(zkzone)
+	}
 }
