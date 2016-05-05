@@ -90,7 +90,9 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 	}
 
 	// group verification
-	if group != "__smoketest__" {
+	if group == "" {
+		// empty group, means we skip group verification
+	} else if group != "__smoketest__" {
 		if _, present := this.appConsumerGroupMap[appid]; !present {
 			return manager.ErrInvalidGroup
 		}
