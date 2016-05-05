@@ -198,6 +198,9 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] sub with delayed ack
+  - StatusNotModified
+  - what if rebalanced, and ack buffered p/o
 - [ ] gk deploy kateway
   - logstash install
   - logrotate config
