@@ -22,6 +22,7 @@ func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
 	output["options"] = options
 	output["loglevel"] = logLevel.String()
 	output["pubserver.type"] = this.pubServer.name
+	output["manager"] = manager.Default.Dump()
 	b, _ := json.MarshalIndent(output, "", "    ")
 	w.Write(b)
 }

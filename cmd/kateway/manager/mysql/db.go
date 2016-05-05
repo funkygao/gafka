@@ -21,8 +21,8 @@ type mysqlStore struct {
 	// TODO https://github.com/hashicorp/go-memdb
 	appClusterMap       map[string]string              // appid:cluster
 	appSecretMap        map[string]string              // appid:secret
-	appSubMap           map[string]map[string]struct{} // appid:topics
-	appPubMap           map[string]map[string]struct{} // appid:subscribed topics
+	appSubMap           map[string]map[string]struct{} // appid:subscribed topics
+	appPubMap           map[string]map[string]struct{} // appid:topics
 	appConsumerGroupMap map[string]string              // appid:group
 	shadowQueueMap      map[string]string              // hisappid.topic.ver.myappid:group
 }

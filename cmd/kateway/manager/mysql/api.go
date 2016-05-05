@@ -11,6 +11,16 @@ var (
 	topicNameRegex = regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 )
 
+func (this *mysqlStore) Dump() map[string]interface{} {
+	r := make(map[string]interface{})
+	r["app_cluster"] = this.appClusterMap
+	r["subscrptions"] = this.appSubMap
+	r["app_topic"] = this.appPubMap
+	r["groups"] = this.appConsumerGroupMap
+	r["shadows"] = this.shadowQueueMap
+	return r
+}
+
 func (this *mysqlStore) Refreshed() <-chan struct{} {
 	return this.refreshCh
 }
