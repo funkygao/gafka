@@ -53,6 +53,10 @@ func (this *dummyStore) IsShadowedTopic(hisAppid, topic, ver, myAppid, group str
 	return true
 }
 
+func (this *dummyStore) Dump() map[string]interface{} {
+	return nil
+}
+
 func (this *dummyStore) Start() error {
 	return nil
 }

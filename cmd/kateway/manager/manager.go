@@ -35,6 +35,8 @@ type Manager interface {
 
 	ValidateTopicName(topic string) bool
 	ValidateGroupName(header http.Header, group string) bool
+
+	Dump() map[string]interface{}
 }
 
 var Default Manager
