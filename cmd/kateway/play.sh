@@ -28,7 +28,7 @@ curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hello world!' 'http://local
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d '@/Users/funky/gopkg/src/github.com/funkygao/fae/contrib/resources/dashboard.png' 'http://localhost:9191/v1/msgs/foobar/v1'
 
 # raw sub
-curl -XGET -H'Appid: app1' -H'Subkey: mypubkey' 'http://localhost:9192/v1/raw/topics/foobar/v1'
+curl -XGET -H'Appid: app1' -H'Subkey: mypubkey' 'http://localhost:9192/v1/raw/msgs/app1/foobar/v1?group=xx'
 
 
 #----------------------
