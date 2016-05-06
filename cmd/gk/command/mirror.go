@@ -22,6 +22,7 @@ type Mirror struct {
 	zone1, zone2       string
 	cluster1, cluster2 string
 	excludes           string
+	progressStep       int
 	topicsExcluded     map[string]struct{}
 }
 
@@ -33,6 +34,7 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.cluster1, "c1", "", "")
 	cmdFlags.StringVar(&this.cluster2, "c2", "", "")
 	cmdFlags.StringVar(&this.excludes, "excluded", "", "")
+	cmdFlags.Int64Var(&this.progressStep, "step", 5000, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -77,7 +79,7 @@ func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
 	cf.Offsets.CommitInterval = time.Minute
 	cf.ChannelBufferSize = 0
 	cf.Consumer.Return.Errors = true
-	group := fmt.Sprintf("%s.%s._mirror", c1.Name(), c2.Name())
+	group := fmt.Sprintf("%s.%s._mirror_", c1.Name(), c2.Name())
 	sub, err := consumergroup.JoinConsumerGroup(group, topics, c1.ZkZone().ZkAddrList(), cf)
 	swallow(err)
 
@@ -108,7 +110,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			sub.CommitUpto(msg)
 
 			n++
-			if n%5000 == 0 {
+			if n%this.progressStep == 0 {
 				log.Println(n)
 			}
 
@@ -150,6 +152,8 @@ Options:
     -c2 to cluster
 
     -exclude comma seperated topic names
+
+    -step n
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
