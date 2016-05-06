@@ -14,6 +14,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/signal"
 	"github.com/funkygao/kafka-cg/consumergroup"
@@ -30,6 +31,7 @@ type Mirror struct {
 	cluster1, cluster2 string
 	excludes           string
 	topicsExcluded     map[string]struct{}
+	debug              bool
 
 	bandwidthLimit       int
 	bandwidthRateLimiter *ratelimiter.LeakyBucket
@@ -44,6 +46,7 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.cluster1, "c1", "", "")
 	cmdFlags.StringVar(&this.cluster2, "c2", "", "")
 	cmdFlags.StringVar(&this.excludes, "excluded", "", "")
+	cmdFlags.BoolVar(&this.debug, "debug", false, "")
 	cmdFlags.IntVar(&this.bandwidthLimit, "net", 100, "")
 	cmdFlags.Int64Var(&this.progressStep, "step", 5000, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -65,7 +68,10 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	this.quit = make(chan struct{})
 	limit := (1 << 20) * this.bandwidthLimit / 8
 	this.bandwidthRateLimiter = ratelimiter.NewLeakyBucket(limit*10, time.Second*10)
-	log.Printf("[%s]%s -> [%s]%s with bandwidth %dbps", limit)
+	log.Printf("[%s]%s -> [%s]%s with bandwidth %dbps",
+		this.zone1, this.cluster1,
+		this.zone2, this.cluster2,
+		limit)
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		log.Printf("received signal: %s", strings.ToUpper(sig.String()))
 		log.Println("quiting...")
@@ -159,9 +165,9 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 	)
 
 	defer func() {
+		log.Println("pump cleanup...")
 		sub.Close()
 		pub.Close()
-
 		log.Println("pump cleanup ok")
 
 		stop <- struct{}{} // notify others I'm done
@@ -171,10 +177,12 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 	for {
 		select {
 		case <-this.quit:
+			log.Println("received quit command")
 			return
 
 		case <-stop:
 			// yes sir!
+			log.Println("received stop command")
 			return
 
 		case <-time.After(time.Second * 10):
@@ -182,7 +190,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			log.Println("idle 10s waiting for new msg")
 
 		case msg := <-sub.Messages():
-			if !active {
+			if !active || this.debug {
 				log.Printf("<-[%d] T:%s M:%s", n, msg.Topic, string(msg.Value))
 			}
 			active = true
@@ -195,16 +203,17 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			sub.CommitUpto(msg)
 
 			// rate limit, never overflood the limited bandwidth between IDCs
+			bytesN := len(msg.Topic) + len(msg.Key) + len(msg.Value) + 20 // payload overhead
 			for {
-				bytesN := len(msg.Topic) + len(msg.Key) + len(msg.Value) + 20 // payload overhead
 				if !this.bandwidthRateLimiter.Pour(bytesN) {
 					time.Sleep(time.Millisecond * 5)
+					log.Printf("%d -> bandwidth reached", bytesN)
 				}
 			}
 
 			n++
 			if n%this.progressStep == 0 {
-				log.Println(n)
+				log.Println(gofmt.Comma(n))
 			}
 
 		case err := <-sub.Errors():
@@ -240,6 +249,8 @@ Options:
 
     -step n
       Defaults 5000.
+
+    -debug
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
