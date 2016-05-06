@@ -34,7 +34,11 @@ func (this *Kguard) Run(args []string) (exitCode int) {
 		return
 	}
 
-	this.Ui.Output(fmt.Sprintf("%s %s", color.Green(string(data)),
+	children, _, _ := zkzone.Conn().Children("/" + zk.KguardLeaderPath)
+
+	this.Ui.Output(fmt.Sprintf("%s(out of %d candidates) up: %s",
+		color.Green(string(data)),
+		len(children),
 		gofmt.PrettySince(zk.ZkTimestamp(stat.Mtime).Time())))
 
 	return
