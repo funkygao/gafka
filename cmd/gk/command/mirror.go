@@ -77,8 +77,8 @@ func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
 	cf.Offsets.CommitInterval = time.Minute
 	cf.ChannelBufferSize = 0
 	cf.Consumer.Return.Errors = true
-	sub, err := consumergroup.JoinConsumerGroup("_mirror_group_", topics,
-		c1.ZkZone().ZkAddrList(), cf)
+	group := fmt.Sprintf("%s.%s._mirror", c1.Name(), c2.Name())
+	sub, err := consumergroup.JoinConsumerGroup(group, topics, c1.ZkZone().ZkAddrList(), cf)
 	swallow(err)
 
 	log.Println("starting pump")
@@ -96,7 +96,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 
 		case msg := <-sub.Messages():
 			if !active {
-				log.Printf("got new msg: %s", string(msg.Value))
+				log.Printf("[%d] got new msg: %s %s", n, msg.Topic, string(msg.Value))
 			}
 			active = true
 			pub.Input() <- &sarama.ProducerMessage{
