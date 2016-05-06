@@ -88,6 +88,16 @@ func (this *ZkCluster) TopicsCtime() map[string]time.Time {
 	return r
 }
 
+func (this *ZkCluster) Topics() ([]string, error) {
+	topics, _, err := this.zone.Conn().Children(this.topicsRoot())
+	return topics, err
+}
+
+func (this *ZkCluster) WatchTopics() ([]string, <-chan zk.Event, error) {
+	topics, _, ch, err := this.zone.Conn().ChildrenW(this.topicsRoot())
+	return topics, ch, err
+}
+
 func (this *ZkCluster) Partitions(topic string) []int32 {
 	partitions := this.zone.children(this.partitionsPath(topic))
 	r := make([]int32, 0, len(partitions))

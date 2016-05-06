@@ -78,54 +78,94 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 }
 
 func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
-	pub, err := sarama.NewAsyncProducer(c2.BrokerList(), sarama.NewConfig())
+	pub, err := this.makePub(c2)
 	swallow(err)
 
-	// TODO
-	// *. topics might change at any time
-	topics := this.topicsOfCluster(c1)
+	topics, topicsChanges, err := c1.WatchTopics()
+	swallow(err)
+
 	log.Printf("topics: %+v", topics)
 	if len(topics) == 0 {
 		log.Println("empty topics")
 		return
 	}
 
+	group := fmt.Sprintf("%s.%s._mirror_", c1.Name(), c2.Name())
+	sub, err := this.makeSub(c1, group, topics)
+	swallow(err)
+
+	pumpStopper := make(chan struct{})
+	for {
+		select {
+		case <-topicsChanges:
+			log.Println("topics changed, stopping pump...")
+			pumpStopper <- struct{}{} // stop pump
+			<-pumpStopper             // await pump cleanup
+
+			// refresh c1 topics
+			topics, err = c1.Topics()
+			if err != nil {
+				// TODO how to handle this err?
+				log.Println(err)
+			}
+
+			log.Printf("topics: %+v", topics)
+
+			sub, err = this.makeSub(c1, group, topics)
+			if err != nil {
+				// TODO how to handle this err?
+				log.Println(err)
+			}
+
+			go this.pump(sub, pub, pumpStopper)
+
+		case <-this.quit:
+			<-pumpStopper // await pump cleanup
+			break
+		}
+	}
+
+}
+
+func (this *Mirror) makePub(c2 *zk.ZkCluster) (sarama.AsyncProducer, error) {
+	// TODO setup batch size
+	return sarama.NewAsyncProducer(c2.BrokerList(), sarama.NewConfig())
+}
+
+func (this *Mirror) makeSub(c1 *zk.ZkCluster, group string, topics []string) (*consumergroup.ConsumerGroup, error) {
 	cf := consumergroup.NewConfig()
 	cf.Zookeeper.Chroot = c1.Chroot()
 	cf.Offsets.CommitInterval = time.Second * 10
 	cf.ChannelBufferSize = 200
 	cf.Consumer.Return.Errors = true
-	group := fmt.Sprintf("%s.%s._mirror_", c1.Name(), c2.Name())
 	sub, err := consumergroup.JoinConsumerGroup(group, topics, c1.ZkZone().ZkAddrList(), cf)
-	swallow(err)
-
-	log.Println("start pumping")
-	this.pump(sub, pub)
+	return sub, err
 }
 
-func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProducer) {
+func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProducer, stop chan struct{}) {
 	var (
-		n                 int64
-		active            = true
-		watchTopicsTicker = time.NewTicker(time.Minute)
+		n      int64
+		active = true
 	)
 
 	defer func() {
-		watchTopicsTicker.Stop()
-
 		sub.Close()
 		pub.Close()
 
 		log.Println("pump cleanup ok")
+
+		stop <- struct{}{} // notify others I'm done
 	}()
 
+	log.Printf("start pumping")
 	for {
 		select {
 		case <-this.quit:
 			return
 
-		case <-watchTopicsTicker.C:
-			// TODO check whether topics has changed
+		case <-stop:
+			// yes sir!
+			return
 
 		case <-time.After(time.Second * 10):
 			active = false
@@ -161,17 +201,6 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			log.Println(err.Error()) // TODO need reconnect?
 		}
 	}
-}
-
-func (this *Mirror) topicsOfCluster(c *zk.ZkCluster) []string {
-	kc, err := sarama.NewClient(c.BrokerList(), sarama.NewConfig())
-	swallow(err)
-	defer kc.Close()
-
-	topics, err := kc.Topics()
-	swallow(err)
-
-	return topics
 }
 
 func (*Mirror) Synopsis() string {
