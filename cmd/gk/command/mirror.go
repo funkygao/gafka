@@ -141,6 +141,8 @@ func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
 		}
 	}
 
+	pub.Close()
+
 }
 
 func (this *Mirror) makePub(c2 *zk.ZkCluster) (sarama.AsyncProducer, error) {
@@ -152,8 +154,11 @@ func (this *Mirror) makeSub(c1 *zk.ZkCluster, group string, topics []string) (*c
 	cf := consumergroup.NewConfig()
 	cf.Zookeeper.Chroot = c1.Chroot()
 	cf.Offsets.CommitInterval = time.Second * 10
-	cf.ChannelBufferSize = 200
+	cf.Offsets.ProcessingTimeout = time.Second
+	cf.ChannelBufferSize = 0
 	cf.Consumer.Return.Errors = true
+	cf.Consumer.MaxProcessingTime = 100 * time.Millisecond // chan recv timeout
+
 	sub, err := consumergroup.JoinConsumerGroup(group, topics, c1.ZkZone().ZkAddrList(), cf)
 	return sub, err
 }
@@ -167,7 +172,6 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 	defer func() {
 		log.Println("pump cleanup...")
 		sub.Close()
-		pub.Close()
 		log.Println("pump cleanup ok")
 
 		stop <- struct{}{} // notify others I'm done
@@ -177,12 +181,12 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 	for {
 		select {
 		case <-this.quit:
-			log.Println("received quit command")
+			this.Ui.Warn("received quit command")
 			return
 
 		case <-stop:
 			// yes sir!
-			log.Println("received stop command")
+			this.Ui.Warn("received stop command")
 			return
 
 		case <-time.After(time.Second * 10):
@@ -204,11 +208,9 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 
 			// rate limit, never overflood the limited bandwidth between IDCs
 			bytesN := len(msg.Topic) + len(msg.Key) + len(msg.Value) + 20 // payload overhead
-			for {
-				if !this.bandwidthRateLimiter.Pour(bytesN) {
-					time.Sleep(time.Millisecond * 5)
-					log.Printf("%d -> bandwidth reached", bytesN)
-				}
+			if !this.bandwidthRateLimiter.Pour(bytesN) {
+				time.Sleep(time.Second)
+				this.Ui.Error(fmt.Sprintf("%d -> bandwidth reached", bytesN))
 			}
 
 			n++
@@ -217,7 +219,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			}
 
 		case err := <-sub.Errors():
-			log.Println(err.Error()) // TODO need reconnect?
+			this.Ui.Error(err.Error()) // TODO
 		}
 	}
 }
