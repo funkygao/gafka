@@ -74,6 +74,7 @@ func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
 
 	cf := consumergroup.NewConfig()
 	cf.Zookeeper.Chroot = c1.Chroot()
+	cf.Offsets.CommitInterval = time.Minute
 	cf.ChannelBufferSize = 0
 	cf.Consumer.Return.Errors = true
 	sub, err := consumergroup.JoinConsumerGroup("_mirror_group_", topics,
