@@ -1,37 +1,38 @@
-package main
+package kafka
 
 import (
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kguard/watchers"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 )
 
-var _ Executor = &MonitorBrokers{}
+var _ watchers.Watcher = &WatchBrokers{}
 
-// MonitorBrokers monitors aliveness of brokers.
-type MonitorBrokers struct {
-	zkzone *zk.ZkZone
-	stop   chan struct{}
-	tick   time.Duration
-	wg     *sync.WaitGroup
+// WatchBrokers monitors aliveness of kafka brokers.
+type WatchBrokers struct {
+	Zkzone *zk.ZkZone
+	Stop   chan struct{}
+	Tick   time.Duration
+	Wg     *sync.WaitGroup
 }
 
-func (this *MonitorBrokers) Init() {}
+func (this *WatchBrokers) Init() {}
 
-func (this *MonitorBrokers) Run() {
-	defer this.wg.Done()
+func (this *WatchBrokers) Run() {
+	defer this.Wg.Done()
 
-	ticker := time.NewTicker(this.tick)
+	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
 	deadBrokers := metrics.NewRegisteredGauge("brokers.dead", nil)
 	unregisteredBrokers := metrics.NewRegisteredGauge("brokers.unreg", nil)
 	for {
 		select {
-		case <-this.stop:
+		case <-this.Stop:
 			return
 
 		case <-ticker.C:
@@ -42,9 +43,9 @@ func (this *MonitorBrokers) Run() {
 	}
 }
 
-func (this *MonitorBrokers) report() (dead, unregistered int64) {
-	this.zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
-		zkcluster := this.zkzone.NewCluster(cluster)
+func (this *WatchBrokers) report() (dead, unregistered int64) {
+	this.Zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
+		zkcluster := this.Zkzone.NewCluster(cluster)
 		registeredBrokers := zkcluster.RegisteredInfo().Roster
 
 		// find diff between registeredBrokers and liveBrokers

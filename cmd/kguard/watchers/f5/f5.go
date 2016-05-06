@@ -1,4 +1,4 @@
-package main
+package f5
 
 import (
 	"io/ioutil"
@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kguard/watchers"
 	"github.com/funkygao/gafka/mpool"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
@@ -16,11 +17,13 @@ const (
 	HttpLoop = 100
 )
 
-// MonitorF5 monitors latency of F5 load balancer vibration.
-type MonitorF5 struct {
-	stop chan struct{}
-	tick time.Duration
-	wg   *sync.WaitGroup
+var _ watchers.Watcher = &WatchF5{}
+
+// WatchF5 monitors latency of F5 load balancer vibration.
+type WatchF5 struct {
+	Stop chan struct{}
+	Tick time.Duration
+	Wg   *sync.WaitGroup
 
 	latencyWithF5WithGateway       metrics.Histogram
 	latencyWithoutF5WithoutGateway metrics.Histogram
@@ -33,14 +36,14 @@ type MonitorF5 struct {
 	httpConn *http.Client
 }
 
-func (this *MonitorF5) Init() {
+func (this *WatchF5) Init() {
 
 }
 
-func (this *MonitorF5) Run() {
-	defer this.wg.Done()
+func (this *WatchF5) Run() {
+	defer this.Wg.Done()
 
-	ticker := time.NewTicker(this.tick)
+	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
 	this.httpConn = &http.Client{
@@ -59,7 +62,7 @@ func (this *MonitorF5) Run() {
 
 	for {
 		select {
-		case <-this.stop:
+		case <-this.Stop:
 			return
 
 		case <-ticker.C:
@@ -73,34 +76,34 @@ func (this *MonitorF5) Run() {
 }
 
 // client -> F5(intra) -> gateway -> F5(intra) -> nginx -> backend
-func (this *MonitorF5) callLikeRealUser() {
+func (this *WatchF5) callLikeRealUser() {
 	url := "http://api.ffan.com/health/v1/callChain"
 	// http://pubf5gwng.intra.ffan.com/alive
 	this.callHttp(url, this.latencyRealUser)
 }
 
 // client -> F5(intra) -> [nginx] -> gateway -> backend
-func (this *MonitorF5) callWithF5WithGateway() {
+func (this *WatchF5) callWithF5WithGateway() {
 	url := "http://api.ffan.com/pubsub/v1/pub/alive"
 	// http://pub.intra.ffan.com/alive
 	this.callHttp(url, this.latencyWithF5WithGateway)
 }
 
 // client -> F5(intra) -> backend
-func (this *MonitorF5) callWithF5DirectToBackend() {
+func (this *WatchF5) callWithF5DirectToBackend() {
 	url := "http://10.208.224.47/alive"
 	// http://10.213.57.147:9191
 	this.callHttp(url, this.latencyF5DirectBackend)
 }
 
 // client -> backend
-func (this *MonitorF5) callWithoutF5WithoutGateway() {
+func (this *WatchF5) callWithoutF5WithoutGateway() {
 	url := "http://pub.sit.ffan.com:9191/alive"
 	this.callHttp(url, this.latencyWithoutF5WithoutGateway)
 }
 
 // client -> nginx(intra) -> gateway -> backend
-func (this *MonitorF5) callWithoutF5WithGateway() {
+func (this *WatchF5) callWithoutF5WithGateway() {
 	url := "http://10.209.36.67/pubsub/v1/pub/alive"
 	host := "api.ffan.com"
 
@@ -131,7 +134,7 @@ func (this *MonitorF5) callWithoutF5WithGateway() {
 
 }
 
-func (this *MonitorF5) callHttp(url string, h metrics.Histogram) {
+func (this *WatchF5) callHttp(url string, h metrics.Histogram) {
 	var t time.Time
 	for i := 0; i < HttpLoop; i++ {
 		t = time.Now()

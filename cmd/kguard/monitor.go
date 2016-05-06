@@ -4,15 +4,23 @@ import (
 	"flag"
 	"net"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/docker/leadership"
 	"github.com/docker/libkv/store"
 	"github.com/docker/libkv/store/zookeeper"
+	"github.com/funkygao/gafka/cmd/kguard/watchers"
+	"github.com/funkygao/gafka/cmd/kguard/watchers/f5"
+	"github.com/funkygao/gafka/cmd/kguard/watchers/kafka"
+	wzk "github.com/funkygao/gafka/cmd/kguard/watchers/zk"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
+	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
@@ -25,10 +33,12 @@ type Monitor struct {
 	router *httprouter.Router
 	zkzone *zk.ZkZone
 
+	candidate *leadership.Candidate
+
 	stop   chan struct{}
 	leader bool
 
-	executors []Executor
+	watchers []watchers.Watcher
 }
 
 func (this *Monitor) Init() {
@@ -46,6 +56,8 @@ func (this *Monitor) Init() {
 
 	ctx.LoadFromHome()
 	this.zkzone = zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+
+	// export RESTful api
 	this.router = httprouter.New()
 	this.router.GET("/metrics", this.metricsHandler)
 
@@ -60,8 +72,8 @@ func (this *Monitor) Init() {
 	}
 }
 
-func (this *Monitor) addExecutor(e Executor) {
-	this.executors = append(this.executors, e)
+func (this *Monitor) addWatcher(w watchers.Watcher) {
+	this.watchers = append(this.watchers, w)
 }
 
 func (this *Monitor) Stop() {
@@ -74,30 +86,38 @@ func (this *Monitor) Start() {
 	go InfluxDB(ctx.Hostname(), metrics.DefaultRegistry, time.Minute,
 		this.influxdbAddr, this.influxdbDbName, "", "", this.stop)
 
-	this.executors = make([]Executor, 0)
+	this.watchers = make([]watchers.Watcher, 0)
 	wg := new(sync.WaitGroup)
-	this.addExecutor(&MonitorTopics{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
-	this.addExecutor(&MonitorBrokers{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
-	this.addExecutor(&MonitorReplicas{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
-	this.addExecutor(&MonitorConsumers{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
-	this.addExecutor(&MonitorClusters{zkzone: this.zkzone, tick: time.Minute, stop: this.stop, wg: wg})
-	this.addExecutor(&MonitorZk{zkzone: this.zkzone, tick: time.Second * 20, stop: this.stop, wg: wg})
-	this.addExecutor(&MonitorF5{tick: time.Minute, stop: this.stop, wg: wg})
-	for _, e := range this.executors {
+	this.addWatcher(&kafka.WatchBrokers{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
+	this.addWatcher(&kafka.WatchClusters{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
+	this.addWatcher(&kafka.WatchConsumers{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
+	this.addWatcher(&kafka.WatchReplicas{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
+	this.addWatcher(&kafka.WatchTopics{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
+	this.addWatcher(&wzk.WatchZk{Zkzone: this.zkzone, Tick: time.Second * 20, Stop: this.stop, Wg: wg})
+	this.addWatcher(&f5.WatchF5{Tick: time.Minute, Stop: this.stop, Wg: wg})
+	for _, w := range this.watchers {
 		wg.Add(1)
-		go e.Run()
+		go w.Run()
 	}
 
-	log.Info("all executors ready")
+	log.Info("all watchers ready")
 
 	<-this.stop
 	wg.Wait()
 
-	log.Info("all executors stopped")
+	log.Info("all watchers stopped")
 }
 
 func (this *Monitor) ServeForever() {
 	defer this.zkzone.Close()
+
+	signal.RegisterSignalsHandler(func(sig os.Signal) {
+		log.Info("received signal: %s", strings.ToUpper(sig.String()))
+
+		this.candidate.Stop()
+		log.Info("election stopped, stopping watchers...")
+		this.Stop()
+	}, syscall.SIGINT, syscall.SIGTERM)
 
 	// start the api server
 	apiServer := &http.Server{
@@ -117,20 +137,20 @@ func (this *Monitor) ServeForever() {
 	}
 
 	ip, _ := ctx.LocalIP()
-	candidate := leadership.NewCandidate(backend, zk.KguardLeaderPath, ip.String(), 15*time.Second)
-	electedCh, _, err := candidate.RunForElection()
+	this.candidate = leadership.NewCandidate(backend, zk.KguardLeaderPath, ip.String(), 15*time.Second)
+	electedCh, _, err := this.candidate.RunForElection()
 	if err != nil {
 		panic("Cannot run for election, store is probably down")
 	}
 
 	for isElected := range electedCh {
 		if isElected {
-			log.Info("Won the election, starting all executors")
+			log.Info("Won the election, starting all watchers")
 
 			this.leader = true
 			this.Start()
 		} else {
-			log.Warn("Lost the election, watching election events...")
+			log.Warn("Fails the election, watching election events...")
 
 			if this.leader {
 				this.Stop()

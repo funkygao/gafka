@@ -1,38 +1,39 @@
-package main
+package kafka
 
 import (
 	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/cmd/kguard/watchers"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 )
 
-var _ Executor = &MonitorReplicas{}
+var _ watchers.Watcher = &WatchReplicas{}
 
-// MonitorReplicas reports out of sync partitions num over time.
-type MonitorReplicas struct {
-	zkzone *zk.ZkZone
-	stop   chan struct{}
-	tick   time.Duration
-	wg     *sync.WaitGroup
+// WatchReplicas reports kafka out of sync partitions num over time.
+type WatchReplicas struct {
+	Zkzone *zk.ZkZone
+	Stop   chan struct{}
+	Tick   time.Duration
+	Wg     *sync.WaitGroup
 }
 
-func (this *MonitorReplicas) Init() {}
+func (this *WatchReplicas) Init() {}
 
-func (this *MonitorReplicas) Run() {
-	defer this.wg.Done()
+func (this *WatchReplicas) Run() {
+	defer this.Wg.Done()
 
-	ticker := time.NewTicker(this.tick)
+	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
 	dead := metrics.NewRegisteredGauge("partitions.dead", nil)
 	outOfSync := metrics.NewRegisteredGauge("partitions.outofsync", nil)
 	for {
 		select {
-		case <-this.stop:
+		case <-this.Stop:
 			return
 
 		case <-ticker.C:
@@ -44,8 +45,8 @@ func (this *MonitorReplicas) Run() {
 
 }
 
-func (this *MonitorReplicas) report() (deadPartitions, outOfSyncPartitions int64) {
-	this.zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+func (this *WatchReplicas) report() (deadPartitions, outOfSyncPartitions int64) {
+	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		brokerList := zkcluster.BrokerList()
 		if len(brokerList) == 0 {
 			log.Warn("cluster[%s] empty brokers", zkcluster.Name())

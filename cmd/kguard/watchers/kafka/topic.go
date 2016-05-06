@@ -1,31 +1,32 @@
-package main
+package kafka
 
 import (
 	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/cmd/kguard/watchers"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 )
 
-var _ Executor = &MonitorTopics{}
+var _ watchers.Watcher = &WatchTopics{}
 
-// MonitorTopics montor total msg count over time.
-type MonitorTopics struct {
-	zkzone *zk.ZkZone
-	stop   chan struct{}
-	tick   time.Duration
-	wg     *sync.WaitGroup
+// WatchTopics montor kafka total msg count over time.
+type WatchTopics struct {
+	Zkzone *zk.ZkZone
+	Stop   chan struct{}
+	Tick   time.Duration
+	Wg     *sync.WaitGroup
 }
 
-func (this *MonitorTopics) Init() {}
+func (this *WatchTopics) Init() {}
 
-func (this *MonitorTopics) Run() {
-	defer this.wg.Done()
+func (this *WatchTopics) Run() {
+	defer this.Wg.Done()
 
-	ticker := time.NewTicker(this.tick)
+	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
 	pubQps := metrics.NewRegisteredMeter("pub.qps", nil)
@@ -37,7 +38,7 @@ func (this *MonitorTopics) Run() {
 	for {
 
 		select {
-		case <-this.stop:
+		case <-this.Stop:
 			return
 
 		case <-ticker.C:
@@ -66,9 +67,9 @@ func (this *MonitorTopics) Run() {
 
 }
 
-func (this *MonitorTopics) report() (totalOffsets int64, topicsN int64,
+func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 	partitionN int64, brokersN int64) {
-	this.zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		brokerList := zkcluster.BrokerList()
 		kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
 		if err != nil {

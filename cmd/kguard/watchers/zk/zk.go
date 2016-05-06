@@ -1,33 +1,35 @@
-package main
+package zk
 
 import (
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kguard/watchers"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 )
 
-var _ Executor = &MonitorZk{}
+var _ watchers.Watcher = &WatchZk{}
 
-type MonitorZk struct {
-	zkzone *zk.ZkZone
-	stop   chan struct{}
-	tick   time.Duration
-	wg     *sync.WaitGroup
+// WatchZk watches zookeeper health.
+type WatchZk struct {
+	Zkzone *zk.ZkZone
+	Stop   chan struct{}
+	Tick   time.Duration
+	Wg     *sync.WaitGroup
 
 	lastReceived int64
 }
 
-func (this *MonitorZk) Init() {
+func (this *WatchZk) Init() {
 
 }
 
-func (this *MonitorZk) Run() {
-	defer this.wg.Done()
+func (this *WatchZk) Run() {
+	defer this.Wg.Done()
 
-	ticker := time.NewTicker(this.tick)
+	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
 	qps := metrics.NewRegisteredGauge("zk.qps", nil)
@@ -35,13 +37,13 @@ func (this *MonitorZk) Run() {
 	znodes := metrics.NewRegisteredGauge("zk.znodes", nil)
 	for {
 		select {
-		case <-this.stop:
+		case <-this.Stop:
 			return
 
 		case <-ticker.C:
 			r, c, z := this.collectMetrics()
 			if this.lastReceived > 0 {
-				qps.Update((r - this.lastReceived) / int64(this.tick.Seconds()))
+				qps.Update((r - this.lastReceived) / int64(this.Tick.Seconds()))
 			}
 			this.lastReceived = r
 
@@ -51,8 +53,8 @@ func (this *MonitorZk) Run() {
 	}
 }
 
-func (this *MonitorZk) collectMetrics() (received, conns, znodes int64) {
-	for _, statOutput := range this.zkzone.RunZkFourLetterCommand("stat") {
+func (this *WatchZk) collectMetrics() (received, conns, znodes int64) {
+	for _, statOutput := range this.Zkzone.RunZkFourLetterCommand("stat") {
 		stat := zk.ParseStatResult(statOutput)
 		n, _ := strconv.Atoi(stat.Received)
 		received += int64(n)
