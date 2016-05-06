@@ -33,6 +33,7 @@ type Kateway struct {
 	logLevel     string
 	configOption string
 	longFmt      bool
+	install      bool
 	resetCounter string
 	listClients  bool
 	visualLog    string
@@ -45,6 +46,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.BoolVar(&this.configMode, "cf", false, "")
 	cmdFlags.StringVar(&this.id, "id", "", "")
+	cmdFlags.BoolVar(&this.install, "i", false, "")
 	cmdFlags.BoolVar(&this.longFmt, "l", false, "")
 	cmdFlags.StringVar(&this.configOption, "option", "", "")
 	cmdFlags.StringVar(&this.resetCounter, "reset", "", "")
@@ -58,6 +60,11 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 	if this.visualLog != "" {
 		this.doVisualize()
+		return
+	}
+
+	if this.install {
+		this.installGuide()
 		return
 	}
 
@@ -221,6 +228,37 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	})
 
 	return
+}
+
+func (this *Kateway) installGuide() {
+	this.Ui.Info("mkdir -p /var/wd/kateway/sbin")
+	this.Ui.Info("cd /var/wd/kateway")
+	this.Ui.Info("nohup ./sbin/kateway -zone prod -id 1 -level trace -log kateway.log -crashlog panic -influxdbaddr http://10.213.1.223:8086 &")
+	this.Ui.Info("")
+	this.Ui.Info("yum install -y logstash")
+	this.Ui.Info("/etc/logstash/conf.d/kateway.conf")
+	this.Ui.Output(strings.TrimSpace(`
+input {
+    file {
+        path => "/var/wd/kateway/kateway.log"
+        type => "kateway"
+    }
+    file {
+        path => "/var/wd/kateway/panic"
+        type => "kateway_panic"
+    }
+}
+
+output {
+    kafka {
+        broker_list => "10.209.18.15:11003,10.209.18.16:11003"
+        topic_id => "pubsub_log"
+        topic_metadata_refresh_interval_ms => 600000
+    }
+}
+		`))
+	this.Ui.Info("chkconfig --add logstash")
+	this.Ui.Info("/etc/init.d/logstash start")
 }
 
 func (this *Kateway) getClientsInfo(url string) map[string][]string {
@@ -399,6 +437,9 @@ Usage: %s kateway -z zone [options]
     List/Config online kateway instances
 
 Options:
+
+    -i
+      Install kateway guide
 
     -checkup
       Checkup for online kateway instances

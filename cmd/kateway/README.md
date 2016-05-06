@@ -201,9 +201,6 @@ It is designed to be programmer friendly.
 - [ ] sub with delayed ack
   - StatusNotModified
   - what if rebalanced, and ack buffered p/o
-- [ ] gk deploy kateway
-  - logstash install
-  - logrotate config
 - [ ] test max body/header size limit
 - [ ] refactor api pkg
 - [ ] bugs
