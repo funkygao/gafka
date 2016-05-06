@@ -87,20 +87,28 @@ func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
 
 func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProducer) {
 	var n int64
+	active := true
 	for {
 		select {
-		case <-time.After(time.Second * 5):
-			log.Println("idle 5s waiting for new msg")
+		case <-time.After(time.Second * 10):
+			active = false
+			log.Println("idle 10s waiting for new msg")
 
 		case msg := <-sub.Messages():
+			if !active {
+				log.Printf("got new msg: %s", string(msg.Value))
+			}
+			active = true
 			pub.Input() <- &sarama.ProducerMessage{
 				Topic: msg.Topic,
 				Key:   sarama.ByteEncoder(msg.Key),
 				Value: sarama.ByteEncoder(msg.Value),
 			}
 
+			sub.CommitUpto(msg)
+
 			n++
-			if n%2000 == 0 {
+			if n%5000 == 0 {
 				log.Println(n)
 			}
 
