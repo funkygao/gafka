@@ -3,9 +3,15 @@ package command
 import (
 	"flag"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 
+	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/kafka-cg/consumergroup"
 )
 
 type Mirror struct {
@@ -41,7 +47,58 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 		this.topicsExcluded[e] = struct{}{}
 	}
 
+	log.SetOutput(os.Stdout)
+
+	z1 := zk.NewZkZone(zk.DefaultConfig(this.zone1, ctx.ZoneZkAddrs(this.zone1)))
+	z2 := zk.NewZkZone(zk.DefaultConfig(this.zone2, ctx.ZoneZkAddrs(this.zone2)))
+	c1 := z1.NewCluster(this.cluster1)
+	c2 := z2.NewCluster(this.cluster2)
+	this.makeMirror(c1, c2)
+
 	return
+}
+
+func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
+	pub, err := sarama.NewAsyncProducer(c2.BrokerList(), sarama.NewConfig())
+	swallow(err)
+
+	// TODO
+	// *. topics might change at any time
+	topics := this.topicsOfCluster(c1)
+	log.Printf("topics: %+v", topics)
+	sub, err := consumergroup.JoinConsumerGroup("_mirror_group_", topics,
+		c1.ZkZone().ZkAddrList(), consumergroup.NewConfig())
+	swallow(err)
+
+	log.Println("starting pump")
+	this.pump(sub, pub)
+}
+
+func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProducer) {
+	for {
+		select {
+		case msg := <-sub.Messages():
+			pub.Input() <- &sarama.ProducerMessage{
+				Topic: msg.Topic,
+				Key:   sarama.ByteEncoder(msg.Key),
+				Value: sarama.ByteEncoder(msg.Value),
+			}
+
+		case err := <-sub.Errors():
+			log.Println(err.Error())
+		}
+	}
+}
+
+func (this *Mirror) topicsOfCluster(c *zk.ZkCluster) []string {
+	kc, err := sarama.NewClient(c.BrokerList(), sarama.NewConfig())
+	swallow(err)
+	defer kc.Close()
+
+	topics, err := kc.Topics()
+	swallow(err)
+
+	return topics
 }
 
 func (*Mirror) Synopsis() string {
