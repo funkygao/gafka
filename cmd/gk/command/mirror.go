@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -23,6 +24,7 @@ type Mirror struct {
 	Cmd string
 
 	quit chan struct{}
+	once sync.Once
 
 	zone1, zone2       string
 	cluster1, cluster2 string
@@ -59,13 +61,18 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 		this.topicsExcluded[e] = struct{}{}
 	}
 
-	this.quit = make(chan struct{})
-	this.bandwidthRateLimiter = ratelimiter.NewLeakyBucket((1<<20)*this.bandwidthLimit/8, time.Second)
 	log.SetOutput(os.Stdout)
+	this.quit = make(chan struct{})
+	limit := (1 << 20) * this.bandwidthLimit / 8
+	this.bandwidthRateLimiter = ratelimiter.NewLeakyBucket(limit*10, time.Second*10)
+	log.Printf("[%s]%s -> [%s]%s with bandwidth %dbps", limit)
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		log.Printf("received signal: %s", strings.ToUpper(sig.String()))
+		log.Println("quiting...")
 
-		close(this.quit)
+		this.once.Do(func() {
+			close(this.quit)
+		})
 	}, syscall.SIGINT, syscall.SIGTERM)
 
 	z1 := zk.NewZkZone(zk.DefaultConfig(this.zone1, ctx.ZoneZkAddrs(this.zone1)))
@@ -95,6 +102,8 @@ func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
 	swallow(err)
 
 	pumpStopper := make(chan struct{})
+	go this.pump(sub, pub, pumpStopper)
+
 	for {
 		select {
 		case <-topicsChanges:
@@ -120,7 +129,8 @@ func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
 			go this.pump(sub, pub, pumpStopper)
 
 		case <-this.quit:
-			<-pumpStopper // await pump cleanup
+			log.Println("awaiting pump cleanup...")
+			<-pumpStopper
 			break
 		}
 	}
