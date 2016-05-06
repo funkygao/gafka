@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -13,12 +14,15 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/ratelimiter"
+	"github.com/funkygao/golib/signal"
 	"github.com/funkygao/kafka-cg/consumergroup"
 )
 
 type Mirror struct {
 	Ui  cli.Ui
 	Cmd string
+
+	quit chan struct{}
 
 	zone1, zone2       string
 	cluster1, cluster2 string
@@ -55,8 +59,14 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 		this.topicsExcluded[e] = struct{}{}
 	}
 
+	this.quit = make(chan struct{})
 	this.bandwidthRateLimiter = ratelimiter.NewLeakyBucket((1<<20)*this.bandwidthLimit/8, time.Second)
 	log.SetOutput(os.Stdout)
+	signal.RegisterSignalsHandler(func(sig os.Signal) {
+		log.Printf("received signal: %s", strings.ToUpper(sig.String()))
+
+		close(this.quit)
+	}, syscall.SIGINT, syscall.SIGTERM)
 
 	z1 := zk.NewZkZone(zk.DefaultConfig(this.zone1, ctx.ZoneZkAddrs(this.zone1)))
 	z2 := zk.NewZkZone(zk.DefaultConfig(this.zone2, ctx.ZoneZkAddrs(this.zone2)))
@@ -82,8 +92,8 @@ func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
 
 	cf := consumergroup.NewConfig()
 	cf.Zookeeper.Chroot = c1.Chroot()
-	cf.Offsets.CommitInterval = time.Minute
-	cf.ChannelBufferSize = 0
+	cf.Offsets.CommitInterval = time.Second * 10
+	cf.ChannelBufferSize = 200
 	cf.Consumer.Return.Errors = true
 	group := fmt.Sprintf("%s.%s._mirror_", c1.Name(), c2.Name())
 	sub, err := consumergroup.JoinConsumerGroup(group, topics, c1.ZkZone().ZkAddrList(), cf)
@@ -95,18 +105,35 @@ func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
 
 func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProducer) {
 	var (
-		n      int64
-		active = true
+		n                 int64
+		active            = true
+		watchTopicsTicker = time.NewTicker(time.Minute)
 	)
+
+	defer func() {
+		watchTopicsTicker.Stop()
+
+		sub.Close()
+		pub.Close()
+
+		log.Println("pump cleanup ok")
+	}()
+
 	for {
 		select {
+		case <-this.quit:
+			return
+
+		case <-watchTopicsTicker.C:
+			// TODO check whether topics has changed
+
 		case <-time.After(time.Second * 10):
 			active = false
 			log.Println("idle 10s waiting for new msg")
 
 		case msg := <-sub.Messages():
 			if !active {
-				log.Printf("[%d] got new msg: %s %s", n, msg.Topic, string(msg.Value))
+				log.Printf("<-[%d] T:%s M:%s", n, msg.Topic, string(msg.Value))
 			}
 			active = true
 
@@ -131,7 +158,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			}
 
 		case err := <-sub.Errors():
-			log.Println(err.Error())
+			log.Println(err.Error()) // TODO need reconnect?
 		}
 	}
 }
