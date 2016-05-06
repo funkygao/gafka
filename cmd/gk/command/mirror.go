@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/ctx"
@@ -66,8 +67,17 @@ func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
 	// *. topics might change at any time
 	topics := this.topicsOfCluster(c1)
 	log.Printf("topics: %+v", topics)
+	if len(topics) == 0 {
+		log.Println("empty topics")
+		return
+	}
+
+	cf := consumergroup.NewConfig()
+	cf.Zookeeper.Chroot = c1.Chroot()
+	cf.ChannelBufferSize = 0
+	cf.Consumer.Return.Errors = true
 	sub, err := consumergroup.JoinConsumerGroup("_mirror_group_", topics,
-		c1.ZkZone().ZkAddrList(), consumergroup.NewConfig())
+		c1.ZkZone().ZkAddrList(), cf)
 	swallow(err)
 
 	log.Println("starting pump")
@@ -75,13 +85,22 @@ func (this *Mirror) makeMirror(c1, c2 *zk.ZkCluster) {
 }
 
 func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProducer) {
+	var n int64
 	for {
 		select {
+		case <-time.After(time.Second * 5):
+			log.Println("idle 5s waiting for new msg")
+
 		case msg := <-sub.Messages():
 			pub.Input() <- &sarama.ProducerMessage{
 				Topic: msg.Topic,
 				Key:   sarama.ByteEncoder(msg.Key),
 				Value: sarama.ByteEncoder(msg.Value),
+			}
+
+			n++
+			if n%2000 == 0 {
+				log.Println(n)
 			}
 
 		case err := <-sub.Errors():

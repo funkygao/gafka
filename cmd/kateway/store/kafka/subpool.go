@@ -63,8 +63,8 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 	cf.Net.ReadTimeout = time.Second * 10
 	cf.ChannelBufferSize = 0
 	cf.Consumer.Return.Errors = true
-	cf.Zookeeper.Chroot = meta.Default.ZkChroot(cluster)
 	cf.Consumer.MaxProcessingTime = 100 * time.Millisecond // chan recv timeout
+	cf.Zookeeper.Chroot = meta.Default.ZkChroot(cluster)
 	cf.Zookeeper.Timeout = zk.DefaultZkSessionTimeout()
 	cf.Offsets.CommitInterval = time.Minute
 	cf.Offsets.ProcessingTimeout = time.Second
