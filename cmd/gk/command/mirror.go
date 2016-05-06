@@ -141,9 +141,9 @@ LOOP:
 		case <-this.quit:
 			log.Println("awaiting pump cleanup...")
 			<-pumpStopper
-			log.Printf("total transferred: %s, %s",
-				gofmt.Comma(this.transferN),
-				gofmt.ByteSize(this.transferBytes))
+			log.Printf("total transferred: %s %smsgs",
+				gofmt.ByteSize(this.transferBytes),
+				gofmt.Comma(this.transferN))
 			break LOOP
 		}
 	}
