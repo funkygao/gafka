@@ -25,8 +25,8 @@ func newSubPool() *subPool {
 	}
 }
 
-func (this *subPool) PickConsumerGroup(cluster, topic, group,
-	remoteAddr, resetOffset string) (cg *consumergroup.ConsumerGroup, err error) {
+func (this *subPool) PickConsumerGroup(cluster, topic, group, remoteAddr string,
+	resetOffset string, permitStandby bool) (cg *consumergroup.ConsumerGroup, err error) {
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 
@@ -42,18 +42,21 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group,
 		return
 	}
 
+	// find sub thread from cache
 	var present bool
 	cg, present = this.clientMap[remoteAddr]
 	if present {
 		return
 	}
 
-	// FIXME what if client wants to consumer a non-existent topic?
-	onlineN := meta.Default.OnlineConsumersCount(cluster, topic, group)
-	partitionN := len(meta.Default.TopicPartitions(cluster, topic))
-	if partitionN > 0 && onlineN >= partitionN {
-		err = store.ErrTooManyConsumers
-		return
+	if !permitStandby {
+		// ensure concurrent sub threads didn't exceed partition count
+		onlineN := meta.Default.OnlineConsumersCount(cluster, topic, group)
+		partitionN := len(meta.Default.TopicPartitions(cluster, topic))
+		if partitionN > 0 && onlineN >= partitionN {
+			err = store.ErrTooManyConsumers
+			return
+		}
 	}
 
 	// cache miss, create the consumer group for this client
