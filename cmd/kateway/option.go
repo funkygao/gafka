@@ -46,6 +46,7 @@ var (
 		Debug                  bool
 		HttpHeaderMaxBytes     int
 		MaxPubSize             int64
+		LogRotateSize          int
 		MinPubSize             int
 		MaxPubRetries          int
 		PubQpsLimit            int
@@ -117,6 +118,7 @@ func parseFlags() {
 	flag.IntVar(&options.MinPubSize, "minpub", 1, "min Pub message size")
 	flag.IntVar(&options.MaxPubRetries, "pubretry", 5, "max retries when Pub fails")
 	flag.IntVar(&options.MaxRequestPerConn, "maxreq", -1, "max request per connection")
+	flag.IntVar(&options.LogRotateSize, "logsize", 10<<30, "max unrotated log file size")
 	flag.IntVar(&options.PubQpsLimit, "publimit", 60*10000, "pub qps limit per minute per ip")
 	flag.IntVar(&options.PubPoolCapcity, "pubpool", 100, "pub connection pool capacity")
 	flag.IntVar(&options.MaxClients, "maxclient", 100000, "max concurrent connections")

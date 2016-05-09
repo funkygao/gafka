@@ -56,7 +56,9 @@ func setupLogging(logFile, level, crashLogFile string) {
 		filer := log.NewFileLogWriter(logFile, false)
 		filer.SetFormat("[%d %T] [%L] (%S) %M")
 		filer.SetRotate(true)
-		filer.SetRotateSize(10 << 30) // 10GB
+		if options.LogRotateSize > 0 {
+			filer.SetRotateSize(options.LogRotateSize)
+		}
 		filer.SetRotateLines(0)
 		filer.SetRotateDaily(true)
 		log.AddFilter("file", logLevel, filer)
