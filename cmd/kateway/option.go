@@ -34,6 +34,7 @@ var (
 		KillFile               string
 		ShowVersion            bool
 		Ratelimit              bool
+		PermitStandbySub       bool
 		DisableMetrics         bool
 		EnableGzip             bool
 		DryRun                 bool
@@ -105,6 +106,7 @@ func parseFlags() {
 	flag.BoolVar(&options.EnableAccessLog, "accesslog", false, "en(dis)able access log")
 	flag.BoolVar(&options.EnableClientStats, "clientsmap", false, "record online pub/sub clients")
 	flag.BoolVar(&options.DryRun, "dryrun", false, "dry run mode")
+	flag.BoolVar(&options.PermitStandbySub, "standbysub", false, "permits sub threads exceed partitions")
 	flag.BoolVar(&options.EnableGzip, "gzip", true, "enable http response gzip")
 	flag.BoolVar(&options.CpuAffinity, "cpuaffinity", false, "enable cpu affinity")
 	flag.BoolVar(&options.Ratelimit, "raltelimit", false, "enable rate limit")

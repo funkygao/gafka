@@ -75,7 +75,7 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
-		myAppid+"."+group, r.RemoteAddr, resetOffset)
+		myAppid+"."+group, r.RemoteAddr, resetOffset, options.PermitStandbySub)
 	if err != nil {
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 

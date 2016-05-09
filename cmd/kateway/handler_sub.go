@@ -152,7 +152,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
-		myAppid+"."+group, r.RemoteAddr, "")
+		myAppid+"."+group, r.RemoteAddr, "", options.PermitStandbySub)
 	if err != nil {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
@@ -322,7 +322,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
-		myAppid+"."+group, r.RemoteAddr, reset)
+		myAppid+"."+group, r.RemoteAddr, reset, options.PermitStandbySub)
 	if err != nil {
 		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,

@@ -41,6 +41,7 @@ func (this *subStore) Name() string {
 	return "dummy"
 }
 
-func (this *subStore) Fetch(cluster, topic, group, remoteAddr, reset string) (store.Fetcher, error) {
+func (this *subStore) Fetch(cluster, topic, group, remoteAddr,
+	reset string, permitStandby bool) (store.Fetcher, error) {
 	return this.fetcher, nil
 }
