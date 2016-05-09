@@ -231,6 +231,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 }
 
 func (this *Kateway) installGuide() {
+	this.Ui.Info("gk deploy -kfkonly")
 	this.Ui.Info("mkdir -p /var/wd/kateway/sbin")
 	this.Ui.Info("cd /var/wd/kateway")
 	this.Ui.Info("nohup ./sbin/kateway -zone prod -id 1 -level trace -log kateway.log -crashlog panic -influxdbaddr http://10.213.1.223:8086 &")
