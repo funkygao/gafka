@@ -245,7 +245,7 @@ func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit
 
 		// timeout mechanism
 		if time.Since(waitStart).Seconds() > maxWaitSeconds {
-			log.Warn("%s on %s still left %d conns, but forced to shutdown after %ss",
+			log.Warn("%s on %s still left %d conns, but forced to shutdown after %ds",
 				this.name, server.Addr, activeConnN, maxWaitSeconds)
 			break
 		}
