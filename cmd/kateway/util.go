@@ -116,11 +116,12 @@ func updateCounter(appid, topic, ver, name string, n int64,
 }
 
 type SubStatus struct {
-	Appid     string `json:"appid,omitempty"`
-	Group     string `json:"group"`
-	Partition string `json:"partition"`
-	Produced  int64  `json:"pubd"`
-	Consumed  int64  `json:"subd"`
+	Appid          string `json:"appid,omitempty"`
+	Group          string `json:"group"`
+	Partition      string `json:"partition"`
+	ProducedOldest int64  `json:"pold"`
+	ProducedNewest int64  `json:"pubd"`
+	Consumed       int64  `json:"subd"`
 }
 
 func topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
@@ -170,10 +171,11 @@ func topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
 			}
 
 			stat := SubStatus{
-				Group:     p[1],
-				Partition: consumer.PartitionId,
-				Produced:  consumer.ProducerOffset,
-				Consumed:  consumer.ConsumerOffset,
+				Group:          p[1],
+				Partition:      consumer.PartitionId,
+				ProducedOldest: consumer.OldestOffset,
+				ProducedNewest: consumer.ProducerOffset,
+				Consumed:       consumer.ConsumerOffset,
 			}
 			if !onlyMine {
 				stat.Appid = p[0]

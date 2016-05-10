@@ -300,11 +300,17 @@ func (this *ZkCluster) ConsumerGroupsOfTopic(topic string) (map[string][]Consume
 					return r, err
 				}
 
+				oldestOffset, err := kfk.GetOffset(topic, int32(pid), sarama.OffsetOldest)
+				if err != nil {
+					return r, err
+				}
+
 				cm := ConsumerMeta{
 					Group:          group,
 					Topic:          topic,
 					PartitionId:    partitionId,
 					ConsumerOffset: consumerOffset,
+					OldestOffset:   oldestOffset,
 					ProducerOffset: producerOffset,
 					Lag:            producerOffset - consumerOffset,
 				}
