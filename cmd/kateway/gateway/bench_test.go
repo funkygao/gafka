@@ -65,12 +65,12 @@ func BenchmarkStrconvItoa(b *testing.B) {
 }
 
 func newGatewayForTest(b *testing.B, store string) *Gateway {
-	options.Zone = "local"
-	options.PubHttpAddr = ":9191"
-	options.SubHttpAddr = ":9192"
-	options.Store = store
-	options.Debug = false
-	options.DisableMetrics = false
+	Options.Zone = "local"
+	Options.PubHttpAddr = ":9191"
+	Options.SubHttpAddr = ":9192"
+	Options.Store = store
+	Options.Debug = false
+	Options.DisableMetrics = false
 
 	ctx.LoadConfig("/etc/kateway.cf")
 
