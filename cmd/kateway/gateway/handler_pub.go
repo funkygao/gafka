@@ -74,6 +74,11 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	var msg *mpool.Message
 	tag = r.Header.Get(HttpHeaderMsgTag)
 	if tag != "" {
+		if len(tag) > Options.MaxMsgTagLen {
+			this.writeBadRequest(w, "too big tag")
+			return
+		}
+
 		msg = mpool.NewMessage(tagLen(tag) + msgLen)
 		msg.Body = msg.Body[0 : tagLen(tag)+msgLen]
 	} else {
