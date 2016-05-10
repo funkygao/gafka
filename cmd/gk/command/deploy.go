@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"path"
 	"strconv"
 	"strings"
 
@@ -104,6 +105,12 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	if validateArgs(this, this.Ui).
 		require("-broker.id", "-port", "-ip", "-log.dirs").
 		invalid(args) {
+		return 2
+	}
+
+	invalidDir := this.validateLogDirs(this.logDirs)
+	if invalidDir != "" {
+		this.Ui.Error(fmt.Sprintf("invalid %s in log.dirs", invalidDir))
 		return 2
 	}
 
@@ -228,6 +235,19 @@ func (this *Deploy) instanceDir() string {
 
 func (this *Deploy) clusterName() string {
 	return fmt.Sprintf("kfk_%s", this.cluster)
+}
+
+func (*Deploy) validateLogDirs(dirs string) (invalidDir string) {
+	for _, dir := range strings.Split(dirs, ",") {
+		normDir := strings.TrimRight(dir, "/")
+		parent := path.Dir(normDir)
+		if !gio.DirExists(parent) {
+			invalidDir = dir
+			return // return on 1st invalid dir found
+		}
+	}
+
+	return
 }
 
 func (this *Deploy) installKafka() {
