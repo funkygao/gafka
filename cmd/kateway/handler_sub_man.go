@@ -15,14 +15,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type SubStatus struct {
-	Appid     string `json:"appid,omitempty"`
-	Group     string `json:"group"`
-	Partition string `json:"partition"`
-	Produced  int64  `json:"pubd"`
-	Consumed  int64  `json:"subd"`
-}
-
 // GET /v1/raw/msgs/:appid/:topic/:ver?group=xx
 // tells client how to sub in raw mode: how to connect directly to kafka
 func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
