@@ -26,6 +26,10 @@ type MsgTag struct {
 	Operator TagOperator
 }
 
+func IsTaggedMessage(msg []byte) bool {
+	return msg[0] == TagMarkStart
+}
+
 // TODO perf
 func AddTagToMessage(m *mpool.Message, tags string) {
 	body := make([]byte, len(m.Body))

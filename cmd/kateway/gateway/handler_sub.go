@@ -9,6 +9,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/sla"
+	"github.com/funkygao/golib/hack"
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
@@ -226,9 +227,28 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 		w.Header().Set(HttpHeaderPartition, partition)
 		w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
 
+		var (
+			tags    []MsgTag
+			bodyIdx int
+		)
+		if IsTaggedMessage(msg.Value) {
+			// TagMarkStart + tag + TagMarkEnd + body
+			tags, bodyIdx, err = ExtractMessageTag(msg.Value)
+			if err != nil {
+				return
+			}
+
+			// needn't check 'index out of range' here
+			w.Header().Set(HttpHeaderMsgTag, hack.String(msg.Value[1:bodyIdx-1]))
+		}
+
+		if len(tags) > 0 {
+			// TODO compare with tagFilters
+		}
+
 		// TODO when remote close silently, the write still ok
 		// which will lead to msg lost for sub
-		if _, err = w.Write(msg.Value); err != nil {
+		if _, err = w.Write(msg.Value[bodyIdx:]); err != nil {
 			return
 		}
 
