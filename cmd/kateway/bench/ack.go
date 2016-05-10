@@ -48,7 +48,8 @@ func main() {
 		Group: group,
 	}
 	err = c.SubX(opt, func(statusCode int, msg []byte, r *api.SubXResult) error {
-		log.Printf("i=%d, status:%d, r:%+v msg:%s", i, statusCode, *r, string(msg))
+		log.Printf("i=%d, status:%d, r:%+v msg:%s tag:%s", i, statusCode, *r, string(msg),
+			r.Tag)
 
 		offset, _ := strconv.Atoi(r.Offset)
 		if false && i < 3 {
