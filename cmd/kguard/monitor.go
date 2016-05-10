@@ -66,7 +66,7 @@ func (this *Monitor) Init() {
 	} else {
 		log.DeleteFilter("stdout")
 
-		filer := log.NewFileLogWriter(logFile, false)
+		filer := log.NewFileLogWriter(logFile, true, false)
 		filer.SetFormat("[%d %T] [%L] (%S) %M")
 		log.AddFilter("file", log.INFO, filer)
 	}
