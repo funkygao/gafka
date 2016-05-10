@@ -8,5 +8,7 @@ import (
 
 func (this *Gateway) notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	log.Error(r.RequestURI)
-	this.writeBadRequest(w, "not found")
+
+	w.Header().Set("Connection", "close")
+	this.writeErrorResponse(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 }
