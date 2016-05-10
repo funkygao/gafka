@@ -11,7 +11,7 @@ func (this *Gateway) buildRouting() {
 
 	if this.manServer != nil {
 		this.manServer.Router().GET("/alive", m(this.checkAliveHandler))
-		this.manServer.Router().NotFound = http.HandlerFunc(this.notFoundHandler)
+		this.manServer.Router().NotFound = http.HandlerFunc(this.manServer.notFoundHandler)
 
 		// api for 'gk kateway'
 		this.manServer.Router().GET("/v1/clusters", m(this.clustersHandler))
@@ -32,7 +32,7 @@ func (this *Gateway) buildRouting() {
 
 	if this.pubServer != nil {
 		this.pubServer.Router().GET("/alive", m(this.checkAliveHandler))
-		this.pubServer.Router().NotFound = http.HandlerFunc(this.notFoundHandler)
+		this.pubServer.Router().NotFound = http.HandlerFunc(this.pubServer.notFoundHandler)
 
 		// TODO /v1/msgs/:topic/:ver
 		this.pubServer.Router().POST("/v1/msgs/:topic/:ver", m(this.pubHandler))
@@ -46,7 +46,7 @@ func (this *Gateway) buildRouting() {
 
 	if this.subServer != nil {
 		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
-		this.subServer.Router().NotFound = http.HandlerFunc(this.notFoundHandler)
+		this.subServer.Router().NotFound = http.HandlerFunc(this.subServer.notFoundHandler)
 
 		this.subServer.Router().GET("/v1/msgs/:appid/:topic/:ver", m(this.subHandler))
 		this.subServer.Router().GET("/v1/ws/msgs/:appid/:topic/:ver", m(this.subWsHandler))
