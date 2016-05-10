@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/funkygao/gafka/cmd/kateway/gateway"
 	"github.com/funkygao/gafka/mpool"
 )
 
@@ -15,6 +16,7 @@ type PubOption struct {
 	Topic, Ver string
 	Async      bool
 	AckAll     bool
+	Tag        string
 }
 
 // Pub publish a keyed message to specified versioned topic.
@@ -45,8 +47,11 @@ func (this *Client) Pub(key string, msg []byte, opt PubOption) (err error) {
 		return
 	}
 
-	req.Header.Set("AppId", this.cf.AppId)
-	req.Header.Set("Pubkey", this.cf.Secret)
+	req.Header.Set(gateway.HttpHeaderAppid, this.cf.AppId)
+	req.Header.Set(gateway.HttpHeaderPubkey, this.cf.Secret)
+	if opt.Tag != "" {
+		req.Header.Set(gateway.HttpHeaderMsgTag, opt.Tag)
+	}
 
 	var response *http.Response
 	response, err = this.pubConn.Do(req)
@@ -71,8 +76,8 @@ func (this *Client) Pub(key string, msg []byte, opt PubOption) (err error) {
 	if this.cf.Debug {
 		log.Printf("--> [%s]", response.Status)
 		log.Printf("Partition:%s Offset:%s",
-			response.Header.Get("X-Partition"),
-			response.Header.Get("X-Offset"))
+			response.Header.Get(gateway.HttpHeaderPartition),
+			response.Header.Get(gateway.HttpHeaderOffset))
 	}
 
 	return nil

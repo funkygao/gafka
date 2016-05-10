@@ -40,7 +40,8 @@ type ConsumerMeta struct {
 	PartitionId    string
 	Mtime          ZkTimestamp
 	ConsumerOffset int64
-	ProducerOffset int64
+	OldestOffset   int64
+	ProducerOffset int64 // newest offset
 	Lag            int64
 	ConsumerZnode  *ConsumerZnode
 }

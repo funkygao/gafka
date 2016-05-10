@@ -51,7 +51,7 @@ func main() {
 		log.Printf("i=%d, status:%d, r:%+v msg:%s", i, statusCode, *r, string(msg))
 
 		offset, _ := strconv.Atoi(r.Offset)
-		if false && i < 3 {
+		if i < 3 {
 			i++
 			r.Partition = "-1"
 			r.Offset = "-1"
@@ -67,7 +67,7 @@ func main() {
 		}
 
 		i++
-		if i > 2 {
+		if i > 5 {
 			return api.ErrSubStop
 		}
 

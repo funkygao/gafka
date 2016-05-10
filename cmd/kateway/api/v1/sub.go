@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/funkygao/gafka/cmd/kateway/gateway"
 	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/gorequest"
 )
@@ -40,8 +41,8 @@ func (this *Client) Sub(opt SubOption, h SubHandler) error {
 		return err
 	}
 
-	req.Header.Set("AppId", this.cf.AppId)
-	req.Header.Set("Subkey", this.cf.Secret)
+	req.Header.Set(gateway.HttpHeaderAppid, this.cf.AppId)
+	req.Header.Set(gateway.HttpHeaderSubkey, this.cf.Secret)
 	for {
 		response, err := this.subConn.Do(req)
 		if err != nil {
@@ -75,6 +76,7 @@ type SubXResult struct {
 	Bury      string
 	Offset    string
 	Partition string
+	Tag       string
 }
 
 func (this *SubXResult) Reset() {
@@ -100,9 +102,11 @@ func (this *Client) SubX(opt SubOption, h SubXHandler) error {
 
 	req := gorequest.New()
 	req.Get(u.String()).
-		Set("AppId", this.cf.AppId).Set("Subkey", this.cf.Secret).
+		Set(gateway.HttpHeaderAppid, this.cf.AppId).
+		Set(gateway.HttpHeaderSubkey, this.cf.Secret).
 		Set("User-Agent", UserAgent).
-		Set("X-Partition", "-1").Set("X-Offset", "-1")
+		Set(gateway.HttpHeaderPartition, "-1").
+		Set(gateway.HttpHeaderOffset, "-1")
 	r := &SubXResult{}
 	for {
 		response, b, errs := req.EndBytes()
@@ -111,26 +115,27 @@ func (this *Client) SubX(opt SubOption, h SubXHandler) error {
 		}
 
 		// reset the request header
-		req.Set("X-Partition", "")
-		req.Set("X-Offset", "")
-		req.Set("X-Bury", "")
+		req.Set(gateway.HttpHeaderPartition, "")
+		req.Set(gateway.HttpHeaderOffset, "")
+		req.Set(gateway.HttpHeaderMsgBury, "")
 
 		if this.cf.Debug {
 			log.Printf("--> [%s]", response.Status)
 			log.Printf("Partition:%s Offset:%s",
-				response.Header.Get("X-Partition"),
-				response.Header.Get("X-Offset"))
+				response.Header.Get(gateway.HttpHeaderPartition),
+				response.Header.Get(gateway.HttpHeaderOffset))
 		}
 
 		r.Reset()
-		r.Partition = response.Header.Get("X-Partition")
-		r.Offset = response.Header.Get("X-Offset")
+		r.Partition = response.Header.Get(gateway.HttpHeaderPartition)
+		r.Offset = response.Header.Get(gateway.HttpHeaderOffset)
+		r.Tag = response.Header.Get(gateway.HttpHeaderMsgTag)
 		if err := h(response.StatusCode, b, r); err != nil {
 			return err
 		}
 
-		req.Set("X-Partition", r.Partition)
-		req.Set("X-Offset", r.Offset)
+		req.Set(gateway.HttpHeaderPartition, r.Partition)
+		req.Set(gateway.HttpHeaderOffset, r.Offset)
 
 		if r.Bury != "" {
 			if r.Bury != ShadowRetry && r.Bury != ShadowDead {

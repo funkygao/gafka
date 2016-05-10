@@ -1,3 +1,0 @@
-// +build fasthttp
-
-package main
