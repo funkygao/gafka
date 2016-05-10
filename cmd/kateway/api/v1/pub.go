@@ -15,6 +15,7 @@ type PubOption struct {
 	Topic, Ver string
 	Async      bool
 	AckAll     bool
+	Tag        string
 }
 
 // Pub publish a keyed message to specified versioned topic.
