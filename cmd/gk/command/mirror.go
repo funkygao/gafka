@@ -32,6 +32,7 @@ type Mirror struct {
 	excludes           string
 	topicsExcluded     map[string]struct{}
 	debug              bool
+	compress           string
 
 	transferN     int64
 	transferBytes int64
@@ -50,6 +51,7 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.cluster2, "c2", "", "")
 	cmdFlags.StringVar(&this.excludes, "excluded", "", "")
 	cmdFlags.BoolVar(&this.debug, "debug", false, "")
+	cmdFlags.StringVar(&this.compress, "compress", "", "")
 	cmdFlags.IntVar(&this.bandwidthLimit, "net", 100, "")
 	cmdFlags.Int64Var(&this.progressStep, "step", 5000, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -153,7 +155,15 @@ LOOP:
 
 func (this *Mirror) makePub(c2 *zk.ZkCluster) (sarama.AsyncProducer, error) {
 	// TODO setup batch size
-	return sarama.NewAsyncProducer(c2.BrokerList(), sarama.NewConfig())
+	cf := sarama.NewConfig()
+	switch this.compress {
+	case "gzip":
+		cf.Producer.Compression = sarama.CompressionGZIP
+
+	case "snappy":
+		cf.Producer.Compression = sarama.CompressionSnappy
+	}
+	return sarama.NewAsyncProducer(c2.BrokerList(), cf)
 }
 
 func (this *Mirror) makeSub(c1 *zk.ZkCluster, group string, topics []string) (*consumergroup.ConsumerGroup, error) {
@@ -254,6 +264,9 @@ Options:
       Defaults 5000.
 
     -debug
+
+    -compress <gzip|snappy>
+      Defaults none.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
