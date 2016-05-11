@@ -30,13 +30,6 @@ func init() {
 			}, nil
 		},
 
-		"rsyslog": func() (cli.Command, error) {
-			return &command.Rsyslog{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
 		"deploy": func() (cli.Command, error) {
 			return &command.Deploy{
 				Ui:  ui,
