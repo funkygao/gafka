@@ -71,8 +71,8 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 }
 
 func (this *Deploy) configKernal() {
-	this.Ui.Warn("net.core.somaxconn = 16384")
-	this.Ui.Warn("net.core.netdev_max_backlog = 2500")
+	this.Ui.Warn("sysctl net.core.somaxconn=16384")
+	this.Ui.Warn("sysctl net.core.netdev_max_backlog=2500")
 	this.Ui.Warn(`
 vim /etc/security/limits.conf
 *          soft    nofile          409600
