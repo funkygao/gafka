@@ -130,7 +130,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
 
-		this.writeAuthFailure(w, manager.ErrPermDenied)
+		this.writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
@@ -189,7 +189,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("suspicous add topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
-		this.writeAuthFailure(w, manager.ErrPermDenied)
+		this.writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
@@ -302,7 +302,7 @@ func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("suspicous update topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
-		this.writeAuthFailure(w, manager.ErrPermDenied)
+		this.writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
