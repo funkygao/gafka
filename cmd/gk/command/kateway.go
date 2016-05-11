@@ -231,6 +231,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 }
 
 func (this *Kateway) installGuide() {
+	this.Ui.Warn("FIRST: manager db GRANT access rights to this ip")
 	this.Ui.Info("gk deploy -kfkonly")
 	this.Ui.Info("mkdir -p /var/wd/kateway/sbin")
 	this.Ui.Info("cd /var/wd/kateway")
