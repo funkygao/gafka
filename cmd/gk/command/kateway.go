@@ -258,6 +258,27 @@ output {
     }
 }
 		`))
+	this.Ui.Info("/etc/kateway.cf")
+	this.Ui.Output(strings.TrimSpace(`
+{
+    zones: [
+        {
+            name: "sit"
+            zk: "10.77.144.87:10181,10.77.144.88:10181,10.77.144.89:10181"
+        }
+        {
+            name: "pre"
+            zk: "10.213.33.154:2181,10.213.42.48:2181,10.213.42.49:2181"
+        }
+        {
+            name: "prod"
+            zk: "10.209.33.69:2181,10.209.37.19:2181,10.209.37.68:2181"
+        }
+    ]
+
+    kafka_home: "/opt/kafka_2.10-0.8.2.2"
+}
+		`))
 	this.Ui.Info("chkconfig --add logstash")
 	this.Ui.Info("/etc/init.d/logstash start")
 }
