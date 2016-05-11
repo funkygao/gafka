@@ -79,6 +79,10 @@ func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 	return manager.ErrAuthorizationFail
 }
 
+func (this *mysqlStore) AllowSubWithUnregisteredGroup(yesOrNo bool) {
+	this.allowUnregisteredGroup = yesOrNo
+}
+
 func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string) error {
 	if appid == "" || hisTopic == "" {
 		return manager.ErrEmptyIdentity
@@ -90,11 +94,13 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 	}
 
 	// group verification
-	if group == "" {
-		// empty group, means we skip group verification
-	} else if group != "__smoketest__" {
-		if _, present := this.appConsumerGroupMap[appid][group]; !present {
-			return manager.ErrInvalidGroup
+	if !this.allowUnregisteredGroup {
+		if group == "" {
+			// empty group, means we skip group verification
+		} else if group != "__smoketest__" {
+			if _, present := this.appConsumerGroupMap[appid][group]; !present {
+				return manager.ErrInvalidGroup
+			}
 		}
 	}
 

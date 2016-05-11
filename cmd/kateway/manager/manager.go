@@ -18,6 +18,8 @@ type Manager interface {
 	// OwnTopic checks if an appid owns a topic.
 	OwnTopic(appid, pubkey, topic string) error
 
+	AllowSubWithUnregisteredGroup(bool)
+
 	// AuthSub checks if an appid is able to consume message from hisAppid.hisTopic.
 	AuthSub(appid, subkey, hisAppid, hisTopic, group string) error
 

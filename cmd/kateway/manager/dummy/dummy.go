@@ -41,6 +41,10 @@ func (this *dummyStore) OwnTopic(appid, pubkey, topic string) error {
 	return nil
 }
 
+func (*dummyStore) AllowSubWithUnregisteredGroup(yes bool) {
+
+}
+
 func (this *dummyStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string) error {
 	return nil
 }

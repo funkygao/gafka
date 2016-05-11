@@ -14,13 +14,13 @@ import (
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
-	metadummy "github.com/funkygao/gafka/cmd/kateway/manager/dummy"
-	"github.com/funkygao/gafka/cmd/kateway/manager/mysql"
+	mandummy "github.com/funkygao/gafka/cmd/kateway/manager/dummy"
+	mandb "github.com/funkygao/gafka/cmd/kateway/manager/mysql"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	storedummy "github.com/funkygao/gafka/cmd/kateway/store/dummy"
-	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
+	storekfk "github.com/funkygao/gafka/cmd/kateway/store/kafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/registry"
 	"github.com/funkygao/gafka/registry/zk"
@@ -96,12 +96,13 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 	switch Options.ManagerStore {
 	case "mysql":
-		managerCf := mysql.DefaultConfig(this.zone)
-		managerCf.Refresh = Options.ManagerRefresh
-		manager.Default = mysql.New(managerCf)
+		cf := mandb.DefaultConfig(this.zone)
+		cf.Refresh = Options.ManagerRefresh
+		manager.Default = mandb.New(cf)
+		manager.Default.AllowSubWithUnregisteredGroup(Options.PermitUnregisteredGroup)
 
 	case "dummy":
-		manager.Default = metadummy.New()
+		manager.Default = mandummy.New()
 
 	default:
 		panic("invalid manager")
@@ -114,7 +115,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 		switch Options.Store {
 		case "kafka":
-			store.DefaultPubStore = kafka.NewPubStore(
+			store.DefaultPubStore = storekfk.NewPubStore(
 				Options.PubPoolCapcity, Options.MaxPubRetries, Options.PubPoolIdleTimeout,
 				&this.wg, Options.Debug, Options.DryRun)
 
@@ -133,7 +134,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 
 		switch Options.Store {
 		case "kafka":
-			store.DefaultSubStore = kafka.NewSubStore(&this.wg,
+			store.DefaultSubStore = storekfk.NewSubStore(&this.wg,
 				this.subServer.closedConnCh, Options.Debug)
 
 		case "dummy":

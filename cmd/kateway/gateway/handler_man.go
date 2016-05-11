@@ -68,6 +68,10 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	case "standbysub":
 		Options.PermitStandbySub = boolVal
 
+	case "unregroup":
+		Options.PermitUnregisteredGroup = boolVal
+		manager.Default.AllowSubWithUnregisteredGroup(boolVal)
+
 	case "maxreq":
 		Options.MaxRequestPerConn, _ = strconv.Atoi(value)
 

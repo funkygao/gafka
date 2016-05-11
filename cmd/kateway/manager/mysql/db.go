@@ -17,6 +17,8 @@ type mysqlStore struct {
 	shutdownCh chan struct{}
 	refreshCh  chan struct{}
 
+	allowUnregisteredGroup bool
+
 	// mysql store, initialized on refresh
 	// TODO https://github.com/hashicorp/go-memdb
 	appClusterMap       map[string]string              // appid:cluster
@@ -37,10 +39,11 @@ func New(cf *config) *mysqlStore {
 	}
 
 	return &mysqlStore{
-		cf:         cf,
-		zkzone:     zk.NewZkZone(zk.DefaultConfig(cf.Zone, zkAddrs)), // TODO session timeout
-		shutdownCh: make(chan struct{}),
-		refreshCh:  make(chan struct{}),
+		cf:                     cf,
+		zkzone:                 zk.NewZkZone(zk.DefaultConfig(cf.Zone, zkAddrs)), // TODO session timeout
+		shutdownCh:             make(chan struct{}),
+		refreshCh:              make(chan struct{}),
+		allowUnregisteredGroup: false,
 	}
 }
 

@@ -11,58 +11,59 @@ import (
 
 var (
 	Options struct {
-		Id                     string
-		Zone                   string
-		ConfigFile             string
-		PubHttpAddr            string
-		PubHttpsAddr           string
-		SubHttpAddr            string
-		SubHttpsAddr           string
-		ManHttpAddr            string
-		ManHttpsAddr           string
-		DebugHttpAddr          string
-		Store                  string
-		ManagerStore           string
-		PidFile                string
-		CertFile               string
-		KeyFile                string
-		LogFile                string
-		LogLevel               string
-		CrashLogFile           string
-		InfluxServer           string
-		InfluxDbName           string
-		KillFile               string
-		ShowVersion            bool
-		Ratelimit              bool
-		PermitStandbySub       bool
-		DisableMetrics         bool
-		EnableGzip             bool
-		DryRun                 bool
-		CpuAffinity            bool
-		EnableAccessLog        bool
-		EnableHttpPanicRecover bool
-		EnableClientStats      bool
-		GolangTrace            bool
-		Debug                  bool
-		HttpHeaderMaxBytes     int
-		MaxPubSize             int64
-		LogRotateSize          int
-		MaxMsgTagLen           int
-		MinPubSize             int
-		MaxPubRetries          int
-		PubQpsLimit            int
-		MaxClients             int
-		MaxRequestPerConn      int // to make load balancer distribute request even for persistent conn
-		PubPoolCapcity         int
-		PubPoolIdleTimeout     time.Duration
-		SubTimeout             time.Duration
-		OffsetCommitInterval   time.Duration
-		ReporterInterval       time.Duration
-		ConsoleMetricsInterval time.Duration
-		MetaRefresh            time.Duration
-		ManagerRefresh         time.Duration
-		HttpReadTimeout        time.Duration
-		HttpWriteTimeout       time.Duration
+		Id                      string
+		Zone                    string
+		ConfigFile              string
+		PubHttpAddr             string
+		PubHttpsAddr            string
+		SubHttpAddr             string
+		SubHttpsAddr            string
+		ManHttpAddr             string
+		ManHttpsAddr            string
+		DebugHttpAddr           string
+		Store                   string
+		ManagerStore            string
+		PidFile                 string
+		CertFile                string
+		KeyFile                 string
+		LogFile                 string
+		LogLevel                string
+		CrashLogFile            string
+		InfluxServer            string
+		InfluxDbName            string
+		KillFile                string
+		ShowVersion             bool
+		Ratelimit               bool
+		PermitStandbySub        bool
+		DisableMetrics          bool
+		EnableGzip              bool
+		DryRun                  bool
+		CpuAffinity             bool
+		EnableAccessLog         bool
+		EnableHttpPanicRecover  bool
+		EnableClientStats       bool
+		GolangTrace             bool
+		PermitUnregisteredGroup bool
+		Debug                   bool
+		HttpHeaderMaxBytes      int
+		MaxPubSize              int64
+		LogRotateSize           int
+		MaxMsgTagLen            int
+		MinPubSize              int
+		MaxPubRetries           int
+		PubQpsLimit             int
+		MaxClients              int
+		MaxRequestPerConn       int // to make load balancer distribute request even for persistent conn
+		PubPoolCapcity          int
+		PubPoolIdleTimeout      time.Duration
+		SubTimeout              time.Duration
+		OffsetCommitInterval    time.Duration
+		ReporterInterval        time.Duration
+		ConsoleMetricsInterval  time.Duration
+		MetaRefresh             time.Duration
+		ManagerRefresh          time.Duration
+		HttpReadTimeout         time.Duration
+		HttpWriteTimeout        time.Duration
 	}
 )
 
@@ -108,6 +109,7 @@ func ParseFlags() {
 	flag.BoolVar(&Options.EnableAccessLog, "accesslog", false, "en(dis)able access log")
 	flag.BoolVar(&Options.EnableClientStats, "clientsmap", false, "record online pub/sub clients")
 	flag.BoolVar(&Options.DryRun, "dryrun", false, "dry run mode")
+	flag.BoolVar(&Options.PermitUnregisteredGroup, "unregrp", false, "permit sub group usage without being registered")
 	flag.BoolVar(&Options.PermitStandbySub, "standbysub", false, "permits sub threads exceed partitions")
 	flag.BoolVar(&Options.EnableGzip, "gzip", true, "enable http response gzip")
 	flag.BoolVar(&Options.CpuAffinity, "cpuaffinity", false, "enable cpu affinity")
