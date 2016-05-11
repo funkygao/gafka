@@ -130,11 +130,15 @@ func (this *Whois) loadFromManager(dsn string) {
 		op = "LIKE"
 	}
 	if this.topic != "" {
-		if this.likeMode {
-			this.topic = "%" + this.topic + "%"
+		if this.topic == "all" {
+			sql = fmt.Sprintf("SELECT AppId,TopicName,TopicIntro,CreateBy,CreateTime,Status FROM topics")
+		} else {
+			if this.likeMode {
+				this.topic = "%" + this.topic + "%"
+			}
+			sql = fmt.Sprintf("SELECT AppId,TopicName,TopicIntro,CreateBy,CreateTime,Status FROM topics WHERE TopicName %s '%s'",
+				op, this.topic)
 		}
-		sql = fmt.Sprintf("SELECT AppId,TopicName,TopicIntro,CreateBy,CreateTime,Status FROM topics WHERE TopicName %s '%s'",
-			op, this.topic)
 		q = db.NewQuery(sql)
 		swallow(q.All(&this.topicInfos))
 
@@ -144,11 +148,16 @@ func (this *Whois) loadFromManager(dsn string) {
 	}
 
 	if this.group != "" {
-		if this.likeMode {
-			this.group = "%" + this.group + "%"
+		if this.group == "all" {
+			sql = fmt.Sprintf("SELECT AppId,GroupName,GroupIntro,CreateBy,CreateTime,Status FROM application_group")
+		} else {
+			if this.likeMode {
+				this.group = "%" + this.group + "%"
+			}
+			sql = fmt.Sprintf("SELECT AppId,GroupName,GroupIntro,CreateBy,CreateTime,Status FROM application_group WHERE GroupName %s '%s'",
+				op, this.group)
 		}
-		sql = fmt.Sprintf("SELECT AppId,GroupName,GroupIntro,CreateBy,CreateTime,Status FROM application_group WHERE GroupName %s '%s'",
-			op, this.group)
+
 		q = db.NewQuery(sql)
 		swallow(q.All(&this.groupInfos))
 		for i, gi := range this.groupInfos {
@@ -183,9 +192,9 @@ Options:
 
     -app comma seperated appId
 
-    -g group
+    -g <group|all>
 
-    -t topic
+    -t <topic|all>
 
     -l
       Like mode. 
