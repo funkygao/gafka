@@ -35,8 +35,6 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 
 	err := os.MkdirAll(this.root, 0755)
 	swalllow(err)
-	err = os.MkdirAll(fmt.Sprintf("%s/bin", this.root), 0755)
-	swalllow(err)
 	err = os.MkdirAll(fmt.Sprintf("%s/sbin", this.root), 0755)
 	swalllow(err)
 	err = os.MkdirAll(fmt.Sprintf("%s/logs", this.root), 0755)
@@ -59,8 +57,8 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	swalllow(err)
 
 	this.Ui.Info("will read zones from $HOME/.gafka.cf")
-	this.Ui.Info(fmt.Sprintf("compile haproxy to %s/sbin: make TARGET=xxx USE_ZLIB=yes", this.root))
-	this.Ui.Info(fmt.Sprintf("cp %s to /etc/init.d/ehaproxy", initPath))
+	this.Ui.Info(fmt.Sprintf("compile haproxy to %s/sbin: make TARGET=generic USE_ZLIB=yes", this.root))
+	this.Ui.Info(fmt.Sprintf("cp %s /etc/init.d/ehaproxy", initPath))
 	this.Ui.Info(fmt.Sprintf("chkconfig --add ehaproxy"))
 
 	this.configKernal()
@@ -75,32 +73,50 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 func (this *Deploy) configKernal() {
 	this.Ui.Warn("net.core.somaxconn = 16384")
 	this.Ui.Warn("net.core.netdev_max_backlog = 2500")
-}
-
-func (this *Deploy) configRsyslog() {
-	this.Ui.Output("install and setup rsyslog for haproxy")
-	this.Ui.Output(fmt.Sprintf(`
+	this.Ui.Warn(`
 vim /etc/security/limits.conf
 *          soft    nofile          409600
 *          hard    nofile          409600
 
 *          soft    nproc          65535
 *          hard    nproc          65535
+		`)
+}
 
+func (this *Deploy) configRsyslog() {
+	this.Ui.Output("install and setup rsyslog for haproxy")
+	this.Ui.Output(fmt.Sprintf(`
 vim /etc/rsyslog.conf		
 $ModLoad imudp
 $UDPServerAddress 127.0.0.1
 $UDPServerRun 514
 
 vim  /etc/rsyslog.d/haproxy.conf
-local1.*     /var/log/haproxy.log
-local3.*     /var/log/haproxy.log
+local1.*  /var/log/haproxy.log
+local3.*  /var/log/haproxy.log
 
 vim /etc/sysconfig/rsyslog
-SYSLOGD_OPTIONS=”-c 2 -r -m 0″
+SYSLOGD_OPTIONS="-c 2 -r -m 0"
 #-c 2 使用兼容模式，默认是 -c 5
 #-r 开启远程日志
-#-m 0 标记时间戳。单位是分钟，为0时，表示禁用该功能	
+#-m 0 标记时间戳。单位是分钟，为0时，表示禁用该功能
+
+service rsyslog restart
+
+vim /etc/logrotate.d/haproxy
+/varlog/haproxy*.log
+{
+    rotate 4
+    daily
+    missingok
+    notifempty
+    compress
+    delaycompress
+    sharedscripts
+    postrotate
+        reload rsyslog >/dev/null 2>&1 || true
+    endscript
+}
 		`))
 }
 
@@ -120,7 +136,7 @@ Options:
       Defaults %s
 
     -rsyslog
-      Display rsyslog integration with haproxy
+      Display how to integrate rsyslog with haproxy
 
 `, this.Cmd, this.Cmd, defaultPrefix)
 	return strings.TrimSpace(help)
