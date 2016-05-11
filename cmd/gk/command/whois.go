@@ -9,7 +9,6 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gocli"
 	"github.com/go-ozzo/ozzo-dbx"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/olekukonko/tablewriter"
 )
 

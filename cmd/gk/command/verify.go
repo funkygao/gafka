@@ -15,7 +15,6 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/go-ozzo/ozzo-dbx"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/olekukonko/tablewriter"
 )
 
