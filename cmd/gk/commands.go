@@ -46,6 +46,13 @@ func init() {
 			}, nil
 		},
 
+		"upgrade": func() (cli.Command, error) {
+			return &command.Upgrade{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"verify": func() (cli.Command, error) {
 			return &command.Verify{
 				Ui:  ui,
