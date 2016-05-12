@@ -482,8 +482,34 @@ func (this *ZkCluster) AddTopic(topic string, ts *sla.TopicSla) (output []string
 		fmt.Sprintf("--topic %s", topic),
 	}
 	args = append(args, ts.DumpForCreateTopic()...)
-	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
-		args...)
+	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()), args...)
+	if err = cmd.Open(); err != nil {
+		return
+	}
+	defer cmd.Close()
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+
+	output = make([]string, 0)
+	for scanner.Scan() {
+		output = append(output, scanner.Text())
+	}
+	if err = scanner.Err(); err != nil {
+		return
+	}
+
+	return
+}
+
+func (this *ZkCluster) DeleteTopic(topic string) (output []string, err error) {
+	zkAddrs := this.ZkConnectAddr()
+	args := []string{
+		fmt.Sprintf("--zookeeper %s", zkAddrs),
+		fmt.Sprintf("--delete"),
+		fmt.Sprintf("--topic %s", topic),
+	}
+	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()), args...)
 	if err = cmd.Open(); err != nil {
 		return
 	}

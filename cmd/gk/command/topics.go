@@ -35,6 +35,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		zone              string
 		cluster           string
 		addTopic          string
+		delTopic          string
 		replicas          int
 		partitions        int
 		retentionInMinute int
@@ -49,6 +50,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.StringVar(&addTopic, "add", "", "")
+	cmdFlags.StringVar(&delTopic, "del", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
 	cmdFlags.BoolVar(&configged, "cf", false, "")
 	cmdFlags.BoolVar(&resetConf, "cfreset", false, "")
@@ -60,9 +62,10 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	if validateArgs(this, this.Ui).
 		on("-add", "-c").
+		on("-del", "-c").
 		on("-retention", "-c", "-t").
 		on("-cfreset", "-c", "-t").
-		requireAdminRights("-add", "-retention").
+		requireAdminRights("-add", "-del", "-retention").
 		invalid(args) {
 		return 2
 	}
@@ -71,6 +74,12 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 		zkcluster := zkzone.NewCluster(cluster)
 		swallow(this.addTopic(zkcluster, addTopic, replicas, partitions))
+
+		return
+	} else if delTopic != "" {
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+		zkcluster := zkzone.NewCluster(cluster)
+		swallow(this.delTopic(zkcluster, delTopic))
 
 		return
 	}
@@ -434,6 +443,21 @@ func (this *Topics) addTopic(zkcluster *zk.ZkCluster, topic string, replicas,
 	return nil
 }
 
+func (this *Topics) delTopic(zkcluster *zk.ZkCluster, topic string) error {
+	this.Ui.Info(fmt.Sprintf("deleting kafka topic: %s", topic))
+
+	lines, err := zkcluster.DeleteTopic(topic)
+	if err != nil {
+		return err
+	}
+
+	for _, l := range lines {
+		this.Ui.Output(color.Yellow(l))
+	}
+
+	return nil
+}
+
 func (*Topics) Synopsis() string {
 	return "Manage kafka topics"
 }
@@ -462,6 +486,9 @@ Options:
 
     -add topic
       Add a topic to a kafka cluster.
+
+    -del topic
+      Delete a kafka topic.
 
     -partitions n
       Partition count when adding a new topic. Default 1.
