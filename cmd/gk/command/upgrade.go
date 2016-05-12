@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"os/user"
 	"strings"
 
 	"github.com/funkygao/gocli"
@@ -31,21 +32,23 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 
 	switch this.mode {
 	case "d":
+		u, err := user.Current()
+		swallow(err)
 		this.runCmd("rm", []string{"-f", "gk"})
-		this.runCmd("rm", []string{"-f", "~/.gafka"})
+		this.runCmd("rm", []string{"-f", fmt.Sprintf("%s/.gafka.cf", u.HomeDir)})
 		this.runCmd("wget", []string{this.storeUrl})
 		this.runCmd("chmod", []string{"a+x", "gk"})
-		this.runCmd("mv", []string{"-f", "/usr/bin/gk"})
+		this.runCmd("mv", []string{"-f", "gk", "/usr/bin/gk"})
 
 	case "u":
-		this.runCmd("cp", []string{"-f", "`which gk`", this.uploadDir})
+		this.runCmd("cp", []string{"-f", "/root/gopkg/bin/gk", this.uploadDir})
 
 	default:
 		this.Ui.Error("invalid mode")
 		return 2
 	}
 
-	this.Ui.Info("done")
+	this.Ui.Info("ok")
 	return
 }
 
@@ -60,6 +63,8 @@ func (this *Upgrade) runCmd(c string, args []string) {
 	for scanner.Scan() {
 		this.Ui.Output(fmt.Sprintf("    %s", scanner.Text()))
 	}
+
+	this.Ui.Output(fmt.Sprintf("  %s %+v", c, args))
 }
 
 func (*Upgrade) Synopsis() string {
