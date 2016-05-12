@@ -217,6 +217,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			sub.CommitUpto(msg)
 
 			// rate limit, never overflood the limited bandwidth between IDCs
+			// FIXME when compressed, the bandwidth calculation is wrong
 			bytesN := len(msg.Topic) + len(msg.Key) + len(msg.Value) + 20 // payload overhead
 			if !this.bandwidthRateLimiter.Pour(bytesN) {
 				time.Sleep(time.Second)
