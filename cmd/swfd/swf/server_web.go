@@ -55,6 +55,10 @@ func newWebServer(name string, httpAddr, httpsAddr string) *webServer {
 	return this
 }
 
+func (this *webServer) Name() string {
+	return this.name
+}
+
 func (this *webServer) Router() *httprouter.Router {
 	return this.router
 }

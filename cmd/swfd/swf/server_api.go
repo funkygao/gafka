@@ -10,10 +10,9 @@ type apiServer struct {
 	*webServer
 }
 
-func (this *Swf) checkAliveHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (this *apiServer) checkAliveHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Write(ResponseOk)
 }
 
-func (this *apiServer) NotImplemented(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *apiServer) NotImplemented(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 }
