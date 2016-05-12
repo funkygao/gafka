@@ -234,12 +234,12 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 		if IsTaggedMessage(msg.Value) {
 			// TagMarkStart + tag + TagMarkEnd + body
 			tags, bodyIdx, err = ExtractMessageTag(msg.Value)
-			if err != nil {
-				return
+			if err == nil {
+				// needn't check 'index out of range' here
+				w.Header().Set(HttpHeaderMsgTag, hack.String(msg.Value[1:bodyIdx-1]))
+			} else {
+				// not a valid tagged message, treat it as non-tagged message
 			}
-
-			// needn't check 'index out of range' here
-			w.Header().Set(HttpHeaderMsgTag, hack.String(msg.Value[1:bodyIdx-1]))
 		}
 
 		if len(tags) > 0 {

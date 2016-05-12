@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	TagMarkStart = byte(1)
+	TagMarkStart = byte(1) // FIXME conflicts with ProtocolBuffer
 	TagMarkEnd   = byte(2)
 	TagSeperator = ";" // follow cookie rules a=b;c=d
 
@@ -47,7 +47,7 @@ func ExtractMessageTag(msg []byte) ([]MsgTag, int, error) {
 	tagEnd := bytes.IndexByte(msg, TagMarkEnd)
 	if tagEnd == -1 {
 		// not a tagged message
-		return nil, -1, ErrIllegalTaggedMessage
+		return nil, 0, ErrIllegalTaggedMessage
 	}
 
 	tag := string(msg[1:tagEnd]) // discard the tag mark start
