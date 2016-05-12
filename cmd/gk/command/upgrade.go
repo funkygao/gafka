@@ -74,14 +74,14 @@ func (this *Upgrade) runCmd(c string, args []string) {
 }
 
 func (*Upgrade) Synopsis() string {
-	return "Upgrade local gk to latest version and reset .gafka"
+	return "Upgrade local gk to latest version"
 }
 
 func (this *Upgrade) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s upgrade [options]
 
-    Upgrade local gk to latest version and reset .gafka
+    Upgrade local gk to latest version
 
 Options:
 
