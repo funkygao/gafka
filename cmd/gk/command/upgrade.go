@@ -34,11 +34,13 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	case "d":
 		u, err := user.Current()
 		swallow(err)
+		this.runCmd("gk", []string{"-v"})
 		this.runCmd("rm", []string{"-f", "gk"})
 		this.runCmd("rm", []string{"-f", fmt.Sprintf("%s/.gafka.cf", u.HomeDir)})
 		this.runCmd("wget", []string{this.storeUrl})
 		this.runCmd("chmod", []string{"a+x", "gk"})
 		this.runCmd("mv", []string{"-f", "gk", "/usr/bin/gk"})
+		this.runCmd("gk", []string{"-v"})
 
 	case "u":
 		this.runCmd("cp", []string{"-f", "/root/gopkg/bin/gk", this.uploadDir})
