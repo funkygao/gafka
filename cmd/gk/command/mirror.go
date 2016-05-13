@@ -246,6 +246,9 @@ Usage: %s mirror [options]
 
     Continuously copy data between two Kafka clusters
 
+    e,g.
+    gk mirror -z1 prod -c1 logstash -z2 mirror -c2 aggregator -net 100 -step 2000
+
 Options:
 
     -z1 from zone
