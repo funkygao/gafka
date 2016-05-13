@@ -33,6 +33,7 @@ type Mirror struct {
 	topicsExcluded     map[string]struct{}
 	debug              bool
 	compress           string
+	autoCommit         bool
 
 	transferN     int64
 	transferBytes int64
@@ -53,6 +54,7 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.debug, "debug", false, "")
 	cmdFlags.StringVar(&this.compress, "compress", "", "")
 	cmdFlags.Int64Var(&this.bandwidthLimit, "net", 100, "")
+	cmdFlags.BoolVar(&this.autoCommit, "commit", true, "")
 	cmdFlags.Int64Var(&this.progressStep, "step", 5000, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -214,7 +216,9 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 				Key:   sarama.ByteEncoder(msg.Key),
 				Value: sarama.ByteEncoder(msg.Value),
 			}
-			sub.CommitUpto(msg)
+			if this.autoCommit {
+				sub.CommitUpto(msg)
+			}
 
 			// rate limit, never overflood the limited bandwidth between IDCs
 			// FIXME when compressed, the bandwidth calculation is wrong
@@ -271,6 +275,10 @@ Options:
 
     -compress <gzip|snappy>
       Defaults none.
+
+    -commit
+      Auto commit the checkpoint offset.
+      Defaults true.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
