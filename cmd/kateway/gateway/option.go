@@ -51,7 +51,7 @@ var (
 		MaxMsgTagLen            int
 		MinPubSize              int
 		MaxPubRetries           int
-		PubQpsLimit             int
+		PubQpsLimit             int64
 		MaxClients              int
 		MaxRequestPerConn       int // to make load balancer distribute request even for persistent conn
 		PubPoolCapcity          int
@@ -123,7 +123,7 @@ func ParseFlags() {
 	flag.IntVar(&Options.MaxRequestPerConn, "maxreq", -1, "max request per connection")
 	flag.IntVar(&Options.MaxMsgTagLen, "tagsz", 120, "max message tag length permitted")
 	flag.IntVar(&Options.LogRotateSize, "logsize", 10<<30, "max unrotated log file size")
-	flag.IntVar(&Options.PubQpsLimit, "publimit", 60*10000, "pub qps limit per minute per ip")
+	flag.Int64Var(&Options.PubQpsLimit, "publimit", 60*10000, "pub qps limit per minute per ip")
 	flag.IntVar(&Options.PubPoolCapcity, "pubpool", 100, "pub connection pool capacity")
 	flag.IntVar(&Options.MaxClients, "maxclient", 100000, "max concurrent connections")
 	flag.DurationVar(&Options.OffsetCommitInterval, "offsetcommit", time.Minute, "consumer offset commit interval")
