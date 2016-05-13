@@ -37,7 +37,7 @@ type Mirror struct {
 	transferN     int64
 	transferBytes int64
 
-	bandwidthLimit       int
+	bandwidthLimit       int64
 	bandwidthRateLimiter *ratelimiter.LeakyBucket
 	progressStep         int64
 }
@@ -52,7 +52,7 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.excludes, "excluded", "", "")
 	cmdFlags.BoolVar(&this.debug, "debug", false, "")
 	cmdFlags.StringVar(&this.compress, "compress", "", "")
-	cmdFlags.IntVar(&this.bandwidthLimit, "net", 100, "")
+	cmdFlags.Int64Var(&this.bandwidthLimit, "net", 100, "")
 	cmdFlags.Int64Var(&this.progressStep, "step", 5000, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -72,7 +72,7 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	log.SetOutput(os.Stdout)
 	this.quit = make(chan struct{})
 	limit := (1 << 20) * this.bandwidthLimit / 8
-	this.bandwidthRateLimiter = ratelimiter.NewLeakyBucket(limit*10, time.Second*10)
+	this.bandwidthRateLimiter = ratelimiter.NewLeakyBucket(limit, time.Second)
 	log.Printf("[%s]%s -> [%s]%s with bandwidth %sbps",
 		this.zone1, this.cluster1,
 		this.zone2, this.cluster2,
