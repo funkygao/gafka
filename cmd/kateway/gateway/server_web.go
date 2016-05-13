@@ -233,8 +233,6 @@ func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit
 
 	log.Trace("%s on %s listener closed", this.name, server.Addr)
 
-	// wait for active connections finish up to 4s
-	const maxWaitSeconds = 4
 	waitStart := time.Now()
 	for {
 		activeConnN := atomic.LoadInt32(&this.activeConnN)
@@ -244,9 +242,9 @@ func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit
 		}
 
 		// timeout mechanism
-		if time.Since(waitStart).Seconds() > maxWaitSeconds {
-			log.Warn("%s on %s still left %d conns, but forced to shutdown after %ds",
-				this.name, server.Addr, activeConnN, maxWaitSeconds)
+		if time.Since(waitStart).Seconds() > Options.SubTimeout.Seconds() {
+			log.Warn("%s on %s still left %d conns, but forced to shutdown after %s",
+				this.name, server.Addr, activeConnN, Options.SubTimeout)
 			break
 		}
 
