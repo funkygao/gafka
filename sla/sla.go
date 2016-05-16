@@ -100,6 +100,9 @@ func (this *TopicSla) DumpForAlterTopic() []string {
 		r = append(r, fmt.Sprintf("--config retention.ms=%d",
 			int(this.RetentionHours*1000*3600)))
 	}
+	if this.Partitions != defaultPartitions {
+		r = append(r, fmt.Sprintf("--partitions %d", this.Partitions))
+	}
 
 	return r
 }
