@@ -1,5 +1,9 @@
 # swf
 
+### Task List
+
+Amazon SWF stores the activity tasks in the workflow history and schedules them for execution by placing them on the activity task list. The activity workers poll the task list and execute the tasks.
+
 ### Workflow History
 
 The workflow history is a detailed, complete, and consistent record of every event that occurred since the workflow execution started.
