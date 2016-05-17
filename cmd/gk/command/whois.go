@@ -20,6 +20,7 @@ type WhoisAppInfo struct {
 	CreateBy         string `db:"CreateBy"`
 	CreateTime       string `db:"CreateTime"`
 	Status           string `db:"Status"`
+	AppSecret        string `db:"AppSecret"`
 }
 
 type WhoisTopicInfo struct {
@@ -46,11 +47,12 @@ type Whois struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone     string
-	app      string
-	topic    string
-	group    string
-	likeMode bool
+	zone       string
+	app        string
+	topic      string
+	group      string
+	likeMode   bool
+	showSecret string
 
 	appInfos   []WhoisAppInfo
 	topicInfos []WhoisTopicInfo
@@ -65,6 +67,7 @@ func (this *Whois) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.group, "g", "", "")
 	cmdFlags.StringVar(&this.topic, "t", "", "")
 	cmdFlags.BoolVar(&this.likeMode, "l", false, "")
+	cmdFlags.StringVar(&this.showSecret, "key", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -82,9 +85,17 @@ func (this *Whois) Run(args []string) (exitCode int) {
 	switch {
 	case this.topic+this.group == "":
 		// list apps
-		table.SetHeader([]string{"Id", "Name", "Cluster", "Ctime"})
+		if this.showSecret {
+			table.SetHeader([]string{"Id", "Name", "Cluster", "Ctime", "Secret"})
+		} else {
+			table.SetHeader([]string{"Id", "Name", "Cluster", "Ctime"})
+		}
 		for _, ai := range this.appInfos {
-			table.Append([]string{ai.AppId, ai.ApplicationName, ai.Cluster, ai.CreateTime})
+			if this.showSecret {
+				table.Append([]string{ai.AppId, ai.ApplicationName, ai.Cluster, ai.CreateTime, ai.AppSecret})
+			} else {
+				table.Append([]string{ai.AppId, ai.ApplicationName, ai.Cluster, ai.CreateTime})
+			}
 		}
 
 	case this.topic != "":
@@ -116,7 +127,7 @@ func (this *Whois) loadFromManager(dsn string) {
 	swallow(err)
 
 	// TODO fetch from topics_version
-	sql := "SELECT AppId,ApplicationName,ApplicationIntro,Cluster,CreateBy,CreateTime,Status FROM application"
+	sql := "SELECT AppId,ApplicationName,ApplicationIntro,Cluster,CreateBy,CreateTime,Status,AppSecret FROM application"
 	if this.app != "" {
 		sql += " WHERE AppId IN (" + this.app + ")"
 	}
@@ -191,6 +202,9 @@ Options:
     -z zone
 
     -app comma seperated appId
+
+    -key
+      Show app secret key
 
     -g <group|all>
 
