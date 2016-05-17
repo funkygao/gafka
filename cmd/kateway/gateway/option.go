@@ -111,7 +111,7 @@ func ParseFlags() {
 	flag.BoolVar(&Options.DryRun, "dryrun", false, "dry run mode")
 	flag.BoolVar(&Options.PermitUnregisteredGroup, "unregrp", false, "permit sub group usage without being registered")
 	flag.BoolVar(&Options.PermitStandbySub, "standbysub", false, "permits sub threads exceed partitions")
-	flag.BoolVar(&Options.EnableGzip, "gzip", true, "enable http response gzip")
+	flag.BoolVar(&Options.EnableGzip, "gzip", false, "enable http response gzip")
 	flag.BoolVar(&Options.CpuAffinity, "cpuaffinity", false, "enable cpu affinity")
 	flag.BoolVar(&Options.Ratelimit, "raltelimit", false, "enable rate limit")
 	flag.BoolVar(&Options.EnableHttpPanicRecover, "httppanic", false, "enable http handler panic recover")
