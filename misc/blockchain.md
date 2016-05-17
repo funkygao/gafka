@@ -20,3 +20,28 @@ The Bitcoin blockchain is about 50 GB; it grew by 24 GB in 2015
         Bits uint32         // Difficulty target for the block
         Nonce uint32
     }
+
+### Protocol
+
+    CmdVersion     = "version"
+    CmdVerAck      = "verack"
+    CmdGetAddr     = "getaddr"
+    CmdAddr        = "addr"
+    CmdGetBlocks   = "getblocks"
+    CmdInv         = "inv"
+    CmdGetData     = "getdata"
+    CmdNotFound    = "notfound"
+    CmdBlock       = "block"
+    CmdTx          = "tx"
+    CmdGetHeaders  = "getheaders"
+    CmdHeaders     = "headers"
+    CmdPing        = "ping"
+    CmdPong        = "pong"
+    CmdAlert       = "alert"
+    CmdMemPool     = "mempool"
+    CmdFilterAdd   = "filteradd"
+    CmdFilterClear = "filterclear"
+    CmdFilterLoad  = "filterload"
+    CmdMerkleBlock = "merkleblock"
+    CmdReject      = "reject"
+    CmdSendHeaders = "sendheaders"
