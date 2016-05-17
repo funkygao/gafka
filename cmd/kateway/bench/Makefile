@@ -2,9 +2,7 @@ bench:kwsync
 
 pub:pub.go
 	@echo keep pub to kateway to check mem/thread leakeage
-	@go run pub.go -t foobar -c 1 -sz 50 -tag true
-	#@go run pub.go -t foobar -c 1 -sz 50
-	#@go run pub.go -t foobar -sleep 1s -c 1 -sz 50
+	@go run pub.go -step 10000 -t foobar -c 1 -sz 50 -tag true 
 
 ack:ack.go
 	@echo sub from kateway
@@ -14,8 +12,12 @@ subx:sub.go
 	@echo sub from kateway
 	go run sub.go -t foobar -mode subx -sleep 5s
 
+s:
+	go run pubsub.go -c1 1 -c2 1 -mode sub -appid app2 -key xxx -subappid app1 -ep 10.1.114.159:9192 -topic foobar -group bench_go 
+
 sub:sub.go
-	go run sub.go -t foobar -mode sub -sleep 1s
+	go run sub.go -t foobar -mode sub 
+	#go run sub.go -t foobar -mode sub -sleep 1s
 
 kwsync:bench.go
 	@echo bench against kateway in sync pub mode

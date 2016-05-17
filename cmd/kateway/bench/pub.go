@@ -18,6 +18,7 @@ var (
 	addr     string
 	n        int64
 	msgSize  int
+	debug    bool
 	step     int64
 	appid    string
 	topic    string
@@ -28,6 +29,8 @@ var (
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	flag.IntVar(&c, "c", 10, "client concurrency")
 	flag.IntVar(&msgSize, "sz", 100, "msg size")
 	flag.StringVar(&appid, "appid", "app1", "app id")
@@ -36,6 +39,7 @@ func main() {
 	flag.StringVar(&addr, "h", fmt.Sprintf("%s:9191", ip.String()), "pub http addr")
 	flag.Int64Var(&step, "step", 1, "display progress step")
 	flag.StringVar(&key, "key", "", "message key")
+	flag.BoolVar(&debug, "debug", false, "debug")
 	flag.BoolVar(&tag, "tag", false, "add random tag to each message")
 	flag.StringVar(&topic, "t", "foobar", "topic to pub")
 	flag.StringVar(&workerId, "id", "1", "worker id")
@@ -51,7 +55,7 @@ func main() {
 func pubGatewayLoop(seq int) {
 	cf := api.DefaultConfig(appid, "mysecret")
 	cf.Pub.Endpoint = addr
-	cf.Debug = true
+	cf.Debug = debug
 	client := api.NewClient(cf)
 
 	var (
