@@ -20,6 +20,7 @@ var (
 	limit    int
 	debug    bool
 	endpoint string
+	batch    int
 	group    string
 	msgfile  string
 	subAppid string
@@ -35,6 +36,7 @@ func init() {
 	flag.StringVar(&endpoint, "ep", "pub.sit.ffan.com:9191", "end point")
 	flag.StringVar(&msgfile, "msgfile", "", "message file to Pub")
 	flag.StringVar(&group, "group", "bench_go", "sub group name")
+	flag.IntVar(&batch, "batch", 1, "sub batch limit")
 	flag.StringVar(&subAppid, "subappid", "", "sub which app's msg")
 	flag.BoolVar(&debug, "debug", false, "debug")
 
@@ -94,6 +96,7 @@ func benchmarkSub(seq int) {
 		AppId: subAppid,
 		Topic: topic,
 		Ver:   ver,
+		Limit: batch,
 		Group: group,
 	}
 	var i int
@@ -103,7 +106,7 @@ func benchmarkSub(seq int) {
 			log.Printf("%+v %s", *r, string(msg))
 		}
 		if statusCode == 200 {
-			stress.IncCounter("ok", 1)
+			stress.IncCounter("ok", int64(batch))
 		} else {
 			if debug {
 				log.Println(string(msg))
