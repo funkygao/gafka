@@ -191,8 +191,10 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			}
 
 			if this.versionOnly {
-				this.Ui.Info(fmt.Sprintf("id:%-2s host:%s ver:%s cpu:%-2s up:%s",
-					kw.Id, kw.Host, kw.Ver,
+				this.Ui.Info(fmt.Sprintf("%6s id:%-2s host:%s ver:%s build:%s/%s cpu:%-2s up:%s",
+					zkzone.Name(),
+					kw.Id, kw.Host,
+					kw.Ver, kw.Build, kw.BuiltAt,
 					kw.Cpu,
 					gofmt.PrettySince(kw.Ctime)))
 				continue
