@@ -75,6 +75,8 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 }
 
 func (this *Upgrade) runCmd(c string, args []string) {
+	this.Ui.Output(fmt.Sprintf("  %s %+v", c, args))
+
 	cmd := pipestream.New(c, args...)
 	err := cmd.Open()
 	swallow(err)
@@ -90,7 +92,6 @@ func (this *Upgrade) runCmd(c string, args []string) {
 		this.Ui.Error(err.Error())
 	}
 
-	this.Ui.Output(fmt.Sprintf("  %s %+v", c, args))
 }
 
 func (*Upgrade) Synopsis() string {
