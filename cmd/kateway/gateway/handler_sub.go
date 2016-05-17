@@ -245,6 +245,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 		case msg := <-fetcher.Messages():
 			partition := strconv.FormatInt(int64(msg.Partition), 10)
 
+			// FIXME if limit>1, the P/O will be only the 1st message, which is wrong
 			w.Header().Set(HttpHeaderMsgKey, string(msg.Key))
 			w.Header().Set(HttpHeaderPartition, partition)
 			w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
