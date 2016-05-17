@@ -38,6 +38,7 @@ type Kateway struct {
 	listClients  bool
 	visualLog    string
 	checkup      bool
+	versionOnly  bool
 }
 
 func (this *Kateway) Run(args []string) (exitCode int) {
@@ -50,6 +51,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.longFmt, "l", false, "")
 	cmdFlags.StringVar(&this.configOption, "option", "", "")
 	cmdFlags.StringVar(&this.resetCounter, "reset", "", "")
+	cmdFlags.BoolVar(&this.versionOnly, "ver", false, "")
 	cmdFlags.BoolVar(&this.listClients, "clients", false, "")
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "", "")
 	cmdFlags.StringVar(&this.visualLog, "visualog", "", "")
@@ -152,23 +154,25 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			return
 		}
 
-		mysqlDsn, err := zkzone.KatewayMysqlDsn()
-		if err != nil {
-			this.Ui.Warn(fmt.Sprintf("kateway[%s] mysql DSN not set on zk yet", zkzone.Name()))
-			this.Ui.Output(fmt.Sprintf("e,g. %s -> pubsub:pubsub@tcp(10.77.135.217:10010)/pubsub?charset=utf8&timeout=10s",
-				zk.KatewayMysqlPath))
-		} else {
-			this.Ui.Output(fmt.Sprintf("zone[%s] manager db: %s",
-				color.Cyan(zkzone.Name()), mysqlDsn))
-		}
+		if !this.versionOnly {
+			mysqlDsn, err := zkzone.KatewayMysqlDsn()
+			if err != nil {
+				this.Ui.Warn(fmt.Sprintf("kateway[%s] mysql DSN not set on zk yet", zkzone.Name()))
+				this.Ui.Output(fmt.Sprintf("e,g. %s -> pubsub:pubsub@tcp(10.77.135.217:10010)/pubsub?charset=utf8&timeout=10s",
+					zk.KatewayMysqlPath))
+			} else {
+				this.Ui.Output(fmt.Sprintf("zone[%s] manager db: %s",
+					color.Cyan(zkzone.Name()), mysqlDsn))
+			}
 
-		disques, err := zkzone.KatewayDisqueAddrs()
-		if err != nil {
-			this.Ui.Warn(fmt.Sprintf("kateway[%s] disque not set on zk:%s", zkzone.Name(),
-				zk.KatewayDisquePath))
-		} else {
-			this.Ui.Output(fmt.Sprintf("zone[%s]     disque: %+v",
-				color.Cyan(zkzone.Name()), disques))
+			disques, err := zkzone.KatewayDisqueAddrs()
+			if err != nil {
+				this.Ui.Warn(fmt.Sprintf("kateway[%s] disque not set on zk:%s", zkzone.Name(),
+					zk.KatewayDisquePath))
+			} else {
+				this.Ui.Output(fmt.Sprintf("zone[%s]     disque: %+v",
+					color.Cyan(zkzone.Name()), disques))
+			}
 		}
 
 		kateways, err := zkzone.KatewayInfos()
@@ -183,6 +187,14 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 		for _, kw := range kateways {
 			if this.id != "" && this.id != kw.Id {
+				continue
+			}
+
+			if this.versionOnly {
+				this.Ui.Info(fmt.Sprintf("id:%-2s host:%s ver:%s cpu:%-2s up:%s",
+					kw.Id, kw.Host, kw.Ver,
+					kw.Cpu,
+					gofmt.PrettySince(kw.Ctime)))
 				continue
 			}
 
@@ -463,6 +475,9 @@ Options:
 
     -i
       Install kateway guide
+
+    -ver
+      Display kateway version only
 
     -checkup
       Checkup for online kateway instances
