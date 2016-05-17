@@ -51,7 +51,7 @@ func main() {
 
 	case "help":
 		fmt.Println("Pub: go run pubsub.go -c1 10 -step 5 -mode pub -appid 73 -key xxxx -msgfile msg -ep pub.sit.ffan.com:9191 -topic risk_beacon_test")
-		fmt.Println("Sub: go run pubsub.go -c1 1 -c2 1 -mode sub -appid 73 -key xxx -ep sub.sit.ffan.com:9192 -topic risk_beacon_test -group bench_go")
+		fmt.Println("Sub: go run pubsub.go -c1 1 -c2 1 -mode sub -appid app2 -subappid app1 -key xxx -ep sub.sit.ffan.com:9192 -topic risk_beacon_test -group bench_go -debug")
 
 	}
 
@@ -98,13 +98,17 @@ func benchmarkSub(seq int) {
 	}
 	var i int
 
-	err := client.Sub(opt, func(statusCode int, msg []byte) error {
+	err := client.SubX(opt, func(statusCode int, msg []byte, r *api.SubXResult) error {
 		if debug {
-			log.Printf("%s", string(msg))
+			log.Printf("%+v %s", *r, string(msg))
 		}
 		if statusCode == 200 {
 			stress.IncCounter("ok", 1)
 		} else {
+			if debug {
+				log.Println(string(msg))
+			}
+
 			stress.IncCounter("fail", 1)
 		}
 
