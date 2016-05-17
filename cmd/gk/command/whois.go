@@ -52,7 +52,7 @@ type Whois struct {
 	topic      string
 	group      string
 	likeMode   bool
-	showSecret string
+	showSecret bool
 
 	appInfos   []WhoisAppInfo
 	topicInfos []WhoisTopicInfo
@@ -67,7 +67,7 @@ func (this *Whois) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.group, "g", "", "")
 	cmdFlags.StringVar(&this.topic, "t", "", "")
 	cmdFlags.BoolVar(&this.likeMode, "l", false, "")
-	cmdFlags.StringVar(&this.showSecret, "key", false, "")
+	cmdFlags.BoolVar(&this.showSecret, "key", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
