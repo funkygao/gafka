@@ -15,9 +15,10 @@ type Upgrade struct {
 	Ui  cli.Ui
 	Cmd string
 
-	storeUrl  string
-	uploadDir string
-	mode      string
+	storeUrl       string
+	uploadDir      string
+	mode           string
+	upgradeKateway bool
 }
 
 func (this *Upgrade) Run(args []string) (exitCode int) {
@@ -26,10 +27,29 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.storeUrl, "url", "http://10.77.144.193:10080/gk", "")
 	cmdFlags.StringVar(&this.uploadDir, "upload", "/var/www/html", "")
 	cmdFlags.StringVar(&this.mode, "mode", "d", "")
+	cmdFlags.BoolVar(&this.upgradeKateway, "k", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
+	if this.upgradeKateway {
+		this.storeUrl = "http://10.77.144.193:10080/kateway"
+
+		switch this.mode {
+		case "d":
+			this.runCmd("wget", []string{this.storeUrl})
+			this.runCmd("chmod", []string{"a+x", "kateway"})
+			this.runCmd("mv", []string{"-f", "kateway", "/var/wd/kateway/kateway"})
+
+		case "u":
+			this.Ui.Warn("you must run './build.sh -it kateway' first.")
+			this.runCmd("cp", []string{"-f", "/root/gopkg/bin/kateway", this.uploadDir})
+		}
+
+		return
+	}
+
+	// work on gk
 	switch this.mode {
 	case "d":
 		u, err := user.Current()
@@ -85,16 +105,19 @@ Usage: %s upgrade [options]
 
 Options:
 
-	-mode <d|u>
-	  Download or upload
-	  Defaults download mode
+    -k
+      Upgrade on kateway instead of gk
 
-	-url gk file server url
-	  Defaults http://10.77.144.193:10080/gk
+    -mode <d|u>
+      Download or upload
+      Defaults download mode
 
-	-upload dir
-	  Upload the gk file to target dir, only run on gk file server
-	  Defaults /var/www/html
+    -url gk file server url
+      Defaults http://10.77.144.193:10080/gk
+
+    -upload dir
+      Upload the gk file to target dir, only run on gk file server
+      Defaults /var/www/html
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
