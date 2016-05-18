@@ -293,7 +293,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 				if err = writeI64(w, metaBuf, msg.Offset); err != nil {
 					return err
 				}
-				if err = writeI32(w, metaBuf, int32(len(msg.Value))); err != nil {
+				if err = writeI32(w, metaBuf, int32(len(msg.Value[bodyIdx:]))); err != nil {
 					return err
 				}
 				// TODO add tag?
