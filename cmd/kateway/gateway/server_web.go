@@ -30,7 +30,8 @@ type webServer struct {
 	onConnNewFunc   onConnNewFunc
 	onConnCloseFunc onConnCloseFunc
 
-	onStop func()
+	onStop   func()
+	onceStop sync.Once
 
 	activeConnN int32
 }
@@ -255,7 +256,10 @@ func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit
 	log.Trace("%s on %s all connections finished", this.name, server.Addr)
 
 	if this.onStop != nil {
-		this.onStop()
+		// if both http and https, without sync once, onStop will be called twice
+		this.onceStop.Do(func() {
+			this.onStop()
+		})
 	}
 
 	this.gw.wg.Done()
