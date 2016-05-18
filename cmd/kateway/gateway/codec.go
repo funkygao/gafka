@@ -25,3 +25,36 @@ func writeI64(writer io.Writer, buf []byte, v int64) error {
 	_, e := writer.Write(b)
 	return e
 }
+
+type Message struct {
+	Partition int32
+	Offset    int64
+	Value     []byte
+}
+
+func DecodeMessageSet(messageSet []byte) []Message {
+	r := make([]Message, 0)
+
+	idx := 0
+	for {
+		m := Message{}
+		m.Partition = int32(binary.BigEndian.Uint32(messageSet[idx : idx+4]))
+
+		idx += 4
+		m.Offset = int64(binary.BigEndian.Uint64(messageSet[idx : idx+8]))
+
+		idx += 8
+		messageSetLen := int(binary.BigEndian.Uint32(messageSet[idx : idx+4]))
+
+		idx += 4
+		m.Value = messageSet[idx : idx+messageSetLen]
+
+		r = append(r, m)
+
+		idx += messageSetLen
+		if idx == len(messageSet) {
+			return r
+		}
+	}
+
+}
