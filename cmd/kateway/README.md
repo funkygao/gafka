@@ -198,6 +198,7 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] cf.ChannelBufferSize=20
 - [ ] sub with delayed ack
   - StatusNotModified
   - what if rebalanced, and ack buffered p/o
