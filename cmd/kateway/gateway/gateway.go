@@ -54,14 +54,13 @@ type Gateway struct {
 	connections   map[string]int // remoteAddr:counter
 	connectionsMu sync.Mutex
 
-	pubMetrics *pubMetrics
 	subMetrics *subMetrics
 	svrMetrics *serverMetrics
 
-	accessLogger      *AccessLogger
-	guard             *guard
-	timer             *timewheel.TimeWheel
-	throttlePub       *ratelimiter.LeakyBuckets
+	accessLogger *AccessLogger
+	guard        *guard
+	timer        *timewheel.TimeWheel
+
 	throttleAddTopic  *ratelimiter.LeakyBuckets
 	throttleSubStatus *ratelimiter.LeakyBuckets
 }
@@ -71,7 +70,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		id:                id,
 		zone:              Options.Zone,
 		shutdownCh:        make(chan struct{}),
-		throttlePub:       ratelimiter.NewLeakyBuckets(Options.PubQpsLimit, time.Minute),
 		throttleAddTopic:  ratelimiter.NewLeakyBuckets(60, time.Minute),
 		throttleSubStatus: ratelimiter.NewLeakyBuckets(60, time.Minute),
 		certFile:          Options.CertFile,
@@ -111,7 +109,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	if Options.PubHttpAddr != "" || Options.PubHttpsAddr != "" {
 		this.pubServer = newPubServer(Options.PubHttpAddr, Options.PubHttpsAddr,
 			Options.MaxClients, this)
-		this.pubMetrics = NewPubMetrics(this)
 
 		switch Options.Store {
 		case "kafka":
@@ -234,7 +231,6 @@ func (this *Gateway) Start() (err error) {
 		}
 		log.Trace("pub store[%s] started", store.DefaultPubStore.Name())
 
-		this.pubMetrics.Load()
 		this.pubServer.Start()
 	}
 	if this.subServer != nil {
@@ -299,10 +295,6 @@ func (this *Gateway) ServeForever() {
 
 		this.svrMetrics.Flush()
 		log.Trace("server metrics flushed")
-		if this.pubMetrics != nil {
-			this.pubMetrics.Flush()
-			log.Trace("pub metrics flushed")
-		}
 		if this.subMetrics != nil {
 			this.subMetrics.Flush()
 			log.Trace("sub metrics flushed")

@@ -13,12 +13,12 @@ import (
 )
 
 // POST /v1/jobs/:topic/:ver?delay=100s
-func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
+func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	t1 := time.Now()
 
 	if Options.EnableClientStats { // TODO enable pub or sub client stats
-		this.clientStates.RegisterPubClient(r)
+		this.gw.clientStates.RegisterPubClient(r)
 	}
 
 	if Options.Ratelimit && !this.throttlePub.Pour(getHttpRemoteIp(r), 1) {
@@ -131,7 +131,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // DELETE /v1/jobs/:topic/:ver?id=D-1d13f5e8-9NVhoRqjowkLy6iTE/QnZw/l-05a1
-func (this *Gateway) deleteJobHandler(w http.ResponseWriter, r *http.Request,
+func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	appid := r.Header.Get(HttpHeaderAppid)
 	topic := params.ByName(UrlParamTopic)

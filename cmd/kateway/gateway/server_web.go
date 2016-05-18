@@ -30,6 +30,8 @@ type webServer struct {
 	onConnNewFunc   onConnNewFunc
 	onConnCloseFunc onConnCloseFunc
 
+	onStop func()
+
 	activeConnN int32
 }
 
@@ -251,6 +253,10 @@ func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit
 		time.Sleep(time.Millisecond * 50)
 	}
 	log.Trace("%s on %s all connections finished", this.name, server.Addr)
+
+	if this.onStop != nil {
+		this.onStop()
+	}
 
 	this.gw.wg.Done()
 }

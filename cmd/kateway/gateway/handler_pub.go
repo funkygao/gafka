@@ -16,7 +16,7 @@ import (
 )
 
 // POST /v1/msgs/:topic/:ver?key=mykey&async=1&ack=all
-func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
+func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		appid        string
@@ -28,7 +28,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	)
 
 	if Options.EnableClientStats { // TODO enable pub or sub client stats
-		this.clientStates.RegisterPubClient(r)
+		this.gw.clientStates.RegisterPubClient(r)
 	}
 
 	if Options.Ratelimit && !this.throttlePub.Pour(getHttpRemoteIp(r), 1) {
