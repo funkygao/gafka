@@ -17,7 +17,7 @@ type SubOption struct {
 	AppId      string
 	Topic, Ver string
 	Group      string
-	Limit      int
+	Batch      int
 	Reset      string // newest | oldest
 	Shadow     string
 }
@@ -37,8 +37,8 @@ func (this *Client) Sub(opt SubOption, h SubHandler) error {
 	if opt.Reset != "" {
 		q.Set("reset", opt.Reset)
 	}
-	if opt.Limit > 1 {
-		q.Set("limit", strconv.Itoa(opt.Limit))
+	if opt.Batch > 1 {
+		q.Set("batch", strconv.Itoa(opt.Batch))
 	}
 	u.RawQuery = q.Encode()
 	req, err := http.NewRequest("GET", u.String(), nil)
@@ -103,8 +103,8 @@ func (this *Client) SubX(opt SubOption, h SubXHandler) error {
 	if opt.Reset != "" {
 		q.Set("reset", opt.Reset)
 	}
-	if opt.Limit > 1 {
-		q.Set("limit", strconv.Itoa(opt.Limit))
+	if opt.Batch > 1 {
+		q.Set("batch", strconv.Itoa(opt.Batch))
 	}
 	u.RawQuery = q.Encode()
 
