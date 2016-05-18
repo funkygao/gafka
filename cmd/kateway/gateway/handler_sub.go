@@ -245,10 +245,11 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 		case msg := <-fetcher.Messages():
 			partition := strconv.FormatInt(int64(msg.Partition), 10)
 
-			// FIXME if limit>1, the P/O will be only the 1st message, which is wrong
-			w.Header().Set(HttpHeaderMsgKey, string(msg.Key))
-			w.Header().Set(HttpHeaderPartition, partition)
-			w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
+			if limit == 1 {
+				w.Header().Set(HttpHeaderMsgKey, string(msg.Key))
+				w.Header().Set(HttpHeaderPartition, partition)
+				w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
+			}
 
 			var (
 				tags    []MsgTag
@@ -258,7 +259,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 			if IsTaggedMessage(msg.Value) {
 				// TagMarkStart + tag + TagMarkEnd + body
 				tags, bodyIdx, err = ExtractMessageTag(msg.Value)
-				if err == nil {
+				if limit == 1 && err == nil {
 					// needn't check 'index out of range' here
 					w.Header().Set(HttpHeaderMsgTag, hack.String(msg.Value[1:bodyIdx-1]))
 				} else {
@@ -270,9 +271,8 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 				// TODO compare with tagFilters
 			}
 
-			// TODO when remote close silently, the write still ok
-			// which will lead to msg lost for sub
 			if _, err = w.Write(msg.Value[bodyIdx:]); err != nil {
+				// when remote close silently, the write still ok
 				return err
 			}
 
