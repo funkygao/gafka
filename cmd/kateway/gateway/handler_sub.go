@@ -53,6 +53,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		this.writeBadRequest(w, "illegal limit")
 		return
 	}
+	if limit > Options.MaxSubBatchSize && Options.MaxSubBatchSize > 0 {
+		limit = Options.MaxSubBatchSize
+	}
 
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
