@@ -89,7 +89,7 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	default:
 		log.Warn("invalid option:%s=%s", option, value)
 
-		this.writeBadRequest(w, "invalid option")
+		writeBadRequest(w, "invalid option")
 		return
 	}
 
@@ -134,7 +134,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
 
-		this.writeAuthFailure(w, manager.ErrAuthenticationFail)
+		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
@@ -143,7 +143,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s} undefined cluster",
 			r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
 
-		this.writeBadRequest(w, "undefined cluster")
+		writeBadRequest(w, "undefined cluster")
 		return
 	}
 
@@ -151,7 +151,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("cluster[%s] %v", zkcluster.Name(), err)
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 	defer kfk.Close()
@@ -161,7 +161,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
 			zkcluster.Name(), r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, err)
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 
@@ -175,12 +175,12 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if !manager.Default.ValidateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)
 
-		this.writeBadRequest(w, "illegal topic")
+		writeBadRequest(w, "illegal topic")
 		return
 	}
 
 	if !this.throttleAddTopic.Pour(getHttpRemoteIp(r), 1) {
-		this.writeQuotaExceeded(w)
+		writeQuotaExceeded(w)
 		return
 	}
 
@@ -193,7 +193,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("suspicous add topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
-		this.writeAuthFailure(w, manager.ErrAuthenticationFail)
+		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
@@ -202,7 +202,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("add topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
-		this.writeBadRequest(w, "undefined cluster")
+		writeBadRequest(w, "undefined cluster")
 		return
 	}
 
@@ -210,7 +210,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if !info.Public {
 		log.Warn("app[%s] adding topic:%s in non-public cluster: %+v", hisAppid, topic, params)
 
-		this.writeBadRequest(w, "invalid cluster")
+		writeBadRequest(w, "invalid cluster")
 		return
 	}
 
@@ -231,7 +231,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if err := ts.Validate(); err != nil {
 		log.Error("app[%s] update topic:%s %s: %+v", hisAppid, topic, query.Encode(), err)
 
-		this.writeBadRequest(w, err.Error())
+		writeBadRequest(w, err.Error())
 		return
 	}
 
@@ -243,7 +243,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 
@@ -267,7 +267,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		if err != nil {
 			log.Error("app[%s] %s alter topic: %s", appid, r.RemoteAddr, err.Error())
 
-			this.writeServerError(w, err.Error())
+			writeServerError(w, err.Error())
 			return
 		}
 
@@ -277,7 +277,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 
 		w.Write(ResponseOk)
 	} else {
-		this.writeServerError(w, strings.Join(lines, ";"))
+		writeServerError(w, strings.Join(lines, ";"))
 	}
 }
 
@@ -288,12 +288,12 @@ func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
 	if !manager.Default.ValidateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)
 
-		this.writeBadRequest(w, "illegal topic")
+		writeBadRequest(w, "illegal topic")
 		return
 	}
 
 	if !this.throttleAddTopic.Pour(getHttpRemoteIp(r), 1) {
-		this.writeQuotaExceeded(w)
+		writeQuotaExceeded(w)
 		return
 	}
 
@@ -306,7 +306,7 @@ func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("suspicous update topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
-		this.writeAuthFailure(w, manager.ErrAuthenticationFail)
+		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
@@ -315,7 +315,7 @@ func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("update topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
-		this.writeBadRequest(w, "undefined cluster")
+		writeBadRequest(w, "undefined cluster")
 		return
 	}
 
@@ -323,7 +323,7 @@ func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
 	if !info.Public {
 		log.Warn("app[%s] update topic:%s in non-public cluster: %+v", hisAppid, topic, params)
 
-		this.writeBadRequest(w, "invalid cluster")
+		writeBadRequest(w, "invalid cluster")
 		return
 	}
 
@@ -341,7 +341,7 @@ func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
 	if err := ts.Validate(); err != nil {
 		log.Error("app[%s] update topic:%s %s: %+v", hisAppid, topic, query.Encode(), err)
 
-		this.writeBadRequest(w, err.Error())
+		writeBadRequest(w, err.Error())
 		return
 	}
 
@@ -363,7 +363,7 @@ func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} %v",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode(), err)
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 

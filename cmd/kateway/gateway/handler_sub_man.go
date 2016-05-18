@@ -35,7 +35,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	query := r.URL.Query()
 	group = query.Get("group")
 	if !manager.Default.ValidateGroupName(r.Header, group) {
-		this.writeBadRequest(w, "illegal group")
+		writeBadRequest(w, "illegal group")
 		return
 	}
 
@@ -44,7 +44,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("raw[%s] %s {topic:%s, ver:%s, hisapp:%s}: %s",
 			myAppid, r.RemoteAddr, topic, ver, hisAppid, err)
 
-		this.writeAuthFailure(w, err)
+		writeAuthFailure(w, err)
 		return
 	}
 
@@ -52,7 +52,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 	if !found {
 		log.Error("cluster not found for raw subd app: %s", hisAppid)
 
-		this.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -85,7 +85,7 @@ func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		this.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -93,7 +93,7 @@ func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 	lastN, _ = strconv.Atoi(q.Get("n"))
 	if lastN == 0 {
 		// if n is not a number, lastN will be 0
-		this.writeBadRequest(w, "invalid n param")
+		writeBadRequest(w, "invalid n param")
 		return
 	}
 	waitParam := q.Get("wait")
@@ -120,7 +120,7 @@ func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
 
 	kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
 	if err != nil {
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 
@@ -189,7 +189,7 @@ LOOP:
 			log.Error("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d} %+v",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, err)
 
-			this.writeServerError(w, err.Error())
+			writeServerError(w, err.Error())
 			return
 
 		case msg := <-msgChan:
@@ -222,7 +222,7 @@ func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Reques
 	)
 
 	if !this.throttleSubStatus.Pour(getHttpRemoteIp(r), 1) {
-		this.writeQuotaExceeded(w)
+		writeQuotaExceeded(w)
 		return
 	}
 
@@ -239,14 +239,14 @@ func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Reques
 		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset, err)
 
-		this.writeBadRequest(w, err.Error())
+		writeBadRequest(w, err.Error())
 		return
 	}
 	if offsetN < 0 {
 		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} negative offset",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset)
 
-		this.writeBadRequest(w, "offset must be positive")
+		writeBadRequest(w, "offset must be positive")
 		return
 	}
 
@@ -255,7 +255,7 @@ func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Reques
 		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset, err)
 
-		this.writeAuthFailure(w, err)
+		writeAuthFailure(w, err)
 		return
 	}
 
@@ -264,7 +264,7 @@ func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Reques
 		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset)
 
-		this.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -279,7 +279,7 @@ func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Reques
 		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, group, offset, err)
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 
@@ -310,7 +310,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
-		this.writeAuthFailure(w, err)
+		writeAuthFailure(w, err)
 		return
 	}
 
@@ -318,7 +318,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		this.writeBadRequest(w, "illegal group")
+		writeBadRequest(w, "illegal group")
 		return
 	}
 
@@ -327,7 +327,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		this.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -342,7 +342,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 
@@ -371,7 +371,7 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 		log.Warn("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} illegal group name",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		this.writeBadRequest(w, "illegal group")
+		writeBadRequest(w, "illegal group")
 		return
 	}
 
@@ -380,7 +380,7 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 		log.Error("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
-		this.writeAuthFailure(w, err)
+		writeAuthFailure(w, err)
 		return
 	}
 
@@ -392,7 +392,7 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 		log.Error("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		this.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -409,7 +409,7 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, t, err.Error())
 
-			this.writeServerError(w, err.Error())
+			writeServerError(w, err.Error())
 			return
 		}
 
@@ -426,7 +426,7 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, t, strings.Join(lines, ";"))
 
-			this.writeServerError(w, strings.Join(lines, ";"))
+			writeServerError(w, strings.Join(lines, ";"))
 			return
 		}
 	}
@@ -449,7 +449,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	)
 
 	if !this.throttleSubStatus.Pour(getHttpRemoteIp(r), 1) {
-		this.writeQuotaExceeded(w)
+		writeQuotaExceeded(w)
 		return
 	}
 
@@ -465,7 +465,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("sub status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
-		this.writeAuthFailure(w, err)
+		writeAuthFailure(w, err)
 		return
 	}
 
@@ -474,7 +474,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("sub status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
-		this.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -483,7 +483,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 
 	out, err := topicSubStatus(cluster, myAppid, hisAppid, topic, ver, group, true)
 	if err != nil {
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 
@@ -502,7 +502,7 @@ func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	)
 
 	if !this.throttleSubStatus.Pour(getHttpRemoteIp(r), 1) {
-		this.writeQuotaExceeded(w)
+		writeQuotaExceeded(w)
 		return
 	}
 
@@ -514,7 +514,7 @@ func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("subd status[%s] %s(%s): {topic:%s, ver:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 
-		this.writeAuthFailure(w, err)
+		writeAuthFailure(w, err)
 		return
 	}
 
@@ -523,7 +523,7 @@ func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("subd status[%s] %s(%s): {topic:%s, ver:%s} cluster not found",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
 
-		this.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -532,7 +532,7 @@ func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 
 	out, err := topicSubStatus(cluster, myAppid, myAppid, topic, ver, "", false)
 	if err != nil {
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 

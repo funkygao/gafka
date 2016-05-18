@@ -259,5 +259,5 @@ func (this *webServer) notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	log.Error("%s: not found %s", this.name, r.RequestURI)
 
 	w.Header().Set("Connection", "close")
-	this.gw.writeErrorResponse(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	writeErrorResponse(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 }

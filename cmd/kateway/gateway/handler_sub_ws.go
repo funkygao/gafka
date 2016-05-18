@@ -41,7 +41,7 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	resetOffset = query.Get("reset")
 	limit, err := getHttpQueryInt(&query, "limit", 1)
 	if err != nil {
-		this.writeWsError(ws, err.Error())
+		writeWsError(ws, err.Error())
 		return
 	}
 	if !manager.Default.ValidateGroupName(r.Header, group) {
@@ -59,7 +59,7 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("consumer[%s] %s {hisapp:%s, topic:%s, ver:%s, group:%s, limit:%d}: %s",
 			myAppid, r.RemoteAddr, hisAppid, topic, ver, group, limit, err)
 
-		this.writeWsError(ws, "auth fail")
+		writeWsError(ws, "auth fail")
 		return
 	}
 
@@ -70,7 +70,7 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	if !found {
 		log.Error("cluster not found for subd app: %s", hisAppid)
 
-		this.writeWsError(ws, "invalid subd appid")
+		writeWsError(ws, "invalid subd appid")
 		return
 	}
 
@@ -79,7 +79,7 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 
-		this.writeWsError(ws, err.Error())
+		writeWsError(ws, err.Error())
 		return
 	}
 
