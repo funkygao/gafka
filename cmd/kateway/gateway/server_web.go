@@ -30,6 +30,9 @@ type webServer struct {
 	onConnNewFunc   onConnNewFunc
 	onConnCloseFunc onConnCloseFunc
 
+	onStop   func()
+	onceStop sync.Once
+
 	activeConnN int32
 }
 
@@ -252,6 +255,13 @@ func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit
 	}
 	log.Trace("%s on %s all connections finished", this.name, server.Addr)
 
+	if this.onStop != nil {
+		// if both http and https, without sync once, onStop will be called twice
+		this.onceStop.Do(func() {
+			this.onStop()
+		})
+	}
+
 	this.gw.wg.Done()
 }
 
@@ -259,5 +269,5 @@ func (this *webServer) notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	log.Error("%s: not found %s", this.name, r.RequestURI)
 
 	w.Header().Set("Connection", "close")
-	this.gw.writeErrorResponse(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	writeErrorResponse(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 }

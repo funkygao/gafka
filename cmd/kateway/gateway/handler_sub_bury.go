@@ -14,8 +14,7 @@ import (
 )
 
 // PUT /v1/bury/:appid/:topic/:ver?group=xx&q=yy
-func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		topic      string
 		ver        string
@@ -32,14 +31,10 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 		err        error
 	)
 
-	if Options.EnableClientStats {
-		this.clientStates.RegisterSubClient(r)
-	}
-
 	query := r.URL.Query()
 	group = query.Get("group")
 	if !manager.Default.ValidateGroupName(r.Header, group) {
-		this.writeBadRequest(w, "illegal group")
+		writeBadRequest(w, "illegal group")
 		return
 	}
 
@@ -54,7 +49,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), bury)
 
-		this.writeBadRequest(w, "illegal bury")
+		writeBadRequest(w, "illegal bury")
 		return
 	}
 
@@ -65,7 +60,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
-		this.writeAuthFailure(w, err)
+		writeAuthFailure(w, err)
 		return
 	}
 
@@ -76,7 +71,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"))
 
-		this.writeBadRequest(w, "empty offset or partition")
+		writeBadRequest(w, "empty offset or partition")
 		return
 	}
 
@@ -86,7 +81,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), offset)
 
-		this.writeBadRequest(w, "bad offset")
+		writeBadRequest(w, "bad offset")
 		return
 	}
 	partitionN, err = strconv.Atoi(partition)
@@ -95,7 +90,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), partition)
 
-		this.writeBadRequest(w, "bad partition")
+		writeBadRequest(w, "bad partition")
 		return
 	}
 
@@ -112,7 +107,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
-		this.writeBadRequest(w, err.Error())
+		writeBadRequest(w, err.Error())
 		return
 	}
 
@@ -122,7 +117,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), hisAppid)
 
-		this.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -133,7 +128,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, shadow, r.Header.Get("User-Agent"))
 
-			this.writeBadRequest(w, "invalid shadow name")
+			writeBadRequest(w, "invalid shadow name")
 			return
 		}
 
@@ -142,7 +137,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, shadow, r.Header.Get("User-Agent"))
 
-			this.writeBadRequest(w, "register shadow first")
+			writeBadRequest(w, "register shadow first")
 			return
 		}
 
@@ -158,7 +153,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
-		this.writeBadRequest(w, err.Error())
+		writeBadRequest(w, err.Error())
 		return
 	}
 
@@ -169,7 +164,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 
@@ -182,7 +177,7 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 

@@ -21,8 +21,7 @@ type ackOffset struct {
 type ackOffsets []ackOffset
 
 // PUT /v1/offsets/:appid/:topic/:ver/:group with json body
-func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		topic    string
 		ver      string
@@ -40,24 +39,24 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request,
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
-		this.gw.writeAuthFailure(w, err)
+		writeAuthFailure(w, err)
 		return
 	}
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		this.gw.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
 	msgLen := int(r.ContentLength)
 	switch {
 	case int64(msgLen) > Options.MaxPubSize:
-		this.gw.writeBadRequest(w, ErrTooBigMessage.Error())
+		writeBadRequest(w, ErrTooBigMessage.Error())
 		return
 
 	case msgLen < Options.MinPubSize:
-		this.gw.writeBadRequest(w, ErrTooSmallMessage.Error())
+		writeBadRequest(w, ErrTooSmallMessage.Error())
 		return
 	}
 
@@ -68,7 +67,7 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request,
 	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
 		msg.Free()
 
-		this.gw.writeBadRequest(w, ErrTooBigMessage.Error())
+		writeBadRequest(w, ErrTooBigMessage.Error())
 		return
 	}
 
@@ -76,7 +75,7 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request,
 	if err = json.Unmarshal(msg.Body, &acks); err != nil {
 		msg.Free()
 
-		this.gw.writeBadRequest(w, "invalid json body")
+		writeBadRequest(w, "invalid json body")
 		return
 	}
 
@@ -89,7 +88,7 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request,
 		if err != nil {
 			msg.Free()
 
-			this.gw.writeServerError(w, err.Error())
+			writeServerError(w, err.Error())
 			return
 		}
 	}

@@ -16,6 +16,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/signal"
+	glog "github.com/funkygao/log4go"
 )
 
 func init() {
@@ -99,6 +100,7 @@ func main() {
 	}
 
 	gw.ServeForever()
+	glog.Info("kateway bye!")
 
 	if gateway.Options.PidFile != "" {
 		syscall.Unlink(gateway.Options.PidFile)

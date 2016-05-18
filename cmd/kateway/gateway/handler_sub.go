@@ -15,8 +15,7 @@ import (
 )
 
 // GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&wait=5s&reset=<newest|oldest>&ack=1&q=<dead|retry>
-func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		topic      string
 		ver        string
@@ -38,20 +37,20 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	)
 
 	if Options.EnableClientStats {
-		this.clientStates.RegisterSubClient(r)
+		this.gw.clientStates.RegisterSubClient(r)
 	}
 
 	query := r.URL.Query()
 	group = query.Get("group")
 	reset = query.Get("reset")
 	if !manager.Default.ValidateGroupName(r.Header, group) {
-		this.writeBadRequest(w, "illegal group")
+		writeBadRequest(w, "illegal group")
 		return
 	}
 
 	limit, err = getHttpQueryInt(&query, "batch", 1)
 	if err != nil {
-		this.writeBadRequest(w, "illegal limit")
+		writeBadRequest(w, "illegal limit")
 		return
 	}
 	if limit > Options.MaxSubBatchSize && Options.MaxSubBatchSize > 0 {
@@ -75,7 +74,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
-		this.writeAuthFailure(w, err)
+		writeAuthFailure(w, err)
 		return
 	}
 
@@ -99,7 +98,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 					group, r.Header.Get("User-Agent"), offset)
 
-				this.writeBadRequest(w, "ack with bad offset")
+				writeBadRequest(w, "ack with bad offset")
 				return
 			}
 			partitionN, err = strconv.Atoi(partition)
@@ -108,7 +107,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 					group, r.Header.Get("User-Agent"), partition)
 
-				this.writeBadRequest(w, "ack with bad partition")
+				writeBadRequest(w, "ack with bad partition")
 				return
 			}
 		} else if len(partition+offset) != 0 {
@@ -116,7 +115,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, partition, offset, r.Header.Get("User-Agent"))
 
-			this.writeBadRequest(w, "partial ack not allowed")
+			writeBadRequest(w, "partial ack not allowed")
 			return
 		}
 	}
@@ -134,7 +133,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, shadow, r.Header.Get("User-Agent"))
 
-			this.writeBadRequest(w, "invalid shadow name")
+			writeBadRequest(w, "invalid shadow name")
 			return
 		}
 
@@ -143,7 +142,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, shadow, r.Header.Get("User-Agent"))
 
-			this.writeBadRequest(w, "register shadow first")
+			writeBadRequest(w, "register shadow first")
 			return
 		}
 
@@ -158,7 +157,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"))
 
-		this.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -169,7 +168,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
-		this.writeBadRequest(w, err.Error())
+		writeBadRequest(w, err.Error())
 		return
 	}
 
@@ -186,7 +185,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 				group, partition, offset, r.Header.Get("User-Agent"), err)
 
-			this.writeBadRequest(w, err.Error())
+			writeBadRequest(w, err.Error())
 			return
 		} else {
 			log.Debug("sub land %s(%s): {G:%s, T:%s, P:%s, O:%s}",
@@ -207,7 +206,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"), err)
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 
 		if err = fetcher.Close(); err != nil {
 			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
@@ -216,7 +215,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
+func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 	fetcher store.Fetcher, limit int, wait time.Duration, myAppid, hisAppid, topic, ver,
 	group string, delayedAck bool, tagFilters []MsgTag) error {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
@@ -230,7 +229,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 			// FIXME access log will not be able to record this behavior
 			return ErrClientGone
 
-		case <-this.shutdownCh:
+		case <-this.gw.shutdownCh:
 			if !chunkedEver {
 				w.WriteHeader(http.StatusNoContent)
 				w.Write([]byte{})
@@ -243,7 +242,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 			// e,g. conn with broker is broken
 			return err
 
-		case <-this.timer.After(wait):
+		case <-this.gw.timer.After(wait):
 			if chunkedEver {
 				// response already sent in chunk
 				log.Debug("chunked sub idle timeout {G:%s, T:%s, A:%s->%s}", group, topic, myAppid, hisAppid)

@@ -13,18 +13,17 @@ import (
 )
 
 // POST /v1/jobs/:topic/:ver?delay=100s
-func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	t1 := time.Now()
 
 	if Options.EnableClientStats { // TODO enable pub or sub client stats
-		this.clientStates.RegisterPubClient(r)
+		this.gw.clientStates.RegisterPubClient(r)
 	}
 
 	if Options.Ratelimit && !this.throttlePub.Pour(getHttpRemoteIp(r), 1) {
 		log.Warn("%s(%s) rate limit reached", r.RemoteAddr, getHttpRemoteIp(r))
 
-		this.writeQuotaExceeded(w)
+		writeQuotaExceeded(w)
 		return
 	}
 
@@ -35,7 +34,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 
-		this.writeAuthFailure(w, err)
+		writeAuthFailure(w, err)
 		return
 	}
 
@@ -46,19 +45,19 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} invalid content length: %d",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
 
-		this.writeBadRequest(w, "invalid content length")
+		writeBadRequest(w, "invalid content length")
 		return
 
 	case int64(msgLen) > Options.MaxPubSize:
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} too big content length: %d",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
-		this.writeBadRequest(w, ErrTooBigMessage.Error())
+		writeBadRequest(w, ErrTooBigMessage.Error())
 		return
 
 	case msgLen < Options.MinPubSize:
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} too small content length: %d",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
-		this.writeBadRequest(w, ErrTooSmallMessage.Error())
+		writeBadRequest(w, ErrTooSmallMessage.Error())
 		return
 	}
 
@@ -70,7 +69,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 
 		log.Error("+job[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
-		this.writeBadRequest(w, ErrTooBigMessage.Error())
+		writeBadRequest(w, ErrTooBigMessage.Error())
 		return
 	}
 
@@ -86,7 +85,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 
 	delay, err := time.ParseDuration(r.URL.Query().Get("delay"))
 	if err != nil {
-		this.writeBadRequest(w, "invalid delay format")
+		writeBadRequest(w, "invalid delay format")
 		return
 	}
 
@@ -95,7 +94,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
 
-		this.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -110,7 +109,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 
 		log.Error("+job[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 
@@ -131,8 +130,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // DELETE /v1/jobs/:topic/:ver?id=D-1d13f5e8-9NVhoRqjowkLy6iTE/QnZw/l-05a1
-func (this *Gateway) deleteJobHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	appid := r.Header.Get(HttpHeaderAppid)
 	topic := params.ByName(UrlParamTopic)
 	ver := params.ByName(UrlParamVersion)
@@ -140,7 +138,7 @@ func (this *Gateway) deleteJobHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 
-		this.writeAuthFailure(w, err)
+		writeAuthFailure(w, err)
 		return
 	}
 
@@ -149,13 +147,13 @@ func (this *Gateway) deleteJobHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
 
-		this.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
 	jobId := r.URL.Query().Get("id")
 	if len(jobId) < 30 { // jobId e,g. D-1d13f5e8-W6ZuLg2WVrIo6KblpXlycpze-05a1
-		this.writeBadRequest(w, "invalid job id")
+		writeBadRequest(w, "invalid job id")
 		return
 	}
 
@@ -163,7 +161,7 @@ func (this *Gateway) deleteJobHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %v",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 

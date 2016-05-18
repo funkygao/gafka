@@ -16,8 +16,7 @@ import (
 )
 
 // POST /v1/msgs/:topic/:ver?key=mykey&async=1&ack=all
-func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		appid        string
 		topic        string
@@ -28,7 +27,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	)
 
 	if Options.EnableClientStats { // TODO enable pub or sub client stats
-		this.clientStates.RegisterPubClient(r)
+		this.gw.clientStates.RegisterPubClient(r)
 	}
 
 	if Options.Ratelimit && !this.throttlePub.Pour(getHttpRemoteIp(r), 1) {
@@ -36,7 +35,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			Options.PubQpsLimit)
 
 		this.pubMetrics.ClientError.Inc(1)
-		this.writeQuotaExceeded(w)
+		writeQuotaExceeded(w)
 		return
 	}
 
@@ -48,7 +47,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, r.Header.Get("User-Agent"), err)
 
 		this.pubMetrics.ClientError.Inc(1)
-		this.writeAuthFailure(w, err)
+		writeAuthFailure(w, err)
 		return
 	}
 
@@ -59,7 +58,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, r.Header.Get("User-Agent"), msgLen)
 
 		this.pubMetrics.ClientError.Inc(1)
-		this.writeBadRequest(w, ErrTooBigMessage.Error())
+		writeBadRequest(w, ErrTooBigMessage.Error())
 		return
 
 	case msgLen < Options.MinPubSize:
@@ -67,7 +66,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, r.Header.Get("User-Agent"), msgLen)
 
 		this.pubMetrics.ClientError.Inc(1)
-		this.writeBadRequest(w, ErrTooSmallMessage.Error())
+		writeBadRequest(w, ErrTooSmallMessage.Error())
 		return
 	}
 
@@ -75,7 +74,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 	tag = r.Header.Get(HttpHeaderMsgTag)
 	if tag != "" {
 		if len(tag) > Options.MaxMsgTagLen {
-			this.writeBadRequest(w, "too big tag")
+			writeBadRequest(w, "too big tag")
 			return
 		}
 
@@ -96,7 +95,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			topic, ver, r.Header.Get("User-Agent"), err)
 
 		this.pubMetrics.ClientError.Inc(1)
-		this.writeBadRequest(w, ErrTooBigMessage.Error())
+		writeBadRequest(w, ErrTooBigMessage.Error())
 		return
 	}
 
@@ -123,7 +122,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			r.Header.Get("User-Agent"), partitionKey)
 
 		this.pubMetrics.ClientError.Inc(1)
-		this.writeBadRequest(w, "too big key")
+		writeBadRequest(w, "too big key")
 		return
 	}
 
@@ -141,7 +140,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, r.Header.Get("User-Agent"), ver)
 
 		this.pubMetrics.ClientError.Inc(1)
-		this.writeBadRequest(w, "invalid appid")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
@@ -157,7 +156,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			this.pubMetrics.PubFail(appid, topic, ver)
 		}
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 

@@ -16,34 +16,29 @@ import (
 )
 
 // GET /v1/status
-func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	output := make(map[string]interface{})
 	output["options"] = Options
 	output["loglevel"] = logLevel.String()
-	output["pubserver.type"] = this.pubServer.name
 	output["manager"] = manager.Default.Dump()
 	b, _ := json.MarshalIndent(output, "", "    ")
 	w.Write(b)
 }
 
 // GET /v1/clients
-func (this *Gateway) clientsHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	b, _ := json.Marshal(this.clientStates.Export())
+func (this *manServer) clientsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	b, _ := json.Marshal(this.gw.clientStates.Export())
 	w.Write(b)
 }
 
 // GET /v1/clusters
-func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) clustersHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	b, _ := json.Marshal(meta.Default.Clusters())
 	w.Write(b)
 }
 
 // PUT /v1/options/:option/:value
-func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	option := params.ByName("option")
 	value := params.ByName("value")
 	boolVal := value == "true"
@@ -54,7 +49,7 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 
 	case "clients":
 		Options.EnableClientStats = boolVal
-		this.clientStates.Reset()
+		this.gw.clientStates.Reset()
 
 	case "nometrics":
 		Options.DisableMetrics = boolVal
@@ -79,9 +74,9 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 		if Options.EnableAccessLog != boolVal {
 			// on/off switching
 			if boolVal {
-				this.accessLogger.Start()
+				this.gw.accessLogger.Start()
 			} else {
-				this.accessLogger.Stop()
+				this.gw.accessLogger.Stop()
 			}
 		}
 		Options.EnableAccessLog = boolVal
@@ -89,7 +84,7 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 	default:
 		log.Warn("invalid option:%s=%s", option, value)
 
-		this.writeBadRequest(w, "invalid option")
+		writeBadRequest(w, "invalid option")
 		return
 	}
 
@@ -99,8 +94,7 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // PUT /v1/log/:level
-func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) setlogHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	logLevel = toLogLevel(params.ByName("level"))
 	for name, filter := range log.Global {
 		log.Info("log[%s] level: %s -> %s", name, filter.Level, logLevel)
@@ -112,8 +106,7 @@ func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // DELETE /v1/counter/:name
-func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) resetCounterHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	counterName := params.ByName("name")
 
 	_ = counterName // TODO
@@ -122,8 +115,7 @@ func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // GET /v1/partitions/:cluster/:appid/:topic/:ver
-func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	cluster := params.ByName(UrlParamCluster)
 	hisAppid := params.ByName(UrlParamAppid)
@@ -134,7 +126,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
 
-		this.writeAuthFailure(w, manager.ErrAuthenticationFail)
+		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
@@ -143,7 +135,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s} undefined cluster",
 			r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
 
-		this.writeBadRequest(w, "undefined cluster")
+		writeBadRequest(w, "undefined cluster")
 		return
 	}
 
@@ -151,7 +143,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("cluster[%s] %v", zkcluster.Name(), err)
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 	defer kfk.Close()
@@ -161,7 +153,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
 			zkcluster.Name(), r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, err)
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 
@@ -169,18 +161,17 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // POST /v1/topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2&retention.hours=72&retention.bytes=-1
-func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	if !manager.Default.ValidateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)
 
-		this.writeBadRequest(w, "illegal topic")
+		writeBadRequest(w, "illegal topic")
 		return
 	}
 
 	if !this.throttleAddTopic.Pour(getHttpRemoteIp(r), 1) {
-		this.writeQuotaExceeded(w)
+		writeQuotaExceeded(w)
 		return
 	}
 
@@ -193,7 +184,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("suspicous add topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
-		this.writeAuthFailure(w, manager.ErrAuthenticationFail)
+		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
@@ -202,7 +193,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("add topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
-		this.writeBadRequest(w, "undefined cluster")
+		writeBadRequest(w, "undefined cluster")
 		return
 	}
 
@@ -210,7 +201,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if !info.Public {
 		log.Warn("app[%s] adding topic:%s in non-public cluster: %+v", hisAppid, topic, params)
 
-		this.writeBadRequest(w, "invalid cluster")
+		writeBadRequest(w, "invalid cluster")
 		return
 	}
 
@@ -231,7 +222,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if err := ts.Validate(); err != nil {
 		log.Error("app[%s] update topic:%s %s: %+v", hisAppid, topic, query.Encode(), err)
 
-		this.writeBadRequest(w, err.Error())
+		writeBadRequest(w, err.Error())
 		return
 	}
 
@@ -243,7 +234,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 
@@ -267,7 +258,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 		if err != nil {
 			log.Error("app[%s] %s alter topic: %s", appid, r.RemoteAddr, err.Error())
 
-			this.writeServerError(w, err.Error())
+			writeServerError(w, err.Error())
 			return
 		}
 
@@ -277,23 +268,22 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 
 		w.Write(ResponseOk)
 	} else {
-		this.writeServerError(w, strings.Join(lines, ";"))
+		writeServerError(w, strings.Join(lines, ";"))
 	}
 }
 
 // PUT /v1/topics/:cluster/:appid/:topic/:ver?partitions=1&retention.hours=72&retention.bytes=-1
-func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) updateTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	if !manager.Default.ValidateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)
 
-		this.writeBadRequest(w, "illegal topic")
+		writeBadRequest(w, "illegal topic")
 		return
 	}
 
 	if !this.throttleAddTopic.Pour(getHttpRemoteIp(r), 1) {
-		this.writeQuotaExceeded(w)
+		writeQuotaExceeded(w)
 		return
 	}
 
@@ -306,7 +296,7 @@ func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Warn("suspicous update topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
-		this.writeAuthFailure(w, manager.ErrAuthenticationFail)
+		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
@@ -315,7 +305,7 @@ func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("update topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
 			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
 
-		this.writeBadRequest(w, "undefined cluster")
+		writeBadRequest(w, "undefined cluster")
 		return
 	}
 
@@ -323,7 +313,7 @@ func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
 	if !info.Public {
 		log.Warn("app[%s] update topic:%s in non-public cluster: %+v", hisAppid, topic, params)
 
-		this.writeBadRequest(w, "invalid cluster")
+		writeBadRequest(w, "invalid cluster")
 		return
 	}
 
@@ -341,7 +331,7 @@ func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
 	if err := ts.Validate(); err != nil {
 		log.Error("app[%s] update topic:%s %s: %+v", hisAppid, topic, query.Encode(), err)
 
-		this.writeBadRequest(w, err.Error())
+		writeBadRequest(w, err.Error())
 		return
 	}
 
@@ -363,7 +353,7 @@ func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
 		log.Error("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} %v",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode(), err)
 
-		this.writeServerError(w, err.Error())
+		writeServerError(w, err.Error())
 		return
 	}
 

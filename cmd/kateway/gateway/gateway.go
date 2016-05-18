@@ -25,7 +25,6 @@ import (
 	"github.com/funkygao/gafka/registry"
 	"github.com/funkygao/gafka/registry/zk"
 	gzk "github.com/funkygao/gafka/zk"
-	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/signal"
 	"github.com/funkygao/golib/timewheel"
 	log "github.com/funkygao/log4go"
@@ -54,30 +53,22 @@ type Gateway struct {
 	connections   map[string]int // remoteAddr:counter
 	connectionsMu sync.Mutex
 
-	pubMetrics *pubMetrics
-	subMetrics *subMetrics
 	svrMetrics *serverMetrics
 
-	accessLogger      *AccessLogger
-	guard             *guard
-	timer             *timewheel.TimeWheel
-	throttlePub       *ratelimiter.LeakyBuckets
-	throttleAddTopic  *ratelimiter.LeakyBuckets
-	throttleSubStatus *ratelimiter.LeakyBuckets
+	accessLogger *AccessLogger
+	guard        *guard
+	timer        *timewheel.TimeWheel
 }
 
 func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this := &Gateway{
-		id:                id,
-		zone:              Options.Zone,
-		shutdownCh:        make(chan struct{}),
-		throttlePub:       ratelimiter.NewLeakyBuckets(Options.PubQpsLimit, time.Minute),
-		throttleAddTopic:  ratelimiter.NewLeakyBuckets(60, time.Minute),
-		throttleSubStatus: ratelimiter.NewLeakyBuckets(60, time.Minute),
-		certFile:          Options.CertFile,
-		keyFile:           Options.KeyFile,
-		clientStates:      NewClientStates(),
-		connections:       make(map[string]int, 1000),
+		id:           id,
+		zone:         Options.Zone,
+		shutdownCh:   make(chan struct{}),
+		certFile:     Options.CertFile,
+		keyFile:      Options.KeyFile,
+		clientStates: NewClientStates(),
+		connections:  make(map[string]int, 1000),
 	}
 
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
@@ -111,7 +102,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	if Options.PubHttpAddr != "" || Options.PubHttpsAddr != "" {
 		this.pubServer = newPubServer(Options.PubHttpAddr, Options.PubHttpsAddr,
 			Options.MaxClients, this)
-		this.pubMetrics = NewPubMetrics(this)
 
 		switch Options.Store {
 		case "kafka":
@@ -130,7 +120,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	if Options.SubHttpAddr != "" || Options.SubHttpsAddr != "" {
 		this.subServer = newSubServer(Options.SubHttpAddr, Options.SubHttpsAddr,
 			Options.MaxClients, this)
-		this.subMetrics = NewSubMetrics(this)
 
 		switch Options.Store {
 		case "kafka":
@@ -234,7 +223,6 @@ func (this *Gateway) Start() (err error) {
 		}
 		log.Trace("pub store[%s] started", store.DefaultPubStore.Name())
 
-		this.pubMetrics.Load()
 		this.pubServer.Start()
 	}
 	if this.subServer != nil {
@@ -243,7 +231,6 @@ func (this *Gateway) Start() (err error) {
 		}
 		log.Trace("sub store[%s] started", store.DefaultSubStore.Name())
 
-		this.subMetrics.Load()
 		this.subServer.Start()
 	}
 
@@ -282,11 +269,11 @@ func (this *Gateway) ServeForever() {
 			}
 		}
 
-		log.Info("Deregister done, waiting for components shutdown...")
+		log.Info("Deregister done, waiting for servers shutdown...")
 		this.wg.Wait()
+		log.Info("<----- all servers shutdown ----->")
 
 		this.accessLogger.Stop()
-		log.Trace("access logger closed")
 
 		if store.DefaultPubStore != nil {
 			store.DefaultPubStore.Stop()
@@ -295,24 +282,10 @@ func (this *Gateway) ServeForever() {
 			store.DefaultSubStore.Stop()
 		}
 
-		log.Info("all components shutdown complete")
-
 		this.svrMetrics.Flush()
-		log.Trace("server metrics flushed")
-		if this.pubMetrics != nil {
-			this.pubMetrics.Flush()
-			log.Trace("pub metrics flushed")
-		}
-		if this.subMetrics != nil {
-			this.subMetrics.Flush()
-			log.Trace("sub metrics flushed")
-		}
 
 		meta.Default.Stop()
-		log.Trace("meta store[%s] stopped", meta.Default.Name())
-
 		manager.Default.Stop()
-		log.Trace("manager store[%s] stopped", manager.Default.Name())
 
 		if this.zkzone != nil {
 			this.zkzone.Close()

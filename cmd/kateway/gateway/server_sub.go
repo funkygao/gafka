@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/funkygao/golib/ratelimiter"
 	log "github.com/funkygao/log4go"
 )
 
@@ -20,16 +21,21 @@ type subServer struct {
 	// websocket heartbeat configuration
 	wsReadLimit int64
 	wsPongWait  time.Duration
+
+	subMetrics        *subMetrics
+	throttleSubStatus *ratelimiter.LeakyBuckets
 }
 
 func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subServer {
 	this := &subServer{
-		webServer:    newWebServer("sub", httpAddr, httpsAddr, maxClients, gw),
-		closedConnCh: make(chan string, 1<<10),
-		idleConns:    make(map[string]net.Conn, 10000), // TODO
-		wsReadLimit:  8 << 10,
-		wsPongWait:   time.Minute,
+		webServer:         newWebServer("sub", httpAddr, httpsAddr, maxClients, gw),
+		closedConnCh:      make(chan string, 1<<10),
+		idleConns:         make(map[string]net.Conn, 10000), // TODO
+		wsReadLimit:       8 << 10,
+		wsPongWait:        time.Minute,
+		throttleSubStatus: ratelimiter.NewLeakyBuckets(60, time.Minute),
 	}
+	this.subMetrics = NewSubMetrics(this.gw)
 	this.waitExitFunc = this.waitExit
 	this.connStateFunc = this.connStateHandler
 
@@ -42,6 +48,11 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 	}
 
 	return this
+}
+
+func (this *subServer) Start() {
+	this.subMetrics.Load()
+	this.webServer.Start()
 }
 
 func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
@@ -124,6 +135,8 @@ func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit
 
 	log.Trace("%s waiting for all connected http client close", this.name)
 	this.idleConnsWg.Wait()
+
+	this.subMetrics.Flush()
 
 	this.gw.wg.Done()
 }
