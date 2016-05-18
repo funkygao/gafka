@@ -54,28 +54,25 @@ type Gateway struct {
 	connections   map[string]int // remoteAddr:counter
 	connectionsMu sync.Mutex
 
-	subMetrics *subMetrics
 	svrMetrics *serverMetrics
 
 	accessLogger *AccessLogger
 	guard        *guard
 	timer        *timewheel.TimeWheel
 
-	throttleAddTopic  *ratelimiter.LeakyBuckets
-	throttleSubStatus *ratelimiter.LeakyBuckets
+	throttleAddTopic *ratelimiter.LeakyBuckets
 }
 
 func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this := &Gateway{
-		id:                id,
-		zone:              Options.Zone,
-		shutdownCh:        make(chan struct{}),
-		throttleAddTopic:  ratelimiter.NewLeakyBuckets(60, time.Minute),
-		throttleSubStatus: ratelimiter.NewLeakyBuckets(60, time.Minute),
-		certFile:          Options.CertFile,
-		keyFile:           Options.KeyFile,
-		clientStates:      NewClientStates(),
-		connections:       make(map[string]int, 1000),
+		id:               id,
+		zone:             Options.Zone,
+		shutdownCh:       make(chan struct{}),
+		throttleAddTopic: ratelimiter.NewLeakyBuckets(60, time.Minute),
+		certFile:         Options.CertFile,
+		keyFile:          Options.KeyFile,
+		clientStates:     NewClientStates(),
+		connections:      make(map[string]int, 1000),
 	}
 
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
@@ -127,7 +124,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	if Options.SubHttpAddr != "" || Options.SubHttpsAddr != "" {
 		this.subServer = newSubServer(Options.SubHttpAddr, Options.SubHttpsAddr,
 			Options.MaxClients, this)
-		this.subMetrics = NewSubMetrics(this)
 
 		switch Options.Store {
 		case "kafka":
@@ -239,7 +235,6 @@ func (this *Gateway) Start() (err error) {
 		}
 		log.Trace("sub store[%s] started", store.DefaultSubStore.Name())
 
-		this.subMetrics.Load()
 		this.subServer.Start()
 	}
 
@@ -295,10 +290,6 @@ func (this *Gateway) ServeForever() {
 
 		this.svrMetrics.Flush()
 		log.Trace("server metrics flushed")
-		if this.subMetrics != nil {
-			this.subMetrics.Flush()
-			log.Trace("sub metrics flushed")
-		}
 
 		meta.Default.Stop()
 		log.Trace("meta store[%s] stopped", meta.Default.Name())

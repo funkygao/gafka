@@ -14,7 +14,7 @@ import (
 )
 
 // PUT /v1/bury/:appid/:topic/:ver?group=xx&q=yy
-func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
+func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic      string
@@ -31,10 +31,6 @@ func (this *Gateway) buryHandler(w http.ResponseWriter, r *http.Request,
 		offsetN    int64 = -1
 		err        error
 	)
-
-	if Options.EnableClientStats {
-		this.clientStates.RegisterSubClient(r)
-	}
 
 	query := r.URL.Query()
 	group = query.Get("group")

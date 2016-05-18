@@ -12,7 +12,7 @@ import (
 )
 
 // GET /v1/ws/msgs/:appid/:topic/:ver?group=xx
-func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
+func (this *subServer) subWsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -23,8 +23,8 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	defer func() {
 		ws.Close()
 
-		this.svrMetrics.ConcurrentSubWs.Dec(1)
-		this.subServer.idleConnsWg.Done()
+		this.gw.svrMetrics.ConcurrentSubWs.Dec(1)
+		this.idleConnsWg.Done()
 	}()
 
 	var (
@@ -100,11 +100,11 @@ func (this *Gateway) subWsHandler(w http.ResponseWriter, r *http.Request,
 	return
 }
 
-func (this *Gateway) wsReadPump(clientGone chan struct{}, ws *websocket.Conn) {
-	ws.SetReadLimit(this.subServer.wsReadLimit)
-	ws.SetReadDeadline(time.Now().Add(this.subServer.wsPongWait))
+func (this *subServer) wsReadPump(clientGone chan struct{}, ws *websocket.Conn) {
+	ws.SetReadLimit(this.wsReadLimit)
+	ws.SetReadDeadline(time.Now().Add(this.wsPongWait))
 	ws.SetPongHandler(func(string) error {
-		ws.SetReadDeadline(time.Now().Add(this.subServer.wsPongWait))
+		ws.SetReadDeadline(time.Now().Add(this.wsPongWait))
 		return nil
 	})
 
@@ -127,7 +127,7 @@ func (this *Gateway) wsReadPump(clientGone chan struct{}, ws *websocket.Conn) {
 	}
 }
 
-func (this *Gateway) wsWritePump(clientGone chan struct{}, ws *websocket.Conn, fetcher store.Fetcher) {
+func (this *subServer) wsWritePump(clientGone chan struct{}, ws *websocket.Conn, fetcher store.Fetcher) {
 	defer fetcher.Close()
 
 	var err error
@@ -150,14 +150,14 @@ func (this *Gateway) wsWritePump(clientGone chan struct{}, ws *websocket.Conn, f
 			// TODO
 			log.Error(err)
 
-		case <-this.timer.After(this.subServer.wsPongWait / 3):
+		case <-this.gw.timer.After(this.wsPongWait / 3):
 			ws.SetWriteDeadline(time.Now().Add(time.Second * 10))
 			if err = ws.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
 				log.Error("%s: %v", ws.RemoteAddr(), err)
 				return
 			}
 
-		case <-this.shutdownCh:
+		case <-this.gw.shutdownCh:
 			return
 
 		case <-clientGone:

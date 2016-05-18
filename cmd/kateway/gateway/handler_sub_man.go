@@ -17,7 +17,7 @@ import (
 
 // GET /v1/raw/msgs/:appid/:topic/:ver?group=xx
 // tells client how to sub in raw mode: how to connect directly to kafka
-func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
+func (this *subServer) subRawHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic    string
@@ -67,7 +67,7 @@ func (this *Gateway) subRawHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // GET /v1/peek/:appid/:topic/:ver?n=10&q=retry&wait=5s
-func (this *Gateway) peekHandler(w http.ResponseWriter, r *http.Request,
+func (this *subServer) peekHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		myAppid  string
@@ -207,7 +207,7 @@ LOOP:
 }
 
 // PUT /v1/offset/:appid/:topic/:ver/:group/:partition?offset=xx
-func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Request,
+func (this *subServer) resetSubOffsetHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic     string
@@ -288,7 +288,7 @@ func (this *Gateway) resetSubOffsetHandler(w http.ResponseWriter, r *http.Reques
 
 // DELETE /v1/groups/:appid/:topic/:ver/:group
 // TODO delete shadow consumers too
-func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
+func (this *subServer) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic    string
@@ -350,7 +350,7 @@ func (this *Gateway) delSubGroupHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // POST /v1/shadow/:appid/:topic/:ver/:group
-func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Request,
+func (this *subServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic    string
@@ -437,7 +437,7 @@ func (this *Gateway) addTopicShadowHandler(w http.ResponseWriter, r *http.Reques
 
 // GET /v1/status/:appid/:topic/:ver?group=xx
 // TODO show shadow consumers too
-func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
+func (this *subServer) subStatusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic    string
@@ -492,7 +492,7 @@ func (this *Gateway) subStatusHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // GET /v1/subd/:topic/:ver
-func (this *Gateway) subdStatusHandler(w http.ResponseWriter, r *http.Request,
+func (this *subServer) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic   string

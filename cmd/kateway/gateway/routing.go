@@ -47,22 +47,22 @@ func (this *Gateway) buildRouting() {
 		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
 		this.subServer.Router().NotFound = http.HandlerFunc(this.subServer.notFoundHandler)
 
-		this.subServer.Router().GET("/v1/msgs/:appid/:topic/:ver", m(this.subHandler))
-		this.subServer.Router().GET("/v1/ws/msgs/:appid/:topic/:ver", m(this.subWsHandler))
-		this.subServer.Router().PUT("/v1/bury/:appid/:topic/:ver", m(this.buryHandler))
+		this.subServer.Router().GET("/v1/msgs/:appid/:topic/:ver", m(this.subServer.subHandler))
+		this.subServer.Router().GET("/v1/ws/msgs/:appid/:topic/:ver", m(this.subServer.subWsHandler))
+		this.subServer.Router().PUT("/v1/bury/:appid/:topic/:ver", m(this.subServer.buryHandler))
 		this.subServer.Router().PUT("/v1/offsets/:appid/:topic/:ver/:group", m(this.subServer.ackHandler))
 
 		// api for pubsub manager
-		this.subServer.Router().GET("/v1/raw/msgs/:appid/:topic/:ver", m(this.subRawHandler))
-		this.subServer.Router().GET("/v1/peek/:appid/:topic/:ver", m(this.peekHandler))
-		this.subServer.Router().POST("/v1/shadow/:appid/:topic/:ver/:group", m(this.addTopicShadowHandler))
-		this.subServer.Router().GET("/v1/subd/:topic/:ver", m(this.subdStatusHandler))
-		this.subServer.Router().GET("/v1/status/:appid/:topic/:ver", m(this.subStatusHandler))
-		this.subServer.Router().DELETE("/v1/groups/:appid/:topic/:ver/:group", m(this.delSubGroupHandler))
-		this.subServer.Router().PUT("/v1/offset/:appid/:topic/:ver/:group/:partition", m(this.resetSubOffsetHandler))
+		this.subServer.Router().GET("/v1/raw/msgs/:appid/:topic/:ver", m(this.subServer.subRawHandler))
+		this.subServer.Router().GET("/v1/peek/:appid/:topic/:ver", m(this.subServer.peekHandler))
+		this.subServer.Router().POST("/v1/shadow/:appid/:topic/:ver/:group", m(this.subServer.addTopicShadowHandler))
+		this.subServer.Router().GET("/v1/subd/:topic/:ver", m(this.subServer.subdStatusHandler))
+		this.subServer.Router().GET("/v1/status/:appid/:topic/:ver", m(this.subServer.subStatusHandler))
+		this.subServer.Router().DELETE("/v1/groups/:appid/:topic/:ver/:group", m(this.subServer.delSubGroupHandler))
+		this.subServer.Router().PUT("/v1/offset/:appid/:topic/:ver/:group/:partition", m(this.subServer.resetSubOffsetHandler))
 
 		// TODO deprecated
-		this.subServer.Router().GET("/topics/:appid/:topic/:ver", m(this.subHandler))
+		this.subServer.Router().GET("/topics/:appid/:topic/:ver", m(this.subServer.subHandler))
 	}
 
 }

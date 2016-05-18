@@ -15,7 +15,7 @@ import (
 )
 
 // GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&wait=5s&reset=<newest|oldest>&ack=1&q=<dead|retry>
-func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
+func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
 		topic      string
@@ -38,7 +38,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	)
 
 	if Options.EnableClientStats {
-		this.clientStates.RegisterSubClient(r)
+		this.gw.clientStates.RegisterSubClient(r)
 	}
 
 	query := r.URL.Query()
@@ -216,7 +216,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
+func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 	fetcher store.Fetcher, limit int, wait time.Duration, myAppid, hisAppid, topic, ver,
 	group string, delayedAck bool, tagFilters []MsgTag) error {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
@@ -230,7 +230,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 			// FIXME access log will not be able to record this behavior
 			return ErrClientGone
 
-		case <-this.shutdownCh:
+		case <-this.gw.shutdownCh:
 			if !chunkedEver {
 				w.WriteHeader(http.StatusNoContent)
 				w.Write([]byte{})
@@ -243,7 +243,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 			// e,g. conn with broker is broken
 			return err
 
-		case <-this.timer.After(wait):
+		case <-this.gw.timer.After(wait):
 			if chunkedEver {
 				// response already sent in chunk
 				log.Debug("chunked sub idle timeout {G:%s, T:%s, A:%s->%s}", group, topic, myAppid, hisAppid)
