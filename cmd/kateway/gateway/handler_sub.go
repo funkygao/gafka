@@ -14,7 +14,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// GET /v1/msgs/:appid/:topic/:ver?group=xx&limit=10&reset=<newest|oldest>&ack=1&q=<dead|retry>
+// GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&reset=<newest|oldest>&ack=1&q=<dead|retry>
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -48,7 +48,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	limit, err = getHttpQueryInt(&query, "limit", 1)
+	limit, err = getHttpQueryInt(&query, "batch", 1)
 	if err != nil {
 		this.writeBadRequest(w, "illegal limit")
 		return
