@@ -298,6 +298,8 @@ func (this *Gateway) ServeForever() {
 		}
 
 		this.timer.Stop()
+
+		log.Info("kateway bye!")
 	}
 
 }
