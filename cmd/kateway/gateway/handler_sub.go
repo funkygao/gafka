@@ -253,6 +253,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 
 			w.WriteHeader(http.StatusNoContent)
 			w.Write([]byte{}) // without this, client cant get response
+			return nil
 
 		case msg := <-fetcher.Messages():
 			partition := strconv.FormatInt(int64(msg.Partition), 10)
