@@ -52,13 +52,13 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 	case int64(msgLen) > Options.MaxPubSize:
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} too big content length: %d",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
-		this.writeBadRequest(w, ErrTooBigPubMessage.Error())
+		this.writeBadRequest(w, ErrTooBigMessage.Error())
 		return
 
 	case msgLen < Options.MinPubSize:
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} too small content length: %d",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
-		this.writeBadRequest(w, ErrTooSmallPubMessage.Error())
+		this.writeBadRequest(w, ErrTooSmallMessage.Error())
 		return
 	}
 
@@ -70,7 +70,7 @@ func (this *Gateway) addJobHandler(w http.ResponseWriter, r *http.Request,
 
 		log.Error("+job[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
-		this.writeBadRequest(w, ErrTooBigPubMessage.Error())
+		this.writeBadRequest(w, ErrTooBigMessage.Error())
 		return
 	}
 

@@ -59,7 +59,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, r.Header.Get("User-Agent"), msgLen)
 
 		this.pubMetrics.ClientError.Inc(1)
-		this.writeBadRequest(w, ErrTooBigPubMessage.Error())
+		this.writeBadRequest(w, ErrTooBigMessage.Error())
 		return
 
 	case msgLen < Options.MinPubSize:
@@ -67,7 +67,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, r.Header.Get("User-Agent"), msgLen)
 
 		this.pubMetrics.ClientError.Inc(1)
-		this.writeBadRequest(w, ErrTooSmallPubMessage.Error())
+		this.writeBadRequest(w, ErrTooSmallMessage.Error())
 		return
 	}
 
@@ -96,7 +96,7 @@ func (this *Gateway) pubHandler(w http.ResponseWriter, r *http.Request,
 			topic, ver, r.Header.Get("User-Agent"), err)
 
 		this.pubMetrics.ClientError.Inc(1)
-		this.writeBadRequest(w, ErrTooBigPubMessage.Error())
+		this.writeBadRequest(w, ErrTooBigMessage.Error())
 		return
 	}
 
