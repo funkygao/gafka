@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/funkygao/gafka/cmd/kateway/gateway"
 	"github.com/funkygao/gafka/sla"
@@ -16,6 +17,7 @@ type SubOption struct {
 	AppId      string
 	Topic, Ver string
 	Group      string
+	Batch      int
 	Reset      string // newest | oldest
 	Shadow     string
 }
@@ -34,6 +36,9 @@ func (this *Client) Sub(opt SubOption, h SubHandler) error {
 	}
 	if opt.Reset != "" {
 		q.Set("reset", opt.Reset)
+	}
+	if opt.Batch > 1 {
+		q.Set("batch", strconv.Itoa(opt.Batch))
 	}
 	u.RawQuery = q.Encode()
 	req, err := http.NewRequest("GET", u.String(), nil)
@@ -97,6 +102,9 @@ func (this *Client) SubX(opt SubOption, h SubXHandler) error {
 	}
 	if opt.Reset != "" {
 		q.Set("reset", opt.Reset)
+	}
+	if opt.Batch > 1 {
+		q.Set("batch", strconv.Itoa(opt.Batch))
 	}
 	u.RawQuery = q.Encode()
 

@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/api/v1"
+	"github.com/funkygao/gafka/cmd/kateway/gateway"
 	"github.com/funkygao/golib/stress"
 )
 
@@ -20,9 +22,11 @@ var (
 	limit    int
 	debug    bool
 	endpoint string
+	batch    int
 	group    string
 	msgfile  string
 	subAppid string
+	sleep    time.Duration
 )
 
 func init() {
@@ -35,6 +39,8 @@ func init() {
 	flag.StringVar(&endpoint, "ep", "pub.sit.ffan.com:9191", "end point")
 	flag.StringVar(&msgfile, "msgfile", "", "message file to Pub")
 	flag.StringVar(&group, "group", "bench_go", "sub group name")
+	flag.DurationVar(&sleep, "sleep", 0, "sleep between loops")
+	flag.IntVar(&batch, "batch", 1, "sub batch limit")
 	flag.StringVar(&subAppid, "subappid", "", "sub which app's msg")
 	flag.BoolVar(&debug, "debug", false, "debug")
 
@@ -94,16 +100,24 @@ func benchmarkSub(seq int) {
 		AppId: subAppid,
 		Topic: topic,
 		Ver:   ver,
+		Batch: batch,
 		Group: group,
 	}
 	var i int
 
 	err := client.SubX(opt, func(statusCode int, msg []byte, r *api.SubXResult) error {
 		if debug {
-			log.Printf("%+v %s", *r, string(msg))
+			if batch > 1 {
+				msgs := gateway.DecodeMessageSet(msg)
+				for idx, m := range msgs {
+					log.Printf("%d P:%d O:%d V:%s", idx, m.Partition, m.Offset, string(m.Value))
+				}
+			} else {
+				log.Println(string(msg))
+			}
 		}
 		if statusCode == 200 {
-			stress.IncCounter("ok", 1)
+			stress.IncCounter("ok", int64(batch))
 		} else {
 			if debug {
 				log.Println(string(msg))
@@ -115,6 +129,10 @@ func benchmarkSub(seq int) {
 		i++
 		if i > limit {
 			return api.ErrSubStop
+		}
+
+		if sleep > 0 {
+			time.Sleep(sleep)
 		}
 
 		return nil

@@ -14,7 +14,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// GET /v1/msgs/:appid/:topic/:ver?group=xx&&reset=<newest|oldest>&ack=1&q=<dead|retry>
+// GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&reset=<newest|oldest>&ack=1&q=<dead|retry>
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -29,7 +29,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		partition  string
 		partitionN int = -1
 		offset     string
-		offsetN    int64    = -1
+		offsetN    int64 = -1
+		limit      int
 		delayedAck bool     // explicit application level acknowledgement
 		tagFilters []MsgTag = nil
 		err        error
@@ -44,6 +45,12 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	reset = query.Get("reset")
 	if !manager.Default.ValidateGroupName(r.Header, group) {
 		this.writeBadRequest(w, "illegal group")
+		return
+	}
+
+	limit, err = getHttpQueryInt(&query, "batch", 1)
+	if err != nil {
+		this.writeBadRequest(w, "illegal limit")
 		return
 	}
 
@@ -107,9 +114,9 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	shadow = query.Get("q")
 
-	log.Debug("sub[%s] %s(%s): {app:%s q:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s}",
+	log.Debug("sub[%s] %s(%s): {app:%s q:%s topic:%s ver:%s group:%s limit:%d ack:%s partition:%s offset:%s UA:%s}",
 		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, shadow, topic, ver,
-		group, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"))
+		group, limit, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"))
 
 	// calculate raw topic according to shadow
 	if shadow != "" {
@@ -184,8 +191,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		tagFilters = parseMessageTag(tag)
 	}
 
-	err = this.pumpMessages(w, r, fetcher, myAppid, hisAppid, cluster,
-		topic, ver, group, delayedAck, tagFilters)
+	err = this.pumpMessages(w, r, fetcher, limit, myAppid, hisAppid, topic, ver, group, delayedAck, tagFilters)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s} %v",
@@ -202,76 +208,126 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 }
 
 func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
-	fetcher store.Fetcher,
-	myAppid, hisAppid, cluster, topic, ver, group string,
-	delayedAck bool, tagFilters []MsgTag) (err error) {
+	fetcher store.Fetcher, limit int, myAppid, hisAppid, topic, ver, group string,
+	delayedAck bool, tagFilters []MsgTag) error {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
-	select {
-	case <-clientGoneCh:
-		// FIXME access log will not be able to record this behavior
-		err = ErrClientGone
+	var metaBuf []byte = nil
+	n := 0
+	chunkedEver := false
+	for {
+		select {
+		case <-clientGoneCh:
+			// FIXME access log will not be able to record this behavior
+			return ErrClientGone
 
-	case <-this.shutdownCh:
-		w.WriteHeader(http.StatusNoContent)
-		w.Write([]byte{})
+		case <-this.shutdownCh:
+			if !chunkedEver {
+				w.WriteHeader(http.StatusNoContent)
+				w.Write([]byte{})
+			}
 
-	case <-this.timer.After(Options.SubTimeout):
-		w.WriteHeader(http.StatusNoContent)
-		w.Write([]byte{}) // without this, client cant get response
+			return nil
 
-	case msg := <-fetcher.Messages():
-		partition := strconv.FormatInt(int64(msg.Partition), 10)
+		case err := <-fetcher.Errors():
+			// e,g. consume a non-existent topic
+			// e,g. conn with broker is broken
+			return err
 
-		w.Header().Set(HttpHeaderMsgKey, string(msg.Key))
-		w.Header().Set(HttpHeaderPartition, partition)
-		w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
+		case <-this.timer.After(Options.SubTimeout):
+			if chunkedEver {
+				// response already sent in chunk
+				log.Debug("chunked sub idle timeout {G:%s, T:%s, A:%s->%s}", group, topic, myAppid, hisAppid)
+				return nil
+			}
 
-		var (
-			tags    []MsgTag
-			bodyIdx int
-		)
-		if IsTaggedMessage(msg.Value) {
-			// TagMarkStart + tag + TagMarkEnd + body
-			tags, bodyIdx, err = ExtractMessageTag(msg.Value)
-			if err == nil {
-				// needn't check 'index out of range' here
-				w.Header().Set(HttpHeaderMsgTag, hack.String(msg.Value[1:bodyIdx-1]))
+			w.WriteHeader(http.StatusNoContent)
+			w.Write([]byte{}) // without this, client cant get response
+
+		case msg := <-fetcher.Messages():
+			partition := strconv.FormatInt(int64(msg.Partition), 10)
+
+			if limit == 1 {
+				w.Header().Set(HttpHeaderMsgKey, string(msg.Key))
+				w.Header().Set(HttpHeaderPartition, partition)
+				w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
+			}
+
+			var (
+				tags    []MsgTag
+				bodyIdx int
+				err     error
+			)
+			if IsTaggedMessage(msg.Value) {
+				// TagMarkStart + tag + TagMarkEnd + body
+				tags, bodyIdx, err = ExtractMessageTag(msg.Value)
+				if limit == 1 && err == nil {
+					// needn't check 'index out of range' here
+					w.Header().Set(HttpHeaderMsgTag, hack.String(msg.Value[1:bodyIdx-1]))
+				} else {
+					// not a valid tagged message, treat it as non-tagged message
+				}
+			}
+
+			if len(tags) > 0 {
+				// TODO compare with tagFilters
+			}
+
+			if limit == 1 {
+				// non-batch mode, just the message itself without meta
+				if _, err = w.Write(msg.Value[bodyIdx:]); err != nil {
+					// when remote close silently, the write still ok
+					return err
+				}
 			} else {
-				// not a valid tagged message, treat it as non-tagged message
+				// batch mode, write MessageSet
+				// MessageSet => [Partition(int32) Offset(int64) MessageSize(int32) Message] BigEndian
+				if metaBuf == nil {
+					// initialize the reuseable buffer
+					metaBuf = make([]byte, 8)
+				}
+
+				if err = writeI32(w, metaBuf, msg.Partition); err != nil {
+					return err
+				}
+				if err = writeI64(w, metaBuf, msg.Offset); err != nil {
+					return err
+				}
+				if err = writeI32(w, metaBuf, int32(len(msg.Value[bodyIdx:]))); err != nil {
+					return err
+				}
+				// TODO add tag?
+				if _, err = w.Write(msg.Value[bodyIdx:]); err != nil {
+					return err
+				}
 			}
-		}
 
-		if len(tags) > 0 {
-			// TODO compare with tagFilters
-		}
-
-		// TODO when remote close silently, the write still ok
-		// which will lead to msg lost for sub
-		if _, err = w.Write(msg.Value[bodyIdx:]); err != nil {
-			return
-		}
-
-		if !delayedAck {
-			log.Debug("sub commit offset {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
-			if err = fetcher.CommitUpto(msg); err != nil {
-				return
+			if !delayedAck {
+				log.Debug("sub commit offset {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
+				if err = fetcher.CommitUpto(msg); err != nil {
+					return err
+				}
+			} else {
+				log.Debug("sub take off %s(%s): {G:%s, T:%s, P:%d, O:%d}",
+					r.RemoteAddr, getHttpRemoteIp(r),
+					group, msg.Topic, msg.Partition, msg.Offset)
 			}
-		} else {
-			log.Debug("sub take off %s(%s): {G:%s, T:%s, P:%d, O:%d}",
-				r.RemoteAddr, getHttpRemoteIp(r),
-				group, msg.Topic, msg.Partition, msg.Offset)
+
+			this.subMetrics.ConsumeOk(myAppid, topic, ver)
+			this.subMetrics.ConsumedOk(hisAppid, topic, ver)
+
+			n++
+			if n >= limit {
+				return nil
+			}
+
+			// http chunked: len in hex
+			// curl CURLOPT_HTTP_TRANSFER_DECODING will auto unchunk
+			w.(http.Flusher).Flush()
+
+			chunkedEver = true
 		}
-
-		this.subMetrics.ConsumeOk(myAppid, topic, ver)
-		this.subMetrics.ConsumedOk(hisAppid, topic, ver)
-
-	case err = <-fetcher.Errors():
-		// e,g. consume a non-existent topic
-		// e,g. conn with broker is broken
 	}
-
-	return
 }
 
 // PUT /v1/bury/:appid/:topic/:ver?group=xx&q=yy
