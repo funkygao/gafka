@@ -20,6 +20,10 @@ func (w gzipResponseWriter) CloseNotify() <-chan bool {
 	return w.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }
 
+func (w gzipResponseWriter) Flush() {
+	w.ResponseWriter.(http.Flusher).Flush()
+}
+
 type WriterWrapper interface {
 	http.ResponseWriter
 
