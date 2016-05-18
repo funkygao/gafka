@@ -199,7 +199,7 @@ It is designed to be programmer friendly.
 ### TODO
 
 - [ ] change all handler declaration to xxxServer instead of Gateway
-- [ ] cf.ChannelBufferSize=20
+- [X] cf.ChannelBufferSize=20
 - [ ] sub with delayed ack
   - StatusNotModified
   - what if rebalanced, and ack buffered p/o

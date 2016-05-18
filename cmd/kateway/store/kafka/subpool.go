@@ -64,7 +64,7 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group, remoteAddr string,
 	cf.Net.DialTimeout = time.Second * 10
 	cf.Net.WriteTimeout = time.Second * 10
 	cf.Net.ReadTimeout = time.Second * 10
-	cf.ChannelBufferSize = 0
+	cf.ChannelBufferSize = 100 // TODO configurable
 	cf.Consumer.Return.Errors = true
 	cf.Consumer.MaxProcessingTime = 100 * time.Millisecond // chan recv timeout
 	cf.Zookeeper.Chroot = meta.Default.ZkChroot(cluster)
