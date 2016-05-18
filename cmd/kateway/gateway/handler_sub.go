@@ -211,6 +211,8 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 	fetcher store.Fetcher, limit int, myAppid, hisAppid, topic, ver, group string,
 	delayedAck bool, tagFilters []MsgTag) error {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
+
+	var metaBuf []byte = nil
 	n := 0
 	chunkedEver := false
 	for {
@@ -271,9 +273,33 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 				// TODO compare with tagFilters
 			}
 
-			if _, err = w.Write(msg.Value[bodyIdx:]); err != nil {
-				// when remote close silently, the write still ok
-				return err
+			if limit == 1 {
+				// non-batch mode, just the message itself without meta
+				if _, err = w.Write(msg.Value[bodyIdx:]); err != nil {
+					// when remote close silently, the write still ok
+					return err
+				}
+			} else {
+				// batch mode, write MessageSet
+				// MessageSet => [Partition(int32) Offset(int64) MessageSize(int32) Message] BigEndian
+				if metaBuf == nil {
+					// initialize the reuseable buffer
+					metaBuf = make([]byte, 8)
+				}
+
+				if err = writeI32(w, metaBuf, msg.Partition); err != nil {
+					return err
+				}
+				if err = writeI64(w, metaBuf, msg.Offset); err != nil {
+					return err
+				}
+				if err = writeI32(w, metaBuf, int32(len(msg.Value))); err != nil {
+					return err
+				}
+				// TODO add tag?
+				if _, err = w.Write(msg.Value[bodyIdx:]); err != nil {
+					return err
+				}
 			}
 
 			if !delayedAck {
