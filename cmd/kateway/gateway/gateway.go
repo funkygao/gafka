@@ -269,11 +269,11 @@ func (this *Gateway) ServeForever() {
 			}
 		}
 
-		log.Info("Deregister done, waiting for components shutdown...")
+		log.Info("Deregister done, waiting for servers shutdown...")
 		this.wg.Wait()
+		log.Info("<----- all servers shutdown ----->")
 
 		this.accessLogger.Stop()
-		log.Trace("access logger closed")
 
 		if store.DefaultPubStore != nil {
 			store.DefaultPubStore.Stop()
@@ -282,24 +282,16 @@ func (this *Gateway) ServeForever() {
 			store.DefaultSubStore.Stop()
 		}
 
-		log.Info("all components shutdown complete")
-
 		this.svrMetrics.Flush()
-		log.Trace("server metrics flushed")
 
 		meta.Default.Stop()
-		log.Trace("meta store[%s] stopped", meta.Default.Name())
-
 		manager.Default.Stop()
-		log.Trace("manager store[%s] stopped", manager.Default.Name())
 
 		if this.zkzone != nil {
 			this.zkzone.Close()
 		}
 
 		this.timer.Stop()
-
-		log.Info("kateway bye!")
 	}
 
 }

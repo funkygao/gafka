@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/funkygao/golib/window"
-	log "github.com/funkygao/log4go"
 	"github.com/shirou/gopsutil/cpu"
 )
 
@@ -51,7 +50,6 @@ func (this *guard) mainLoop() {
 	for {
 		select {
 		case <-this.gw.shutdownCh:
-			log.Trace("guard stopped")
 			return
 
 		case <-this.refreshCh:

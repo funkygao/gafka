@@ -47,11 +47,6 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 		this.httpServer.ConnState = this.connStateFunc
 	}
 
-	this.onStop = func() {
-		this.subMetrics.Flush()
-		log.Trace("sub metrics flushed")
-	}
-
 	return this
 }
 
@@ -140,6 +135,8 @@ func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit
 
 	log.Trace("%s waiting for all connected http client close", this.name)
 	this.idleConnsWg.Wait()
+
+	this.subMetrics.Flush()
 
 	this.gw.wg.Done()
 }

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/funkygao/golib/ratelimiter"
-	log "github.com/funkygao/log4go"
 )
 
 type pubServer struct {
@@ -28,7 +27,6 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 
 	this.webServer.onStop = func() {
 		this.pubMetrics.Flush()
-		log.Trace("pub metrics flushed")
 	}
 
 	return this
