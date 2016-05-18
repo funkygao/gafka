@@ -117,7 +117,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 
 	shadow = query.Get("q")
 
-	log.Debug("sub[%s] %s(%s): {app:%s q:%s topic:%s ver:%s group:%s limit:%d ack:%s partition:%s offset:%s UA:%s}",
+	log.Debug("sub[%s] %s(%s): {app:%s q:%s topic:%s ver:%s group:%s batch:%d ack:%s partition:%s offset:%s UA:%s}",
 		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, shadow, topic, ver,
 		group, limit, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"))
 
@@ -288,6 +288,9 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 				if metaBuf == nil {
 					// initialize the reuseable buffer
 					metaBuf = make([]byte, 8)
+
+					// remove the middleware added header
+					w.Header().Del("Content-Type")
 				}
 
 				if err = writeI32(w, metaBuf, msg.Partition); err != nil {
