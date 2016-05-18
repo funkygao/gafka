@@ -44,14 +44,14 @@ func DecodeMessageSet(messageSet []byte) []Message {
 		m.Offset = int64(binary.BigEndian.Uint64(messageSet[idx : idx+8]))
 
 		idx += 8
-		messageSetLen := int(binary.BigEndian.Uint32(messageSet[idx : idx+4]))
+		msgLen := int(binary.BigEndian.Uint32(messageSet[idx : idx+4]))
 
 		idx += 4
-		m.Value = messageSet[idx : idx+messageSetLen]
+		m.Value = messageSet[idx : idx+msgLen]
 
 		r = append(r, m)
 
-		idx += messageSetLen
+		idx += msgLen
 		if idx == len(messageSet) {
 			return r
 		}
