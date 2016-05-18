@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
@@ -14,7 +15,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&reset=<newest|oldest>&ack=1&q=<dead|retry>
+// GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&wait=5s&reset=<newest|oldest>&ack=1&q=<dead|retry>
 func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
 	var (
@@ -29,10 +30,11 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		partition  string
 		partitionN int = -1
 		offset     string
-		offsetN    int64 = -1
-		limit      int
-		delayedAck bool     // explicit application level acknowledgement
-		tagFilters []MsgTag = nil
+		offsetN    int64         = -1
+		limit      int           // max messages to include in the message set
+		wait       time.Duration // max time to wait if insufficient data is available
+		delayedAck bool          // explicit application level acknowledgement
+		tagFilters []MsgTag      = nil
 		err        error
 	)
 
@@ -55,6 +57,11 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 	}
 	if limit > Options.MaxSubBatchSize && Options.MaxSubBatchSize > 0 {
 		limit = Options.MaxSubBatchSize
+	}
+
+	wait, err = time.ParseDuration(query.Get("wait"))
+	if err != nil || wait.Nanoseconds() < MinSubWaitNanoSeconds {
+		wait = Options.SubTimeout
 	}
 
 	ver = params.ByName(UrlParamVersion)
@@ -194,7 +201,7 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 		tagFilters = parseMessageTag(tag)
 	}
 
-	err = this.pumpMessages(w, r, fetcher, limit, myAppid, hisAppid, topic, ver, group, delayedAck, tagFilters)
+	err = this.pumpMessages(w, r, fetcher, limit, wait, myAppid, hisAppid, topic, ver, group, delayedAck, tagFilters)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s} %v",
@@ -211,8 +218,8 @@ func (this *Gateway) subHandler(w http.ResponseWriter, r *http.Request,
 }
 
 func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
-	fetcher store.Fetcher, limit int, myAppid, hisAppid, topic, ver, group string,
-	delayedAck bool, tagFilters []MsgTag) error {
+	fetcher store.Fetcher, limit int, wait time.Duration, myAppid, hisAppid, topic, ver,
+	group string, delayedAck bool, tagFilters []MsgTag) error {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
 	var metaBuf []byte = nil
@@ -237,7 +244,7 @@ func (this *Gateway) pumpMessages(w http.ResponseWriter, r *http.Request,
 			// e,g. conn with broker is broken
 			return err
 
-		case <-this.timer.After(Options.SubTimeout):
+		case <-this.timer.After(wait):
 			if chunkedEver {
 				// response already sent in chunk
 				log.Debug("chunked sub idle timeout {G:%s, T:%s, A:%s->%s}", group, topic, myAppid, hisAppid)

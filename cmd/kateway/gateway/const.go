@@ -25,6 +25,10 @@ const (
 	MaxPartitionKeyLen = 256
 )
 
+const (
+	MinSubWaitNanoSeconds = 1000 * 1000 * 100 // 100ms
+)
+
 var (
 	ResponseOk = []byte(`{"ok":1}`)
 )
