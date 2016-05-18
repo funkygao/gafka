@@ -13,8 +13,7 @@ import (
 )
 
 // POST /v1/jobs/:topic/:ver?delay=100s
-func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	t1 := time.Now()
 
 	if Options.EnableClientStats { // TODO enable pub or sub client stats
@@ -131,8 +130,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // DELETE /v1/jobs/:topic/:ver?id=D-1d13f5e8-9NVhoRqjowkLy6iTE/QnZw/l-05a1
-func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	appid := r.Header.Get(HttpHeaderAppid)
 	topic := params.ByName(UrlParamTopic)
 	ver := params.ByName(UrlParamVersion)

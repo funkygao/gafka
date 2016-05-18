@@ -14,20 +14,20 @@ func (this *Gateway) buildRouting() {
 		this.manServer.Router().NotFound = http.HandlerFunc(this.manServer.notFoundHandler)
 
 		// api for 'gk kateway'
-		this.manServer.Router().GET("/v1/clusters", m(this.clustersHandler))
-		this.manServer.Router().GET("/v1/clients", m(this.clientsHandler))
-		this.manServer.Router().GET("/v1/status", m(this.statusHandler))
-		this.manServer.Router().PUT("/v1/options/:option/:value", m(this.setOptionHandler))
-		this.manServer.Router().PUT("/v1/log/:level", m(this.setlogHandler))
-		this.manServer.Router().DELETE("/v1/counter/:name", m(this.resetCounterHandler))
+		this.manServer.Router().GET("/v1/clusters", m(this.manServer.clustersHandler))
+		this.manServer.Router().GET("/v1/clients", m(this.manServer.clientsHandler))
+		this.manServer.Router().GET("/v1/status", m(this.manServer.statusHandler))
+		this.manServer.Router().PUT("/v1/options/:option/:value", m(this.manServer.setOptionHandler))
+		this.manServer.Router().PUT("/v1/log/:level", m(this.manServer.setlogHandler))
+		this.manServer.Router().DELETE("/v1/counter/:name", m(this.manServer.resetCounterHandler))
 
 		// api for pubsub manager
 		this.manServer.Router().GET("/v1/partitions/:cluster/:appid/:topic/:ver",
-			m(this.partitionsHandler))
+			m(this.manServer.partitionsHandler))
 		this.manServer.Router().POST("/v1/topics/:cluster/:appid/:topic/:ver",
-			m(this.addTopicHandler))
+			m(this.manServer.addTopicHandler))
 		this.manServer.Router().PUT("/v1/topics/:cluster/:appid/:topic/:ver",
-			m(this.updateTopicHandler))
+			m(this.manServer.updateTopicHandler))
 	}
 
 	if this.pubServer != nil {

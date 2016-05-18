@@ -12,8 +12,7 @@ import (
 )
 
 // GET /v1/ws/msgs/:appid/:topic/:ver?group=xx
-func (this *subServer) subWsHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *subServer) subWsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Error("%s: %v", r.RemoteAddr, err)

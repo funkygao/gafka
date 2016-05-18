@@ -14,8 +14,7 @@ import (
 )
 
 // PUT /v1/bury/:appid/:topic/:ver?group=xx&q=yy
-func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		topic      string
 		ver        string

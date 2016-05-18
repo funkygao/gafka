@@ -16,34 +16,29 @@ import (
 )
 
 // GET /v1/status
-func (this *Gateway) statusHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	output := make(map[string]interface{})
 	output["options"] = Options
 	output["loglevel"] = logLevel.String()
-	output["pubserver.type"] = this.pubServer.name
 	output["manager"] = manager.Default.Dump()
 	b, _ := json.MarshalIndent(output, "", "    ")
 	w.Write(b)
 }
 
 // GET /v1/clients
-func (this *Gateway) clientsHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
-	b, _ := json.Marshal(this.clientStates.Export())
+func (this *manServer) clientsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	b, _ := json.Marshal(this.gw.clientStates.Export())
 	w.Write(b)
 }
 
 // GET /v1/clusters
-func (this *Gateway) clustersHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) clustersHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	b, _ := json.Marshal(meta.Default.Clusters())
 	w.Write(b)
 }
 
 // PUT /v1/options/:option/:value
-func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	option := params.ByName("option")
 	value := params.ByName("value")
 	boolVal := value == "true"
@@ -54,7 +49,7 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 
 	case "clients":
 		Options.EnableClientStats = boolVal
-		this.clientStates.Reset()
+		this.gw.clientStates.Reset()
 
 	case "nometrics":
 		Options.DisableMetrics = boolVal
@@ -79,9 +74,9 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 		if Options.EnableAccessLog != boolVal {
 			// on/off switching
 			if boolVal {
-				this.accessLogger.Start()
+				this.gw.accessLogger.Start()
 			} else {
-				this.accessLogger.Stop()
+				this.gw.accessLogger.Stop()
 			}
 		}
 		Options.EnableAccessLog = boolVal
@@ -99,8 +94,7 @@ func (this *Gateway) setOptionHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // PUT /v1/log/:level
-func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) setlogHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	logLevel = toLogLevel(params.ByName("level"))
 	for name, filter := range log.Global {
 		log.Info("log[%s] level: %s -> %s", name, filter.Level, logLevel)
@@ -112,8 +106,7 @@ func (this *Gateway) setlogHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // DELETE /v1/counter/:name
-func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) resetCounterHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	counterName := params.ByName("name")
 
 	_ = counterName // TODO
@@ -122,8 +115,7 @@ func (this *Gateway) resetCounterHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // GET /v1/partitions/:cluster/:appid/:topic/:ver
-func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	cluster := params.ByName(UrlParamCluster)
 	hisAppid := params.ByName(UrlParamAppid)
@@ -169,8 +161,7 @@ func (this *Gateway) partitionsHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // POST /v1/topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2&retention.hours=72&retention.bytes=-1
-func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	if !manager.Default.ValidateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)
@@ -282,8 +273,7 @@ func (this *Gateway) addTopicHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // PUT /v1/topics/:cluster/:appid/:topic/:ver?partitions=1&retention.hours=72&retention.bytes=-1
-func (this *Gateway) updateTopicHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+func (this *manServer) updateTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	if !manager.Default.ValidateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)

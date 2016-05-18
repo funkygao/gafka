@@ -25,7 +25,6 @@ import (
 	"github.com/funkygao/gafka/registry"
 	"github.com/funkygao/gafka/registry/zk"
 	gzk "github.com/funkygao/gafka/zk"
-	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/signal"
 	"github.com/funkygao/golib/timewheel"
 	log "github.com/funkygao/log4go"
@@ -59,20 +58,17 @@ type Gateway struct {
 	accessLogger *AccessLogger
 	guard        *guard
 	timer        *timewheel.TimeWheel
-
-	throttleAddTopic *ratelimiter.LeakyBuckets
 }
 
 func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	this := &Gateway{
-		id:               id,
-		zone:             Options.Zone,
-		shutdownCh:       make(chan struct{}),
-		throttleAddTopic: ratelimiter.NewLeakyBuckets(60, time.Minute),
-		certFile:         Options.CertFile,
-		keyFile:          Options.KeyFile,
-		clientStates:     NewClientStates(),
-		connections:      make(map[string]int, 1000),
+		id:           id,
+		zone:         Options.Zone,
+		shutdownCh:   make(chan struct{}),
+		certFile:     Options.CertFile,
+		keyFile:      Options.KeyFile,
+		clientStates: NewClientStates(),
+		connections:  make(map[string]int, 1000),
 	}
 
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
