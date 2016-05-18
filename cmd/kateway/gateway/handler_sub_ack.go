@@ -18,7 +18,7 @@ type ackOffset struct {
 	Offset    int64 `json:"offset"`
 }
 
-type ackOffsetS []ackOffset
+type ackOffsets []ackOffset
 
 // PUT /v1/offsets/:appid/:topic/:ver/:group with json body
 func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request,
@@ -72,7 +72,7 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	var acks ackOffsetS
+	var acks ackOffsets
 	if err = json.Unmarshal(msg.Body, &acks); err != nil {
 		msg.Free()
 
