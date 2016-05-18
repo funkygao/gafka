@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"testing"
+	"time"
 
 	"github.com/funkygao/assert"
 	"github.com/funkygao/gafka/cmd/kateway/store"
@@ -24,6 +25,23 @@ func TestExtractFromMetricsName(t *testing.T) {
 	assert.Equal(t, "", appid)
 	assert.Equal(t, "", topic)
 	assert.Equal(t, "", ver)
+}
+
+func TestTimeParseDuration(t *testing.T) {
+	_, err := time.ParseDuration("")
+	assert.Equal(t, "time: invalid duration ", err.Error())
+
+	d, err := time.ParseDuration("-5s")
+	assert.Equal(t, -5., d.Seconds())
+	assert.Equal(t, nil, err)
+
+	d, err = time.ParseDuration("5s")
+	assert.Equal(t, 5., d.Seconds())
+	assert.Equal(t, nil, err)
+
+	d, err = time.ParseDuration("100ms")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, int64(1000*1000*100), d.Nanoseconds())
 }
 
 func TestGetHttpRemoteIp(t *testing.T) {

@@ -20,6 +20,7 @@ type SubOption struct {
 	Batch      int
 	Reset      string // newest | oldest
 	Shadow     string
+	Wait       string
 }
 
 type SubHandler func(statusCode int, msg []byte) error
@@ -39,6 +40,9 @@ func (this *Client) Sub(opt SubOption, h SubHandler) error {
 	}
 	if opt.Batch > 1 {
 		q.Set("batch", strconv.Itoa(opt.Batch))
+	}
+	if opt.Wait != "" {
+		q.Set("wait", opt.Wait)
 	}
 	u.RawQuery = q.Encode()
 	req, err := http.NewRequest("GET", u.String(), nil)
@@ -105,6 +109,9 @@ func (this *Client) SubX(opt SubOption, h SubXHandler) error {
 	}
 	if opt.Batch > 1 {
 		q.Set("batch", strconv.Itoa(opt.Batch))
+	}
+	if opt.Wait != "" {
+		q.Set("wait", opt.Wait)
 	}
 	u.RawQuery = q.Encode()
 
