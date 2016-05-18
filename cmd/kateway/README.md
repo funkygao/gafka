@@ -199,6 +199,7 @@ It is designed to be programmer friendly.
 ### TODO
 
 - [ ] cf.ChannelBufferSize=20
+- [ ] sub batch will not work if gzip enabled
 - [ ] sub with delayed ack
   - StatusNotModified
   - what if rebalanced, and ack buffered p/o
