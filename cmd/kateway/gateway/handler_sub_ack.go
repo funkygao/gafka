@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"sync/atomic"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/mpool"
@@ -93,7 +94,20 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 		acks[i].group = realGroup
 	}
 
+	if atomic.AddInt32(&this.ackShutdown, 1) == 0 {
+		// kateway is shutting down, ackCh is already closed
+		msg.Free()
+
+		log.Warn("ack[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} server is shutting down %+v ",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group,
+			r.Header.Get("User-Agent"), acks)
+
+		writeServerError(w, "server is shutting down")
+		return
+	}
+
 	this.ackCh <- acks
+	atomic.AddInt32(&this.ackShutdown, -1)
 
 	msg.Free()
 	w.Write(ResponseOk)

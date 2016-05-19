@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
@@ -24,6 +25,8 @@ type subServer struct {
 	wsReadLimit int64
 	wsPongWait  time.Duration
 
+	shutdownOnce sync.Once
+	ackShutdown  int32                                          // sync shutdown with ack handlers goroutines
 	ackCh        chan ackOffsets                                // client ack'ed offsets
 	ackedOffsets map[string]map[string]map[string]map[int]int64 // [cluster][topic][group][partition]: offset
 
@@ -39,6 +42,7 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 		wsReadLimit:       8 << 10,
 		wsPongWait:        time.Minute,
 		throttleSubStatus: ratelimiter.NewLeakyBuckets(60, time.Minute),
+		ackShutdown:       0,
 		ackCh:             make(chan ackOffsets, 100),
 		ackedOffsets:      make(map[string]map[string]map[string]map[int]int64),
 	}
@@ -143,7 +147,7 @@ func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit
 	}
 	this.idleConnsLock.Unlock()
 
-	log.Trace("%s waiting for all connected http client close", this.name)
+	log.Trace("%s waiting for all connected http client close...", this.name)
 	this.idleConnsWg.Wait()
 
 	this.subMetrics.Flush()
@@ -155,14 +159,26 @@ func (this *subServer) ackCommitter() {
 	ticker := time.NewTicker(time.Second * 30)
 	defer func() {
 		ticker.Stop()
+		log.Debug("ack committer done")
 		this.gw.wg.Done()
 	}()
 
 	for {
 		select {
 		case <-this.gw.shutdownCh:
-			this.commitOffsets()
-			return
+			this.shutdownOnce.Do(func() {
+				atomic.AddInt32(&this.ackShutdown, -1)
+
+				for {
+					// waiting for all ack handlers finish
+					if atomic.LoadInt32(&this.ackShutdown) <= -1 {
+						break
+					}
+
+					time.Sleep(time.Millisecond * 10)
+				}
+				close(this.ackCh)
+			})
 
 		case acks, ok := <-this.ackCh:
 			if ok {
@@ -180,11 +196,15 @@ func (this *subServer) ackCommitter() {
 					// TODO validation
 					this.ackedOffsets[ack.cluster][ack.topic][ack.group][ack.Partition] = ack.Offset
 				}
+			} else {
+				// channel buffer drained, flush all offsets
+				// zk is still alive, safe to commit offsets
+				this.commitOffsets()
+				return
 			}
 
 		case <-ticker.C:
 			this.commitOffsets()
-
 		}
 	}
 
