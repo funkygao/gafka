@@ -28,7 +28,9 @@ curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hello world!' 'http://local
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d '@/Users/funky/gopkg/src/github.com/funkygao/fae/contrib/resources/dashboard.png' 'http://localhost:9191/v1/msgs/foobar/v1'
 
 # raw sub
-curl -XGET -H'Appid: app1' -H'Subkey: mypubkey' 'http://localhost:9192/v1/raw/msgs/app1/foobar/v1?group=xx'
+curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9192/v1/raw/msgs/app1/foobar/v1?group=xx'
+
+curl -XPUT -H'Appid: app2' -H'Subkey: mysubkey' -d '[{"partition":0,"offset":1221300}]' http://localhost:9192/v1/offsets/app1/foobar/v1/bench_go
 
 
 #----------------------
