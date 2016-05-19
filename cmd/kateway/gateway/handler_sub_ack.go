@@ -77,7 +77,7 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 	if err = json.Unmarshal(msg.Body, &acks); err != nil {
 		msg.Free()
 
-		writeBadRequest(w, "invalid json body")
+		writeBadRequest(w, "invalid ack json body")
 		return
 	}
 

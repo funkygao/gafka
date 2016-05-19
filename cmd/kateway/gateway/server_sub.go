@@ -24,8 +24,8 @@ type subServer struct {
 	wsReadLimit int64
 	wsPongWait  time.Duration
 
-	ackCh   chan ackOffsets                                // client ack'ed offsets
-	offsets map[string]map[string]map[string]map[int]int64 // [cluster][topic][group][partition]: offset
+	ackCh        chan ackOffsets                                // client ack'ed offsets
+	ackedOffsets map[string]map[string]map[string]map[int]int64 // [cluster][topic][group][partition]: offset
 
 	subMetrics        *subMetrics
 	throttleSubStatus *ratelimiter.LeakyBuckets
@@ -40,7 +40,7 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 		wsPongWait:        time.Minute,
 		throttleSubStatus: ratelimiter.NewLeakyBuckets(60, time.Minute),
 		ackCh:             make(chan ackOffsets, 100),
-		offsets:           make(map[string]map[string]map[string]map[int]int64),
+		ackedOffsets:      make(map[string]map[string]map[string]map[int]int64),
 	}
 	this.subMetrics = NewSubMetrics(this.gw)
 	this.waitExitFunc = this.waitExit
@@ -59,7 +59,7 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 
 func (this *subServer) Start() {
 	this.gw.wg.Add(1)
-	go this.offsetCommitter()
+	go this.ackCommitter()
 
 	this.subMetrics.Load()
 	this.webServer.Start()
@@ -151,8 +151,8 @@ func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit
 	this.gw.wg.Done()
 }
 
-func (this *subServer) offsetCommitter() {
-	ticker := time.NewTicker(time.Second * 10)
+func (this *subServer) ackCommitter() {
+	ticker := time.NewTicker(time.Second * 30)
 	defer func() {
 		ticker.Stop()
 		this.gw.wg.Done()
@@ -167,18 +167,18 @@ func (this *subServer) offsetCommitter() {
 		case acks, ok := <-this.ackCh:
 			if ok {
 				for _, ack := range acks {
-					if _, present := this.offsets[ack.cluster]; !present {
-						this.offsets[ack.cluster] = make(map[string]map[string]map[int]int64)
+					if _, present := this.ackedOffsets[ack.cluster]; !present {
+						this.ackedOffsets[ack.cluster] = make(map[string]map[string]map[int]int64)
 					}
-					if _, present := this.offsets[ack.cluster][ack.topic]; !present {
-						this.offsets[ack.cluster][ack.topic] = make(map[string]map[int]int64)
+					if _, present := this.ackedOffsets[ack.cluster][ack.topic]; !present {
+						this.ackedOffsets[ack.cluster][ack.topic] = make(map[string]map[int]int64)
 					}
-					if _, present := this.offsets[ack.topic][ack.group]; !present {
-						this.offsets[ack.cluster][ack.topic][ack.group] = make(map[int]int64)
+					if _, present := this.ackedOffsets[ack.topic][ack.group]; !present {
+						this.ackedOffsets[ack.cluster][ack.topic][ack.group] = make(map[int]int64)
 					}
 
 					// TODO validation
-					this.offsets[ack.cluster][ack.topic][ack.group][ack.Partition] = ack.Offset
+					this.ackedOffsets[ack.cluster][ack.topic][ack.group][ack.Partition] = ack.Offset
 				}
 			}
 
@@ -191,7 +191,7 @@ func (this *subServer) offsetCommitter() {
 }
 
 func (this *subServer) commitOffsets() {
-	for cluster, clusterTopic := range this.offsets {
+	for cluster, clusterTopic := range this.ackedOffsets {
 		zkcluster := meta.Default.ZkCluster(cluster)
 
 		for topic, groupPartition := range clusterTopic {
@@ -209,7 +209,7 @@ func (this *subServer) commitOffsets() {
 						log.Error("commitOffsets: %v", err)
 					} else {
 						// mark this slot empty
-						this.offsets[cluster][topic][group][partition] = -1
+						this.ackedOffsets[cluster][topic][group][partition] = -1
 					}
 				}
 			}
