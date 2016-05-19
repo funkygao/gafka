@@ -32,6 +32,9 @@ curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9192/v1/raw/ms
 
 curl -XPUT -H'Appid: app2' -H'Subkey: mysubkey' -d '[{"partition":0,"offset":1221300}]' http://localhost:9192/v1/offsets/app1/foobar/v1/bench_go
 
+# pprof debug 
+curl http://localhost:9194/debug/pprof/
+
 
 #----------------------
 # play with meta
@@ -41,23 +44,3 @@ echo
 curl http://localhost:9193/v1/clusters
 echo
 
-
-# setup cluster nickname
-gk clusters -z pre -s -c psub -nickname pubsub演示
-gk clusters -z pre -s -c bp_backend -nickname bp后台
-gk clusters -z pre -s -c comment -nickname 评论
-gk clusters -z pre -s -c activitycenter_platform -nickname 活动中心
-gk clusters -z pre -s -c coupon -nickname 券
-gk clusters -z pre -s -c flashtrade_web -nickname 闪购
-gk clusters -z pre -s -c goods -nickname 商品
-gk clusters -z pre -s -c logstash -nickname 日志
-gk clusters -z pre -s -c msgcenter -nickname 消息中心
-gk clusters -z pre -s -c payment -nickname 支付
-gk clusters -z pre -s -c plaza_pusher -nickname 广场推送
-gk clusters -z pre -s -c point -nickname 积分
-gk clusters -z pre -s -c recommender -nickname 推荐
-gk clusters -z pre -s -c search -nickname 搜索
-gk clusters -z pre -s -c ticket -nickname 电影票
-gk clusters -z pre -s -c trade -nickname 交易
-gk clusters -z pre -s -c ucenter -nickname 用户中心
-gk clusters -z pre -s -c wifi_portal -nickname 广场wifi
