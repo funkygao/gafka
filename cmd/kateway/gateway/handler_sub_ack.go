@@ -4,18 +4,20 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
-	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/mpool"
-	//log "github.com/funkygao/log4go"
+	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
 
 type ackOffset struct {
 	Partition int   `json:"partition"`
 	Offset    int64 `json:"offset"`
+
+	cluster string
+	topic   string
+	group   string
 }
 
 type ackOffsets []ackOffset
@@ -79,19 +81,19 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
-	zkcluster := meta.Default.ZkCluster(cluster)
+	log.Debug("ack[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %+v",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group,
+		r.Header.Get("User-Agent"), acks)
+
 	realGroup := myAppid + "." + group
 	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
-	for _, ack := range acks {
-		err = zkcluster.ResetConsumerGroupOffset(rawTopic, realGroup,
-			strconv.Itoa(ack.Partition), ack.Offset)
-		if err != nil {
-			msg.Free()
-
-			writeServerError(w, err.Error())
-			return
-		}
+	for i := 0; i < len(acks); i++ {
+		acks[i].cluster = cluster
+		acks[i].topic = rawTopic
+		acks[i].group = realGroup
 	}
+
+	this.ackCh <- acks
 
 	msg.Free()
 	w.Write(ResponseOk)
