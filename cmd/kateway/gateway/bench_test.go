@@ -107,7 +107,7 @@ func runBenchmarkPub(b *testing.B, store string, msgSize int64) {
 		rw.Body.Reset()
 		lr.(*io.LimitedReader).N = msgSize
 		req.Body = body
-		gw.pubHandler(rw, req, param)
+		gw.pubServer.pubHandler(rw, req, param)
 	}
 }
 
