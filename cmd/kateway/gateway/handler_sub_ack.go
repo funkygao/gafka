@@ -4,18 +4,21 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strconv"
+	"sync/atomic"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
-	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/mpool"
-	//log "github.com/funkygao/log4go"
+	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
 
 type ackOffset struct {
 	Partition int   `json:"partition"`
 	Offset    int64 `json:"offset"`
+
+	cluster string
+	topic   string
+	group   string
 }
 
 type ackOffsets []ackOffset
@@ -75,23 +78,36 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 	if err = json.Unmarshal(msg.Body, &acks); err != nil {
 		msg.Free()
 
-		writeBadRequest(w, "invalid json body")
+		writeBadRequest(w, "invalid ack json body")
 		return
 	}
 
-	zkcluster := meta.Default.ZkCluster(cluster)
+	log.Debug("ack[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %+v",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group,
+		r.Header.Get("User-Agent"), acks)
+
 	realGroup := myAppid + "." + group
 	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
-	for _, ack := range acks {
-		err = zkcluster.ResetConsumerGroupOffset(rawTopic, realGroup,
-			strconv.Itoa(ack.Partition), ack.Offset)
-		if err != nil {
-			msg.Free()
-
-			writeServerError(w, err.Error())
-			return
-		}
+	for i := 0; i < len(acks); i++ {
+		acks[i].cluster = cluster
+		acks[i].topic = rawTopic
+		acks[i].group = realGroup
 	}
+
+	if atomic.AddInt32(&this.ackShutdown, 1) == 0 {
+		// kateway is shutting down, ackCh is already closed
+		msg.Free()
+
+		log.Warn("ack[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} server is shutting down %+v ",
+			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group,
+			r.Header.Get("User-Agent"), acks)
+
+		writeServerError(w, "server is shutting down")
+		return
+	}
+
+	this.ackCh <- acks
+	atomic.AddInt32(&this.ackShutdown, -1)
 
 	msg.Free()
 	w.Write(ResponseOk)

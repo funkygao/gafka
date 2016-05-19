@@ -3,9 +3,12 @@ package gateway
 import (
 	"net"
 	"net/http"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/golib/ratelimiter"
 	log "github.com/funkygao/log4go"
 )
@@ -22,6 +25,11 @@ type subServer struct {
 	wsReadLimit int64
 	wsPongWait  time.Duration
 
+	shutdownOnce sync.Once
+	ackShutdown  int32                                          // sync shutdown with ack handlers goroutines
+	ackCh        chan ackOffsets                                // client ack'ed offsets
+	ackedOffsets map[string]map[string]map[string]map[int]int64 // [cluster][topic][group][partition]: offset
+
 	subMetrics        *subMetrics
 	throttleSubStatus *ratelimiter.LeakyBuckets
 }
@@ -34,6 +42,9 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 		wsReadLimit:       8 << 10,
 		wsPongWait:        time.Minute,
 		throttleSubStatus: ratelimiter.NewLeakyBuckets(60, time.Minute),
+		ackShutdown:       0,
+		ackCh:             make(chan ackOffsets, 100),
+		ackedOffsets:      make(map[string]map[string]map[string]map[int]int64),
 	}
 	this.subMetrics = NewSubMetrics(this.gw)
 	this.waitExitFunc = this.waitExit
@@ -51,6 +62,9 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 }
 
 func (this *subServer) Start() {
+	this.gw.wg.Add(1)
+	go this.ackCommitter()
+
 	this.subMetrics.Load()
 	this.webServer.Start()
 }
@@ -133,10 +147,93 @@ func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit
 	}
 	this.idleConnsLock.Unlock()
 
-	log.Trace("%s waiting for all connected http client close", this.name)
+	log.Trace("%s waiting for all connected http client close...", this.name)
 	this.idleConnsWg.Wait()
 
 	this.subMetrics.Flush()
 
 	this.gw.wg.Done()
+}
+
+func (this *subServer) ackCommitter() {
+	ticker := time.NewTicker(time.Second * 30)
+	defer func() {
+		ticker.Stop()
+		log.Debug("ack committer done")
+		this.gw.wg.Done()
+	}()
+
+	for {
+		select {
+		case <-this.gw.shutdownCh:
+			this.shutdownOnce.Do(func() {
+				atomic.AddInt32(&this.ackShutdown, -1)
+
+				for {
+					// waiting for all ack handlers finish
+					if atomic.LoadInt32(&this.ackShutdown) <= -1 {
+						break
+					}
+
+					time.Sleep(time.Millisecond * 10)
+				}
+				close(this.ackCh)
+			})
+
+		case acks, ok := <-this.ackCh:
+			if ok {
+				for _, ack := range acks {
+					if _, present := this.ackedOffsets[ack.cluster]; !present {
+						this.ackedOffsets[ack.cluster] = make(map[string]map[string]map[int]int64)
+					}
+					if _, present := this.ackedOffsets[ack.cluster][ack.topic]; !present {
+						this.ackedOffsets[ack.cluster][ack.topic] = make(map[string]map[int]int64)
+					}
+					if _, present := this.ackedOffsets[ack.topic][ack.group]; !present {
+						this.ackedOffsets[ack.cluster][ack.topic][ack.group] = make(map[int]int64)
+					}
+
+					// TODO validation
+					this.ackedOffsets[ack.cluster][ack.topic][ack.group][ack.Partition] = ack.Offset
+				}
+			} else {
+				// channel buffer drained, flush all offsets
+				// zk is still alive, safe to commit offsets
+				this.commitOffsets()
+				return
+			}
+
+		case <-ticker.C:
+			this.commitOffsets()
+		}
+	}
+
+}
+
+func (this *subServer) commitOffsets() {
+	for cluster, clusterTopic := range this.ackedOffsets {
+		zkcluster := meta.Default.ZkCluster(cluster)
+
+		for topic, groupPartition := range clusterTopic {
+			for group, partitionOffset := range groupPartition {
+				for partition, offset := range partitionOffset {
+					if offset == -1 {
+						// this slot is empty
+						continue
+					}
+
+					log.Debug("commit offset {C:%s T:%s G:%s P:%d O:%d}", cluster, topic, group, partition, offset)
+
+					if err := zkcluster.ResetConsumerGroupOffset(topic, group,
+						strconv.Itoa(partition), offset); err != nil {
+						log.Error("commitOffsets: %v", err)
+					} else {
+						// mark this slot empty
+						this.ackedOffsets[cluster][topic][group][partition] = -1
+					}
+				}
+			}
+		}
+	}
+
 }

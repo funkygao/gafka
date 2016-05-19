@@ -285,10 +285,13 @@ func (this *Gateway) ServeForever() {
 		this.svrMetrics.Flush()
 
 		meta.Default.Stop()
+		log.Trace("meta store stopped")
 		manager.Default.Stop()
+		log.Trace("manager store stopped")
 
 		if this.zkzone != nil {
 			this.zkzone.Close()
+			log.Trace("zkzone stopped")
 		}
 
 		this.timer.Stop()
