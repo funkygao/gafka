@@ -198,6 +198,7 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] topic name obfuscation
 - [ ] change all handler declaration to xxxServer instead of Gateway
 - [X] cf.ChannelBufferSize=20
 - [ ] sub with delayed ack
