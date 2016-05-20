@@ -230,6 +230,9 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			return ErrClientGone
 
 		case <-this.gw.shutdownCh:
+			// don't call me again
+			w.Header().Set("Connection", "close")
+
 			if !chunkedEver {
 				w.WriteHeader(http.StatusNoContent)
 				w.Write([]byte{})
@@ -245,7 +248,8 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 		case <-this.gw.timer.After(wait):
 			if chunkedEver {
 				// response already sent in chunk
-				log.Debug("chunked sub idle timeout {G:%s, T:%s, A:%s->%s}", group, topic, myAppid, hisAppid)
+				log.Debug("chunked sub idle timeout %s {A:%s/G:%s->A:%s T:%s V:%s}",
+					wait, myAppid, group, hisAppid, topic, ver)
 				return nil
 			}
 
