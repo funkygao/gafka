@@ -25,6 +25,7 @@ var (
 	batch    int
 	group    string
 	msgfile  string
+	wait     string
 	subAppid string
 	sleep    time.Duration
 )
@@ -40,6 +41,7 @@ func init() {
 	flag.StringVar(&msgfile, "msgfile", "", "message file to Pub")
 	flag.StringVar(&group, "group", "bench_go", "sub group name")
 	flag.DurationVar(&sleep, "sleep", 0, "sleep between loops")
+	flag.StringVar(&wait, "wait", "", "wait time")
 	flag.IntVar(&batch, "batch", 1, "sub batch limit")
 	flag.StringVar(&subAppid, "subappid", "", "sub which app's msg")
 	flag.BoolVar(&debug, "debug", false, "debug")
@@ -101,19 +103,20 @@ func benchmarkSub(seq int) {
 		Topic: topic,
 		Ver:   ver,
 		Batch: batch,
+		Wait:  wait,
 		Group: group,
 	}
 	var i int
 
 	err := client.SubX(opt, func(statusCode int, msg []byte, r *api.SubXResult) error {
 		if debug {
-			if batch > 1 {
+			if statusCode == 200 && batch > 1 {
 				msgs := gateway.DecodeMessageSet(msg)
 				for idx, m := range msgs {
 					log.Printf("%d P:%d O:%d V:%s", idx, m.Partition, m.Offset, string(m.Value))
 				}
 			} else {
-				log.Println(string(msg))
+				log.Println(statusCode, string(msg))
 			}
 		}
 		if statusCode == 200 {
