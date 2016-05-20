@@ -35,13 +35,14 @@ func (this *WatchZk) Run() {
 	qps := metrics.NewRegisteredGauge("zk.qps", nil)
 	conns := metrics.NewRegisteredGauge("zk.conns", nil)
 	znodes := metrics.NewRegisteredGauge("zk.znodes", nil)
+	deadNodes := metrics.NewRegisteredGauge("zk.dead", nil)
 	for {
 		select {
 		case <-this.Stop:
 			return
 
 		case <-ticker.C:
-			r, c, z := this.collectMetrics()
+			r, c, z, d := this.collectMetrics()
 			if this.lastReceived > 0 {
 				qps.Update((r - this.lastReceived) / int64(this.Tick.Seconds()))
 			}
@@ -49,11 +50,12 @@ func (this *WatchZk) Run() {
 
 			conns.Update(c)
 			znodes.Update(z)
+			deadNodes.Update(d)
 		}
 	}
 }
 
-func (this *WatchZk) collectMetrics() (received, conns, znodes int64) {
+func (this *WatchZk) collectMetrics() (received, conns, znodes, dead int64) {
 	for _, statOutput := range this.Zkzone.RunZkFourLetterCommand("stat") {
 		stat := zk.ParseStatResult(statOutput)
 		n, _ := strconv.Atoi(stat.Received)
@@ -62,6 +64,9 @@ func (this *WatchZk) collectMetrics() (received, conns, znodes int64) {
 		conns += int64(n)                // sum up the total connections
 		n, _ = strconv.Atoi(stat.Znodes) // each node in zk should the same amount of znode
 		znodes = int64(n)
+		if stat.Mode == "" {
+			dead += 1
+		}
 	}
 
 	return
