@@ -123,8 +123,8 @@ func ParseFlags() {
 	flag.IntVar(&Options.MaxPubRetries, "pubretry", 5, "max retries when Pub fails")
 	flag.IntVar(&Options.MaxRequestPerConn, "maxreq", -1, "max request per connection")
 	flag.IntVar(&Options.MaxMsgTagLen, "tagsz", 1024, "max message tag length permitted")
-	// kafka Fetch maxFetchSize=1MB, so if our msg agv size is 500B, batch size can be 2500
-	flag.IntVar(&Options.MaxSubBatchSize, "maxbatch", 2500, "max sub batch size")
+	// kafka Fetch maxFetchSize=1MB, so if our msg agv size is 250B, batch size can be 4000
+	flag.IntVar(&Options.MaxSubBatchSize, "maxbatch", 4000, "max sub batch size")
 	flag.IntVar(&Options.LogRotateSize, "logsize", 10<<30, "max unrotated log file size")
 	flag.Int64Var(&Options.PubQpsLimit, "publimit", 60*10000, "pub qps limit per minute per ip")
 	flag.IntVar(&Options.PubPoolCapcity, "pubpool", 100, "pub connection pool capacity")
