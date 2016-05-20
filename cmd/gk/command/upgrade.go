@@ -26,7 +26,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.storeUrl, "url", "http://10.77.144.193:10080/gk", "")
 	cmdFlags.StringVar(&this.uploadDir, "upload", "/var/www/html", "")
-	cmdFlags.StringVar(&this.mode, "mode", "d", "")
+	cmdFlags.StringVar(&this.mode, "m", "d", "")
 	cmdFlags.BoolVar(&this.upgradeKateway, "k", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -109,8 +109,8 @@ Options:
     -k
       Upgrade on kateway instead of gk
 
-    -mode <d|u>
-      Download or upload
+    -m <d|u>
+      Download or upload mode
       Defaults download mode
 
     -url gk file server url
