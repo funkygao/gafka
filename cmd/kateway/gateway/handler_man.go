@@ -344,7 +344,7 @@ func (this *manServer) updateTopicHandler(w http.ResponseWriter, r *http.Request
 		log.Warn("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} nothing updated",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
 
-		w.Write(ResponseOk)
+		writeBadRequest(w, "nothing updated")
 		return
 	}
 
