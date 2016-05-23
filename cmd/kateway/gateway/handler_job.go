@@ -98,7 +98,8 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	jobId, err := store.DefaultPubStore.AddJob(cluster, appid+"."+topic+"."+ver,
+	jobId, err := store.DefaultPubStore.AddJob(cluster,
+		manager.Default.KafkaTopic(appid, topic, ver),
 		msg.Body, delay)
 	if err != nil {
 		msg.Free() // defer is costly

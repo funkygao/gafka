@@ -144,7 +144,8 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
-	partition, offset, err := pubMethod(cluster, appid+"."+topic+"."+ver,
+	partition, offset, err := pubMethod(cluster,
+		manager.Default.KafkaTopic(appid, topic, ver),
 		[]byte(partitionKey), msg.Body)
 	if err != nil {
 		log.Error("pub[%s] %s(%s) {topic:%s ver:%s} %s",
