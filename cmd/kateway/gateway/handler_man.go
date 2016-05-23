@@ -273,7 +273,7 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 }
 
 // PUT /v1/topics/:cluster/:appid/:topic/:ver?partitions=1&retention.hours=72&retention.bytes=-1
-func (this *manServer) updateTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	if !manager.Default.ValidateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)
