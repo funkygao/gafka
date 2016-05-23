@@ -90,7 +90,7 @@ func (this *mysqlStore) AuthAdmin(appid, pubkey string) bool {
 }
 
 func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
-	if appid == "" || topic == "" {
+	if appid == "" || topic == "" || pubkey == "" {
 		return manager.ErrEmptyIdentity
 	}
 
