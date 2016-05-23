@@ -5,11 +5,30 @@ import (
 	"regexp"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
+	"github.com/funkygao/gafka/mpool"
 )
 
 var (
 	topicNameRegex = regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 )
+
+func (this *mysqlStore) KafkaTopic(appid string, topic string, ver string) (r string) {
+	b := mpool.BytesBufferGet()
+	b.Reset()
+	b.WriteString(appid)
+	b.WriteString(".")
+	b.WriteString(topic)
+	b.WriteString(".")
+	b.WriteString(ver)
+	r = b.String()
+	mpool.BytesBufferPut(b)
+	return
+}
+
+func (this *mysqlStore) ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group string) (r string) {
+	r = this.KafkaTopic(hisAppid, topic, ver)
+	return r + "." + myAppid + "." + group + "." + shadow
+}
 
 func (this *mysqlStore) Dump() map[string]interface{} {
 	r := make(map[string]interface{})

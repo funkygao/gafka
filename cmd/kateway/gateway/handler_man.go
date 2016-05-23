@@ -148,7 +148,7 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	}
 	defer kfk.Close()
 
-	partitions, err := kfk.Partitions(manager.KafkaTopic(hisAppid, topic, ver))
+	partitions, err := kfk.Partitions(manager.Default.KafkaTopic(hisAppid, topic, ver))
 	if err != nil {
 		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
 			zkcluster.Name(), r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, err)
@@ -229,7 +229,7 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 	log.Info("app[%s] from %s(%s) add topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
 		appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
 
-	topic = manager.KafkaTopic(hisAppid, topic, ver)
+	topic = manager.Default.KafkaTopic(hisAppid, topic, ver)
 	lines, err := zkcluster.AddTopic(topic, ts)
 	if err != nil {
 		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
@@ -338,7 +338,7 @@ func (this *manServer) updateTopicHandler(w http.ResponseWriter, r *http.Request
 	log.Info("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
 		appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
 
-	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
+	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	alterConfig := ts.DumpForAlterTopic()
 	if len(alterConfig) == 0 {
 		log.Warn("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} nothing updated",

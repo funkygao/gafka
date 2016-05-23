@@ -64,7 +64,7 @@ func (this *subServer) subWsHandler(w http.ResponseWriter, r *http.Request, para
 
 	log.Debug("sub[%s] %s: %+v", myAppid, r.RemoteAddr, params)
 
-	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
+	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
 		log.Error("cluster not found for subd app: %s", hisAppid)

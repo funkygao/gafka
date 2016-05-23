@@ -146,9 +146,9 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			return
 		}
 
-		rawTopic = manager.ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group)
+		rawTopic = manager.Default.ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group)
 	} else {
-		rawTopic = manager.KafkaTopic(hisAppid, topic, ver)
+		rawTopic = manager.Default.KafkaTopic(hisAppid, topic, ver)
 	}
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)

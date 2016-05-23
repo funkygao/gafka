@@ -12,6 +12,26 @@ func validateTopicName(topic string) bool {
 	return m.ValidateTopicName(topic)
 }
 
+func TestKafkaTopic(t *testing.T) {
+	m := &mysqlStore{}
+
+	appid := "ap1"
+	topic := "foobar"
+	ver := "v1"
+	if kafkaTopicWithSprintf(m, appid, topic, ver) != m.KafkaTopic(appid, topic, ver) {
+		t.Fail()
+	}
+}
+
+func TestShadowTopic(t *testing.T) {
+	m := &mysqlStore{}
+
+	topic := "foobar"
+	ver := "v1"
+	assert.Equal(t, "hisapp.foobar.v1.myapp.group1.retry",
+		m.ShadowTopic("retry", "myapp", "hisapp", topic, ver, "group1"))
+}
+
 func TestShadowKey(t *testing.T) {
 	m := mysqlStore{}
 	assert.Equal(t, "hisAppid.topic.ver.myAppid", m.shadowKey("hisAppid", "topic", "ver", "myAppid"))

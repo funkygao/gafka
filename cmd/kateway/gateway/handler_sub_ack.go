@@ -87,7 +87,7 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 		r.Header.Get("User-Agent"), acks)
 
 	realGroup := myAppid + "." + group
-	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
+	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	for i := 0; i < len(acks); i++ {
 		acks[i].cluster = cluster
 		acks[i].topic = rawTopic

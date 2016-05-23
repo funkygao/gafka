@@ -20,6 +20,9 @@ type Manager interface {
 
 	AllowSubWithUnregisteredGroup(bool)
 
+	KafkaTopic(appid string, topic string, ver string) string
+	ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group string) string
+
 	// AuthSub checks if an appid is able to consume message from hisAppid.hisTopic.
 	AuthSub(appid, subkey, hisAppid, hisTopic, group string) error
 

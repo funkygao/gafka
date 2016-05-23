@@ -131,7 +131,7 @@ func topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
 		// if group is empty, find all groups
 		group = myAppid + "." + group
 	}
-	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
+	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	consumersByGroup, err := zkcluster.ConsumerGroupsOfTopic(rawTopic)
 	if err != nil {
 		return nil, err

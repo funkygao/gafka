@@ -58,7 +58,7 @@ func (this *subServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 	var out = map[string]string{
 		"store": "kafka",
 		"zk":    meta.Default.ZkCluster(cluster).ZkConnectAddr(),
-		"topic": manager.KafkaTopic(hisAppid, topic, ver),
+		"topic": manager.Default.KafkaTopic(hisAppid, topic, ver),
 		"group": group,
 	}
 	b, _ := json.Marshal(out)
@@ -113,7 +113,7 @@ func (this *subServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 		lastN = 100
 	}
 
-	rawTopic = manager.KafkaTopic(hisAppid, topic, ver)
+	rawTopic = manager.Default.KafkaTopic(hisAppid, topic, ver)
 	zkcluster := meta.Default.ZkCluster(cluster)
 
 	kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
@@ -270,7 +270,7 @@ func (this *subServer) resetSubOffsetHandler(w http.ResponseWriter, r *http.Requ
 
 	zkcluster := meta.Default.ZkCluster(cluster)
 	realGroup := myAppid + "." + group
-	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
+	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	err = zkcluster.ResetConsumerGroupOffset(rawTopic, realGroup, partition, offsetN)
 	if err != nil {
 		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
@@ -394,8 +394,8 @@ func (this *subServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Requ
 	ts := sla.DefaultSla()
 	zkcluster := meta.Default.ZkCluster(cluster)
 	shadowTopics := []string{
-		manager.ShadowTopic(sla.SlaKeyRetryTopic, myAppid, hisAppid, topic, ver, group),
-		manager.ShadowTopic(sla.SlaKeyDeadLetterTopic, myAppid, hisAppid, topic, ver, group),
+		manager.Default.ShadowTopic(sla.SlaKeyRetryTopic, myAppid, hisAppid, topic, ver, group),
+		manager.Default.ShadowTopic(sla.SlaKeyDeadLetterTopic, myAppid, hisAppid, topic, ver, group),
 	}
 	for _, t := range shadowTopics {
 		lines, err := zkcluster.AddTopic(t, ts)
