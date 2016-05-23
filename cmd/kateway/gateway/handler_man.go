@@ -229,10 +229,10 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 	log.Info("app[%s] from %s(%s) add topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
 		appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
 
-	topic = manager.Default.KafkaTopic(hisAppid, topic, ver)
-	lines, err := zkcluster.AddTopic(topic, ts)
+	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
+	lines, err := zkcluster.AddTopic(rawTopic, ts)
 	if err != nil {
-		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
+		log.Error("app[%s] %s add topic[%s]: %s", appid, r.RemoteAddr, rawTopic, err.Error())
 
 		writeServerError(w, err.Error())
 		return
@@ -240,7 +240,7 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 
 	createdOk := false
 	for _, l := range lines {
-		log.Trace("app[%s] add topic[%s] in cluster %s: %s", appid, topic, cluster, l)
+		log.Trace("app[%s] add topic[%s] in cluster %s: %s", appid, rawTopic, cluster, l)
 
 		if strings.Contains(l, "Created topic") {
 			createdOk = true
@@ -254,16 +254,16 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 			return
 		}
 
-		lines, err = zkcluster.AlterTopic(topic, ts)
+		lines, err = zkcluster.AlterTopic(rawTopic, ts)
 		if err != nil {
-			log.Error("app[%s] %s alter topic: %s", appid, r.RemoteAddr, err.Error())
+			log.Error("app[%s] %s alter topic[%s]: %s", appid, r.RemoteAddr, rawTopic, err.Error())
 
 			writeServerError(w, err.Error())
 			return
 		}
 
 		for _, l := range lines {
-			log.Trace("app[%s] alter topic[%s] in cluster %s: %s", appid, topic, cluster, l)
+			log.Trace("app[%s] alter topic[%s] in cluster %s: %s", appid, rawTopic, cluster, l)
 		}
 
 		w.Write(ResponseOk)
