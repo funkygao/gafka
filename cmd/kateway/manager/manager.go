@@ -20,7 +20,10 @@ type Manager interface {
 
 	AllowSubWithUnregisteredGroup(bool)
 
+	// KafkaTopic returns raw kafka topic name.
 	KafkaTopic(appid string, topic string, ver string) string
+
+	// ShadowTopic returns raw kafka topic name of a shadowed topic.
 	ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group string) string
 
 	// AuthSub checks if an appid is able to consume message from hisAppid.hisTopic.
