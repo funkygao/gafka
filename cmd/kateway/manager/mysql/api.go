@@ -1,8 +1,10 @@
 package mysql
 
 import (
+	"hash/adler32"
 	"net/http"
 	"regexp"
+	"strconv"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/mpool"
@@ -16,10 +18,19 @@ func (this *mysqlStore) KafkaTopic(appid string, topic string, ver string) (r st
 	b := mpool.BytesBufferGet()
 	b.Reset()
 	b.WriteString(appid)
-	b.WriteString(".")
+	b.WriteByte('.')
 	b.WriteString(topic)
-	b.WriteString(".")
+	b.WriteByte('.')
 	b.WriteString(ver)
+	if len(ver) > 2 {
+		// ver starts with 'v1', from 'v10' on, will use obfuscation
+		b.WriteByte('.')
+
+		// can't use app secret as part of cookie: what if user changes his secret?
+		// FIXME user can guess the cookie if they know the algorithm in advance
+		cookie := adler32.Checksum([]byte(appid + topic))
+		b.WriteString(strconv.Itoa(int(cookie % 1000)))
+	}
 	r = b.String()
 	mpool.BytesBufferPut(b)
 	return

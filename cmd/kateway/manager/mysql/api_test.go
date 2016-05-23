@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/funkygao/assert"
+	"github.com/funkygao/gafka/ctx"
 )
 
 func validateTopicName(topic string) bool {
@@ -21,6 +22,18 @@ func TestKafkaTopic(t *testing.T) {
 	if kafkaTopicWithSprintf(m, appid, topic, ver) != m.KafkaTopic(appid, topic, ver) {
 		t.Fail()
 	}
+}
+
+func TestKafkaTopicWithObfuscation(t *testing.T) {
+	ctx.LoadFromHome()
+	m := New(DefaultConfig("local"))
+	appid := "app1"
+	topic := "foobar"
+	ver := "v10"
+	m.appSecretMap = make(map[string]string)
+	m.appSecretMap[appid] = "b7b73ac504d84944a3fedb801b348b2e"
+	t.Logf("topic: %s", m.KafkaTopic(appid, topic, ver))
+	assert.Equal(t, "app1.foobar.v10.844", m.KafkaTopic(appid, topic, ver))
 }
 
 func TestShadowTopic(t *testing.T) {

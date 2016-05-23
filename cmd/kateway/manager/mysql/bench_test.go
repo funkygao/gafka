@@ -1,8 +1,11 @@
 package mysql
 
 import (
+	"crypto/md5"
 	"fmt"
 	"testing"
+
+	"github.com/funkygao/gafka/ctx"
 )
 
 func kafkaTopicWithStrConcat(m *mysqlStore, appid string, topic string, ver string) string {
@@ -25,7 +28,26 @@ func BenchmarkKafkaTopicWithSprintf(b *testing.B) {
 func BenchmarkKafkaTopicWithMpool(b *testing.B) {
 	m := &mysqlStore{}
 	for i := 0; i < b.N; i++ {
-		m.KafkaTopic("appid", "topic", "ver")
+		m.KafkaTopic("appid", "topic", "v1")
+	}
+}
+
+// 145 ns/op	      16 B/op	       1 allocs/op
+func BenchmarkKafkaTopicObfuscationWithMpool(b *testing.B) {
+	ctx.LoadFromHome()
+	m := New(DefaultConfig("local"))
+	for i := 0; i < b.N; i++ {
+		m.KafkaTopic("appid", "topic", "v10")
+	}
+}
+
+// 322 ns/op
+func BenchmarkMd5Sum(b *testing.B) {
+	m := md5.New()
+	app := "app1"
+	topic := "asdfasdfasfa"
+	for i := 0; i < b.N; i++ {
+		m.Sum([]byte(app + topic))
 	}
 }
 
