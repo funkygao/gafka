@@ -27,7 +27,7 @@ func (this *Gateway) buildRouting() {
 		this.manServer.Router().POST("/v1/topics/:cluster/:appid/:topic/:ver",
 			m(this.manServer.addTopicHandler))
 		this.manServer.Router().PUT("/v1/topics/:cluster/:appid/:topic/:ver",
-			m(this.manServer.updateTopicHandler))
+			m(this.manServer.alterTopicHandler))
 	}
 
 	if this.pubServer != nil {

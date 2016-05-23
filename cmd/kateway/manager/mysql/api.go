@@ -1,15 +1,45 @@
 package mysql
 
 import (
+	"hash/adler32"
 	"net/http"
 	"regexp"
+	"strconv"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
+	"github.com/funkygao/gafka/mpool"
 )
 
 var (
 	topicNameRegex = regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 )
+
+func (this *mysqlStore) KafkaTopic(appid string, topic string, ver string) (r string) {
+	b := mpool.BytesBufferGet()
+	b.Reset()
+	b.WriteString(appid)
+	b.WriteByte('.')
+	b.WriteString(topic)
+	b.WriteByte('.')
+	b.WriteString(ver)
+	if len(ver) > 2 {
+		// ver starts with 'v1', from 'v10' on, will use obfuscation
+		b.WriteByte('.')
+
+		// can't use app secret as part of cookie: what if user changes his secret?
+		// FIXME user can guess the cookie if they know the algorithm in advance
+		cookie := adler32.Checksum([]byte(appid + topic))
+		b.WriteString(strconv.Itoa(int(cookie % 1000)))
+	}
+	r = b.String()
+	mpool.BytesBufferPut(b)
+	return
+}
+
+func (this *mysqlStore) ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group string) (r string) {
+	r = this.KafkaTopic(hisAppid, topic, ver)
+	return r + "." + myAppid + "." + group + "." + shadow
+}
 
 func (this *mysqlStore) Dump() map[string]interface{} {
 	r := make(map[string]interface{})

@@ -5,11 +5,44 @@ import (
 	"testing"
 
 	"github.com/funkygao/assert"
+	"github.com/funkygao/gafka/ctx"
 )
 
 func validateTopicName(topic string) bool {
 	m := mysqlStore{}
 	return m.ValidateTopicName(topic)
+}
+
+func TestKafkaTopic(t *testing.T) {
+	m := &mysqlStore{}
+
+	appid := "ap1"
+	topic := "foobar"
+	ver := "v1"
+	if kafkaTopicWithSprintf(m, appid, topic, ver) != m.KafkaTopic(appid, topic, ver) {
+		t.Fail()
+	}
+}
+
+func TestKafkaTopicWithObfuscation(t *testing.T) {
+	ctx.LoadFromHome()
+	m := New(DefaultConfig("local"))
+	appid := "app1"
+	topic := "foobar"
+	ver := "v10"
+	m.appSecretMap = make(map[string]string)
+	m.appSecretMap[appid] = "b7b73ac504d84944a3fedb801b348b2e"
+	t.Logf("topic: %s", m.KafkaTopic(appid, topic, ver))
+	assert.Equal(t, "app1.foobar.v10.844", m.KafkaTopic(appid, topic, ver))
+}
+
+func TestShadowTopic(t *testing.T) {
+	m := &mysqlStore{}
+
+	topic := "foobar"
+	ver := "v1"
+	assert.Equal(t, "hisapp.foobar.v1.myapp.group1.retry",
+		m.ShadowTopic("retry", "myapp", "hisapp", topic, ver, "group1"))
 }
 
 func TestShadowKey(t *testing.T) {

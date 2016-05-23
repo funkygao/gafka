@@ -150,6 +150,7 @@ func (this *Whois) loadFromManager(dsn string) {
 			sql = fmt.Sprintf("SELECT AppId,TopicName,TopicIntro,CreateBy,CreateTime,Status FROM topics WHERE TopicName %s '%s'",
 				op, this.topic)
 		}
+		sql += " ORDER BY TopicName, AppId"
 		q = db.NewQuery(sql)
 		swallow(q.All(&this.topicInfos))
 
@@ -168,7 +169,7 @@ func (this *Whois) loadFromManager(dsn string) {
 			sql = fmt.Sprintf("SELECT AppId,GroupName,GroupIntro,CreateBy,CreateTime,Status FROM application_group WHERE GroupName %s '%s'",
 				op, this.group)
 		}
-
+		sql += " ORDER BY GroupName, AppId"
 		q = db.NewQuery(sql)
 		swallow(q.All(&this.groupInfos))
 		for i, gi := range this.groupInfos {

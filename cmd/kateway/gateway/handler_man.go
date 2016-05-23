@@ -148,7 +148,7 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	}
 	defer kfk.Close()
 
-	partitions, err := kfk.Partitions(manager.KafkaTopic(hisAppid, topic, ver))
+	partitions, err := kfk.Partitions(manager.Default.KafkaTopic(hisAppid, topic, ver))
 	if err != nil {
 		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
 			zkcluster.Name(), r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, err)
@@ -229,10 +229,10 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 	log.Info("app[%s] from %s(%s) add topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
 		appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
 
-	topic = manager.KafkaTopic(hisAppid, topic, ver)
-	lines, err := zkcluster.AddTopic(topic, ts)
+	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
+	lines, err := zkcluster.AddTopic(rawTopic, ts)
 	if err != nil {
-		log.Error("app[%s] %s add topic: %s", appid, r.RemoteAddr, err.Error())
+		log.Error("app[%s] %s add topic[%s]: %s", appid, r.RemoteAddr, rawTopic, err.Error())
 
 		writeServerError(w, err.Error())
 		return
@@ -240,7 +240,7 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 
 	createdOk := false
 	for _, l := range lines {
-		log.Trace("app[%s] add topic[%s] in cluster %s: %s", appid, topic, cluster, l)
+		log.Trace("app[%s] add topic[%s] in cluster %s: %s", appid, rawTopic, cluster, l)
 
 		if strings.Contains(l, "Created topic") {
 			createdOk = true
@@ -254,16 +254,16 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 			return
 		}
 
-		lines, err = zkcluster.AlterTopic(topic, ts)
+		lines, err = zkcluster.AlterTopic(rawTopic, ts)
 		if err != nil {
-			log.Error("app[%s] %s alter topic: %s", appid, r.RemoteAddr, err.Error())
+			log.Error("app[%s] %s alter topic[%s]: %s", appid, r.RemoteAddr, rawTopic, err.Error())
 
 			writeServerError(w, err.Error())
 			return
 		}
 
 		for _, l := range lines {
-			log.Trace("app[%s] alter topic[%s] in cluster %s: %s", appid, topic, cluster, l)
+			log.Trace("app[%s] alter topic[%s] in cluster %s: %s", appid, rawTopic, cluster, l)
 		}
 
 		w.Write(ResponseOk)
@@ -273,7 +273,7 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 }
 
 // PUT /v1/topics/:cluster/:appid/:topic/:ver?partitions=1&retention.hours=72&retention.bytes=-1
-func (this *manServer) updateTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	if !manager.Default.ValidateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)
@@ -338,13 +338,13 @@ func (this *manServer) updateTopicHandler(w http.ResponseWriter, r *http.Request
 	log.Info("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
 		appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
 
-	rawTopic := manager.KafkaTopic(hisAppid, topic, ver)
+	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	alterConfig := ts.DumpForAlterTopic()
 	if len(alterConfig) == 0 {
 		log.Warn("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} nothing updated",
 			appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
 
-		w.Write(ResponseOk)
+		writeBadRequest(w, "nothing updated")
 		return
 	}
 

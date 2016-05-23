@@ -81,7 +81,8 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 		return
 	}
 
-	err := pubMethod(cluster, appid+"."+topic+"."+ver,
+	err := pubMethod(cluster,
+		manager.Default.KafkaTopic(appid, topic, ver),
 		key, ctx.PostBody())
 	if err != nil {
 		if !options.DisableMetrics {

@@ -30,7 +30,7 @@ type mysqlStore struct {
 }
 
 func New(cf *config) *mysqlStore {
-	if cf.Zone == "" {
+	if cf == nil || cf.Zone == "" {
 		panic("empty zone")
 	}
 	zkAddrs := ctx.ZoneZkAddrs(cf.Zone)

@@ -141,9 +141,9 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 			return
 		}
 
-		rawTopic = manager.ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group)
+		rawTopic = manager.Default.ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group)
 	} else {
-		rawTopic = manager.KafkaTopic(hisAppid, topic, ver)
+		rawTopic = manager.Default.KafkaTopic(hisAppid, topic, ver)
 	}
 
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
@@ -158,7 +158,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	}
 
 	// step1: pub
-	shadowTopic := manager.ShadowTopic(bury, myAppid, hisAppid, topic, ver, group)
+	shadowTopic := manager.Default.ShadowTopic(bury, myAppid, hisAppid, topic, ver, group)
 	_, _, err = store.DefaultPubStore.SyncPub(cluster, shadowTopic, nil, msg)
 	if err != nil {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
