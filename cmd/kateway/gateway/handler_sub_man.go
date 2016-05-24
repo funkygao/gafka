@@ -59,7 +59,7 @@ func (this *subServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 		"store": "kafka",
 		"zk":    meta.Default.ZkCluster(cluster).ZkConnectAddr(),
 		"topic": manager.Default.KafkaTopic(hisAppid, topic, ver),
-		"group": group,
+		"group": myAppid + "." + group,
 	}
 	b, _ := json.Marshal(out)
 	w.Write(b)
