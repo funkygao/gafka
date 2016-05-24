@@ -58,8 +58,8 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	}
 
 	wait, err = time.ParseDuration(query.Get("wait"))
-	if err != nil || wait.Nanoseconds() < MinSubWaitNanoSeconds {
-		wait = Options.SubTimeout
+	if err != nil || wait < MinSubWait {
+		wait = MinSubWait
 	}
 
 	ver = params.ByName(UrlParamVersion)
