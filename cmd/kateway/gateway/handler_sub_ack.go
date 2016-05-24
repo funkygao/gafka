@@ -82,8 +82,9 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
+	realIp := getHttpRemoteIp(r)
 	log.Debug("ack[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %+v",
-		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group,
+		myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group,
 		r.Header.Get("User-Agent"), acks)
 
 	realGroup := myAppid + "." + group
@@ -99,7 +100,7 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 		msg.Free()
 
 		log.Warn("ack[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} server is shutting down %+v ",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group,
 			r.Header.Get("User-Agent"), acks)
 
 		writeServerError(w, "server is shutting down")

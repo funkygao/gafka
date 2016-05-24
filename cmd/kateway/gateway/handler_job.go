@@ -20,19 +20,19 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		this.gw.clientStates.RegisterPubClient(r)
 	}
 
-	if Options.Ratelimit && !this.throttlePub.Pour(getHttpRemoteIp(r), 1) {
-		log.Warn("%s(%s) rate limit reached", r.RemoteAddr, getHttpRemoteIp(r))
+	appid := r.Header.Get(HttpHeaderAppid)
+	realIp := getHttpRemoteIp(r)
+	if Options.Ratelimit && !this.throttlePub.Pour(realIp, 1) {
+		log.Warn("+job[%s] %s(%s) rate limit reached", appid, r.RemoteAddr, realIp)
 
 		writeQuotaExceeded(w)
 		return
 	}
 
-	appid := r.Header.Get(HttpHeaderAppid)
 	topic := params.ByName(UrlParamTopic)
 	ver := params.ByName(UrlParamVersion)
 	if err := manager.Default.OwnTopic(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
-		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
+		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} %s", appid, r.RemoteAddr, realIp, topic, ver, err)
 
 		writeAuthFailure(w, err)
 		return
@@ -43,20 +43,20 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 	switch {
 	case msgLen == -1:
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} invalid content length: %d",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
+			appid, r.RemoteAddr, realIp, topic, ver, msgLen)
 
 		writeBadRequest(w, "invalid content length")
 		return
 
 	case int64(msgLen) > Options.MaxPubSize:
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} too big content length: %d",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
+			appid, r.RemoteAddr, realIp, topic, ver, msgLen)
 		writeBadRequest(w, ErrTooBigMessage.Error())
 		return
 
 	case msgLen < Options.MinPubSize:
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} too small content length: %d",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, msgLen)
+			appid, r.RemoteAddr, realIp, topic, ver, msgLen)
 		writeBadRequest(w, ErrTooSmallMessage.Error())
 		return
 	}
@@ -68,14 +68,14 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		msg.Free()
 
 		log.Error("+job[%s] %s(%s) {topic:%s, ver:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
+			appid, r.RemoteAddr, realIp, topic, ver, err)
 		writeBadRequest(w, ErrTooBigMessage.Error())
 		return
 	}
 
 	if Options.Debug {
 		log.Debug("+job[%s] %s(%s) {topic:%s, ver:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, string(msg.Body))
+			appid, r.RemoteAddr, realIp, topic, ver, string(msg.Body))
 	}
 
 	if !Options.DisableMetrics {
@@ -92,7 +92,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 	cluster, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
+			appid, r.RemoteAddr, realIp, topic, ver)
 
 		writeBadRequest(w, "invalid appid")
 		return
@@ -109,7 +109,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		}
 
 		log.Error("+job[%s] %s(%s) {topic:%s, ver:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
+			appid, r.RemoteAddr, realIp, topic, ver, err)
 		writeServerError(w, err.Error())
 		return
 	}
@@ -135,9 +135,10 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 	appid := r.Header.Get(HttpHeaderAppid)
 	topic := params.ByName(UrlParamTopic)
 	ver := params.ByName(UrlParamVersion)
+	realIp := getHttpRemoteIp(r)
 	if err := manager.Default.OwnTopic(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
+			appid, r.RemoteAddr, realIp, topic, ver, err)
 
 		writeAuthFailure(w, err)
 		return
@@ -146,7 +147,7 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 	cluster, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver)
+			appid, r.RemoteAddr, realIp, topic, ver)
 
 		writeBadRequest(w, "invalid appid")
 		return
@@ -160,7 +161,7 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 
 	if err := store.DefaultPubStore.DeleteJob(cluster, jobId); err != nil {
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %v",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
+			appid, r.RemoteAddr, realIp, topic, ver, err)
 
 		writeServerError(w, err.Error())
 		return

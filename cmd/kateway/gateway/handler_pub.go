@@ -30,9 +30,9 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		this.gw.clientStates.RegisterPubClient(r)
 	}
 
-	if Options.Ratelimit && !this.throttlePub.Pour(getHttpRemoteIp(r), 1) {
-		log.Warn("%s(%s) rate limit reached: %d/s", r.RemoteAddr, getHttpRemoteIp(r),
-			Options.PubQpsLimit)
+	realIp := getHttpRemoteIp(r)
+	if Options.Ratelimit && !this.throttlePub.Pour(realIp, 1) {
+		log.Warn("pub[%s] %s(%s) rate limit reached: %d/s", appid, r.RemoteAddr, realIp, Options.PubQpsLimit)
 
 		this.pubMetrics.ClientError.Inc(1)
 		writeQuotaExceeded(w)
@@ -44,7 +44,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	ver = params.ByName(UrlParamVersion)
 	if err := manager.Default.OwnTopic(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
 		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, r.Header.Get("User-Agent"), err)
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), err)
 
 		this.pubMetrics.ClientError.Inc(1)
 		writeAuthFailure(w, err)
@@ -55,7 +55,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	switch {
 	case int64(msgLen) > Options.MaxPubSize:
 		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} too big content length: %d",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, r.Header.Get("User-Agent"), msgLen)
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), msgLen)
 
 		this.pubMetrics.ClientError.Inc(1)
 		writeBadRequest(w, ErrTooBigMessage.Error())
@@ -63,7 +63,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 
 	case msgLen < Options.MinPubSize:
 		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} too small content length: %d",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, r.Header.Get("User-Agent"), msgLen)
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), msgLen)
 
 		this.pubMetrics.ClientError.Inc(1)
 		writeBadRequest(w, ErrTooSmallMessage.Error())
@@ -91,8 +91,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		msg.Free()
 
 		log.Error("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r),
-			topic, ver, r.Header.Get("User-Agent"), err)
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), err)
 
 		this.pubMetrics.ClientError.Inc(1)
 		writeBadRequest(w, ErrTooBigMessage.Error())
@@ -105,7 +104,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 
 	if Options.Debug {
 		log.Debug("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver,
+			appid, r.RemoteAddr, realIp, topic, ver,
 			string(msg.Body), r.Header.Get("User-Agent"))
 	}
 
@@ -118,7 +117,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	partitionKey = query.Get("key")
 	if len(partitionKey) > MaxPartitionKeyLen {
 		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} too big key: %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver,
+			appid, r.RemoteAddr, realIp, topic, ver,
 			r.Header.Get("User-Agent"), partitionKey)
 
 		this.pubMetrics.ClientError.Inc(1)
@@ -137,7 +136,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	cluster, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} cluster not found",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, r.Header.Get("User-Agent"), ver)
+			appid, r.RemoteAddr, realIp, topic, r.Header.Get("User-Agent"), ver)
 
 		this.pubMetrics.ClientError.Inc(1)
 		writeBadRequest(w, "invalid appid")
@@ -149,7 +148,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		[]byte(partitionKey), msg.Body)
 	if err != nil {
 		log.Error("pub[%s] %s(%s) {topic:%s ver:%s} %s",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), topic, ver, err)
+			appid, r.RemoteAddr, realIp, topic, ver, err)
 
 		msg.Free() // defer is costly
 

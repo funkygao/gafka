@@ -66,12 +66,13 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
+	realIp := getHttpRemoteIp(r)
 
 	// auth
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
 		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
 		writeAuthFailure(w, err)
@@ -95,7 +96,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			offsetN, err = strconv.ParseInt(offset, 10, 64)
 			if err != nil {
 				log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} offset:%s",
-					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+					myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 					group, r.Header.Get("User-Agent"), offset)
 
 				writeBadRequest(w, "ack with bad offset")
@@ -104,7 +105,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			partitionN, err = strconv.Atoi(partition)
 			if err != nil {
 				log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} partition:%s",
-					myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+					myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 					group, r.Header.Get("User-Agent"), partition)
 
 				writeBadRequest(w, "ack with bad partition")
@@ -112,7 +113,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			}
 		} else if len(partition+offset) != 0 {
 			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s partition:%s offset:%s UA:%s} partial ack",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 				group, partition, offset, r.Header.Get("User-Agent"))
 
 			writeBadRequest(w, "partial ack not allowed")
@@ -123,14 +124,14 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	shadow = query.Get("q")
 
 	log.Debug("sub[%s] %s(%s): {app:%s q:%s topic:%s ver:%s group:%s batch:%d ack:%s partition:%s offset:%s UA:%s}",
-		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, shadow, topic, ver,
+		myAppid, r.RemoteAddr, realIp, hisAppid, shadow, topic, ver,
 		group, limit, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"))
 
 	// calculate raw topic according to shadow
 	if shadow != "" {
 		if !sla.ValidateShadowName(shadow) {
 			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s q:%s UA:%s} invalid shadow name",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 				group, shadow, r.Header.Get("User-Agent"))
 
 			writeBadRequest(w, "invalid shadow name")
@@ -139,7 +140,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 
 		if !manager.Default.IsShadowedTopic(hisAppid, topic, ver, myAppid, group) {
 			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s q:%s UA:%s} not a shadowed topic",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 				group, shadow, r.Header.Get("User-Agent"))
 
 			writeBadRequest(w, "register shadow first")
@@ -154,7 +155,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
 		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} cluster not found",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"))
 
 		writeBadRequest(w, "invalid appid")
@@ -165,7 +166,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		myAppid+"."+group, r.RemoteAddr, reset, Options.PermitStandbySub)
 	if err != nil {
 		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
 		writeBadRequest(w, err.Error())
@@ -182,15 +183,14 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			Offset:    offsetN,
 		}); err != nil {
 			log.Error("sub commit[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:1 partition:%s offset:%s UA:%s} %v",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 				group, partition, offset, r.Header.Get("User-Agent"), err)
 
 			writeBadRequest(w, err.Error())
 			return
 		} else {
 			log.Debug("sub land %s(%s): {G:%s, T:%s, P:%s, O:%s}",
-				r.RemoteAddr, getHttpRemoteIp(r),
-				group, rawTopic, partition, offset)
+				r.RemoteAddr, realIp, group, rawTopic, partition, offset)
 		}
 	}
 
@@ -203,14 +203,14 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"), err)
 
 		writeServerError(w, err.Error())
 
 		if err = fetcher.Close(); err != nil {
 			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group, err)
 		}
 	}
 }
@@ -222,6 +222,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 
 	var metaBuf []byte = nil
 	n := 0
+	realIp := getHttpRemoteIp(r)
 	chunkedEver := false
 	for {
 		select {
@@ -319,14 +320,15 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			}
 
 			if !delayedAck {
-				log.Debug("sub commit offset {G:%s, T:%s, P:%d, O:%d}", group, msg.Topic, msg.Partition, msg.Offset)
+				log.Debug("sub commit offset %s(%s): {G:%s, T:%s, P:%d, O:%d}",
+					r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset)
+
 				if err = fetcher.CommitUpto(msg); err != nil {
 					return err
 				}
 			} else {
 				log.Debug("sub take off %s(%s): {G:%s, T:%s, P:%d, O:%d}",
-					r.RemoteAddr, getHttpRemoteIp(r),
-					group, msg.Topic, msg.Partition, msg.Offset)
+					r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset)
 			}
 
 			this.subMetrics.ConsumeOk(myAppid, topic, ver)

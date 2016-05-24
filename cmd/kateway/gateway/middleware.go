@@ -81,7 +81,7 @@ func (this *Gateway) MiddlewareKateway(h httprouter.Handle) httprouter.Handle {
 func (this *Gateway) buildCommonLogLine(buf []byte, r *http.Request, status, size int) []byte {
 	appid := r.Header.Get(HttpHeaderAppid)
 	if appid == "" {
-		appid = getHttpRemoteIp(r)
+		appid = getHttpRemoteIp(r) // cheat appid as remote ip, if not present, use ip
 	}
 
 	buf = append(buf, appid...)
