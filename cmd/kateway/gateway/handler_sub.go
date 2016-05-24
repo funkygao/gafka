@@ -222,6 +222,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 
 	var metaBuf []byte = nil
 	n := 0
+	idleTimeout := Options.SubTimeout
 	chunkedEver := false
 	for {
 		select {
@@ -245,11 +246,11 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			// e,g. conn with broker is broken
 			return err
 
-		case <-this.gw.timer.After(wait):
+		case <-this.gw.timer.After(idleTimeout):
 			if chunkedEver {
 				// response already sent in chunk
 				log.Debug("chunked sub idle timeout %s {A:%s/G:%s->A:%s T:%s V:%s}",
-					wait, myAppid, group, hisAppid, topic, ver)
+					idleTimeout, myAppid, group, hisAppid, topic, ver)
 				return nil
 			}
 
@@ -342,6 +343,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			w.(http.Flusher).Flush()
 
 			chunkedEver = true
+			idleTimeout = wait // user specified wait only works after recv 1st message in batch
 		}
 	}
 }
