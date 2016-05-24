@@ -166,7 +166,7 @@ func (this *Verify) verifyPub() {
 			continue
 		}
 
-		psubTopic := manager.KafkaTopic(t.AppId, t.TopicName, "v1")
+		psubTopic := manager.Default.KafkaTopic(t.AppId, t.TopicName, "v1")
 		offsets := this.pubOffsetDiff(t.KafkaTopicName, kafkaCluster,
 			psubTopic, this.cluster)
 		var diff string
@@ -240,7 +240,7 @@ func (this *Verify) verifySub() {
 			continue
 		}
 
-		psubTopic := manager.KafkaTopic(t.AppId, t.TopicName, "v1")
+		psubTopic := manager.Default.KafkaTopic(t.AppId, t.TopicName, "v1")
 		psubGroups := this.fetchConsumerGroups(psubTopic, this.cluster)
 		kfkGroups := this.fetchConsumerGroups(t.KafkaTopicName, kafkaCluster)
 		pN, kN := len(psubGroups), len(kfkGroups)

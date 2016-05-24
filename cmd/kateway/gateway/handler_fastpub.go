@@ -137,7 +137,7 @@ func (this *Gateway) pubRawHandler(ctx *fasthttp.RequestCtx, params fasthttprout
 	var out = map[string]string{
 		"store":       "kafka",
 		"broker.list": strings.Join(meta.Default.BrokerList(cluster), ","),
-		"topic":       meta.KafkaTopic(appid, topic, ver),
+		"topic":       manager.Default.KafkaTopic(appid, topic, ver),
 	}
 
 	b, _ := json.Marshal(out)
