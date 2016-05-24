@@ -10,6 +10,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
+	mandb "github.com/funkygao/gafka/cmd/kateway/manager/mysql"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
@@ -63,6 +64,9 @@ func (this *Verify) Run(args []string) (exitCode int) {
 		invalid(args) {
 		return 2
 	}
+
+	cf := mandb.DefaultConfig(this.zone)
+	manager.Default = mandb.New(cf)
 
 	ensureZoneValid(this.zone)
 	this.zkzone = zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
