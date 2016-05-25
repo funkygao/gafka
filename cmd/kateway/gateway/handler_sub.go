@@ -14,7 +14,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&wait=5s&reset=<newest|oldest>&ack=1&q=<dead|retry>
+// GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&reset=<newest|oldest>&ack=1&q=<dead|retry>
 func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		topic      string
@@ -28,11 +28,10 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		partition  string
 		partitionN int = -1
 		offset     string
-		offsetN    int64                = -1
-		limit      int                  // max messages to include in the message set
-		wait       = Options.SubTimeout // max time to wait if insufficient data is available
-		delayedAck bool                 // explicit application level acknowledgement
-		tagFilters []MsgTag             = nil
+		offsetN    int64    = -1
+		limit      int      // max messages to include in the message set
+		delayedAck bool     // explicit application level acknowledgement
+		tagFilters []MsgTag = nil
 		err        error
 	)
 
@@ -55,17 +54,6 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	}
 	if limit > Options.MaxSubBatchSize && Options.MaxSubBatchSize > 0 {
 		limit = Options.MaxSubBatchSize
-	}
-
-	waitParam := query.Get("wait")
-	if waitParam != "" {
-		w, e := time.ParseDuration(waitParam)
-		if e == nil {
-			wait = w
-			if wait < MinSubWait {
-				wait = MinSubWait
-			}
-		}
 	}
 
 	ver = params.ByName(UrlParamVersion)
@@ -205,7 +193,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		tagFilters = parseMessageTag(tag)
 	}
 
-	err = this.pumpMessages(w, r, fetcher, limit, wait, myAppid, hisAppid, topic, ver, group, delayedAck, tagFilters)
+	err = this.pumpMessages(w, r, fetcher, limit, myAppid, hisAppid, topic, ver, group, delayedAck, tagFilters)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s} %v",
@@ -222,7 +210,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 }
 
 func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
-	fetcher store.Fetcher, limit int, wait time.Duration, myAppid, hisAppid, topic, ver,
+	fetcher store.Fetcher, limit int, myAppid, hisAppid, topic, ver,
 	group string, delayedAck bool, tagFilters []MsgTag) error {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
@@ -255,8 +243,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			// e,g. conn with broker is broken
 			return err
 
-		//case <-this.gw.timer.After(idleTimeout): TODO timer precision is in seconds
-		case <-time.After(idleTimeout):
+		case <-this.gw.timer.After(idleTimeout):
 			if chunkedEver {
 				// response already sent in chunk
 				log.Debug("chunked sub idle timeout %s {A:%s/G:%s->A:%s T:%s V:%s}",
@@ -330,7 +317,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			}
 
 			if !delayedAck {
-				log.Debug("sub commit offset %s(%s): {G:%s, T:%s, P:%d, O:%d}",
+				log.Debug("sub auto commit offset %s(%s): {G:%s, T:%s, P:%d, O:%d}",
 					r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset)
 
 				if err = fetcher.CommitUpto(msg); err != nil {
@@ -354,7 +341,13 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			w.(http.Flusher).Flush()
 
 			chunkedEver = true
-			idleTimeout = wait // user specified wait only works after recv 1st message in batch
+
+			if n == 1 {
+				log.Debug("sub idle timeout %s->1s %s(%s): {G:%s, T:%s, P:%d, O:%d B:%d}",
+					idleTimeout, r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset, limit)
+				idleTimeout = time.Second
+			}
+
 		}
 	}
 }

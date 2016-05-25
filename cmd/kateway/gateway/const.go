@@ -1,9 +1,5 @@
 package gateway
 
-import (
-	"time"
-)
-
 const (
 	HttpHeaderAppid         = "Appid"
 	HttpHeaderPubkey        = "Pubkey"
@@ -27,10 +23,6 @@ const (
 	CharDot           = '.'
 
 	MaxPartitionKeyLen = 256
-)
-
-const (
-	MinSubWait = 100 * time.Millisecond
 )
 
 var (
