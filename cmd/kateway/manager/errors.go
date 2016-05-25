@@ -5,6 +5,7 @@ import (
 )
 
 var (
+	ErrDisabledTopic      = errors.New("pub to a disabled topic not allowed")
 	ErrEmptyIdentity      = errors.New("auth with empty identity")
 	ErrAuthenticationFail = errors.New("authentication fails, retry after 5m")
 	ErrAuthorizationFail  = errors.New("authorization fails, retry after 5m")

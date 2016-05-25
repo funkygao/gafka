@@ -24,7 +24,7 @@ type mysqlStore struct {
 	appClusterMap       map[string]string              // appid:cluster
 	appSecretMap        map[string]string              // appid:secret
 	appSubMap           map[string]map[string]struct{} // appid:subscribed topics
-	appPubMap           map[string]map[string]struct{} // appid:topics
+	appTopicsMap        map[string]map[string]bool     // appid:topics enabled
 	appConsumerGroupMap map[string]map[string]struct{} // appid:groups
 	shadowQueueMap      map[string]string              // hisappid.topic.ver.myappid:group
 }
@@ -56,7 +56,7 @@ type applicationRecord struct {
 }
 
 type appTopicRecord struct {
-	AppId, TopicName string
+	AppId, TopicName, Status string
 }
 
 type appSubscribeRecord struct {
@@ -264,29 +264,29 @@ func (this *mysqlStore) fetchSubscribeRecords(db *sql.DB) error {
 }
 
 func (this *mysqlStore) fetchTopicRecords(db *sql.DB) error {
-	rows, err := db.Query("SELECT AppId,TopicName FROM topics WHERE Status=1")
+	rows, err := db.Query("SELECT AppId,TopicName,Status FROM topics")
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 
 	var app appTopicRecord
-	m := make(map[string]map[string]struct{})
+	m := make(map[string]map[string]bool)
 	for rows.Next() {
-		err = rows.Scan(&app.AppId, &app.TopicName)
+		err = rows.Scan(&app.AppId, &app.TopicName, &app.Status)
 		if err != nil {
 			log.Error("mysql manager store: %v", err)
 			continue
 		}
 
 		if _, present := m[app.AppId]; !present {
-			m[app.AppId] = make(map[string]struct{})
+			m[app.AppId] = make(map[string]bool)
 		}
 
-		m[app.AppId][app.TopicName] = struct{}{}
+		m[app.AppId][app.TopicName] = app.Status == "1"
 	}
 
-	this.appPubMap = m
+	this.appTopicsMap = m
 
 	return nil
 }

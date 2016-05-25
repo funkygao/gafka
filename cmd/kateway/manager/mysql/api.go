@@ -45,7 +45,7 @@ func (this *mysqlStore) Dump() map[string]interface{} {
 	r := make(map[string]interface{})
 	r["app_cluster"] = this.appClusterMap
 	r["subscrptions"] = this.appSubMap
-	r["app_topic"] = this.appPubMap
+	r["app_topic"] = this.appTopicsMap
 	r["groups"] = this.appConsumerGroupMap
 	r["shadows"] = this.shadowQueueMap
 	return r
@@ -100,9 +100,13 @@ func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 	}
 
 	// authorization
-	if topics, present := this.appPubMap[appid]; present {
-		if _, present := topics[topic]; present {
-			return nil
+	if topics, present := this.appTopicsMap[appid]; present {
+		if enabled, present := topics[topic]; present {
+			if enabled {
+				return nil
+			} else {
+				return manager.ErrDisabledTopic
+			}
 		}
 	}
 
