@@ -472,7 +472,10 @@ func (this *ZkZone) brokers() map[string]map[string]*BrokerZnode {
 			r[cluster] = make(map[string]*BrokerZnode)
 			for brokerId, brokerInfo := range liveBrokers {
 				broker := newBrokerZnode(brokerId)
-				broker.from(brokerInfo.data)
+				if err := broker.from(brokerInfo.data); err != nil {
+					log.Error("%s: %v", string(brokerInfo.data), err)
+					continue
+				}
 
 				r[cluster][brokerId] = broker
 			}

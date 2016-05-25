@@ -75,10 +75,8 @@ func newConsumerZnode(id string) *ConsumerZnode {
 	return &ConsumerZnode{Id: id}
 }
 
-func (c *ConsumerZnode) from(zkData []byte) {
-	if err := json.Unmarshal(zkData, c); err != nil {
-		panic(string(zkData) + ": " + err.Error())
-	}
+func (c *ConsumerZnode) from(zkData []byte) error {
+	return json.Unmarshal(zkData, c)
 }
 
 func (c *ConsumerZnode) Host() string {
@@ -134,10 +132,8 @@ func (b *BrokerZnode) Uptime() time.Time {
 	return TimestampToTime(b.Timestamp)
 }
 
-func (b *BrokerZnode) from(zkData []byte) {
-	if err := json.Unmarshal(zkData, b); err != nil {
-		panic(string(zkData) + ": " + err.Error())
-	}
+func (b *BrokerZnode) from(zkData []byte) error {
+	return json.Unmarshal(zkData, b)
 }
 
 func (b *BrokerZnode) Addr() string {

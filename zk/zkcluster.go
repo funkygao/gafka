@@ -222,7 +222,11 @@ func (this *ZkCluster) ConsumerGroups() map[string]map[string]*ConsumerZnode {
 		r[group] = make(map[string]*ConsumerZnode)
 		for consumerId, data := range this.zone.ChildrenWithData(this.consumerGroupIdsPath(group)) {
 			c := newConsumerZnode(consumerId)
-			c.from(data.data)
+			if err := c.from(data.data); err != nil {
+				log.Error("%s: %v", string(data.data), err)
+				continue
+			}
+
 			r[group][consumerId] = c
 		}
 	}
@@ -418,7 +422,10 @@ func (this *ZkCluster) Brokers() map[string]*BrokerZnode {
 	r := make(map[string]*BrokerZnode)
 	for brokerId, brokerInfo := range this.zone.ChildrenWithData(this.brokerIdsRoot()) {
 		broker := newBrokerZnode(brokerId)
-		broker.from(brokerInfo.data)
+		if err := broker.from(brokerInfo.data); err != nil {
+			log.Error("%s: %v", string(brokerInfo.data), err)
+			continue
+		}
 
 		r[brokerId] = broker
 	}
@@ -470,7 +477,9 @@ func (this *ZkCluster) Isr(topic string, partitionId int32) []int {
 func (this *ZkCluster) Broker(id int) (b *BrokerZnode) {
 	zkData, _, _ := this.zone.conn.Get(this.brokerPath(id))
 	b = newBrokerZnode(strconv.Itoa(id))
-	b.from(zkData)
+	if err := b.from(zkData); err != nil {
+		log.Error("%s: %v", string(zkData), err)
+	}
 	return
 }
 
