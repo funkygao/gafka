@@ -220,11 +220,13 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 	group string, delayedAck bool, tagFilters []MsgTag) error {
 	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
 
-	var metaBuf []byte = nil
-	n := 0
-	idleTimeout := Options.SubTimeout
-	realIp := getHttpRemoteIp(r)
-	chunkedEver := false
+	var (
+		metaBuf     []byte = nil
+		n                  = 0
+		idleTimeout        = Options.SubTimeout
+		realIp             = getHttpRemoteIp(r)
+		chunkedEver        = false
+	)
 	for {
 		select {
 		case <-clientGoneCh:
