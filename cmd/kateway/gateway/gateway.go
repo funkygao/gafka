@@ -180,11 +180,11 @@ func (this *Gateway) Start() (err error) {
 		}
 
 		if err := registry.Default.Deregister(); err != nil {
-			log.Error("Deregister: %v", err)
+			log.Error("deregister: %v", err)
 			return
 		}
 
-		log.Info("Deregister done")
+		log.Info("deregistered from %s", registry.Default.Name())
 	}, syscall.SIGUSR1) // disallow load balancer dispatch to me
 
 	this.startedAt = time.Now()
@@ -269,7 +269,8 @@ func (this *Gateway) ServeForever() {
 			}
 		}
 
-		log.Info("Deregister done, waiting for servers shutdown...")
+		log.Info("deregistered from %s", registry.Default.Name())
+		log.Info("waiting for servers shutdown...")
 		this.wg.Wait()
 		log.Info("<----- all servers shutdown ----->")
 
