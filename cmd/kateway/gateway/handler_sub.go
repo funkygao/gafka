@@ -223,6 +223,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 	var metaBuf []byte = nil
 	n := 0
 	idleTimeout := Options.SubTimeout
+	realIp := getHttpRemoteIp(r)
 	chunkedEver := false
 	for {
 		select {
