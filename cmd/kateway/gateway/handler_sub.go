@@ -28,11 +28,11 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		partition  string
 		partitionN int = -1
 		offset     string
-		offsetN    int64         = -1
-		limit      int           // max messages to include in the message set
-		wait       time.Duration // max time to wait if insufficient data is available
-		delayedAck bool          // explicit application level acknowledgement
-		tagFilters []MsgTag      = nil
+		offsetN    int64                = -1
+		limit      int                  // max messages to include in the message set
+		wait       = Options.SubTimeout // max time to wait if insufficient data is available
+		delayedAck bool                 // explicit application level acknowledgement
+		tagFilters []MsgTag             = nil
 		err        error
 	)
 
@@ -57,9 +57,15 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		limit = Options.MaxSubBatchSize
 	}
 
-	wait, err = time.ParseDuration(query.Get("wait"))
-	if err != nil || wait < MinSubWait {
-		wait = MinSubWait
+	waitParam := query.Get("wait")
+	if waitParam != "" {
+		w, e := time.ParseDuration(waitParam)
+		if e == nil {
+			wait = w
+			if wait < MinSubWait {
+				wait = MinSubWait
+			}
+		}
 	}
 
 	ver = params.ByName(UrlParamVersion)
