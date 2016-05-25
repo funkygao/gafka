@@ -276,14 +276,17 @@ func (this *Gateway) ServeForever() {
 
 		this.accessLogger.Stop()
 
+		log.Trace("stopping pub store")
 		if store.DefaultPubStore != nil {
 			store.DefaultPubStore.Stop()
 		}
+		log.Trace("stopping sub store")
 		if store.DefaultSubStore != nil {
 			store.DefaultSubStore.Stop()
 		}
 
 		this.svrMetrics.Flush()
+		log.Trace("svr metrics flushed")
 
 		meta.Default.Stop()
 		log.Trace("meta store stopped")
