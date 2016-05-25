@@ -1,5 +1,9 @@
 package gateway
 
+import (
+	"time"
+)
+
 const (
 	HttpHeaderAppid         = "Appid"
 	HttpHeaderPubkey        = "Pubkey"
@@ -26,7 +30,7 @@ const (
 )
 
 const (
-	MinSubWaitNanoSeconds = 1000 * 1000 * 100 // 100ms
+	MinSubWait = 100 * time.Millisecond
 )
 
 var (
