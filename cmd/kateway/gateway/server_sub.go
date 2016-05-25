@@ -147,8 +147,11 @@ func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit
 	}
 	this.idleConnsLock.Unlock()
 
-	log.Trace("%s waiting for all connected http client close...", this.name)
-	this.idleConnsWg.Wait()
+	log.Trace("%s waiting for all connected client close...", this.name)
+	if waitTimeout(&this.idleConnsWg, Options.SubTimeout) {
+		log.Warn("%s waiting for all connected client close timeout: %s",
+			this.name, Options.SubTimeout)
+	}
 
 	this.subMetrics.Flush()
 
