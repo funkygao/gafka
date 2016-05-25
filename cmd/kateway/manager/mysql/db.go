@@ -51,27 +51,6 @@ func (this *mysqlStore) Name() string {
 	return "mysql"
 }
 
-type applicationRecord struct {
-	AppId, Cluster, AppSecret string
-}
-
-type appTopicRecord struct {
-	AppId, TopicName, Status string
-}
-
-type appSubscribeRecord struct {
-	AppId, TopicName string
-}
-
-type appConsumerGroupRecord struct {
-	AppId, GroupName string
-}
-
-type shadowQueueRecord struct {
-	HisAppId, TopicName, Ver string
-	MyAppid, Group           string
-}
-
 func (this *mysqlStore) Start() error {
 	if err := this.refreshFromMysql(); err != nil {
 		// refuse to start if mysql conn fails
