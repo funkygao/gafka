@@ -55,6 +55,9 @@ func (this *subServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
+	log.Info("sub raw[%s] %s(%s): {app:%s, topic:%s, ver:%s group:%s}",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
+
 	var out = map[string]string{
 		"store": "kafka",
 		"zk":    meta.Default.ZkCluster(cluster).ZkConnectAddr(),
