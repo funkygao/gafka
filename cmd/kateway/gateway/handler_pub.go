@@ -15,7 +15,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// POST /v1/msgs/:topic/:ver?key=mykey&async=1&ack=all
+// POST /v1/msgs/:topic/:ver?key=mykey&async=1&ack=all&batch=1
 func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		appid        string
@@ -114,6 +114,9 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	}
 
 	query := r.URL.Query() // reuse the query will save 100ns
+	if query.Get("batch") == "1" {
+		// TODO
+	}
 	partitionKey = query.Get("key")
 	if len(partitionKey) > MaxPartitionKeyLen {
 		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} too big key: %s",

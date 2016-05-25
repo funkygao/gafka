@@ -198,9 +198,10 @@ It is designed to be programmer friendly.
 
 ### TODO
 
-- [ ] topic name obfuscation
-- [ ] change all handler declaration to xxxServer instead of Gateway
+- [ ] pub in batch
+- [X] change all handler declaration to xxxServer instead of Gateway
 - [X] cf.ChannelBufferSize=20
+- [X] topic name obfuscation
 - [ ] sub with delayed ack
   - StatusNotModified
   - what if rebalanced, and ack buffered p/o
