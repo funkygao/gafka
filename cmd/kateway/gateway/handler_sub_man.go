@@ -60,7 +60,7 @@ func (this *subServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 
 	var out = map[string]string{
 		"store": "kafka",
-		"zk":    meta.Default.ZkCluster(cluster).ZkConnectAddr(),
+		"zk":    meta.Default.ZkCluster(cluster).NamedZkConnectAddr(),
 		"topic": manager.Default.KafkaTopic(hisAppid, topic, ver),
 		"group": myAppid + "." + group,
 	}
