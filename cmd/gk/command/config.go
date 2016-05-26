@@ -19,15 +19,27 @@ type Config struct {
 
 func (this *Config) Run(args []string) (exitCode int) {
 	var (
-		genratedMode bool
-		showAliases  bool
+		genratedMode     bool
+		showAliases      bool
+		bashAutocomplete bool
 	)
 	cmdFlags := flag.NewFlagSet("config", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.BoolVar(&genratedMode, "gen", false, "")
 	cmdFlags.BoolVar(&showAliases, "alias", false, "")
+	cmdFlags.BoolVar(&bashAutocomplete, "auto", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	if bashAutocomplete {
+		writeFileFromTemplate("template/bash_autocomplete", "/etc/bash_completion.d/gk",
+			0644, nil, nil)
+
+		this.Ui.Info("next:")
+		this.Ui.Warn("yum install -y bash-completion")
+		this.Ui.Warn("source /etc/bash_completion.d/gk")
+		return
 	}
 
 	if genratedMode {
@@ -66,6 +78,9 @@ Usage: %s config [options]
     Display %s config file contents
 
 Options:
+
+    -auto
+      Install gk bash autocomplete script.
 
     -gen
       Display default config contents on console.
