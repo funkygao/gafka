@@ -201,27 +201,31 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 				sort.Strings(sortedIds)
 
 				for _, consumerId := range sortedIds {
-					for _, offset := range this.displayGroupOffsets(zkcluster, group, false) {
-						ownerByPartition := zkcluster.OwnersOfGroupByTopic(group, offset.topic)
-						onlineSymbol := "◉"
-						if ownerByPartition[offset.partitionId] == consumerId {
-							onlineSymbol += "*"
+					c := consumersMap[consumerId]
+					for topic, _ := range c.Subscription {
+						for _, offset := range this.displayGroupOffsets(zkcluster, group, topic, false) {
+							ownerByPartition := zkcluster.OwnersOfGroupByTopic(group, offset.topic)
+							onlineSymbol := "◉"
+							if ownerByPartition[offset.partitionId] == consumerId {
+								onlineSymbol += "*"
+							}
+
+							lines = append(lines,
+								fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
+									zkzone.Name(), zkcluster.Name(),
+									onlineSymbol,
+									c.Host(),
+									group,
+									fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),
+									offset.offset,
+									gofmt.PrettySince(c.Uptime())))
 						}
-						c := consumersMap[consumerId]
-						lines = append(lines,
-							fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
-								zkzone.Name(), zkcluster.Name(),
-								onlineSymbol,
-								c.Host(),
-								group,
-								fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),
-								offset.offset,
-								gofmt.PrettySince(c.Uptime())))
 					}
+
 				}
 			} else {
 				// offline
-				for _, offset := range this.displayGroupOffsets(zkcluster, group, false) {
+				for _, offset := range this.displayGroupOffsets(zkcluster, group, "", false) {
 					lines = append(lines,
 						fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
 							zkzone.Name(), zkcluster.Name(),
@@ -242,37 +246,37 @@ type consumerGroupOffset struct {
 	offset             string // comma fmt
 }
 
-func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, group string, echo bool) []consumerGroupOffset {
+func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, group, topic string, echo bool) []consumerGroupOffset {
 	offsetMap := zkcluster.ConsumerOffsetsOfGroup(group)
 	sortedTopics := make([]string, 0, len(offsetMap))
-	for topic, _ := range offsetMap {
-		sortedTopics = append(sortedTopics, topic)
+	for t, _ := range offsetMap {
+		sortedTopics = append(sortedTopics, t)
 	}
 	sort.Strings(sortedTopics)
 
 	r := make([]consumerGroupOffset, 0)
 
-	for _, topic := range sortedTopics {
-		if !patternMatched(topic, this.topicPattern) {
+	for _, t := range sortedTopics {
+		if !patternMatched(t, this.topicPattern) || (topic != "" && t != topic) {
 			continue
 		}
 
-		sortedPartitionIds := make([]string, 0, len(offsetMap[topic]))
-		for partitionId, _ := range offsetMap[topic] {
+		sortedPartitionIds := make([]string, 0, len(offsetMap[t]))
+		for partitionId, _ := range offsetMap[t] {
 			sortedPartitionIds = append(sortedPartitionIds, partitionId)
 		}
 		sort.Strings(sortedPartitionIds)
 
 		for _, partitionId := range sortedPartitionIds {
 			r = append(r, consumerGroupOffset{
-				topic:       topic,
+				topic:       t,
 				partitionId: partitionId,
-				offset:      gofmt.Comma(offsetMap[topic][partitionId]),
+				offset:      gofmt.Comma(offsetMap[t][partitionId]),
 			})
 
 			if echo {
 				this.Ui.Output(fmt.Sprintf("\t\t%s/%s Offset:%s",
-					topic, partitionId, gofmt.Comma(offsetMap[topic][partitionId])))
+					t, partitionId, gofmt.Comma(offsetMap[t][partitionId])))
 			}
 
 		}
