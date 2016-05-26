@@ -203,12 +203,16 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 				for _, consumerId := range sortedIds {
 					c := consumersMap[consumerId]
 					for topic, _ := range c.Subscription {
+						ownerByPartition := zkcluster.OwnersOfGroupByTopic(group, topic)
+
+						partitionsWithOffset := make(map[string]struct{})
 						for _, offset := range this.displayGroupOffsets(zkcluster, group, topic, false) {
-							ownerByPartition := zkcluster.OwnersOfGroupByTopic(group, offset.topic)
 							onlineSymbol := "◉"
 							if ownerByPartition[offset.partitionId] == consumerId {
 								onlineSymbol += "*"
 							}
+
+							partitionsWithOffset[offset.partitionId] = struct{}{}
 
 							lines = append(lines,
 								fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
@@ -219,6 +223,20 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 									fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),
 									offset.offset,
 									gofmt.PrettySince(c.Uptime())))
+						}
+
+						for partitionId, _ := range ownerByPartition {
+							if _, present := partitionsWithOffset[partitionId]; !present {
+								// this consumer is owner online, but has no offset
+								lines = append(lines,
+									fmt.Sprintf("%s|%s|%s|%s|%s|%s|?|%s",
+										zkzone.Name(), zkcluster.Name(),
+										"◉*",
+										c.Host(),
+										group,
+										fmt.Sprintf("%s/%s", topic, partitionId),
+										gofmt.PrettySince(c.Uptime())))
+							}
 						}
 					}
 
