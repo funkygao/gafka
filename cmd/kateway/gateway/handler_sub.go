@@ -185,7 +185,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			writeServerError(w, err.Error())
 			return
 		} else {
-			log.Debug("sub land %s(%s): {G:%s, T:%s, P:%s, O:%s}",
+			log.Debug("sub land %s(%s): {G:%s, T:%s/%s, O:%s}",
 				r.RemoteAddr, realIp, group, rawTopic, partition, offset)
 		}
 	}
@@ -319,14 +319,14 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			}
 
 			if !delayedAck {
-				log.Debug("sub auto commit offset %s(%s): {G:%s, T:%s, P:%d, O:%d}",
+				log.Debug("sub auto commit offset %s(%s): {G:%s, T:%s/%d, O:%d}",
 					r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset)
 
 				if err = fetcher.CommitUpto(msg); err != nil {
 					return err
 				}
 			} else {
-				log.Debug("sub take off %s(%s): {G:%s, T:%s, P:%d, O:%d}",
+				log.Debug("sub take off %s(%s): {G:%s, T:%s/%d, O:%d}",
 					r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset)
 			}
 
@@ -345,7 +345,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			chunkedEver = true
 
 			if n == 1 {
-				log.Debug("sub idle timeout %s->1s %s(%s): {G:%s, T:%s, P:%d, O:%d B:%d}",
+				log.Debug("sub idle timeout %s->1s %s(%s): {G:%s, T:%s/%d, O:%d B:%d}",
 					idleTimeout, r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset, limit)
 				idleTimeout = time.Second
 			}
