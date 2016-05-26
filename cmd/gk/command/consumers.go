@@ -20,6 +20,7 @@ type Consumers struct {
 	Cmd string
 
 	onlineOnly   bool
+	ownerOnly    bool
 	groupPattern string
 	byHost       bool
 	cleanup      bool
@@ -39,6 +40,7 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.onlineOnly, "online", false, "")
 	cmdFlags.BoolVar(&this.byHost, "byhost", false, "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
+	cmdFlags.BoolVar(&this.ownerOnly, "own", false, "")
 	cmdFlags.BoolVar(&this.cleanup, "cleanup", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -208,8 +210,13 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 						partitionsWithOffset := make(map[string]struct{})
 						for _, offset := range this.displayGroupOffsets(zkcluster, group, topic, false) {
 							onlineSymbol := "◉"
+							isOwner := false
 							if ownerByPartition[offset.partitionId] == consumerId {
-								onlineSymbol += "*"
+								onlineSymbol += "*" // owned by this consumer
+								isOwner = true
+							}
+							if this.ownerOnly && !isOwner {
+								continue
 							}
 
 							partitionsWithOffset[offset.partitionId] = struct{}{}
@@ -219,7 +226,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 									zkzone.Name(), zkcluster.Name(),
 									onlineSymbol,
 									c.Host(),
-									group,
+									c.Id,
 									fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),
 									offset.offset,
 									gofmt.PrettySince(c.Uptime())))
@@ -228,12 +235,22 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 						for partitionId, _ := range ownerByPartition {
 							if _, present := partitionsWithOffset[partitionId]; !present {
 								// this consumer is owner online, but has no offset
+								onlineSymbol := "◉"
+								isOwner := false
+								if ownerByPartition[partitionId] == consumerId {
+									onlineSymbol += "*"
+									isOwner = true
+								}
+								if this.ownerOnly && !isOwner {
+									continue
+								}
+
 								lines = append(lines,
 									fmt.Sprintf("%s|%s|%s|%s|%s|%s|?|%s",
 										zkzone.Name(), zkcluster.Name(),
-										"◉*",
+										onlineSymbol,
 										c.Host(),
-										group,
+										c.Id,
 										fmt.Sprintf("%s/%s", topic, partitionId),
 										gofmt.PrettySince(c.Uptime())))
 							}
@@ -327,6 +344,9 @@ Options:
 
     -online
       Only show online consumer groups.    
+
+    -own
+      Only show consumer instances that owns partitions.
 
     -cleanup
       Cleanup the stale consumer groups after confirmation.
