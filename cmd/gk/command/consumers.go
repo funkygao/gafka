@@ -23,7 +23,6 @@ type Consumers struct {
 	groupPattern string
 	byHost       bool
 	cleanup      bool
-	tableFmt     bool
 	topicPattern string
 }
 
@@ -37,7 +36,6 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.StringVar(&this.groupPattern, "g", "", "")
-	cmdFlags.BoolVar(&this.tableFmt, "table", true, "")
 	cmdFlags.BoolVar(&this.onlineOnly, "online", false, "")
 	cmdFlags.BoolVar(&this.byHost, "byhost", false, "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
@@ -60,11 +58,7 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 			case this.byHost:
 				this.printConsumersByHost(zkzone, cluster)
 			default:
-				if this.tableFmt {
-					this.printConsumersByGroupTable(zkzone, cluster)
-				} else {
-					this.printConsumersByGroup(zkzone, cluster)
-				}
+				this.printConsumersByGroupTable(zkzone, cluster)
 			}
 		})
 
@@ -78,11 +72,7 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	case this.byHost:
 		this.printConsumersByHost(zkzone, cluster)
 	default:
-		if this.tableFmt {
-			this.printConsumersByGroupTable(zkzone, cluster)
-		} else {
-			this.printConsumersByGroup(zkzone, cluster)
-		}
+		this.printConsumersByGroupTable(zkzone, cluster)
 	}
 
 	return
@@ -247,53 +237,6 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 	this.Ui.Output(columnize.SimpleFormat(lines))
 }
 
-// Print all consumers of all clusters within a zone.
-func (this *Consumers) printConsumersByGroup(zkzone *zk.ZkZone, clusterPattern string) {
-	this.Ui.Output(color.Blue(zkzone.Name()))
-	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
-		if !patternMatched(zkcluster.Name(), clusterPattern) {
-			return
-		}
-
-		this.Ui.Output(strings.Repeat(" ", 4) + zkcluster.Name())
-		consumerGroups := zkcluster.ConsumerGroups()
-		sortedGroups := make([]string, 0, len(consumerGroups))
-		for group, _ := range consumerGroups {
-			if !patternMatched(group, this.groupPattern) {
-				continue
-			}
-
-			sortedGroups = append(sortedGroups, group)
-		}
-
-		sort.Strings(sortedGroups)
-		for _, group := range sortedGroups {
-			consumers := consumerGroups[group]
-			if len(consumers) > 0 {
-				this.Ui.Output(fmt.Sprintf("\t%s %s", color.Green("☀︎"), group))
-
-				// sort by host
-				sortedIds := make([]string, 0)
-				consumersMap := make(map[string]*zk.ConsumerZnode)
-				for _, c := range consumers {
-					sortedIds = append(sortedIds, c.Id)
-					consumersMap[c.Id] = c
-				}
-				sort.Strings(sortedIds)
-				for _, id := range sortedIds {
-					this.Ui.Output(fmt.Sprintf("\t\t%s", consumersMap[id]))
-				}
-
-			} else if !this.onlineOnly {
-				this.Ui.Output(fmt.Sprintf("\t%s %s", color.Yellow("☔︎"), group))
-			}
-
-			this.displayGroupOffsets(zkcluster, group, true)
-		}
-	})
-
-}
-
 type consumerGroupOffset struct {
 	topic, partitionId string
 	offset             string // comma fmt
@@ -361,10 +304,7 @@ Options:
     -t topic pattern
 
     -online
-      Only show online consumer groups.
-
-    -table
-      Display in table format.
+      Only show online consumer groups.    
 
     -cleanup
       Cleanup the stale consumer groups after confirmation.
