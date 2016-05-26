@@ -226,7 +226,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 									zkzone.Name(), zkcluster.Name(),
 									onlineSymbol,
 									c.Host(),
-									c.Id,
+									group+"@"+c.Id[len(c.Id)-12:],
 									fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),
 									offset.offset,
 									gofmt.PrettySince(c.Uptime())))
@@ -250,7 +250,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 										zkzone.Name(), zkcluster.Name(),
 										onlineSymbol,
 										c.Host(),
-										c.Id,
+										group+"@"+c.Id[len(c.Id)-12:],
 										fmt.Sprintf("%s/%s", topic, partitionId),
 										gofmt.PrettySince(c.Uptime())))
 							}
