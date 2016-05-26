@@ -21,7 +21,7 @@ func (this *syncProducerClient) Id() uint64 {
 
 // Close must be called before Recycle
 func (this *syncProducerClient) Close() {
-	log.Trace("cluster[%s] closing kafka sync client: %d", this.cluster, this.id)
+	log.Debug("cluster[%s] closing kafka sync client: %d", this.cluster, this.id)
 
 	// will close the producer and the kafka tcp conn
 	this.SyncProducer.Close()
@@ -50,7 +50,7 @@ type asyncProducerClient struct {
 }
 
 func (this *asyncProducerClient) Close() {
-	log.Trace("cluster[%s] closing kafka async client: %d", this.cluster, this.id)
+	log.Debug("cluster[%s] closing kafka async client: %d", this.cluster, this.id)
 
 	// will flush any buffered message
 	this.AsyncProducer.AsyncClose()
