@@ -91,7 +91,7 @@ func (this *Message) Bytes() []byte {
 func NewMessage(size int) *Message {
 	var msg *Message
 	var ch chan *Message
-	for _, slabClass := range messagePool { // TODO improve perf
+	for _, slabClass := range messagePool { // TODO binary search
 		if size <= slabClass.maxSize {
 			ch = slabClass.ch
 			size = slabClass.maxSize
