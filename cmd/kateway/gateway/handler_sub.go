@@ -180,7 +180,9 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 				group, partition, offset, r.Header.Get("User-Agent"), err)
 
-			writeBadRequest(w, err.Error())
+			// when consumer group rebalances, this err might happen
+			// when client retry, it get resolved
+			writeServerError(w, err.Error())
 			return
 		} else {
 			log.Debug("sub land %s(%s): {G:%s, T:%s, P:%s, O:%s}",
