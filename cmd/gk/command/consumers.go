@@ -52,6 +52,10 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 		return 2
 	}
 
+	if this.ownerOnly {
+		this.onlineOnly = true
+	}
+
 	if zone == "" {
 		forSortedZones(func(zkzone *zk.ZkZone) {
 			switch {
