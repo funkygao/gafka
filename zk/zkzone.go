@@ -303,7 +303,6 @@ func (this *ZkZone) setZnode(path string, data []byte) error {
 func (this *ZkZone) children(path string) []string {
 	this.connectIfNeccessary()
 
-	log.Debug("zk get children: %s", path)
 	children, _, err := this.conn.Children(path)
 	if err != nil {
 		if err != zk.ErrNoNode {
