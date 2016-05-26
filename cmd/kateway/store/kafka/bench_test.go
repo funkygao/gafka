@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	ctx.LoadConfig("/etc/kateway.cf")
+	ctx.LoadFromHome()
 	log.AddFilter("stdout", log.INFO, log.NewConsoleLogWriter())
 }
 

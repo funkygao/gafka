@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	ctx.LoadConfig("/etc/kateway.cf")
+	ctx.LoadFromHome()
 }
 
 func TestAll(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	ctx.LoadConfig("/etc/kateway.cf")
+	ctx.LoadFromHome()
 }
 
 func BenchmarkMetricsCounterWithoutLock(b *testing.B) {

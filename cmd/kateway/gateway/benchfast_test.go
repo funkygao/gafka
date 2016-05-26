@@ -53,7 +53,7 @@ func newGatewayForTest(b *testing.B, store string) *Gateway {
 	options.disableMetrics = false
 	options.enableBreaker = true
 
-	ctx.LoadConfig("/etc/kateway.cf")
+	ctx.LoadFromHome()
 
 	gw := NewGateway("1", time.Hour)
 	if err := gw.Start(); err != nil {

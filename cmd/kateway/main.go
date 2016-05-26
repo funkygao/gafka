@@ -85,11 +85,15 @@ func main() {
 	gateway.SetupLogging(gateway.Options.LogFile, gateway.Options.LogLevel, gateway.Options.CrashLogFile)
 
 	// load config
-	_, err := os.Stat(gateway.Options.ConfigFile)
-	if err != nil {
-		panic(err)
+	if gateway.Options.ConfigFile == "" {
+		ctx.LoadFromHome()
+	} else {
+		_, err := os.Stat(gateway.Options.ConfigFile)
+		if err != nil {
+			panic(err)
+		}
+		ctx.LoadConfig(gateway.Options.ConfigFile)
 	}
-	ctx.LoadConfig(gateway.Options.ConfigFile)
 
 	gateway.EnsureValidUlimit()
 	debug.SetGCPercent(800) // same env GOGC TODO

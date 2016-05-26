@@ -100,7 +100,7 @@ func ParseFlags() {
 	flag.StringVar(&Options.DebugHttpAddr, "debughttp", "", "debug http bind addr")
 	flag.StringVar(&Options.Store, "store", "kafka", "backend store")
 	flag.StringVar(&Options.ManagerStore, "mstore", "mysql", "store integration with manager")
-	flag.StringVar(&Options.ConfigFile, "conf", "/etc/kateway.cf", "config file")
+	flag.StringVar(&Options.ConfigFile, "conf", "", "config file, defaults $HOME/.gafka.cf")
 	flag.StringVar(&Options.KillFile, "kill", "", "kill running kateway by pid file")
 	flag.StringVar(&Options.InfluxServer, "influxdbaddr", "http://10.77.144.193:10036", "influxdb server address for the metrics reporter")
 	flag.StringVar(&Options.InfluxDbName, "influxdbname", "pubsub", "influxdb db name")

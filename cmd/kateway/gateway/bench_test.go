@@ -72,7 +72,7 @@ func newGatewayForTest(b *testing.B, store string) *Gateway {
 	Options.Debug = false
 	Options.DisableMetrics = false
 
-	ctx.LoadConfig("/etc/kateway.cf")
+	ctx.LoadFromHome()
 
 	gw := NewGateway("1", time.Hour)
 	if err := gw.Start(); err != nil {
@@ -118,7 +118,8 @@ func BenchmarkDirectKafkaProduce1K(b *testing.B) {
 	b.ReportAllocs()
 	b.SetBytes(int64(msgSize))
 
-	ctx.LoadConfig("/etc/kateway.cf")
+	ctx.LoadFromHome()
+
 	cf := zkmeta.DefaultConfig("local")
 	cf.Refresh = time.Hour
 	meta.Default = zkmeta.New(cf)
