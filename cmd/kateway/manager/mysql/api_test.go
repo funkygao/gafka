@@ -98,18 +98,3 @@ func TestValidateGroupName(t *testing.T) {
 	h.Set("X-Origin", "smoketest")
 	assert.Equal(t, true, m.ValidateGroupName(h, "__smoketest__"))
 }
-
-// 46.1 ns/op
-func BenchmarkValidateGroupName(b *testing.B) {
-	m := mysqlStore{}
-	for i := 0; i < b.N; i++ {
-		m.ValidateGroupName(nil, "asdfasdf-1")
-	}
-}
-
-// 837 ns/op
-func BenchmarkValidateTopicName(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		validateTopicName("asdfasdf-1")
-	}
-}
