@@ -210,13 +210,18 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 				}
 				sort.Strings(sortedIds)
 
-				for _, id := range sortedIds {
+				for _, consumerId := range sortedIds {
 					for _, offset := range this.displayGroupOffsets(zkcluster, group, false) {
-						c := consumersMap[id]
+						ownerByPartition := zkcluster.OwnersOfGroupByTopic(group, offset.topic)
+						onlineSymbol := "◉"
+						if ownerByPartition[offset.partitionId] == consumerId {
+							onlineSymbol += "*"
+						}
+						c := consumersMap[consumerId]
 						lines = append(lines,
 							fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
 								zkzone.Name(), zkcluster.Name(),
-								"◉",
+								onlineSymbol,
 								c.Host(),
 								group,
 								fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),

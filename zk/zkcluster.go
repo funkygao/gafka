@@ -235,7 +235,7 @@ func (this *ZkCluster) ConsumerGroups() map[string]map[string]*ConsumerZnode {
 
 // Returns {partitionId: consumerId}
 // consumerId is /consumers/$group/ids/$consumerId
-func (this *ZkCluster) ownersOfGroupByTopic(group, topic string) map[string]string {
+func (this *ZkCluster) OwnersOfGroupByTopic(group, topic string) map[string]string {
 	r := make(map[string]string)
 	for partition, data := range this.zone.ChildrenWithData(this.consumerGroupOwnerOfTopicPath(group, topic)) {
 		// data:
@@ -355,7 +355,7 @@ func (this *ZkCluster) ConsumersByGroup(groupPattern string) map[string][]Consum
 
 		topics := this.zone.children(this.ConsumerGroupOffsetPath(group))
 		for _, topic := range topics {
-			consumerInstances := this.ownersOfGroupByTopic(group, topic)
+			consumerInstances := this.OwnersOfGroupByTopic(group, topic)
 			if len(consumerInstances) == 0 {
 				// no online consumers running
 				continue
