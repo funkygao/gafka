@@ -58,7 +58,7 @@ func (this *pubPool) newSyncProducer(requiredAcks sarama.RequiredAcks) (pool.Res
 		return nil, err
 	}
 
-	log.Trace("cluster[%s] kafka connected[%d]: %+v %s",
+	log.Debug("cluster[%s] kafka connected[%d]: %+v %s",
 		this.cluster, spc.id, this.brokerList, time.Since(t1))
 
 	return spc, err
@@ -105,7 +105,7 @@ func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
 		return nil, err
 	}
 
-	log.Trace("cluster[%s] kafka connected[%d]: %+v %s",
+	log.Debug("cluster[%s] kafka connected[%d]: %+v %s",
 		this.cluster, apc.id, this.brokerList, time.Since(t1))
 
 	// TODO
