@@ -63,7 +63,6 @@ func (this *Lags) Run(args []string) (exitCode int) {
 	if cluster == "" {
 		for {
 			zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
-				this.Ui.Output(zkcluster.Name())
 				if this.tableFmt {
 					this.printConsumersLagTable(zkcluster)
 				} else {
@@ -86,8 +85,8 @@ func (this *Lags) Run(args []string) (exitCode int) {
 		return
 	}
 
+	// display a single cluster
 	for {
-		this.Ui.Output(cluster)
 		zkcluster := zkzone.NewCluster(cluster) // panic if invalid cluster
 		if this.tableFmt {
 			this.printConsumersLagTable(zkcluster)
@@ -148,6 +147,13 @@ func (this *Lags) printConsumersLagTable(zkcluster *zk.ZkCluster) {
 			if !consumer.Online {
 				continue
 			}
+			if this.problematicMode && consumer.Lag <= int64(this.lagThreshold) {
+				continue
+			}
+			if consumer.ConsumerZnode == nil {
+				this.Ui.Warn(fmt.Sprintf("%+v has no znode", consumer))
+				continue
+			}
 
 			lines = append(lines,
 				fmt.Sprintf("%s|%s/%s|%s|%s|%s|%s|%s",
@@ -161,7 +167,10 @@ func (this *Lags) printConsumersLagTable(zkcluster *zk.ZkCluster) {
 		}
 	}
 
-	this.Ui.Output(columnize.SimpleFormat(lines))
+	if len(lines) > 1 {
+		this.Ui.Info(fmt.Sprintf("%s ▾", zkcluster.Name()))
+		this.Ui.Output(columnize.SimpleFormat(lines))
+	}
 }
 
 func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
@@ -173,9 +182,8 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 	}
 	sort.Strings(sortedGroups)
 
+	lines := make([]string, 0, 100)
 	for _, group := range sortedGroups {
-		this.Ui.Output(strings.Repeat(" ", 4) + group)
-
 		sortedTopicAndPartitionIds := make([]string, 0)
 		consumers := make(map[string]zk.ConsumerMeta)
 		for _, t := range consumersByGroup[group] {
@@ -230,7 +238,7 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					uptime = gofmt.PrettySince(consumer.ConsumerZnode.Uptime())
 				}
 
-				this.Ui.Output(fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s\n%s %s",
+				lines = append(lines, fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s\n%s %s",
 					symbol,
 					consumer.Topic, consumer.PartitionId,
 					gofmt.Comma(consumer.ProducerOffset),
@@ -239,13 +247,20 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					gofmt.PrettySince(consumer.Mtime.Time()),
 					host, uptime))
 			} else if !this.onlineOnly {
-				this.Ui.Output(fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s",
+				lines = append(lines, fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s",
 					symbol,
 					consumer.Topic, consumer.PartitionId,
 					gofmt.Comma(consumer.ProducerOffset),
 					gofmt.Comma(consumer.ConsumerOffset),
 					lagOutput,
 					gofmt.PrettySince(consumer.Mtime.Time())))
+			}
+		}
+
+		if len(lines) > 0 {
+			this.Ui.Output(strings.Repeat(" ", 4) + group)
+			for _, l := range lines {
+				this.Ui.Output(l)
 			}
 		}
 	}
