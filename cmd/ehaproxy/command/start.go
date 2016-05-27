@@ -28,6 +28,9 @@ type Start struct {
 	root     string
 	command  string
 	logfile  string
+	pubPort  int
+	subPort  int
+	manPort  int
 	starting bool
 	quitCh   chan struct{}
 }
@@ -38,6 +41,9 @@ func (this *Start) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.logfile, "log", defaultLogfile, "")
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.root, "p", defaultPrefix, "")
+	cmdFlags.IntVar(&this.pubPort, "pub", 10891, "")
+	cmdFlags.IntVar(&this.subPort, "sub", 10892, "")
+	cmdFlags.IntVar(&this.manPort, "man", 10893, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -82,6 +88,9 @@ func (this *Start) main() {
 	var servers = BackendServers{
 		CpuNum:      ctx.NumCPU(),
 		HaproxyRoot: this.root,
+		PubPort:     this.pubPort,
+		SubPort:     this.subPort,
+		ManPort:     this.manPort,
 	}
 	var lastInstances []string
 	for {
@@ -208,7 +217,13 @@ Options:
     -z zone
       Default %s
 
-    -p prefix
+    -pub pub server listen port
+
+    -sub sub server listen port
+
+    -man manager server listen port
+
+    -p directory prefix
       Default %s
 
     -log log file

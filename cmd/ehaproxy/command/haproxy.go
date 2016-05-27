@@ -14,6 +14,9 @@ import (
 type BackendServers struct {
 	CpuNum      int
 	HaproxyRoot string
+	PubPort     int
+	SubPort     int
+	ManPort     int
 
 	Pub []Backend
 	Sub []Backend

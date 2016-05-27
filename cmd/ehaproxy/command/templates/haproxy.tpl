@@ -52,7 +52,7 @@ listen dashboard
     stats auth eadmin:adminPassOfDashboard1
 
 listen pub
-    bind 0.0.0.0:10891
+    bind 0.0.0.0:{{.PubPort}}
     balance source
     #cookie PUB insert indirect # indirect means not sending cookie to backend
     #option httpchk GET /alive HTTP/1.1\r\nHost:pub.ffan.com
@@ -61,7 +61,7 @@ listen pub
 {{end}}
 
 listen sub
-    bind 0.0.0.0:10892
+    bind 0.0.0.0:{{.SubPort}}
     balance source
     #balance source # uri
     #compression algo gzip
@@ -73,7 +73,7 @@ listen sub
 {{end}}
 
 listen man
-    bind 0.0.0.0:10893
+    bind 0.0.0.0:{{.ManPort}}
 {{range .Man}}
     server {{.Name}} {{.Addr}} weight {{.Cpu}}
 {{end}}
