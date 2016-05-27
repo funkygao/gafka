@@ -392,16 +392,15 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 			this.totalMsgs += latestOffset - oldestOffset
 			this.totalOffsets += latestOffset
 			if !underReplicated {
-				linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%16s - %-16s Num:%-15s",
-					partitionID, leader.ID(), replicas, isr,
+				linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%8d Leader:%s Replicas:%+v Isr:%+v Offset:%16s - %-16s Num:%-15s",
+					partitionID, color.Green("%d", leader.ID()), replicas, isr,
 					gofmt.Comma(oldestOffset), gofmt.Comma(latestOffset), gofmt.Comma(latestOffset-oldestOffset)), linesInTopicMode)
 			} else {
 				// use red for alert
-				linesInTopicMode = this.echoOrBuffer(color.Red("%8d Leader:%d Replicas:%+v Isr:%+v Offset:%16s - %-16s Num:%-15s",
-					partitionID, leader.ID(), replicas, isr,
+				linesInTopicMode = this.echoOrBuffer(color.Red("%8d Leader:%s Replicas:%+v Isr:%+v Offset:%16s - %-16s Num:%-15s",
+					partitionID, color.Green("%d", leader.ID()), replicas, isr,
 					gofmt.Comma(oldestOffset), gofmt.Comma(latestOffset), gofmt.Comma(latestOffset-oldestOffset)), linesInTopicMode)
 			}
-
 		}
 	}
 
