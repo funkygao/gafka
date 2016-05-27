@@ -285,13 +285,15 @@ func (*Topology) Synopsis() string {
 
 func (this *Topology) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s topology [options]
+Usage: %s topology -z zone [options]
 
-    Print server topology and balancing stats of kafka clusters
+    Print broker topology and balancing stats of kafka clusters
 
 Options:
 
     -z zone
+
+    -c cluster
 
     -host host pattern
       Display given hosts only.
