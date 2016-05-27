@@ -21,6 +21,7 @@ type Topology struct {
 	Cmd string
 
 	zone        string
+	cluster     string
 	hostPattern string
 	verbose     bool
 	watchMode   bool
@@ -30,33 +31,14 @@ type Topology struct {
 func (this *Topology) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("topology", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.zone, "z", "", "")
+	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.StringVar(&this.hostPattern, "host", "", "")
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.BoolVar(&this.watchMode, "w", false, "")
 	cmdFlags.BoolVar(&this.maxPort, "maxport", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
-	}
-
-	if this.zone == "" {
-		for {
-			forSortedZones(func(zkzone *zk.ZkZone) {
-				if this.maxPort {
-					this.displayZoneMaxPort(zkzone)
-				} else {
-					this.displayZoneTopology(zkzone)
-				}
-			})
-
-			if !this.watchMode {
-				return
-			}
-			time.Sleep(time.Second * 5)
-			refreshScreen()
-		}
-
-		return
 	}
 
 	// a single zone
@@ -146,6 +128,9 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 	zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
 		if len(liveBrokers) == 0 {
 			this.Ui.Warn(fmt.Sprintf("empty brokers in cluster[%s]", cluster))
+			return
+		}
+		if this.cluster != "" && this.cluster != cluster {
 			return
 		}
 
