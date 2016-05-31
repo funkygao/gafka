@@ -209,10 +209,15 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 				for _, consumerId := range sortedIds {
 					c := consumersMap[consumerId]
 					for topic, _ := range c.Subscription {
+						if !patternMatched(offset.topic, this.topicPattern) {
+							continue
+						}
+
 						ownerByPartition := zkcluster.OwnersOfGroupByTopic(group, topic)
 
 						partitionsWithOffset := make(map[string]struct{})
 						for _, offset := range this.displayGroupOffsets(zkcluster, group, topic, false) {
+
 							onlineSymbol := "◉"
 							isOwner := false
 							if ownerByPartition[offset.partitionId] == consumerId {
@@ -265,6 +270,10 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 			} else {
 				// offline
 				for _, offset := range this.displayGroupOffsets(zkcluster, group, "", false) {
+					if !patternMatched(offset.topic, this.topicPattern) {
+						continue
+					}
+
 					lines = append(lines,
 						fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
 							zkzone.Name(), zkcluster.Name(),
