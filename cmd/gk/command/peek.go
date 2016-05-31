@@ -121,7 +121,7 @@ LOOP:
 				break LOOP
 
 			}
-			if this.lastN > 0 && total >= this.lastN {
+			if this.lastN > 0 && total >= int(this.lastN) {
 				break LOOP
 			}
 
