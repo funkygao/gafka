@@ -209,7 +209,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 				for _, consumerId := range sortedIds {
 					c := consumersMap[consumerId]
 					for topic, _ := range c.Subscription {
-						if !patternMatched(offset.topic, this.topicPattern) {
+						if !patternMatched(topic, this.topicPattern) {
 							continue
 						}
 
