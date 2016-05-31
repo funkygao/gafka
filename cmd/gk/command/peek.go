@@ -115,11 +115,14 @@ LOOP:
 				}
 			}
 
-			if this.limit > 0 {
-				total++
-				if total >= this.limit {
-					break LOOP
-				}
+			total++
+
+			if this.limit > 0 && total >= this.limit {
+				break LOOP
+
+			}
+			if this.lastN > 0 && total >= this.lastN {
+				break LOOP
 			}
 
 		}
