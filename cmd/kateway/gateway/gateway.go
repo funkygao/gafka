@@ -34,8 +34,8 @@ import (
 //
 // Working with ehaproxy, it can compose a Pub/Sub cluster system.
 type Gateway struct {
-	id     string // must be unique across the zone
-	zone   string
+	id string // must be unique across the zone
+
 	zkzone *gzk.ZkZone // load/resume/flush counter metrics to zk
 
 	startedAt    time.Time
@@ -56,22 +56,22 @@ type Gateway struct {
 
 	accessLogger *AccessLogger
 	guard        *guard
-	timer        *timewheel.TimeWheel
+
+	timer *timewheel.TimeWheel
 }
 
 func New(id string) *Gateway {
 	this := &Gateway{
 		id:           id,
-		zone:         Options.Zone,
 		shutdownCh:   make(chan struct{}),
 		certFile:     Options.CertFile,
 		keyFile:      Options.KeyFile,
 		clientStates: NewClientStates(),
 	}
 
-	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
-
-	metaConf := zkmeta.DefaultConfig(this.zone)
+	registry.Default = zk.New(Options.Zone, this.id, this.InstanceInfo())
+	this.zkzone = gzk.NewZkZone(gzk.DefaultConfig(Options.Zone, ctx.ZoneZkAddrs(Options.Zone)))
+	metaConf := zkmeta.DefaultConfig(Options.Zone)
 	metaConf.Refresh = Options.MetaRefresh
 	meta.Default = zkmeta.New(metaConf)
 	this.guard = newGuard(this)
@@ -82,7 +82,7 @@ func New(id string) *Gateway {
 	// initialize the manager store
 	switch Options.ManagerStore {
 	case "mysql":
-		cf := mandb.DefaultConfig(this.zone)
+		cf := mandb.DefaultConfig(Options.Zone)
 		cf.Refresh = Options.ManagerRefresh
 		manager.Default = mandb.New(cf)
 		manager.Default.AllowSubWithUnregisteredGroup(Options.PermitUnregisteredGroup)
@@ -91,7 +91,7 @@ func New(id string) *Gateway {
 		manager.Default = mandummy.New()
 
 	default:
-		panic("invalid manager")
+		panic("invalid manager store")
 	}
 
 	// initialize the servers on demand
@@ -129,6 +129,9 @@ func New(id string) *Gateway {
 			store.DefaultSubStore = storedummy.NewSubStore(&this.wg,
 				this.subServer.closedConnCh, Options.Debug)
 
+		default:
+			panic("invalid store")
+
 		}
 	}
 
@@ -138,7 +141,7 @@ func New(id string) *Gateway {
 func (this *Gateway) InstanceInfo() []byte {
 	info := gzk.KatewayMeta{
 		Id:        this.id,
-		Zone:      this.zone,
+		Zone:      Options.Zone,
 		Ver:       gafka.Version,
 		Build:     gafka.BuildId,
 		BuiltAt:   gafka.BuiltAt,
@@ -154,14 +157,6 @@ func (this *Gateway) InstanceInfo() []byte {
 	}
 	d, _ := json.Marshal(info)
 	return d
-}
-
-func (this *Gateway) GetZkZone() *gzk.ZkZone {
-	if this.zkzone == nil {
-		this.zkzone = gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
-	}
-
-	return this.zkzone
 }
 
 func (this *Gateway) Start() (err error) {
