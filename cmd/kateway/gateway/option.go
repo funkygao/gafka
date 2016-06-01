@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 )
 
@@ -147,12 +148,18 @@ func ValidateFlags() {
 		return
 	}
 
+	if Options.ShowVersion {
+		fmt.Fprintf(os.Stderr, "%s-%s\n", gafka.Version, gafka.BuildId)
+		os.Exit(0)
+	}
+
+	if gafka.BuildId == "" {
+		fmt.Fprintf(os.Stderr, "empty BuildId, please rebuild with build.sh\n")
+		//os.Exit(1)
+	}
+
 	if Options.Zone == "" {
 		fmt.Fprintf(os.Stderr, "-zone required\n")
 		os.Exit(1)
-	}
-
-	if Options.ManHttpsAddr == "" && Options.ManHttpAddr == "" {
-		fmt.Fprintf(os.Stderr, "-manhttp or -manhttps required\n")
 	}
 }

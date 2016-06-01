@@ -36,7 +36,11 @@ import (
 type Gateway struct {
 	id string // must be unique across the zone
 
-	zkzone *gzk.ZkZone // load/resume/flush counter metrics to zk
+	zkzone       *gzk.ZkZone // load/resume/flush counter metrics to zk
+	svrMetrics   *serverMetrics
+	accessLogger *AccessLogger
+	guard        *guard
+	timer        *timewheel.TimeWheel
 
 	shutdownOnce sync.Once
 	shutdownCh   chan struct{}
@@ -50,13 +54,6 @@ type Gateway struct {
 	manServer *manServer
 
 	clientStates *ClientStates
-
-	svrMetrics *serverMetrics
-
-	accessLogger *AccessLogger
-	guard        *guard
-
-	timer *timewheel.TimeWheel
 }
 
 func New(id string) *Gateway {

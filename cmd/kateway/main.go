@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/gateway"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
@@ -21,15 +20,16 @@ import (
 
 func init() {
 	gateway.ParseFlags()
+	gateway.ValidateFlags()
+}
 
-	if gateway.Options.ShowVersion {
-		fmt.Fprintf(os.Stderr, "%s-%s\n", gafka.Version, gafka.BuildId)
-		os.Exit(0)
-	}
-
-	if gafka.BuildId == "" {
-		fmt.Fprintf(os.Stderr, "empty BuildId, please rebuild with build.sh\n")
-	}
+func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+			debug.PrintStack()
+		}
+	}()
 
 	if gateway.Options.Debug {
 		log.SetFlags(log.LstdFlags | log.Llongfile) // TODO zk sdk uses this
@@ -37,17 +37,6 @@ func init() {
 	} else {
 		log.SetOutput(ioutil.Discard)
 	}
-
-}
-
-func main() {
-	gateway.ValidateFlags()
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println(err)
-			debug.PrintStack()
-		}
-	}()
 
 	if gateway.Options.KillFile != "" {
 		if err := signal.SignalProcessByPidFile(gateway.Options.KillFile, syscall.SIGUSR2); err != nil {
@@ -81,7 +70,6 @@ func main() {
 		}
 	}
 
-	// FIXME logLevel dup with ctx
 	gateway.SetupLogging(gateway.Options.LogFile, gateway.Options.LogLevel, gateway.Options.CrashLogFile)
 
 	// load config
