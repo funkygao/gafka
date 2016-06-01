@@ -156,26 +156,12 @@ func (this *Gateway) InstanceInfo() []byte {
 }
 
 func (this *Gateway) Start() (err error) {
+	log.Trace("starting gateway...")
+
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		log.Info("received signal: %s", strings.ToUpper(sig.String()))
 		this.Stop()
-	}, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2) // yes we ignore HUP
-
-	// FIXME load balancer will redispatch the consumer to another
-	// kateway, but the offset has not been committed, then???
-	signal.RegisterSignalsHandler(func(sig os.Signal) {
-		if registry.Default == nil {
-			log.Warn("USR1 fired when no registry defined")
-			return
-		}
-
-		if err := registry.Default.Deregister(); err != nil {
-			log.Error("deregister: %v", err)
-			return
-		}
-
-		log.Info("deregistered from %s", registry.Default.Name())
-	}, syscall.SIGUSR1) // disallow load balancer dispatch to me
+	}, syscall.SIGINT, syscall.SIGTERM) // yes we ignore HUP
 
 	meta.Default.Start()
 	log.Trace("meta store[%s] started", meta.Default.Name())
@@ -203,11 +189,12 @@ func (this *Gateway) Start() (err error) {
 	}
 
 	this.svrMetrics.Load()
+	go startRuntimeMetrics(Options.ReporterInterval)
 
+	// start up the servers
 	if this.manServer != nil {
 		this.manServer.Start()
 	}
-
 	if this.pubServer != nil {
 		if err := store.DefaultPubStore.Start(); err != nil {
 			panic(err)
@@ -225,9 +212,7 @@ func (this *Gateway) Start() (err error) {
 		this.subServer.Start()
 	}
 
-	go startRuntimeMetrics(Options.ReporterInterval)
-
-	// the last thing is to register: notify others
+	// the last thing is to register: notify others: come on baby!
 	if registry.Default != nil {
 		if err := registry.Default.Register(); err != nil {
 			panic(err)
@@ -244,7 +229,7 @@ func (this *Gateway) Start() (err error) {
 
 func (this *Gateway) Stop() {
 	this.shutdownOnce.Do(func() {
-		log.Info("stopping kateway...")
+		log.Info("stopping gateway...")
 
 		close(this.shutdownCh)
 	})
