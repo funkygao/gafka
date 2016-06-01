@@ -52,9 +52,6 @@ type Gateway struct {
 
 	clientStates *ClientStates
 
-	connections   map[string]int // remoteAddr:counter
-	connectionsMu sync.Mutex
-
 	svrMetrics *serverMetrics
 
 	accessLogger *AccessLogger
@@ -70,7 +67,6 @@ func New(id string) *Gateway {
 		certFile:     Options.CertFile,
 		keyFile:      Options.KeyFile,
 		clientStates: NewClientStates(),
-		connections:  make(map[string]int, 1000),
 	}
 
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
