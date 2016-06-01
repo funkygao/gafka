@@ -38,7 +38,6 @@ type Gateway struct {
 
 	zkzone *gzk.ZkZone // load/resume/flush counter metrics to zk
 
-	startedAt    time.Time
 	shutdownOnce sync.Once
 	shutdownCh   chan struct{}
 	wg           sync.WaitGroup
@@ -180,8 +179,6 @@ func (this *Gateway) Start() (err error) {
 
 		log.Info("deregistered from %s", registry.Default.Name())
 	}, syscall.SIGUSR1) // disallow load balancer dispatch to me
-
-	this.startedAt = time.Now()
 
 	meta.Default.Start()
 	log.Trace("meta store[%s] started", meta.Default.Name())
