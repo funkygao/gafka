@@ -98,7 +98,7 @@ func main() {
 	gateway.EnsureValidUlimit()
 	debug.SetGCPercent(800) // same env GOGC TODO
 
-	gw := gateway.NewGateway(gateway.Options.Id, gateway.Options.MetaRefresh)
+	gw := gateway.New(gateway.Options.Id)
 	if err := gw.Start(); err != nil {
 		panic(err)
 	}

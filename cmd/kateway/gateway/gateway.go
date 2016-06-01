@@ -62,7 +62,7 @@ type Gateway struct {
 	timer        *timewheel.TimeWheel
 }
 
-func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
+func New(id string) *Gateway {
 	this := &Gateway{
 		id:           id,
 		zone:         Options.Zone,
@@ -76,7 +76,7 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	registry.Default = zk.New(this.zone, this.id, this.InstanceInfo())
 
 	metaConf := zkmeta.DefaultConfig(this.zone)
-	metaConf.Refresh = metaRefreshInterval
+	metaConf.Refresh = Options.MetaRefresh
 	meta.Default = zkmeta.New(metaConf)
 	this.guard = newGuard(this)
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
