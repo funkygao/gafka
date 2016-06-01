@@ -182,8 +182,9 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 	}
 	sort.Strings(sortedGroups)
 
-	lines := make([]string, 0, 100)
 	for _, group := range sortedGroups {
+		lines := make([]string, 0, 100)
+
 		sortedTopicAndPartitionIds := make([]string, 0)
 		consumers := make(map[string]zk.ConsumerMeta)
 		for _, t := range consumersByGroup[group] {
