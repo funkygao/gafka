@@ -32,7 +32,7 @@ import (
 
 // Gateway is a distributed kafka Pub/Sub HTTP endpoint.
 type Gateway struct {
-	id     string // must be unique across the cluster
+	id     string // must be unique across the zone
 	zone   string
 	zkzone *gzk.ZkZone // load/resume/flush counter metrics to zk
 
@@ -78,13 +78,10 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 	meta.Default = zkmeta.New(metaConf)
 	this.guard = newGuard(this)
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
-
 	this.accessLogger = NewAccessLogger("access_log", 100)
-
-	this.manServer = newManServer(Options.ManHttpAddr, Options.ManHttpsAddr,
-		Options.MaxClients, this)
 	this.svrMetrics = NewServerMetrics(Options.ReporterInterval, this)
 
+	// initialize the manager store
 	switch Options.ManagerStore {
 	case "mysql":
 		cf := mandb.DefaultConfig(this.zone)
@@ -99,6 +96,11 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 		panic("invalid manager")
 	}
 
+	// initialize the servers on demand
+	if Options.ManHttpAddr != "" || Options.ManHttpsAddr != "" {
+		this.manServer = newManServer(Options.ManHttpAddr, Options.ManHttpsAddr,
+			Options.MaxClients, this)
+	}
 	if Options.PubHttpAddr != "" || Options.PubHttpsAddr != "" {
 		this.pubServer = newPubServer(Options.PubHttpAddr, Options.PubHttpsAddr,
 			Options.MaxClients, this)
@@ -116,7 +118,6 @@ func NewGateway(id string, metaRefreshInterval time.Duration) *Gateway {
 			panic("invalid store")
 		}
 	}
-
 	if Options.SubHttpAddr != "" || Options.SubHttpsAddr != "" {
 		this.subServer = newSubServer(Options.SubHttpAddr, Options.SubHttpsAddr,
 			Options.MaxClients, this)
@@ -207,7 +208,6 @@ func (this *Gateway) Start() (err error) {
 	}
 
 	this.buildRouting()
-	this.manServer.Start()
 
 	if Options.DebugHttpAddr != "" {
 		log.Info("debug http server ready on %s", Options.DebugHttpAddr)
@@ -216,6 +216,10 @@ func (this *Gateway) Start() (err error) {
 	}
 
 	this.svrMetrics.Load()
+
+	if this.manServer != nil {
+		this.manServer.Start()
+	}
 
 	if this.pubServer != nil {
 		if err := store.DefaultPubStore.Start(); err != nil {
