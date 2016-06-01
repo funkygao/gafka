@@ -30,7 +30,9 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-// Gateway is a distributed kafka Pub/Sub HTTP endpoint.
+// Gateway is a distributed Pub/Sub HTTP endpoint.
+//
+// Working with ehaproxy, it can compose a Pub/Sub cluster system.
 type Gateway struct {
 	id     string // must be unique across the zone
 	zone   string
