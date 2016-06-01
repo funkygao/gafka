@@ -66,7 +66,7 @@ func (this *serverMetrics) Key() string {
 }
 
 func (this *serverMetrics) Load() {
-	b, err := this.gw.GetZkZone().LoadKatewayMetrics(this.gw.id, this.Key())
+	b, err := this.gw.zkzone.LoadKatewayMetrics(this.gw.id, this.Key())
 	if err != nil {
 		log.Error("load %s metrics: %v", this.Key(), err)
 		return
@@ -82,7 +82,7 @@ func (this *serverMetrics) Flush() {
 		"total": this.TotalConns.Count(),
 	}
 	b, _ := json.Marshal(data)
-	this.gw.GetZkZone().FlushKatewayMetrics(this.gw.id, this.Key(), b)
+	this.gw.zkzone.FlushKatewayMetrics(this.gw.id, this.Key(), b)
 }
 
 type subMetrics struct {
@@ -120,7 +120,7 @@ func (this *subMetrics) Key() string {
 }
 
 func (this *subMetrics) Load() {
-	b, err := this.gw.GetZkZone().LoadKatewayMetrics(this.gw.id, this.Key())
+	b, err := this.gw.zkzone.LoadKatewayMetrics(this.gw.id, this.Key())
 	if err != nil {
 		log.Error("load %s metrics: %v", this.Key(), err)
 		return
@@ -155,7 +155,7 @@ func (this *subMetrics) Flush() {
 	}
 
 	b, _ := json.Marshal(data)
-	this.gw.GetZkZone().FlushKatewayMetrics(this.gw.id, this.Key(), b)
+	this.gw.zkzone.FlushKatewayMetrics(this.gw.id, this.Key(), b)
 }
 
 func (this *subMetrics) ConsumeOk(appid, topic, ver string) {
@@ -217,7 +217,7 @@ func (this *pubMetrics) Key() string {
 
 // TODO need test
 func (this *pubMetrics) Load() {
-	b, err := this.gw.GetZkZone().LoadKatewayMetrics(this.gw.id, this.Key())
+	b, err := this.gw.zkzone.LoadKatewayMetrics(this.gw.id, this.Key())
 	if err != nil {
 		log.Error("load %s metrics: %v", this.Key(), err)
 		return
@@ -252,7 +252,7 @@ func (this *pubMetrics) Flush() {
 	}
 
 	b, _ := json.Marshal(data)
-	this.gw.GetZkZone().FlushKatewayMetrics(this.gw.id, this.Key(), b)
+	this.gw.zkzone.FlushKatewayMetrics(this.gw.id, this.Key(), b)
 }
 
 func (this *pubMetrics) PubFail(appid, topic, ver string) {

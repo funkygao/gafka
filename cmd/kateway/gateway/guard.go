@@ -7,6 +7,7 @@ import (
 	"github.com/shirou/gopsutil/cpu"
 )
 
+// still a lot of TODO
 type guard struct {
 	gw *Gateway
 
@@ -26,13 +27,6 @@ func newGuard(gw *Gateway) *guard {
 }
 
 func (this *guard) Start() {
-	this.gw.wg.Add(1)
-	defer this.gw.wg.Done()
-
-	go this.mainLoop()
-}
-
-func (this *guard) mainLoop() {
 	interval := time.Minute
 	refreshTicker := time.NewTicker(interval)
 	defer refreshTicker.Stop()

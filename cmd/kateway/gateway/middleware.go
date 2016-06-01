@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/funkygao/gafka/mpool"
@@ -15,6 +16,11 @@ import (
 )
 
 func (this *Gateway) MiddlewareKateway(h httprouter.Handle) httprouter.Handle {
+	var (
+		connections   = make(map[string]int, 1000) // remoteAddr:counter
+		connectionsMu sync.Mutex
+	)
+
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		w.Header().Set("Server", "kateway")
 
@@ -30,20 +36,20 @@ func (this *Gateway) MiddlewareKateway(h httprouter.Handle) httprouter.Handle {
 			writer = gzipResponseWriter{Writer: gz, ResponseWriter: w}
 		}
 
-		// max request per connetion
+		// max request per conn to rebalance the session sticky http conns
 		if Options.MaxRequestPerConn > 1 {
-			this.connectionsMu.Lock()
+			connectionsMu.Lock()
 
-			if n, present := this.connections[r.RemoteAddr]; present && n >= Options.MaxRequestPerConn {
+			if n, present := connections[r.RemoteAddr]; present && n >= Options.MaxRequestPerConn {
 				log.Debug("%s max req per conn reached: %d", r.RemoteAddr, n)
 
 				w.Header().Set("Connection", "close")
-				delete(this.connections, r.RemoteAddr)
+				delete(connections, r.RemoteAddr)
 			} else {
-				this.connections[r.RemoteAddr]++ // in golang, works even when present=false
+				connections[r.RemoteAddr]++ // in golang, works even when present=false
 			}
 
-			this.connectionsMu.Unlock()
+			connectionsMu.Unlock()
 		}
 
 		if !Options.EnableAccessLog {

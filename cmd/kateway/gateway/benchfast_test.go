@@ -55,7 +55,7 @@ func newGatewayForTest(b *testing.B, store string) *Gateway {
 
 	ctx.LoadFromHome()
 
-	gw := NewGateway("1", time.Hour)
+	gw := New("1")
 	if err := gw.Start(); err != nil {
 		b.Fatal(err)
 	}
