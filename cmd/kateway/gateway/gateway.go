@@ -200,7 +200,7 @@ func (this *Gateway) Start() (err error) {
 	}
 	log.Trace("manager store[%s] started", manager.Default.Name())
 
-	this.guard.Start()
+	go this.guard.Start()
 	log.Trace("guard started")
 
 	if Options.EnableAccessLog {
