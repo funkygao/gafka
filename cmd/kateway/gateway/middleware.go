@@ -41,7 +41,7 @@ func (this *Gateway) MiddlewareKateway(h httprouter.Handle) httprouter.Handle {
 			connectionsMu.Lock()
 
 			if n, present := connections[r.RemoteAddr]; present && n >= Options.MaxRequestPerConn {
-				log.Debug("%s max req per conn reached: %d", r.RemoteAddr, n)
+				log.Trace("%s max req per conn reached: %d", r.RemoteAddr, n)
 
 				w.Header().Set("Connection", "close")
 				delete(connections, r.RemoteAddr)

@@ -176,7 +176,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			Partition: int32(partitionN),
 			Offset:    offsetN,
 		}); err != nil {
-			log.Error("sub commit[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:1 partition:%s offset:%s UA:%s} %v",
+			log.Trace("sub commit[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:1 partition:%s offset:%s UA:%s} %v",
 				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 				group, partition, offset, r.Header.Get("User-Agent"), err)
 
