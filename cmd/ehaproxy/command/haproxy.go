@@ -17,6 +17,7 @@ type BackendServers struct {
 	PubPort     int
 	SubPort     int
 	ManPort     int
+	ForwardFor  bool
 
 	Pub []Backend
 	Sub []Backend

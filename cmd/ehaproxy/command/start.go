@@ -24,15 +24,16 @@ type Start struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone     string
-	root     string
-	command  string
-	logfile  string
-	pubPort  int
-	subPort  int
-	manPort  int
-	starting bool
-	quitCh   chan struct{}
+	zone       string
+	root       string
+	command    string
+	logfile    string
+	pubPort    int
+	subPort    int
+	manPort    int
+	starting   bool
+	forwardFor bool
+	quitCh     chan struct{}
 }
 
 func (this *Start) Run(args []string) (exitCode int) {
@@ -41,9 +42,11 @@ func (this *Start) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.logfile, "log", defaultLogfile, "")
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.root, "p", defaultPrefix, "")
+	cmdFlags.BoolVar(&this.forwardFor, "forwardfor", false, "")
 	cmdFlags.IntVar(&this.pubPort, "pub", 10891, "")
 	cmdFlags.IntVar(&this.subPort, "sub", 10892, "")
 	cmdFlags.IntVar(&this.manPort, "man", 10893, "")
+
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -88,6 +91,7 @@ func (this *Start) main() {
 	var servers = BackendServers{
 		CpuNum:      ctx.NumCPU(),
 		HaproxyRoot: this.root,
+		ForwardFor:  this.forwardFor,
 		PubPort:     this.pubPort,
 		SubPort:     this.subPort,
 		ManPort:     this.manPort,
@@ -216,6 +220,10 @@ Options:
 
     -z zone
       Default %s
+
+    -forwardfor
+      Default false.
+      If true, haproxy will add X-Forwarded-For http header.
 
     -pub pub server listen port
 
