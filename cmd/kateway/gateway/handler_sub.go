@@ -322,9 +322,18 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 				log.Debug("sub auto commit offset %s(%s): {G:%s, T:%s/%d, O:%d}",
 					r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset)
 
-				if err = fetcher.CommitUpto(msg); err != nil {
-					return err
-				}
+				// ignore the offset commit err on purpose:
+				// during rebalance, offset commit often encounter errors because fetcher
+				// underlying partition offset tracker has changed
+				// e,g.
+				// topic has partition: 0, 1
+				// 1. got msg(p=0) from fetcher
+				// 2. rebalanced, then start consuming p=1
+				// 3. commit the msg offset, still msg(p=0) => error
+				// BUT, it has no fatal effects.
+				// The worst case is between 1-3, kateway shutdown, sub client
+				// will get 1 duplicated msg.
+				fetcher.CommitUpto(msg)
 			} else {
 				log.Debug("sub take off %s(%s): {G:%s, T:%s/%d, O:%d}",
 					r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset)
