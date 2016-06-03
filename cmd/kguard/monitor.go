@@ -16,6 +16,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kguard/watchers"
 	"github.com/funkygao/gafka/cmd/kguard/watchers/f5"
 	"github.com/funkygao/gafka/cmd/kguard/watchers/kafka"
+	"github.com/funkygao/gafka/cmd/kguard/watchers/kateway"
 	wzk "github.com/funkygao/gafka/cmd/kguard/watchers/zk"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
@@ -93,6 +94,7 @@ func (this *Monitor) Start() {
 	this.addWatcher(&kafka.WatchConsumers{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
 	this.addWatcher(&kafka.WatchReplicas{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
 	this.addWatcher(&kafka.WatchTopics{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
+	this.addWatcher(&kateway.WatchKateway{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
 	this.addWatcher(&wzk.WatchZk{Zkzone: this.zkzone, Tick: time.Second * 20, Stop: this.stop, Wg: wg})
 	this.addWatcher(&f5.WatchF5{Tick: time.Minute, Stop: this.stop, Wg: wg})
 	for _, w := range this.watchers {
