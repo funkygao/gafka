@@ -124,9 +124,11 @@ func (this *subServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 		writeServerError(w, err.Error())
 		return
 	}
+	defer kfk.Close()
 
 	msgChan := make(chan *sarama.ConsumerMessage, 10)
 	errs := make(chan error)
+	stopCh := make(chan struct{})
 
 	go func() {
 		partitions, err := kfk.Partitions(rawTopic)
@@ -171,6 +173,9 @@ func (this *subServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 					select {
 					case msg := <-p.Messages():
 						msgChan <- msg
+
+					case <-stopCh:
+						return
 					}
 				}
 
@@ -202,6 +207,8 @@ LOOP:
 			}
 		}
 	}
+
+	close(stopCh) // stop all the sub-goroutines
 
 	d, _ := json.Marshal(msgs)
 	w.Write(d)
