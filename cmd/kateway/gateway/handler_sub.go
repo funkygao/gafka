@@ -169,21 +169,15 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 
 	// commit the acked offset
 	if delayedAck && partitionN >= 0 && offsetN >= 0 {
-		// what if shutdown kateway now?
-		// the commit will be ok, and when pumpMessages, the conn will get http.StatusNoContent
 		if err = fetcher.CommitUpto(&sarama.ConsumerMessage{
 			Topic:     rawTopic,
 			Partition: int32(partitionN),
 			Offset:    offsetN,
 		}); err != nil {
-			log.Trace("sub commit[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:1 partition:%s offset:%s UA:%s} %v",
-				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
-				group, partition, offset, r.Header.Get("User-Agent"), err)
-
-			// when consumer group rebalances, this err might happen
-			// when client retry, it get resolved
-			writeServerError(w, err.Error())
-			return
+			// during rebalance, this might happen, but with no bad effects
+			log.Trace("sub land[%s] %s(%s): {app:%s topic:%s/%s ver:%s group:%s ack:1 partition:%s offset:%s UA:%s} %v",
+				myAppid, r.RemoteAddr, realIp, hisAppid, topic, partition, ver,
+				group, offset, r.Header.Get("User-Agent"), err)
 		} else {
 			log.Debug("sub land %s(%s): {G:%s, T:%s/%s, O:%s}",
 				r.RemoteAddr, realIp, group, rawTopic, partition, offset)
