@@ -292,19 +292,11 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		}
 	}
 
-	// find 1st broker in the cluster
-	// each broker in the cluster has same metadata
-	var broker0 *zk.BrokerZnode
-	for _, broker := range brokers {
-		broker0 = broker
-		break
-	}
-
-	kfk, err := sarama.NewClient([]string{broker0.Addr()}, sarama.NewConfig())
+	kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
 	if err != nil {
 		if this.verbose {
-			linesInTopicMode = this.echoOrBuffer(color.Yellow("%5s%s %s", " ",
-				broker0.Addr(), err.Error()), linesInTopicMode)
+			linesInTopicMode = this.echoOrBuffer(color.Yellow("%5s%+v %s", " ",
+				zkcluster.BrokerList(), err.Error()), linesInTopicMode)
 		}
 
 		return
