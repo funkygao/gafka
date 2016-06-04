@@ -75,8 +75,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	}
 
 	if debug {
-		log.SetOutput(os.Stderr)
-		log.SetPrefix(color.Magenta("[sarama]"))
+		sarama.Logger = log.New(os.Stderr, color.Magenta("[sarama]"), log.LstdFlags)
 	}
 
 	if addTopic != "" {
