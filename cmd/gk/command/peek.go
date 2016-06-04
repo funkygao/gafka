@@ -111,14 +111,15 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		startAt = time.Now()
 		msg     *sarama.ConsumerMessage
 		total   int
+		bytes   int64
 	)
 
 LOOP:
 	for {
 		select {
 		case <-this.quit:
-			this.Ui.Output(fmt.Sprintf("Total: %d msgs", total))
-			this.Ui.Output(fmt.Sprintf("Throughput: %d/s", total/int(time.Since(startAt).Seconds())))
+			this.Ui.Output(fmt.Sprintf("Total: %s msgs, %s", gofmt.Comma(int64(total)), gofmt.ByteSize(bytes)))
+			this.Ui.Output(fmt.Sprintf("Speed: %d/s", total/int(time.Since(startAt).Seconds())))
 			return
 
 		case msg = <-msgChan:
@@ -139,6 +140,7 @@ LOOP:
 			}
 
 			total++
+			bytes += int64(len(msg.Value))
 
 			if this.limit > 0 && total >= this.limit {
 				break LOOP
