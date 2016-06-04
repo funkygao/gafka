@@ -46,6 +46,13 @@ func init() {
 			}, nil
 		},
 
+		"publish": func() (cli.Command, error) {
+			return &command.Publish{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"upgrade": func() (cli.Command, error) {
 			return &command.Upgrade{
 				Ui:  ui,
