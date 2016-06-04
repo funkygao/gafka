@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -15,6 +17,7 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/golib/signal"
 )
 
 var (
@@ -50,6 +53,8 @@ type Peek struct {
 	lastN    int64 // peek the most recent N messages
 	colorize bool
 	limit    int
+	quit     chan struct{}
+	once     sync.Once
 }
 
 func (this *Peek) Run(args []string) (exitCode int) {
@@ -75,6 +80,8 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	this.quit = make(chan struct{})
+
 	if silence {
 		stats := newPeekStats()
 		go stats.start()
@@ -91,13 +98,27 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		this.consumeCluster(zkcluster, topicPattern, partitionId, msgChan)
 	}
 
+	signal.RegisterSignalsHandler(func(sig os.Signal) {
+		log.Printf("received signal: %s", strings.ToUpper(sig.String()))
+		log.Println("quiting...")
+
+		this.once.Do(func() {
+			close(this.quit)
+		})
+	}, syscall.SIGINT, syscall.SIGTERM)
+
 	var (
-		msg   *sarama.ConsumerMessage
-		total int
+		startAt = time.Now()
+		msg     *sarama.ConsumerMessage
+		total   int
 	)
 LOOP:
 	for {
 		select {
+		case <-this.quit:
+			this.Ui.Output(fmt.Sprintf("Total: %d msgs", total))
+			this.Ui.Output(fmt.Sprintf("Throughput: %d/s", total/int(time.Since(startAt).Seconds())))
+
 		case msg = <-msgChan:
 			if silence {
 				stats.MsgCountPerSecond.Mark(1)
@@ -223,6 +244,9 @@ func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
 	n := int64(0)
 	for {
 		select {
+		case <-this.quit:
+			return
+
 		case msg := <-p.Messages():
 			msgCh <- msg
 
