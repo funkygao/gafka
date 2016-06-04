@@ -46,6 +46,13 @@ func init() {
 			}, nil
 		},
 
+		"leader": func() (cli.Command, error) {
+			return &command.Leader{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"publish": func() (cli.Command, error) {
 			return &command.Publish{
 				Ui:  ui,
