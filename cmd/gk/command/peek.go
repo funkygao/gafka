@@ -112,12 +112,14 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		msg     *sarama.ConsumerMessage
 		total   int
 	)
+
 LOOP:
 	for {
 		select {
 		case <-this.quit:
 			this.Ui.Output(fmt.Sprintf("Total: %d msgs", total))
 			this.Ui.Output(fmt.Sprintf("Throughput: %d/s", total/int(time.Since(startAt).Seconds())))
+			return
 
 		case msg = <-msgChan:
 			if silence {
