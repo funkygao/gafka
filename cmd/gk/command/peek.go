@@ -119,7 +119,11 @@ LOOP:
 		select {
 		case <-this.quit:
 			this.Ui.Output(fmt.Sprintf("Total: %s msgs, %s", gofmt.Comma(int64(total)), gofmt.ByteSize(bytes)))
-			this.Ui.Output(fmt.Sprintf("Speed: %d/s", total/int(time.Since(startAt).Seconds())))
+			elapsed := time.Since(startAt).Seconds()
+			if elapsed > 0. {
+				this.Ui.Output(fmt.Sprintf("Speed: %d/s", total/int(elapsed)))
+			}
+
 			return
 
 		case msg = <-msgChan:
