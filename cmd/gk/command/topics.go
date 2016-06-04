@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"log"
+	"os"
 	"sort"
 	"strings"
 
@@ -40,6 +42,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		partitions        int
 		retentionInMinute int
 		resetConf         bool
+		debug             bool
 		configged         bool
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
@@ -53,6 +56,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&delTopic, "del", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
 	cmdFlags.BoolVar(&configged, "cf", false, "")
+	cmdFlags.BoolVar(&debug, "debug", false, "")
 	cmdFlags.BoolVar(&resetConf, "cfreset", false, "")
 	cmdFlags.IntVar(&retentionInMinute, "retention", -1, "")
 	cmdFlags.IntVar(&replicas, "replicas", 2, "")
@@ -68,6 +72,11 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		requireAdminRights("-add", "-del", "-retention").
 		invalid(args) {
 		return 2
+	}
+
+	if debug {
+		log.SetOutput(os.Stderr)
+		log.SetPrefix(color.Magenta("[sarama]"))
 	}
 
 	if addTopic != "" {
@@ -495,6 +504,8 @@ Options:
 
     -n
       Show network addresses as numbers.
+
+    -debug
 `, this.Cmd, ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }
