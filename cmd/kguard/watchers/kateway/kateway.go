@@ -34,7 +34,8 @@ func (this *WatchKateway) Run() {
 			return
 
 		case <-ticker.C:
-			liveKateways.Update(1)
+			kws, _ := this.Zkzone.KatewayInfos()
+			liveKateways.Update(int64(len(kws)))
 		}
 	}
 }
