@@ -140,24 +140,30 @@ func (this *Monitor) ServeForever() {
 
 	ip, _ := ctx.LocalIP()
 	this.candidate = leadership.NewCandidate(backend, zk.KguardLeaderPath, ip.String(), 15*time.Second)
-	electedCh, _, err := this.candidate.RunForElection()
+	electedCh, errCh := this.candidate.RunForElection()
 	if err != nil {
 		panic("Cannot run for election, store is probably down")
 	}
 
-	for isElected := range electedCh {
-		if isElected {
-			log.Info("Won the election, starting all watchers")
+	for {
+		select {
+		case isElected := <-electedCh:
+			if isElected {
+				log.Info("Won the election, starting all watchers")
 
-			this.leader = true
-			this.Start()
-		} else {
-			log.Warn("Fails the election, watching election events...")
+				this.leader = true
+				this.Start()
+			} else {
+				log.Warn("Fails the election, watching election events...")
 
-			if this.leader {
-				this.Stop()
+				if this.leader {
+					this.Stop()
+				}
+				this.leader = false
 			}
-			this.leader = false
+
+		case err := <-errCh:
+			log.Error("Error during election: %v", err)
 		}
 	}
 
