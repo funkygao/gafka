@@ -222,6 +222,7 @@ Options:
 
     -brokers id1,id2,idN
       Migrate the topic to given broker ids.
+      brokers order is IMPORTANT! The 1st is the preferred leader.
 
     -verify
       Verify the migration ongoing.      
