@@ -45,6 +45,25 @@ func (this *Get) Run(args []string) (exitCode int) {
 	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	defer zkzone.Close()
 	if this.recursive {
+		data, stat, err := zkzone.Conn().Get(this.path)
+		must(err)
+		if stat.EphemeralOwner > 0 {
+			this.Ui.Output(color.Yellow(this.path))
+		} else {
+			this.Ui.Output(color.Green(this.path))
+		}
+
+		if len(data) > 0 {
+			if this.verbose {
+				this.Ui.Output(fmt.Sprintf("%s %#v",
+					strings.Repeat(" ", 3), stat))
+				this.Ui.Output(fmt.Sprintf("%s %v",
+					strings.Repeat(" ", 3), data))
+			}
+			this.Ui.Output(fmt.Sprintf("%s %s",
+				strings.Repeat(" ", 3), string(data)))
+		}
+
 		this.showChildrenRecursively(zkzone.Conn(), this.path)
 
 		return 0
