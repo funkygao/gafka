@@ -28,6 +28,11 @@ func (this *WatchKateway) Run() {
 	defer ticker.Stop()
 
 	liveKateways := metrics.NewRegisteredGauge("kateway.live", nil)
+
+	// warmup
+	kws, _ := this.Zkzone.KatewayInfos()
+	liveKateways.Update(int64(len(kws)))
+
 	for {
 		select {
 		case <-this.Stop:
