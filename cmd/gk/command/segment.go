@@ -18,12 +18,14 @@ type Segment struct {
 	Cmd string
 
 	rootPath string
+	limit    int
 }
 
 func (this *Segment) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("segment", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.rootPath, "p", "", "")
+	cmdFlags.IntVar(&this.limit, "n", -1, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -75,6 +77,9 @@ func (this *Segment) Run(args []string) (exitCode int) {
 		}
 	}
 	sortutil.AscByField(summary, "size")
+	if this.limit > 0 && len(summary) > this.limit {
+		summary = summary[:this.limit]
+	}
 	for _, s := range summary {
 		this.Ui.Output(fmt.Sprintf("day:%2d hour:%2d size:%s",
 			s.day, s.hour, gofmt.ByteSize(s.size)))
@@ -93,7 +98,10 @@ Usage: %s segment [options]
 
     Scan the kafka segments and display summary
 
-    -p dir    
+    -p dir
+
+    -n limit
+      Default unlimited.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
