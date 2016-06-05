@@ -46,6 +46,13 @@ func init() {
 			}, nil
 		},
 
+		"segment": func() (cli.Command, error) {
+			return &command.Segment{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"leader": func() (cli.Command, error) {
 			return &command.Leader{
 				Ui:  ui,
