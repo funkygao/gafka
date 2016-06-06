@@ -32,7 +32,7 @@ import (
 
 // Gateway is a distributed Pub/Sub HTTP endpoint.
 //
-// Working with ehaproxy, it can compose a Pub/Sub cluster system.
+// Working with ehaproxy, it can form a Pub/Sub cluster system.
 type Gateway struct {
 	id string // must be unique across the zone
 
@@ -163,7 +163,7 @@ func (this *Gateway) Start() (err error) {
 
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		log.Info("received signal: %s", strings.ToUpper(sig.String()))
-		this.Stop()
+		this.stop()
 	}, syscall.SIGINT, syscall.SIGTERM) // yes we ignore HUP
 
 	meta.Default.Start()
@@ -230,7 +230,7 @@ func (this *Gateway) Start() (err error) {
 	return nil
 }
 
-func (this *Gateway) Stop() {
+func (this *Gateway) stop() {
 	this.shutdownOnce.Do(func() {
 		log.Info("stopping gateway...")
 

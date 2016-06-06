@@ -7,7 +7,7 @@ import (
 )
 
 func (this *Gateway) buildRouting() {
-	m := this.MiddlewareKateway
+	m := this.middleware
 
 	if this.manServer != nil {
 		this.manServer.Router().GET("/alive", m(this.checkAliveHandler))

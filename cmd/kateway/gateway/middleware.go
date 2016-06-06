@@ -15,7 +15,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (this *Gateway) MiddlewareKateway(h httprouter.Handle) httprouter.Handle {
+func (this *Gateway) middleware(h httprouter.Handle) httprouter.Handle {
 	var (
 		connections   = make(map[string]int, 1000) // remoteAddr:counter
 		connectionsMu sync.Mutex
