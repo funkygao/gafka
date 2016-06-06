@@ -175,7 +175,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			Offset:    offsetN,
 		}); err != nil {
 			// during rebalance, this might happen, but with no bad effects
-			log.Trace("sub land[%s] %s(%s): {app:%s topic:%s/%s ver:%s group:%s ack:1 partition:%s offset:%s UA:%s} %v",
+			log.Trace("sub land[%s] %s(%s): {app:%s topic:%s/%s ver:%s group:%s ack:1 offset:%s UA:%s} %v",
 				myAppid, r.RemoteAddr, realIp, hisAppid, topic, partition, ver,
 				group, offset, r.Header.Get("User-Agent"), err)
 		} else {
