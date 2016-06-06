@@ -175,6 +175,8 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 	lines = append(lines, header)
 
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		groupTopicsMap := make(map[string]map[string]struct{}) // group:sub topics
+
 		if !patternMatched(zkcluster.Name(), clusterPattern) {
 			return
 		}
@@ -212,6 +214,11 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 						if !patternMatched(topic, this.topicPattern) {
 							continue
 						}
+
+						if len(groupTopicsMap[group]) == 0 {
+							groupTopicsMap[group] = make(map[string]struct{}, 5)
+						}
+						groupTopicsMap[group][topic] = struct{}{}
 
 						ownerByPartition := zkcluster.OwnersOfGroupByTopic(group, topic)
 
@@ -282,6 +289,17 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 							group, fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),
 							offset.offset, " "))
 				}
+			}
+		}
+
+		for group, topics := range groupTopicsMap {
+			if len(topics) > 1 {
+				// the same consumer group is consuming more than 1 topics
+				topicsLabel := make([]string, 0, len(topics))
+				for t, _ := range topics {
+					topicsLabel = append(topicsLabel, t)
+				}
+				this.Ui.Warn(fmt.Sprintf("%35s consuming: %+v", group, topicsLabel))
 			}
 		}
 	})
