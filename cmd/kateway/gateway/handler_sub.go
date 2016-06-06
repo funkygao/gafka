@@ -252,6 +252,11 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			return nil
 
 		case msg := <-fetcher.Messages():
+			if Options.Debug {
+				log.Debug("sub[%s] %s(%s): {G:%s T:%s/%d O:%d}",
+					myAppid, r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset)
+			}
+
 			partition := strconv.FormatInt(int64(msg.Partition), 10)
 
 			if limit == 1 {
