@@ -58,6 +58,12 @@ func (this *ZkZone) ZkAddrList() []string {
 	return strings.Split(this.conf.ZkAddrs, ",")
 }
 
+func (this *ZkZone) Ping() error {
+	this.connectIfNeccessary()
+	_, _, err := this.conn.Get("/") // zk sdk has no ping, simulate by Get
+	return err
+}
+
 func (this *ZkZone) Close() {
 	this.once.Do(func() {
 		this.conn.Close()
