@@ -93,6 +93,7 @@ func main() {
 
 	gw.ServeForever()
 	glog.Info("kateway bye!")
+	glog.Close()
 
 	if gateway.Options.PidFile != "" {
 		syscall.Unlink(gateway.Options.PidFile)
