@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/funkygao/go-simplejson"
 	log "github.com/funkygao/log4go"
@@ -231,24 +230,9 @@ func (this *ZkZone) Connect() (err error) {
 		return nil
 	}
 
-	var i int
-	for i = 1; i <= 3; i++ {
-		log.Debug("zk #%d try connecting %s", i, this.conf.ZkAddrs)
-		this.conn, this.evt, err = zk.Connect(this.ZkAddrList(), this.conf.SessionTimeout)
-		if err == nil {
-			// connected ok
-			break
-		}
-
-		backoff := time.Millisecond * 200 * time.Duration(i)
-		log.Debug("zk #%d connect backoff %s", i, backoff)
-		time.Sleep(backoff)
-	}
-
-	if err == nil {
-		log.Debug("zk connected with %s after %d retries",
-			this.conf.ZkAddrs, i-1)
-	}
+	log.Debug("zk connecting %s", this.conf.ZkAddrs)
+	// zk.Connect will not do real tcp connect, needn't retry here
+	this.conn, this.evt, err = zk.Connect(this.ZkAddrList(), this.conf.SessionTimeout)
 
 	return
 }
@@ -367,7 +351,8 @@ func (this *ZkZone) ClusterPath(name string) string {
 
 	clusterPath, _, err := this.conn.Get(ClusterPath(name))
 	if err != nil {
-		panic(fmt.Sprintf("cluster[%s] %v", name, err))
+		this.swallow(err)
+		return ""
 	}
 
 	return string(clusterPath)
