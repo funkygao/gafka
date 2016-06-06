@@ -70,9 +70,9 @@ func New(id string) *Gateway {
 	if err := this.zkzone.Ping(); err != nil {
 		panic(err)
 	}
-	metaConf := zkmeta.DefaultConfig(Options.Zone)
+	metaConf := zkmeta.DefaultConfig()
 	metaConf.Refresh = Options.MetaRefresh
-	meta.Default = zkmeta.New(metaConf)
+	meta.Default = zkmeta.New(metaConf, this.zkzone)
 	this.guard = newGuard(this)
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
 	this.accessLogger = NewAccessLogger("access_log", 100)

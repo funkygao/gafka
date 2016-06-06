@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
-	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 	zklib "github.com/samuel/go-zookeeper/zk"
@@ -30,18 +29,10 @@ type zkMetaStore struct {
 	pmapLock      sync.RWMutex
 }
 
-func New(cf *config) meta.MetaStore {
-	if cf.Zone == "" {
-		panic("empty zone")
-	}
-	zkAddrs := ctx.ZoneZkAddrs(cf.Zone)
-	if len(zkAddrs) == 0 {
-		panic("empty zookeeper addr")
-	}
-
+func New(cf *config, zkzone *zk.ZkZone) meta.MetaStore {
 	return &zkMetaStore{
 		cf:         cf,
-		zkzone:     zk.NewZkZone(zk.DefaultConfig(cf.Zone, zkAddrs)), // TODO session timeout
+		zkzone:     zkzone,
 		shutdownCh: make(chan struct{}),
 		refreshCh:  make(chan struct{}, 5),
 

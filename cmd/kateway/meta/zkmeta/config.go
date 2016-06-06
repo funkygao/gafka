@@ -5,13 +5,11 @@ import (
 )
 
 type config struct {
-	Zone    string
 	Refresh time.Duration
 }
 
-func DefaultConfig(zone string) *config {
+func DefaultConfig() *config {
 	return &config{
-		Zone:    zone,
 		Refresh: time.Minute * 10,
 	}
 }
