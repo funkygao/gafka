@@ -124,10 +124,6 @@ func (this *zkMetaStore) Stop() {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
-	for _, c := range this.clusters {
-		c.Close()
-	}
-
 	close(this.shutdownCh)
 }
 
