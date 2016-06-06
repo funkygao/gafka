@@ -56,10 +56,6 @@ func (this *ZkCluster) ZkZone() *ZkZone {
 	return this.zone
 }
 
-func (this *ZkCluster) Close() {
-	this.zone.Close()
-}
-
 // ConfiggedTopics returns topics and theirs configs in zk:/config/topics that have non-default configuration.
 func (this *ZkCluster) ConfiggedTopics() map[string]TopicConfigMeta {
 	r := make(map[string]TopicConfigMeta)
