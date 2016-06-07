@@ -24,6 +24,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/mpool"
+	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
 	"github.com/julienschmidt/httprouter"
@@ -120,9 +121,10 @@ func BenchmarkDirectKafkaProduce1K(b *testing.B) {
 
 	ctx.LoadFromHome()
 
-	cf := zkmeta.DefaultConfig("local")
+	cf := zkmeta.DefaultConfig()
+	zkzone := zk.NewZkZone(zk.DefaultConfig("local", ctx.ZoneZkAddrs("local")))
 	cf.Refresh = time.Hour
-	meta.Default = zkmeta.New(cf)
+	meta.Default = zkmeta.New(cf, zkzone)
 	meta.Default.Start()
 	var wg sync.WaitGroup
 	store.DefaultPubStore = kafka.NewPubStore(100, 5, 0, &wg, false, true)
