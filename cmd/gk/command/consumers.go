@@ -22,6 +22,7 @@ type Consumers struct {
 	onlineOnly   bool
 	ownerOnly    bool
 	groupPattern string
+	warnOnly     bool
 	byHost       bool
 	cleanup      bool
 	topicPattern string
@@ -40,6 +41,7 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.onlineOnly, "online", false, "")
 	cmdFlags.BoolVar(&this.byHost, "byhost", false, "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
+	cmdFlags.BoolVar(&this.warnOnly, "warn", false, "")
 	cmdFlags.BoolVar(&this.ownerOnly, "own", false, "")
 	cmdFlags.BoolVar(&this.cleanup, "cleanup", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -304,7 +306,10 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 		}
 	})
 
-	this.Ui.Output(columnize.SimpleFormat(lines))
+	if !this.warnOnly {
+		this.Ui.Output(columnize.SimpleFormat(lines))
+	}
+
 }
 
 type consumerGroupOffset struct {
@@ -372,6 +377,9 @@ Options:
     -g group name pattern
 
     -t topic pattern
+
+    -warn
+      Only show groups that consumes multiple topics.
 
     -online
       Only show online consumer groups.    
