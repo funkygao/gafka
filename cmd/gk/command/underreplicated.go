@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/ctx"
@@ -86,7 +87,10 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 		return nil
 	}
 
-	kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
+	cf := sarama.NewConfig()
+	cf.Net.ReadTimeout = time.Second * 4
+	cf.Net.WriteTimeout = time.Second * 4
+	kfk, err := sarama.NewClient(brokerList, cf)
 	if err != nil {
 		this.Ui.Error(fmt.Sprintf("%s %+v %s", zkcluster.Name(), brokerList, err.Error()))
 

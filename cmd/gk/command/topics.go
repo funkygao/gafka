@@ -8,6 +8,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/ctx"
@@ -300,7 +301,10 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		}
 	}
 
-	kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
+	cf := sarama.NewConfig()
+	cf.Net.ReadTimeout = time.Second * 4
+	cf.Net.WriteTimeout = time.Second * 4
+	kfk, err := sarama.NewClient(zkcluster.BrokerList(), cf)
 	if err != nil {
 		if this.verbose {
 			linesInTopicMode = this.echoOrBuffer(color.Yellow("%5s%+v %s", " ",

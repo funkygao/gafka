@@ -120,7 +120,10 @@ func (this *Brokers) clusterBrokers(zone, cluster string, brokers map[string]*zk
 	if this.staleOnly {
 		// try each broker's aliveness
 		for brokerId, broker := range brokers {
-			kfk, err := sarama.NewClient([]string{broker.Addr()}, sarama.NewConfig())
+			cf := sarama.NewConfig()
+			cf.Net.ReadTimeout = time.Second * 4
+			cf.Net.WriteTimeout = time.Second * 4
+			kfk, err := sarama.NewClient([]string{broker.Addr()}, cf)
 			if err != nil {
 				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s",
 					zone, cluster,
