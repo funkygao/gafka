@@ -65,8 +65,8 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	// auth
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
-		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
-			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
+		log.Error("sub[%s] -(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
+			myAppid, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
 		writeAuthFailure(w, err)
@@ -159,8 +159,8 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
 		myAppid+"."+group, r.RemoteAddr, reset, Options.PermitStandbySub)
 	if err != nil {
-		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
-			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
+		log.Error("sub[%s] -(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
+			myAppid, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
 		writeBadRequest(w, err.Error())
