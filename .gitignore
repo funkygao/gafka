@@ -45,6 +45,7 @@ cmd/webhook/webhook
 cmd/swfd/swfd
 cmd/gitlabtool/gitop/gitop
 cmd/zk/zk
+cmd/kafka/kafka
 panic.dump
 cmd/gk/gk
 misc/scripts
