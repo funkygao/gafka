@@ -43,6 +43,13 @@ func init() {
 				Cmd: cmd,
 			}, nil
 		},
+
+		"logdirs": func() (cli.Command, error) {
+			return &command.LogDirs{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
 	}
 
 }
