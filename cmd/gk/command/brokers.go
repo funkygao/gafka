@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"log"
 	"regexp"
 	"sort"
 	"strconv"
@@ -32,12 +33,14 @@ type Brokers struct {
 
 func (this *Brokers) Run(args []string) (exitCode int) {
 	var (
-		zone string
+		zone  string
+		debug bool
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", "", "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
+	cmdFlags.BoolVar(&debug, "debug", false, "")
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.BoolVar(&this.staleOnly, "stale", false, "")
 	cmdFlags.BoolVar(&this.showVersions, "versions", false, "")
@@ -48,6 +51,10 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	if this.showVersions {
 		this.doShowVersions()
 		return
+	}
+
+	if debug {
+		sarama.Logger = log.New(os.Stderr, color.Magenta("[sarama]"), log.LstdFlags)
 	}
 
 	if zone != "" {
@@ -284,7 +291,9 @@ Options:
 
     -versions
       Display kafka instances versions by host
-      Precondition: you MUST install consul on each broker host    
+      Precondition: you MUST install consul on each broker host
+
+    -debug
 
     -n
       Show network addresses as numbers
