@@ -157,7 +157,7 @@ func (this *WatchF5) callHttp(url string, h metrics.Histogram) {
 		if err != nil {
 			log.Error("%s %s", url, resp.Status)
 			this.errors.Mark(1)
-		} else if string(b) != `{"ok": 1}` {
+		} else if string(b) != `{"ok":1}` {
 			log.Error("%s response: %s", url, string(b))
 			this.errors.Mark(1)
 		}
