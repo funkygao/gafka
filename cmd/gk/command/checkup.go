@@ -49,8 +49,8 @@ func (this *Checkup) Run(args []string) (exitCode int) {
 	cmd.Run(args)
 	this.Ui.Output("")
 
-	this.Ui.Output(color.Cyan("checking controllers\n%s", strings.Repeat("-", 80)))
-	cmd = &Controllers{
+	this.Ui.Output(color.Cyan("checking kguard\n%s", strings.Repeat("-", 80)))
+	cmd = &Kguard{
 		Ui:  this.Ui,
 		Cmd: this.Cmd,
 	}
@@ -76,7 +76,7 @@ func (*Checkup) Synopsis() string {
 
 func (this *Checkup) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s [options]
+Usage: %s checkup [options]
 
     Health checkup of kafka runtime
 
