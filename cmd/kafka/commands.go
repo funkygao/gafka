@@ -36,6 +36,13 @@ func init() {
 				Cmd: cmd,
 			}, nil
 		},
+
+		"zksession": func() (cli.Command, error) {
+			return &command.ZkSession{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
 	}
 
 }
