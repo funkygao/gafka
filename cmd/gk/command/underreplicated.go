@@ -3,6 +3,8 @@ package command
 import (
 	"flag"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -19,6 +21,7 @@ type UnderReplicated struct {
 
 	zone    string
 	cluster string
+	debug   bool
 }
 
 func (this *UnderReplicated) Run(args []string) (exitCode int) {
@@ -26,8 +29,13 @@ func (this *UnderReplicated) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
+	cmdFlags.BoolVar(&this.debug, "debug", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	if this.debug {
+		sarama.Logger = log.New(os.Stderr, color.Magenta("[sarama]"), log.LstdFlags)
 	}
 
 	if this.zone == "" {
@@ -170,6 +178,10 @@ Usage: %s underreplicated [options]
 Options:
 
     -z zone
+
+    -c cluster
+
+    -debug
 `, this.Cmd)
 	return strings.TrimSpace(help)
 }
