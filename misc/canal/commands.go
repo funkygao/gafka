@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/funkygao/gafka/cmd/canal/command"
+	"github.com/funkygao/gafka/misc/canal/command"
 	"github.com/funkygao/gocli"
 )
 
