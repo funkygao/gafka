@@ -15,6 +15,12 @@ type Whoami struct {
 
 func (this *Whoami) Run(args []string) (exitCode int) {
 	var tags = map[string]string{
+		// pubsub
+		"10.209.36.14": "psub 1",
+		"10.209.36.33": "psub 2",
+		"10.213.1.210": "psub 3",
+		"10.213.9.245": "psub 4",
+
 		// kafka brokers with small disks
 		"10.209.37.39":  "kk 1",
 		"10.209.33.20":  "kk 2",
