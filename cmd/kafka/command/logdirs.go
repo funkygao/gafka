@@ -15,15 +15,23 @@ type LogDirs struct {
 
 func (this *LogDirs) Run(args []string) (exitCode int) {
 	var (
-		curLogDirss  int
-		curConsumers int
+		dirN int
 	)
 	cmdFlags := flag.NewFlagSet("logdirs", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.IntVar(&curLogDirss, "p", 17, "partitions count")
-	cmdFlags.IntVar(&curConsumers, "c", 4, "consumers count")
+	cmdFlags.IntVar(&dirN, "d", 12, "log.dirs count")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	this.Ui.Output("nextLogDir...")
+	if dirN == 1 {
+		this.Ui.Output(fmt.Sprintf("dir/0"))
+		return
+	} else {
+		this.Ui.Output(`
+Scan each log.dirs and choose the directory with the least partitions in it			
+			`)
 	}
 
 	return
@@ -39,9 +47,7 @@ Usage: %s logdirs [options]
 
     log.dirs balance algorithm
 
-    -p partitions
-
-    -c consumer instances
+    -d log.dirs count
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
