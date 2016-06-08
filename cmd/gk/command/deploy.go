@@ -164,7 +164,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		ZkAddrs:     this.zkzone.ZkAddrs(),
 		LogDirs:     this.logDirs,
 	}
-	data.IoThreads = strconv.Itoa(4 * len(strings.Split(data.LogDirs, ",")))
+	data.IoThreads = strconv.Itoa(3 * len(strings.Split(data.LogDirs, ",")))
 	networkThreads := ctx.NumCPU() / 2
 	if networkThreads < 2 {
 		networkThreads = 2
@@ -323,7 +323,7 @@ func (this *Deploy) demo() {
 		myBrokerId = 0
 	}
 	logDirs := make([]string, 0)
-	for i := 0; i <= 11; i++ {
+	for i := 1; i <= 12; i++ {
 		logDir := fmt.Sprintf("/data%d/%s", i, this.clusterName())
 		logDirs = append(logDirs, logDir)
 	}
