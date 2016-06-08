@@ -29,6 +29,13 @@ func init() {
 				Cmd: cmd,
 			}, nil
 		},
+
+		"rebalance": func() (cli.Command, error) {
+			return &command.Rebalance{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
 	}
 
 }
