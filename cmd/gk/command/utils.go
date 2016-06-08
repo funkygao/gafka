@@ -252,7 +252,7 @@ func setupLogging(logFile, level, crashLogFile string) {
 	} else {
 		log.DeleteFilter("stdout")
 
-		filer := log.NewFileLogWriter(logFile, true, false)
+		filer := log.NewFileLogWriter(logFile, true, false, 0)
 		filer.SetFormat("[%d %T] [%L] (%S) %M")
 		filer.SetRotateSize(0)
 		filer.SetRotateLines(0)

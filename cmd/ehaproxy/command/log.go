@@ -43,7 +43,7 @@ func (this *Start) setupLogging(logFile, logLevel, crashLogFile string) {
 	} else {
 		log.DeleteFilter("stdout")
 
-		filer := log.NewFileLogWriter(logFile, true, true)
+		filer := log.NewFileLogWriter(logFile, true, true, 0)
 		filer.SetFormat("[%d %T] [%L] (%S) %M")
 		filer.SetRotateSize(0)
 		filer.SetRotateLines(0)

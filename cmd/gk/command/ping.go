@@ -54,7 +54,7 @@ func (this *Ping) Run(args []string) (exitCode int) {
 func (this *Ping) setupLog() {
 	log.DeleteFilter("stdout")
 
-	filer := log.NewFileLogWriter(this.logfile, true, false)
+	filer := log.NewFileLogWriter(this.logfile, true, false, 0)
 	filer.SetFormat("[%d %T] [%L] (%S) %M")
 	filer.SetRotateSize(0)
 	filer.SetRotateLines(0)
