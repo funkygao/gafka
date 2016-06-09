@@ -15,6 +15,7 @@ func (this *Gateway) watchDeadPartitions() {
 		select {
 		case <-ticker.C:
 			for topic, dp := range manager.Default.DeadPartitions() {
+				// FIXME what if some topics come alive?
 				store.DefaultPubStore.MarkPartitionsDead(topic, dp)
 			}
 
