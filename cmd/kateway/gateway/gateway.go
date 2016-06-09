@@ -174,6 +174,8 @@ func (this *Gateway) Start() (err error) {
 	}
 	log.Trace("manager store[%s] started", manager.Default.Name())
 
+	go this.watchDeadPartitions()
+
 	go this.guard.Start()
 	log.Trace("guard started")
 

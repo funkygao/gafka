@@ -55,6 +55,10 @@ func (this *mysqlStore) Refreshed() <-chan struct{} {
 	return this.refreshCh
 }
 
+func (this *mysqlStore) DeadPartitions() map[string]map[int32]struct{} {
+	return this.deadPartitionMap
+}
+
 func (this *mysqlStore) ValidateTopicName(topic string) bool {
 	return len(topic) <= 100 && len(topicNameRegex.FindAllString(topic, -1)) == 1
 }

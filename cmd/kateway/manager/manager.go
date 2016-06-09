@@ -44,6 +44,8 @@ type Manager interface {
 	ValidateTopicName(topic string) bool
 	ValidateGroupName(header http.Header, group string) bool
 
+	DeadPartitions() map[string]map[int32]struct{}
+
 	Dump() map[string]interface{}
 }
 

@@ -26,6 +26,9 @@ type PubStore interface {
 
 	// AsyncPub pub a keyed message to a topic of a cluster asynchronously.
 	AsyncPub(cluster, topic string, key, msg []byte) (partition int32, offset int64, err error)
+
+	// MarkPartitionsDead will disable a topic's partitions.
+	MarkPartitionsDead(topic string, partitionIds map[int32]struct{})
 }
 
 var DefaultPubStore PubStore

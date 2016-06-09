@@ -169,3 +169,9 @@ func (this *pubStore) AsyncPub(cluster string, topic string, key []byte,
 	producer.Recycle()
 	return
 }
+
+func (this *pubStore) MarkPartitionsDead(topic string, deadPartitionIds map[int32]struct{}) {
+	exclusivePartitionersLock.Lock()
+	exclusivePartitioners[topic].markDead(deadPartitionIds)
+	exclusivePartitionersLock.Unlock()
+}

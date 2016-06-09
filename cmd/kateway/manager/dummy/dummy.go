@@ -40,6 +40,10 @@ func (this *dummyStore) WebHooks() ([]manager.WebHook, error) {
 	return nil, nil
 }
 
+func (this *dummyStore) DeadPartitions() map[string]map[int32]struct{} {
+	return nil
+}
+
 func (this *dummyStore) Refreshed() <-chan struct{} {
 	return nil
 }
