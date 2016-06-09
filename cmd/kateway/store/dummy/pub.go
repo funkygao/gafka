@@ -22,7 +22,7 @@ func (this *pubStore) Name() string {
 	return "dummy"
 }
 
-func (this *pubStore) MarkPartitionsDead(topic string, partitionIds []int32) {
+func (this *pubStore) MarkPartitionsDead(topic string, partitionIds map[int32]struct{}) {
 
 }
 

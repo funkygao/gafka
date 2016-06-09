@@ -170,12 +170,7 @@ func (this *pubStore) AsyncPub(cluster string, topic string, key []byte,
 	return
 }
 
-func (this *pubStore) MarkPartitionsDead(topic string, partitionIds []int32) {
-	deadPartitionIds := make(map[int32]struct{})
-	for _, p := range partitionIds {
-		deadPartitionIds[p] = struct{}{}
-	}
-
+func (this *pubStore) MarkPartitionsDead(topic string, deadPartitionIds map[int32]struct{}) {
 	exclusivePartitionersLock.Lock()
 	exclusivePartitioners[topic].markDead(deadPartitionIds)
 	exclusivePartitionersLock.Unlock()
