@@ -22,6 +22,6 @@ type shadowQueueRecord struct {
 }
 
 type deadPartitionRecord struct {
-	AppId, TopicName, Ver string
-	PartitionId           int32
+	KafkaTopic  string
+	PartitionId int32
 }

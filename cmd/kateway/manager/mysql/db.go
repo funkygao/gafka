@@ -144,7 +144,7 @@ func (this *mysqlStore) shadowKey(hisAppid, topic, ver, myAppid string) string {
 }
 
 func (this *mysqlStore) fetchDeadPartitions(db *sql.DB) error {
-	rows, err := db.Query("SELECT AppId,TopicName,Version,Partition FROM dead_partition")
+	rows, err := db.Query("SELECT KafkaTopic,Partition FROM dead_partition")
 	if err != nil {
 		return err
 	}
@@ -153,17 +153,16 @@ func (this *mysqlStore) fetchDeadPartitions(db *sql.DB) error {
 	deadPartitionMap := make(map[string]map[int32]struct{})
 	var dp deadPartitionRecord
 	for rows.Next() {
-		err = rows.Scan(&dp.AppId, &dp.TopicName, &dp.Ver, &dp.PartitionId)
+		err = rows.Scan(&dp.KafkaTopic, &dp.PartitionId)
 		if err != nil {
 			log.Error("mysql manager store: %v", err)
 			continue
 		}
 
-		topic := this.KafkaTopic(dp.AppId, dp.TopicName, dp.Ver)
-		if _, present := deadPartitionMap[topic]; !present {
-			deadPartitionMap[topic] = make(map[int32]struct{})
+		if _, present := deadPartitionMap[dp.KafkaTopic]; !present {
+			deadPartitionMap[dp.KafkaTopic] = make(map[int32]struct{})
 		}
-		deadPartitionMap[topic][dp.PartitionId] = struct{}{}
+		deadPartitionMap[dp.KafkaTopic][dp.PartitionId] = struct{}{}
 	}
 
 	this.deadPartitionMap = deadPartitionMap

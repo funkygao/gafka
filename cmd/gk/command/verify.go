@@ -102,13 +102,13 @@ func (this *Verify) Run(args []string) (exitCode int) {
 		this.Ui.Warn(fmt.Sprintf("dup clusters found for topic: %s", topic))
 	}
 
-	mysqlDsns := map[string]string{
-		"prod": "user_pubsub:p0nI7mEL6OLW@tcp(m3342.wdds.mysqldb.com:3342)/pubsub?charset=utf8&timeout=10s",
-		"sit":  "pubsub:pubsub@tcp(10.209.44.12:10043)/pubsub?charset=utf8&timeout=10s",
-		"test": "pubsub:pubsub@tcp(10.209.44.14:10044)/pubsub?charset=utf8&timeout=10s",
+	dsn, err := this.zkzone.KatewayMysqlDsn()
+	if err != nil {
+		this.Ui.Error(err.Error())
+		return 1
 	}
 
-	this.loadFromManager(mysqlDsns[this.zone])
+	this.loadFromManager(dsn)
 	switch this.mode {
 	case "p":
 		this.verifyPub()

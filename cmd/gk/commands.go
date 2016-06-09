@@ -67,6 +67,13 @@ func init() {
 			}, nil
 		},
 
+		"disable": func() (cli.Command, error) {
+			return &command.Disable{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"publish": func() (cli.Command, error) {
 			return &command.Publish{
 				Ui:  ui,
