@@ -1,7 +1,14 @@
 package kafka
 
 import (
+	"sync"
+
 	"github.com/Shopify/sarama"
+)
+
+var (
+	exclusivePartitioners     = make(map[string]*exclusivePartitioner, 50) // topic:partitioner
+	exclusivePartitionersLock sync.Mutex
 )
 
 type exclusivePartitioner struct {
@@ -14,6 +21,10 @@ func NewExclusivePartitioner(topic string) sarama.Partitioner {
 		hasher:           sarama.NewHashPartitioner(topic),
 		deadPartitionIds: make(map[int32]struct{}),
 	}
+
+	exclusivePartitionersLock.Lock()
+	exclusivePartitioners[topic] = this
+	exclusivePartitionersLock.Unlock()
 	return this
 }
 

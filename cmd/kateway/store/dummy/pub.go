@@ -22,6 +22,10 @@ func (this *pubStore) Name() string {
 	return "dummy"
 }
 
+func (this *pubStore) MarkPartitionsDead(topic string, partitionIds []int32) {
+
+}
+
 func (*pubStore) AddJob(cluster, topic string, payload []byte, delay time.Duration) (jobId string, err error) {
 	return "", nil
 }
