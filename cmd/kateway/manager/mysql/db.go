@@ -27,6 +27,7 @@ type mysqlStore struct {
 	appTopicsMap        map[string]map[string]bool     // appid:topics enabled
 	appConsumerGroupMap map[string]map[string]struct{} // appid:groups
 	shadowQueueMap      map[string]string              // hisappid.topic.ver.myappid:group
+	deadPartitionMap    map[string]map[int32]struct{}  // topic:partitionId
 }
 
 func New(cf *config) *mysqlStore {
@@ -128,6 +129,11 @@ func (this *mysqlStore) refreshFromMysql() error {
 			log.Error("shadow queues: %v", err)
 			return err
 		}
+
+		if err = this.fetchDeadPartitions(db); err != nil {
+			log.Error("dead partitions: %v", err)
+			return err
+		}
 	}
 
 	return nil
@@ -137,6 +143,33 @@ func (this *mysqlStore) shadowKey(hisAppid, topic, ver, myAppid string) string {
 	return hisAppid + "." + topic + "." + ver + "." + myAppid
 }
 
+func (this *mysqlStore) fetchDeadPartitions(db *sql.DB) error {
+	rows, err := db.Query("SELECT AppId,TopicName,Version,Partition FROM dead_partition")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	deadPartitionMap := make(map[string]map[int32]struct{})
+	var dp deadPartitionRecord
+	for rows.Next() {
+		err = rows.Scan(&dp.AppId, &dp.TopicName, &dp.Ver, &dp.PartitionId)
+		if err != nil {
+			log.Error("mysql manager store: %v", err)
+			continue
+		}
+
+		topic := this.KafkaTopic(dp.AppId, dp.TopicName, dp.Ver)
+		if _, present := deadPartitionMap[topic]; !present {
+			deadPartitionMap[topic] = make(map[int32]struct{})
+		}
+		deadPartitionMap[topic][dp.PartitionId] = struct{}{}
+	}
+
+	this.deadPartitionMap = deadPartitionMap
+	return nil
+}
+
 func (this *mysqlStore) fetchShadowQueueRecords(db *sql.DB) error {
 	rows, err := db.Query("SELECT HisAppId,TopicName,Version,MyAppid,GroupName FROM group_shadow WHERE Status=1")
 	if err != nil {
@@ -144,8 +177,8 @@ func (this *mysqlStore) fetchShadowQueueRecords(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	var shadow shadowQueueRecord
 	shadowQueueMap := make(map[string]string)
+	var shadow shadowQueueRecord
 	for rows.Next() {
 		err = rows.Scan(&shadow.HisAppId, &shadow.TopicName, &shadow.Ver, &shadow.MyAppid, &shadow.Group)
 		if err != nil {
@@ -167,8 +200,8 @@ func (this *mysqlStore) fetchAppGroupRecords(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	var group appConsumerGroupRecord
 	appGroupMap := make(map[string]map[string]struct{})
+	var group appConsumerGroupRecord
 	for rows.Next() {
 		err = rows.Scan(&group.AppId, &group.GroupName)
 		if err != nil {
@@ -194,9 +227,9 @@ func (this *mysqlStore) fetchApplicationRecords(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	var app applicationRecord
 	appClusterMap := make(map[string]string)
 	appSecretMap := make(map[string]string)
+	var app applicationRecord
 	for rows.Next() {
 		err = rows.Scan(&app.AppId, &app.Cluster, &app.AppSecret)
 		if err != nil {
@@ -221,8 +254,8 @@ func (this *mysqlStore) fetchSubscribeRecords(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	var app appSubscribeRecord
 	m := make(map[string]map[string]struct{})
+	var app appSubscribeRecord
 	for rows.Next() {
 		err = rows.Scan(&app.AppId, &app.TopicName)
 		if err != nil {
@@ -249,8 +282,8 @@ func (this *mysqlStore) fetchTopicRecords(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	var app appTopicRecord
 	m := make(map[string]map[string]bool)
+	var app appTopicRecord
 	for rows.Next() {
 		err = rows.Scan(&app.AppId, &app.TopicName, &app.Status)
 		if err != nil {

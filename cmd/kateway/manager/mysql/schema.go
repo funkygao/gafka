@@ -20,3 +20,8 @@ type shadowQueueRecord struct {
 	HisAppId, TopicName, Ver string
 	MyAppid, Group           string
 }
+
+type deadPartitionRecord struct {
+	AppId, TopicName, Ver string
+	PartitionId           int32
+}
