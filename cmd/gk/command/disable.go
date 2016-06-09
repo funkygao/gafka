@@ -17,6 +17,7 @@ type Disable struct {
 	Cmd string
 
 	zone, cluster, topic, partitions string
+	listMode                         bool
 }
 
 func (this *Disable) Run(args []string) (exitCode int) {
@@ -26,14 +27,9 @@ func (this *Disable) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.StringVar(&this.topic, "t", "", "")
 	cmdFlags.StringVar(&this.partitions, "p", "", "")
+	cmdFlags.BoolVar(&this.listMode, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
-	}
-
-	if validateArgs(this, this.Ui).
-		require("-z", "-c", "-t", "-p").
-		invalid(args) {
-		return 2
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
@@ -45,6 +41,18 @@ func (this *Disable) Run(args []string) (exitCode int) {
 
 	db, err := dbx.Open("mysql", dsn)
 	swallow(err)
+	defer db.Close()
+
+	if this.listMode {
+		this.listDeadPartitions(db)
+		return 0
+	}
+
+	if validateArgs(this, this.Ui).
+		require("-z", "-c", "-t", "-p").
+		invalid(args) {
+		return 2
+	}
 
 	for _, p := range strings.Split(this.partitions, ",") {
 		partitionId, err := strconv.Atoi(p)
@@ -62,6 +70,20 @@ func (this *Disable) Run(args []string) (exitCode int) {
 	return
 }
 
+func (this *Disable) listDeadPartitions(db *dbx.DB) {
+	type DeadPartition struct {
+		KafkaTopic string `db:"KafkaTopic"`
+		Partition  int32  `db:"Partition"`
+	}
+
+	var deadPartitions []DeadPartition
+	q := db.NewQuery("SELECT KafkaTopic, Partition FROM dead_partition")
+	swallow(q.All(&deadPartitions))
+	for _, dp := range deadPartitions {
+		this.Ui.Output(fmt.Sprintf("%s/%d marked dead", dp.KafkaTopic, dp.Partition))
+	}
+}
+
 func (this *Disable) Synopsis() string {
 	return "Disable Pub topic partition"
 }
@@ -73,6 +95,9 @@ Usage: %s disable [options]
     Disable Pub topic partition
 
 Options:
+
+    -l
+      List all disabled partitions
 
     -z zone
 
