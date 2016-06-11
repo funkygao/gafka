@@ -34,6 +34,7 @@ func (this *Gateway) buildRouting() {
 		this.pubServer.Router().GET("/alive", m(this.checkAliveHandler))
 		this.pubServer.Router().NotFound = http.HandlerFunc(this.pubServer.notFoundHandler)
 
+		this.pubServer.Router().POST("/v1/raw/msgs/:cluster/:topic", m(this.pubServer.pubRawHandler))
 		this.pubServer.Router().POST("/v1/msgs/:topic/:ver", m(this.pubServer.pubHandler))
 		this.pubServer.Router().POST("/v1/ws/msgs/:topic/:ver", m(this.pubServer.pubWsHandler))
 		this.pubServer.Router().POST("/v1/jobs/:topic/:ver", m(this.pubServer.addJobHandler))
