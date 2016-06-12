@@ -375,7 +375,10 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 			swallow(err)
 
 			replicas, err := kfk.Replicas(topic, partitionID)
-			swallow(err)
+			if err != nil {
+				this.Ui.Error(err.Error())
+				continue
+			}
 
 			isr := zkcluster.Isr(topic, partitionID)
 			//isr, err := kfk.Isr(topic, partitionID)
