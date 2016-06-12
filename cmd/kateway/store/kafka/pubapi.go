@@ -176,7 +176,9 @@ func (this *pubStore) MarkPartitionsDead(topic string, deadPartitionIds map[int3
 		// this topic comes alive
 		delete(exclusivePartitioners, topic)
 	} else {
-		exclusivePartitioners[topic].markDead(deadPartitionIds)
+		if p, present := exclusivePartitioners[topic]; present {
+			p.markDead(deadPartitionIds)
+		}
 	}
 	exclusivePartitionersLock.Unlock()
 }
