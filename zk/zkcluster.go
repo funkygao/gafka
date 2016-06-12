@@ -467,7 +467,7 @@ func (this *ZkCluster) Isr(topic string, partitionId int32) ([]int, time.Time, t
 	}
 	sort.Ints(r)
 
-	return r, ZkTimestamp(stat.Mtime).Time(), ZkTimestamp(stat.Ctime)
+	return r, ZkTimestamp(stat.Mtime).Time(), ZkTimestamp(stat.Ctime).Time()
 }
 
 func (this *ZkCluster) Broker(id int) (b *BrokerZnode) {
