@@ -171,14 +171,12 @@ func (this *pubStore) AsyncPub(cluster string, topic string, key []byte,
 }
 
 func (this *pubStore) MarkPartitionsDead(topic string, deadPartitionIds map[int32]struct{}) {
-	exclusivePartitionersLock.Lock()
+	excludedPartitionsLock.Lock()
 	if deadPartitionIds == nil {
 		// this topic comes alive
-		delete(exclusivePartitioners, topic)
+		delete(excludedPartitions, topic)
 	} else {
-		if p, present := exclusivePartitioners[topic]; present {
-			p.markDead(deadPartitionIds)
-		}
+		excludedPartitions[topic] = deadPartitionIds
 	}
-	exclusivePartitionersLock.Unlock()
+	excludedPartitionsLock.Unlock()
 }

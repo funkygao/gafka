@@ -7,29 +7,20 @@ import (
 )
 
 var (
-	exclusivePartitioners     = make(map[string]*exclusivePartitioner, 50) // topic:partitioner
-	exclusivePartitionersLock sync.Mutex
+	excludedPartitions     = make(map[string]map[int32]struct{}, 50) // topic:partition
+	excludedPartitionsLock sync.RWMutex
 )
 
 type exclusivePartitioner struct {
-	hasher           sarama.Partitioner
-	deadPartitionIds map[int32]struct{}
+	hasher sarama.Partitioner
 }
 
 func NewExclusivePartitioner(topic string) sarama.Partitioner {
 	this := &exclusivePartitioner{
-		hasher:           sarama.NewHashPartitioner(topic),
-		deadPartitionIds: make(map[int32]struct{}),
+		hasher: sarama.NewHashPartitioner(topic),
 	}
 
-	exclusivePartitionersLock.Lock()
-	exclusivePartitioners[topic] = this
-	exclusivePartitionersLock.Unlock()
 	return this
-}
-
-func (this *exclusivePartitioner) markDead(partitionIds map[int32]struct{}) {
-	this.deadPartitionIds = partitionIds
 }
 
 func (this *exclusivePartitioner) Partition(message *sarama.ProducerMessage, numPartitions int32) (partitionId int32, err error) {
@@ -38,13 +29,18 @@ func (this *exclusivePartitioner) Partition(message *sarama.ProducerMessage, num
 	}
 
 	partitionId, err = this.hasher.Partition(message, numPartitions)
-	if err != nil || len(this.deadPartitionIds) == int(numPartitions) {
+
+	excludedPartitionsLock.RLock()
+	deadPartitions := excludedPartitions[message.Topic]
+	excludedPartitionsLock.RUnlock()
+
+	if err != nil || len(deadPartitions) == 0 || len(deadPartitions) == int(numPartitions) {
 		// all partitions dead? I have to pick one!
 		return
 	}
 
 	for {
-		if _, present := this.deadPartitionIds[partitionId]; !present {
+		if _, present := deadPartitions[partitionId]; !present {
 			// bingo!
 			return
 		}

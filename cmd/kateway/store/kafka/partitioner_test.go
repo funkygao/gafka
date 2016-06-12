@@ -24,7 +24,8 @@ func TestExclusivePartitioner(t *testing.T) {
 	partitionId, _ = p.Partition(msg, partitionsN)
 	assert.Equal(t, int32(3), partitionId)
 
-	p.markDead(map[int32]struct{}{
+	ps := &pubStore{}
+	ps.MarkPartitionsDead("foo", map[int32]struct{}{
 		3: struct{}{},
 	})
 	partitionId, _ = p.Partition(msg, partitionsN)
