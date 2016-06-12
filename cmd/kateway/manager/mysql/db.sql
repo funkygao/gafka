@@ -33,6 +33,12 @@ CREATE TABLE `application_category` (
   KEY `ParentId` (`ParentId`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
 
+CREATE TABLE dead_partition (
+    KafkaTopic varchar(128) NOT NULL,
+    PartitionId int(11) NOT NULL,
+    PRIMARY KEY (KafkaTopic, PartitionId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 DROP TABLE IF EXISTS `topics`;
 CREATE TABLE `topics` (
 `TopicId` bigint(20) NOT NULL AUTO_INCREMENT,

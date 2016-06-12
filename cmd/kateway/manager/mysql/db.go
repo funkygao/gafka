@@ -144,7 +144,7 @@ func (this *mysqlStore) shadowKey(hisAppid, topic, ver, myAppid string) string {
 }
 
 func (this *mysqlStore) fetchDeadPartitions(db *sql.DB) error {
-	rows, err := db.Query("SELECT KafkaTopic,Partition FROM dead_partition")
+	rows, err := db.Query("SELECT KafkaTopic,PartitionId FROM dead_partition")
 	if err != nil {
 		return err
 	}
