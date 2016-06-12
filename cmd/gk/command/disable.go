@@ -51,12 +51,20 @@ func (this *Disable) Run(args []string) (exitCode int) {
 	}
 
 	if this.delMode {
+		if validateArgs(this, this.Ui).
+			require("-z", "-c", "-t", "-p").
+			requireAdminRights("-z").
+			invalid(args) {
+			return 2
+		}
+
 		this.enablePartitions(db)
 		return 0
 	}
 
 	if validateArgs(this, this.Ui).
 		require("-z", "-c", "-t", "-p").
+		requireAdminRights("-z").
 		invalid(args) {
 		return 2
 	}
