@@ -44,7 +44,7 @@ func (this *pubPool) newSyncProducer(requiredAcks sarama.RequiredAcks) (pool.Res
 
 	cf.Producer.Timeout = time.Second * 10
 	cf.Producer.RequiredAcks = requiredAcks
-	cf.Producer.Partitioner = sarama.NewHashPartitioner
+	cf.Producer.Partitioner = NewExclusivePartitioner
 	cf.Producer.Return.Successes = false
 	cf.Producer.Retry.Max = 3
 	//cf.Producer.Compression = sarama.CompressionSnappy
@@ -94,7 +94,7 @@ func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
 	cf.Producer.Flush.MaxMessages = 0 // unlimited
 
 	cf.Producer.RequiredAcks = sarama.NoResponse
-	cf.Producer.Partitioner = sarama.NewHashPartitioner
+	cf.Producer.Partitioner = NewExclusivePartitioner
 	cf.Producer.Retry.Max = 3
 	//cf.Producer.Compression = sarama.CompressionSnappy TODO
 
