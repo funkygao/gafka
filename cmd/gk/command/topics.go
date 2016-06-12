@@ -381,6 +381,11 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 			}
 
 			isr, isrMtime, partitionCtime := zkcluster.Isr(topic, partitionID)
+			isrMtimeSince := gofmt.PrettySince(isrMtime)
+			if time.Since(isrMtime).Hours() < 24 {
+				// ever out of sync last 24h
+				isrMtimeSince = color.Magenta(isrMtimeSince)
+			}
 
 			underReplicated := false
 			if len(isr) != len(replicas) {
@@ -402,14 +407,14 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 					partitionID,
 					color.Green("%d", leader.ID()), replicas, isr,
 					gofmt.Comma(oldestOffset), gofmt.Comma(latestOffset), gofmt.Comma(latestOffset-oldestOffset),
-					gofmt.PrettySince(partitionCtime), gofmt.PrettySince(isrMtime)), linesInTopicMode)
+					gofmt.PrettySince(partitionCtime), isrMtimeSince), linesInTopicMode)
 			} else {
 				// use red for alert
 				linesInTopicMode = this.echoOrBuffer(color.Red("%8d/%s Leader:%s Replicas:%+v Isr:%+v/%s Offset:%16s - %-16s Num:%-15s %s-%s",
 					partitionID,
 					color.Green("%d", leader.ID()), replicas, isr,
 					gofmt.Comma(oldestOffset), gofmt.Comma(latestOffset), gofmt.Comma(latestOffset-oldestOffset),
-					gofmt.PrettySince(partitionCtime), gofmt.PrettySince(isrMtime)), linesInTopicMode)
+					gofmt.PrettySince(partitionCtime), isrMtimeSince), linesInTopicMode)
 			}
 		}
 	}
