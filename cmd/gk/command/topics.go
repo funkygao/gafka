@@ -410,9 +410,9 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 					gofmt.PrettySince(partitionCtime), isrMtimeSince), linesInTopicMode)
 			} else {
 				// use red for alert
-				linesInTopicMode = this.echoOrBuffer(color.Red("%8d/%s Leader:%s Replicas:%+v Isr:%+v/%s Offset:%16s - %-16s Num:%-15s %s-%s",
+				linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%8d Leader:%s Replicas:%+v Isr:%s Offset:%16s - %-16s Num:%-15s %s-%s",
 					partitionID,
-					color.Green("%d", leader.ID()), replicas, isr,
+					color.Green("%d", leader.ID()), replicas, color.Red("%+v", isr),
 					gofmt.Comma(oldestOffset), gofmt.Comma(latestOffset), gofmt.Comma(latestOffset-oldestOffset),
 					gofmt.PrettySince(partitionCtime), isrMtimeSince), linesInTopicMode)
 			}
