@@ -124,16 +124,17 @@ func (this *mysqlStore) refreshFromMysql() error {
 		return err
 	}
 
+	if err = this.fetchDeadPartitions(db); err != nil {
+		log.Error("dead partitions: %v", err)
+		return err
+	}
+
 	if false {
 		if err = this.fetchShadowQueueRecords(db); err != nil {
 			log.Error("shadow queues: %v", err)
 			return err
 		}
 
-		if err = this.fetchDeadPartitions(db); err != nil {
-			log.Error("dead partitions: %v", err)
-			return err
-		}
 	}
 
 	return nil
