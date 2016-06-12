@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/gofmt"
 )
 
 type UnderReplicated struct {
@@ -137,7 +138,7 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 				continue
 			}
 
-			isr := zkcluster.Isr(topic, partitionID)
+			isr, isrMtime := zkcluster.Isr(topic, partitionID)
 
 			underReplicated := false
 			if len(isr) != len(replicas) {
@@ -154,9 +155,10 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 				oldestOffset, err := kfk.GetOffset(topic, partitionID, sarama.OffsetOldest)
 				swallow(err)
 
-				lines = append(lines, fmt.Sprintf("\t%s Partition:%d Leader:%d Replicas:%+v Isr:%+v Offset:%d-%d Num:%d",
+				lines = append(lines, fmt.Sprintf("\t%s Partition:%d Leader:%d Replicas:%+v Isr:%+v/%s Offset:%d-%d Num:%d",
 					topic,
 					partitionID, leader.ID(), replicas, isr,
+					gofmt.PrettySince(isrMtime),
 					oldestOffset, latestOffset, latestOffset-oldestOffset))
 			}
 		}
