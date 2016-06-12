@@ -18,6 +18,7 @@ type Disable struct {
 
 	zone, cluster, topic, partitions string
 	listMode                         bool
+	delMode                          bool
 }
 
 func (this *Disable) Run(args []string) (exitCode int) {
@@ -28,6 +29,7 @@ func (this *Disable) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.topic, "t", "", "")
 	cmdFlags.StringVar(&this.partitions, "p", "", "")
 	cmdFlags.BoolVar(&this.listMode, "l", false, "")
+	cmdFlags.BoolVar(&this.delMode, "d", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -48,6 +50,11 @@ func (this *Disable) Run(args []string) (exitCode int) {
 		return 0
 	}
 
+	if this.delMode {
+		this.enablePartitions(db)
+		return 0
+	}
+
 	if validateArgs(this, this.Ui).
 		require("-z", "-c", "-t", "-p").
 		invalid(args) {
@@ -59,8 +66,8 @@ func (this *Disable) Run(args []string) (exitCode int) {
 		swallow(err)
 
 		_, err = db.Insert("dead_partition", dbx.Params{
-			"KafkaTopic": this.topic,
-			"Partition":  this.partitions,
+			"KafkaTopic":  this.topic,
+			"PartitionId": this.partitions,
 		}).Execute()
 		swallow(err)
 
@@ -73,14 +80,29 @@ func (this *Disable) Run(args []string) (exitCode int) {
 func (this *Disable) listDeadPartitions(db *dbx.DB) {
 	type DeadPartition struct {
 		KafkaTopic string `db:"KafkaTopic"`
-		Partition  int32  `db:"Partition"`
+		Partition  int32  `db:"PartitionId"`
 	}
 
 	var deadPartitions []DeadPartition
-	q := db.NewQuery("SELECT KafkaTopic, Partition FROM dead_partition")
+	q := db.NewQuery("SELECT KafkaTopic, PartitionId FROM dead_partition")
 	swallow(q.All(&deadPartitions))
 	for _, dp := range deadPartitions {
 		this.Ui.Output(fmt.Sprintf("%s/%d marked dead", dp.KafkaTopic, dp.Partition))
+	}
+}
+
+func (this *Disable) enablePartitions(db *dbx.DB) {
+	for _, p := range strings.Split(this.partitions, ",") {
+		partitionId, err := strconv.Atoi(p)
+		swallow(err)
+
+		_, err = db.Delete("dead_partition", dbx.HashExp{
+			"KafkaTopic":  this.topic,
+			"PartitionId": partitionId,
+		}).Execute()
+		swallow(err)
+
+		this.Ui.Info(fmt.Sprintf("%s/%d enabled again", this.topic, partitionId))
 	}
 }
 
@@ -98,6 +120,9 @@ Options:
 
     -l
       List all disabled partitions
+
+    -d
+      Delete the disable entry: enable it again
 
     -z zone
 
