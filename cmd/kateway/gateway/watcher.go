@@ -5,6 +5,7 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/store"
+	log "github.com/funkygao/log4go"
 )
 
 func (this *Gateway) watchDeadPartitions() {
@@ -25,6 +26,9 @@ func (this *Gateway) watchDeadPartitions() {
 			for lastDeadTopic, _ := range lastTopics {
 				if _, present := deadPartitions[lastDeadTopic]; !present {
 					// this topic was marked dead last round, but this round it comes alive
+
+					log.Trace("%s come alive again", lastDeadTopic)
+
 					store.DefaultPubStore.MarkPartitionsDead(lastDeadTopic, nil)
 					delete(lastTopics, lastDeadTopic)
 				}
