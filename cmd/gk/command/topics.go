@@ -380,8 +380,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 				continue
 			}
 
-			isr, isrMtime := zkcluster.Isr(topic, partitionID)
-			//isr, err := kfk.Isr(topic, partitionID)
+			isr, isrMtime, partitionCtime := zkcluster.Isr(topic, partitionID)
 
 			underReplicated := false
 			if len(isr) != len(replicas) {
@@ -399,14 +398,16 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 			this.totalMsgs += latestOffset - oldestOffset
 			this.totalOffsets += latestOffset
 			if !underReplicated {
-				linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%8d Leader:%s Replicas:%+v Isr:%+v/%s Offset:%16s - %-16s Num:%-15s",
-					partitionID, color.Green("%d", leader.ID()), replicas, isr,
+				linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%8d/%s Leader:%s Replicas:%+v Isr:%+v/%s Offset:%16s - %-16s Num:%-15s",
+					partitionID, gofmt.PrettySince(partitionCtime),
+					color.Green("%d", leader.ID()), replicas, isr,
 					gofmt.PrettySince(isrMtime),
 					gofmt.Comma(oldestOffset), gofmt.Comma(latestOffset), gofmt.Comma(latestOffset-oldestOffset)), linesInTopicMode)
 			} else {
 				// use red for alert
-				linesInTopicMode = this.echoOrBuffer(color.Red("%8d Leader:%s Replicas:%+v Isr:%+v/%s Offset:%16s - %-16s Num:%-15s",
-					partitionID, color.Green("%d", leader.ID()), replicas, isr,
+				linesInTopicMode = this.echoOrBuffer(color.Red("%8d/%s Leader:%s Replicas:%+v Isr:%+v/%s Offset:%16s - %-16s Num:%-15s",
+					partitionID, gofmt.PrettySince(partitionCtime),
+					color.Green("%d", leader.ID()), replicas, isr,
 					gofmt.PrettySince(isrMtime),
 					gofmt.Comma(oldestOffset), gofmt.Comma(latestOffset), gofmt.Comma(latestOffset-oldestOffset)), linesInTopicMode)
 			}

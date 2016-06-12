@@ -456,7 +456,7 @@ func (this *ZkCluster) BrokerList() []string {
 	return r
 }
 
-func (this *ZkCluster) Isr(topic string, partitionId int32) ([]int, time.Time) {
+func (this *ZkCluster) Isr(topic string, partitionId int32) ([]int, time.Time, time.Time) {
 	partitionStateData, stat, _ := this.zone.conn.Get(this.partitionStatePath(topic, partitionId))
 	partitionState := make(map[string]interface{})
 	json.Unmarshal(partitionStateData, &partitionState)
@@ -467,7 +467,7 @@ func (this *ZkCluster) Isr(topic string, partitionId int32) ([]int, time.Time) {
 	}
 	sort.Ints(r)
 
-	return r, ZkTimestamp(stat.Mtime).Time()
+	return r, ZkTimestamp(stat.Mtime).Time(), ZkTimestamp(stat.Ctime)
 }
 
 func (this *ZkCluster) Broker(id int) (b *BrokerZnode) {

@@ -138,7 +138,7 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 				continue
 			}
 
-			isr, isrMtime := zkcluster.Isr(topic, partitionID)
+			isr, isrMtime, partitionCtime := zkcluster.Isr(topic, partitionID)
 
 			underReplicated := false
 			if len(isr) != len(replicas) {
@@ -155,9 +155,10 @@ func (this *UnderReplicated) displayUnderReplicatedPartitionsOfCluster(zkcluster
 				oldestOffset, err := kfk.GetOffset(topic, partitionID, sarama.OffsetOldest)
 				swallow(err)
 
-				lines = append(lines, fmt.Sprintf("\t%s Partition:%d Leader:%d Replicas:%+v Isr:%+v/%s Offset:%d-%d Num:%d",
-					topic,
-					partitionID, leader.ID(), replicas, isr,
+				lines = append(lines, fmt.Sprintf("\t%s Partition:%d/%s Leader:%d Replicas:%+v Isr:%+v/%s Offset:%d-%d Num:%d",
+					topic, partitionID,
+					gofmt.PrettySince(partitionCtime),
+					leader.ID(), replicas, isr,
 					gofmt.PrettySince(isrMtime),
 					oldestOffset, latestOffset, latestOffset-oldestOffset))
 			}
