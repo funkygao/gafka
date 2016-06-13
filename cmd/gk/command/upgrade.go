@@ -24,7 +24,7 @@ type Upgrade struct {
 func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("upgrade", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.storeUrl, "url", "http://10.77.144.193:10080/gk", "")
+	cmdFlags.StringVar(&this.storeUrl, "url", "http://10.213.57.149:10080/gk", "")
 	cmdFlags.StringVar(&this.uploadDir, "upload", "/var/www/html", "")
 	cmdFlags.StringVar(&this.mode, "m", "d", "")
 	cmdFlags.BoolVar(&this.upgradeKateway, "k", false, "")
@@ -33,7 +33,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	}
 
 	if this.upgradeKateway {
-		this.storeUrl = "http://10.77.144.193:10080/kateway"
+		this.storeUrl = "http://10.213.57.149:10080/kateway"
 
 		switch this.mode {
 		case "d":
@@ -114,7 +114,7 @@ Options:
       Defaults download mode
 
     -url gk file server url
-      Defaults http://10.77.144.193:10080/gk
+      Defaults http://10.213.57.149:10080/gk
 
     -upload dir
       Upload the gk file to target dir, only run on gk file server
