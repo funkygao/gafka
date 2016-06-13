@@ -47,7 +47,9 @@ func (this *pubPool) newSyncProducer(requiredAcks sarama.RequiredAcks) (pool.Res
 	cf.Producer.Partitioner = NewExclusivePartitioner
 	cf.Producer.Return.Successes = false
 	cf.Producer.Retry.Max = 3
-	//cf.Producer.Compression = sarama.CompressionSnappy
+	if this.store.compress {
+		cf.Producer.Compression = sarama.CompressionSnappy
+	}
 
 	cf.ClientID = this.store.hostname
 
@@ -96,7 +98,9 @@ func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
 	cf.Producer.RequiredAcks = sarama.NoResponse
 	cf.Producer.Partitioner = NewExclusivePartitioner
 	cf.Producer.Retry.Max = 3
-	//cf.Producer.Compression = sarama.CompressionSnappy TODO
+	if this.store.compress {
+		cf.Producer.Compression = sarama.CompressionSnappy
+	}
 
 	cf.ClientID = this.store.hostname
 

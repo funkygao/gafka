@@ -45,6 +45,7 @@ var (
 		EnableClientStats       bool
 		GolangTrace             bool
 		PermitUnregisteredGroup bool
+		UseCompress             bool
 		Debug                   bool
 		EnableRegistry          bool
 		HttpHeaderMaxBytes      int
@@ -109,6 +110,7 @@ func ParseFlags() {
 	flag.BoolVar(&Options.ShowVersion, "version", false, "show version and exit")
 	flag.BoolVar(&Options.Debug, "debug", false, "enable debug mode")
 	flag.BoolVar(&Options.GolangTrace, "gotrace", false, "go tool trace")
+	flag.BoolVar(&Options.UseCompress, "snappy", false, "backend store will snappy compress messages")
 	flag.BoolVar(&Options.EnableAccessLog, "accesslog", false, "en(dis)able access log")
 	flag.BoolVar(&Options.EnableRegistry, "withreg", true, "self register in zk, otherwise isolated from cluster")
 	flag.BoolVar(&Options.EnableClientStats, "clientsmap", false, "record online pub/sub clients")
