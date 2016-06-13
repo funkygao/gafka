@@ -88,6 +88,13 @@ func init() {
 			}, nil
 		},
 
+		"move": func() (cli.Command, error) {
+			return &command.Move{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"verify": func() (cli.Command, error) {
 			return &command.Verify{
 				Ui:  ui,
