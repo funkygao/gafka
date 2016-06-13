@@ -1,6 +1,7 @@
 package command
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -55,6 +56,7 @@ type Peek struct {
 	limit    int
 	quit     chan struct{}
 	once     sync.Once
+	column   string
 }
 
 func (this *Peek) Run(args []string) (exitCode int) {
@@ -74,6 +76,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.colorize, "color", true, "")
 	cmdFlags.Int64Var(&this.lastN, "last", -1, "")
 	cmdFlags.IntVar(&this.limit, "limit", -1, "")
+	cmdFlags.StringVar(&this.column, "col", "", "")
 	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
 	cmdFlags.BoolVar(&silence, "s", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -114,6 +117,8 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		bytes   int64
 	)
 
+	var j map[string]string
+
 LOOP:
 	for {
 		select {
@@ -132,6 +137,25 @@ LOOP:
 				stats.MsgCountPerSecond.Mark(1)
 				stats.MsgBytesPerSecond.Mark(int64(len(msg.Value)))
 			} else {
+				if this.column != "" {
+					if err := json.Unmarshal(msg.Value, &j); err != nil {
+						this.Ui.Error(err.Error())
+					} else {
+						if this.colorize {
+							this.Ui.Output(fmt.Sprintf("%s/%d %s k:%s v:%s",
+								color.Green(msg.Topic), msg.Partition,
+								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column]))
+						} else {
+							// colored UI will have invisible chars output
+							fmt.Println(fmt.Sprintf("%s/%d %s k:%s v:%s",
+								msg.Topic, msg.Partition,
+								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column]))
+						}
+					}
+
+					continue
+				}
+
 				if this.colorize {
 					this.Ui.Output(fmt.Sprintf("%s/%d %s k:%s, v:%s",
 						color.Green(msg.Topic), msg.Partition,
@@ -288,6 +312,9 @@ Options:
     
     -p partition id
       -1 will peek all partitions of a topic
+
+    -col json column name
+      Will json decode message and extract specified column value only
 
     -last n
       Peek the most recent N messages
