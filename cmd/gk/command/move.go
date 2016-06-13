@@ -50,14 +50,14 @@ func (this *Move) Run(args []string) (exitCode int) {
 }
 
 func (*Move) Synopsis() string {
-	return "Move kafka data from one dir to another"
+	return "Move kafka partition from one dir to another"
 }
 
 func (this *Move) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s move [options]
 
-    Move kafka data from one dir to another
+    Move kafka partition from one dir to another
 
     If you encounter high iowait problem, this command can help.
     e,g.
