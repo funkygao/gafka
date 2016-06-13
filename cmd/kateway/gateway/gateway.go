@@ -65,10 +65,13 @@ func New(id string) *Gateway {
 		clientStates: NewClientStates(),
 	}
 
-	registry.Default = zk.New(Options.Zone, this.id, this.InstanceInfo())
 	this.zkzone = gzk.NewZkZone(gzk.DefaultConfig(Options.Zone, ctx.ZoneZkAddrs(Options.Zone)))
 	if err := this.zkzone.Ping(); err != nil {
 		panic(err)
+	}
+
+	if Options.EnableRegistry {
+		registry.Default = zk.New(Options.Zone, this.id, this.InstanceInfo())
 	}
 	metaConf := zkmeta.DefaultConfig()
 	metaConf.Refresh = Options.MetaRefresh
@@ -248,9 +251,10 @@ func (this *Gateway) ServeForever() {
 			if err := registry.Default.Deregister(); err != nil {
 				log.Error("Deregister: %v", err)
 			}
+
+			log.Info("deregistered from %s", registry.Default.Name())
 		}
 
-		log.Info("deregistered from %s", registry.Default.Name())
 		log.Info("waiting for servers shutdown...")
 		this.wg.Wait()
 		log.Info("<----- all servers shutdown ----->")

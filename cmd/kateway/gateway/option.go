@@ -46,6 +46,7 @@ var (
 		GolangTrace             bool
 		PermitUnregisteredGroup bool
 		Debug                   bool
+		EnableRegistry          bool
 		HttpHeaderMaxBytes      int
 		MaxPubSize              int64
 		LogRotateSize           int
@@ -109,6 +110,7 @@ func ParseFlags() {
 	flag.BoolVar(&Options.Debug, "debug", false, "enable debug mode")
 	flag.BoolVar(&Options.GolangTrace, "gotrace", false, "go tool trace")
 	flag.BoolVar(&Options.EnableAccessLog, "accesslog", false, "en(dis)able access log")
+	flag.BoolVar(&Options.EnableRegistry, "withreg", true, "self register in zk, otherwise isolated from cluster")
 	flag.BoolVar(&Options.EnableClientStats, "clientsmap", false, "record online pub/sub clients")
 	flag.BoolVar(&Options.DryRun, "dryrun", false, "dry run mode")
 	flag.BoolVar(&Options.PermitUnregisteredGroup, "unregrp", false, "permit sub group usage without being registered")
