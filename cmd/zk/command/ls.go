@@ -32,6 +32,11 @@ func (this *Ls) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	if len(args) == 0 {
+		this.Ui.Error("missing path")
+		return 2
+	}
+
 	this.path = args[len(args)-1]
 
 	if this.zone == "" {
