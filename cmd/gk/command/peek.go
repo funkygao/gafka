@@ -121,7 +121,7 @@ LOOP:
 			this.Ui.Output(fmt.Sprintf("Total: %s msgs, %s, elapsed: %s",
 				gofmt.Comma(int64(total)), gofmt.ByteSize(bytes), time.Since(startAt)))
 			elapsed := time.Since(startAt).Seconds()
-			if elapsed > 0. {
+			if elapsed > 1. {
 				this.Ui.Output(fmt.Sprintf("Speed: %d/s", total/int(elapsed)))
 			}
 
