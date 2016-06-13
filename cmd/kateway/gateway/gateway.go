@@ -2,8 +2,10 @@ package gateway
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"syscall"
@@ -150,6 +152,7 @@ func (this *Gateway) InstanceInfo() []byte {
 		BuiltAt:   gafka.BuiltAt,
 		Host:      ctx.Hostname(),
 		Cpu:       ctx.NumCPUStr(),
+		Arch:      fmt.Sprintf("%s:%s-%s/%s", runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH),
 		PubAddr:   Options.PubHttpAddr,
 		SPubAddr:  Options.PubHttpsAddr,
 		SubAddr:   Options.SubHttpAddr,

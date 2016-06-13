@@ -190,6 +190,7 @@ type KatewayMeta struct {
 	Ver       string `json:"ver"`
 	Build     string `json:"build"`
 	BuiltAt   string `json:"builtat"`
+	Arch      string `json:"arch"`
 	Host      string `json:"host"`
 	Cpu       string `json:"cpu"`
 	PubAddr   string `json:"pub"`
