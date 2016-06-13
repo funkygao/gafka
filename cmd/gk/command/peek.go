@@ -153,18 +153,17 @@ LOOP:
 						}
 					}
 
-					continue
-				}
-
-				if this.colorize {
-					this.Ui.Output(fmt.Sprintf("%s/%d %s k:%s, v:%s",
-						color.Green(msg.Topic), msg.Partition,
-						gofmt.Comma(msg.Offset), string(msg.Key), string(msg.Value)))
 				} else {
-					// colored UI will have invisible chars output
-					fmt.Println(fmt.Sprintf("%s/%d %s k:%s, v:%s",
-						msg.Topic, msg.Partition,
-						gofmt.Comma(msg.Offset), string(msg.Key), string(msg.Value)))
+					if this.colorize {
+						this.Ui.Output(fmt.Sprintf("%s/%d %s k:%s, v:%s",
+							color.Green(msg.Topic), msg.Partition,
+							gofmt.Comma(msg.Offset), string(msg.Key), string(msg.Value)))
+					} else {
+						// colored UI will have invisible chars output
+						fmt.Println(fmt.Sprintf("%s/%d %s k:%s, v:%s",
+							msg.Topic, msg.Partition,
+							gofmt.Comma(msg.Offset), string(msg.Key), string(msg.Value)))
+					}
 				}
 			}
 
