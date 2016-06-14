@@ -1,6 +1,7 @@
 package influxdb
 
 import (
+	"errors"
 	"net/url"
 	"time"
 
@@ -21,6 +22,10 @@ func NewConfig(uri, db, user, pass string, interval time.Duration) (*config, err
 	u, err := url.Parse(uri)
 	if err != nil {
 		return nil, err
+	}
+
+	if interval == 0 {
+		return nil, errors.New("illegal interval")
 	}
 
 	return &config{
