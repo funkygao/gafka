@@ -9,4 +9,5 @@ var (
 	ErrTooBigMessage        = errors.New("too big message")
 	ErrTooSmallMessage      = errors.New("too small message")
 	ErrIllegalTaggedMessage = errors.New("illegal tagged message")
+	ErrClientKilled         = errors.New("client killed")
 )

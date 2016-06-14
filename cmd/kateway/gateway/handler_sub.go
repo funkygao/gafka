@@ -251,7 +251,11 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			w.Write([]byte{}) // without this, client cant get response
 			return nil
 
-		case msg := <-fetcher.Messages():
+		case msg, ok := <-fetcher.Messages():
+			if !ok {
+				return ErrClientKilled
+			}
+
 			if Options.Debug {
 				log.Debug("sub[%s] %s(%s): {G:%s T:%s/%d O:%d}",
 					myAppid, r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset)
