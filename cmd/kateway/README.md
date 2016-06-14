@@ -198,6 +198,7 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] sub: what if broker moved
 - [ ] pub in batch
 - [X] change all handler declaration to xxxServer instead of Gateway
 - [X] cf.ChannelBufferSize=20
