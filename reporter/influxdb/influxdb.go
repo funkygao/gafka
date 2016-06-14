@@ -3,10 +3,13 @@ package influxdb
 import (
 	"time"
 
+	rp "github.com/funkygao/gafka/reporter"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 	"github.com/influxdata/influxdb/client"
 )
+
+var _ rp.Reporter = &reporter{}
 
 type reporter struct {
 	cf     *config
