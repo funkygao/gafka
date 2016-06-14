@@ -2,12 +2,26 @@ package influxdb
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 	"github.com/influxdata/influxdb/client"
 )
+
+func extractFromMetricsName(name string) (appid, topic, ver, realname string) {
+	if name[0] != '{' {
+		realname = name
+		return
+	}
+
+	i := strings.Index(name, "}")
+	realname = name[i+1:]
+	p := strings.SplitN(name[1:i], ".", 3)
+	appid, topic, ver = p[0], p[1], p[2]
+	return
+}
 
 func (r *reporter) dump() {
 	var pts []client.Point
