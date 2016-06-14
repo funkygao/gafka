@@ -33,6 +33,11 @@ func (this *Stat) Run(args []string) (exitCode int) {
 		return 2
 	}
 
+	if len(args) == 0 {
+		this.Ui.Error("missing path")
+		return 2
+	}
+
 	this.path = args[len(args)-1]
 
 	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
