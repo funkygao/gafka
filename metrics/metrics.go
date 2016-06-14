@@ -5,6 +5,8 @@ package metrics
 // A Reporter continously scans metrics.Registry and
 // send all metrics to durable storage.
 type Reporter interface {
+	Name() string
+
 	Start() error
 	Stop()
 }
