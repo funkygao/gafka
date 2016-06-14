@@ -1,11 +1,12 @@
 package influxdb
 
 import (
+	"fmt"
+	"runtime/debug"
 	"time"
 
 	rp "github.com/funkygao/gafka/reporter"
 	"github.com/funkygao/go-metrics"
-	log "github.com/funkygao/log4go"
 	"github.com/influxdata/influxdb/client"
 )
 
@@ -58,9 +59,14 @@ func (this *reporter) Start() error {
 		return err
 	}
 
-	intervalTicker := time.Tick(this.cf.interval)
-	pingTicker := time.Tick(this.cf.interval / 3)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+			debug.PrintStack()
+		}
+	}()
 
+	intervalTicker := time.Tick(this.cf.interval)
 	for {
 		select {
 		case <-this.quiting:
@@ -72,20 +78,6 @@ func (this *reporter) Start() error {
 		case <-intervalTicker:
 			this.dump()
 
-		case <-pingTicker:
-			_, _, err := this.client.Ping()
-			if err != nil {
-				log.Error("ping: %v, reconnecting...", err)
-
-				for i := 0; i < 3; i++ {
-					if err = this.makeClient(); err != nil {
-						log.Error("reconnect #%d: %v", i+1, err)
-					} else {
-						break
-					}
-				}
-
-			}
 		}
 	}
 
