@@ -54,6 +54,7 @@ func (this *Gateway) buildRouting() {
 		this.subServer.Router().PUT("/v1/offsets/:appid/:topic/:ver/:group", m(this.subServer.ackHandler))
 
 		// api for pubsub manager
+		this.subServer.Router().DELETE("/v1/conns", this.subServer.subKillHandler)
 		this.subServer.Router().GET("/v1/raw/msgs/:appid/:topic/:ver", m(this.subServer.subRawHandler))
 		this.subServer.Router().GET("/v1/peek/:appid/:topic/:ver", m(this.subServer.peekHandler))
 		this.subServer.Router().POST("/v1/shadow/:appid/:topic/:ver/:group", m(this.subServer.addTopicShadowHandler))
