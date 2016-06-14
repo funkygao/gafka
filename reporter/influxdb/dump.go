@@ -2,53 +2,25 @@ package influxdb
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 	"github.com/influxdata/influxdb/client"
+	"github.com/rcrowley/go-metrics"
 )
 
-func extractFromMetricsName(name string) (appid, topic, ver, realname string) {
-	if name[0] != '{' {
-		realname = name
-		return
-	}
-
-	i := strings.Index(name, "}")
-	realname = name[i+1:]
-	p := strings.SplitN(name[1:i], ".", 3)
-	appid, topic, ver = p[0], p[1], p[2]
-	return
-}
-
-func (r *reporter) dump() (pts []client.Point) {
+func (this *reporter) dump() (pts []client.Point) {
 	var (
-		appid, topic, ver string
-		tags              map[string]string
+		tags map[string]string
+		now  = time.Now()
 	)
-	r.reg.Each(func(name string, i interface{}) {
-		now := time.Now()
-		appid, topic, ver, name = extractFromMetricsName(name)
-
-		if appid == "" {
-			tags = map[string]string{
-				"host": r.cf.hostname,
-			}
-		} else {
-			tags = map[string]string{
-				"host":  r.cf.hostname,
-				"appid": appid,
-				"topic": topic,
-				"ver":   ver,
-			}
-		}
+	this.reg.Each(func(name string, i interface{}) {
+		tags = this.extractTagsFromMetricsName(name)
 
 		switch m := i.(type) {
 		case metrics.Counter:
 			pts = append(pts, client.Point{
-				Measurement: fmt.Sprintf("%s.count", name),
+				Measurement: fmt.Sprintf("%s.count", name), // TODO perf
 				Fields: map[string]interface{}{
 					"value": m.Count(),
 				},
@@ -98,20 +70,6 @@ func (r *reporter) dump() (pts []client.Point) {
 				Time: now,
 			})
 
-		case metrics.Meter:
-			pts = append(pts, client.Point{
-				Measurement: fmt.Sprintf("%s.meter", name),
-				Fields: map[string]interface{}{
-					"count": m.Count(),
-					"m1":    m.Rate1(),
-					"m5":    m.Rate5(),
-					"m15":   m.Rate15(),
-					"mean":  m.RateMean(),
-				},
-				Tags: tags,
-				Time: now,
-			})
-
 		case metrics.Timer:
 			ps := m.Percentiles([]float64{0.5, 0.75, 0.95, 0.99, 0.999, 0.9999})
 			pts = append(pts, client.Point{
@@ -137,23 +95,40 @@ func (r *reporter) dump() (pts []client.Point) {
 				Tags: tags,
 				Time: now,
 			})
+
+		case metrics.Meter:
+			pts = append(pts, client.Point{
+				Measurement: fmt.Sprintf("%s.meter", name),
+				Fields: map[string]interface{}{
+					"count": m.Count(),
+					"m1":    m.Rate1(),
+					"m5":    m.Rate5(),
+					"m15":   m.Rate15(),
+					"mean":  m.RateMean(),
+				},
+				Tags: tags,
+				Time: now,
+			})
+
+		case metrics.Healthcheck:
+			// ignored
+
 		}
 	})
 
 	return
 }
 
-func (this *reporter) dumpToInfluxDB(pts []client.Point) {
+func (this *reporter) writeInfluxDB(pts []client.Point) {
 	if this.client == nil {
-		log.Warn("dump while connectin lost")
+		log.Warn("influxdb write while connection lost")
 		return
 	}
 
-	_, err := this.client.Write(client.BatchPoints{
+	if _, err := this.client.Write(client.BatchPoints{
 		Points:   pts,
 		Database: this.cf.database,
-	})
-	if err != nil {
-		log.Error("dump: %v", err)
+	}); err != nil {
+		log.Error("influxdb write: %v", err)
 	}
 }

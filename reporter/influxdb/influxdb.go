@@ -6,8 +6,8 @@ import (
 	"time"
 
 	rp "github.com/funkygao/gafka/reporter"
-	"github.com/funkygao/go-metrics"
 	"github.com/influxdata/influxdb/client"
+	"github.com/rcrowley/go-metrics"
 )
 
 var _ rp.Reporter = &reporter{}
@@ -71,12 +71,12 @@ func (this *reporter) Start() error {
 		select {
 		case <-this.quiting:
 			// flush
-			this.dumpToInfluxDB(this.dump())
+			this.writeInfluxDB(this.dump())
 			close(this.quit)
 			return nil
 
 		case <-intervalTicker:
-			this.dumpToInfluxDB(this.dump())
+			this.writeInfluxDB(this.dump())
 
 		}
 	}
