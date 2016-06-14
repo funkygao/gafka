@@ -71,12 +71,12 @@ func (this *reporter) Start() error {
 		select {
 		case <-this.quiting:
 			// flush
-			this.dump()
+			this.dumpToInfluxDB(this.dump())
 			close(this.quit)
 			return nil
 
 		case <-intervalTicker:
-			this.dump()
+			this.dumpToInfluxDB(this.dump())
 
 		}
 	}

@@ -23,9 +23,7 @@ func extractFromMetricsName(name string) (appid, topic, ver, realname string) {
 	return
 }
 
-func (r *reporter) dump() {
-	var pts []client.Point
-
+func (r *reporter) dump() (pts []client.Point) {
 	var (
 		appid, topic, ver string
 		tags              map[string]string
@@ -142,14 +140,18 @@ func (r *reporter) dump() {
 		}
 	})
 
-	if r.client == nil {
+	return
+}
+
+func (this *reporter) dumpToInfluxDB(pts []client.Point) {
+	if this.client == nil {
 		log.Warn("dump while connectin lost")
 		return
 	}
 
-	_, err := r.client.Write(client.BatchPoints{
+	_, err := this.client.Write(client.BatchPoints{
 		Points:   pts,
-		Database: r.cf.database,
+		Database: this.cf.database,
 	})
 	if err != nil {
 		log.Error("dump: %v", err)
