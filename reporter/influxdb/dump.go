@@ -15,7 +15,7 @@ func (this *reporter) dump() (pts []client.Point) {
 		now  = time.Now()
 	)
 	this.reg.Each(func(name string, i interface{}) {
-		tags = this.extractTagsFromMetricsName(name)
+		name, tags = this.extractTagsFromMetricsName(name)
 
 		switch m := i.(type) {
 		case metrics.Counter:
