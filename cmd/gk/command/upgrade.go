@@ -19,6 +19,7 @@ type Upgrade struct {
 	uploadDir      string
 	mode           string
 	upgradeKateway bool
+	upgradeZk      bool
 }
 
 func (this *Upgrade) Run(args []string) (exitCode int) {
@@ -28,6 +29,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.uploadDir, "upload", "/var/www/html", "")
 	cmdFlags.StringVar(&this.mode, "m", "d", "")
 	cmdFlags.BoolVar(&this.upgradeKateway, "k", false, "")
+	cmdFlags.BoolVar(&this.upgradeZk, "zk", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -44,6 +46,22 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 		case "u":
 			this.Ui.Warn("you must run './build.sh -it kateway' first.")
 			this.runCmd("cp", []string{"-f", "/root/gopkg/bin/kateway", this.uploadDir})
+		}
+
+		return
+	}
+
+	if this.upgradeZk {
+		this.storeUrl = "http://10.213.57.149:10080/zk"
+
+		switch this.mode {
+		case "d":
+			this.runCmd("wget", []string{this.storeUrl})
+			this.runCmd("chmod", []string{"a+x", "zk"})
+			this.runCmd("mv", []string{"-f", "zk", "/usr/bin/zk"})
+
+		case "u":
+			this.runCmd("cp", []string{"-f", "/root/gopkg/bin/zk", this.uploadDir})
 		}
 
 		return
@@ -107,7 +125,10 @@ Usage: %s upgrade [options]
 Options:
 
     -k
-      Upgrade on kateway instead of gk
+      Upgrade kateway instead of gk
+
+    -zk
+      Upgrade zk instead of gk
 
     -m <d|u>
       Download or upload mode
