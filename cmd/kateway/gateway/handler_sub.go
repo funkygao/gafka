@@ -117,9 +117,11 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 
 	shadow = query.Get("q")
 
-	log.Debug("sub[%s] %s(%s): {app:%s q:%s topic:%s ver:%s group:%s batch:%d ack:%s partition:%s offset:%s UA:%s}",
-		myAppid, r.RemoteAddr, realIp, hisAppid, shadow, topic, ver,
-		group, limit, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"))
+	if Options.AuditSub {
+		this.auditor.Trace("sub[%s] %s(%s): {app:%s q:%s topic:%s ver:%s group:%s batch:%d ack:%s partition:%s offset:%s UA:%s}",
+			myAppid, r.RemoteAddr, realIp, hisAppid, shadow, topic, ver,
+			group, limit, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"))
+	}
 
 	// calculate raw topic according to shadow
 	if shadow != "" {

@@ -38,6 +38,7 @@ var (
 		PermitStandbySub        bool
 		DisableMetrics          bool
 		AuditPub                bool
+		AuditSub                bool
 		EnableGzip              bool
 		DryRun                  bool
 		CpuAffinity             bool
@@ -111,7 +112,8 @@ func ParseFlags() {
 	flag.BoolVar(&Options.ShowVersion, "version", false, "show version and exit")
 	flag.BoolVar(&Options.Debug, "debug", false, "enable debug mode")
 	flag.BoolVar(&Options.GolangTrace, "gotrace", false, "go tool trace")
-	flag.BoolVar(&Options.AuditPub, "auditpub", true, "")
+	flag.BoolVar(&Options.AuditPub, "auditpub", true, "enable Pub audit")
+	flag.BoolVar(&Options.AuditSub, "auditsub", true, "enable Sub audit")
 	flag.BoolVar(&Options.UseCompress, "snappy", false, "backend store will snappy compress messages")
 	flag.BoolVar(&Options.EnableAccessLog, "accesslog", false, "en(dis)able access log")
 	flag.BoolVar(&Options.EnableRegistry, "withreg", true, "self register in zk, otherwise isolated from cluster")

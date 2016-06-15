@@ -21,6 +21,8 @@ type subServer struct {
 	closedConnCh  chan string         // channel of remote addr
 	idleConnsLock sync.Mutex
 
+	auditor log.Logger
+
 	// websocket heartbeat configuration
 	wsReadLimit int64
 	wsPongWait  time.Duration
@@ -57,6 +59,19 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 	if this.httpServer != nil {
 		this.httpServer.ConnState = this.connStateFunc
 	}
+
+	this.auditor = log.NewDefaultLogger(log.TRACE)
+	this.auditor.DeleteFilter("stdout")
+
+	rotateEnabled, discardWhenDiskFull := true, true
+	filer := log.NewFileLogWriter("sub_audit.log", rotateEnabled, discardWhenDiskFull, 0644)
+	filer.SetFormat("[%d %T] [%L] (%S) %M")
+	if Options.LogRotateSize > 0 {
+		filer.SetRotateSize(Options.LogRotateSize)
+	}
+	filer.SetRotateLines(0)
+	filer.SetRotateDaily(true)
+	this.auditor.AddFilter("file", logLevel, filer)
 
 	return this
 }
