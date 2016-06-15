@@ -52,8 +52,10 @@ func (this *SubLag) report() (lags int) {
 				continue
 			}
 
-			if c.Lag > 0 && time.Since(c.Mtime.Time()) > time.Minute*2 {
-				log.Warn("group:%s topic:%s/%s lag:%d", group, c.Topic, c.PartitionId, c.Lag)
+			// offset commit every 1m, sublag runs every 1m, so the gap might be 2m
+			if c.Lag > 0 && time.Since(c.Mtime.Time()) >= time.Minute*3 {
+				log.Warn("group[%s] topic[%s/%s] %d - %d = %d", group, c.Topic, c.PartitionId,
+					c.ProducerOffset, c.ConsumerOffset, c.Lag)
 				lags++
 			}
 		}
