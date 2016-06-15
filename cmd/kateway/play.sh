@@ -20,7 +20,11 @@ make sub
 
 # sub a topic
 curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/app1/foobar/v1?group=group1&reset=newest&limit=1'
-curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/app1/foo/v1?group=group1'
+curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/app1/foobar/v1?group=group1'
+
+# kill a sub client
+curl -XDELETE -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/conns' -H'X-Kill-Addr: ip:port'
+
 
 # pub a topic
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hello world!' 'http://localhost:9191/v1/msgs/foobar/v1'

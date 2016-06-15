@@ -268,6 +268,5 @@ func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit
 func (this *webServer) notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	log.Error("%s: not found %s", this.name, r.RequestURI)
 
-	w.Header().Set("Connection", "close")
-	writeErrorResponse(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	writeNotFound(w)
 }
