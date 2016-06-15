@@ -39,6 +39,13 @@ func init() {
 			}, nil
 		},
 
+		"haproxy": func() (cli.Command, error) {
+			return &command.Haproxy{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"ping": func() (cli.Command, error) {
 			return &command.Ping{
 				Ui:  ui,
