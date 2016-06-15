@@ -95,6 +95,7 @@ func (this *Monitor) Start() {
 	this.addWatcher(&kafka.WatchReplicas{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
 	this.addWatcher(&kafka.WatchTopics{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
 	this.addWatcher(&kateway.WatchKateway{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
+	this.addWatcher(&kateway.SubLag{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
 	this.addWatcher(&wzk.WatchZk{Zkzone: this.zkzone, Tick: time.Second * 20, Stop: this.stop, Wg: wg})
 	this.addWatcher(&f5.WatchF5{Tick: time.Minute, Stop: this.stop, Wg: wg})
 	for _, w := range this.watchers {
