@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"os"
 	"os/user"
 	"strings"
 
@@ -34,6 +35,8 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	gopath := os.Getenv("GOPATH")
+
 	if this.upgradeKateway {
 		this.storeUrl = "http://10.213.57.149:10080/kateway"
 
@@ -45,7 +48,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 
 		case "u":
 			this.Ui.Warn("you must run './build.sh -it kateway' first.")
-			this.runCmd("cp", []string{"-f", "/root/gopkg/bin/kateway", this.uploadDir})
+			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/kateway", gopath), this.uploadDir})
 		}
 
 		return
@@ -61,7 +64,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 			this.runCmd("mv", []string{"-f", "zk", "/usr/bin/zk"})
 
 		case "u":
-			this.runCmd("cp", []string{"-f", "/root/gopkg/bin/zk", this.uploadDir})
+			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/zk", gopath), this.uploadDir})
 		}
 
 		return
@@ -81,7 +84,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 		this.runCmd("/usr/bin/gk", []string{"-v"})
 
 	case "u":
-		this.runCmd("cp", []string{"-f", "/root/gopkg/bin/gk", this.uploadDir})
+		this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/gk", gopath), this.uploadDir})
 
 	default:
 		this.Ui.Error("invalid mode")
