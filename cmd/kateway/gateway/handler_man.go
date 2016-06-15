@@ -60,6 +60,9 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	case "ratelimit":
 		Options.Ratelimit = boolVal
 
+	case "auditpub":
+		Options.AuditPub = boolVal
+
 	case "standbysub":
 		Options.PermitStandbySub = boolVal
 

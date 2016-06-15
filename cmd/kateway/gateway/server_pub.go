@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/funkygao/golib/ratelimiter"
+	log "github.com/funkygao/log4go"
 )
 
 type pubServer struct {
@@ -14,6 +15,7 @@ type pubServer struct {
 
 	pubMetrics  *pubMetrics
 	throttlePub *ratelimiter.LeakyBuckets
+	auditor     log.Logger
 }
 
 func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubServer {
@@ -28,6 +30,19 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 	this.webServer.onStop = func() {
 		this.pubMetrics.Flush()
 	}
+
+	this.auditor = log.NewDefaultLogger(log.TRACE)
+	this.auditor.DeleteFilter("stdout")
+
+	rotateEnabled, discardWhenDiskFull := true, true
+	filer := log.NewFileLogWriter("pub_audit.log", rotateEnabled, discardWhenDiskFull, 0644)
+	filer.SetFormat("[%d %T] [%L] (%S) %M")
+	if Options.LogRotateSize > 0 {
+		filer.SetRotateSize(Options.LogRotateSize)
+	}
+	filer.SetRotateLines(0)
+	filer.SetRotateDaily(true)
+	this.auditor.AddFilter("file", logLevel, filer)
 
 	return this
 }

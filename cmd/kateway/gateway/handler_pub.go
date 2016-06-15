@@ -102,10 +102,9 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		AddTagToMessage(msg, tag)
 	}
 
-	if Options.Debug {
-		log.Debug("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} %s",
-			appid, r.RemoteAddr, realIp, topic, ver,
-			string(msg.Body), r.Header.Get("User-Agent"))
+	if Options.AuditPub {
+		this.auditor.Trace("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} key:%s",
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), partitionKey)
 	}
 
 	if !Options.DisableMetrics {
