@@ -7,6 +7,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kguard/watchers"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
+	log "github.com/funkygao/log4go"
 )
 
 var _ watchers.Watcher = &SubLag{}
@@ -45,13 +46,14 @@ func (this *SubLag) Run() {
 }
 
 func (this *SubLag) report() (lags int) {
-	for _, consumers := range this.zkcluster.ConsumersByGroup("") {
+	for group, consumers := range this.zkcluster.ConsumersByGroup("") {
 		for _, c := range consumers {
 			if !c.Online {
 				continue
 			}
 
 			if c.Lag > 0 && time.Since(c.Mtime.Time()) > time.Minute*2 {
+				log.Warn("group:%s topic:%s/%s lag:%d", group, c.Topic, c.PartitionId, c.Lag)
 				lags++
 			}
 		}
