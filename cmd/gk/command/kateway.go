@@ -486,7 +486,7 @@ Options:
     -loglevel <info|debug|trace|warn|alarm|error>
       Set kateway log level
     
-    -option <debug|clients|gzip|accesslog|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|int>
+    -option <debug|clients|gzip|accesslog|auditpub|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|int>
       Set kateway options value
 
 `, this.Cmd)
