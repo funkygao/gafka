@@ -91,7 +91,7 @@ func (this *WatchReplicas) report() (deadPartitions, outOfSyncPartitions int64) 
 					continue
 				}
 
-				isr := zkcluster.Isr(topic, partitionID)
+				isr, _, _ := zkcluster.Isr(topic, partitionID)
 				if len(isr) != len(replicas) {
 					outOfSyncPartitions += 1
 				}
