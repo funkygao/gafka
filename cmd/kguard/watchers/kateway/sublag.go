@@ -26,7 +26,7 @@ func (this *SubLag) Init() {}
 func (this *SubLag) Run() {
 	defer this.Wg.Done()
 
-	this.zkcluster = this.Zkzone.NewCluster("bigtopic")
+	this.zkcluster = this.Zkzone.NewCluster("bigtopic") // TODO
 
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
@@ -44,6 +44,18 @@ func (this *SubLag) Run() {
 	}
 }
 
-func (this *SubLag) report() int {
-	return 0
+func (this *SubLag) report() (lags int) {
+	for _, consumers := range this.zkcluster.ConsumersByGroup("") {
+		for _, c := range consumers {
+			if !c.Online {
+				continue
+			}
+
+			if c.Lag > 0 && time.Since(c.Mtime.Time()) > time.Minute*2 {
+				lags++
+			}
+		}
+	}
+
+	return
 }
