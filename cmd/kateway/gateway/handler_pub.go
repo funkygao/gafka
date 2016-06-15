@@ -103,8 +103,8 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	}
 
 	if Options.AuditPub {
-		this.auditor.Trace("pub[%s] %s(%s) {topic:%s ver:%s UA:%s}",
-			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"))
+		this.auditor.Trace("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} key:%s",
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), partitionKey)
 	}
 
 	if !Options.DisableMetrics {
