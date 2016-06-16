@@ -99,7 +99,7 @@ func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 				latestOffset, err := kfk.GetOffset(topic, partitionId,
 					sarama.OffsetNewest)
 				if err != nil {
-					log.Error("cluster[%s] topic:%s partition:%d %v",
+					log.Error("cluster[%s] topic[%s/%d]: %v",
 						zkcluster.Name(), topic, partitionId, err)
 					continue
 				}
