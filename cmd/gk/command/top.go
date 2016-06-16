@@ -166,9 +166,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 
 func (this *Top) drawDashboard() {
 	err := termui.Init()
-	if err != nil {
-		panic(err)
-	}
+	swallow(err)
 	defer termui.Close()
 
 	termui.UseTheme("helloworld")
@@ -456,22 +454,33 @@ func (this *Top) clusterTopProducers(zkcluster *zk.ZkCluster) {
 
 			msgs := int64(0)
 			alivePartitions, err := kfk.WritablePartitions(topic)
-			if err != nil {
-				panic(err)
-			}
+			swallow(err)
 
 			for _, partitionID := range alivePartitions {
 				latestOffset, err := kfk.GetOffset(topic, partitionID,
 					sarama.OffsetNewest)
-				if err != nil {
-					panic(err)
-				}
+				swallow(err)
 
 				msgs += latestOffset
 			}
 
 			this.mu.Lock()
-			this.brokers[cluster+":"+topic] = this.discardPortOfBrokerAddr(brokerList)
+			if _, present := this.brokers[cluster+":"+topic]; !present {
+				// calculate the broker leading partitions
+				leadingPartitions := make(map[string]int) // broker:lead partitions n
+				for _, pid := range alivePartitions {
+					leader, err := kfk.Leader(topic, pid)
+					swallow(err)
+					leadingPartitions[leader.Addr()]++
+				}
+
+				brokers := make([]string, 0)
+				for addr, n := range leadingPartitions {
+					brokers = append(brokers, fmt.Sprintf("%d@%s", n, addr))
+				}
+
+				this.brokers[cluster+":"+topic] = this.discardPortOfBrokerAddr(brokers)
+			}
 			this.counters[cluster+":"+topic] = float64(msgs)
 			this.partitions[cluster+":"+topic] = len(alivePartitions)
 			this.mu.Unlock()
@@ -486,12 +495,13 @@ func (this *Top) clusterTopProducers(zkcluster *zk.ZkCluster) {
 func (this *Top) discardPortOfBrokerAddr(brokerList []string) []string {
 	sort.Strings(brokerList)
 	r := make([]string, 0, len(brokerList))
-	for _, addr := range brokerList {
-		host, _, _ := net.SplitHostPort(addr)
+	for _, countAndAddr := range brokerList {
+		parts := strings.Split(countAndAddr, "@")
+		host, _, _ := net.SplitHostPort(parts[1])
 		if this.skipIpPrefix {
 			host = shortIp(host)
 		}
-		r = append(r, host)
+		r = append(r, fmt.Sprintf("%s@%s", parts[0], host))
 	}
 	return r
 }
