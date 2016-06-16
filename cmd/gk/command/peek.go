@@ -76,7 +76,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
 	cmdFlags.BoolVar(&this.colorize, "color", true, "")
 	cmdFlags.Int64Var(&this.lastN, "last", -1, "")
-	cmdFlags.IntVar(&this.limit, "limit", -1, "")
+	cmdFlags.IntVar(&this.limit, "n", -1, "")
 	cmdFlags.StringVar(&this.column, "col", "", "")
 	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
 	cmdFlags.BoolVar(&silence, "s", false, "")
