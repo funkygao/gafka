@@ -56,6 +56,10 @@ const (
             cmd: "psub"
             alias: "lags -z prod -c bigtopic -lag 1 -p"
         }
+        {
+            cmd: "gw"
+            alias: "peek -z prod -c activitycenter_platform -t gateway_log -body -p -1"
+        }
     ]
 
     reverse_dns: [
