@@ -235,11 +235,11 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					host = "unrecognized"
 					uptime = "-"
 				} else {
-					host = color.Green("%90s", consumer.ConsumerZnode.Host())
+					host = color.Green("%s", consumer.ConsumerZnode.Host())
 					uptime = gofmt.PrettySince(consumer.ConsumerZnode.Uptime())
 				}
 
-				lines = append(lines, fmt.Sprintf("\t%s %35s/%-2s %12s -> %-12s %s %s\n%s %s",
+				lines = append(lines, fmt.Sprintf("\t%s %35s/%-2s %12s -> %-15s %s %-10s %s %s",
 					symbol,
 					consumer.Topic, consumer.PartitionId,
 					gofmt.Comma(consumer.ProducerOffset),
