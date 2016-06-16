@@ -46,6 +46,13 @@ func init() {
 			}, nil
 		},
 
+		"histogram": func() (cli.Command, error) {
+			return &command.Histogram{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"ping": func() (cli.Command, error) {
 			return &command.Ping{
 				Ui:  ui,
