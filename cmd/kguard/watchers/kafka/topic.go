@@ -5,13 +5,19 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/funkygao/gafka/cmd/kguard/watchers"
+	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 )
 
-var _ watchers.Watcher = &WatchTopics{}
+func init() {
+	monitor.RegisterWatcher("kafka.topic", func() monitor.Watcher {
+		return &WatchTopics{
+			Tick: time.Minute,
+		}
+	})
+}
 
 // WatchTopics montor kafka total msg count over time.
 type WatchTopics struct {
@@ -21,7 +27,11 @@ type WatchTopics struct {
 	Wg     *sync.WaitGroup
 }
 
-func (this *WatchTopics) Init() {}
+func (this *WatchTopics) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
+	this.Zkzone = zkzone
+	this.Stop = stop
+	this.Wg = wg
+}
 
 func (this *WatchTopics) Run() {
 	defer this.Wg.Done()
@@ -39,6 +49,7 @@ func (this *WatchTopics) Run() {
 
 		select {
 		case <-this.Stop:
+			log.Info("kafka.topic stopped")
 			return
 
 		case <-ticker.C:

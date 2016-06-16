@@ -4,16 +4,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/funkygao/gafka/cmd/kguard/watchers"
+	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 )
 
-var _ watchers.Watcher = &SubLag{}
+func init() {
+	monitor.RegisterWatcher("kateway.sublag", func() monitor.Watcher {
+		return &WatchSubLag{
+			Tick: time.Minute,
+		}
+	})
+}
 
 // SubLag monitors aliveness of kateway cluster.
-type SubLag struct {
+type WatchSubLag struct {
 	Zkzone *zk.ZkZone
 	Stop   chan struct{}
 	Tick   time.Duration
@@ -22,9 +28,13 @@ type SubLag struct {
 	zkcluster *zk.ZkCluster
 }
 
-func (this *SubLag) Init() {}
+func (this *WatchSubLag) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
+	this.Zkzone = zkzone
+	this.Stop = stop
+	this.Wg = wg
+}
 
-func (this *SubLag) Run() {
+func (this *WatchSubLag) Run() {
 	defer this.Wg.Done()
 
 	this.zkcluster = this.Zkzone.NewCluster("bigtopic") // TODO
@@ -36,6 +46,7 @@ func (this *SubLag) Run() {
 	for {
 		select {
 		case <-this.Stop:
+			log.Info("kateway.sublag stopped")
 			return
 
 		case <-ticker.C:
@@ -45,7 +56,7 @@ func (this *SubLag) Run() {
 	}
 }
 
-func (this *SubLag) report() (lags int) {
+func (this *WatchSubLag) report() (lags int) {
 	for group, consumers := range this.zkcluster.ConsumersByGroup("") {
 		for _, c := range consumers {
 			if !c.Online {

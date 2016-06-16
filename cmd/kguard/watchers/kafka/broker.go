@@ -5,12 +5,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/funkygao/gafka/cmd/kguard/watchers"
+	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
+	log "github.com/funkygao/log4go"
 )
 
-var _ watchers.Watcher = &WatchBrokers{}
+func init() {
+	monitor.RegisterWatcher("kafka.broker", func() monitor.Watcher {
+		return &WatchBrokers{
+			Tick: time.Minute,
+		}
+	})
+}
 
 // WatchBrokers monitors aliveness of kafka brokers.
 type WatchBrokers struct {
@@ -20,7 +27,11 @@ type WatchBrokers struct {
 	Wg     *sync.WaitGroup
 }
 
-func (this *WatchBrokers) Init() {}
+func (this *WatchBrokers) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
+	this.Zkzone = zkzone
+	this.Stop = stop
+	this.Wg = wg
+}
 
 func (this *WatchBrokers) Run() {
 	defer this.Wg.Done()
@@ -33,6 +44,7 @@ func (this *WatchBrokers) Run() {
 	for {
 		select {
 		case <-this.Stop:
+			log.Info("kafka.broker stopped")
 			return
 
 		case <-ticker.C:

@@ -1,4 +1,4 @@
-package main
+package monitor
 
 import (
 	"flag"
@@ -13,11 +13,6 @@ import (
 	"github.com/docker/leadership"
 	"github.com/docker/libkv/store"
 	"github.com/docker/libkv/store/zookeeper"
-	"github.com/funkygao/gafka/cmd/kguard/watchers"
-	"github.com/funkygao/gafka/cmd/kguard/watchers/f5"
-	"github.com/funkygao/gafka/cmd/kguard/watchers/kafka"
-	"github.com/funkygao/gafka/cmd/kguard/watchers/kateway"
-	wzk "github.com/funkygao/gafka/cmd/kguard/watchers/zk"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
@@ -36,10 +31,9 @@ type Monitor struct {
 
 	candidate *leadership.Candidate
 
-	stop   chan struct{}
+	stop   chan struct{} // broadcast to all watchers to stop, but might restart again
+	quit   chan struct{}
 	leader bool
-
-	watchers []watchers.Watcher
 }
 
 func (this *Monitor) Init() {
@@ -57,6 +51,7 @@ func (this *Monitor) Init() {
 
 	ctx.LoadFromHome()
 	this.zkzone = zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	this.quit = make(chan struct{})
 
 	// export RESTful api
 	this.router = httprouter.New()
@@ -73,37 +68,33 @@ func (this *Monitor) Init() {
 	}
 }
 
-func (this *Monitor) addWatcher(w watchers.Watcher) {
-	this.watchers = append(this.watchers, w)
-}
-
 func (this *Monitor) Stop() {
-	close(this.stop)
+	if this.leader {
+		close(this.stop)
+	}
+	this.leader = false
 }
 
 func (this *Monitor) Start() {
+	this.leader = true
+
 	this.stop = make(chan struct{})
 
 	go InfluxDB(ctx.Hostname(), metrics.DefaultRegistry, time.Minute,
 		this.influxdbAddr, this.influxdbDbName, "", "", this.stop)
 
-	this.watchers = make([]watchers.Watcher, 0)
 	wg := new(sync.WaitGroup)
-	this.addWatcher(&kafka.WatchBrokers{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
-	this.addWatcher(&kafka.WatchClusters{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
-	this.addWatcher(&kafka.WatchConsumers{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
-	this.addWatcher(&kafka.WatchReplicas{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
-	this.addWatcher(&kafka.WatchTopics{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
-	this.addWatcher(&kateway.WatchKateway{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
-	this.addWatcher(&kateway.SubLag{Zkzone: this.zkzone, Tick: time.Minute, Stop: this.stop, Wg: wg})
-	this.addWatcher(&wzk.WatchZk{Zkzone: this.zkzone, Tick: time.Second * 20, Stop: this.stop, Wg: wg})
-	this.addWatcher(&f5.WatchF5{Tick: time.Minute, Stop: this.stop, Wg: wg})
-	for _, w := range this.watchers {
+	for name, watcherFactory := range registeredWatchers {
+		watcher := watcherFactory()
+		watcher.Init(this.zkzone, this.stop, wg)
+
+		log.Info("created and starting watcher: %s", name)
+
 		wg.Add(1)
-		go w.Run()
+		go watcher.Run()
 	}
 
-	log.Info("all watchers ready")
+	log.Info("all watchers ready!")
 
 	<-this.stop
 	wg.Wait()
@@ -120,6 +111,7 @@ func (this *Monitor) ServeForever() {
 		this.candidate.Stop()
 		log.Info("election stopped, stopping watchers...")
 		this.Stop()
+		close(this.quit)
 	}, syscall.SIGINT, syscall.SIGTERM)
 
 	// start the api server
@@ -152,19 +144,19 @@ func (this *Monitor) ServeForever() {
 			if isElected {
 				log.Info("Won the election, starting all watchers")
 
-				this.leader = true
 				this.Start()
 			} else {
 				log.Warn("Fails the election, watching election events...")
-
-				if this.leader {
-					this.Stop()
-				}
-				this.leader = false
+				this.Stop()
 			}
 
 		case err := <-errCh:
 			log.Error("Error during election: %v", err)
+
+		case <-this.quit:
+			log.Info("kguard bye!")
+			log.Close()
+			return
 		}
 	}
 
