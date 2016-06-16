@@ -15,6 +15,9 @@ type Whoami struct {
 
 func (this *Whoami) Run(args []string) (exitCode int) {
 	var tags = map[string]string{
+		// misc
+		"10.213.57.149": "dev",
+
 		// pubsub
 		"10.209.36.14": "psub 1",
 		"10.209.36.33": "psub 2",
