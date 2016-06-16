@@ -31,6 +31,7 @@ type Topics struct {
 	totalMsgs    int64
 	totalOffsets int64
 	ipInNumber   bool
+	plainMode    bool
 }
 
 func (this *Topics) Run(args []string) (exitCode int) {
@@ -54,6 +55,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.StringVar(&addTopic, "add", "", "")
+	cmdFlags.BoolVar(&this.plainMode, "plain", false, "")
 	cmdFlags.StringVar(&delTopic, "del", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
 	cmdFlags.BoolVar(&configged, "cf", false, "")
@@ -164,8 +166,14 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Topics-", this.topicN))
 		this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Partitions-", this.partitionN))
 		if this.verbose {
-			this.Ui.Output(fmt.Sprintf("%25s %s", "-FLAT Messages-", gofmt.Comma(this.totalMsgs)))
-			this.Ui.Output(fmt.Sprintf("%25s %s", "-CUM Messages-", gofmt.Comma(this.totalOffsets)))
+			if this.plainMode {
+				fmt.Printf("%25s %s\n", "-FLAT Messages-", gofmt.Comma(this.totalMsgs))
+				fmt.Printf("%25s %s\n", "-CUM Messages-", gofmt.Comma(this.totalOffsets))
+			} else {
+				this.Ui.Output(fmt.Sprintf("%25s %s", "-FLAT Messages-", gofmt.Comma(this.totalMsgs)))
+				this.Ui.Output(fmt.Sprintf("%25s %s", "-CUM Messages-", gofmt.Comma(this.totalOffsets)))
+			}
+
 		}
 		return
 	}
@@ -177,8 +185,14 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Topics-", this.topicN))
 	this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Partitions-", this.partitionN))
 	if this.verbose {
-		this.Ui.Output(fmt.Sprintf("%25s %s", "-FLAT Messages-", gofmt.Comma(this.totalMsgs)))
-		this.Ui.Output(fmt.Sprintf("%25s %s", "-CUM Messages-", gofmt.Comma(this.totalOffsets)))
+		if this.plainMode {
+			fmt.Printf("%25s %s\n", "-FLAT Messages-", gofmt.Comma(this.totalMsgs))
+			fmt.Printf("%25s %s\n", "-CUM Messages-", gofmt.Comma(this.totalOffsets))
+		} else {
+			this.Ui.Output(fmt.Sprintf("%25s %s", "-FLAT Messages-", gofmt.Comma(this.totalMsgs)))
+			this.Ui.Output(fmt.Sprintf("%25s %s", "-CUM Messages-", gofmt.Comma(this.totalOffsets)))
+		}
+
 	}
 
 	return
@@ -515,6 +529,9 @@ Options:
     
     -l
       Use a long listing format.
+
+    -plain
+      Use fmt.Println instead of Ui.Output
 
     -n
       Show network addresses as numbers.
