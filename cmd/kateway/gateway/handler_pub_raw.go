@@ -3,12 +3,11 @@
 package gateway
 
 import (
-	"io"
+	"bytes"
 	"net/http"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/store"
-	"github.com/funkygao/gafka/mpool"
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
@@ -25,28 +24,23 @@ func (this *pubServer) pubRawHandler(w http.ResponseWriter, r *http.Request, par
 	realIp := getHttpRemoteIp(r)
 	topic = params.ByName(UrlParamTopic)
 	cluster = params.ByName("cluster")
-	msgLen := int(r.ContentLength)
 
-	var msg *mpool.Message
-	msg = mpool.NewMessage(msgLen)
-	msg.Body = msg.Body[0:msgLen]
-
-	// get the raw POST message
-	lbr := io.LimitReader(r.Body, Options.MaxPubSize+1)
-	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
-		msg.Free()
-
+	buf := bytes.NewBuffer(make([]byte, 0, 1<<10))
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
 		log.Error("pub raw %s(%s) {C:%s T:%s UA:%s} %s",
 			r.RemoteAddr, realIp, cluster, topic, r.Header.Get("User-Agent"), err)
 
 		this.pubMetrics.ClientError.Inc(1)
-		writeBadRequest(w, ErrTooBigMessage.Error())
+		writeBadRequest(w, err.Error())
 		return
 	}
 
+	body := buf.Bytes()
+
 	if !Options.DisableMetrics {
 		this.pubMetrics.PubQps.Mark(1)
-		this.pubMetrics.PubMsgSize.Update(int64(len(msg.Body)))
+		this.pubMetrics.PubMsgSize.Update(int64(len(body)))
 	}
 
 	query := r.URL.Query() // reuse the query will save 100ns
@@ -60,18 +54,15 @@ func (this *pubServer) pubRawHandler(w http.ResponseWriter, r *http.Request, par
 		pubMethod = store.DefaultPubStore.SyncAllPub
 	}
 
-	_, _, err := pubMethod(cluster, topic, []byte(partitionKey), msg.Body)
+	_, _, err = pubMethod(cluster, topic, []byte(partitionKey), body)
 	if err != nil {
 		log.Error("pub raw %s(%s) {C:%s T:%s UA:%s} %s",
 			r.RemoteAddr, realIp, cluster, topic, r.Header.Get("User-Agent"), err)
-
-		msg.Free() // defer is costly
 
 		writeServerError(w, err.Error())
 		return
 	}
 
-	msg.Free()
 	w.WriteHeader(http.StatusCreated)
 
 	if _, err = w.Write(ResponseOk); err != nil {
