@@ -53,6 +53,13 @@ func init() {
 			}, nil
 		},
 
+		"alias": func() (cli.Command, error) {
+			return &command.Alias{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"segment": func() (cli.Command, error) {
 			return &command.Segment{
 				Ui:  ui,

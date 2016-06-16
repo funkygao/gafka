@@ -96,6 +96,10 @@ func Aliases() []string {
 	return r
 }
 
+func AliasesWithValue() map[string]string {
+	return conf.aliases
+}
+
 func NamedZoneZkAddrs(zone string) string {
 	parts := strings.Split(ZoneZkAddrs(zone), ",")
 	addrs := make([]string, 0, len(parts))
