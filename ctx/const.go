@@ -53,12 +53,48 @@ const (
 
     aliases: [
         {
-            cmd: "psub"
+            cmd: "sublag"
             alias: "lags -z prod -c bigtopic -lag 1 -p"
         }
         {
             cmd: "gw"
             alias: "peek -z prod -c activitycenter_platform -t gateway_log -body -p -1"
+        }
+        {
+            cmd: "java"
+            alias: "peek -z prod -c svc_hippo -t flume_kafka_queue_topic -body"
+        }
+        {
+            cmd: "ngerr"
+            alias: "peek -z prod -c logstash -t nginx_errlog"
+        }
+        {
+            cmd: "ng"
+            alias: "peek -z prod -c logstash -t nginx_access_log"
+        }
+        {
+            cmd: "kw"
+            alias: "peek -z prod -c logs -t pubsub_log"
+        }
+        {
+            cmd: "app"
+            alias: "peek -z prod -c logstash -t logstash_new_app_log -body -p -1"
+        }
+        {
+            cmd: "h5"
+            alias: "peek -z prod -c logstash -t logstash_h5_log -p -1 -body"
+        }
+        {
+            cmd: "order"
+            alias: "peek -z prod -c trade -t OrderStatusMsg -p -1 -body"
+        }
+        {
+            cmd: "xapi"
+            alias: "peek -z prod -c logstash -t logstash_apache -p -1 -body"
+        }
+        {
+            cmd: "bizalarm"
+            alias: "peek -z prod -c svc_hippo -t flume_biz_alarm -p -1 -body"
         }
     ]
 
