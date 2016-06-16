@@ -33,7 +33,10 @@ func (this *Histogram) Run(args []string) (exitCode int) {
 	defer f.Close()
 
 	r := bufio.NewReader(f)
-	lastN := int64(0)
+	var (
+		lastN = int64(0)
+		tm    string
+	)
 
 	for {
 		line, err := r.ReadString('\n')
@@ -45,6 +48,7 @@ func (this *Histogram) Run(args []string) (exitCode int) {
 
 		if !strings.Contains(line, "CUM Messages") {
 			// time info: Thu Jun 16 22:45:01 CST 2016
+			tm = line
 		} else {
 			// offset:            -CUM Messages- 255,705,684,384
 			n := strings.Split(line, "-CUM Messages-")[1]
@@ -53,8 +57,7 @@ func (this *Histogram) Run(args []string) (exitCode int) {
 			offset, err := strconv.ParseInt(n, 10, 64)
 			swallow(err)
 			if lastN > 0 {
-				this.Ui.Output(fmt.Sprintf("%s", gofmt.Comma(offset-lastN)))
-
+				this.Ui.Output(fmt.Sprintf("%55s %15s", tm, gofmt.Comma(offset-lastN)))
 			}
 
 			lastN = offset
