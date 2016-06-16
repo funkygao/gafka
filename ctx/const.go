@@ -52,10 +52,10 @@ const (
     loglevel: "info"
 
     aliases: [
-    	//{
-    	//	cmd: "_xxx"
-    	//	alias: "_yyy"
-    	//}
+        {
+            cmd: "psub"
+            alias: "lags -z prod -c bigtopic -lag 1 -p"
+        }
     ]
 
     reverse_dns: [
