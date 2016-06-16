@@ -57,6 +57,7 @@ type Peek struct {
 	quit     chan struct{}
 	once     sync.Once
 	column   string
+	bodyOnly bool
 }
 
 func (this *Peek) Run(args []string) (exitCode int) {
@@ -79,6 +80,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.column, "col", "", "")
 	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
 	cmdFlags.BoolVar(&silence, "s", false, "")
+	cmdFlags.BoolVar(&this.bodyOnly, "body", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -141,7 +143,9 @@ LOOP:
 					if err := json.Unmarshal(msg.Value, &j); err != nil {
 						this.Ui.Error(err.Error())
 					} else {
-						if this.colorize {
+						if this.bodyOnly {
+							fmt.Println(j[this.column])
+						} else if this.colorize {
 							this.Ui.Output(fmt.Sprintf("%s/%d %s k:%s v:%s",
 								color.Green(msg.Topic), msg.Partition,
 								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column]))
@@ -154,7 +158,9 @@ LOOP:
 					}
 
 				} else {
-					if this.colorize {
+					if this.bodyOnly {
+						fmt.Println(string(msg.Value))
+					} else if this.colorize {
 						this.Ui.Output(fmt.Sprintf("%s/%d %s k:%s, v:%s",
 							color.Green(msg.Topic), msg.Partition,
 							gofmt.Comma(msg.Offset), string(msg.Key), string(msg.Value)))
@@ -323,8 +329,11 @@ Options:
       You can specify your own offset.
       Default -1(OffsetNewest)
 
-    -limit n
+    -n count
       Limit how many messages to consume
+
+    -body
+      Only display message body
 
     -s
       Silence mode, only display statastics instead of message content
