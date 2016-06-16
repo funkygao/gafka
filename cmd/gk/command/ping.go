@@ -29,7 +29,7 @@ func (this *Ping) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.DurationVar(&this.interval, "interval", time.Minute*5, "")
-	cmdFlags.StringVar(&this.logfile, "logfile", "gk.ping.log", "")
+	cmdFlags.StringVar(&this.logfile, "logfile", "stdout", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -52,14 +52,17 @@ func (this *Ping) Run(args []string) (exitCode int) {
 }
 
 func (this *Ping) setupLog() {
-	log.DeleteFilter("stdout")
+	if this.logfile != "stdout" {
+		log.DeleteFilter("stdout")
 
-	filer := log.NewFileLogWriter(this.logfile, true, false, 0)
-	filer.SetFormat("[%d %T] [%L] (%S) %M")
-	filer.SetRotateSize(0)
-	filer.SetRotateLines(0)
-	filer.SetRotateDaily(true)
-	log.AddFilter("file", log.DEBUG, filer)
+		filer := log.NewFileLogWriter(this.logfile, true, false, 0)
+		filer.SetFormat("[%d %T] [%L] (%S) %M")
+		filer.SetRotateSize(0)
+		filer.SetRotateLines(0)
+		filer.SetRotateDaily(true)
+		log.AddFilter("file", log.DEBUG, filer)
+	}
+
 }
 
 func (this *Ping) diagnose() {
@@ -100,7 +103,7 @@ Options:
       Defaults 5m
 
     -logfile filename
-      Defaults gk.ping.log in current directory
+      Defaults stdout in current directory
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
