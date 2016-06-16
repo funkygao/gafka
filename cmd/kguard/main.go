@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/funkygao/gafka"
+	"github.com/funkygao/gafka/cmd/kguard/monitor"
 )
 
 func main() {
@@ -15,7 +16,7 @@ func main() {
 		}
 	}
 
-	var m Monitor
+	var m monitor.Monitor
 	m.Init()
 	m.ServeForever()
 }

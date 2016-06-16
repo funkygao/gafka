@@ -1,4 +1,4 @@
-package watchers
+package monitor
 
 type Watcher interface {
 	Init()
