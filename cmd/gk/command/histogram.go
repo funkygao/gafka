@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/gofmt"
 )
 
 type Histogram struct {
@@ -40,14 +41,21 @@ func (this *Histogram) Run(args []string) (exitCode int) {
 			break
 		}
 
-		if line[0] != ' ' {
+		line = strings.TrimSpace(line)
+
+		if !strings.Contains(line, "CUM Messages") {
 			// time info: Thu Jun 16 22:45:01 CST 2016
 		} else {
 			// offset:            -CUM Messages- 255,705,684,384
 			n := strings.Split(line, "-CUM Messages-")[1]
 			n = strings.Replace(n, ",", "", -1)
-			offset, _ := strconv.ParseInt(n, 10, 64)
-			this.Ui.Output(fmt.Sprintf("%d", offset-lastN))
+			n = strings.TrimSpace(n)
+			offset, err := strconv.ParseInt(n, 10, 64)
+			swallow(err)
+			if lastN > 0 {
+				this.Ui.Output(fmt.Sprintf("%s", gofmt.Comma(offset-lastN)))
+
+			}
 
 			lastN = offset
 		}
@@ -63,14 +71,14 @@ func (*Histogram) Synopsis() string {
 
 func (this *Histogram) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s histogram [options]
+	Usage: %s histogram [options]
 
-    Histogram of kafka produced messages every hour
+	    Histogram of kafka produced messages every hour
 
-Options:
+	Options:
 
-    -f offset file
+	    -f offset file
 
-`, this.Cmd)
+	`, this.Cmd)
 	return strings.TrimSpace(help)
 }
