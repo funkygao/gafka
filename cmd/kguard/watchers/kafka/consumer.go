@@ -4,12 +4,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/funkygao/gafka/cmd/kguard/watchers"
+	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
+	log "github.com/funkygao/log4go"
 )
 
-var _ watchers.Watcher = &WatchConsumers{}
+func init() {
+	monitor.RegisterWatcher("kafka.consumer", func() monitor.Watcher {
+		return &WatchConsumers{
+			Tick: time.Minute,
+		}
+	})
+}
 
 // WatchConsumers monitors num of kafka online consumer groups over the time.
 type WatchConsumers struct {
@@ -19,7 +26,11 @@ type WatchConsumers struct {
 	Wg     *sync.WaitGroup
 }
 
-func (this *WatchConsumers) Init() {}
+func (this *WatchConsumers) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
+	this.Zkzone = zkzone
+	this.Stop = stop
+	this.Wg = wg
+}
 
 func (this *WatchConsumers) Run() {
 	defer this.Wg.Done()
@@ -32,6 +43,7 @@ func (this *WatchConsumers) Run() {
 	for {
 		select {
 		case <-this.Stop:
+			log.Info("kafka.consumer stopped")
 			return
 
 		case <-ticker.C:

@@ -4,12 +4,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/funkygao/gafka/cmd/kguard/watchers"
+	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
+	log "github.com/funkygao/log4go"
 )
 
-var _ watchers.Watcher = &WatchKateway{}
+func init() {
+	monitor.RegisterWatcher("kateway.kateway", func() monitor.Watcher {
+		return &WatchKateway{
+			Tick: time.Minute,
+		}
+	})
+}
 
 // WatchKateway monitors aliveness of kateway cluster.
 type WatchKateway struct {
@@ -19,7 +26,11 @@ type WatchKateway struct {
 	Wg     *sync.WaitGroup
 }
 
-func (this *WatchKateway) Init() {}
+func (this *WatchKateway) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
+	this.Zkzone = zkzone
+	this.Stop = stop
+	this.Wg = wg
+}
 
 func (this *WatchKateway) Run() {
 	defer this.Wg.Done()
@@ -36,6 +47,7 @@ func (this *WatchKateway) Run() {
 	for {
 		select {
 		case <-this.Stop:
+			log.Info("kateway.kateway stopped")
 			return
 
 		case <-ticker.C:

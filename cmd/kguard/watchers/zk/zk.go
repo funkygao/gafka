@@ -5,12 +5,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/funkygao/gafka/cmd/kguard/watchers"
+	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
+	log "github.com/funkygao/log4go"
 )
 
-var _ watchers.Watcher = &WatchZk{}
+func init() {
+	monitor.RegisterWatcher("zk.zk", func() monitor.Watcher {
+		return &WatchZk{
+			Tick: time.Minute,
+		}
+	})
+}
 
 // WatchZk watches zookeeper health.
 type WatchZk struct {
@@ -22,8 +29,10 @@ type WatchZk struct {
 	lastReceived int64
 }
 
-func (this *WatchZk) Init() {
-
+func (this *WatchZk) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
+	this.Zkzone = zkzone
+	this.Stop = stop
+	this.Wg = wg
 }
 
 func (this *WatchZk) Run() {
@@ -39,6 +48,7 @@ func (this *WatchZk) Run() {
 	for {
 		select {
 		case <-this.Stop:
+			log.Info("zk.zk stopped")
 			return
 
 		case <-ticker.C:

@@ -5,13 +5,19 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/funkygao/gafka/cmd/kguard/watchers"
+	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 )
 
-var _ watchers.Watcher = &WatchReplicas{}
+func init() {
+	monitor.RegisterWatcher("kafka.replica", func() monitor.Watcher {
+		return &WatchReplicas{
+			Tick: time.Minute,
+		}
+	})
+}
 
 // WatchReplicas reports kafka out of sync partitions num over time.
 type WatchReplicas struct {
@@ -21,7 +27,11 @@ type WatchReplicas struct {
 	Wg     *sync.WaitGroup
 }
 
-func (this *WatchReplicas) Init() {}
+func (this *WatchReplicas) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
+	this.Zkzone = zkzone
+	this.Stop = stop
+	this.Wg = wg
+}
 
 func (this *WatchReplicas) Run() {
 	defer this.Wg.Done()
@@ -34,6 +44,7 @@ func (this *WatchReplicas) Run() {
 	for {
 		select {
 		case <-this.Stop:
+			log.Info("kafka.replica stopped")
 			return
 
 		case <-ticker.C:

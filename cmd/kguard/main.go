@@ -6,6 +6,10 @@ import (
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
+	_ "github.com/funkygao/gafka/cmd/kguard/watchers/f5" // trigger RegisterWatcher(s)
+	_ "github.com/funkygao/gafka/cmd/kguard/watchers/kafka"
+	_ "github.com/funkygao/gafka/cmd/kguard/watchers/kateway"
+	_ "github.com/funkygao/gafka/cmd/kguard/watchers/zk"
 )
 
 func main() {
