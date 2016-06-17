@@ -92,17 +92,20 @@ func (this *Histogram) showNetworkGrowth() {
 		// CDM1C01-209018015: bytes:98975866482403 bytes:115679008715688
 		line, err := r.ReadString('\n')
 		if err == io.EOF {
+			if lastRx > 0 {
+				this.Ui.Output(fmt.Sprintf("%55s    RX:%10s TX:%10s",
+					tm, gofmt.ByteSize(rxTotal-lastRx), gofmt.ByteSize(txTotal-lastTx)))
+			}
 			break
 		}
 
 		line = strings.TrimSpace(line)
-
 		if !strings.Contains(line, "bytes") {
 			// time info: Thu Jun 16 22:45:01 CST 2016
 			tm = line
 
 			if lastRx > 0 {
-				this.Ui.Output(fmt.Sprintf("%55s rx:%15s tx:%15s",
+				this.Ui.Output(fmt.Sprintf("%55s    RX:%10s TX:%10s",
 					tm, gofmt.ByteSize(rxTotal-lastRx), gofmt.ByteSize(txTotal-lastTx)))
 			}
 
@@ -125,7 +128,6 @@ func (this *Histogram) showNetworkGrowth() {
 			swallow(err)
 			txTotal += n
 		}
-
 	}
 }
 
