@@ -104,13 +104,14 @@ func (this *Histogram) showNetworkGrowth() {
 		line = strings.TrimSpace(line)
 		if !strings.Contains(line, "bytes") {
 			// time info: Thu Jun 16 22:45:01 CST 2016
-			tm = line
 
 			if lastRx > 0 {
 				this.Ui.Output(fmt.Sprintf("%55s    RX+:%10s/%-10s TX+:%10s/%-10s",
 					tm, gofmt.ByteSize(rxTotal-lastRx), gofmt.ByteSize(lastRx),
 					gofmt.ByteSize(txTotal-lastTx), gofmt.ByteSize(lastTx)))
 			}
+
+			tm = line
 
 			lastRx = rxTotal
 			lastTx = txTotal
