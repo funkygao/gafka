@@ -17,17 +17,26 @@ type Histogram struct {
 	Ui  cli.Ui
 	Cmd string
 
-	offsetFile string
+	offsetFile  string
+	networkFile string // consul exec ifconfig bond0 | grep 'RX bytes' | awk '{print $1,$3,$7}' | sort
 }
 
 func (this *Histogram) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("histogram", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.offsetFile, "f", "/var/wd/topics_offsets/offsets", "")
+	cmdFlags.StringVar(&this.networkFile, "n", "/var/wd/topics_offsets/network", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
+	this.showOffsetGrowth()
+	this.showNetworkGrowth()
+
+	return
+}
+
+func (this *Histogram) showOffsetGrowth() {
 	f, err := os.OpenFile(this.offsetFile, os.O_RDONLY, 0660)
 	swallow(err)
 	defer f.Close()
@@ -64,8 +73,60 @@ func (this *Histogram) Run(args []string) (exitCode int) {
 		}
 
 	}
+}
 
-	return
+func (this *Histogram) showNetworkGrowth() {
+	f, err := os.OpenFile(this.networkFile, os.O_RDONLY, 0660)
+	swallow(err)
+	defer f.Close()
+
+	r := bufio.NewReader(f)
+	var (
+		lastRx           = int64(0)
+		lastTx           = int64(0)
+		rxTotal, txTotal int64
+		tm               string
+	)
+
+	for {
+		// CDM1C01-209018015: bytes:98975866482403 bytes:115679008715688
+		line, err := r.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+
+		line = strings.TrimSpace(line)
+
+		if !strings.Contains(line, "bytes") {
+			// time info: Thu Jun 16 22:45:01 CST 2016
+			tm = line
+
+			if lastRx > 0 {
+				this.Ui.Output(fmt.Sprintf("%55s rx:%15s tx:%15s",
+					tm, gofmt.ByteSize(rxTotal-lastRx), gofmt.ByteSize(txTotal-lastTx)))
+			}
+
+			lastRx = rxTotal
+			lastTx = txTotal
+			rxTotal = 0
+			txTotal = 0
+		} else {
+			// CDM1C01-209018015: bytes:98975866482403 bytes:115679008715688
+			parts := strings.Split(line, " ")
+			//host := strings.TrimRight(parts[0], ":")
+			rxBytes := strings.Split(parts[1], ":")[1]
+			txBytes := strings.Split(parts[2], ":")[1]
+
+			n, err := strconv.ParseInt(rxBytes, 10, 64)
+			swallow(err)
+			rxTotal += n
+
+			n, err = strconv.ParseInt(txBytes, 10, 64)
+			swallow(err)
+			txTotal += n
+		}
+
+	}
 }
 
 func (*Histogram) Synopsis() string {
@@ -81,6 +142,8 @@ func (this *Histogram) Help() string {
 	Options:
 
 	    -f offset file
+
+	    -n network volumn file
 
 	`, this.Cmd)
 	return strings.TrimSpace(help)
