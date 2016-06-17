@@ -82,7 +82,7 @@ const (
         }
         {
             cmd: "app"
-            alias: "peek -z prod -c logstash -t logstash_new_app_log -body -p -1"
+            alias: "peek -z prod -c logstash -t app_log -body -p -1"
         }
         {
             cmd: "h5"
@@ -91,11 +91,7 @@ const (
         {
             cmd: "order"
             alias: "peek -z prod -c trade -t OrderStatusMsg -p -1 -body"
-        }
-        {
-            cmd: "xapi"
-            alias: "peek -z prod -c logstash -t logstash_apache -p -1 -body"
-        }
+        }       
         {
             cmd: "bizalarm"
             alias: "peek -z prod -c svc_hippo -t flume_biz_alarm -p -1 -body"
