@@ -24,7 +24,7 @@ func (this *Alias) Run(args []string) (exitCode int) {
 	sort.Strings(sortedNames)
 
 	lines := make([]string, 0, len(aliases)+1)
-	header := "alias|command"
+	header := "Alias|Command"
 	lines = append(lines, header)
 	for _, name := range sortedNames {
 		lines = append(lines, fmt.Sprintf("%s|%s", name, aliases[name]))
