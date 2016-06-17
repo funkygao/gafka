@@ -66,7 +66,8 @@ func (this *Histogram) showOffsetGrowth() {
 			offset, err := strconv.ParseInt(n, 10, 64)
 			swallow(err)
 			if lastN > 0 {
-				this.Ui.Output(fmt.Sprintf("%55s Message+ %15s", tm, gofmt.Comma(offset-lastN)))
+				this.Ui.Output(fmt.Sprintf("%55s Message+ %15s/%s", tm,
+					gofmt.Comma(offset-lastN), gofmt.Comma(lastN)))
 			}
 
 			lastN = offset
