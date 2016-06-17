@@ -1,0 +1,6 @@
+Known issues
+============
+
+[ ] https://issues.apache.org/jira/browse/KAFKA-2201
+[ ] http://grokbase.com/t/kafka/users/141n6y2d9m/possibly-leaking-socket-on-replicafetcherthread
+[ ] kafka lot of sockets in CLOSE_WAIT with high receive queue
