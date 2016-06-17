@@ -74,7 +74,7 @@ const (
         }
         {
             cmd: "ng"
-            alias: "peek -z prod -c logstash -t nginx_access_log"
+            alias: "peek -z prod -c logstash -t nginx_access_log -p -1"
         }
         {
             cmd: "kw"
@@ -82,7 +82,7 @@ const (
         }
         {
             cmd: "app"
-            alias: "peek -z prod -c logstash -t app_log -body -p -1"
+            alias: "peek -z prod -c logstash -t app_log -p -1"
         }
         {
             cmd: "h5"
@@ -91,7 +91,7 @@ const (
         {
             cmd: "order"
             alias: "peek -z prod -c trade -t OrderStatusMsg -p -1 -body"
-        }       
+        }
         {
             cmd: "bizalarm"
             alias: "peek -z prod -c svc_hippo -t flume_biz_alarm -p -1 -body"
