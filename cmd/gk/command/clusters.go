@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -35,6 +36,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		zone           string
 		priority       int
 		retentionHours int
+		port           string
 		delCluster     string
 		replicas       int
 		addBroker      string
@@ -56,6 +58,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&retentionHours, "retention", -1, "")
 	cmdFlags.IntVar(&priority, "priority", -1, "")
 	cmdFlags.IntVar(&public, "public", -1, "")
+	cmdFlags.StringVar(&port, "port", "", "")
 	cmdFlags.StringVar(&addBroker, "addbroker", "", "")
 	cmdFlags.StringVar(&nickname, "nickname", "", "")
 	cmdFlags.StringVar(&delBroker, "delbroker", "", "")
@@ -191,13 +194,13 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	// display mode
 	if zone != "" {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-		this.printClusters(zkzone, clusterName)
+		this.printClusters(zkzone, clusterName, port)
 
 		printSwallowedErrors(this.Ui, zkzone)
 	} else {
 		// print all zones all clusters
 		forSortedZones(func(zkzone *zk.ZkZone) {
-			this.printClusters(zkzone, clusterName)
+			this.printClusters(zkzone, clusterName, port)
 
 			printSwallowedErrors(this.Ui, zkzone)
 		})
@@ -269,7 +272,7 @@ func (this *Clusters) verifyBrokers(zkzone *zk.ZkZone) {
 	})
 }
 
-func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string) {
+func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, port string) {
 	if this.registeredBrokers {
 		this.printRegisteredBrokers(zkzone)
 		return
@@ -307,6 +310,17 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string) {
 			ci.err = "no live brokers"
 			clusters = append(clusters, ci)
 			return
+		}
+
+		if port != "" {
+			for _, hostport := range brokerList {
+				_, p, err := net.SplitHostPort(hostport)
+				swallow(err)
+
+				if p != port {
+					return
+				}
+			}
 		}
 
 		info := zkcluster.RegisteredInfo()
@@ -433,6 +447,9 @@ Options:
 
     -l
       Use a long listing format.
+
+    -port broker port number
+      Search cluster with port number.
 
     -neat
       Use short listing format.
