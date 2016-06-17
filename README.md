@@ -66,7 +66,6 @@ Currently gafka manages:
 - 100+ kafka brokers
 - 500+ kafka topics
 - 2000+ kafka partitions
-- 2Billion messages per day
+- 10Billion messages per day
 - peak load
   - 0.6Million message per second
-  - 5G+ bps network bandwidth
