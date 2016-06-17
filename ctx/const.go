@@ -57,6 +57,10 @@ const (
             alias: "lags -z prod -c bigtopic -lag 1 -p"
         }
         {
+            cmd: "apache"
+            alias: "peek -z prod -c logstash -t logstash_apache -p -1 -body"
+        }
+        {
             cmd: "gw"
             alias: "peek -z prod -c activitycenter_platform -t gateway_log -body -p -1"
         }
