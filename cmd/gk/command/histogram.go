@@ -93,8 +93,9 @@ func (this *Histogram) showNetworkGrowth() {
 		line, err := r.ReadString('\n')
 		if err == io.EOF {
 			if lastRx > 0 {
-				this.Ui.Output(fmt.Sprintf("%55s    RX:%10s TX:%10s",
-					tm, gofmt.ByteSize(rxTotal-lastRx), gofmt.ByteSize(txTotal-lastTx)))
+				this.Ui.Output(fmt.Sprintf("%55s    RX:%10s/%-10s TX:%10s/%-10s",
+					tm, gofmt.ByteSize(rxTotal-lastRx), gofmt.ByteSize(lastRx),
+					gofmt.ByteSize(txTotal-lastTx), gofmt.ByteSize(lastTx)))
 			}
 			break
 		}
@@ -105,8 +106,9 @@ func (this *Histogram) showNetworkGrowth() {
 			tm = line
 
 			if lastRx > 0 {
-				this.Ui.Output(fmt.Sprintf("%55s    RX:%10s TX:%10s",
-					tm, gofmt.ByteSize(rxTotal-lastRx), gofmt.ByteSize(txTotal-lastTx)))
+				this.Ui.Output(fmt.Sprintf("%55s    RX:%10s/%-10s TX:%10s/%-10s",
+					tm, gofmt.ByteSize(rxTotal-lastRx), gofmt.ByteSize(lastRx),
+					gofmt.ByteSize(txTotal-lastTx), gofmt.ByteSize(lastTx)))
 			}
 
 			lastRx = rxTotal
