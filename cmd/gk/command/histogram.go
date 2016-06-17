@@ -66,7 +66,7 @@ func (this *Histogram) showOffsetGrowth() {
 			offset, err := strconv.ParseInt(n, 10, 64)
 			swallow(err)
 			if lastN > 0 {
-				this.Ui.Output(fmt.Sprintf("%55s %15s", tm, gofmt.Comma(offset-lastN)))
+				this.Ui.Output(fmt.Sprintf("%55s Message+ %15s", tm, gofmt.Comma(offset-lastN)))
 			}
 
 			lastN = offset
@@ -93,7 +93,7 @@ func (this *Histogram) showNetworkGrowth() {
 		line, err := r.ReadString('\n')
 		if err == io.EOF {
 			if lastRx > 0 {
-				this.Ui.Output(fmt.Sprintf("%55s    RX:%10s/%-10s TX:%10s/%-10s",
+				this.Ui.Output(fmt.Sprintf("%55s    RX+:%10s/%-10s TX+:%10s/%-10s",
 					tm, gofmt.ByteSize(rxTotal-lastRx), gofmt.ByteSize(lastRx),
 					gofmt.ByteSize(txTotal-lastTx), gofmt.ByteSize(lastTx)))
 			}
@@ -106,7 +106,7 @@ func (this *Histogram) showNetworkGrowth() {
 			tm = line
 
 			if lastRx > 0 {
-				this.Ui.Output(fmt.Sprintf("%55s    RX:%10s/%-10s TX:%10s/%-10s",
+				this.Ui.Output(fmt.Sprintf("%55s    RX+:%10s/%-10s TX+:%10s/%-10s",
 					tm, gofmt.ByteSize(rxTotal-lastRx), gofmt.ByteSize(lastRx),
 					gofmt.ByteSize(txTotal-lastTx), gofmt.ByteSize(lastTx)))
 			}
