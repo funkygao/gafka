@@ -10,6 +10,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 	log "github.com/funkygao/log4go"
 )
 
@@ -18,6 +19,7 @@ type Ping struct {
 	Cmd string
 
 	zone     string
+	zkzone   *zk.ZkZone
 	logfile  string
 	interval time.Duration
 }
@@ -41,9 +43,13 @@ func (this *Ping) Run(args []string) (exitCode int) {
 	}
 
 	this.setupLog()
+	this.zkzone = zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 
 	for {
 		this.diagnose()
+		if this.logfile == "stdout" {
+			break
+		}
 
 		time.Sleep(this.interval)
 	}
@@ -66,20 +72,23 @@ func (this *Ping) setupLog() {
 }
 
 func (this *Ping) diagnose() {
-	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
-	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+	this.zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		registeredBrokers := zkcluster.RegisteredInfo().Roster
 		for _, broker := range registeredBrokers {
 			log.Debug("ping %s", broker.Addr())
+
 			kfk, err := sarama.NewClient([]string{broker.Addr()}, sarama.NewConfig())
 			if err != nil {
-				log.Error("broker %s: %v", broker.Addr(), err)
+				log.Error("%25s %30s %s", broker.Addr(), broker.NamedAddr(), color.Red(err.Error()))
+
 				continue
 			}
 
 			_, err = kfk.Topics() // kafka didn't provide ping, so use Topics() as ping
 			if err != nil {
-				log.Error("broker %s: %v", broker.Addr(), err)
+				log.Error("%25s %30s %s", broker.Addr(), broker.NamedAddr(), color.Red(err.Error()))
+			} else {
+				log.Info("%25s %30s %s", broker.Addr(), broker.NamedAddr(), color.Green("ok"))
 			}
 			kfk.Close()
 		}
