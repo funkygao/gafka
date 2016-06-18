@@ -372,7 +372,10 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		}
 
 		replicas, err := kfk.Replicas(topic, partions[0])
-		swallow(err)
+		if err != nil {
+			this.Ui.Error(fmt.Sprintf("%s/%d %v", topic, partions[0], err))
+			continue
+		}
 
 		this.partitionN += len(partions)
 		if !this.verbose {
@@ -390,7 +393,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 
 			replicas, err := kfk.Replicas(topic, partitionID)
 			if err != nil {
-				this.Ui.Error(err.Error())
+				this.Ui.Error(fmt.Sprintf("%s/%d %v", topic, partitionID, err))
 				continue
 			}
 
