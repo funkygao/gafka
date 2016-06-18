@@ -44,10 +44,6 @@ func (this *dummyStore) DeadPartitions() map[string]map[int32]struct{} {
 	return nil
 }
 
-func (this *dummyStore) Refreshed() <-chan struct{} {
-	return nil
-}
-
 func (this *dummyStore) AuthAdmin(appid, pubkey string) bool {
 	return true
 }
