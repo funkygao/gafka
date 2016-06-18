@@ -207,10 +207,10 @@ func (this *Histogram) drawAll(offsetTs []time.Time, offsets []int64,
 	}
 
 	bc2 := termui.NewBarChart()
-	bc2.Border.Label = "Network RX/in GB"
+	bc2.Border.Label = "Network RX/in 10GB"
 	data = make([]int, 0)
 	for _, r := range rx {
-		data = append(data, int(r>>30)) // in GB
+		data = append(data, int(r>>30)/10)
 	}
 	bc2.Data = data
 	bc2.Width = w
@@ -222,10 +222,10 @@ func (this *Histogram) drawAll(offsetTs []time.Time, offsets []int64,
 	bc2.NumColor = termui.ColorYellow
 
 	bc3 := termui.NewBarChart()
-	bc3.Border.Label = "Network TX/in GB"
+	bc3.Border.Label = "Network TX/in 10GB"
 	data = make([]int, 0)
 	for _, t := range tx {
-		data = append(data, int(t>>30)) // in GB
+		data = append(data, int(t>>30)/10)
 	}
 	bc3.Data = data
 	bc3.Width = w
