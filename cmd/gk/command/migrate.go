@@ -193,7 +193,11 @@ func (this *Migrate) verify() {
 	scanner := bufio.NewScanner(cmd.Reader())
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
-		this.Ui.Output(color.Yellow(scanner.Text()))
+		if strings.Contains(scanner.Text(), "successfully") {
+			this.Ui.Info(scanner.Text())
+		} else {
+			this.Ui.Warn(scanner.Text())
+		}
 	}
 
 }
