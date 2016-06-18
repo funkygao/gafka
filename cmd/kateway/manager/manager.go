@@ -35,6 +35,9 @@ type Manager interface {
 	// WebHooks returns all registered webhooks object.
 	WebHooks() ([]WebHook, error)
 
+	// ForceRefresh will force manager to refresh the management data at once.
+	ForceRefresh()
+
 	// IsShadowedTopic checks if a topic has retry/dead sub/shadow topics.
 	IsShadowedTopic(hisAppid, topic, ver, myAppid, group string) bool
 

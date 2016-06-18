@@ -44,6 +44,10 @@ func (this *dummyStore) DeadPartitions() map[string]map[int32]struct{} {
 	return nil
 }
 
+func (this *dummyStore) ForceRefresh() {
+
+}
+
 func (this *dummyStore) AuthAdmin(appid, pubkey string) bool {
 	return true
 }

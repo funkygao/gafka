@@ -14,6 +14,7 @@ type mysqlStore struct {
 	cf     *config
 	zkzone *zk.ZkZone
 
+	refreshCh  chan struct{}
 	shutdownCh chan struct{}
 
 	allowUnregisteredGroup bool
@@ -42,6 +43,7 @@ func New(cf *config) *mysqlStore {
 		cf:                     cf,
 		zkzone:                 zk.NewZkZone(zk.DefaultConfig(cf.Zone, zkAddrs)), // TODO session timeout
 		shutdownCh:             make(chan struct{}),
+		refreshCh:              make(chan struct{}),
 		allowUnregisteredGroup: false,
 	}
 }
@@ -67,6 +69,10 @@ func (this *mysqlStore) Start() error {
 			case <-ticker.C:
 				this.refreshFromMysql()
 				log.Info("manager refreshed from mysql")
+
+			case <-this.refreshCh:
+				this.refreshFromMysql()
+				log.Info("manager forced to refresh from mysql")
 
 			case <-this.shutdownCh:
 				log.Info("mysql manager stopped")
