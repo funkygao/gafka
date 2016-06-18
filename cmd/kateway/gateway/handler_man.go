@@ -57,6 +57,9 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	case "gzip":
 		Options.EnableGzip = boolVal
 
+	case "refreshdb":
+		manager.Default.ForceRefresh()
+
 	case "ratelimit":
 		Options.Ratelimit = boolVal
 
