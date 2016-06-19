@@ -125,6 +125,17 @@ func (this *Peek) Run(args []string) (exitCode int) {
 
 LOOP:
 	for {
+		if time.Since(startAt) >= wait {
+			this.Ui.Output(fmt.Sprintf("Total: %s msgs, %s, elapsed: %s",
+				gofmt.Comma(int64(total)), gofmt.ByteSize(bytes), time.Since(startAt)))
+			elapsed := time.Since(startAt).Seconds()
+			if elapsed > 1. {
+				this.Ui.Output(fmt.Sprintf("Speed: %d/s", total/int(elapsed)))
+			}
+
+			return
+		}
+
 		select {
 		case <-this.quit:
 			this.Ui.Output(fmt.Sprintf("Total: %s msgs, %s, elapsed: %s",
@@ -136,15 +147,8 @@ LOOP:
 
 			return
 
-		case <-time.After(wait):
-			this.Ui.Output(fmt.Sprintf("Total: %s msgs, %s, elapsed: %s",
-				gofmt.Comma(int64(total)), gofmt.ByteSize(bytes), time.Since(startAt)))
-			elapsed := time.Since(startAt).Seconds()
-			if elapsed > 1. {
-				this.Ui.Output(fmt.Sprintf("Speed: %d/s", total/int(elapsed)))
-			}
-
-			return
+		case <-time.After(time.Second):
+			continue
 
 		case msg = <-msgChan:
 			if silence {
