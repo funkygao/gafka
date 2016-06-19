@@ -66,6 +66,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		zone         string
 		topicPattern string
 		partitionId  int
+		wait         time.Duration
 		silence      bool
 	)
 	cmdFlags := flag.NewFlagSet("peek", flag.ContinueOnError)
@@ -80,6 +81,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.column, "col", "", "")
 	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
 	cmdFlags.BoolVar(&silence, "s", false, "")
+	cmdFlags.DurationVar(&wait, "wait", time.Hour, "")
 	cmdFlags.BoolVar(&this.bodyOnly, "body", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -125,6 +127,16 @@ LOOP:
 	for {
 		select {
 		case <-this.quit:
+			this.Ui.Output(fmt.Sprintf("Total: %s msgs, %s, elapsed: %s",
+				gofmt.Comma(int64(total)), gofmt.ByteSize(bytes), time.Since(startAt)))
+			elapsed := time.Since(startAt).Seconds()
+			if elapsed > 1. {
+				this.Ui.Output(fmt.Sprintf("Speed: %d/s", total/int(elapsed)))
+			}
+
+			return
+
+		case <-time.After(wait):
 			this.Ui.Output(fmt.Sprintf("Total: %s msgs, %s, elapsed: %s",
 				gofmt.Comma(int64(total)), gofmt.ByteSize(bytes), time.Since(startAt)))
 			elapsed := time.Since(startAt).Seconds()
@@ -331,6 +343,10 @@ Options:
 
     -n count
       Limit how many messages to consume
+
+    -wait duration
+      Limit how long to keep peeking
+      e,g. -wait 5m
 
     -body
       Only display message body
