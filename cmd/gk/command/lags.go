@@ -236,7 +236,11 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 					uptime = "-"
 				} else {
 					host = color.Green("%s", consumer.ConsumerZnode.Host())
-					uptime = gofmt.PrettySince(consumer.ConsumerZnode.Uptime())
+					if time.Since(consumer.ConsumerZnode.Uptime()) < time.Hour {
+						uptime = color.Magenta(gofmt.PrettySince(consumer.ConsumerZnode.Uptime()))
+					} else {
+						uptime = gofmt.PrettySince(consumer.ConsumerZnode.Uptime())
+					}
 				}
 
 				lines = append(lines, fmt.Sprintf("\t%s %35s/%-2s %12s -> %-15s %s %-10s %s %s",
