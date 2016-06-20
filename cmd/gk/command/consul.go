@@ -13,6 +13,11 @@ import (
 	"github.com/funkygao/golib/pipestream"
 )
 
+// consul members will include:
+// - zk cluster as server
+// - agents
+//   - brokers
+//   - kateway
 type Consul struct {
 	Ui  cli.Ui
 	Cmd string
@@ -36,6 +41,22 @@ func (this *Consul) Run(args []string) (exitCode int) {
 		}
 	})
 
+	zkHosts := make(map[string]struct{})
+	for _, addr := range zkzone.ZkAddrList() {
+		zkNode, _, err := net.SplitHostPort(addr)
+		swallow(err)
+		zkHosts[zkNode] = struct{}{}
+	}
+
+	katewayHosts := make(map[string]struct{})
+	kws, err := zkzone.KatewayInfos()
+	swallow(err)
+	for _, kw := range kws {
+		host, _, err := net.SplitHostPort(kw.PubAddr)
+		swallow(err)
+		katewayHosts[host] = struct{}{}
+	}
+
 	consulLiveNode, consulDeadNodes := this.consulMembers()
 	for _, node := range consulDeadNodes {
 		this.Ui.Error(fmt.Sprintf("%s consul dead", node))
@@ -43,13 +64,17 @@ func (this *Consul) Run(args []string) (exitCode int) {
 
 	consulLiveMap := make(map[string]struct{})
 	for _, node := range consulLiveNode {
-		if _, present := brokerHosts[node]; !present {
-			this.Ui.Info(fmt.Sprintf("+ %s", node))
+		_, presentInBroker := brokerHosts[node]
+		_, presentInZk := zkHosts[node]
+		_, presentInKateway := katewayHosts[node]
+		if !presentInBroker && !presentInZk && !presentInKateway {
+			this.Ui.Info(fmt.Sprintf("? %s", node))
 		}
 
 		consulLiveMap[node] = struct{}{}
 	}
 
+	// all brokers should run consul
 	for broker, _ := range brokerHosts {
 		if _, present := consulLiveMap[broker]; !present {
 			this.Ui.Warn(fmt.Sprintf("- %s", broker))

@@ -100,12 +100,14 @@ func (*Ping) Synopsis() string {
 
 func (this *Ping) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s ping -z zone [options]
+Usage: %s ping [options]
 
     Ping liveness of all registered brokers in a zone
 
 Options:
 
+    -z zone
+    
     -p
       Only show problematic brokers
 
