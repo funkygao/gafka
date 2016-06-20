@@ -30,7 +30,7 @@ type Ping struct {
 func (this *Ping) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("ping", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.zone, "z", "", "")
+	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.DurationVar(&this.interval, "interval", time.Minute*5, "")
 	cmdFlags.StringVar(&this.logfile, "logfile", "stdout", "")
 	cmdFlags.BoolVar(&this.problematicMode, "p", false, "")
