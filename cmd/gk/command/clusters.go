@@ -47,7 +47,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	)
 	cmdFlags := flag.NewFlagSet("clusters", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&addCluster, "add", "", "")
 	cmdFlags.BoolVar(&this.publicOnly, "po", false, "")
 	cmdFlags.BoolVar(&setMode, "s", false, "")
