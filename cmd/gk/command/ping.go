@@ -38,12 +38,6 @@ func (this *Ping) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if validateArgs(this, this.Ui).
-		require("-z").
-		invalid(args) {
-		return 2
-	}
-
 	this.setupLog()
 	this.zkzone = zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 
