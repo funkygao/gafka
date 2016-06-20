@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -401,12 +402,17 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, po
 
 			this.Ui.Output(fmt.Sprintf("%30s: %s",
 				c.name, c.path))
-			brokers := ""
+			brokers := []string{}
 			for _, broker := range c.brokerInfos {
-				brokers += fmt.Sprintf("%d/%s:%d ", broker.Id, broker.Host, broker.Port)
+				if this.ipInNumber {
+					brokers = append(brokers, fmt.Sprintf("%d/%s:%d", broker.Id, broker.Host, broker.Port))
+				} else {
+					brokers = append(brokers, fmt.Sprintf("%d/%s", broker.Id, broker.NamedAddr()))
+				}
 			}
-			if brokers != "" {
-				this.Ui.Output(fmt.Sprintf("%31s %s", " ", brokers))
+			if len(brokers) > 0 {
+				sort.Strings(brokers)
+				this.Ui.Info(color.Green("%31s %s", " ", strings.Join(brokers, ", ")))
 			}
 
 			this.Ui.Output(strings.Repeat(" ", 4) +
@@ -421,14 +427,18 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, po
 	// not verbose mode
 	for _, c := range clusters {
 		this.Ui.Output(fmt.Sprintf("%30s: %s", c.name, c.path))
-		brokers := ""
+		brokers := []string{}
 		for _, broker := range c.brokerInfos {
-			brokers += fmt.Sprintf("%d/%s:%d ", broker.Id, broker.Host, broker.Port)
+			if this.ipInNumber {
+				brokers = append(brokers, fmt.Sprintf("%d/%s:%d", broker.Id, broker.Host, broker.Port))
+			} else {
+				brokers = append(brokers, fmt.Sprintf("%d/%s", broker.Id, broker.NamedAddr()))
+			}
 		}
-		if brokers != "" {
-			this.Ui.Output(fmt.Sprintf("%31s %s", " ", brokers))
+		if len(brokers) > 0 {
+			sort.Strings(brokers)
+			this.Ui.Info(color.Green("%31s %s", " ", strings.Join(brokers, ", ")))
 		}
-
 	}
 
 }
