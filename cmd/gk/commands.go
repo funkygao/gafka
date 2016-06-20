@@ -264,7 +264,7 @@ func init() {
 			}, nil
 		},
 
-		"consul": func() (cli.Command, error) {
+		"members": func() (cli.Command, error) {
 			return &command.Consul{
 				Ui:  ui,
 				Cmd: cmd,

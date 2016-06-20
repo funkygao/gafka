@@ -62,15 +62,18 @@ func (this *Consul) Run(args []string) (exitCode int) {
 func (this *Consul) consulMembers() ([]string, []string) {
 	cmd := pipestream.New("consul", "members")
 	err := cmd.Open()
-	if err != nil {
-		return nil, nil
-	}
+	swallow(err)
 	defer cmd.Close()
 
 	liveHosts, deadHosts := []string{}, []string{}
 	scanner := bufio.NewScanner(cmd.Reader())
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), "Protocol") {
+			// the header
+			continue
+		}
+
 		fields := strings.Fields(scanner.Text())
 		addr, alive := fields[1], fields[2]
 		host, _, err := net.SplitHostPort(addr)
