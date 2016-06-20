@@ -16,6 +16,7 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/pipestream"
+	"github.com/funkygao/golib/rand"
 )
 
 const (
@@ -103,6 +104,27 @@ func (this *Migrate) ensureBrokersAreAlive() {
 
 }
 
+func (this *Migrate) normalizePartitions() {
+	if strings.Contains(this.partition, "-") {
+		// e,g. 0-10
+		parts := strings.Split(this.partition, "-")
+		startId, err := strconv.Atoi(parts[0])
+		swallow(err)
+		endId, err := strconv.Atoi(parts[1])
+		swallow(err)
+		if startId >= endId {
+			panic("invalid partition id")
+		}
+
+		partitions := make([]string, 0)
+		for i := startId; i <= endId; i++ {
+			partitions = append(partitions, strconv.Itoa(i))
+		}
+
+		this.partition = strings.Join(partitions, ",")
+	}
+}
+
 // generate reassignment-node.json
 func (this *Migrate) generateReassignFile() string {
 	// {"version":1,"partitions":[{"topic":"fortest1","partition":0,"replicas":[3,4]}
@@ -136,6 +158,9 @@ func (this *Migrate) generateReassignFile() string {
 			swallow(err)
 
 			pmeta.Replicas = append(pmeta.Replicas, bid)
+
+			// shuffle for load balance the preferred leader
+			pmeta.Replicas = rand.ShuffleInts(pmeta.Replicas)
 		}
 
 		js.Partitions = append(js.Partitions, pmeta)
@@ -221,8 +246,9 @@ Options:
     -t topic
 
     -p partitionId   
-      Multiple partition ids seperated by comma.
+      Multiple partition ids seperated by comma or -.
       e,g. -p 0,1
+      e,g. -p 2-20
 
     -brokers id1,id2,idN
       Migrate the topic to given broker ids.
