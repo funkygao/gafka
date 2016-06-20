@@ -66,7 +66,7 @@ func (this *Migrate) Run(args []string) (exitCode int) {
 			this.Ui.Output(fmt.Sprintf("%s", time.Now().String()))
 			this.verify()
 
-			time.Sleep(time.Second * 2)
+			time.Sleep(time.Second * 5)
 		}
 
 		return
