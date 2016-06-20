@@ -142,6 +142,7 @@ func (this *Migrate) generateReassignFile() string {
 	var js ReassignMeta
 	js.Version = 1
 	js.Partitions = make([]PartitionMeta, 0)
+	this.normalizePartitions()
 	for _, p := range strings.Split(this.partition, ",") {
 		p = strings.TrimSpace(p)
 		pid, err := strconv.Atoi(p)
