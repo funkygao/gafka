@@ -135,7 +135,7 @@ func (this *Brokers) clusterBrokers(zone, cluster string, brokers map[string]*zk
 				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s",
 					zone, cluster,
 					brokerId, broker.Addr(),
-					gofmt.PrettySince(broker.Uptime())))
+					fmt.Sprintf("%s: %v", gofmt.PrettySince(broker.Uptime()), err)))
 			} else {
 				kfk.Close()
 			}
