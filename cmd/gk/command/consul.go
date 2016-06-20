@@ -24,10 +24,14 @@ type Consul struct {
 }
 
 func (this *Consul) Run(args []string) (exitCode int) {
-	var zone string
+	var (
+		zone        string
+		showLoadAvg bool
+	)
 	cmdFlags := flag.NewFlagSet("consul", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.BoolVar(&showLoadAvg, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -81,7 +85,33 @@ func (this *Consul) Run(args []string) (exitCode int) {
 		}
 	}
 
+	if showLoadAvg {
+		this.displayLoadAvg()
+	}
+
 	return
+}
+
+func (this *Consul) displayLoadAvg() {
+	cmd := pipestream.New("consul", "exec",
+		"uptime", "|", "grep", "load")
+	err := cmd.Open()
+	swallow(err)
+	defer cmd.Close()
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+		host := fields[0]
+		parts := strings.Split(line, "load average:")
+		if len(parts) < 2 {
+			continue
+		}
+
+		this.Ui.Output(fmt.Sprintf("%35s %s", host, parts[1]))
+	}
 }
 
 func (this *Consul) consulMembers() ([]string, []string) {
@@ -125,6 +155,9 @@ Usage: %s consul [options]
     Verify consul members match kafka zone
 
     -z zone
+
+    -l
+      Display each member load average
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
