@@ -23,6 +23,7 @@ type Clusters struct {
 	neat              bool
 	registeredBrokers bool
 	publicOnly        bool
+	ipInNumber        bool
 }
 
 func (this *Clusters) Run(args []string) (exitCode int) {
@@ -58,6 +59,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&retentionHours, "retention", -1, "")
 	cmdFlags.IntVar(&priority, "priority", -1, "")
 	cmdFlags.IntVar(&public, "public", -1, "")
+	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.StringVar(&port, "port", "", "")
 	cmdFlags.StringVar(&addBroker, "addbroker", "", "")
 	cmdFlags.StringVar(&nickname, "nickname", "", "")
@@ -219,7 +221,11 @@ func (this *Clusters) printRegisteredBrokers(zkzone *zk.ZkZone) {
 			this.Ui.Warn("        brokers not defined")
 		} else {
 			for _, b := range registeredBrokers {
-				this.Ui.Output(fmt.Sprintf("        %2d %s", b.Id, b.Addr()))
+				if this.ipInNumber {
+					this.Ui.Output(fmt.Sprintf("        %2d %s", b.Id, b.Addr()))
+				} else {
+					this.Ui.Output(fmt.Sprintf("        %2d %s", b.Id, b.NamedAddr()))
+				}
 			}
 		}
 
@@ -462,6 +468,9 @@ Options:
 
     -del cluster name
       Help to delete a cluster.
+
+    -n
+      Show network addresses as numbers
 
     -p cluster zk path
       The new kafka cluster chroot path in Zookeeper.
