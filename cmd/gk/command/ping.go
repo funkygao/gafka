@@ -18,10 +18,11 @@ type Ping struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone     string
-	zkzone   *zk.ZkZone
-	logfile  string
-	interval time.Duration
+	zone            string
+	zkzone          *zk.ZkZone
+	logfile         string
+	problematicMode bool
+	interval        time.Duration
 }
 
 // TODO run 3 nodes in a zone to monitor as daemon
@@ -32,6 +33,7 @@ func (this *Ping) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.DurationVar(&this.interval, "interval", time.Minute*5, "")
 	cmdFlags.StringVar(&this.logfile, "logfile", "stdout", "")
+	cmdFlags.BoolVar(&this.problematicMode, "p", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -88,7 +90,9 @@ func (this *Ping) diagnose() {
 			if err != nil {
 				log.Error("%25s %30s %s", broker.Addr(), broker.NamedAddr(), color.Red(err.Error()))
 			} else {
-				log.Info("%25s %30s %s", broker.Addr(), broker.NamedAddr(), color.Green("ok"))
+				if !this.problematicMode {
+					log.Info("%25s %30s %s", broker.Addr(), broker.NamedAddr(), color.Green("ok"))
+				}
 			}
 			kfk.Close()
 		}
@@ -107,6 +111,9 @@ Usage: %s ping -z zone [options]
     Ping liveness of all registered brokers in a zone
 
 Options:
+
+    -p
+      Only show problematic brokers
 
     -interval duration
       Defaults 5m

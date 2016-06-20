@@ -25,6 +25,14 @@ func (this *Checkup) Run(args []string) (exitCode int) {
 		this.Ui.Output("")
 	}
 
+	this.Ui.Output(color.Cyan("ping all brokers\n%s", strings.Repeat("-", 80)))
+	cmd = &Ping{
+		Ui:  this.Ui,
+		Cmd: this.Cmd,
+	}
+	cmd.Run(append(args, "-p"))
+	this.Ui.Output("")
+
 	this.Ui.Output(color.Cyan("checking registered brokers are alive\n%s", strings.Repeat("-", 80)))
 	cmd = &Clusters{
 		Ui:  this.Ui,
