@@ -264,13 +264,15 @@ func init() {
 			}, nil
 		},
 
-		/* TODOs
 		"consul": func() (cli.Command, error) {
 			return &command.Consul{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
 		},
+
+		/* TODOs
+
 
 		"rebalance": func() (cli.Command, error) {
 			return &command.Rebalance{

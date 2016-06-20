@@ -1,12 +1,16 @@
 package command
 
 import (
+	"bufio"
+	"flag"
 	"fmt"
+	"net"
 	"strings"
 
-	"github.com/drnic/consul-discovery"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/pipestream"
 )
 
 type Consul struct {
@@ -15,28 +19,84 @@ type Consul struct {
 }
 
 func (this *Consul) Run(args []string) (exitCode int) {
-	cf := consuldiscovery.DefaultConfig()
-	cf.Address = ctx.ConsulBootstrap()
-	client, _ := consuldiscovery.NewClient(cf)
-	services, err := client.CatalogServices()
-	swallow(err)
-
-	for _, service := range services {
-		serviceNodes, _ := client.CatalogServiceByName(service.Name)
-		this.Ui.Output(fmt.Sprintf("%25s: %#v", service.Name, serviceNodes))
+	var zone string
+	cmdFlags := flag.NewFlagSet("consul", flag.ContinueOnError)
+	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
+	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
+	if err := cmdFlags.Parse(args); err != nil {
+		return 1
 	}
+
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+
+	brokerHosts := make(map[string]struct{})
+	zkzone.ForSortedBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
+		for _, brokerInfo := range brokers {
+			brokerHosts[brokerInfo.Host] = struct{}{}
+		}
+	})
+
+	consulLiveNode, consulDeadNodes := this.consulMembers()
+	for _, node := range consulDeadNodes {
+		this.Ui.Error(fmt.Sprintf("%s consul dead", node))
+	}
+
+	consulLiveMap := make(map[string]struct{})
+	for _, node := range consulLiveNode {
+		if _, present := brokerHosts[node]; !present {
+			this.Ui.Info(fmt.Sprintf("+ %s", node))
+		}
+
+		consulLiveMap[node] = struct{}{}
+	}
+
+	for broker, _ := range brokerHosts {
+		if _, present := consulLiveMap[broker]; !present {
+			this.Ui.Warn(fmt.Sprintf("- %s", broker))
+		}
+	}
+
 	return
 }
 
+func (this *Consul) consulMembers() ([]string, []string) {
+	cmd := pipestream.New("consul", "members")
+	err := cmd.Open()
+	if err != nil {
+		return nil, nil
+	}
+	defer cmd.Close()
+
+	liveHosts, deadHosts := []string{}, []string{}
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		addr, alive := fields[1], fields[2]
+		host, _, err := net.SplitHostPort(addr)
+		swallow(err)
+
+		if alive == "alive" {
+			liveHosts = append(liveHosts, host)
+		} else {
+			deadHosts = append(deadHosts, host)
+		}
+	}
+
+	return liveHosts, deadHosts
+}
+
 func (*Consul) Synopsis() string {
-	return "Service discovery from consul"
+	return "Verify consul members match kafka zone"
 }
 
 func (this *Consul) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s consul [options]
 
-    Service discovery from consul
+    Verify consul members match kafka zone
+
+    -z zone
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
