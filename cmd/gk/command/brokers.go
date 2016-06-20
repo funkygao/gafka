@@ -102,8 +102,15 @@ func (this *Brokers) displayZoneBrokers(zkzone *zk.ZkZone) {
 		n += len(outputs)
 		lines = append(lines, outputs...)
 	})
-	this.Ui.Info(fmt.Sprintf("%d brokers in zone[%s]", n, zkzone.Name()))
-	this.Ui.Output(columnize.SimpleFormat(lines))
+	if this.staleOnly {
+		this.Ui.Info(fmt.Sprintf("%d problematic brokers in zone[%s]", n, zkzone.Name()))
+	} else {
+		this.Ui.Info(fmt.Sprintf("%d brokers in zone[%s]", n, zkzone.Name()))
+	}
+	if len(lines) > 1 {
+		// lines has header
+		this.Ui.Output(columnize.SimpleFormat(lines))
+	}
 }
 
 func (this *Brokers) clusterBrokers(zone, cluster string, brokers map[string]*zk.BrokerZnode) []string {
