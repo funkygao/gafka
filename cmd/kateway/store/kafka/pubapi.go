@@ -43,6 +43,11 @@ func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 		return
 	}
 
+	if pool.breaker.Open() {
+		err = store.ErrBusy
+		return
+	}
+
 	var (
 		producer   *syncProducerClient
 		keyEncoder sarama.Encoder = nil // will use random partitioner
@@ -71,8 +76,9 @@ func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 
 	producer, err = getProducer()
 	if err != nil {
-		// e,g the connection is idle too long, so when get, will trigger
-		// factory method, which might lead to kafka connection error
+		// e,g. during factory method, kafka breaks down
+		pool.breaker.Fail()
+
 		if producer != nil {
 			// should never happen
 			producer.CloseAndRecycle()
@@ -86,6 +92,7 @@ func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 	partition, offset, err = producer.SendMessage(producerMsg)
 	if err == nil {
 		// send ok
+		pool.breaker.Succeed()
 		producer.Recycle()
 		return
 	}
@@ -97,22 +104,24 @@ func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 
 	case sarama.ErrUnknownTopicOrPartition:
 		// this conn is still valid
+		pool.breaker.Succeed()
 		producer.Recycle()
 		return
 
 	case breaker.ErrBreakerOpen, sarama.ErrOutOfBrokers:
 		// sarama is using breaker: 3 error/1 success/10s
 		// will not retry FIXME breaker didn't work
+		pool.breaker.Fail()
 		producer.CloseAndRecycle()
-		// err = store.ErrBusy hide the underlying err
+		// err = store.ErrBusy TODO hide the underlying err
 		return
 
 	default:
 		// e,g. sarama.ErrLeaderNotAvailable, sarama.ErrNotLeaderForPartition
 		// will retry
+		pool.breaker.Fail()
 		producer.CloseAndRecycle()
-		// err = store.ErrBusy hide the underlying err
-
+		// err = store.ErrBusy TODO hide the underlying err
 	}
 
 	return

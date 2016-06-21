@@ -1,6 +1,9 @@
 package kafka
 
 import (
+	"time"
+
+	"github.com/funkygao/golib/breaker"
 	"github.com/funkygao/golib/set"
 	log "github.com/funkygao/log4go"
 	pool "github.com/youtube/vitess/go/pools"
@@ -15,6 +18,8 @@ type pubPool struct {
 	nextId     uint64
 	brokerList []string
 
+	breaker *breaker.Consecutive
+
 	syncPool    *pool.ResourcePool
 	syncAllPool *pool.ResourcePool
 	asyncPool   *pool.ResourcePool
@@ -26,6 +31,10 @@ func newPubPool(store *pubStore, cluster string, brokerList []string, size int) 
 		cluster:    cluster,
 		size:       size,
 		brokerList: brokerList,
+		breaker: &breaker.Consecutive{
+			FailureAllowance: 5,
+			RetryTimeout:     time.Second * 10,
+		},
 	}
 	this.buildPools()
 
