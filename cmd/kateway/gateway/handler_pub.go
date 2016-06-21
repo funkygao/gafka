@@ -3,6 +3,7 @@
 package gateway
 
 import (
+	"hash/adler32"
 	"io"
 	"net/http"
 	"strconv"
@@ -103,8 +104,9 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	}
 
 	if Options.AuditPub {
-		this.auditor.Trace("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} key:%s",
-			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), partitionKey)
+		this.auditor.Trace("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} k:%s vlen:%d h:%d",
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"),
+			partitionKey, msgLen, adler32.Checksum(msg.Body))
 	}
 
 	if !Options.DisableMetrics {
