@@ -44,7 +44,7 @@ func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 	}
 
 	if pool.breaker.Open() {
-		err = store.ErrBusy
+		err = store.ErrCircuitOpen
 		return
 	}
 
