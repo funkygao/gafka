@@ -39,7 +39,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.BoolVar(&debug, "debug", false, "")
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
