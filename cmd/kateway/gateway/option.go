@@ -55,7 +55,6 @@ var (
 		LogRotateSize           int
 		MaxMsgTagLen            int
 		MinPubSize              int
-		MaxPubRetries           int
 		PubQpsLimit             int64
 		MaxSubBatchSize         int
 		MaxClients              int
@@ -129,7 +128,6 @@ func ParseFlags() {
 	flag.IntVar(&Options.HttpHeaderMaxBytes, "maxheader", 4<<10, "http header max size in bytes")
 	flag.Int64Var(&Options.MaxPubSize, "maxpub", 512<<10, "max Pub message size")
 	flag.IntVar(&Options.MinPubSize, "minpub", 1, "min Pub message size")
-	flag.IntVar(&Options.MaxPubRetries, "pubretry", 5, "max retries when Pub fails")
 	flag.IntVar(&Options.MaxRequestPerConn, "maxreq", -1, "max request per connection")
 	flag.IntVar(&Options.MaxMsgTagLen, "tagsz", 1024, "max message tag length permitted")
 	// kafka Fetch maxFetchSize=1MB, so if our msg agv size is 250B, batch size can be 4000

@@ -16,11 +16,10 @@ import (
 type pubStore struct {
 	shutdownCh chan struct{}
 
-	maxRetries int
-	wg         *sync.WaitGroup
-	hostname   string // used as kafka client id
-	dryRun     bool
-	compress   bool
+	wg       *sync.WaitGroup
+	hostname string // used as kafka client id
+	dryRun   bool
+	compress bool
 
 	pubPools        map[string]*pubPool // key is cluster, each cluster maintains a conn pool
 	pubPoolsCapcity int
@@ -35,7 +34,7 @@ type pubStore struct {
 	lastRefreshedAt time.Time
 }
 
-func NewPubStore(poolCapcity int, maxRetries int, compress bool, idleTimeout time.Duration,
+func NewPubStore(poolCapcity int, idleTimeout time.Duration, compress bool,
 	wg *sync.WaitGroup, debug bool, dryRun bool) *pubStore {
 	if debug {
 		sarama.Logger = l.New(os.Stdout, color.Green("[Sarama]"),
@@ -44,7 +43,6 @@ func NewPubStore(poolCapcity int, maxRetries int, compress bool, idleTimeout tim
 
 	return &pubStore{
 		hostname:        ctx.Hostname(),
-		maxRetries:      maxRetries,
 		compress:        compress,
 		idleTimeout:     idleTimeout,
 		pubPoolsCapcity: poolCapcity,

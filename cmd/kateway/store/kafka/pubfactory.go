@@ -40,12 +40,13 @@ func (this *pubPool) newSyncProducer(requiredAcks sarama.RequiredAcks) (pool.Res
 
 	cf.Metadata.RefreshFrequency = time.Minute * 10
 	cf.Metadata.Retry.Max = 3
-	cf.Metadata.Retry.Backoff = time.Second
+	cf.Metadata.Retry.Backoff = time.Millisecond * 200
 
-	cf.Producer.Timeout = time.Second * 10
+	cf.Producer.Timeout = time.Second * 1
 	cf.Producer.RequiredAcks = requiredAcks
 	cf.Producer.Partitioner = NewExclusivePartitioner
 	cf.Producer.Return.Successes = false
+	cf.Producer.Retry.Backoff = time.Millisecond * 200
 	cf.Producer.Retry.Max = 3
 	if this.store.compress {
 		cf.Producer.Compression = sarama.CompressionSnappy
@@ -53,8 +54,9 @@ func (this *pubPool) newSyncProducer(requiredAcks sarama.RequiredAcks) (pool.Res
 
 	cf.ClientID = this.store.hostname
 
-	cf.ChannelBufferSize = 256
+	cf.ChannelBufferSize = 256 // TODO
 
+	// will fetch meta from broker list
 	spc.SyncProducer, err = sarama.NewSyncProducer(this.brokerList, cf)
 	if err != nil {
 		return nil, err
@@ -88,15 +90,16 @@ func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
 	var err error
 	t1 := time.Now()
 	cf := sarama.NewConfig()
-	cf.Metadata.RefreshFrequency = time.Minute // TODO
-	cf.Metadata.Retry.Max = 3                  //
+	cf.Metadata.RefreshFrequency = time.Minute * 10
+	cf.Metadata.Retry.Max = 3
 
-	cf.Producer.Flush.Frequency = time.Second * 10
+	cf.Producer.Flush.Frequency = time.Second * 10 // TODO
 	cf.Producer.Flush.Messages = 1000
 	cf.Producer.Flush.MaxMessages = 0 // unlimited
 
 	cf.Producer.RequiredAcks = sarama.NoResponse
 	cf.Producer.Partitioner = NewExclusivePartitioner
+	cf.Producer.Retry.Backoff = time.Millisecond * 200
 	cf.Producer.Retry.Max = 3
 	if this.store.compress {
 		cf.Producer.Compression = sarama.CompressionSnappy

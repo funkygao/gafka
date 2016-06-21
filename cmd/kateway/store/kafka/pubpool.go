@@ -42,6 +42,7 @@ func (this *pubPool) buildPools() {
 		this.size, this.size, 0)
 }
 
+// TODO from live meta or zk?
 func (this *pubPool) RefreshBrokerList(brokerList []string) {
 	if len(brokerList) == 0 {
 		if len(this.brokerList) > 0 {

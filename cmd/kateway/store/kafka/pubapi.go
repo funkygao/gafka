@@ -44,7 +44,6 @@ func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 	}
 
 	var (
-		retryDelay time.Duration
 		producer   *syncProducerClient
 		keyEncoder sarama.Encoder = nil // will use random partitioner
 	)
@@ -82,45 +81,38 @@ func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 		return
 	}
 
-	for i := 0; i < this.maxRetries; i++ {
-		// sarama will retry Producer.Retry.Max(3) times on produce failure before return error
-		// meanwhile, it will auto refresh meta
-		partition, offset, err = producer.SendMessage(producerMsg)
-		if err == nil {
-			// send ok
-			producer.Recycle()
-			return
-		}
+	// sarama will retry Producer.Retry.Max(3) times on produce failure before return error
+	// meanwhile, it will auto refresh meta
+	partition, offset, err = producer.SendMessage(producerMsg)
+	if err == nil {
+		// send ok
+		producer.Recycle()
+		return
+	}
 
-		log.Warn("cluster[%s] topic:%s %v", cluster, topic, err)
-		switch err {
-		case sarama.ErrUnknownTopicOrPartition:
-			// will not retry
-			producer.Recycle()
-			return
+	log.Warn("cluster[%s] topic:%s %v", cluster, topic, err)
+	switch err {
+	// read tcp 10.209.36.33:50607->10.209.18.16:11005: i/o timeout
+	// dial tcp 10.209.18.65:11005: getsockopt: connection refused
 
-		case breaker.ErrBreakerOpen, sarama.ErrOutOfBrokers:
-			// will not retry
-			producer.CloseAndRecycle()
-			err = store.ErrBusy
-			return
+	case sarama.ErrUnknownTopicOrPartition:
+		// this conn is still valid
+		producer.Recycle()
+		return
 
-		default:
-			// will retry
-			producer.CloseAndRecycle()
-		}
+	case breaker.ErrBreakerOpen, sarama.ErrOutOfBrokers:
+		// sarama is using breaker: 3 error/1 success/10s
+		// will not retry FIXME breaker didn't work
+		producer.CloseAndRecycle()
+		// err = store.ErrBusy hide the underlying err
+		return
 
-		if retryDelay == 0 {
-			retryDelay = 50 * time.Millisecond
-		} else {
-			retryDelay = 2 * retryDelay
-		}
-		if maxDelay := time.Second; retryDelay > maxDelay {
-			retryDelay = maxDelay
-		}
+	default:
+		// e,g. sarama.ErrLeaderNotAvailable, sarama.ErrNotLeaderForPartition
+		// will retry
+		producer.CloseAndRecycle()
+		// err = store.ErrBusy hide the underlying err
 
-		log.Warn("cluster[%s] topic:%s %v retry in %v", cluster, topic, err, retryDelay)
-		time.Sleep(retryDelay)
 	}
 
 	return

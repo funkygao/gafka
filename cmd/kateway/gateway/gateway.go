@@ -109,10 +109,8 @@ func New(id string) *Gateway {
 
 		switch Options.Store {
 		case "kafka":
-			store.DefaultPubStore = storekfk.NewPubStore(
-				Options.PubPoolCapcity, Options.MaxPubRetries, Options.UseCompress,
-				Options.PubPoolIdleTimeout,
-				&this.wg, Options.Debug, Options.DryRun)
+			store.DefaultPubStore = storekfk.NewPubStore(Options.PubPoolCapcity, Options.PubPoolIdleTimeout,
+				Options.UseCompress, &this.wg, Options.Debug, Options.DryRun)
 
 		case "dummy":
 			store.DefaultPubStore = storedummy.NewPubStore(&this.wg, Options.Debug)
