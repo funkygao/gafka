@@ -66,7 +66,7 @@ const (
         }
         {
             cmd: "java"
-            alias: "peek -z prod -c svc_hippo -t flume_kafka_queue_topic -body"
+            alias: "peek -z prod -c svc_hippo -t flume_kafka_es_topic -p -1 -color=false -body"
         }
         {
             cmd: "ngerr"
