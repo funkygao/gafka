@@ -39,6 +39,7 @@ type Top struct {
 	dashboardGraph bool
 	topicPattern   string
 	longFmt        bool
+	duration       time.Duration
 	skipIpPrefix   bool
 
 	brokers          map[string][]string
@@ -63,6 +64,7 @@ func (this *Top) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.skipIpPrefix, "shortip", true, "")
 	cmdFlags.StringVar(&this.who, "who", "producer", "")
 	cmdFlags.BoolVar(&this.dashboardGraph, "d", false, "")
+	cmdFlags.DurationVar(&this.duration, "for", time.Hour, "")
 	cmdFlags.BoolVar(&this.longFmt, "l", false, "")
 	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -135,10 +137,16 @@ func (this *Top) Run(args []string) (exitCode int) {
 			keyboardPressed <- struct{}{}
 		}
 	}()
+
+	startAt := time.Now()
 	for {
 		select {
 		case <-keyboardPressed:
 		case <-ticker.C:
+		}
+
+		if time.Since(startAt) >= this.duration {
+			break
 		}
 
 		if this.batchMode {
@@ -538,7 +546,10 @@ Options:
       Used with -l, broker host 10.20.30.40 will display as 30.40
 
     -d
-      Draw dashboard in graph.    
+      Draw dashboard in graph.
+
+    -for duration
+      Run top for how long.
 
     -b 
       Batch mode operation. 
