@@ -198,6 +198,11 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] failure tolerance
+  - pub breaker
+  - migration partition from a to b
+  - what if a broker killed
+- [ ] async pub
 - [ ] sub: what if broker moved
 - [ ] pub in batch
 - [X] change all handler declaration to xxxServer instead of Gateway
