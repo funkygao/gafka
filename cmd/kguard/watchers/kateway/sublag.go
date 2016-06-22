@@ -67,6 +67,9 @@ func (this *WatchSubLag) report() (lags int) {
 			// TODO lag too much, even if it's still alive, emit alarm
 			elapsed := time.Since(c.Mtime.Time())
 			if c.Lag > 0 && elapsed >= time.Minute*3 {
+				// case:
+				//   consumer A started 20h ago, last commit 10m ago, then no message arrives
+				//   now, 1 new message arrives, and WatchSubLag is awaken: false alarm
 				log.Warn("group[%s] topic[%s/%s] %d - %d = %d, elapsed: %s",
 					group, c.Topic, c.PartitionId,
 					c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
