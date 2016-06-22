@@ -1,13 +1,18 @@
 package command
 
 import (
+	"bufio"
+	"encoding/binary"
 	"flag"
 	"fmt"
+	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/Shopify/sarama"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/pmylund/sortutil"
@@ -43,7 +48,63 @@ func (this *Segment) Run(args []string) (exitCode int) {
 		return 2
 	}
 
+	this.readSegment(this.filename)
+
 	return
+}
+
+func (this *Segment) readSegment(filename string) {
+	f, err := os.Open(filename) // readonly
+	swallow(err)
+	defer f.Close()
+
+	var buf = make([]byte, 12)
+	r := bufio.NewReader(f)
+	for {
+		_, err := r.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				panic(err)
+			}
+		}
+
+		offset := binary.BigEndian.Uint64(buf[:8])
+		size := binary.BigEndian.Uint32(buf[8:12])
+
+		// crc32+magic+attr+key
+		r.Read(buf[0:10])
+
+		attr := buf[5]
+		keySize := binary.BigEndian.Uint32(buf[6:10])
+		if keySize > 0 && keySize != math.MaxUint32 {
+			for i := 0; i < int(keySize); i++ {
+				r.ReadByte()
+			}
+		}
+
+		r.Read(buf[:4])
+		valSize := binary.BigEndian.Uint32(buf[:4])
+
+		if valSize > 0 {
+			println(valSize)
+			val := make([]byte, int(valSize))
+			r.Read(val)
+			this.Ui.Output(string(val))
+		}
+
+		this.Ui.Output(fmt.Sprintf("off:%d size:%d %v %d %d", offset, size, attr,
+			keySize, valSize))
+
+		switch sarama.CompressionCodec(attr) {
+		case sarama.CompressionGZIP:
+		case sarama.CompressionNone:
+		case sarama.CompressionSnappy:
+			println("snappy")
+		}
+
+	}
 }
 
 func (this *Segment) printSummary() {
@@ -107,6 +168,7 @@ func (this *Segment) printSummary() {
 			this.Ui.Output(fmt.Sprintf("%30s day:%2d hour:%2d size:%s", p,
 				s.day, s.hour, gofmt.ByteSize(s.size)))
 		}
+
 	}
 
 	return
