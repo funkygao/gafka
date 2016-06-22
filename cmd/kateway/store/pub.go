@@ -29,6 +29,8 @@ type PubStore interface {
 
 	// MarkPartitionsDead will disable a topic's partitions.
 	MarkPartitionsDead(topic string, partitionIds map[int32]struct{})
+
+	IsSystemError(error) bool
 }
 
 var DefaultPubStore PubStore

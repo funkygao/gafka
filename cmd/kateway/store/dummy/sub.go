@@ -41,6 +41,10 @@ func (this *subStore) Name() string {
 	return "dummy"
 }
 
+func (this *subStore) IsSystemError(error) bool {
+	return false
+}
+
 func (this *subStore) Fetch(cluster, topic, group, remoteAddr,
 	reset string, permitStandby bool) (store.Fetcher, error) {
 	return this.fetcher, nil

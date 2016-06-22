@@ -81,3 +81,13 @@ func (this *subStore) Fetch(cluster, topic, group, remoteAddr,
 		store:         this,
 	}, nil
 }
+
+func (this *subStore) IsSystemError(err error) bool {
+	switch err {
+	case store.ErrTooManyConsumers:
+		return false
+
+	default:
+		return true
+	}
+}

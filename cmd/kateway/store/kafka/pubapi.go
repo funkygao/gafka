@@ -127,6 +127,16 @@ func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 	return
 }
 
+func (this *pubStore) IsSystemError(err error) bool {
+	switch err {
+	case store.ErrInvalidCluster:
+		return false
+
+	default:
+		return true
+	}
+}
+
 func (this *pubStore) SyncAllPub(cluster, topic string, key, msg []byte) (partition int32, offset int64, err error) {
 	return this.doSyncPub(true, cluster, topic, key, msg)
 }
