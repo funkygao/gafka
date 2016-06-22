@@ -165,7 +165,9 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			myAppid, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
+		// FIXME if broker is done, ErrOutOfBrokers, should writeServerError
 		writeBadRequest(w, err.Error())
+
 		return
 	}
 
@@ -239,6 +241,8 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 		case err := <-fetcher.Errors():
 			// e,g. consume a non-existent topic
 			// e,g. conn with broker is broken
+			// e,g. kafka: error while consuming foobar/0: EOF
+			// e,g. kafka: error while consuming foobar/2: read tcp 10.209.36.33:60088->10.209.18.16:11005: i/o timeout
 			return err
 
 		case <-this.gw.timer.After(idleTimeout):
