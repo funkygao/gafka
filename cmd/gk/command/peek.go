@@ -57,6 +57,7 @@ type Peek struct {
 	quit     chan struct{}
 	once     sync.Once
 	column   string
+	pretty   bool
 	bodyOnly bool
 }
 
@@ -77,14 +78,19 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
 	cmdFlags.BoolVar(&this.colorize, "color", true, "")
 	cmdFlags.Int64Var(&this.lastN, "last", -1, "")
+	cmdFlags.IntVar(&this.pretty, "pretty", false, "")
 	cmdFlags.IntVar(&this.limit, "n", -1, "")
 	cmdFlags.StringVar(&this.column, "col", "", "")
 	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
 	cmdFlags.BoolVar(&silence, "s", false, "")
-	cmdFlags.DurationVar(&wait, "wait", time.Hour, "")
+	cmdFlags.DurationVar(&wait, "d", time.Hour, "")
 	cmdFlags.BoolVar(&this.bodyOnly, "body", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	if this.pretty {
+		this.bodyOnly = true
 	}
 
 	this.quit = make(chan struct{})
@@ -160,7 +166,12 @@ LOOP:
 						this.Ui.Error(err.Error())
 					} else {
 						if this.bodyOnly {
-							fmt.Println(j[this.column])
+							if this.pretty {
+								pretty, _ := json.MarshalIndent(j, "", "    ")
+								fmt.Println(string(pretty))
+							} else {
+								fmt.Println(j[this.column])
+							}
 						} else if this.colorize {
 							this.Ui.Output(fmt.Sprintf("%s/%d %s k:%s v:%s",
 								color.Green(msg.Topic), msg.Partition,
@@ -334,6 +345,9 @@ Options:
     -p partition id
       -1 will peek all partitions of a topic
 
+    -pretty
+      Pretty print the json message body
+
     -col json column name
       Will json decode message and extract specified column value only
 
@@ -348,9 +362,9 @@ Options:
     -n count
       Limit how many messages to consume
 
-    -wait duration
+    -d duration
       Limit how long to keep peeking
-      e,g. -wait 5m
+      e,g. -d 5m
 
     -body
       Only display message body
