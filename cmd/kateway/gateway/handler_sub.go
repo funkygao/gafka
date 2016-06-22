@@ -165,8 +165,11 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			myAppid, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
-		// FIXME if broker is done, ErrOutOfBrokers, should writeServerError
-		writeBadRequest(w, err.Error())
+		if store.DefaultSubStore.IsSystemError(err) {
+			writeServerError(w, err.Error())
+		} else {
+			writeBadRequest(w, err.Error())
+		}
 
 		return
 	}
