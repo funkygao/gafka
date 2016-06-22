@@ -2,10 +2,13 @@ package command
 
 import (
 	"bufio"
+	"bytes"
+	"compress/gzip"
 	"encoding/binary"
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -15,8 +18,11 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/golang/snappy"
 	"github.com/pmylund/sortutil"
 )
+
+var snappyMagic = []byte{130, 83, 78, 65, 80, 80, 89, 0} // SNAPPY
 
 type Segment struct {
 	Ui  cli.Ui
@@ -58,7 +64,20 @@ func (this *Segment) readSegment(filename string) {
 	swallow(err)
 	defer f.Close()
 
-	var buf = make([]byte, 12)
+	const (
+		maxKeySize = 10 << 10
+		maxValSize = 2 << 20
+	)
+
+	var (
+		buf = make([]byte, 12)
+		key = make([]byte, maxKeySize)
+		val = make([]byte, maxValSize)
+
+		msgN        int64
+		firstOffset uint64 = math.MaxUint64 // sentry
+		endOffset   uint64
+	)
 	r := bufio.NewReader(f)
 	for {
 		_, err := r.Read(buf)
@@ -70,6 +89,7 @@ func (this *Segment) readSegment(filename string) {
 			}
 		}
 
+		// offset+size
 		offset := binary.BigEndian.Uint64(buf[:8])
 		size := binary.BigEndian.Uint32(buf[8:12])
 
@@ -79,32 +99,72 @@ func (this *Segment) readSegment(filename string) {
 		attr := buf[5]
 		keySize := binary.BigEndian.Uint32(buf[6:10])
 		if keySize > 0 && keySize != math.MaxUint32 {
-			for i := 0; i < int(keySize); i++ {
-				r.ReadByte()
-			}
+			_, err = r.Read(key[:keySize])
+			swallow(err)
 		}
 
-		r.Read(buf[:4])
+		_, err = r.Read(buf[:4])
+		swallow(err)
 		valSize := binary.BigEndian.Uint32(buf[:4])
-
 		if valSize > 0 {
-			println(valSize)
-			val := make([]byte, int(valSize))
-			r.Read(val)
-			this.Ui.Output(string(val))
+			_, err = r.Read(val[:valSize])
+			swallow(err)
 		}
-
-		this.Ui.Output(fmt.Sprintf("off:%d size:%d %v %d %d", offset, size, attr,
-			keySize, valSize))
 
 		switch sarama.CompressionCodec(attr) {
-		case sarama.CompressionGZIP:
 		case sarama.CompressionNone:
+			fmt.Printf("offset:%d size:%d %s\n", offset, size, string(val[:valSize]))
+
+		case sarama.CompressionGZIP:
+			reader, err := gzip.NewReader(bytes.NewReader(val[:valSize]))
+			swallow(err)
+			v, err := ioutil.ReadAll(reader)
+			swallow(err)
+
+			fmt.Printf("offset:%d size:%d gzip %s\n", offset, size, string(v))
+
 		case sarama.CompressionSnappy:
-			println("snappy")
+			v, err := this.snappyDecode(val[:valSize])
+			swallow(err)
+
+			fmt.Printf("offset:%d size:%d snappy %s\n", offset, size, string(v))
 		}
 
+		if firstOffset == math.MaxUint64 {
+			firstOffset = offset
+		}
+		endOffset = offset
+		msgN++
 	}
+
+	fmt.Printf("Total Messages: %d, %d - %d\n", msgN, firstOffset, endOffset)
+}
+
+func (*Segment) snappyDecode(src []byte) ([]byte, error) {
+	if bytes.Equal(src[:8], snappyMagic) {
+		var (
+			pos   = uint32(16)
+			max   = uint32(len(src))
+			dst   = make([]byte, 0, len(src))
+			chunk []byte
+			err   error
+		)
+		for pos < max {
+			size := binary.BigEndian.Uint32(src[pos : pos+4])
+			pos += 4
+
+			chunk, err = snappy.Decode(chunk, src[pos:pos+size])
+			if err != nil {
+				return nil, err
+			}
+			pos += size
+			dst = append(dst, chunk...)
+		}
+
+		return dst, nil
+	}
+
+	return snappy.Decode(nil, src)
 }
 
 func (this *Segment) printSummary() {
