@@ -1,11 +1,11 @@
 package command
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/funkygao/gocli"
@@ -47,7 +47,7 @@ func (this *Segment) Run(args []string) (exitCode int) {
 }
 
 func (this *Segment) printSummary() {
-	segments := make(map[int]map[int]int64) // day:hour:size
+	segments := make(map[string]map[int]map[int]int64) // dir:day:hour:size
 	err := filepath.Walk(this.rootPath, func(path string, f os.FileInfo, err error) error {
 		if f == nil {
 			return err
@@ -62,38 +62,51 @@ func (this *Segment) printSummary() {
 			return nil
 		}
 
-		if _, present := segments[f.ModTime().Day()]; !present {
-			segments[f.ModTime().Day()] = make(map[int]int64)
+		dir := filepath.Base(filepath.Dir(path))
+		if _, present := segments[dir]; !present {
+			segments[dir] = make(map[int]map[int]int64)
 		}
-		segments[f.ModTime().Day()][f.ModTime().Hour()] += f.Size()
+		if _, present := segments[dir][f.ModTime().Day()]; !present {
+			segments[dir][f.ModTime().Day()] = make(map[int]int64)
+		}
+		segments[dir][f.ModTime().Day()][f.ModTime().Hour()] += f.Size()
 		return nil
 	})
 	if err != nil {
 		this.Ui.Error(err.Error())
 	}
 
+	partitions := make([]string, 0, len(segments))
+	for dir, _ := range segments {
+		partitions = append(partitions, dir)
+	}
+	sort.Strings(partitions)
+
 	type segment struct {
 		day  int
 		hour int
 		size int64
 	}
-	summary := make([]segment, 0)
-	for day, hourSize := range segments {
-		for hour, size := range hourSize {
-			summary = append(summary, segment{
-				day:  day,
-				hour: hour,
-				size: size,
-			})
+
+	for _, p := range partitions {
+		summary := make([]segment, 0)
+		for day, hourSize := range segments[p] {
+			for hour, size := range hourSize {
+				summary = append(summary, segment{
+					day:  day,
+					hour: hour,
+					size: size,
+				})
+			}
 		}
-	}
-	sortutil.AscByField(summary, "size")
-	if this.limit > 0 && len(summary) > this.limit {
-		summary = summary[:this.limit]
-	}
-	for _, s := range summary {
-		this.Ui.Output(fmt.Sprintf("day:%2d hour:%2d size:%s",
-			s.day, s.hour, gofmt.ByteSize(s.size)))
+		sortutil.AscByField(summary, "size")
+		if this.limit > 0 && len(summary) > this.limit {
+			summary = summary[:this.limit]
+		}
+		for _, s := range summary {
+			this.Ui.Output(fmt.Sprintf("%30s day:%2d hour:%2d size:%s", p,
+				s.day, s.hour, gofmt.ByteSize(s.size)))
+		}
 	}
 
 	return
@@ -112,7 +125,8 @@ Usage: %s segment [options]
     -f segment file name
 
     -p dir
-      Sumarry of a segment dir.
+      Sumamry of a segment dir.
+      Summary across partitions is supported if they have the same parent dir.
 
     -n limit
       Default unlimited.
