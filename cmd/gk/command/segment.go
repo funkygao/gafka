@@ -18,6 +18,7 @@ type Segment struct {
 	Cmd string
 
 	rootPath string
+	filename string
 	limit    int
 }
 
@@ -26,16 +27,26 @@ func (this *Segment) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.rootPath, "p", "", "")
 	cmdFlags.IntVar(&this.limit, "n", -1, "")
+	cmdFlags.StringVar(&this.filename, "f", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
+	if this.rootPath != "" {
+		this.printSummary()
+		return
+	}
+
 	if validateArgs(this, this.Ui).
-		require("-p").
+		require("-f").
 		invalid(args) {
 		return 2
 	}
 
+	return
+}
+
+func (this *Segment) printSummary() {
 	segments := make(map[int]map[int]int64) // day:hour:size
 	err := filepath.Walk(this.rootPath, func(path string, f os.FileInfo, err error) error {
 		if f == nil {
@@ -45,7 +56,7 @@ func (this *Segment) Run(args []string) (exitCode int) {
 			return nil
 		}
 		if !strings.HasSuffix(f.Name(), ".index") && !strings.HasSuffix(f.Name(), ".log") {
-			return errors.New(fmt.Sprintf("filename: %s invalid segment file", f.Name()))
+			return nil
 		}
 		if !strings.HasSuffix(f.Name(), ".log") {
 			return nil
@@ -98,7 +109,10 @@ Usage: %s segment [options]
 
     Scan the kafka segments and display summary
 
+    -f segment file name
+
     -p dir
+      Sumarry of a segment dir.
 
     -n limit
       Default unlimited.
