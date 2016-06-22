@@ -66,10 +66,22 @@ func (this *WatchSubLag) report() (lags int) {
 			// offset commit every 1m, sublag runs every 1m, so the gap might be 2m
 			elapsed := time.Since(c.Mtime.Time())
 			if c.Lag > 0 && elapsed >= time.Minute*3 {
-				log.Warn("group[%s] topic[%s/%s] %d - %d = %d, elapsed: %s %s", group, c.Topic, c.PartitionId,
-					c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String(), c.Mtime.Time())
+				log.Warn("group[%s] topic[%s/%s] %d - %d = %d, elapsed: %s",
+					group, c.Topic, c.PartitionId,
+					c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
 
-				lags++
+				if c.ConsumerZnode == nil {
+					log.Warn("group[%s] topic[%s/%s] unrecognized consumer", group,
+						c.Topic, c.PartitionId)
+
+					lags++
+				} else {
+					if time.Since(c.ConsumerZnode.Uptime()) > time.Minute*3 {
+						lags++
+					} else {
+						// the consumer just started
+					}
+				}
 			}
 		}
 	}
