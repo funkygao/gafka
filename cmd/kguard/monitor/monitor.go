@@ -70,6 +70,8 @@ func (this *Monitor) Init() {
 
 func (this *Monitor) Stop() {
 	if this.leader {
+		log.Info("stopping all watchers...")
+
 		close(this.stop)
 	}
 	this.leader = false
@@ -108,6 +110,9 @@ func (this *Monitor) ServeForever() {
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		log.Info("received signal: %s", strings.ToUpper(sig.String()))
 
+		if this.leader {
+			//this.candidate.Resign()
+		}
 		this.candidate.Stop()
 		log.Info("election stopped, stopping watchers...")
 		this.Stop()
