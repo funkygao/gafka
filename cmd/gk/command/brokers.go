@@ -44,7 +44,7 @@ func (this *Brokers) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&debug, "debug", false, "")
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.BoolVar(&this.staleOnly, "stale", false, "")
-	cmdFlags.BoolVar(&this.showVersions, "versions", false, "")
+	cmdFlags.BoolVar(&this.showVersions, "ver", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -177,10 +177,16 @@ func (this *Brokers) doShowVersions() {
 	kafkaVerExp := regexp.MustCompile(`/kafka_(?P<ver>[-\d.]*)\.jar`)
 	processExp := regexp.MustCompile(`kfk_(?P<process>\S*)/config/server.properties`)
 
-	cmd := pipestream.New("/usr/bin/consul", "exec",
+	args := []string{
+		"exec",
 		"pgrep", "-lf", "java",
 		"|", "grep", "-w", "kafka",
-		"|", "grep", "-vw", "grep")
+		"|", "grep", "-vw", "grep",
+	}
+	if this.cluster != "" {
+		args = append(args, "|", "grep", fmt.Sprintf("kfk_%s", this.cluster))
+	}
+	cmd := pipestream.New("/usr/bin/consul", args...)
 	err := cmd.Open()
 	swallow(err)
 	defer cmd.Close()
@@ -300,7 +306,7 @@ Options:
     -c cluster name
       Only print brokers of this cluster
 
-    -versions
+    -ver
       Display kafka instances versions by host
       Precondition: you MUST install consul on each broker host
 

@@ -28,7 +28,7 @@ type UnderReplicated struct {
 func (this *UnderReplicated) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("underreplicated", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.zone, "z", "", "")
+	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.debug, "debug", false, "")
 	if err := cmdFlags.Parse(args); err != nil {

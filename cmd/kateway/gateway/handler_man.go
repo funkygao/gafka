@@ -17,22 +17,29 @@ import (
 
 // GET /v1/status
 func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	log.Info("status %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
+
 	output := make(map[string]interface{})
 	output["options"] = Options
 	output["loglevel"] = logLevel.String()
 	output["manager"] = manager.Default.Dump()
 	b, _ := json.MarshalIndent(output, "", "    ")
+
 	w.Write(b)
 }
 
 // GET /v1/clients
 func (this *manServer) clientsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	log.Info("clients %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
+
 	b, _ := json.Marshal(this.gw.clientStates.Export())
 	w.Write(b)
 }
 
 // GET /v1/clusters
 func (this *manServer) clustersHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	log.Info("clusters %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
+
 	b, _ := json.Marshal(meta.Default.Clusters())
 	w.Write(b)
 }
@@ -97,7 +104,8 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	log.Info("set option:%s to %s, %#v", option, value, Options)
+	log.Info("option %s(%s): %s to %s, %#v", r.RemoteAddr, getHttpRemoteIp(r),
+		option, value, Options)
 
 	w.Write(ResponseOk)
 }
@@ -111,11 +119,15 @@ func (this *manServer) setlogHandler(w http.ResponseWriter, r *http.Request, par
 		filter.Level = logLevel
 	}
 
+	log.Info("log %s(%s): %s", r.RemoteAddr, getHttpRemoteIp(r), logLevel)
+
 	w.Write(ResponseOk)
 }
 
 // DELETE /v1/counter/:name
 func (this *manServer) resetCounterHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	log.Info("reset counter %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
+
 	counterName := params.ByName("name")
 
 	_ = counterName // TODO
@@ -138,6 +150,9 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
+
+	log.Info("partitions %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s}",
+		r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
 
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
@@ -369,6 +384,51 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 	for _, l := range lines {
 		log.Trace("app[%s] update topic[%s] in cluster %s: %s", appid, rawTopic, cluster, l)
 	}
+
+	w.Write(ResponseOk)
+}
+
+// DELETE /v1/manager/cache
+func (this *manServer) refreshManagerHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	appid := r.Header.Get(HttpHeaderAppid)
+	pubkey := r.Header.Get(HttpHeaderPubkey)
+	if !manager.Default.AuthAdmin(appid, pubkey) {
+		log.Warn("suspicous refresh call from %s(%s): {app:%s key:%s}",
+			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey)
+
+		writeAuthFailure(w, manager.ErrAuthenticationFail)
+		return
+	}
+
+	if !this.throttleAddTopic.Pour(getHttpRemoteIp(r), 1) {
+		writeQuotaExceeded(w)
+		return
+	}
+
+	kateways, err := this.gw.zkzone.KatewayInfos()
+	if err != nil {
+		log.Error("refresh from %s(%s): %v", r.RemoteAddr, getHttpRemoteIp(r), err)
+
+		writeServerError(w, err.Error())
+		return
+	}
+
+	// refresh locally
+	manager.Default.ForceRefresh()
+
+	// refresh zone wide
+	for _, kw := range kateways {
+		if kw.Id != this.gw.id {
+			// notify other kateways to refresh: avoid dead loop in the network
+			if err := this.gw.callKateway(kw, "PUT", "v1/options/refreshdb/true"); err != nil {
+				// don't retry, just log
+				log.Error("refresh from %s(%s) %s@%s: %v",
+					r.RemoteAddr, getHttpRemoteIp(r), kw.Id, kw.Host, err)
+			}
+		}
+	}
+
+	log.Info("refresh from %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
 
 	w.Write(ResponseOk)
 }
