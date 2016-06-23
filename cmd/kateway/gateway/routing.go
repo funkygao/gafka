@@ -28,6 +28,8 @@ func (this *Gateway) buildRouting() {
 			m(this.manServer.addTopicHandler))
 		this.manServer.Router().PUT("/v1/topics/:cluster/:appid/:topic/:ver",
 			m(this.manServer.alterTopicHandler))
+		this.manServer.Router().DELETE("/v1/manager/cache",
+			m(this.manServer.refreshManagerHandler))
 	}
 
 	if this.pubServer != nil {

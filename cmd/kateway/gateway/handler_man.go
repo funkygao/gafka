@@ -372,3 +372,48 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 
 	w.Write(ResponseOk)
 }
+
+// DELETE /v1/manager/cache
+func (this *manServer) refreshManagerHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	appid := r.Header.Get(HttpHeaderAppid)
+	pubkey := r.Header.Get(HttpHeaderPubkey)
+	if !manager.Default.AuthAdmin(appid, pubkey) {
+		log.Warn("suspicous refresh call from %s(%s): {app:%s key:%s}",
+			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey)
+
+		writeAuthFailure(w, manager.ErrAuthenticationFail)
+		return
+	}
+
+	if !this.throttleAddTopic.Pour(getHttpRemoteIp(r), 1) {
+		writeQuotaExceeded(w)
+		return
+	}
+
+	kateways, err := this.gw.zkzone.KatewayInfos()
+	if err != nil {
+		log.Error("refresh from %s(%s): %v", r.RemoteAddr, getHttpRemoteIp(r), err)
+
+		writeServerError(w, err.Error())
+		return
+	}
+
+	// refresh locally
+	manager.Default.ForceRefresh()
+
+	// refresh zone wide
+	for _, kw := range kateways {
+		if kw.Id != this.gw.id {
+			// notify other kateways to refresh: avoid dead loop in the network
+			if err := this.gw.callKateway(kw, "PUT", "v1/options/refreshdb/true"); err != nil {
+				// don't retry, just log
+				log.Error("refresh from %s(%s) %s@%s: %v",
+					r.RemoteAddr, getHttpRemoteIp(r), kw.Id, kw.Host, err)
+			}
+		}
+	}
+
+	log.Info("refresh from %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
+
+	w.Write(ResponseOk)
+}
