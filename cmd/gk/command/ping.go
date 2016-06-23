@@ -19,6 +19,7 @@ type Ping struct {
 	Cmd string
 
 	zone            string
+	cluster         string
 	zkzone          *zk.ZkZone
 	logfile         string
 	problematicMode bool
@@ -31,6 +32,7 @@ func (this *Ping) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("ping", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.DurationVar(&this.interval, "interval", time.Minute*5, "")
 	cmdFlags.StringVar(&this.logfile, "logfile", "stdout", "")
 	cmdFlags.BoolVar(&this.problematicMode, "p", false, "")
@@ -69,6 +71,10 @@ func (this *Ping) setupLog() {
 
 func (this *Ping) diagnose() {
 	this.zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		if !patternMatched(zkcluster.Name(), this.cluster) {
+			return
+		}
+
 		registeredBrokers := zkcluster.RegisteredInfo().Roster
 		for _, broker := range registeredBrokers {
 			log.Debug("ping %s", broker.Addr())
@@ -107,6 +113,8 @@ Usage: %s ping [options]
 Options:
 
     -z zone
+
+    -c cluster
     
     -p
       Only show problematic brokers
