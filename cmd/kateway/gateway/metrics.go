@@ -122,7 +122,7 @@ func (this *subMetrics) Key() string {
 func (this *subMetrics) Load() {
 	b, err := this.gw.zkzone.LoadKatewayMetrics(this.gw.id, this.Key())
 	if err != nil {
-		log.Error("load %s metrics: %v", this.Key(), err)
+		log.Warn("load %s metrics: %v", this.Key(), err)
 		return
 	}
 
