@@ -71,7 +71,7 @@ func (this *Ping) setupLog() {
 
 func (this *Ping) diagnose() {
 	this.zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
-		if !patternMatched(zkcluster.Name(), this.cluster) {
+		if this.cluster != "" && this.cluster != zkcluster.Name() {
 			return
 		}
 
