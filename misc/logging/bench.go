@@ -23,7 +23,7 @@ func main() {
 	go func() {
 		start <- struct{}{}
 		for {
-			log.Info("hello %s", "world!")
+			log.Info("hello %s %d", "world!", n)
 			n++
 		}
 	}()
