@@ -17,22 +17,29 @@ import (
 
 // GET /v1/status
 func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	log.Info("status %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
+
 	output := make(map[string]interface{})
 	output["options"] = Options
 	output["loglevel"] = logLevel.String()
 	output["manager"] = manager.Default.Dump()
 	b, _ := json.MarshalIndent(output, "", "    ")
+
 	w.Write(b)
 }
 
 // GET /v1/clients
 func (this *manServer) clientsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	log.Info("clients %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
+
 	b, _ := json.Marshal(this.gw.clientStates.Export())
 	w.Write(b)
 }
 
 // GET /v1/clusters
 func (this *manServer) clustersHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	log.Info("clusters %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
+
 	b, _ := json.Marshal(meta.Default.Clusters())
 	w.Write(b)
 }
@@ -97,7 +104,8 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	log.Info("set option:%s to %s, %#v", option, value, Options)
+	log.Info("option %s(%s): %s to %s, %#v", r.RemoteAddr, getHttpRemoteIp(r),
+		option, value, Options)
 
 	w.Write(ResponseOk)
 }
@@ -111,11 +119,15 @@ func (this *manServer) setlogHandler(w http.ResponseWriter, r *http.Request, par
 		filter.Level = logLevel
 	}
 
+	log.Info("log %s(%s): %s", r.RemoteAddr, getHttpRemoteIp(r), logLevel)
+
 	w.Write(ResponseOk)
 }
 
 // DELETE /v1/counter/:name
 func (this *manServer) resetCounterHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	log.Info("reset counter %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
+
 	counterName := params.ByName("name")
 
 	_ = counterName // TODO
@@ -138,6 +150,9 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
+
+	log.Info("partitions %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s}",
+		r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
 
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
