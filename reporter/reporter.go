@@ -11,4 +11,4 @@ type Reporter interface {
 	Stop()
 }
 
-var DefaultReporter Reporter
+var Default Reporter
