@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -78,7 +79,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
 	cmdFlags.BoolVar(&this.colorize, "color", true, "")
 	cmdFlags.Int64Var(&this.lastN, "last", -1, "")
-	cmdFlags.IntVar(&this.pretty, "pretty", false, "")
+	cmdFlags.BoolVar(&this.pretty, "pretty", false, "")
 	cmdFlags.IntVar(&this.limit, "n", -1, "")
 	cmdFlags.StringVar(&this.column, "col", "", "")
 	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
@@ -124,16 +125,19 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		startAt = time.Now()
 		msg     *sarama.ConsumerMessage
 		total   int
-		bytes   int64
+		bytesN  int64
 	)
 
-	var j map[string]string
+	var (
+		j          map[string]string
+		prettyJSON bytes.Buffer
+	)
 
 LOOP:
 	for {
 		if time.Since(startAt) >= wait {
 			this.Ui.Output(fmt.Sprintf("Total: %s msgs, %s, elapsed: %s",
-				gofmt.Comma(int64(total)), gofmt.ByteSize(bytes), time.Since(startAt)))
+				gofmt.Comma(int64(total)), gofmt.ByteSize(bytesN), time.Since(startAt)))
 			elapsed := time.Since(startAt).Seconds()
 			if elapsed > 1. {
 				this.Ui.Output(fmt.Sprintf("Speed: %d/s", total/int(elapsed)))
@@ -145,7 +149,7 @@ LOOP:
 		select {
 		case <-this.quit:
 			this.Ui.Output(fmt.Sprintf("Total: %s msgs, %s, elapsed: %s",
-				gofmt.Comma(int64(total)), gofmt.ByteSize(bytes), time.Since(startAt)))
+				gofmt.Comma(int64(total)), gofmt.ByteSize(bytesN), time.Since(startAt)))
 			elapsed := time.Since(startAt).Seconds()
 			if elapsed > 1. {
 				this.Ui.Output(fmt.Sprintf("Speed: %d/s", total/int(elapsed)))
@@ -167,8 +171,11 @@ LOOP:
 					} else {
 						if this.bodyOnly {
 							if this.pretty {
-								pretty, _ := json.MarshalIndent(j, "", "    ")
-								fmt.Println(string(pretty))
+								if err = json.Indent(&prettyJSON, []byte(j[this.column]), "", "    "); err != nil {
+									fmt.Println(err.Error())
+								} else {
+									fmt.Println(string(prettyJSON.Bytes()))
+								}
 							} else {
 								fmt.Println(j[this.column])
 							}
@@ -186,7 +193,12 @@ LOOP:
 
 				} else {
 					if this.bodyOnly {
-						fmt.Println(string(msg.Value))
+						if this.pretty {
+							json.Indent(&prettyJSON, msg.Value, "", "    ")
+							fmt.Println(string(prettyJSON.Bytes()))
+						} else {
+							fmt.Println(string(msg.Value))
+						}
 					} else if this.colorize {
 						this.Ui.Output(fmt.Sprintf("%s/%d %s k:%s, v:%s",
 							color.Green(msg.Topic), msg.Partition,
@@ -201,7 +213,7 @@ LOOP:
 			}
 
 			total++
-			bytes += int64(len(msg.Value))
+			bytesN += int64(len(msg.Value))
 
 			if this.limit > 0 && total >= this.limit {
 				break LOOP
