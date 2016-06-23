@@ -36,7 +36,7 @@ type Segment struct {
 func (this *Segment) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("segment", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.rootPath, "p", "", "")
+	cmdFlags.StringVar(&this.rootPath, "s", "", "")
 	cmdFlags.IntVar(&this.limit, "n", -1, "")
 	cmdFlags.StringVar(&this.filename, "f", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -205,19 +205,22 @@ func (this *Segment) printSummary() {
 	sort.Strings(partitions)
 
 	type segment struct {
-		day  int
-		hour int
-		size int64
+		partition string
+		day       int
+		hour      int
+		size      int64
 	}
 
+	var maxSegment segment
 	for _, p := range partitions {
 		summary := make([]segment, 0)
 		for day, hourSize := range segments[p] {
 			for hour, size := range hourSize {
 				summary = append(summary, segment{
-					day:  day,
-					hour: hour,
-					size: size,
+					partition: p,
+					day:       day,
+					hour:      hour,
+					size:      size,
 				})
 			}
 		}
@@ -225,12 +228,19 @@ func (this *Segment) printSummary() {
 		if this.limit > 0 && len(summary) > this.limit {
 			summary = summary[:this.limit]
 		}
+
 		for _, s := range summary {
-			this.Ui.Output(fmt.Sprintf("%30s day:%2d hour:%2d size:%s", p,
+			if s.size > maxSegment.size {
+				maxSegment = s
+			}
+			this.Ui.Output(fmt.Sprintf("%50s day:%2d hour:%2d size:%s", p,
 				s.day, s.hour, gofmt.ByteSize(s.size)))
 		}
 
 	}
+
+	this.Ui.Output(fmt.Sprintf("%50s day:%2d hour:%2d size:%s", "MAX-"+maxSegment.partition,
+		maxSegment.day, maxSegment.hour, gofmt.ByteSize(maxSegment.size)))
 
 	return
 }
@@ -247,7 +257,7 @@ Usage: %s segment [options]
 
     -f segment file name
 
-    -p dir
+    -s dir
       Sumamry of a segment dir.
       Summary across partitions is supported if they have the same parent dir.
 
