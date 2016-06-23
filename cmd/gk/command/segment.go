@@ -89,11 +89,14 @@ func (this *Segment) readSegment(filename string) {
 			}
 		}
 
+		// offset, size, crc32, magic, attrs, key-len, key-content, msg-len, msg-content
+		// crc32 = crc32(magic, attrs, key-len, key-content, msg-len, msg-content)
+
 		// offset+size 8+4
 		offset := binary.BigEndian.Uint64(buf[:8])
 		size := binary.BigEndian.Uint32(buf[8:12])
 
-		// crc32+magic+attr+keySize[key] 4+1+1+4
+		// crc32+magic+attrs+keySize[key] 4+1+1+4
 		r.Read(buf[0:10])
 
 		attr := buf[5]
