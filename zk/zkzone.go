@@ -113,6 +113,10 @@ func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 
 	data, _, err := this.conn.Get(KatewayMysqlPath)
 	if err != nil {
+		if err == zk.ErrNodeExists {
+			return "", errors.New(fmt.Sprintf("please write mysql dsn in zk %s", KatewayMysqlPath))
+		}
+
 		return "", err
 	}
 
