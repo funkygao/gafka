@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/funkygao/gafka/ctx"
@@ -55,7 +56,7 @@ func (this *mysqlStore) Name() string {
 func (this *mysqlStore) Start() error {
 	if err := this.refreshFromMysql(); err != nil {
 		// refuse to start if mysql conn fails
-		return err
+		return fmt.Errorf("manager[%s]: %v", this.Name(), err)
 	}
 
 	// TODO watch KatewayMysqlDsn znode
