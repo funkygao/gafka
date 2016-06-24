@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/Shopify/sarama"
@@ -171,19 +172,26 @@ func (*Segment) snappyDecode(src []byte) ([]byte, error) {
 	return snappy.Decode(nil, src)
 }
 
+func (this *Segment) isKafkaLogSegment(fn string) bool {
+	if !strings.HasSuffix(fn, ".log") || len(fn) != len("00000000000000000000.log") {
+		return false
+	}
+
+	parts := strings.Split(fn, ".")
+	if _, err := strconv.Atoi(parts[0]); err != nil {
+		return false
+	}
+
+	return true
+}
+
 func (this *Segment) printSummary() {
 	segments := make(map[string]map[int]map[int]int64) // dir:day:hour:size
 	err := filepath.Walk(this.rootPath, func(path string, f os.FileInfo, err error) error {
 		if f == nil {
 			return err
 		}
-		if f.IsDir() {
-			return nil
-		}
-		if !strings.HasSuffix(f.Name(), ".index") && !strings.HasSuffix(f.Name(), ".log") {
-			return nil
-		}
-		if !strings.HasSuffix(f.Name(), ".log") {
+		if f.IsDir() || !this.isKafkaLogSegment(f.Name()) {
 			return nil
 		}
 
