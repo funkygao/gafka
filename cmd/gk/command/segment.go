@@ -25,6 +25,7 @@ import (
 
 var snappyMagic = []byte{130, 83, 78, 65, 80, 80, 89, 0} // SNAPPY
 
+// TODO calculate how much data produced each day "github.com/hashicorp/go-memdb"
 type Segment struct {
 	Ui  cli.Ui
 	Cmd string
