@@ -43,6 +43,7 @@ cmd/kateway/bench/bench
 cmd/kateway/bench/httpdserver
 cmd/webhook/webhook
 cmd/swfd/swfd
+cmd/kateway/demo/pub
 cmd/gitlabtool/gitop/gitop
 cmd/zk/zk
 cmd/kafka/kafka
