@@ -88,7 +88,8 @@ func main() {
 
 	gw := gateway.New(gateway.Options.Id)
 	if err := gw.Start(); err != nil {
-		glog.Error("start: %v, quit.", err)
+		glog.Error(err.Error())
+		glog.Info("kateway bye!")
 		glog.Close()
 		os.Exit(1)
 	}
