@@ -143,28 +143,38 @@ func (this *Migrate) generateReassignFile() string {
 	js.Version = 1
 	js.Partitions = make([]PartitionMeta, 0)
 	this.normalizePartitions()
-	for _, p := range strings.Split(this.partition, ",") {
-		p = strings.TrimSpace(p)
-		pid, err := strconv.Atoi(p)
+	var topics []string
+	if this.topic == "_ALL_" {
+		var err error
+		topics, err = this.zkcluster.Topics()
 		swallow(err)
-
-		pmeta := PartitionMeta{
-			Topic:     this.topic,
-			Partition: pid,
-			Replicas:  make([]int, 0),
-		}
-		for _, b := range strings.Split(this.brokerId, ",") {
-			b = strings.TrimSpace(b)
-			bid, err := strconv.Atoi(b)
+	} else {
+		topics = []string{this.topic}
+	}
+	for _, topic := range topics {
+		for _, p := range strings.Split(this.partition, ",") {
+			p = strings.TrimSpace(p)
+			pid, err := strconv.Atoi(p)
 			swallow(err)
 
-			pmeta.Replicas = append(pmeta.Replicas, bid)
+			pmeta := PartitionMeta{
+				Topic:     topic,
+				Partition: pid,
+				Replicas:  make([]int, 0),
+			}
+			for _, b := range strings.Split(this.brokerId, ",") {
+				b = strings.TrimSpace(b)
+				bid, err := strconv.Atoi(b)
+				swallow(err)
 
-			// shuffle for load balance the preferred leader
-			pmeta.Replicas = rand.ShuffleInts(pmeta.Replicas)
+				pmeta.Replicas = append(pmeta.Replicas, bid)
+
+				// shuffle for load balance the preferred leader
+				pmeta.Replicas = rand.ShuffleInts(pmeta.Replicas)
+			}
+
+			js.Partitions = append(js.Partitions, pmeta)
 		}
-
-		js.Partitions = append(js.Partitions, pmeta)
 	}
 
 	b, err := json.Marshal(js)
@@ -245,6 +255,8 @@ Usage: %s migrate -z zone -c cluster [options]
 Options:
 
     -t topic
+      If '-t _ALL_', will migrate all topics within a cluster. 
+      You must know what that means before proceeding.
 
     -p partitionId   
       Multiple partition ids seperated by comma or -.
