@@ -110,7 +110,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 
 	invalidDir := this.validateLogDirs(this.logDirs)
 	if invalidDir != "" {
-		this.Ui.Error(fmt.Sprintf("invalid %s in log.dirs", invalidDir))
+		this.Ui.Error(fmt.Sprintf("%s in log.dirs not exists!", invalidDir))
 		return 2
 	}
 
