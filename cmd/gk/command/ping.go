@@ -98,6 +98,7 @@ func (this *Ping) diagnose() {
 		}
 	})
 
+	log.Close()
 }
 
 func (*Ping) Synopsis() string {
