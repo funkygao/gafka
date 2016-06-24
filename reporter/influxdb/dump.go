@@ -121,8 +121,14 @@ func (this *reporter) dump() (pts []client.Point) {
 
 func (this *reporter) writeInfluxDB(pts []client.Point) {
 	if this.client == nil {
-		log.Warn("influxdb write while connection lost")
-		return
+		log.Warn("influxdb write while connection lost, retry...")
+
+		if err := this.makeClient(); err != nil {
+			log.Error("influxdb connect retry: %v", err)
+			return
+		} else {
+			log.Info("influxdb connect retry ok")
+		}
 	}
 
 	if _, err := this.client.Write(client.BatchPoints{
