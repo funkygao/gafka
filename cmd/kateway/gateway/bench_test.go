@@ -127,7 +127,7 @@ func BenchmarkDirectKafkaProduce1K(b *testing.B) {
 	meta.Default = zkmeta.New(cf, zkzone)
 	meta.Default.Start()
 	var wg sync.WaitGroup
-	store.DefaultPubStore = kafka.NewPubStore(100, 5, 0, &wg, false, true)
+	store.DefaultPubStore = kafka.NewPubStore(100, 0, false, &wg, false, true)
 	store.DefaultPubStore.Start()
 
 	data := []byte(strings.Repeat("X", msgSize))
