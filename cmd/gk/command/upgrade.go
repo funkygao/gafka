@@ -30,7 +30,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.storeUrl, "url", "http://10.213.57.149:10080/gk", "")
 	cmdFlags.StringVar(&this.uploadDir, "upload", "/var/www/html", "")
 	cmdFlags.StringVar(&this.mode, "m", "d", "")
-	cmdFlags.BoolVar(&this.clear, "c", false, "")
+	cmdFlags.BoolVar(&this.clearLocalConf, "c", false, "")
 	cmdFlags.BoolVar(&this.upgradeKateway, "k", false, "")
 	cmdFlags.BoolVar(&this.upgradeZk, "zk", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
