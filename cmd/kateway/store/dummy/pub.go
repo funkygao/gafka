@@ -26,10 +26,6 @@ func (this *pubStore) IsSystemError(error) bool {
 	return false
 }
 
-func (this *pubStore) MarkPartitionsDead(topic string, partitionIds map[int32]struct{}) {
-
-}
-
 func (*pubStore) AddJob(cluster, topic string, payload []byte, delay time.Duration) (jobId string, err error) {
 	return "", nil
 }

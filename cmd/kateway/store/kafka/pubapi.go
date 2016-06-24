@@ -180,14 +180,3 @@ func (this *pubStore) AsyncPub(cluster string, topic string, key []byte,
 	producer.Recycle()
 	return
 }
-
-func (this *pubStore) MarkPartitionsDead(topic string, deadPartitionIds map[int32]struct{}) {
-	excludedPartitionsLock.Lock()
-	if deadPartitionIds == nil {
-		// this topic comes alive
-		delete(excludedPartitions, topic)
-	} else {
-		excludedPartitions[topic] = deadPartitionIds
-	}
-	excludedPartitionsLock.Unlock()
-}
