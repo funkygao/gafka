@@ -1,4 +1,4 @@
-// Package reporter perists github.com/funkygao/go-metrics
+// Package reporter perists github.com/rcrowley/go-metrics
 // metrics.Registry to durable storage.
 package reporter
 

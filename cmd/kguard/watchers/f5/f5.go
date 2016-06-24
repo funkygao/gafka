@@ -8,8 +8,8 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/mpool"
-	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
+	"github.com/rcrowley/go-metrics"
 )
 
 const (

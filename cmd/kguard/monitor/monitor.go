@@ -17,10 +17,10 @@ import (
 	"github.com/funkygao/gafka/reporter"
 	"github.com/funkygao/gafka/reporter/influxdb"
 	"github.com/funkygao/gafka/zk"
-	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rcrowley/go-metrics"
 )
 
 // Monitor is the engine that will start/stop plugin watchers.
