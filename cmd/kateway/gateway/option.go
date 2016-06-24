@@ -30,6 +30,7 @@ var (
 		LogFile                 string
 		LogLevel                string
 		CrashLogFile            string
+		DummyCluster            string
 		InfluxServer            string
 		InfluxDbName            string
 		KillFile                string
@@ -103,6 +104,7 @@ func ParseFlags() {
 	flag.StringVar(&Options.KeyFile, "keyfile", "", "key file path")
 	flag.StringVar(&Options.DebugHttpAddr, "debughttp", "", "debug http bind addr")
 	flag.StringVar(&Options.Store, "store", "kafka", "backend store")
+	flag.StringVar(&Options.DummyCluster, "dummycluster", "me", "dummy store's cluster name")
 	flag.StringVar(&Options.ManagerStore, "mstore", "mysql", "store integration with manager")
 	flag.StringVar(&Options.ConfigFile, "conf", "", "config file, defaults $HOME/.gafka.cf")
 	flag.StringVar(&Options.KillFile, "kill", "", "kill running kateway by pid file")

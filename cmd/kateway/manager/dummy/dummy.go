@@ -8,10 +8,13 @@ import (
 )
 
 type dummyStore struct {
+	cluster string
 }
 
-func New() *dummyStore {
-	return &dummyStore{}
+func New(cluster string) *dummyStore {
+	return &dummyStore{
+		cluster: cluster,
+	}
 }
 
 func (this *dummyStore) Name() string {
@@ -73,7 +76,7 @@ func (this *dummyStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 }
 
 func (this *dummyStore) LookupCluster(appid string) (string, bool) {
-	return "me", true
+	return this.cluster, true
 }
 
 func (this *dummyStore) IsShadowedTopic(hisAppid, topic, ver, myAppid, group string) bool {

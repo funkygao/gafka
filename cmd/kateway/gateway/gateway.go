@@ -92,7 +92,7 @@ func New(id string) *Gateway {
 		manager.Default.AllowSubWithUnregisteredGroup(Options.PermitUnregisteredGroup)
 
 	case "dummy":
-		manager.Default = mandummy.New()
+		manager.Default = mandummy.New(Options.DummyCluster)
 
 	default:
 		panic("invalid manager store")
