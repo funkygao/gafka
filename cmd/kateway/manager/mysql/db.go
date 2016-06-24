@@ -68,12 +68,18 @@ func (this *mysqlStore) Start() error {
 		for {
 			select {
 			case <-ticker.C:
-				this.refreshFromMysql()
-				log.Info("manager refreshed from mysql")
+				if err := this.refreshFromMysql(); err != nil {
+					log.Error(err.Error())
+				} else {
+					log.Info("manager refreshed from mysql")
+				}
 
 			case <-this.refreshCh:
-				this.refreshFromMysql()
-				log.Info("manager forced to refresh from mysql")
+				if err := this.refreshFromMysql(); err != nil {
+					log.Error(err.Error())
+				} else {
+					log.Info("manager forced to refresh from mysql")
+				}
 
 			case <-this.shutdownCh:
 				log.Info("mysql manager stopped")
@@ -92,46 +98,38 @@ func (this *mysqlStore) Stop() {
 func (this *mysqlStore) refreshFromMysql() error {
 	dsn, err := this.zkzone.KatewayMysqlDsn()
 	if err != nil {
-		log.Error("mysql manager store fetching mysql dsn: %v", err)
 		return err
 	}
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		log.Error("mysql manager store: %v", err)
 		return err
 	}
 	defer db.Close()
 
 	// if mysql dies, keep old/stale manager records as it was
 	if err = this.fetchApplicationRecords(db); err != nil {
-		log.Error("apps: %v", err)
 		return err
 	}
 
 	if err = this.fetchTopicRecords(db); err != nil {
-		log.Error("topics: %v", err)
 		return err
 	}
 
 	if err = this.fetchSubscribeRecords(db); err != nil {
-		log.Error("subs: %v", err)
 		return err
 	}
 
 	if err = this.fetchAppGroupRecords(db); err != nil {
-		log.Error("app groups: %v", err)
 		return err
 	}
 
 	if err = this.fetchDeadPartitions(db); err != nil {
-		log.Error("dead partitions: %v", err)
 		return err
 	}
 
 	if false {
 		if err = this.fetchShadowQueueRecords(db); err != nil {
-			log.Error("shadow queues: %v", err)
 			return err
 		}
 
