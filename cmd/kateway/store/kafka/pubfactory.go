@@ -34,19 +34,19 @@ func (this *pubPool) newSyncProducer(requiredAcks sarama.RequiredAcks) (pool.Res
 	var err error
 	t1 := time.Now()
 	cf := sarama.NewConfig()
-	cf.Net.DialTimeout = time.Second * 10
-	cf.Net.ReadTimeout = time.Second * 10
-	cf.Net.WriteTimeout = time.Second * 10
+	cf.Net.DialTimeout = time.Second * 4
+	cf.Net.ReadTimeout = time.Second * 4
+	cf.Net.WriteTimeout = time.Second * 4
 
 	cf.Metadata.RefreshFrequency = time.Minute * 10
 	cf.Metadata.Retry.Max = 3
-	cf.Metadata.Retry.Backoff = time.Millisecond * 50
+	cf.Metadata.Retry.Backoff = time.Millisecond * 10
 
 	cf.Producer.Timeout = time.Second * 1
 	cf.Producer.RequiredAcks = requiredAcks
 	cf.Producer.Partitioner = NewExclusivePartitioner
 	cf.Producer.Return.Successes = false
-	cf.Producer.Retry.Backoff = time.Millisecond * 50
+	cf.Producer.Retry.Backoff = time.Millisecond * 10
 	cf.Producer.Retry.Max = 3
 	if this.store.compress {
 		cf.Producer.Compression = sarama.CompressionSnappy
@@ -90,9 +90,13 @@ func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
 	var err error
 	t1 := time.Now()
 	cf := sarama.NewConfig()
+	cf.Net.DialTimeout = time.Second * 4
+	cf.Net.ReadTimeout = time.Second * 4
+	cf.Net.WriteTimeout = time.Second * 4
+
 	cf.Metadata.RefreshFrequency = time.Minute * 10
 	cf.Metadata.Retry.Max = 3
-	cf.Metadata.Retry.Backoff = time.Millisecond * 50 // gk migrate will trigger this backoff
+	cf.Metadata.Retry.Backoff = time.Millisecond * 10
 
 	cf.Producer.Flush.Frequency = time.Second * 10 // TODO
 	cf.Producer.Flush.Messages = 1000
@@ -100,7 +104,7 @@ func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
 
 	cf.Producer.RequiredAcks = sarama.NoResponse
 	cf.Producer.Partitioner = NewExclusivePartitioner
-	cf.Producer.Retry.Backoff = time.Millisecond * 50
+	cf.Producer.Retry.Backoff = time.Millisecond * 10 // gk migrate will trigger this backoff
 	cf.Producer.Retry.Max = 3
 	if this.store.compress {
 		cf.Producer.Compression = sarama.CompressionSnappy
