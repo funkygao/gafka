@@ -88,7 +88,9 @@ func main() {
 
 	gw := gateway.New(gateway.Options.Id)
 	if err := gw.Start(); err != nil {
-		panic(err)
+		glog.Error("start: %v, quit.", err)
+		glog.Close()
+		os.Exit(1)
 	}
 
 	gw.ServeForever()
