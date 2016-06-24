@@ -21,6 +21,7 @@ type Upgrade struct {
 	mode           string
 	upgradeKateway bool
 	upgradeZk      bool
+	clearLocalConf bool
 }
 
 func (this *Upgrade) Run(args []string) (exitCode int) {
@@ -29,6 +30,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.storeUrl, "url", "http://10.213.57.149:10080/gk", "")
 	cmdFlags.StringVar(&this.uploadDir, "upload", "/var/www/html", "")
 	cmdFlags.StringVar(&this.mode, "m", "d", "")
+	cmdFlags.BoolVar(&this.clear, "c", false, "")
 	cmdFlags.BoolVar(&this.upgradeKateway, "k", false, "")
 	cmdFlags.BoolVar(&this.upgradeZk, "zk", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -77,7 +79,9 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 		swallow(err)
 		this.runCmd("/usr/bin/gk", []string{"-v"})
 		this.runCmd("rm", []string{"-f", "gk"})
-		this.runCmd("rm", []string{"-f", fmt.Sprintf("%s/.gafka.cf", u.HomeDir)})
+		if this.clearLocalConf {
+			this.runCmd("rm", []string{"-f", fmt.Sprintf("%s/.gafka.cf", u.HomeDir)})
+		}
 		this.runCmd("wget", []string{this.storeUrl})
 		this.runCmd("chmod", []string{"a+x", "gk"})
 		this.runCmd("mv", []string{"-f", "gk", "/usr/bin/gk"})
@@ -127,6 +131,9 @@ Usage: %s upgrade [options]
 
 Options:
 
+    -c
+      Clear local $HOME/.gafka.cf
+      
     -k
       Upgrade kateway instead of gk
 
