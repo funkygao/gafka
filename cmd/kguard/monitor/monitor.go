@@ -81,13 +81,14 @@ func (this *Monitor) Init() {
 
 func (this *Monitor) Stop() {
 	if this.leader {
+		this.leader = false
+
 		log.Info("stopping all watchers ...")
 		close(this.stop)
 
 		log.Info("stopping reporter...")
 		reporter.Default.Stop()
 	}
-	this.leader = false
 }
 
 func (this *Monitor) Start() {
