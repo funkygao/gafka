@@ -21,15 +21,15 @@ func init() {
 // WatchConsumers monitors num of kafka online consumer groups over the time.
 type WatchConsumers struct {
 	Zkzone *zk.ZkZone
-	Stop   chan struct{}
+	Stop   <-chan struct{}
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
 }
 
-func (this *WatchConsumers) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
-	this.Zkzone = zkzone
-	this.Stop = stop
-	this.Wg = wg
+func (this *WatchConsumers) Init(ctx monitor.Context) {
+	this.Zkzone = ctx.ZkZone()
+	this.Stop = ctx.StopChan()
+	this.Wg = ctx.WaitGroup()
 }
 
 func (this *WatchConsumers) Run() {

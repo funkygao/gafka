@@ -20,15 +20,15 @@ func init() {
 // WatchInfluxDB continuously query InfluxDB for major metrics.
 type WatchInfluxDB struct {
 	Zkzone *zk.ZkZone
-	Stop   chan struct{}
+	Stop   <-chan struct{}
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
 }
 
-func (this *WatchInfluxDB) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
-	this.Zkzone = zkzone
-	this.Stop = stop
-	this.Wg = wg
+func (this *WatchInfluxDB) Init(ctx monitor.Context) {
+	this.Zkzone = ctx.ZkZone()
+	this.Stop = ctx.StopChan()
+	this.Wg = ctx.WaitGroup()
 }
 
 func (this *WatchInfluxDB) Run() {

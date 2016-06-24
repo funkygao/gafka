@@ -21,15 +21,15 @@ func init() {
 // WatchClusters montor num of kafka clusters over the time.
 type WatchClusters struct {
 	Zkzone *zk.ZkZone
-	Stop   chan struct{}
+	Stop   <-chan struct{}
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
 }
 
-func (this *WatchClusters) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
-	this.Zkzone = zkzone
-	this.Stop = stop
-	this.Wg = wg
+func (this *WatchClusters) Init(ctx monitor.Context) {
+	this.Zkzone = ctx.ZkZone()
+	this.Stop = ctx.StopChan()
+	this.Wg = ctx.WaitGroup()
 }
 
 func (this *WatchClusters) Run() {

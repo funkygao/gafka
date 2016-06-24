@@ -21,17 +21,17 @@ func init() {
 // SubLag monitors aliveness of kateway cluster.
 type WatchSubLag struct {
 	Zkzone *zk.ZkZone
-	Stop   chan struct{}
+	Stop   <-chan struct{}
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
 
 	zkcluster *zk.ZkCluster
 }
 
-func (this *WatchSubLag) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
-	this.Zkzone = zkzone
-	this.Stop = stop
-	this.Wg = wg
+func (this *WatchSubLag) Init(ctx monitor.Context) {
+	this.Zkzone = ctx.ZkZone()
+	this.Stop = ctx.StopChan()
+	this.Wg = ctx.WaitGroup()
 }
 
 func (this *WatchSubLag) Run() {

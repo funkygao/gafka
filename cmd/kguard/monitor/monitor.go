@@ -23,6 +23,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// Monitor is the engine that will start/stop plugin watchers.
+// It itself is an implementation of Context.
 type Monitor struct {
 	influxdbAddr   string
 	influxdbDbName string
@@ -33,6 +35,7 @@ type Monitor struct {
 
 	candidate *leadership.Candidate
 
+	wg     *sync.WaitGroup
 	stop   chan struct{} // broadcast to all watchers to stop, but might restart again
 	quit   chan struct{}
 	leader bool
@@ -94,21 +97,21 @@ func (this *Monitor) Start() {
 
 	go reporter.Default.Start()
 
-	wg := new(sync.WaitGroup)
+	this.wg = new(sync.WaitGroup)
 	for name, watcherFactory := range registeredWatchers {
 		watcher := watcherFactory()
-		watcher.Init(this.zkzone, this.stop, wg)
+		watcher.Init(this)
 
 		log.Info("created and starting watcher: %s", name)
 
-		wg.Add(1)
+		this.wg.Add(1)
 		go watcher.Run()
 	}
 
 	log.Info("all watchers ready!")
 
 	<-this.stop
-	wg.Wait()
+	this.wg.Wait()
 
 	log.Info("all watchers stopped")
 }
@@ -174,4 +177,16 @@ func (this *Monitor) ServeForever() {
 		}
 	}
 
+}
+
+func (this *Monitor) ZkZone() *zk.ZkZone {
+	return this.zkzone
+}
+
+func (this *Monitor) StopChan() <-chan struct{} {
+	return this.stop
+}
+
+func (this *Monitor) WaitGroup() *sync.WaitGroup {
+	return this.wg
 }

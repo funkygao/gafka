@@ -8,7 +8,6 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/mpool"
-	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 )
@@ -28,7 +27,7 @@ func init() {
 
 // WatchF5 monitors latency of F5 load balancer vibration.
 type WatchF5 struct {
-	Stop chan struct{}
+	Stop <-chan struct{}
 	Tick time.Duration
 	Wg   *sync.WaitGroup
 
@@ -43,9 +42,9 @@ type WatchF5 struct {
 	httpConn *http.Client
 }
 
-func (this *WatchF5) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
-	this.Stop = stop
-	this.Wg = wg
+func (this *WatchF5) Init(ctx monitor.Context) {
+	this.Stop = ctx.StopChan()
+	this.Wg = ctx.WaitGroup()
 }
 
 func (this *WatchF5) Run() {

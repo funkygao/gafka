@@ -21,15 +21,15 @@ func init() {
 // WatchKateway monitors aliveness of kateway cluster.
 type WatchKateway struct {
 	Zkzone *zk.ZkZone
-	Stop   chan struct{}
+	Stop   <-chan struct{}
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
 }
 
-func (this *WatchKateway) Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup) {
-	this.Zkzone = zkzone
-	this.Stop = stop
-	this.Wg = wg
+func (this *WatchKateway) Init(ctx monitor.Context) {
+	this.Zkzone = ctx.ZkZone()
+	this.Stop = ctx.StopChan()
+	this.Wg = ctx.WaitGroup()
 }
 
 func (this *WatchKateway) Run() {

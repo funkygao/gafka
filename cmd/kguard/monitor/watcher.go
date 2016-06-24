@@ -2,9 +2,6 @@ package monitor
 
 import (
 	"fmt"
-	"sync"
-
-	"github.com/funkygao/gafka/zk"
 )
 
 var (
@@ -13,7 +10,7 @@ var (
 
 // A Watcher is a plugin of monitor.
 type Watcher interface {
-	Init(zkzone *zk.ZkZone, stop chan struct{}, wg *sync.WaitGroup)
+	Init(Context)
 	Run()
 }
 
