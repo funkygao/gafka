@@ -223,6 +223,7 @@ func (this *Segment) printSummary() {
 	}
 
 	var maxSegment segment
+	var totalSize int64
 	for _, p := range partitions {
 		summary := make([]segment, 0)
 		for day, hourSize := range segments[p] {
@@ -244,6 +245,8 @@ func (this *Segment) printSummary() {
 			if s.size > maxSegment.size {
 				maxSegment = s
 			}
+
+			totalSize += s.size
 			this.Ui.Output(fmt.Sprintf("%50s day:%2d hour:%2d size:%s", p,
 				s.day, s.hour, gofmt.ByteSize(s.size)))
 		}
@@ -252,6 +255,7 @@ func (this *Segment) printSummary() {
 
 	this.Ui.Output(fmt.Sprintf("%50s day:%2d hour:%2d size:%s", "MAX-"+maxSegment.partition,
 		maxSegment.day, maxSegment.hour, gofmt.ByteSize(maxSegment.size)))
+	this.Ui.Output(fmt.Sprintf("%50s %s", "-TOTAL-", gofmt.ByteSize(totalSize)))
 
 	return
 }
