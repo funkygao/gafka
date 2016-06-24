@@ -26,12 +26,15 @@ type WatchSubLag struct {
 	Wg     *sync.WaitGroup
 
 	zkcluster *zk.ZkCluster
+
+	suspects map[string]struct{}
 }
 
 func (this *WatchSubLag) Init(ctx monitor.Context) {
 	this.Zkzone = ctx.ZkZone()
 	this.Stop = ctx.StopChan()
 	this.Wg = ctx.WaitGroup()
+	this.suspects = make(map[string]struct{})
 }
 
 func (this *WatchSubLag) Run() {
@@ -56,6 +59,22 @@ func (this *WatchSubLag) Run() {
 	}
 }
 
+func (this *WatchSubLag) isSuspect(group string, topic string) bool {
+	if _, present := this.suspects[group+"|"+topic]; present {
+		return true
+	}
+
+	return false
+}
+
+func (this *WatchSubLag) suspect(group, topic string) {
+	this.suspects[group+"|"+topic] = struct{}{}
+}
+
+func (this *WatchSubLag) unsuspect(group string, topic string) {
+	delete(this.suspects, group+"|"+topic)
+}
+
 func (this *WatchSubLag) report() (lags int) {
 	for group, consumers := range this.zkcluster.ConsumersByGroup("") {
 		for _, c := range consumers {
@@ -67,6 +86,14 @@ func (this *WatchSubLag) report() (lags int) {
 			// TODO lag too much, even if it's still alive, emit alarm
 			elapsed := time.Since(c.Mtime.Time())
 			if c.Lag > 0 && elapsed >= time.Minute*3 {
+				if !this.isSuspect(group, c.Topic) {
+					// suspect it, next round if it is still lagging, put on trial
+					this.suspect(group, c.Topic)
+					continue
+				}
+
+				// almost sure it is lagging: except when it just started up
+
 				// case:
 				//   consumer A started 20h ago, last commit 10m ago, then no message arrives
 				//   now, 1 new message arrives, and WatchSubLag is awaken: false alarm
@@ -84,8 +111,11 @@ func (this *WatchSubLag) report() (lags int) {
 						lags++
 					} else {
 						// the consumer just started
+						this.unsuspect(group, c.Topic)
 					}
 				}
+			} else {
+				this.unsuspect(group, c.Topic)
 			}
 		}
 	}
