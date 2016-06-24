@@ -95,7 +95,11 @@ func (this *Monitor) Start() {
 
 	this.stop = make(chan struct{})
 
-	go reporter.Default.Start()
+	go func() {
+		if err := reporter.Default.Start(); err != nil {
+			log.Error("reporter: %v", err)
+		}
+	}()
 
 	this.wg = new(sync.WaitGroup)
 	for name, watcherFactory := range registeredWatchers {
@@ -118,6 +122,8 @@ func (this *Monitor) Start() {
 
 func (this *Monitor) ServeForever() {
 	defer this.zkzone.Close()
+
+	log.Info("starting...")
 
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		log.Info("received signal: %s", strings.ToUpper(sig.String()))
