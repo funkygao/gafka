@@ -15,6 +15,11 @@ func (this *reporter) dump() (pts []client.Point) {
 		now  = time.Now()
 	)
 	this.reg.Each(func(name string, i interface{}) {
+		if name[0] == '_' {
+			// in-mem only metrics, will not pub to influxdb
+			return
+		}
+
 		name, tags = this.extractTagsFromMetricsName(name)
 
 		switch m := i.(type) {
