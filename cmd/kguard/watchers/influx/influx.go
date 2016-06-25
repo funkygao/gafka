@@ -54,10 +54,7 @@ func (this *WatchInfluxDB) Run() {
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
-	// SELECT mean("p99") FROM "pub.latency.histogram" WHERE $timeFilter GROUP BY time(10s)
-	// DB: pubsub
 	pubLatency := metrics.NewRegisteredGauge("_pub.latency.99", nil) // private metric name
-
 	for {
 		select {
 		case <-this.Stop:
