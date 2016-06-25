@@ -81,6 +81,20 @@ func (this *WatchInfluxDB) pubLatency() (float64, error) {
 		return 0, err
 	}
 
+	// res = []client.Result{
+	//    client.Result{
+	//      Series:[]models.Row{
+	//        models.Row{
+	//          Name:"pub.latency.histogram",
+	//          Tags:map[string]string(nil),
+	//          Columns:[]string{"time", "mean"},
+	//          Values:[][]interface {}{[]interface {}{"2016-06-25T09:10:49.756661374Z", "0.4"}},
+	//          Err:error(nil)
+	//        }
+	//      },
+	//      Err:""
+	//    }
+	//  }
 	p99 := res[0].Series[0].Values[0][1].(json.Number) // values[0][0] is "time"
 	return p99.Float64()
 }
