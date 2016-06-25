@@ -100,7 +100,7 @@ func (this *WatchInfluxDB) queryDB(cmd string) (res []client.Result, err error) 
 
 	q := client.Query{
 		Command:  cmd,
-		Database: this.db,
+		Database: "pubsub", // FIXME for historical mistakes, we are using another db, not this.db
 	}
 	if response, err := this.cli.Query(q); err == nil {
 		if response.Error() != nil {
