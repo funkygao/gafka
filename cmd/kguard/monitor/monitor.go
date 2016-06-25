@@ -197,3 +197,11 @@ func (this *Monitor) StopChan() <-chan struct{} {
 func (this *Monitor) WaitGroup() *sync.WaitGroup {
 	return this.wg
 }
+
+func (this *Monitor) InfluxAddr() string {
+	return this.influxdbAddr
+}
+
+func (this *Monitor) InfluxDB() string {
+	return this.influxdbDbName
+}

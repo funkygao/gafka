@@ -39,6 +39,8 @@ func (this *WatchInfluxDB) Init(ctx monitor.Context) {
 	this.Zkzone = ctx.ZkZone()
 	this.Stop = ctx.StopChan()
 	this.Wg = ctx.WaitGroup()
+	this.addr = ctx.InfluxAddr()
+	this.db = ctx.InfluxDB()
 }
 
 func (this *WatchInfluxDB) Run() {
