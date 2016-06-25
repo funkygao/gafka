@@ -2,6 +2,7 @@ package influxdb
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/funkygao/log4go"
@@ -15,8 +16,8 @@ func (this *reporter) dump() (pts []client.Point) {
 		now  = time.Now()
 	)
 	this.reg.Each(func(name string, i interface{}) {
-		if name[0] == '_' {
-			// in-mem only metrics, will not pub to influxdb
+		if strings.HasPrefix(name, "_") {
+			// in-mem only private metrics, will not dump to influxdb
 			return
 		}
 
