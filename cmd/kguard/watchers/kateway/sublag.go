@@ -83,8 +83,7 @@ func (this *WatchSubLag) report() (lags int) {
 			}
 
 			if c.ConsumerZnode == nil {
-				log.Warn("group[%s] topic[%s/%s] unrecognized consumer", group,
-					c.Topic, c.PartitionId)
+				log.Warn("group[%s] topic[%s/%s] unrecognized consumer", group, c.Topic, c.PartitionId)
 
 				continue
 			}
@@ -113,8 +112,7 @@ func (this *WatchSubLag) report() (lags int) {
 
 			// bingo! it IS lagging
 			log.Warn("group[%s] topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
-				group, c.Topic, c.PartitionId,
-				c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
+				group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
 
 			lags++
 		}
