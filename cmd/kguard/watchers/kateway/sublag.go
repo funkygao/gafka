@@ -82,41 +82,41 @@ func (this *WatchSubLag) report() (lags int) {
 				continue
 			}
 
+			if c.ConsumerZnode == nil {
+				log.Warn("group[%s] topic[%s/%s] unrecognized consumer", group,
+					c.Topic, c.PartitionId)
+
+				continue
+			}
+
+			if time.Since(c.ConsumerZnode.Uptime()) < time.Minute*2 {
+				log.Info("group[%s] just started, topic[%s/%s]", group, c.Topic, c.PartitionId)
+
+				this.unsuspect(group, c.Topic)
+				continue
+			}
+
 			// offset commit every 1m, sublag runs every 1m, so the gap might be 2m
 			// TODO lag too much, even if it's still alive, emit alarm
 			elapsed := time.Since(c.Mtime.Time())
-			if c.Lag > 0 && elapsed >= time.Minute*3 {
-				if !this.isSuspect(group, c.Topic) {
-					// suspect it, next round if it is still lagging, put on trial
-					this.suspect(group, c.Topic)
-					continue
-				}
-
-				// almost sure it is lagging: except when it just started up
-
-				// case:
-				//   consumer A started 20h ago, last commit 10m ago, then no message arrives
-				//   now, 1 new message arrives, and WatchSubLag is awaken: false alarm
-				log.Warn("group[%s] topic[%s/%s] %d - %d = %d, elapsed: %s",
-					group, c.Topic, c.PartitionId,
-					c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
-
-				if c.ConsumerZnode == nil {
-					log.Warn("group[%s] topic[%s/%s] unrecognized consumer", group,
-						c.Topic, c.PartitionId)
-
-					lags++
-				} else {
-					if time.Since(c.ConsumerZnode.Uptime()) > time.Minute*3 {
-						lags++
-					} else {
-						// the consumer just started
-						this.unsuspect(group, c.Topic)
-					}
-				}
-			} else {
+			if c.Lag == 0 || elapsed < time.Minute*3 {
 				this.unsuspect(group, c.Topic)
+				continue
 			}
+
+			// it might be lagging, but need confirm with last round
+			if !this.isSuspect(group, c.Topic) {
+				// suspect it, next round if it is still lagging, put on trial
+				this.suspect(group, c.Topic)
+				continue
+			}
+
+			// bingo! it IS lagging
+			log.Warn("group[%s] topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
+				group, c.Topic, c.PartitionId,
+				c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
+
+			lags++
 		}
 	}
 
