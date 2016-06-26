@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -325,7 +326,7 @@ func (this *Deploy) demo() {
 	logDirs := make([]string, 0)
 	for i := 0; i <= 12; i++ {
 		logDir := fmt.Sprintf("/data%d/%s", i, this.clusterName())
-		if gio.DirExists(logDir) {
+		if gio.DirExists(filepath.Base(logDir)) {
 			logDirs = append(logDirs, logDir)
 		}
 	}
