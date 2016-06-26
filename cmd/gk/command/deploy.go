@@ -323,9 +323,11 @@ func (this *Deploy) demo() {
 		myBrokerId = 0
 	}
 	logDirs := make([]string, 0)
-	for i := 1; i <= 12; i++ {
+	for i := 0; i <= 12; i++ {
 		logDir := fmt.Sprintf("/data%d/%s", i, this.clusterName())
-		logDirs = append(logDirs, logDir)
+		if gio.DirExists(logDir) {
+			logDirs = append(logDirs, logDir)
+		}
 	}
 
 	this.Ui.Output(fmt.Sprintf("gk deploy -z %s -c %s -broker.id %d -port %d -ip %s -log.dirs %s",
