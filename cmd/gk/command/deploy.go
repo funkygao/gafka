@@ -324,9 +324,9 @@ func (this *Deploy) demo() {
 		myBrokerId = 0
 	}
 	logDirs := make([]string, 0)
-	for i := 0; i <= 12; i++ {
+	for i := 0; i <= 15; i++ {
 		logDir := fmt.Sprintf("/data%d/%s", i, this.clusterName())
-		if gio.DirExists(filepath.Base(logDir)) {
+		if gio.DirExists(filepath.Dir(logDir)) {
 			logDirs = append(logDirs, logDir)
 		}
 	}
