@@ -164,10 +164,10 @@ func (this *Gateway) InstanceInfo() []byte {
 }
 
 func (this *Gateway) Start() (err error) {
-	log.Trace("starting gateway...")
+	log.Info("starting gateway[%s]...", gafka.BuildId)
 
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
-		log.Info("received signal: %s", strings.ToUpper(sig.String()))
+		log.Info("gateway[%s] received signal: %s", gafka.BuildId, strings.ToUpper(sig.String()))
 		this.stop()
 	}, syscall.SIGINT, syscall.SIGTERM) // yes we ignore HUP
 

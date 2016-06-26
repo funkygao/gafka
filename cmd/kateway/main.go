@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/gateway"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
@@ -89,13 +90,13 @@ func main() {
 	gw := gateway.New(gateway.Options.Id)
 	if err := gw.Start(); err != nil {
 		glog.Error(err.Error())
-		glog.Info("kateway bye!")
+		glog.Info("kateway[%s-%s] bye!", gafka.BuildId, gafka.BuiltAt)
 		glog.Close()
 		os.Exit(1)
 	}
 
 	gw.ServeForever()
-	glog.Info("kateway bye!")
+	glog.Info("kateway[%s-%s] bye!", gafka.BuildId, gafka.BuiltAt)
 	glog.Close()
 
 	if gateway.Options.PidFile != "" {
