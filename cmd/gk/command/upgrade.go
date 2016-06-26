@@ -21,6 +21,7 @@ type Upgrade struct {
 	mode           string
 	upgradeKateway bool
 	upgradeZk      bool
+	upgradeKguard  bool
 	clearLocalConf bool
 }
 
@@ -33,6 +34,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.clearLocalConf, "c", false, "")
 	cmdFlags.BoolVar(&this.upgradeKateway, "k", false, "")
 	cmdFlags.BoolVar(&this.upgradeZk, "zk", false, "")
+	cmdFlags.BoolVar(&this.upgradeKguard, "kg", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -67,6 +69,22 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 
 		case "u":
 			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/zk", gopath), this.uploadDir})
+		}
+
+		return
+	}
+
+	if this.upgradeKguard {
+		this.storeUrl = "http://10.213.57.149:10080/kguard"
+
+		switch this.mode {
+		case "d":
+			this.runCmd("wget", []string{this.storeUrl})
+			this.runCmd("chmod", []string{"a+x", "kguard"})
+			this.runCmd("mv", []string{"-f", "kguard", "/var/wd/kguard/kguard"})
+
+		case "u":
+			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/kguard", gopath), this.uploadDir})
 		}
 
 		return
@@ -139,6 +157,9 @@ Options:
 
     -zk
       Upgrade zk instead of gk
+
+    -kg
+      Upgrade kguard instead of gk
 
     -m <d|u>
       Download or upload mode
