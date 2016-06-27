@@ -88,6 +88,13 @@ func init() {
 			}, nil
 		},
 
+		"agent": func() (cli.Command, error) {
+			return &command.Agent{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"disable": func() (cli.Command, error) {
 			return &command.Disable{
 				Ui:  ui,
