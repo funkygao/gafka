@@ -1,6 +1,7 @@
 package command
 
 import (
+	"flag"
 	"fmt"
 	"sort"
 	"strings"
@@ -16,6 +17,12 @@ type Alias struct {
 }
 
 func (this *Alias) Run(args []string) (exitCode int) {
+	cmdFlags := flag.NewFlagSet("alias", flag.ContinueOnError)
+	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
+	if err := cmdFlags.Parse(args); err != nil {
+		return 1
+	}
+
 	aliases := ctx.AliasesWithValue()
 	sortedNames := make([]string, 0, len(aliases))
 	for name, _ := range aliases {
@@ -36,14 +43,14 @@ func (this *Alias) Run(args []string) (exitCode int) {
 }
 
 func (*Alias) Synopsis() string {
-	return "Display all aliases"
+	return "Display all aliases defined in $HOME/.gafka.cf"
 }
 
 func (this *Alias) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s alias
 
-    Display all aliases
+    Display all aliases defined in $HOME/.gafka.cf
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
