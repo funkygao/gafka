@@ -30,7 +30,7 @@ type WatchBrokers struct {
 func (this *WatchBrokers) Init(ctx monitor.Context) {
 	this.Zkzone = ctx.ZkZone()
 	this.Stop = ctx.StopChan()
-	this.Wg = ctx.WaitGroup()
+	this.Wg = ctx.Inflight()
 }
 
 func (this *WatchBrokers) Run() {

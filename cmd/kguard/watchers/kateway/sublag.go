@@ -33,7 +33,7 @@ type WatchSubLag struct {
 func (this *WatchSubLag) Init(ctx monitor.Context) {
 	this.Zkzone = ctx.ZkZone()
 	this.Stop = ctx.StopChan()
-	this.Wg = ctx.WaitGroup()
+	this.Wg = ctx.Inflight()
 	this.suspects = make(map[string]struct{})
 }
 

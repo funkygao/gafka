@@ -35,10 +35,10 @@ type Monitor struct {
 
 	candidate *leadership.Candidate
 
-	wg     *sync.WaitGroup
-	stop   chan struct{} // broadcast to all watchers to stop, but might restart again
-	quit   chan struct{}
-	leader bool
+	inflight *sync.WaitGroup
+	stop     chan struct{} // broadcast to all watchers to stop, but might restart again
+	quit     chan struct{}
+	leader   bool
 }
 
 func (this *Monitor) Init() {
@@ -102,21 +102,21 @@ func (this *Monitor) Start() {
 		}
 	}()
 
-	this.wg = new(sync.WaitGroup)
+	this.inflight = new(sync.WaitGroup)
 	for name, watcherFactory := range registeredWatchers {
 		watcher := watcherFactory()
 		watcher.Init(this)
 
 		log.Info("created and starting watcher: %s", name)
 
-		this.wg.Add(1)
+		this.inflight.Add(1)
 		go watcher.Run()
 	}
 
 	log.Info("all watchers ready!")
 
 	<-this.stop
-	this.wg.Wait()
+	this.inflight.Wait()
 
 	log.Info("all watchers stopped")
 }
@@ -194,8 +194,8 @@ func (this *Monitor) StopChan() <-chan struct{} {
 	return this.stop
 }
 
-func (this *Monitor) WaitGroup() *sync.WaitGroup {
-	return this.wg
+func (this *Monitor) Inflight() *sync.WaitGroup {
+	return this.inflight
 }
 
 func (this *Monitor) InfluxAddr() string {

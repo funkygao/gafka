@@ -44,7 +44,7 @@ type WatchF5 struct {
 
 func (this *WatchF5) Init(ctx monitor.Context) {
 	this.Stop = ctx.StopChan()
-	this.Wg = ctx.WaitGroup()
+	this.Wg = ctx.Inflight()
 }
 
 func (this *WatchF5) Run() {

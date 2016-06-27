@@ -10,7 +10,7 @@ import (
 type Context interface {
 	ZkZone() *zk.ZkZone
 	StopChan() <-chan struct{}
-	WaitGroup() *sync.WaitGroup
+	Inflight() *sync.WaitGroup
 	InfluxAddr() string
 	InfluxDB() string
 }
