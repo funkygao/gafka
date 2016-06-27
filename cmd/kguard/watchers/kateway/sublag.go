@@ -106,12 +106,15 @@ func (this *WatchSubLag) report() (lags int) {
 			// it might be lagging, but need confirm with last round
 			if !this.isSuspect(group, c.Topic) {
 				// suspect it, next round if it is still lagging, put on trial
+				log.Warn("group[%s] suspected topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
+					group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
+
 				this.suspect(group, c.Topic)
 				continue
 			}
 
 			// bingo! it IS lagging
-			log.Warn("group[%s] topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
+			log.Warn("group[%s] confirmed topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
 				group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
 
 			lags++
