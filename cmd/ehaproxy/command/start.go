@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/funkygao/etclib"
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 	zkr "github.com/funkygao/gafka/registry/zk"
 	"github.com/funkygao/gocli"
@@ -63,22 +63,25 @@ func (this *Start) Run(args []string) (exitCode int) {
 	this.starting = true
 	this.quitCh = make(chan struct{})
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
-		log.Info("got signal %s", sig)
+		log.Info("ehaproxy[%s] got signal %s", gafka.BuildId, sig)
 		this.shutdown()
 
 		log.Info("removing %s", configFile)
 		os.Remove(configFile)
 
-		log.Info("shutdown complete")
+		log.Info("ehaproxy[%s] shutdown complete", gafka.BuildId)
 	}, syscall.SIGINT, syscall.SIGTERM)
 
 	this.main()
+	log.Close()
 
 	return
 }
 
 func (this *Start) main() {
 	ctx.LoadFromHome()
+
+	log.Info("ehaproxy[%s] starting...", gafka.BuildId)
 
 	// TODO zk session timeout
 	err := etclib.Dial(strings.Split(ctx.ZoneZkAddrs(this.zone), ","))
@@ -100,7 +103,6 @@ func (this *Start) main() {
 	for {
 		select {
 		case <-this.quitCh:
-			time.Sleep(time.Second) // FIXME just wait log flush
 			return
 
 		case <-ch:
