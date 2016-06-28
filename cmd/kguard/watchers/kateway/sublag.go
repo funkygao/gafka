@@ -48,7 +48,7 @@ func (this *WatchSubLag) Run() {
 	defer ticker.Stop()
 
 	subLagGroups := metrics.NewRegisteredGauge("sub.lags", nil)
-	subConflictGroup := metrics.NewRegisteredGauge("sub.group.conflict", nil)
+	subConflictGroup := metrics.NewRegisteredGauge("sub.conflict", nil)
 	for {
 		select {
 		case <-this.Stop:
