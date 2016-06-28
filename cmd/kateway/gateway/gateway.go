@@ -12,7 +12,6 @@ import (
 	"time"
 
 	_ "expvar"
-	_ "net/http/pprof"
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
@@ -54,6 +53,7 @@ type Gateway struct {
 	pubServer *pubServer
 	subServer *subServer
 	manServer *manServer
+	debugMux  *http.ServeMux
 
 	clientStates *ClientStates
 }
@@ -99,6 +99,9 @@ func New(id string) *Gateway {
 	}
 
 	// initialize the servers on demand
+	if Options.DebugHttpAddr != "" {
+		this.debugMux = http.NewServeMux()
+	}
 	if Options.ManHttpAddr != "" || Options.ManHttpsAddr != "" {
 		this.manServer = newManServer(Options.ManHttpAddr, Options.ManHttpsAddr,
 			Options.MaxClients, this)
@@ -189,12 +192,6 @@ func (this *Gateway) Start() (err error) {
 	}
 
 	this.buildRouting()
-
-	if Options.DebugHttpAddr != "" {
-		log.Info("debug http server ready on %s", Options.DebugHttpAddr)
-
-		go http.ListenAndServe(Options.DebugHttpAddr, nil)
-	}
 
 	this.svrMetrics.Load()
 	go startRuntimeMetrics(Options.ReporterInterval)

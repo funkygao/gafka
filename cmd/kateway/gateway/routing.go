@@ -2,7 +2,10 @@ package gateway
 
 import (
 	"net/http"
+	"net/http/pprof"
 
+	"github.com/NYTimes/gziphandler"
+	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -66,6 +69,18 @@ func (this *Gateway) buildRouting() {
 
 		// TODO deprecated
 		this.subServer.Router().GET("/topics/:appid/:topic/:ver", m(this.subServer.subHandler))
+	}
+
+	if this.debugMux != nil {
+		this.debugMux.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))
+		this.debugMux.HandleFunc("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+		this.debugMux.HandleFunc("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+		this.debugMux.HandleFunc("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+		this.debugMux.HandleFunc("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+
+		go http.ListenAndServe(Options.DebugHttpAddr, gziphandler.GzipHandler(this.debugMux))
+
+		log.Info("debug http server ready on %s", Options.DebugHttpAddr)
 	}
 
 }
