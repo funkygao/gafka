@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 	"github.com/influxdata/influxdb/client"
-	"github.com/rcrowley/go-metrics"
 )
 
 func (this *reporter) dump() (pts []client.Point) {

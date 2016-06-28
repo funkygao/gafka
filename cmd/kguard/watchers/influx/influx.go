@@ -7,9 +7,9 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 	"github.com/influxdata/influxdb/client/v2"
-	"github.com/rcrowley/go-metrics"
 )
 
 func init() {

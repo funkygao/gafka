@@ -7,7 +7,7 @@ import (
 
 	"github.com/funkygao/assert"
 	"github.com/funkygao/gafka/ctx"
-	"github.com/rcrowley/go-metrics"
+	"github.com/funkygao/go-metrics"
 )
 
 func createReporter() *reporter {

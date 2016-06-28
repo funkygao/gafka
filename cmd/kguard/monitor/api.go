@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/funkygao/go-metrics"
 	"github.com/julienschmidt/httprouter"
-	"github.com/rcrowley/go-metrics"
 )
 
 // /metrics

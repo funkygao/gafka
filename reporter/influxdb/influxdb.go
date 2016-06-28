@@ -6,8 +6,8 @@ import (
 	"time"
 
 	rp "github.com/funkygao/gafka/reporter"
+	"github.com/funkygao/go-metrics"
 	"github.com/influxdata/influxdb/client"
-	"github.com/rcrowley/go-metrics"
 )
 
 var _ rp.Reporter = &reporter{}
