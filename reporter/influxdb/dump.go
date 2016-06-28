@@ -142,5 +142,8 @@ func (this *reporter) writeInfluxDB(pts []client.Point) {
 		Database: this.cf.database,
 	}); err != nil {
 		log.Error("influxdb write: %v", err)
+
+		// reconnect in next round
+		this.client = nil
 	}
 }
