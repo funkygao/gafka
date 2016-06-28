@@ -1,6 +1,8 @@
 package kateway
 
 import (
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -46,6 +48,7 @@ func (this *WatchSubLag) Run() {
 	defer ticker.Stop()
 
 	subLagGroups := metrics.NewRegisteredGauge("sub.lags", nil)
+	subConflictGroup := metrics.NewRegisteredGauge("sub.group.conflict", nil)
 	for {
 		select {
 		case <-this.Stop:
@@ -53,7 +56,9 @@ func (this *WatchSubLag) Run() {
 			return
 
 		case <-ticker.C:
-			subLagGroups.Update(int64(this.report()))
+			lags, conflictGroups := this.report()
+			subLagGroups.Update(int64(lags))
+			subConflictGroup.Update(int64(conflictGroups))
 
 		}
 	}
@@ -75,7 +80,8 @@ func (this *WatchSubLag) unsuspect(group string, topic string) {
 	delete(this.suspects, group+"|"+topic)
 }
 
-func (this *WatchSubLag) report() (lags int) {
+func (this *WatchSubLag) report() (lags, conflictGroups int) {
+	groupTopicsMap := make(map[string]map[string]struct{}) // group:sub topics
 	for group, consumers := range this.zkcluster.ConsumersByGroup("") {
 		for _, c := range consumers {
 			if !c.Online {
@@ -86,6 +92,14 @@ func (this *WatchSubLag) report() (lags int) {
 				log.Warn("group[%s] topic[%s/%s] unrecognized consumer", group, c.Topic, c.PartitionId)
 
 				continue
+			}
+
+			// record each group is consuming what topics
+			for topic, _ := range c.ConsumerZnode.Subscription {
+				if _, present := groupTopicsMap[group]; !present {
+					groupTopicsMap[group] = make(map[string]struct{}, 5)
+				}
+				groupTopicsMap[group][topic] = struct{}{}
 			}
 
 			if time.Since(c.ConsumerZnode.Uptime()) < time.Minute*2 {
@@ -119,6 +133,25 @@ func (this *WatchSubLag) report() (lags int) {
 
 			lags++
 		}
+	}
+
+	// Sub disallow the same group to sub multiple topics
+	for group, topics := range groupTopicsMap {
+		if len(topics) <= 1 {
+			continue
+		}
+
+		// conflict found!
+		conflictGroups++
+
+		// the same consumer group is consuming more than 1 topics
+		topicsLabel := make([]string, 0, len(topics))
+		for t, _ := range topics {
+			topicsLabel = append(topicsLabel, t)
+		}
+		sort.Strings(topicsLabel)
+
+		log.Warn("group[%s] consuming more than 1 topics: %s", group, strings.Join(topicsLabel, ","))
 	}
 
 	return
