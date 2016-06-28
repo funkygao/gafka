@@ -143,7 +143,7 @@ func (*Get) Synopsis() string {
 
 func (this *Get) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s get [options] path
+Usage: %s get [options] <path>
 
     Show znode data
 

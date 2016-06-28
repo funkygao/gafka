@@ -94,7 +94,7 @@ func (*Ls) Synopsis() string {
 
 func (this *Ls) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s ls [options] path
+Usage: %s ls [options] <path>
 
     List znode children
 

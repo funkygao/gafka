@@ -60,7 +60,7 @@ func (*Stat) Synopsis() string {
 
 func (this *Stat) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s stat [options] path
+Usage: %s stat [options] <path>
 
     Show znode status info
 

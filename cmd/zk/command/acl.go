@@ -32,6 +32,10 @@ func (this *Acl) Run(args []string) (exitCode int) {
 		return 2
 	}
 
+	if len(args) == 0 {
+		this.Ui.Error("missing path")
+		return 2
+	}
 	this.path = args[len(args)-1]
 
 	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
@@ -50,7 +54,7 @@ func (*Acl) Synopsis() string {
 
 func (this *Acl) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s acl [options] path
+Usage: %s acl [options] <path>
 
     Show znode ACL info
 
