@@ -342,6 +342,16 @@ func (this *ZkZone) Clusters() map[string]string {
 	return r
 }
 
+func (this *ZkZone) PublicClusters() []*ZkCluster {
+	r := make([]*ZkCluster, 0)
+	this.ForSortedClusters(func(c *ZkCluster) {
+		if c.RegisteredInfo().Public {
+			r = append(r, c)
+		}
+	})
+	return r
+}
+
 func (this *ZkZone) ForSortedClusters(fn func(zkcluster *ZkCluster)) {
 	clusters := this.Clusters()
 	sortedNames := make([]string, 0, len(clusters))

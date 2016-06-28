@@ -27,7 +27,7 @@ type WatchSubLag struct {
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
 
-	zkcluster *zk.ZkCluster
+	zkclusters []*zk.ZkCluster
 
 	suspects map[string]struct{}
 }
@@ -42,7 +42,7 @@ func (this *WatchSubLag) Init(ctx monitor.Context) {
 func (this *WatchSubLag) Run() {
 	defer this.Wg.Done()
 
-	this.zkcluster = this.Zkzone.NewCluster("bigtopic") // TODO
+	this.zkclusters = this.Zkzone.PublicClusters() // TODO sync with clusters change
 
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
@@ -81,77 +81,80 @@ func (this *WatchSubLag) unsuspect(group string, topic string) {
 }
 
 func (this *WatchSubLag) report() (lags, conflictGroups int) {
-	groupTopicsMap := make(map[string]map[string]struct{}) // group:sub topics
-	for group, consumers := range this.zkcluster.ConsumersByGroup("") {
-		for _, c := range consumers {
-			if !c.Online {
-				continue
-			}
+	for _, zkcluster := range this.zkclusters {
+		groupTopicsMap := make(map[string]map[string]struct{}) // group:sub topics
 
-			if c.ConsumerZnode == nil {
-				log.Warn("group[%s] topic[%s/%s] unrecognized consumer", group, c.Topic, c.PartitionId)
-
-				continue
-			}
-
-			// record each group is consuming what topics
-			for topic, _ := range c.ConsumerZnode.Subscription {
-				if _, present := groupTopicsMap[group]; !present {
-					groupTopicsMap[group] = make(map[string]struct{}, 5)
+		for group, consumers := range zkcluster.ConsumersByGroup("") {
+			for _, c := range consumers {
+				if !c.Online {
+					continue
 				}
-				groupTopicsMap[group][topic] = struct{}{}
-			}
 
-			if time.Since(c.ConsumerZnode.Uptime()) < time.Minute*2 {
-				log.Info("group[%s] just started, topic[%s/%s]", group, c.Topic, c.PartitionId)
+				if c.ConsumerZnode == nil {
+					log.Warn("group[%s] topic[%s/%s] unrecognized consumer", group, c.Topic, c.PartitionId)
 
-				this.unsuspect(group, c.Topic)
-				continue
-			}
+					continue
+				}
 
-			// offset commit every 1m, sublag runs every 1m, so the gap might be 2m
-			// TODO lag too much, even if it's still alive, emit alarm
-			elapsed := time.Since(c.Mtime.Time())
-			if c.Lag == 0 || elapsed < time.Minute*3 {
-				this.unsuspect(group, c.Topic)
-				continue
-			}
+				// record each group is consuming what topics
+				for topic, _ := range c.ConsumerZnode.Subscription {
+					if _, present := groupTopicsMap[group]; !present {
+						groupTopicsMap[group] = make(map[string]struct{}, 5)
+					}
+					groupTopicsMap[group][topic] = struct{}{}
+				}
 
-			// it might be lagging, but need confirm with last round
-			if !this.isSuspect(group, c.Topic) {
-				// suspect it, next round if it is still lagging, put on trial
-				log.Warn("group[%s] suspected topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
+				if time.Since(c.ConsumerZnode.Uptime()) < time.Minute*2 {
+					log.Info("group[%s] just started, topic[%s/%s]", group, c.Topic, c.PartitionId)
+
+					this.unsuspect(group, c.Topic)
+					continue
+				}
+
+				// offset commit every 1m, sublag runs every 1m, so the gap might be 2m
+				// TODO lag too much, even if it's still alive, emit alarm
+				elapsed := time.Since(c.Mtime.Time())
+				if c.Lag == 0 || elapsed < time.Minute*3 {
+					this.unsuspect(group, c.Topic)
+					continue
+				}
+
+				// it might be lagging, but need confirm with last round
+				if !this.isSuspect(group, c.Topic) {
+					// suspect it, next round if it is still lagging, put on trial
+					log.Warn("group[%s] suspected topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
+						group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
+
+					this.suspect(group, c.Topic)
+					continue
+				}
+
+				// bingo! it IS lagging
+				log.Warn("group[%s] confirmed topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
 					group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
 
-				this.suspect(group, c.Topic)
+				lags++
+			}
+		}
+
+		// Sub disallow the same group to sub multiple topics
+		for group, topics := range groupTopicsMap {
+			if len(topics) <= 1 {
 				continue
 			}
 
-			// bingo! it IS lagging
-			log.Warn("group[%s] confirmed topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
-				group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
+			// conflict found!
+			conflictGroups++
 
-			lags++
+			// the same consumer group is consuming more than 1 topics
+			topicsLabel := make([]string, 0, len(topics))
+			for t, _ := range topics {
+				topicsLabel = append(topicsLabel, t)
+			}
+			sort.Strings(topicsLabel)
+
+			log.Warn("group[%s] consuming more than 1 topics: %s", group, strings.Join(topicsLabel, ","))
 		}
-	}
-
-	// Sub disallow the same group to sub multiple topics
-	for group, topics := range groupTopicsMap {
-		if len(topics) <= 1 {
-			continue
-		}
-
-		// conflict found!
-		conflictGroups++
-
-		// the same consumer group is consuming more than 1 topics
-		topicsLabel := make([]string, 0, len(topics))
-		for t, _ := range topics {
-			topicsLabel = append(topicsLabel, t)
-		}
-		sort.Strings(topicsLabel)
-
-		log.Warn("group[%s] consuming more than 1 topics: %s", group, strings.Join(topicsLabel, ","))
 	}
 
 	return
