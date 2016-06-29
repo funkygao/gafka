@@ -132,11 +132,6 @@ func (this *Monitor) ServeForever() {
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		log.Info("kguard[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))
 
-		if this.leader {
-			//this.candidate.Resign()
-		}
-		this.candidate.Stop()
-		log.Info("election stopped, stopping watchers...")
 		this.Stop()
 		close(this.quit)
 	}, syscall.SIGINT, syscall.SIGTERM)
@@ -181,6 +176,8 @@ func (this *Monitor) ServeForever() {
 			log.Error("Error during election: %v", err)
 
 		case <-this.quit:
+			this.candidate.Stop()
+			log.Info("election stopped")
 			log.Info("kguard[%s@%s] bye!", gafka.BuildId, gafka.BuiltAt)
 			log.Close()
 			return
