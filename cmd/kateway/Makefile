@@ -90,4 +90,4 @@ genkey:
 	@echo check out ssl/
 
 clean:
-	-rm -f kateway.test kateway prof.cpu prof.mem
+	-rm -f kateway.test kateway prof.cpu prof.mem *.log*
