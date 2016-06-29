@@ -97,8 +97,8 @@ func (this *WatchReplicas) report() (deadPartitions, outOfSyncPartitions int64) 
 			for _, partitionID := range alivePartitions {
 				replicas, err := kfk.Replicas(topic, partitionID)
 				if err != nil {
-					log.Error("cluster[%s] topic:%s partition:%d %v",
-						zkcluster.Name(), topic, partitionID, err)
+					log.Error("cluster[%s] topic:%s/%d %v", zkcluster.Name(), topic, partitionID, err)
+					outOfSyncPartitions++
 					continue
 				}
 
