@@ -57,6 +57,7 @@ func Tag(appid, topic, ver string) string {
 
 func UpdateCounter(appid, topic, ver, name string, n int64,
 	mu *sync.RWMutex, m map[string]metrics.Counter) {
+	// Fast path
 	tagBuf := make([]byte, 4+len(appid)+len(topic)+len(ver))
 	tagBuf[0] = charBraceletLeft
 	idx := 1
@@ -84,7 +85,7 @@ func UpdateCounter(appid, topic, ver, name string, n int64,
 	mu.RUnlock()
 
 	if present {
-		counter.Inc(1)
+		counter.Inc(n)
 		return
 	}
 
