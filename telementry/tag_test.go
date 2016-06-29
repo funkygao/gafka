@@ -6,14 +6,14 @@ import (
 	"github.com/funkygao/assert"
 )
 
-func TestExtractFromMetricsName(t *testing.T) {
-	appid, topic, ver, realname := ExtractFromMetricsName("{app1.mytopic.v1}pub.ok")
+func TestDecodeMetricName(t *testing.T) {
+	appid, topic, ver, realname := DecodeMetricName("{app1.mytopic.v1}pub.ok")
 	assert.Equal(t, "app1", appid)
 	assert.Equal(t, "mytopic", topic)
 	assert.Equal(t, "v1", ver)
 	assert.Equal(t, "pub.ok", realname)
 
-	appid, topic, ver, realname = ExtractFromMetricsName("pub.ok")
+	appid, topic, ver, realname = DecodeMetricName("pub.ok")
 	assert.Equal(t, "pub.ok", realname)
 	assert.Equal(t, "", appid)
 	assert.Equal(t, "", topic)
@@ -21,8 +21,8 @@ func TestExtractFromMetricsName(t *testing.T) {
 }
 
 // 186 ns/op
-func BenchmarkExtractFromMetricsName(b *testing.B) {
+func BenchmarkDecodeMetricName(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ExtractFromMetricsName("{app1.mytopic.v1}pub.ok")
+		DecodeMetricName("{app1.mytopic.v1}pub.ok")
 	}
 }

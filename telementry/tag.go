@@ -13,7 +13,11 @@ const (
 	charDot           = '.'
 )
 
-func ExtractFromMetricsName(name string) (appid, topic, ver, realname string) {
+// DecodeMetricName will extract the tags info from [encoded] metric name.
+//
+// go-metrics pkg doesn't support tags feature, so we encode the tags
+// into metric name.
+func DecodeMetricName(name string) (appid, topic, ver, realname string) {
 	if name[0] != charBraceletLeft {
 		realname = name
 		return
