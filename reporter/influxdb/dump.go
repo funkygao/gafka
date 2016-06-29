@@ -5,15 +5,40 @@ import (
 	"strings"
 	"time"
 
+	"github.com/funkygao/gafka/reporter"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 	"github.com/influxdata/influxdb/client"
 )
 
-func (this *reporter) dump() (pts []client.Point) {
+func (this *runner) dump(pts []client.Point) {
+	if this.client == nil {
+		log.Warn("influxdb write while connection lost, retry...")
+
+		if err := this.makeClient(); err != nil {
+			log.Error("influxdb connect retry: %v", err)
+			return
+		} else {
+			log.Info("influxdb connect retry ok")
+		}
+	}
+
+	if _, err := this.client.Write(client.BatchPoints{
+		Points:   pts,
+		Database: this.cf.database,
+	}); err != nil {
+		log.Error("influxdb write: %v", err)
+
+		// reconnect in next round
+		this.client = nil
+	}
+}
+
+func (this *runner) export() (pts []client.Point) {
 	var (
-		tags map[string]string
-		now  = time.Now()
+		now               = time.Now()
+		appid, topic, ver string
+		tags              map[string]string
 	)
 	this.reg.Each(func(name string, i interface{}) {
 		if strings.HasPrefix(name, "_") {
@@ -21,7 +46,19 @@ func (this *reporter) dump() (pts []client.Point) {
 			return
 		}
 
-		name, tags = this.extractTagsFromMetricsName(name)
+		appid, topic, ver, name = reporter.ExtractFromMetricsName(name)
+		if appid == "" {
+			tags = map[string]string{
+				"host": this.cf.hostname,
+			}
+		} else {
+			tags = map[string]string{
+				"host":  this.cf.hostname,
+				"appid": appid,
+				"topic": topic,
+				"ver":   ver,
+			}
+		}
 
 		switch m := i.(type) {
 		case metrics.Counter:
@@ -123,27 +160,4 @@ func (this *reporter) dump() (pts []client.Point) {
 	})
 
 	return
-}
-
-func (this *reporter) writeInfluxDB(pts []client.Point) {
-	if this.client == nil {
-		log.Warn("influxdb write while connection lost, retry...")
-
-		if err := this.makeClient(); err != nil {
-			log.Error("influxdb connect retry: %v", err)
-			return
-		} else {
-			log.Info("influxdb connect retry ok")
-		}
-	}
-
-	if _, err := this.client.Write(client.BatchPoints{
-		Points:   pts,
-		Database: this.cf.database,
-	}); err != nil {
-		log.Error("influxdb write: %v", err)
-
-		// reconnect in next round
-		this.client = nil
-	}
 }

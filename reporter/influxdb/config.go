@@ -27,6 +27,12 @@ func NewConfig(uri, db, user, pass string, interval time.Duration) (*config, err
 	if interval == 0 {
 		return nil, errors.New("illegal interval")
 	}
+	if uri == "" {
+		return nil, errors.New("empty influxdb uri")
+	}
+	if db == "" {
+		return nil, errors.New("empty influxdb db name")
+	}
 
 	return &config{
 		hostname: ctx.Hostname(),

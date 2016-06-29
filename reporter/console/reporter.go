@@ -1,6 +1,6 @@
 // +build !windows
 
-package gateway
+package console
 
 import (
 	"fmt"

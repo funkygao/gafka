@@ -25,7 +25,10 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/registry"
 	"github.com/funkygao/gafka/registry/zk"
+	"github.com/funkygao/gafka/reporter"
+	"github.com/funkygao/gafka/reporter/influxdb"
 	gzk "github.com/funkygao/gafka/zk"
+	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/signal"
 	"github.com/funkygao/golib/timewheel"
 	log "github.com/funkygao/log4go"
@@ -82,6 +85,12 @@ func New(id string) *Gateway {
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
 	this.accessLogger = NewAccessLogger("access_log", 100)
 	this.svrMetrics = NewServerMetrics(Options.ReporterInterval, this)
+	rc, err := influxdb.NewConfig(Options.InfluxServer, Options.InfluxDbName, "", "", Options.ReporterInterval)
+	if err != nil {
+		log.Error("reporter: %v", err)
+	} else {
+		reporter.Default = influxdb.New(metrics.DefaultRegistry, rc)
+	}
 
 	// initialize the manager store
 	switch Options.ManagerStore {
@@ -184,6 +193,16 @@ func (this *Gateway) Start() (err error) {
 
 	go this.guard.Start()
 	log.Trace("guard started")
+
+	if reporter.Default != nil {
+		go func() {
+			if err := reporter.Default.Start(); err != nil {
+				log.Error("reporter: %v", err)
+			} else {
+				log.Trace("reporter[%s] started", reporter.Default.Name())
+			}
+		}()
+	}
 
 	if Options.EnableAccessLog {
 		if err = this.accessLogger.Start(); err != nil {

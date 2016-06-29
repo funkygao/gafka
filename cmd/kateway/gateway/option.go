@@ -65,7 +65,6 @@ var (
 		SubTimeout              time.Duration
 		OffsetCommitInterval    time.Duration
 		ReporterInterval        time.Duration
-		ConsoleMetricsInterval  time.Duration
 		MetaRefresh             time.Duration
 		ManagerRefresh          time.Duration
 		HttpReadTimeout         time.Duration
@@ -145,7 +144,6 @@ func ParseFlags() {
 	flag.DurationVar(&Options.ReporterInterval, "report", time.Second*10, "reporter flush interval")
 	flag.DurationVar(&Options.MetaRefresh, "metarefresh", time.Minute*10, "meta data refresh interval")
 	flag.DurationVar(&Options.ManagerRefresh, "manrefresh", time.Minute*5, "manager integration refresh interval")
-	flag.DurationVar(&Options.ConsoleMetricsInterval, "consolemetrics", 0, "console metrics report interval")
 	flag.DurationVar(&Options.PubPoolIdleTimeout, "pubpoolidle", 0, "pub pool connect idle timeout")
 
 	flag.Parse()
