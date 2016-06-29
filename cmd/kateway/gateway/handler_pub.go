@@ -129,14 +129,6 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
-	pubMethod := store.DefaultPubStore.SyncPub
-	if query.Get("async") == "1" {
-		pubMethod = store.DefaultPubStore.AsyncPub
-	}
-	if query.Get("ack") == "all" {
-		pubMethod = store.DefaultPubStore.SyncAllPub
-	}
-
 	cluster, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} cluster not found",
@@ -145,6 +137,14 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		this.pubMetrics.ClientError.Inc(1)
 		writeBadRequest(w, "invalid appid")
 		return
+	}
+
+	pubMethod := store.DefaultPubStore.SyncPub
+	if query.Get("async") == "1" {
+		pubMethod = store.DefaultPubStore.AsyncPub
+	}
+	if query.Get("ack") == "all" {
+		pubMethod = store.DefaultPubStore.SyncAllPub
 	}
 
 	partition, offset, err := pubMethod(cluster,
