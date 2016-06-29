@@ -125,10 +125,10 @@ func (this *Monitor) Start() {
 func (this *Monitor) ServeForever() {
 	defer this.zkzone.Close()
 
-	log.Info("kguard[%s] starting...", gafka.BuildId)
+	log.Info("kguard[%s@%s] starting...", gafka.BuildId, gafka.BuiltAt)
 
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
-		log.Info("kguard[%s] received signal: %s", gafka.BuildId, strings.ToUpper(sig.String()))
+		log.Info("kguard[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))
 
 		if this.leader {
 			//this.candidate.Resign()
@@ -179,7 +179,7 @@ func (this *Monitor) ServeForever() {
 			log.Error("Error during election: %v", err)
 
 		case <-this.quit:
-			log.Info("kguard[%s] bye!", gafka.BuildId)
+			log.Info("kguard[%s@%s] bye!", gafka.BuildId, gafka.BuiltAt)
 			log.Close()
 			return
 		}
