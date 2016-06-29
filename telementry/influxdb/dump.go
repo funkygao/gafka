@@ -46,7 +46,7 @@ func (this *runner) export() (pts []client.Point) {
 			return
 		}
 
-		appid, topic, ver, name = telementry.DecodeMetricName(name)
+		appid, topic, ver, name = telementry.Untag(name)
 		if appid == "" {
 			tags = map[string]string{
 				"host": this.cf.hostname,
