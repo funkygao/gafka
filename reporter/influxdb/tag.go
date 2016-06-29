@@ -10,7 +10,8 @@ const (
 )
 
 // name: appid=5&topic=a.b.c&ver=v1#pub.qps
-func (this *reporter) extractTagsFromMetricsName(name string) (realName string, tags map[string]string) {
+// TODO deprecated
+func (this *runner) extractTagsFromMetricsName(name string) (realName string, tags map[string]string) {
 	tags = map[string]string{
 		"host": this.cf.hostname,
 	}

@@ -10,10 +10,10 @@ import (
 	"github.com/funkygao/go-metrics"
 )
 
-func createReporter() *reporter {
+func createRunner() *runner {
 	ctx.LoadFromHome()
 	cf, _ := NewConfig("uri", "db", "user", "pass", time.Second)
-	return New(metrics.DefaultRegistry, cf)
+	return New(metrics.DefaultRegistry, cf).(*runner)
 
 }
 
@@ -21,12 +21,12 @@ func TestDump(t *testing.T) {
 	g := metrics.NewRegisteredGaugeFloat64("gauge", nil)
 	g.Update(1)
 
-	r := createReporter()
-	t.Logf("%+v", r.dump())
+	r := createRunner()
+	t.Logf("%+v", r.export())
 }
 
 func TestExtractTags(t *testing.T) {
-	r := createReporter()
+	r := createRunner()
 	realName, tags := r.extractTagsFromMetricsName("pub.qps")
 	t.Logf("%s %+v", realName, tags)
 	assert.Equal(t, 1, len(tags)) // at least "host" attribute exists
@@ -42,7 +42,7 @@ func TestExtractTags(t *testing.T) {
 
 // 318 ns/op	     336 B/op	       2 allocs/op
 func BenchmarkExtractTagsWithoutTags(b *testing.B) {
-	r := createReporter()
+	r := createRunner()
 	for i := 0; i < b.N; i++ {
 		_, _ = r.extractTagsFromMetricsName("pub.qps")
 	}
@@ -50,7 +50,7 @@ func BenchmarkExtractTagsWithoutTags(b *testing.B) {
 
 // 1854 ns/op	     784 B/op	       7 allocs/op
 func BenchmarkExtractTagsWithTags(b *testing.B) {
-	r := createReporter()
+	r := createRunner()
 	for i := 0; i < b.N; i++ {
 		_, _ = r.extractTagsFromMetricsName("appid=5&topic=a.b.c&ver=v1#pub.qps")
 	}
