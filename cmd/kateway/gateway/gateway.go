@@ -25,8 +25,8 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/registry"
 	"github.com/funkygao/gafka/registry/zk"
-	"github.com/funkygao/gafka/reporter"
-	"github.com/funkygao/gafka/reporter/influxdb"
+	"github.com/funkygao/gafka/telementry"
+	"github.com/funkygao/gafka/telementry/influxdb"
 	gzk "github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/signal"
@@ -87,9 +87,9 @@ func New(id string) *Gateway {
 	this.svrMetrics = NewServerMetrics(Options.ReporterInterval, this)
 	rc, err := influxdb.NewConfig(Options.InfluxServer, Options.InfluxDbName, "", "", Options.ReporterInterval)
 	if err != nil {
-		log.Error("reporter: %v", err)
+		log.Error("telementry: %v", err)
 	} else {
-		reporter.Default = influxdb.New(metrics.DefaultRegistry, rc)
+		telementry.Default = influxdb.New(metrics.DefaultRegistry, rc)
 	}
 
 	// initialize the manager store
@@ -194,12 +194,12 @@ func (this *Gateway) Start() (err error) {
 	go this.guard.Start()
 	log.Trace("guard started")
 
-	if reporter.Default != nil {
+	if telementry.Default != nil {
 		go func() {
-			if err := reporter.Default.Start(); err != nil {
-				log.Error("reporter: %v", err)
+			if err := telementry.Default.Start(); err != nil {
+				log.Error("telementry: %v", err)
 			} else {
-				log.Trace("reporter[%s] started", reporter.Default.Name())
+				log.Trace("telementry[%s] started", telementry.Default.Name())
 			}
 		}()
 	}

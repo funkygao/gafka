@@ -1,4 +1,4 @@
-package reporter
+package telementry
 
 import (
 	"testing"
