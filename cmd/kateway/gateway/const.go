@@ -18,10 +18,6 @@ const (
 	UrlParamAppid   = "appid"
 	UrlParamGroup   = "group"
 
-	CharBraceletLeft  = '{'
-	CharBraceletRight = '}'
-	CharDot           = '.'
-
 	MaxPartitionKeyLen = 256
 )
 

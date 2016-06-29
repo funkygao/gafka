@@ -5,12 +5,13 @@ import (
 	uurl "net/url"
 	"time"
 
+	"github.com/funkygao/gafka/reporter"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 	"github.com/influxdata/influxdb/client"
 )
 
-type reporter struct {
+type reporterInflux struct {
 	reg      metrics.Registry
 	interval time.Duration
 	hostname string
@@ -35,7 +36,7 @@ func InfluxDB(hostname string, r metrics.Registry, interval time.Duration,
 		return
 	}
 
-	rep := &reporter{
+	rep := &reporterInflux{
 		reg:      r,
 		interval: interval,
 		url:      *u,
@@ -52,7 +53,7 @@ func InfluxDB(hostname string, r metrics.Registry, interval time.Duration,
 	rep.run()
 }
 
-func (r *reporter) makeClient() (err error) {
+func (r *reporterInflux) makeClient() (err error) {
 	r.client, err = client.NewClient(client.Config{
 		URL:      r.url,
 		Username: r.username,
@@ -62,7 +63,7 @@ func (r *reporter) makeClient() (err error) {
 	return
 }
 
-func (r *reporter) run() {
+func (r *reporterInflux) run() {
 	intervalTicker := time.Tick(r.interval)
 	//pingTicker := time.Tick(time.Second * 5)
 	pingTicker := time.Tick(r.interval / 2)
@@ -89,7 +90,7 @@ func (r *reporter) run() {
 	}
 }
 
-func (r *reporter) send() error {
+func (r *reporterInflux) send() error {
 	var pts []client.Point
 
 	var (
@@ -98,7 +99,7 @@ func (r *reporter) send() error {
 	)
 	r.reg.Each(func(name string, i interface{}) {
 		now := time.Now()
-		appid, topic, ver, name = extractFromMetricsName(name)
+		appid, topic, ver, name = reporter.ExtractFromMetricsName(name)
 
 		if appid == "" {
 			tags = map[string]string{

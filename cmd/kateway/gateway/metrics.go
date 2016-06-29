@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/reporter"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 )
@@ -162,11 +163,11 @@ func (this *subMetrics) ConsumeOk(appid, topic, ver string) {
 	if this.expConsumeOk != nil {
 		this.expConsumeOk.Add(1)
 	}
-	updateCounter(appid, topic, ver, "sub.ok", 1, &this.consumeMapMu, this.ConsumeMap)
+	reporter.UpdateCounter(appid, topic, ver, "sub.ok", 1, &this.consumeMapMu, this.ConsumeMap)
 }
 
 func (this *subMetrics) ConsumedOk(appid, topic, ver string) {
-	updateCounter(appid, topic, ver, "subd.ok", 1, &this.consumedMapMu, this.ConsumedMap)
+	reporter.UpdateCounter(appid, topic, ver, "subd.ok", 1, &this.consumedMapMu, this.ConsumedMap)
 }
 
 type pubMetrics struct {
@@ -259,12 +260,12 @@ func (this *pubMetrics) PubFail(appid, topic, ver string) {
 	if this.expPubFail != nil {
 		this.expPubFail.Add(1)
 	}
-	updateCounter(appid, topic, ver, "pub.fail", 1, &this.pubFailMu, this.PubFailMap)
+	reporter.UpdateCounter(appid, topic, ver, "pub.fail", 1, &this.pubFailMu, this.PubFailMap)
 }
 
 func (this *pubMetrics) PubOk(appid, topic, ver string) {
 	if this.expPubOk != nil {
 		this.expPubOk.Add(1)
 	}
-	updateCounter(appid, topic, ver, "pub.ok", 1, &this.pubOkMu, this.PubOkMap)
+	reporter.UpdateCounter(appid, topic, ver, "pub.ok", 1, &this.pubOkMu, this.PubOkMap)
 }
