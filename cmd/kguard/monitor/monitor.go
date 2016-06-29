@@ -15,8 +15,8 @@ import (
 	"github.com/docker/libkv/store/zookeeper"
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
-	"github.com/funkygao/gafka/reporter"
-	"github.com/funkygao/gafka/reporter/influxdb"
+	"github.com/funkygao/gafka/telementry"
+	"github.com/funkygao/gafka/telementry/influxdb"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/signal"
@@ -73,11 +73,11 @@ func (this *Monitor) Init() {
 		log.AddFilter("file", log.INFO, filer)
 	}
 
-	reporterConfig, err := influxdb.NewConfig(this.influxdbAddr, this.influxdbDbName, "", "", time.Minute)
+	rc, err := influxdb.NewConfig(this.influxdbAddr, this.influxdbDbName, "", "", time.Minute)
 	if err != nil {
 		panic(err)
 	}
-	reporter.Default = influxdb.New(metrics.DefaultRegistry, reporterConfig)
+	telementry.Default = influxdb.New(metrics.DefaultRegistry, rc)
 }
 
 func (this *Monitor) Stop() {
@@ -88,7 +88,7 @@ func (this *Monitor) Stop() {
 		close(this.stop)
 
 		log.Info("stopping reporter...")
-		reporter.Default.Stop()
+		telementry.Default.Stop()
 	}
 }
 
@@ -98,8 +98,10 @@ func (this *Monitor) Start() {
 	this.stop = make(chan struct{})
 
 	go func() {
-		if err := reporter.Default.Start(); err != nil {
-			log.Error("reporter: %v", err)
+		if err := telementry.Default.Start(); err != nil {
+			log.Error("telementry: %v", err)
+		} else {
+			log.Info("telementry started: %s", telementry.Default.Name())
 		}
 	}()
 
