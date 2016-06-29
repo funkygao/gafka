@@ -24,6 +24,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		ver          string
 		tag          string
 		partitionKey string
+		async        bool
 		t1           = time.Now()
 	)
 
@@ -140,16 +141,34 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	}
 
 	pubMethod := store.DefaultPubStore.SyncPub
-	if query.Get("async") == "1" {
+	async = query.Get("async") == "1"
+	if async {
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
 	if query.Get("ack") == "all" {
 		pubMethod = store.DefaultPubStore.SyncAllPub
 	}
 
-	partition, offset, err := pubMethod(cluster,
-		manager.Default.KafkaTopic(appid, topic, ver),
-		[]byte(partitionKey), msg.Body)
+	var (
+		partition int32
+		offset    int64
+		err       error
+	)
+	if async {
+		// message pool can't be applied on async pub because
+		// we don't know when to recycle the memory
+		// TODO a big performance problem
+		body := make([]byte, 0, len(msg.Body))
+		copy(body, msg.Body)
+		partition, offset, err = pubMethod(cluster,
+			manager.Default.KafkaTopic(appid, topic, ver),
+			[]byte(partitionKey), body)
+	} else {
+		partition, offset, err = pubMethod(cluster,
+			manager.Default.KafkaTopic(appid, topic, ver),
+			[]byte(partitionKey), msg.Body)
+	}
+
 	if err != nil {
 		log.Error("pub[%s] %s(%s) {topic:%s ver:%s} %s",
 			appid, r.RemoteAddr, realIp, topic, ver, err)
