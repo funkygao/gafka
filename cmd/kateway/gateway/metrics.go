@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/reporter"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
@@ -47,16 +46,6 @@ func NewServerMetrics(interval time.Duration, gw *Gateway) *serverMetrics {
 
 	if Options.DebugHttpAddr != "" {
 		expvar.Publish("Goroutines", expvar.Func(goroutines))
-	}
-
-	if Options.ConsoleMetricsInterval > 0 {
-		go runMetricsReporter(metrics.DefaultRegistry, Options.ConsoleMetricsInterval)
-	}
-
-	// influxdb reporter
-	if Options.InfluxServer != "" {
-		go InfluxDB(ctx.Hostname(), metrics.DefaultRegistry, interval,
-			Options.InfluxServer, Options.InfluxDbName, "", "")
 	}
 
 	return this
