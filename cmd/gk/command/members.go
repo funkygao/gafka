@@ -91,7 +91,7 @@ func (this *Members) Run(args []string) (exitCode int) {
 	}
 
 	// summary
-	this.Ui.Output(fmt.Sprintf("Zk:%s Broker:%s Kateway:%s ?:%s -total %d-",
+	this.Ui.Output(fmt.Sprintf("Zk:%s Broker:%s Kateway:%s ?:%s =%d=",
 		color.Magenta("%d", zkN),
 		color.Magenta("%d", brokerN),
 		color.Magenta("%d", katewayN),
@@ -193,7 +193,7 @@ func (this *Members) displayLoadAvg() {
 			node = strings.TrimRight(node, ":")
 		}
 
-		loadAvg := parts[1]
+		loadAvg := strings.TrimSpace(parts[1])
 		if loadAvg[0] > '0' {
 			loadAvg += " !"
 			if loadAvg[0] > '1' {
