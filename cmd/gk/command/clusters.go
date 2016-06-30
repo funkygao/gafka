@@ -425,6 +425,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, po
 	}
 
 	// not verbose mode
+	hostsWithoutDnsRecords := make([]string, 0)
 	for _, c := range clusters {
 		this.Ui.Output(fmt.Sprintf("%30s: %s", c.name, c.path))
 		brokers := []string{}
@@ -434,10 +435,21 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, po
 			} else {
 				brokers = append(brokers, fmt.Sprintf("%d/%s", broker.Id, broker.NamedAddr()))
 			}
+
+			if broker.Addr() == broker.NamedAddr() {
+				hostsWithoutDnsRecords = append(hostsWithoutDnsRecords, fmt.Sprintf("%s:%s", c.name, broker.Addr()))
+			}
 		}
 		if len(brokers) > 0 {
 			sort.Strings(brokers)
 			this.Ui.Info(color.Green("%31s %s", " ", strings.Join(brokers, ", ")))
+		}
+	}
+
+	if len(hostsWithoutDnsRecords) > 0 {
+		for _, broker := range hostsWithoutDnsRecords {
+			parts := strings.SplitN(broker, ":", 2)
+			this.Ui.Output(fmt.Sprintf("%30s: %s", parts[0], color.Yellow(parts[1])))
 		}
 	}
 
