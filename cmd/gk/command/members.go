@@ -34,12 +34,14 @@ func (this *Members) Run(args []string) (exitCode int) {
 		zone        string
 		showLoadAvg bool
 		exec        string
+		node        string
 	)
 	cmdFlags := flag.NewFlagSet("members", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&showLoadAvg, "l", false, "")
 	cmdFlags.StringVar(&exec, "exec", "", "")
+	cmdFlags.StringVar(&node, "n", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -93,7 +95,7 @@ func (this *Members) Run(args []string) (exitCode int) {
 		this.displayLoadAvg()
 
 	case exec != "":
-		this.executeOnAll(exec)
+		this.executeOnAll(exec, node)
 	}
 
 	// summary
@@ -128,8 +130,11 @@ func (this *Members) fillTheHosts(zkzone *zk.ZkZone) {
 	}
 }
 
-func (this *Members) executeOnAll(execCmd string) {
+func (this *Members) executeOnAll(execCmd string, node string) {
 	args := []string{"exec"}
+	if node != "" {
+		args = append(args, fmt.Sprintf("-node=%s", node))
+	}
 	args = append(args, strings.Split(execCmd, " ")...)
 	cmd := pipestream.New("consul", args...)
 	err := cmd.Open()
@@ -278,6 +283,9 @@ Usage: %s members [options]
     -exec <cmd>
       Execute cmd on all members and print the result by host
       e,g. gk members -exec "ifconfig bond0 | grep 'TX bytes'"
+
+    -n node
+      Execute cmd on a single node
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
