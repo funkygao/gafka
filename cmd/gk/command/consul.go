@@ -10,6 +10,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/pipestream"
 )
 
@@ -102,7 +103,11 @@ func (this *Consul) Run(args []string) (exitCode int) {
 		this.displayLoadAvg()
 	}
 
-	this.Ui.Output(fmt.Sprintf("broker:%d zk:%d kateway:%d ?:%d", brokerN, zkN, katewayN, unknownN))
+	this.Ui.Output(fmt.Sprintf("zk:%d broker:%s kateway:%s ?:%d",
+		color.Magenta("%d", zkN),
+		color.Magenta("%d", brokerN),
+		color.Magenta("%d", katewayN),
+		color.Green("%d", unknownN)))
 
 	return
 }
