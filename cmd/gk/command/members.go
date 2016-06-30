@@ -22,6 +22,9 @@ import (
 type Members struct {
 	Ui  cli.Ui
 	Cmd string
+
+	brokerHosts, zkHosts, katewayHosts map[string]struct{}
+	nodeHostMap                        map[string]string // consul members node->ip
 }
 
 func (this *Members) Run(args []string) (exitCode int) {
@@ -38,29 +41,7 @@ func (this *Members) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-
-	brokerHosts := make(map[string]struct{})
-	zkzone.ForSortedBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
-		for _, brokerInfo := range brokers {
-			brokerHosts[brokerInfo.Host] = struct{}{}
-		}
-	})
-
-	zkHosts := make(map[string]struct{})
-	for _, addr := range zkzone.ZkAddrList() {
-		zkNode, _, err := net.SplitHostPort(addr)
-		swallow(err)
-		zkHosts[zkNode] = struct{}{}
-	}
-
-	katewayHosts := make(map[string]struct{})
-	kws, err := zkzone.KatewayInfos()
-	swallow(err)
-	for _, kw := range kws {
-		host, _, err := net.SplitHostPort(kw.PubAddr)
-		swallow(err)
-		katewayHosts[host] = struct{}{}
-	}
+	this.fillTheHosts(zkzone)
 
 	consulLiveNode, consulDeadNodes := this.consulMembers()
 	for _, node := range consulDeadNodes {
@@ -70,9 +51,9 @@ func (this *Members) Run(args []string) (exitCode int) {
 	consulLiveMap := make(map[string]struct{})
 	brokerN, zkN, katewayN, unknownN := 0, 0, 0, 0
 	for _, node := range consulLiveNode {
-		_, presentInBroker := brokerHosts[node]
-		_, presentInZk := zkHosts[node]
-		_, presentInKateway := katewayHosts[node]
+		_, presentInBroker := this.brokerHosts[node]
+		_, presentInZk := this.zkHosts[node]
+		_, presentInKateway := this.katewayHosts[node]
 		if presentInBroker {
 			brokerN++
 		}
@@ -93,7 +74,7 @@ func (this *Members) Run(args []string) (exitCode int) {
 	}
 
 	// all brokers should run consul
-	for broker, _ := range brokerHosts {
+	for broker, _ := range this.brokerHosts {
 		if _, present := consulLiveMap[broker]; !present {
 			this.Ui.Warn(fmt.Sprintf("- %s", broker))
 		}
@@ -112,6 +93,31 @@ func (this *Members) Run(args []string) (exitCode int) {
 	return
 }
 
+func (this *Members) fillTheHosts(zkzone *zk.ZkZone) {
+	this.brokerHosts = make(map[string]struct{})
+	zkzone.ForSortedBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
+		for _, brokerInfo := range brokers {
+			this.brokerHosts[brokerInfo.Host] = struct{}{}
+		}
+	})
+
+	this.zkHosts = make(map[string]struct{})
+	for _, addr := range zkzone.ZkAddrList() {
+		zkNode, _, err := net.SplitHostPort(addr)
+		swallow(err)
+		this.zkHosts[zkNode] = struct{}{}
+	}
+
+	this.katewayHosts = make(map[string]struct{})
+	kws, err := zkzone.KatewayInfos()
+	swallow(err)
+	for _, kw := range kws {
+		host, _, err := net.SplitHostPort(kw.PubAddr)
+		swallow(err)
+		this.katewayHosts[host] = struct{}{}
+	}
+}
+
 func (this *Members) displayLoadAvg() {
 	cmd := pipestream.New("consul", "exec",
 		"uptime", "|", "grep", "load")
@@ -124,14 +130,31 @@ func (this *Members) displayLoadAvg() {
 	for scanner.Scan() {
 		line := scanner.Text()
 		fields := strings.Fields(line)
-		host := fields[0]
+		node := fields[0]
 		parts := strings.Split(line, "load average:")
 		if len(parts) < 2 {
 			continue
 		}
+		if strings.HasSuffix(node, ":") {
+			node = strings.TrimRight(node, ":")
+		}
 
-		this.Ui.Output(fmt.Sprintf("%35s %s", host, parts[1]))
+		host := this.nodeHostMap[node]
+		this.Ui.Output(fmt.Sprintf("%35s %s %s", node, this.roleOfHost(host), parts[1]))
 	}
+}
+
+func (this *Members) roleOfHost(host string) string {
+	if _, present := this.brokerHosts[host]; present {
+		return "B"
+	}
+	if _, present := this.zkHosts[host]; present {
+		return "Z"
+	}
+	if _, present := this.katewayHosts[host]; present {
+		return "K"
+	}
+	return "?"
 }
 
 func (this *Members) consulMembers() ([]string, []string) {
@@ -143,6 +166,7 @@ func (this *Members) consulMembers() ([]string, []string) {
 	liveHosts, deadHosts := []string{}, []string{}
 	scanner := bufio.NewScanner(cmd.Reader())
 	scanner.Split(bufio.ScanLines)
+	this.nodeHostMap = make(map[string]string)
 	for scanner.Scan() {
 		if strings.Contains(scanner.Text(), "Protocol") {
 			// the header
@@ -150,9 +174,11 @@ func (this *Members) consulMembers() ([]string, []string) {
 		}
 
 		fields := strings.Fields(scanner.Text())
-		addr, alive := fields[1], fields[2]
+		node, addr, alive := fields[0], fields[1], fields[2]
 		host, _, err := net.SplitHostPort(addr)
 		swallow(err)
+
+		this.nodeHostMap[node] = host
 
 		if alive == "alive" {
 			liveHosts = append(liveHosts, host)
