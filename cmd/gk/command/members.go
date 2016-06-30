@@ -193,8 +193,16 @@ func (this *Members) displayLoadAvg() {
 			node = strings.TrimRight(node, ":")
 		}
 
+		loadAvg := parts[1]
+		if loadAvg[0] > '0' {
+			loadAvg += " !"
+			if loadAvg[0] > '1' {
+				loadAvg += "!"
+			}
+		}
+
 		host := this.nodeHostMap[node]
-		lines = append(lines, fmt.Sprintf("%s|%s|%s|%s", node, host, this.roleOfHost(host), parts[1]))
+		lines = append(lines, fmt.Sprintf("%s|%s|%s|%s", node, host, this.roleOfHost(host), loadAvg))
 	}
 
 	if len(lines) > 1 {
