@@ -44,6 +44,12 @@ func (this *Members) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	if validateArgs(this, this.Ui).
+		requireAdminRights("-exec").
+		invalid(args) {
+		return 2
+	}
+
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	this.fillTheHosts(zkzone)
 
