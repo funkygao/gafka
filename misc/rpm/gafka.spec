@@ -1,7 +1,7 @@
 %define name gafka
-%define version 0.2.6
-%define release 3
-%define path usr/local
+%define version 0.2.7
+%define release 1
+%define path usr
 %define group Development/Tools
 %define __os_install_post %{nil}
 
@@ -13,7 +13,7 @@ Group:      %{group}
 Packager:   Funky Gao <funky.gao@gmail.com>
 License:    Apache
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}
-Prefix:     /usr/local
+Prefix:     /usr
 AutoReqProv: no
 # we just assume you have go installed. You may or may not have an RPM to depend on.
 # BuildRequires: go
@@ -32,6 +32,7 @@ cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
 ./build.sh -t zk
 ./build.sh -t ehaproxy
 ./build.sh -t kateway
+./build.sh -t kguard
 
 %install
 export DONT_STRIP=1
@@ -40,14 +41,6 @@ cd $RPM_BUILD_DIR/%{name}-%{version}-%{release}/gafka
 mkdir -p $RPM_BUILD_ROOT/%{path}/bin
 mkdir -p $RPM_BUILD_ROOT/etc/bash_completion.d
 install cmd/gk/gk $RPM_BUILD_ROOT/%{path}/bin
-install cmd/zk/zk $RPM_BUILD_ROOT/%{path}/bin
-install cmd/ehaproxy/ehaproxy $RPM_BUILD_ROOT/%{path}/bin
-install cmd/kateway/kateway $RPM_BUILD_ROOT/%{path}/bin
-install misc/autocomplete/bash_autocomplete $RPM_BUILD_ROOT/etc/bash_completion.d/gk
 
 %files
 /%{path}/bin/gk
-/%{path}/bin/zk
-/%{path}/bin/ehaproxy
-/%{path}/bin/kateway
-/etc/bash_completion.d/gk
