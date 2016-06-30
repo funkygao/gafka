@@ -272,7 +272,7 @@ func init() {
 		},
 
 		"members": func() (cli.Command, error) {
-			return &command.Consul{
+			return &command.Members{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil

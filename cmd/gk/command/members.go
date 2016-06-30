@@ -19,17 +19,17 @@ import (
 // - agents
 //   - brokers
 //   - kateway
-type Consul struct {
+type Members struct {
 	Ui  cli.Ui
 	Cmd string
 }
 
-func (this *Consul) Run(args []string) (exitCode int) {
+func (this *Members) Run(args []string) (exitCode int) {
 	var (
 		zone        string
 		showLoadAvg bool
 	)
-	cmdFlags := flag.NewFlagSet("consul", flag.ContinueOnError)
+	cmdFlags := flag.NewFlagSet("members", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&showLoadAvg, "l", false, "")
@@ -112,7 +112,7 @@ func (this *Consul) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Consul) displayLoadAvg() {
+func (this *Members) displayLoadAvg() {
 	cmd := pipestream.New("consul", "exec",
 		"uptime", "|", "grep", "load")
 	err := cmd.Open()
@@ -134,7 +134,7 @@ func (this *Consul) displayLoadAvg() {
 	}
 }
 
-func (this *Consul) consulMembers() ([]string, []string) {
+func (this *Members) consulMembers() ([]string, []string) {
 	cmd := pipestream.New("consul", "members")
 	err := cmd.Open()
 	swallow(err)
@@ -164,13 +164,13 @@ func (this *Consul) consulMembers() ([]string, []string) {
 	return liveHosts, deadHosts
 }
 
-func (*Consul) Synopsis() string {
+func (*Members) Synopsis() string {
 	return "Verify consul members match kafka zone"
 }
 
-func (this *Consul) Help() string {
+func (this *Members) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s consul [options]
+Usage: %s members [options]
 
     Verify consul members match kafka zone
 
