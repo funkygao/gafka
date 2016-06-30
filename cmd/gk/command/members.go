@@ -33,11 +33,13 @@ func (this *Members) Run(args []string) (exitCode int) {
 	var (
 		zone        string
 		showLoadAvg bool
+		exec        string
 	)
 	cmdFlags := flag.NewFlagSet("members", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&showLoadAvg, "l", false, "")
+	cmdFlags.StringVar(&exec, "exec", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -80,10 +82,15 @@ func (this *Members) Run(args []string) (exitCode int) {
 		}
 	}
 
-	if showLoadAvg {
+	switch {
+	case showLoadAvg:
 		this.displayLoadAvg()
+
+	case exec != "":
+		this.executeOnAll(exec)
 	}
 
+	// summary
 	this.Ui.Output(fmt.Sprintf("zk:%s broker:%s kateway:%s ?:%s",
 		color.Magenta("%d", zkN),
 		color.Magenta("%d", brokerN),
@@ -115,6 +122,49 @@ func (this *Members) fillTheHosts(zkzone *zk.ZkZone) {
 		host, _, err := net.SplitHostPort(kw.PubAddr)
 		swallow(err)
 		this.katewayHosts[host] = struct{}{}
+	}
+}
+
+func (this *Members) executeOnAll(execCmd string) {
+	args := []string{"exec"}
+	args = append(args, strings.Split(execCmd, " ")...)
+	cmd := pipestream.New("consul", args...)
+	err := cmd.Open()
+	swallow(err)
+	defer cmd.Close()
+
+	this.Ui.Info(fmt.Sprintf("%s ...", execCmd))
+
+	lines := make([]string, 0)
+	header := "Node|Host|Role|Result"
+	lines = append(lines, header)
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "finished with exit code 0") ||
+			strings.Contains(line, "completed / acknowledged") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) == 1 {
+			continue
+		}
+
+		node := fields[0]
+		if strings.HasSuffix(node, ":") {
+			node = strings.TrimRight(node, ":")
+		}
+
+		host := this.nodeHostMap[node]
+		lines = append(lines, fmt.Sprintf("%s|%s|%s|%s", node, host, this.roleOfHost(host),
+			strings.Join(fields[1:], " ")))
+	}
+
+	if len(lines) > 1 {
+		sort.Strings(lines[1:])
+		this.Ui.Output(columnize.SimpleFormat(lines))
 	}
 }
 
@@ -213,6 +263,10 @@ Usage: %s members [options]
 
     -l
       Display each member load average
+
+    -exec <cmd>
+      Execute cmd on all members and print the result by host
+      e,g. gk members -exec "ifconfig bond0 | grep 'TX bytes'"
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
