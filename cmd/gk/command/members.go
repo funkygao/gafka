@@ -12,6 +12,7 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/pipestream"
+	"github.com/ryanuber/columnize"
 )
 
 // consul members will include:
@@ -125,6 +126,10 @@ func (this *Members) displayLoadAvg() {
 	swallow(err)
 	defer cmd.Close()
 
+	lines := make([]string, 0)
+	header := "Node|Host|Role|Load Avg"
+	lines = append(lines, header)
+
 	scanner := bufio.NewScanner(cmd.Reader())
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
@@ -140,7 +145,11 @@ func (this *Members) displayLoadAvg() {
 		}
 
 		host := this.nodeHostMap[node]
-		this.Ui.Output(fmt.Sprintf("%35s %s %s", node, this.roleOfHost(host), parts[1]))
+		lines = append(lines, fmt.Sprintf("%s|%s|%s|%s", node, host, this.roleOfHost(host), parts[1]))
+	}
+
+	if len(lines) > 1 {
+		this.Ui.Output(columnize.SimpleFormat(lines))
 	}
 }
 
