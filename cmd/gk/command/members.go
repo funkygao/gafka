@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 
 	"github.com/funkygao/gafka/ctx"
@@ -67,8 +68,6 @@ func (this *Members) Run(args []string) (exitCode int) {
 
 		if !presentInBroker && !presentInZk && !presentInKateway {
 			unknownN++
-
-			this.Ui.Info(fmt.Sprintf("? %s", node))
 		}
 
 		consulLiveMap[node] = struct{}{}
@@ -149,6 +148,7 @@ func (this *Members) displayLoadAvg() {
 	}
 
 	if len(lines) > 1 {
+		sort.Strings(lines[1:])
 		this.Ui.Output(columnize.SimpleFormat(lines))
 	}
 }
