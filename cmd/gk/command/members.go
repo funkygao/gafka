@@ -103,7 +103,7 @@ func (this *Members) Run(args []string) (exitCode int) {
 		this.displayLoadAvg()
 	}
 
-	this.Ui.Output(fmt.Sprintf("zk:%d broker:%s kateway:%s ?:%d",
+	this.Ui.Output(fmt.Sprintf("zk:%s broker:%s kateway:%s ?:%s",
 		color.Magenta("%d", zkN),
 		color.Magenta("%d", brokerN),
 		color.Magenta("%d", katewayN),
