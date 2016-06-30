@@ -91,11 +91,11 @@ func (this *Members) Run(args []string) (exitCode int) {
 	}
 
 	// summary
-	this.Ui.Output(fmt.Sprintf("zk:%s broker:%s kateway:%s ?:%s",
+	this.Ui.Output(fmt.Sprintf("Zk:%s Broker:%s Kateway:%s ?:%s -total %d-",
 		color.Magenta("%d", zkN),
 		color.Magenta("%d", brokerN),
 		color.Magenta("%d", katewayN),
-		color.Green("%d", unknownN)))
+		color.Green("%d", unknownN), zkN+brokerN+katewayN+unknownN))
 
 	return
 }
