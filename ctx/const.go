@@ -249,10 +249,18 @@ const (
         "k11000b.wdds.kfk.com:10.209.18.16"
         "k11001a.wdds.kfk.com:10.209.37.69"
         "k11001b.wdds.kfk.com:10.209.33.40"
+		"k11002a.wdds.kfk.com:10.209.10.161"
+		"k11002b.wdds.kfk.com:10.209.10.141"
         "k11003a.wdds.kfk.com:10.209.20.194"
         "k11003b.wdds.kfk.com:10.209.18.16"       
+		"k11004a.wdds.kfk.com:10.209.18.65"
+		"k11004b.wdds.kfk.com:10.209.18.66"
+        "k11005a.wdds.kfk.com:10.209.18.65"
+		"k11005b.wdds.kfk.com:10.209.240.194"
         "k11006a.wdds.kfk.com:10.209.19.143"
         "k11006b.wdds.kfk.com:10.209.19.144"
+		"k11007a.wdds.kfk.com:10.209.19.35"
+		"k11007b.wdds.kfk.com:10.209.19.36"
     ]    
 }
 `
