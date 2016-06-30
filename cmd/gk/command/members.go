@@ -91,7 +91,7 @@ func (this *Members) Run(args []string) (exitCode int) {
 	}
 
 	// summary
-	this.Ui.Output(fmt.Sprintf("Zk:%s Broker:%s Kateway:%s ?:%s =%d=",
+	this.Ui.Output(fmt.Sprintf("Zk:%s Broker:%s Kateway:%s ?:%s => %d",
 		color.Magenta("%d", zkN),
 		color.Magenta("%d", brokerN),
 		color.Magenta("%d", katewayN),
