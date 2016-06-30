@@ -34,6 +34,7 @@ type Deploy struct {
 	tcpPort          string
 	ip               string
 	demoMode         bool
+	uninstall        string
 	kafkaVer         string
 	logDirs          string
 	dryRun           bool
@@ -55,12 +56,43 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.ip, "ip", "", "")
 	cmdFlags.StringVar(&this.logDirs, "log.dirs", "", "")
 	cmdFlags.StringVar(&this.runAs, "user", "sre", "")
+	cmdFlags.StringVar(&this.uninstall, "uninstall", "", "")
 	cmdFlags.BoolVar(&this.demoMode, "demo", false, "")
 	cmdFlags.BoolVar(&this.installKafkaOnly, "kfkonly", false, "")
 	cmdFlags.BoolVar(&this.dryRun, "dryrun", true, "")
 	cmdFlags.StringVar(&this.kafkaVer, "ver", "2.10-0.8.2.2", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	if this.uninstall != "" {
+		serverProperties := fmt.Sprintf("%s/config/server.properties", this.uninstall)
+		lines, err := gio.ReadLines(serverProperties)
+		if err != nil {
+			this.Ui.Error(err.Error())
+			return 2
+		}
+		var logDirs []string
+		for _, line := range lines {
+			if strings.HasPrefix(line, "log.dirs") {
+				parts := strings.SplitN(line, "=", 2)
+				logDirs = strings.Split(parts[1], ",")
+				break
+			}
+		}
+		if len(logDirs) == 0 {
+			this.Ui.Error("empty log.dirs")
+			return 2
+		}
+
+		for _, logDir := range logDirs {
+			this.Ui.Output(fmt.Sprintf("rm -rf %s", logDir))
+		}
+		name := filepath.Base(this.uninstall)
+		this.Ui.Output(fmt.Sprintf("chkconfig --del %s", name))
+		this.Ui.Output(fmt.Sprintf("rm -f /etc/init.d/%s", name))
+		this.Ui.Output(fmt.Sprintf("rm -rf %s", this.uninstall))
+		return 0
 	}
 
 	if !ctx.CurrentUserIsRoot() {
@@ -353,6 +385,9 @@ Options:
 
     -kfkonly
       Only install kafka runtime on localhost.
+
+    -uninstall base dir
+      Uninstall a kafka broker on localhost.
 
     -demo
       Demonstrate how to use this command.
