@@ -67,11 +67,24 @@ func (this *Consul) Run(args []string) (exitCode int) {
 	}
 
 	consulLiveMap := make(map[string]struct{})
+	brokerN, zkN, katewayN, unknownN := 0, 0, 0, 0
 	for _, node := range consulLiveNode {
 		_, presentInBroker := brokerHosts[node]
 		_, presentInZk := zkHosts[node]
 		_, presentInKateway := katewayHosts[node]
+		if presentInBroker {
+			brokerN++
+		}
+		if presentInZk {
+			zkN++
+		}
+		if presentInKateway {
+			katewayN++
+		}
+
 		if !presentInBroker && !presentInZk && !presentInKateway {
+			unknownN++
+
 			this.Ui.Info(fmt.Sprintf("? %s", node))
 		}
 
@@ -88,6 +101,8 @@ func (this *Consul) Run(args []string) (exitCode int) {
 	if showLoadAvg {
 		this.displayLoadAvg()
 	}
+
+	this.Ui.Output(fmt.Sprintf("broker:%d zk:%d kateway:%d ?:%d", brokerN, zkN, katewayN, unknownN))
 
 	return
 }
