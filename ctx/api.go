@@ -33,6 +33,11 @@ func ZkDefaultZone() string {
 // UpgradeCenter return the uri where to fetch gk/kguard/kateway/.gafka.cf files.
 func UpgradeCenter() string {
 	ensureLogLoaded()
+	fromEnv := os.Getenv("UPGRADE_CENTER")
+	if fromEnv != "" {
+		return fromEnv
+	}
+
 	return conf.upgradeCenter
 }
 
