@@ -25,6 +25,10 @@ func LoadConfig(fn string) {
 	conf.zones = make(map[string]string)
 	conf.consulBootstrap = cf.String("consul_bootstrap", "")
 	conf.zkDefaultZone = cf.String("zk_default_zone", "")
+	conf.upgradeCenter = cf.String("upgrade_center", "")
+	if !strings.HasPrefix(conf.upgradeCenter, "http://") {
+		panic("invalid upgrade_center")
+	}
 	conf.tunnels = make(map[string]string)
 	conf.aliases = make(map[string]string)
 	for i := 0; i < len(cf.List("aliases", nil)); i++ {
@@ -51,7 +55,7 @@ func LoadConfig(fn string) {
 	conf.reverseDns = make(map[string][]string)
 	for _, entry := range cf.StringList("reverse_dns", nil) {
 		if entry != "" {
-			// entry e,g. k11000b.sit.wdds.kfk.com:10.213.33.149
+			// entry e,g. k11000b.sit.mycorp.kfk.com:10.10.1.1
 			parts := strings.SplitN(entry, ":", 2)
 			if len(parts) != 2 {
 				panic("invalid reverse_dns record")

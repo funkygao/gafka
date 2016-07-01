@@ -276,7 +276,7 @@ input {
 
 output {
     kafka {
-        broker_list => "10.209.18.15:11003,10.209.18.16:11003"
+        broker_list => "k11003a.mycorp.kfk.com:11003,k11003b.mycorp.kfk.com:11003"
         topic_id => "pubsub_log"
         topic_metadata_refresh_interval_ms => 600000
     }

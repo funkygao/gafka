@@ -19,13 +19,11 @@ type Config struct {
 
 func (this *Config) Run(args []string) (exitCode int) {
 	var (
-		genratedMode     bool
 		showAliases      bool
 		bashAutocomplete bool
 	)
 	cmdFlags := flag.NewFlagSet("config", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.BoolVar(&genratedMode, "gen", false, "")
 	cmdFlags.BoolVar(&showAliases, "alias", false, "")
 	cmdFlags.BoolVar(&bashAutocomplete, "auto", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -39,11 +37,6 @@ func (this *Config) Run(args []string) (exitCode int) {
 		this.Ui.Info("next:")
 		this.Ui.Warn("yum install -y bash-completion")
 		this.Ui.Warn("source /etc/bash_completion.d/gk")
-		return
-	}
-
-	if genratedMode {
-		this.Ui.Output(strings.TrimSpace(ctx.DefaultConfig))
 		return
 	}
 
@@ -81,10 +74,7 @@ Options:
 
     -auto
       Install gk bash autocomplete script.
-
-    -gen
-      Display default config contents on console.
-
+   
     -alias
       Display active aliases.
 

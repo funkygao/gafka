@@ -74,13 +74,6 @@ func init() {
 			}, nil
 		},
 
-		"whoami": func() (cli.Command, error) {
-			return &command.Whoami{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
 		"leader": func() (cli.Command, error) {
 			return &command.Leader{
 				Ui:  ui,

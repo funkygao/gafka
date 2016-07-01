@@ -26,9 +26,9 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "", host)
 	host, present = ReverseDnsLookup("10.213.33.148", 10113)
 	assert.Equal(t, true, present)
-	assert.Equal(t, "k10113a.sit.wdds.kfk.com", host)
+	assert.Equal(t, "k10113a.sit.mycorp.kfk.com", host)
 	host, present = ReverseDnsLookup("10.213.33.148", 0)
 	assert.Equal(t, true, present)
-	assert.Equal(t, "k10113a.sit.wdds.kfk.com", host)
+	assert.Equal(t, "k10113a.sit.mycorp.kfk.com", host)
 
 }

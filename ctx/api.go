@@ -30,6 +30,12 @@ func ZkDefaultZone() string {
 	return conf.zkDefaultZone
 }
 
+// UpgradeCenter return the uri where to fetch gk/kguard/kateway/.gafka.cf files.
+func UpgradeCenter() string {
+	ensureLogLoaded()
+	return conf.upgradeCenter
+}
+
 func Tunnels() map[string]string {
 	ensureLogLoaded()
 	return conf.tunnels
@@ -48,7 +54,7 @@ func ReverseDnsLookup(ip string, port int) (string, bool) {
 	}
 
 	// a single host has multiple services each of which has a different port
-	// e,g. k[port][a-z].sit.wdds.kfk.com/kafka  z[port][a-z].sit.wdds.zk.com/zk
+	// e,g. k[port][a-z].sit.mycorp.kfk.com/kafka  z[port][a-z].sit.mycorp.zk.com/zk
 	for _, name := range hosts {
 		p := strings.Split(name, ".")
 		if strings.Contains(p[0], strconv.Itoa(port)) {
