@@ -6,7 +6,6 @@ import (
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
-	_ "github.com/funkygao/gafka/cmd/kguard/watchers/f5" // trigger RegisterWatcher(s)
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/influx"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/kafka"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/kateway"

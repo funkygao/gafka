@@ -23,6 +23,7 @@ type config struct {
 	zkDefaultZone   string            // zk command default zone name
 	aliases         map[string]string
 	reverseDns      map[string][]string // ip: domain names
+	upgradeCenter   string
 }
 
 func (c *config) sortedZones() []string {

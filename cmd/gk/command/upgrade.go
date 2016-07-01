@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"path/filepath"
 	"strings"
 
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/pipestream"
 )
@@ -16,22 +18,20 @@ type Upgrade struct {
 	Ui  cli.Ui
 	Cmd string
 
-	storeUrl       string
 	uploadDir      string
 	mode           string
 	upgradeKateway bool
 	upgradeZk      bool
 	upgradeKguard  bool
-	clearLocalConf bool
+	upgradeConfig  bool
 }
 
 func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("upgrade", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.storeUrl, "url", "http://10.213.57.149:10080/gk", "")
 	cmdFlags.StringVar(&this.uploadDir, "upload", "/var/www/html", "")
 	cmdFlags.StringVar(&this.mode, "m", "d", "")
-	cmdFlags.BoolVar(&this.clearLocalConf, "c", false, "")
+	cmdFlags.BoolVar(&this.upgradeConfig, "c", false, "")
 	cmdFlags.BoolVar(&this.upgradeKateway, "k", false, "")
 	cmdFlags.BoolVar(&this.upgradeZk, "zk", false, "")
 	cmdFlags.BoolVar(&this.upgradeKguard, "kg", false, "")
@@ -40,13 +40,25 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	}
 
 	gopath := os.Getenv("GOPATH")
+	usr, _ := user.Current()
 
-	if this.upgradeKateway {
-		this.storeUrl = "http://10.213.57.149:10080/kateway"
-
+	if this.upgradeConfig {
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl})
+			this.runCmd("wget", []string{this.storeUrl(".gafka.cf")})
+			this.runCmd("mv", []string{"-f", ".gafka.cf", filepath.Join(usr.HomeDir, ".gafka.cf")})
+
+		case "u":
+			this.runCmd("cp", []string{"-f", filepath.Join(usr.HomeDir, ".gafka.cf"), this.uploadDir})
+		}
+
+		return
+	}
+
+	if this.upgradeKateway {
+		switch this.mode {
+		case "d":
+			this.runCmd("wget", []string{this.storeUrl("kateway")})
 			this.runCmd("chmod", []string{"a+x", "kateway"})
 			this.runCmd("mv", []string{"-f", "kateway", "/var/wd/kateway/kateway"})
 
@@ -59,11 +71,9 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	}
 
 	if this.upgradeZk {
-		this.storeUrl = "http://10.213.57.149:10080/zk"
-
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl})
+			this.runCmd("wget", []string{this.storeUrl("zk")})
 			this.runCmd("chmod", []string{"a+x", "zk"})
 			this.runCmd("mv", []string{"-f", "zk", "/usr/bin/zk"})
 
@@ -75,11 +85,9 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	}
 
 	if this.upgradeKguard {
-		this.storeUrl = "http://10.213.57.149:10080/kguard"
-
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl})
+			this.runCmd("wget", []string{this.storeUrl("kguard")})
 			this.runCmd("chmod", []string{"a+x", "kguard"})
 			this.runCmd("mv", []string{"-f", "kguard", "/var/wd/kguard/kguard"})
 
@@ -97,10 +105,10 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 		swallow(err)
 		this.runCmd("/usr/bin/gk", []string{"-v"})
 		this.runCmd("rm", []string{"-f", "gk"})
-		if this.clearLocalConf {
+		if this.upgradeConfig {
 			this.runCmd("rm", []string{"-f", fmt.Sprintf("%s/.gafka.cf", u.HomeDir)})
 		}
-		this.runCmd("wget", []string{this.storeUrl})
+		this.runCmd("wget", []string{this.storeUrl("gk")})
 		this.runCmd("chmod", []string{"a+x", "gk"})
 		this.runCmd("mv", []string{"-f", "gk", "/usr/bin/gk"})
 		this.runCmd("/usr/bin/gk", []string{"-v"})
@@ -115,6 +123,10 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 
 	this.Ui.Info("ok")
 	return
+}
+
+func (this *Upgrade) storeUrl(fn string) string {
+	return fmt.Sprintf("%s/%s", ctx.UpgradeCenter(), fn)
 }
 
 func (this *Upgrade) runCmd(c string, args []string) {
@@ -150,7 +162,7 @@ Usage: %s upgrade [options]
 Options:
 
     -c
-      Clear local $HOME/.gafka.cf
+      Upgrade local $HOME/.gafka.cf
       
     -k
       Upgrade kateway instead of gk
@@ -163,10 +175,7 @@ Options:
 
     -m <d|u>
       Download or upload mode
-      Defaults download mode
-
-    -url gk file server url
-      Defaults http://10.213.57.149:10080/gk
+      Defaults download mode   
 
     -upload dir
       Upload the gk file to target dir, only run on gk file server

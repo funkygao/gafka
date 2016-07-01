@@ -45,7 +45,7 @@ public class KafkaProducer {
  
     private KafkaProducer(){
         Properties props = new Properties();
-        props.put("%s", "k10101a.wdds.kfk.com:10101,k10101b.wdds.kfk.com:10101");
+        props.put("%s", "k10101a.mycorp.kfk.com:10101,k10101b.mycorp.kfk.com:10101");
         props.put("serializer.class", "kafka.serializer.StringEncoder");
         props.put("key.serializer.class", "kafka.serializer.StringEncoder");
  
@@ -87,7 +87,7 @@ public class KafkaConsumer {
 
     private KafkaConsumer() {
         Properties props = new Properties();
-        props.put("%s", "zk2181a.wdds.zk.com:2181,zk2181b.wdds.zk.com:2181,zk2181c.wdds.zk.com:2181/kafka");
+        props.put("%s", "zk2181a.mycorp.zk.com:2181,zk2181b.mycorp.zk.com:2181,zk2181c.mycorp.zk.com:2181/kafka");
         props.put("%s", "group1");
         props.put("zookeeper.session.timeout.ms", "4000");
         props.put("zookeeper.sync.time.ms", "200");
