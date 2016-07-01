@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/pipestream"
+	consulapi "github.com/hashicorp/consul/api"
 	"github.com/ryanuber/columnize"
 )
 
@@ -35,6 +36,7 @@ func (this *Members) Run(args []string) (exitCode int) {
 		showLoadAvg bool
 		exec        string
 		node        string
+		role        string
 	)
 	cmdFlags := flag.NewFlagSet("members", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -42,6 +44,7 @@ func (this *Members) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&showLoadAvg, "l", false, "")
 	cmdFlags.StringVar(&exec, "exec", "", "")
 	cmdFlags.StringVar(&node, "n", "", "")
+	cmdFlags.StringVar(&role, "r", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -53,11 +56,16 @@ func (this *Members) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-	this.fillTheHosts(zkzone)
+	this.fetchAllRunningHostsFromZk(zkzone)
 
-	consulLiveNode, consulDeadNodes := this.consulMembers()
-	for _, node := range consulDeadNodes {
-		this.Ui.Error(fmt.Sprintf("%s consul dead", node))
+	members := this.consulMembers()
+	consulLiveNode := make([]string, 0, len(members))
+	for _, member := range members {
+		if member.Status == 1 {
+			consulLiveNode = append(consulLiveNode, member.Addr)
+		} else {
+			this.Ui.Warn(fmt.Sprintf("%s %s status:%d", member.Name, member.Addr, member.Status))
+		}
 	}
 
 	consulLiveMap := make(map[string]struct{})
@@ -92,10 +100,13 @@ func (this *Members) Run(args []string) (exitCode int) {
 
 	switch {
 	case showLoadAvg:
-		this.displayLoadAvg()
+		this.displayLoadAvg(role)
 
 	case exec != "":
-		this.executeOnAll(exec, node)
+		this.executeOnAll(exec, role, node)
+
+	default:
+		this.displayMembers(members, role)
 	}
 
 	// summary
@@ -105,7 +116,7 @@ func (this *Members) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Members) fillTheHosts(zkzone *zk.ZkZone) {
+func (this *Members) fetchAllRunningHostsFromZk(zkzone *zk.ZkZone) {
 	this.brokerHosts = make(map[string]struct{})
 	zkzone.ForSortedBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
 		for _, brokerInfo := range brokers {
@@ -130,7 +141,8 @@ func (this *Members) fillTheHosts(zkzone *zk.ZkZone) {
 	}
 }
 
-func (this *Members) executeOnAll(execCmd string, node string) {
+// TODO role is ignored
+func (this *Members) executeOnAll(execCmd string, role string, node string) {
 	args := []string{"exec"}
 	if node != "" {
 		args = append(args, fmt.Sprintf("-node=%s", node))
@@ -176,7 +188,26 @@ func (this *Members) executeOnAll(execCmd string, node string) {
 	}
 }
 
-func (this *Members) displayLoadAvg() {
+func (this *Members) displayMembers(members []*consulapi.AgentMember, role string) {
+	lines := make([]string, 0)
+	header := "Node|Host|Role"
+	lines = append(lines, header)
+	for _, member := range members {
+		hostRole := this.roleOfHost(member.Addr)
+		if role != "" && role != hostRole {
+			continue
+		}
+
+		lines = append(lines, fmt.Sprintf("%s|%s|%s", member.Name, member.Addr, hostRole))
+	}
+
+	if len(lines) > 1 {
+		sort.Strings(lines[1:])
+		this.Ui.Output(columnize.SimpleFormat(lines))
+	}
+}
+
+func (this *Members) displayLoadAvg(role string) {
 	cmd := pipestream.New("consul", "exec",
 		"uptime", "|", "grep", "load")
 	err := cmd.Open()
@@ -210,7 +241,12 @@ func (this *Members) displayLoadAvg() {
 		}
 
 		host := this.nodeHostMap[node]
-		lines = append(lines, fmt.Sprintf("%s|%s|%s|%s", node, host, this.roleOfHost(host), loadAvg))
+		hostRole := this.roleOfHost(host)
+		if role != "" && hostRole != role {
+			continue
+		}
+
+		lines = append(lines, fmt.Sprintf("%s|%s|%s|%s", node, host, hostRole, loadAvg))
 	}
 
 	if len(lines) > 1 {
@@ -232,37 +268,30 @@ func (this *Members) roleOfHost(host string) string {
 	return "?"
 }
 
-func (this *Members) consulMembers() ([]string, []string) {
-	cmd := pipestream.New("consul", "members")
-	err := cmd.Open()
+func (this *Members) consulMembers() []*consulapi.AgentMember {
+	cf := consulapi.DefaultConfig()
+	client, err := consulapi.NewClient(cf)
 	swallow(err)
-	defer cmd.Close()
+	members, err := client.Agent().Members(false)
+	swallow(err)
 
-	liveHosts, deadHosts := []string{}, []string{}
-	scanner := bufio.NewScanner(cmd.Reader())
-	scanner.Split(bufio.ScanLines)
-	this.nodeHostMap = make(map[string]string)
-	for scanner.Scan() {
-		if strings.Contains(scanner.Text(), "Protocol") {
-			// the header
-			continue
-		}
+	m := make(map[string]*consulapi.AgentMember, len(members))
+	sortedName := make([]string, 0, len(members))
+	this.nodeHostMap = make(map[string]string, len(members))
+	for _, member := range members {
+		m[member.Name] = member
+		this.nodeHostMap[member.Name] = member.Addr
 
-		fields := strings.Fields(scanner.Text())
-		node, addr, alive := fields[0], fields[1], fields[2]
-		host, _, err := net.SplitHostPort(addr)
-		swallow(err)
+		sortedName = append(sortedName, member.Name)
+	}
+	sort.Strings(sortedName)
 
-		this.nodeHostMap[node] = host
-
-		if alive == "alive" {
-			liveHosts = append(liveHosts, host)
-		} else {
-			deadHosts = append(deadHosts, host)
-		}
+	r := make([]*consulapi.AgentMember, 0, len(sortedName))
+	for _, name := range sortedName {
+		r = append(r, m[name])
 	}
 
-	return liveHosts, deadHosts
+	return r
 }
 
 func (*Members) Synopsis() string {
@@ -276,6 +305,8 @@ Usage: %s members [options]
     Verify consul members match kafka zone
 
     -z zone
+
+    -r role
 
     -l
       Display each member load average
