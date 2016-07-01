@@ -45,7 +45,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	if this.upgradeConfig {
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl(".gafka.cf")})
+			this.runCmd("wget", []string{this.storeUrl(".gafka.cf"), "-O", ".gafka.cf"})
 			this.runCmd("mv", []string{"-f", ".gafka.cf", filepath.Join(usr.HomeDir, ".gafka.cf")})
 
 		case "u":
@@ -58,7 +58,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	if this.upgradeKateway {
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl("kateway")})
+			this.runCmd("wget", []string{this.storeUrl("kateway"), "-O", "kateway"})
 			this.runCmd("chmod", []string{"a+x", "kateway"})
 			this.runCmd("mv", []string{"-f", "kateway", "/var/wd/kateway/kateway"})
 
@@ -73,7 +73,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	if this.upgradeZk {
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl("zk")})
+			this.runCmd("wget", []string{this.storeUrl("zk"), "-O", "zk"})
 			this.runCmd("chmod", []string{"a+x", "zk"})
 			this.runCmd("mv", []string{"-f", "zk", "/usr/bin/zk"})
 
@@ -87,7 +87,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	if this.upgradeKguard {
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl("kguard")})
+			this.runCmd("wget", []string{this.storeUrl("kguard"), "-O", "kguard"})
 			this.runCmd("chmod", []string{"a+x", "kguard"})
 			this.runCmd("mv", []string{"-f", "kguard", "/var/wd/kguard/kguard"})
 
@@ -108,7 +108,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 		if this.upgradeConfig {
 			this.runCmd("rm", []string{"-f", fmt.Sprintf("%s/.gafka.cf", u.HomeDir)})
 		}
-		this.runCmd("wget", []string{this.storeUrl("gk")})
+		this.runCmd("wget", []string{this.storeUrl("gk"), "-O", "gk"})
 		this.runCmd("chmod", []string{"a+x", "gk"})
 		this.runCmd("mv", []string{"-f", "gk", "/usr/bin/gk"})
 		this.runCmd("/usr/bin/gk", []string{"-v"})
