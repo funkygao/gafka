@@ -26,9 +26,6 @@ func LoadConfig(fn string) {
 	conf.consulBootstrap = cf.String("consul_bootstrap", "")
 	conf.zkDefaultZone = cf.String("zk_default_zone", "")
 	conf.upgradeCenter = cf.String("upgrade_center", "")
-	if !strings.HasPrefix(conf.upgradeCenter, "http://") {
-		panic("invalid upgrade_center")
-	}
 	conf.tunnels = make(map[string]string)
 	conf.aliases = make(map[string]string)
 	for i := 0; i < len(cf.List("aliases", nil)); i++ {
