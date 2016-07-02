@@ -235,7 +235,10 @@ func (this *Members) displayLoadAvg(role string) {
 		loadAvg := strings.TrimSpace(parts[1])
 		if loadAvg[0] > '0' {
 			loadAvg += " !"
-			if loadAvg[0] > '1' {
+			if loadAvg[0] > '2' {
+				loadAvg += "!"
+			}
+			if loadAvg[0] > '4' {
 				loadAvg += "!"
 			}
 		}
