@@ -16,7 +16,7 @@ var (
 
 func main() {
 	cf := api.DefaultConfig("30", "32f02594f55743eeb1efcf75db6dd8a0")
-	cf.Pub.Endpoint = "pub.intra.ffan.com"
+	cf.Pub.Endpoint = "pub.intra.mycorp.com"
 	client = api.NewClient(cf)
 
 	http.HandleFunc("/", handle)

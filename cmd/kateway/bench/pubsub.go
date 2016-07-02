@@ -37,7 +37,7 @@ func init() {
 	flag.StringVar(&ver, "ver", "v1", "version")
 	flag.IntVar(&limit, "limit", 100000, "limit msg count")
 	flag.StringVar(&topic, "topic", "", "topic name")
-	flag.StringVar(&endpoint, "ep", "pub.sit.ffan.com:9191", "end point")
+	flag.StringVar(&endpoint, "ep", "pub.sit.mycorp.com:9191", "end point")
 	flag.StringVar(&msgfile, "msgfile", "", "message file to Pub")
 	flag.StringVar(&group, "group", "bench_go", "sub group name")
 	flag.DurationVar(&sleep, "sleep", 0, "sleep between loops")
@@ -58,8 +58,8 @@ func main() {
 		stress.RunStress(benchmarkSub)
 
 	case "help":
-		fmt.Println("Pub: go run pubsub.go -c1 10 -step 5 -mode pub -appid 73 -key xxxx -msgfile msg -ep pub.sit.ffan.com:9191 -topic risk_beacon_test")
-		fmt.Println("Sub: go run pubsub.go -c1 1 -c2 1 -mode sub -appid app2 -subappid app1 -key xxx -ep sub.sit.ffan.com:9192 -topic risk_beacon_test -group bench_go -debug")
+		fmt.Println("Pub: go run pubsub.go -c1 10 -step 5 -mode pub -appid 73 -key xxxx -msgfile msg -ep pub.sit.mycorp.com:9191 -topic risk_beacon_test")
+		fmt.Println("Sub: go run pubsub.go -c1 1 -c2 1 -mode sub -appid app2 -subappid app1 -key xxx -ep sub.sit.mycorp.com:9192 -topic risk_beacon_test -group bench_go -debug")
 
 	}
 

@@ -57,7 +57,6 @@ listen pub
     bind 0.0.0.0:{{.PubPort}}
     balance source
     #cookie PUB insert indirect # indirect means not sending cookie to backend
-    #option httpchk GET /alive HTTP/1.1\r\nHost:pub.ffan.com
 {{range .Pub}}
     server {{.Name}} {{.Addr}} weight {{.Cpu}}
 {{end}}
@@ -69,7 +68,6 @@ listen sub
     #compression algo gzip
     #compression type text/html text/plain application/json
     #cookie SUB insert indirect
-    #option httpchk GET /alive HTTP/1.1\r\nHost:sub.ffan.com
 {{range .Sub}}
     server {{.Name}} {{.Addr}} weight {{.Cpu}}
 {{end}}
