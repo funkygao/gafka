@@ -289,8 +289,10 @@ func (this *Gateway) ServeForever() {
 		this.svrMetrics.Flush()
 		log.Trace("svr metrics flushed")
 
-		telementry.Default.Stop()
-		log.Trace("telementry stopped")
+		if telementry.Default != nil {
+			telementry.Default.Stop()
+			log.Trace("telementry stopped")
+		}
 
 		meta.Default.Stop()
 		log.Trace("meta store stopped")
