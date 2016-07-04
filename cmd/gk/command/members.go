@@ -310,6 +310,7 @@ Usage: %s members [options]
     -z zone
 
     -r role
+      Available roles: [Z|K|B]
 
     -l
       Display each member load average
