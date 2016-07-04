@@ -379,7 +379,7 @@ func (this *Deploy) demo() {
 		}
 	}
 
-	this.Ui.Output(fmt.Sprintf("gk deploy -z %s -c %s -broker.id %d -port %d -ip %s -log.dirs %s",
+	this.Ui.Output(fmt.Sprintf("gk deploy -z %s -c %s -broker.id %d -port %d -ip %s -influx 127.0.0.1:8086 -log.dirs %s",
 		this.zone, this.cluster,
 		myBrokerId, myPort,
 		ip.String(),
