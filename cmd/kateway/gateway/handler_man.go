@@ -15,6 +15,28 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// GET /v1/schema/:appid/:topic/:ver
+func (this *manServer) schemaHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	hisAppid := params.ByName(UrlParamAppid)
+	myAppid := r.Header.Get(HttpHeaderAppid)
+	topic := params.ByName(UrlParamTopic)
+	ver := params.ByName(UrlParamVersion)
+	realIp := getHttpRemoteIp(r)
+
+	log.Info("schema[%s] %s(%s) {app:%s topic:%s ver:%s UA:%s}",
+		myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"))
+
+	// TODO authorization
+
+	_, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		writeBadRequest(w, "invalid appid")
+		return
+	}
+
+	// TODO lookup from manager and send reponse
+}
+
 // GET /v1/status
 func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	log.Info("status %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))

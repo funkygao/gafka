@@ -29,6 +29,8 @@ func (this *Gateway) buildRouting() {
 			m(this.manServer.partitionsHandler))
 		this.manServer.Router().POST("/v1/topics/:cluster/:appid/:topic/:ver",
 			m(this.manServer.addTopicHandler))
+		this.manServer.Router().GET("/v1/schema/:appid/:topic/:ver",
+			m(this.manServer.schemaHandler))
 		this.manServer.Router().PUT("/v1/topics/:cluster/:appid/:topic/:ver",
 			m(this.manServer.alterTopicHandler))
 		this.manServer.Router().DELETE("/v1/manager/cache",
