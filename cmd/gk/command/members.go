@@ -7,6 +7,7 @@ import (
 	"net"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
@@ -27,7 +28,8 @@ type Members struct {
 	Cmd string
 
 	brokerHosts, zkHosts, katewayHosts map[string]struct{}
-	nodeHostMap                        map[string]string // consul members node->ip
+	nodeHostMap, hostNodeMap           map[string]string // consul members node->ip
+	debug                              bool
 }
 
 func (this *Members) Run(args []string) (exitCode int) {
@@ -44,6 +46,7 @@ func (this *Members) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&showLoadAvg, "l", false, "")
 	cmdFlags.StringVar(&exec, "exec", "", "")
 	cmdFlags.StringVar(&node, "n", "", "")
+	cmdFlags.BoolVar(&this.debug, "debug", false, "")
 	cmdFlags.StringVar(&role, "r", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -103,7 +106,11 @@ func (this *Members) Run(args []string) (exitCode int) {
 		this.displayLoadAvg(role)
 
 	case exec != "":
-		this.executeOnAll(exec, role, node)
+		if role != "" {
+			this.executeOnRole(exec, role)
+		} else {
+			this.executeOnAll(exec, node)
+		}
 
 	default:
 		this.displayMembers(members, role)
@@ -141,8 +148,80 @@ func (this *Members) fetchAllRunningHostsFromZk(zkzone *zk.ZkZone) {
 	}
 }
 
-// TODO role is ignored
-func (this *Members) executeOnAll(execCmd string, role string, node string) {
+func (this *Members) executeOnRole(execCmd string, role string) {
+	this.Ui.Info(fmt.Sprintf("%s ...", execCmd))
+
+	linesByNode := make(map[string][]string)
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	for _, node := range this.nodesOfRole(role) {
+		linesByNode[node] = make([]string, 0)
+		wg.Add(1)
+
+		go func(node string) {
+			defer wg.Done()
+
+			args := []string{"exec"}
+			if node != "" {
+				args = append(args, fmt.Sprintf("-node=%s", node))
+			}
+			args = append(args, strings.Split(execCmd, " ")...)
+			if this.debug {
+				this.Ui.Output(fmt.Sprintf("consul %+v", args))
+			}
+			cmd := pipestream.New("consul", args...)
+			err := cmd.Open()
+			swallow(err)
+			defer cmd.Close()
+
+			scanner := bufio.NewScanner(cmd.Reader())
+			scanner.Split(bufio.ScanLines)
+			for scanner.Scan() {
+				line := scanner.Text()
+				if strings.Contains(line, "finished with exit code 0") ||
+					strings.Contains(line, "completed / acknowledged") {
+					continue
+				}
+				fields := strings.Fields(line)
+				if len(fields) == 1 {
+					continue
+				}
+
+				node := fields[0]
+				if strings.HasSuffix(node, ":") {
+					node = strings.TrimRight(node, ":")
+				}
+
+				host := this.nodeHostMap[node]
+				mu.Lock()
+				linesByNode[node] = append(linesByNode[node], fmt.Sprintf("%s|%s", host, strings.Join(fields[1:], " ")))
+				mu.Unlock()
+			}
+		}(node)
+	}
+
+	wg.Wait()
+
+	sortedNodes := make([]string, 0, len(linesByNode))
+	for node, _ := range linesByNode {
+		sortedNodes = append(sortedNodes, node)
+	}
+	sort.Strings(sortedNodes)
+
+	lines := make([]string, 0)
+	header := "Host|Result"
+	lines = append(lines, header)
+	for _, node := range sortedNodes {
+		lines = append(lines, linesByNode[node]...)
+	}
+
+	if len(lines) > 1 {
+		sort.Strings(lines[1:])
+		this.Ui.Output(columnize.SimpleFormat(lines))
+	}
+}
+
+func (this *Members) executeOnAll(execCmd string, node string) {
 	args := []string{"exec"}
 	if node != "" {
 		args = append(args, fmt.Sprintf("-node=%s", node))
@@ -271,6 +350,26 @@ func (this *Members) roleOfHost(host string) string {
 	return "?"
 }
 
+func (this *Members) nodesOfRole(role string) []string {
+	r := make([]string, 0)
+	var container map[string]struct{}
+	switch role {
+	case "B":
+		container = this.brokerHosts
+	case "Z":
+		container = this.zkHosts
+	case "K":
+		container = this.katewayHosts
+	default:
+		return nil
+	}
+
+	for host, _ := range container {
+		r = append(r, this.hostNodeMap[host])
+	}
+	return r
+}
+
 func (this *Members) consulMembers() []*consulapi.AgentMember {
 	cf := consulapi.DefaultConfig()
 	client, err := consulapi.NewClient(cf)
@@ -281,9 +380,11 @@ func (this *Members) consulMembers() []*consulapi.AgentMember {
 	m := make(map[string]*consulapi.AgentMember, len(members))
 	sortedName := make([]string, 0, len(members))
 	this.nodeHostMap = make(map[string]string, len(members))
+	this.hostNodeMap = make(map[string]string, len(members))
 	for _, member := range members {
 		m[member.Name] = member
 		this.nodeHostMap[member.Name] = member.Addr
+		this.hostNodeMap[member.Addr] = member.Name
 
 		sortedName = append(sortedName, member.Name)
 	}
@@ -321,6 +422,8 @@ Usage: %s members [options]
 
     -n node
       Execute cmd on a single node
+
+    -debug
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
