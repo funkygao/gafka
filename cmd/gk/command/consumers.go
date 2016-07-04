@@ -35,7 +35,7 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	)
 	cmdFlags := flag.NewFlagSet("consumers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.StringVar(&this.groupPattern, "g", "", "")
 	cmdFlags.BoolVar(&this.onlineOnly, "online", false, "")
