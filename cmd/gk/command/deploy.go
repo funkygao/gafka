@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"net"
 	"os"
 	"os/user"
 	"path"
@@ -37,6 +38,7 @@ type Deploy struct {
 	uninstall        string
 	kafkaVer         string
 	logDirs          string
+	influxDbAddr     string
 	dryRun           bool
 	installKafkaOnly bool
 }
@@ -60,6 +62,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.demoMode, "demo", false, "")
 	cmdFlags.BoolVar(&this.installKafkaOnly, "kfkonly", false, "")
 	cmdFlags.BoolVar(&this.dryRun, "dryrun", true, "")
+	cmdFlags.StringVar(&this.influxDbAddr, "influx", "", "")
 	cmdFlags.StringVar(&this.kafkaVer, "ver", "2.10-0.8.2.2", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -136,7 +139,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	}
 
 	if validateArgs(this, this.Ui).
-		require("-broker.id", "-port", "-ip", "-log.dirs").
+		require("-broker.id", "-port", "-ip", "-log.dirs", "-influx").
 		invalid(args) {
 		return 2
 	}
@@ -185,17 +188,30 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		LogDirs        string
 		IoThreads      string
 		NetworkThreads string
+		InfluxDbHost   string
+		InfluxDbPort   string
+	}
+	host, port, err := net.SplitHostPort(this.influxDbAddr)
+	if err != nil {
+		this.Ui.Error(err.Error())
+		return 2
+	}
+	if host == "" || port == "" {
+		this.Ui.Error("empty influxdb host or port")
+		return 2
 	}
 	data := templateVar{
-		ZkChroot:    zkchroot,
-		KafkaBase:   this.kafkaBaseDir,
-		BrokerId:    this.brokerId,
-		Ip:          this.ip,
-		InstanceDir: this.instanceDir(),
-		User:        this.runAs,
-		TcpPort:     this.tcpPort,
-		ZkAddrs:     this.zkzone.ZkAddrs(),
-		LogDirs:     this.logDirs,
+		ZkAddrs:      this.zkzone.ZkAddrs(),
+		ZkChroot:     zkchroot,
+		KafkaBase:    this.kafkaBaseDir,
+		BrokerId:     this.brokerId,
+		Ip:           this.ip,
+		InstanceDir:  this.instanceDir(),
+		User:         this.runAs,
+		TcpPort:      this.tcpPort,
+		LogDirs:      this.logDirs,
+		InfluxDbHost: host,
+		InfluxDbPort: port,
 	}
 	data.IoThreads = strconv.Itoa(3 * len(strings.Split(data.LogDirs, ",")))
 	networkThreads := ctx.NumCPU() / 2
@@ -385,6 +401,9 @@ Options:
 
     -kfkonly
       Only install kafka runtime on localhost.
+
+    -influx host:port
+      InfluxDB server address used for kafka metrics reporter.
 
     -uninstall base dir
       Uninstall a kafka broker on localhost.
