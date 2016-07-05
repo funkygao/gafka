@@ -1,50 +1,48 @@
 package swf
 
-func (this *Swf) setupApis() {
-	m := this.Middleware
+import (
+	"net/http"
 
-	if this.apiServer != nil {
-		this.apiServer.Router().GET("/alive", m(this.apiServer.checkAliveHandler))
+	"github.com/julienschmidt/httprouter"
+)
 
-		// learned from amazon:
-		// all apis are POST methods because we need json as input params
-		// endpoint e,g. swf.us-east-1.amazonaws.com
-		const opCountClosedWorkflowExecutions = "CountClosedWorkflowExecutions"
-		const opCountOpenWorkflowExecutions = "CountOpenWorkflowExecutions"
-		const opCountPendingActivityTasks = "CountPendingActivityTasks"
-		const opCountPendingDecisionTasks = "CountPendingDecisionTasks"
-		const opDeprecateActivityType = "DeprecateActivityType"
-		const opDeprecateDomain = "DeprecateDomain"
-		const opDeprecateWorkflowType = "DeprecateWorkflowType"
-		const opDescribeActivityType = "DescribeActivityType"
-		const opDescribeDomain = "DescribeDomain"
-		const opDescribeWorkflowExecution = "DescribeWorkflowExecution"
-		const opDescribeWorkflowType = "DescribeWorkflowType"
-		const opGetWorkflowExecutionHistory = "GetWorkflowExecutionHistory"
-		const opListActivityTypes = "ListActivityTypes"
-		const opListClosedWorkflowExecutions = "ListClosedWorkflowExecutions"
-		const opListDomains = "ListDomains"
-		const opListOpenWorkflowExecutions = "ListOpenWorkflowExecutions"
-		const opListWorkflowTypes = "ListWorkflowTypes"
+func (this *apiServer) mainEntryPoint(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	// X-Amz-Target: SimpleWorkflowService.StartWorkflowExecution
+	// X-Amzn-Authorization: AWS3 AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE,Algorithm=HmacSHA256,SignedHeaders=Host;X-Amz-Date;X-Amz-Target;Content-Encoding,Signature=aYxuqLX+TO91kPVg+jh+aA8PWxQazQRN2+SZUGdOgU0=
 
-		const opPollForActivityTask = "PollForActivityTask"
-		const opPollForDecisionTask = "PollForDecisionTask"
+	api := r.Header.Get("X-Swf-Api")
+	switch api {
+	case opStartWorkflowExecution:
+	case opTerminateWorkflowExecution:
 
-		const opSignalWorkflowExecution = "SignalWorkflowExecution"
-		const opStartWorkflowExecution = "StartWorkflowExecution"
-		const opTerminateWorkflowExecution = "TerminateWorkflowExecution"
-
-		const opRecordActivityTaskHeartbeat = "RecordActivityTaskHeartbeat"
-
-		const opRegisterActivityType = "RegisterActivityType"
-		const opRegisterDomain = "RegisterDomain"
-		const opRegisterWorkflowType = "RegisterWorkflowType"
-
-		const opRequestCancelWorkflowExecution = "RequestCancelWorkflowExecution"
-		const opRespondActivityTaskCanceled = "RespondActivityTaskCanceled"
-		const opRespondActivityTaskCompleted = "RespondActivityTaskCompleted"
-		const opRespondActivityTaskFailed = "RespondActivityTaskFailed"
-		const opRespondDecisionTaskCompleted = "RespondDecisionTaskCompleted"
 	}
+}
+
+func (this *apiServer) startWorkflowExecution(queue string, workflowId string, input string) {
 
 }
+
+// When a decider schedules an activity task, it provides the data (which you determine) that the activity worker needs to perform the activity task.
+// Amazon SWF inserts this data into the activity task before sending it to the activity worker.
+//
+// The execution state for a workflow execution is stored in its workflow history.
+// There can be only one decision task open at any time for a given workflow execution.
+// Every time a state change occurs for a workflow execution, Amazon SWF schedules a decision task.
+
+/*
+RegisterDomain(name, description, workflowExecutionRetentionPeriodInDays string)
+
+RegisterWorkflowType(domain, name, version, description, defaultTaskList string)
+
+RegisterActivityType(domain, name, version, description, defaultTaskList string)
+
+// workflowId unique across StartWorkflowExecution
+StartWorkflowExecution(domain, taskList, workflowType, workflowId, input string, tagList []string) (runId string)
+
+PollForDecisionTask(domain, taskList, identity string, maximumPageSize int, reverseOrder bool) (events []HistoryEvent, previousStartedEventId int64, startedEventId int64, taskToken string, we WorkflowExecution)
+RespondDecisionTaskCompleted(decisions []Decision, executionContext string, taskToken string)
+
+PollForActivityTask(domain, taskList, identity string) (activityId string, activityType, input, startedEventId, taskToken, runId, workflowId string)
+RespondActivityTaskCompleted(result, taskToken string)
+
+*/

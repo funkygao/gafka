@@ -11,5 +11,7 @@ func New() *Swf {
 }
 
 func (this *Swf) ServeForever() {
+	this.setupApis()
+
 	select {}
 }

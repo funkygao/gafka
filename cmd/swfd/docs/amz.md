@@ -1,5 +1,45 @@
 # swf
 
+Provides a powerful and flexible way for developers to implement distributed asynchronous workflow applications.
+
+- scalable
+- reliable
+  - Amazon SWF durably stores scheduled activity and workflow tasks and guarantees that they will be performed at most once.
+  - Amazon SWF guarantees that an activity task will either complete successfully and return a valid result or it will notify the workflow worker that the task failed
+  - Amazon SWF durably stores each completed activity result or, for failed activities, it stores relevant error information.
+- auditable
+
+Amazon SWF does the following:
+- Maintains one or more decision task lists, which queue tasks to be performed by the workflow worker, such as executing an activity.
+- Maintains one or more activities task lists, which queue tasks to be performed by the activities worker.
+- Maintains a detailed step-by-step history of the workflows execution.
+
+When an activity worker completes a task, it returns the result to Amazon SWF, which records it in the workflow execution history and schedules a new workflow task for the workflow worker by placing it on the workflow task list. 
+
+Amazon SWF requires activity and workflow types to be registered before they can be used. 
+
+SWF task-oriented api, task is assigned exactly once
+SQS message-oriented api
+
+runId taskId
+
+https://github.com/ciela/amzswf_golang
+https://github.com/sclasen/swfsm
+
+
+
+    +------------------------------+
+    |       SWF                    |-- history
+    +------------------------------+
+        |            ^ 
+        | poll       | notification
+        | task list  |
+        V            | 
+    +------------------------------+
+    |       worker                 |
+    +------------------------------+
+
+
 ### Task List
 
 Amazon SWF stores the activity tasks in the workflow history and schedules them for execution by placing them on the activity task list. The activity workers poll the task list and execute the tasks.
