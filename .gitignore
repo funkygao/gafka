@@ -31,8 +31,10 @@ prof.cpu
 bindata.go
 snapshot
 *.test
+apps/kafka/kafka
+apps/kateway/webhook/webhook
+apps/gitlabtool/gitop/gitop
 cmd/kateway/kateway
-cmd/kateway/webhook/webhook
 cmd/kateway/prof.cpu
 cmd/kateway/prof.mem
 cmd/kateway/ssl
@@ -44,9 +46,7 @@ cmd/kateway/bench/httpdserver
 cmd/webhook/webhook
 cmd/swfd/swfd
 cmd/kateway/demo/pub
-cmd/gitlabtool/gitop/gitop
 cmd/zk/zk
-cmd/kafka/kafka
 panic.dump
 cmd/gk/gk
 misc/scripts
