@@ -39,6 +39,8 @@ type Deploy struct {
 	kafkaVer         string
 	logDirs          string
 	influxDbAddr     string
+	influxDbHost     string
+	influxdbPort     string
 	dryRun           bool
 	installKafkaOnly bool
 }
@@ -177,41 +179,50 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	chown(fmt.Sprintf("%s/logs", this.instanceDir()), this.userInfo)
 
 	type templateVar struct {
-		KafkaBase      string
-		BrokerId       string
-		TcpPort        string
-		Ip             string
-		User           string
-		ZkChroot       string
-		ZkAddrs        string
-		InstanceDir    string
-		LogDirs        string
-		IoThreads      string
-		NetworkThreads string
-		InfluxDbHost   string
-		InfluxDbPort   string
+		KafkaBase             string
+		BrokerId              string
+		TcpPort               string
+		Ip                    string
+		User                  string
+		ZkChroot              string
+		ZkAddrs               string
+		InstanceDir           string
+		LogDirs               string
+		IoThreads             string
+		NetworkThreads        string
+		InfluxReporterEnabled string
+		InfluxDbHost          string
+		InfluxDbPort          string
 	}
-	host, port, err := net.SplitHostPort(this.influxDbAddr)
-	if err != nil {
-		this.Ui.Error(err.Error())
-		return 2
+	if this.influxDbAddr != "" {
+		this.influxDbHost, this.influxdbPort, err = net.SplitHostPort(this.influxDbAddr)
+		if err != nil {
+			this.Ui.Error(err.Error())
+			return 2
+		}
+		if this.influxDbHost == "" || this.influxdbPort == "" {
+			this.Ui.Error("empty influxdb host or port")
+			return 2
+		}
 	}
-	if host == "" || port == "" {
-		this.Ui.Error("empty influxdb host or port")
-		return 2
+
+	influxReporterEnabled := "false"
+	if this.influxDbHost != "" {
+		influxReporterEnabled = "true"
 	}
 	data := templateVar{
-		ZkAddrs:      this.zkzone.ZkAddrs(),
-		ZkChroot:     zkchroot,
-		KafkaBase:    this.kafkaBaseDir,
-		BrokerId:     this.brokerId,
-		Ip:           this.ip,
-		InstanceDir:  this.instanceDir(),
-		User:         this.runAs,
-		TcpPort:      this.tcpPort,
-		LogDirs:      this.logDirs,
-		InfluxDbHost: host,
-		InfluxDbPort: port,
+		ZkAddrs:               this.zkzone.ZkAddrs(),
+		ZkChroot:              zkchroot,
+		KafkaBase:             this.kafkaBaseDir,
+		BrokerId:              this.brokerId,
+		Ip:                    this.ip,
+		InstanceDir:           this.instanceDir(),
+		User:                  this.runAs,
+		TcpPort:               this.tcpPort,
+		LogDirs:               this.logDirs,
+		InfluxReporterEnabled: influxReporterEnabled,
+		InfluxDbHost:          this.influxDbHost,
+		InfluxDbPort:          this.influxdbPort,
 	}
 	data.IoThreads = strconv.Itoa(3 * len(strings.Split(data.LogDirs, ",")))
 	networkThreads := ctx.NumCPU() / 2
@@ -404,6 +415,7 @@ Options:
 
     -influx host:port
       InfluxDB server address used for kafka metrics reporter.
+      If empty, InfluxDB metrics reporter will be disabled.
 
     -uninstall base dir
       Uninstall a kafka broker on localhost.
