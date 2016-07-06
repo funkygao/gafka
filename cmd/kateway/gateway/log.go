@@ -53,12 +53,13 @@ func SetupLogging(logFile, level, crashLogFile string) {
 	} else {
 		log.DeleteFilter("stdout")
 
-		rotateEnabled, discardWhenDiskFull := true, true
+		rotateEnabled, discardWhenDiskFull := true, false
 		filer := log.NewFileLogWriter(logFile, rotateEnabled, discardWhenDiskFull, 0644)
 		filer.SetFormat("[%d %T] [%L] (%S) %M")
 		if Options.LogRotateSize > 0 {
 			filer.SetRotateSize(Options.LogRotateSize)
 		}
+		filer.SetRotateKeepDuration(time.Hour * 7 * 24)
 		filer.SetRotateLines(0)
 		filer.SetRotateDaily(true)
 		log.AddFilter("file", logLevel, filer)
