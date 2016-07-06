@@ -63,7 +63,7 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 	this.auditor = log.NewDefaultLogger(log.TRACE)
 	this.auditor.DeleteFilter("stdout")
 
-	rotateEnabled, discardWhenDiskFull := true, true
+	rotateEnabled, discardWhenDiskFull := true, false
 	filer := log.NewFileLogWriter("sub_audit.log", rotateEnabled, discardWhenDiskFull, 0644)
 	filer.SetFormat("[%d %T] [%L] (%S) %M")
 	if Options.LogRotateSize > 0 {
