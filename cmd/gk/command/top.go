@@ -467,7 +467,10 @@ func (this *Top) clusterTopProducers(zkcluster *zk.ZkCluster) {
 			for _, partitionID := range alivePartitions {
 				latestOffset, err := kfk.GetOffset(topic, partitionID,
 					sarama.OffsetNewest)
-				swallow(err)
+				if err != nil {
+					// this broker is down
+					continue
+				}
 
 				msgs += latestOffset
 			}
