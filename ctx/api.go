@@ -84,11 +84,6 @@ func KafkaHome() string {
 	return conf.kafkaHome
 }
 
-func InfluxdbHost() string {
-	ensureLogLoaded()
-	return conf.influxdbHost
-}
-
 func SortedZones() []string {
 	ensureLogLoaded()
 	return conf.sortedZones()
@@ -109,6 +104,10 @@ func Aliases() []string {
 
 func AliasesWithValue() map[string]string {
 	return conf.aliases
+}
+
+func ZoneInfluxdbAddr(zone string) string {
+	return conf.influxdbs[zone]
 }
 
 func NamedZoneZkAddrs(zone string) string {

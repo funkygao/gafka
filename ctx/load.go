@@ -21,8 +21,8 @@ func LoadConfig(fn string) {
 	conf.hostname, _ = os.Hostname()
 	conf.kafkaHome = cf.String("kafka_home", "")
 	conf.logLevel = cf.String("loglevel", "info")
-	conf.influxdbHost = cf.String("influxdb_host", "")
 	conf.zones = make(map[string]string)
+	conf.influxdbs = make(map[string]string)
 	conf.consulBootstrap = cf.String("consul_bootstrap", "")
 	conf.zkDefaultZone = cf.String("zk_default_zone", "")
 	conf.upgradeCenter = cf.String("upgrade_center", "")
@@ -47,6 +47,7 @@ func LoadConfig(fn string) {
 		z.loadConfig(section)
 		conf.zones[z.name] = z.zk
 		conf.tunnels[z.name] = z.tunnel
+		conf.influxdbs[z.name] = z.influxAddr
 	}
 
 	conf.reverseDns = make(map[string][]string)
