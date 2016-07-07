@@ -17,6 +17,7 @@ type Zones struct {
 	ipInNumber bool
 	plain      bool
 	longFmt    bool
+	influxOnly bool
 	zone       string
 }
 
@@ -27,6 +28,7 @@ func (this *Zones) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.plain, "plain", false, "")
 	cmdFlags.BoolVar(&this.longFmt, "l", true, "")
 	cmdFlags.StringVar(&this.zone, "z", "", "")
+	cmdFlags.BoolVar(&this.influxOnly, "i", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
 	}
@@ -49,6 +51,9 @@ func (this *Zones) Run(args []string) (exitCode int) {
 		}
 
 		influxDbAddr := ctx.ZoneInfluxdbAddr(zone)
+		if this.influxOnly && influxDbAddr == "" {
+			continue
+		}
 
 		if defaultZone == zone {
 			if this.ipInNumber {
@@ -126,6 +131,9 @@ Options:
 
     -l
       Use a long listing format.
+
+    -i
+      Only display zones that has InfluxDB instances.
 
     -plain
       Display in non-table format.
