@@ -3,6 +3,7 @@ package gateway
 import (
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -63,8 +64,12 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 	this.auditor = log.NewDefaultLogger(log.TRACE)
 	this.auditor.DeleteFilter("stdout")
 
+	_ = os.Mkdir("audit", os.ModePerm)
 	rotateEnabled, discardWhenDiskFull := true, false
-	filer := log.NewFileLogWriter("sub_audit.log", rotateEnabled, discardWhenDiskFull, 0644)
+	filer := log.NewFileLogWriter("audit/sub_audit.log", rotateEnabled, discardWhenDiskFull, 0644)
+	if filer == nil {
+		panic("failed to open sub audit log")
+	}
 	filer.SetFormat("[%d %T] [%L] (%S) %M")
 	if Options.LogRotateSize > 0 {
 		filer.SetRotateSize(Options.LogRotateSize)

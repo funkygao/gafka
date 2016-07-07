@@ -4,6 +4,7 @@ package gateway
 
 import (
 	"net"
+	"os"
 	"time"
 
 	"github.com/funkygao/golib/ratelimiter"
@@ -34,8 +35,12 @@ func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubS
 	this.auditor = log.NewDefaultLogger(log.TRACE)
 	this.auditor.DeleteFilter("stdout")
 
+	_ = os.Mkdir("audit", os.ModePerm)
 	rotateEnabled, discardWhenDiskFull := true, false
-	filer := log.NewFileLogWriter("pub_audit.log", rotateEnabled, discardWhenDiskFull, 0644)
+	filer := log.NewFileLogWriter("audit/pub_audit.log", rotateEnabled, discardWhenDiskFull, 0644)
+	if filer == nil {
+		panic("failed to open pub audit log")
+	}
 	filer.SetFormat("[%d %T] [%L] (%S) %M")
 	if Options.LogRotateSize > 0 {
 		filer.SetRotateSize(Options.LogRotateSize)
