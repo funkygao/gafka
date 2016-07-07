@@ -111,7 +111,6 @@ func (this *webServer) startServer(https bool) {
 			retryDelay         time.Duration
 			theListener        net.Listener
 			waitListenerUpOnce sync.Once
-			addr               string
 		)
 		for {
 			if https {
@@ -137,11 +136,9 @@ func (this *webServer) startServer(https bool) {
 				}
 
 				theListener = this.httpsListener
-				addr = this.httpsServer.Addr
 			} else {
 				this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
 				theListener = this.httpListener
-				addr = this.httpServer.Addr
 			}
 
 			if err != nil {
@@ -172,7 +169,6 @@ func (this *webServer) startServer(https bool) {
 
 			select {
 			case <-this.gw.shutdownCh:
-				log.Trace("%s server stopped on %s", this.name, addr)
 				return
 
 			default:
