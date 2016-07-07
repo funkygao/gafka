@@ -30,11 +30,15 @@ dummy:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -subhttp :9192 -level debug -store dummy -id 1 -metricsoff=false -debughttp ":9194" -debug=true -mstore dummy -accesslog 
 
 bench:build
-	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -pubhttps :9291 -subhttp :9192 -level trace -store kafka -id 1 -keyfile ssl/server.key -certfile ssl/server.pem
+	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -pubhttps :9291 -subhttp :9192 -level trace -store kafka -id 1 -keyfile ssl/server.key -certfile ssl/server.pem -mstore dummy
 
 race:
 	@go build -race -gcflags '-m=1'
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -subhttp :9192 -level debug -debug -store kafka -id 1 
+
+heap:
+	go tool pprof http://1.1.2.2:9999/debug/pprof/heap
+	go tool pprof --alloc_space http://1.1.2.2:9999/debug/pprof/heap
 
 genkey:
 	@mkdir ssl
