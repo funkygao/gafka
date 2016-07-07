@@ -30,6 +30,13 @@ func init() {
 			}, nil
 		},
 
+		"offset": func() (cli.Command, error) {
+			return &command.OffsetManager{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"rebalance": func() (cli.Command, error) {
 			return &command.Rebalance{
 				Ui:  ui,
