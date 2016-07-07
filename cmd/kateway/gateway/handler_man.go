@@ -11,6 +11,8 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/sla"
+	"github.com/funkygao/go-metrics"
+	"github.com/funkygao/golib/gofmt"
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
@@ -45,6 +47,13 @@ func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, par
 	output["options"] = Options
 	output["loglevel"] = logLevel.String()
 	output["manager"] = manager.Default.Dump()
+	var heapSize int64
+	if heap := metrics.DefaultRegistry.Get("runtime.MemStats.HeapSys"); heap != nil {
+		if gauge, ok := heap.(metrics.Gauge); ok {
+			heapSize = gauge.Value()
+		}
+	}
+	output["heap"] = gofmt.ByteSize(heapSize).String()
 	b, _ := json.MarshalIndent(output, "", "    ")
 
 	w.Write(b)

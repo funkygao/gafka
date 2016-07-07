@@ -159,7 +159,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 	// display mode
 	lines := make([]string, 0)
-	header := "Zone|Id|Host|Version|Build|Cpu|Uptime"
+	header := "Zone|Id|Host|Version|Build|Cpu|Mem|Uptime"
 	lines = append(lines, header)
 	forSortedZones(func(zkzone *zk.ZkZone) {
 		if this.zone != "" && zkzone.Name() != this.zone {
@@ -203,11 +203,12 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			}
 
 			if this.versionOnly {
-				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s/%s|%s|%s",
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s/%s|%s|%s|%s",
 					zkzone.Name(),
 					kw.Id, kw.Host,
 					kw.Ver, kw.Build, kw.BuiltAt,
 					kw.Cpu,
+					this.getKatewayHeapSize(kw.ManAddr),
 					gofmt.PrettySince(kw.Ctime)))
 				continue
 			}
@@ -326,6 +327,22 @@ func (this *Kateway) getKatewayLogLevel(url string) string {
 	var v map[string]interface{}
 	json.Unmarshal(body, &v)
 	return v["loglevel"].(string)
+}
+
+func (this *Kateway) getKatewayHeapSize(url string) string {
+	url = fmt.Sprintf("http://%s/v1/status", url)
+	body, err := this.callHttp(url, "GET")
+	if err != nil {
+		return err.Error()
+	}
+
+	var v map[string]interface{}
+	json.Unmarshal(body, &v)
+	if heap, ok := v["heap"].(string); ok {
+		return heap
+	}
+
+	return ""
 }
 
 func (this *Kateway) callHttp(url string, method string) (body []byte, err error) {
