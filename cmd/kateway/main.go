@@ -95,8 +95,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	t0 := time.Now()
 	gw.ServeForever()
-	glog.Info("kateway[%s@%s] bye!", gafka.BuildId, gafka.BuiltAt)
+	glog.Info("kateway[%s@%s] %s, bye!", gafka.BuildId, gafka.BuiltAt, time.Since(t0))
 	glog.Close()
 
 	if gateway.Options.PidFile != "" {
