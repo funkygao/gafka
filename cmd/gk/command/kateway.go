@@ -21,6 +21,7 @@ import (
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/golib/pipestream"
+	"github.com/ryanuber/columnize"
 	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
@@ -157,6 +158,9 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	}
 
 	// display mode
+	lines := make([]string, 0)
+	header := "Zone|Id|Host|Version|Build|Cpu|Uptime"
+	lines = append(lines, header)
 	forSortedZones(func(zkzone *zk.ZkZone) {
 		if this.zone != "" && zkzone.Name() != this.zone {
 			return
@@ -199,7 +203,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			}
 
 			if this.versionOnly {
-				this.Ui.Info(fmt.Sprintf("%6s id:%-2s host:%s ver:%s build:%s/%s cpu:%-2s up:%s",
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s/%s|%s|%s",
 					zkzone.Name(),
 					kw.Id, kw.Host,
 					kw.Ver, kw.Build, kw.BuiltAt,
@@ -249,6 +253,10 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		}
 
 	})
+
+	if this.versionOnly && len(lines) > 1 {
+		this.Ui.Output(columnize.SimpleFormat(lines))
+	}
 
 	return
 }
