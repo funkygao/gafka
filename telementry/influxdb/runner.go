@@ -42,6 +42,11 @@ func (this *runner) makeClient() (err error) {
 		Password: this.cf.password,
 	})
 
+	_, _, err = this.client.Ping()
+	if err != nil {
+		this.client = nil // to trigger retry
+	}
+
 	return
 }
 
@@ -55,10 +60,6 @@ func (this *runner) Stop() {
 }
 
 func (this *runner) Start() error {
-	if err := this.makeClient(); err != nil {
-		return err
-	}
-
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println(err)

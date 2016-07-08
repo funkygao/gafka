@@ -13,10 +13,10 @@ import (
 
 func (this *runner) dump(pts []client.Point) {
 	if this.client == nil {
-		log.Warn("influxdb write while connection lost, retry...")
+		log.Debug("influxdb try connecting...")
 
 		if err := this.makeClient(); err != nil {
-			log.Error("influxdb connect retry: %v", err)
+			log.Error("influxdb quit this tick: %v", err)
 			return
 		} else {
 			log.Info("influxdb connect retry ok")
