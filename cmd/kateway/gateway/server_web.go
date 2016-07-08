@@ -13,17 +13,18 @@ import (
 )
 
 type webServer struct {
+	gw *Gateway
+
 	name       string
 	maxClients int
-	gw         *Gateway
+
+	router *httprouter.Router
 
 	httpListener net.Listener
 	httpServer   *http.Server
 
 	httpsListener net.Listener
 	httpsServer   *http.Server
-
-	router *httprouter.Router
 
 	waitExitFunc    waitExitFunc
 	connStateFunc   connStateFunc
@@ -35,15 +36,22 @@ type webServer struct {
 
 	// FIXME if http/https listener both enabled, must able to tell them apart
 	activeConnN int32
+
+	// TODO channel performance is frustrating, no better than mutex/map use ring buffer
+	stateIdleCh, stateRemoveCh, stateActiveCh chan net.Conn
 }
 
 func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 	gw *Gateway) *webServer {
+	const initialConnBuckets = 200
 	this := &webServer{
-		name:       name,
-		gw:         gw,
-		maxClients: maxClients,
-		router:     httprouter.New(),
+		name:          name,
+		gw:            gw,
+		maxClients:    maxClients,
+		stateActiveCh: make(chan net.Conn, initialConnBuckets),
+		stateIdleCh:   make(chan net.Conn, initialConnBuckets),
+		stateRemoveCh: make(chan net.Conn, initialConnBuckets),
+		router:        httprouter.New(),
 	}
 
 	if Options.EnableHttpPanicRecover {
@@ -76,12 +84,18 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 	return this
 }
 
+func (this *webServer) Router() *httprouter.Router {
+	return this.router
+}
+
 func (this *webServer) Start() {
 	if this.waitExitFunc == nil {
-		this.waitExitFunc = this.waitExit
+		this.waitExitFunc = this.defaultWaitExit
 	}
 	if this.connStateFunc == nil {
-		this.connStateFunc = this.connStateHandler
+		this.connStateFunc = this.defaultConnStateHook
+
+		go this.manageIdleConns()
 	}
 
 	if this.httpsServer != nil {
@@ -94,10 +108,6 @@ func (this *webServer) Start() {
 		this.startServer(false)
 	}
 
-}
-
-func (this *webServer) Router() *httprouter.Router {
-	return this.router
 }
 
 func (this *webServer) startServer(https bool) {
@@ -198,7 +208,7 @@ func (this *webServer) startServer(https bool) {
 	}
 }
 
-func (this *webServer) connStateHandler(c net.Conn, cs http.ConnState) {
+func (this *webServer) defaultConnStateHook(c net.Conn, cs http.ConnState) {
 	switch cs {
 	case http.StateNew:
 		atomic.AddInt32(&this.activeConnN, 1)
@@ -208,22 +218,81 @@ func (this *webServer) connStateHandler(c net.Conn, cs http.ConnState) {
 		}
 
 	case http.StateIdle:
-		// TODO track the idle conns, so as to close it when shutdown
+		this.stateIdleCh <- c
 
 	case http.StateActive:
-		// do nothing by default
+		this.stateActiveCh <- c
 
 	case http.StateClosed, http.StateHijacked:
 		atomic.AddInt32(&this.activeConnN, -1)
+		this.stateRemoveCh <- c
 
 		if this.onConnCloseFunc != nil {
 			this.onConnCloseFunc(c)
 		}
-
 	}
 }
 
-func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit <-chan struct{}) {
+func (this *webServer) manageIdleConns() {
+	var (
+		idleConns     = make(map[net.Conn]struct{}, 200)
+		c             net.Conn
+		waitNextRound = make(chan struct{})
+	)
+	defer func() {
+		close(waitNextRound)
+		close(this.stateActiveCh)
+		close(this.stateIdleCh)
+		close(this.stateRemoveCh)
+	}()
+
+	for {
+		select {
+		case <-this.gw.shutdownCh:
+			if len(idleConns) == 0 {
+				// happy ending
+				log.Debug("%s closed all idle conns", this.name)
+				return
+			}
+
+			t := time.Now().Add(time.Millisecond * 100)
+			for conn := range idleConns {
+				log.Debug("%s closing %s", this.name, conn.RemoteAddr())
+				conn.SetDeadline(t)
+			}
+
+			// wait for next loop
+			waitNextRound <- struct{}{}
+
+		case <-waitNextRound:
+			if len(idleConns) == 0 {
+				log.Debug("%s closed all idle conns", this.name)
+				return
+			}
+
+			t := time.Now().Add(time.Millisecond * 100)
+			for conn := range idleConns {
+				log.Debug("%s closing %s", this.name, conn.RemoteAddr())
+				conn.SetDeadline(t)
+			}
+
+			// wait for next loop
+			waitNextRound <- struct{}{}
+
+		case c = <-this.stateActiveCh:
+			delete(idleConns, c)
+
+		case c = <-this.stateIdleCh:
+			idleConns[c] = struct{}{}
+
+		case c = <-this.stateRemoveCh:
+			delete(idleConns, c)
+		}
+	}
+}
+
+// If http/https both enabled, defaultWaitExit will be called twice
+func (this *webServer) defaultWaitExit(server *http.Server, listener net.Listener, exit <-chan struct{}) {
 	<-exit
 
 	// HTTP response will have "Connection: close"
@@ -236,6 +305,7 @@ func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit
 
 	log.Trace("%s on %s listener closed", this.name, server.Addr)
 
+	// wait for all established conns close
 	waitStart := time.Now()
 	var prompt sync.Once
 	for {
