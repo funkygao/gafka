@@ -71,7 +71,9 @@ func newGatewayForTest(b *testing.B, store string) *Gateway {
 	Options.SubHttpAddr = ":9192"
 	Options.Store = store
 	Options.Debug = false
+	Options.ManagerStore = "dummy"
 	Options.DisableMetrics = false
+	Options.MetaRefresh = time.Hour
 
 	ctx.LoadFromHome()
 
