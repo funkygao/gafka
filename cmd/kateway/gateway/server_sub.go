@@ -120,6 +120,10 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 			// actively close the client safely because IO is all done
 			c.Close()
 
+			this.idleConnsLock.Lock()
+			delete(this.idleConns, c)
+			this.idleConnsLock.Unlock()
+
 		default:
 			this.idleConnsLock.Lock()
 			this.idleConns[c] = struct{}{}
@@ -157,6 +161,7 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 	}
 }
 
+// If http/https both enabled, waitExit will be called twice
 func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit <-chan struct{}) {
 	<-exit
 

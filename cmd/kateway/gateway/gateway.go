@@ -76,7 +76,7 @@ func New(id string) *Gateway {
 	}
 
 	if Options.EnableRegistry {
-		registry.Default = zk.New(Options.Zone, this.id, this.InstanceInfo())
+		registry.Default = zk.New(this.zkzone, this.id, this.InstanceInfo())
 	}
 	metaConf := zkmeta.DefaultConfig()
 	metaConf.Refresh = Options.MetaRefresh
