@@ -32,6 +32,7 @@ import (
 	"github.com/funkygao/golib/signal"
 	"github.com/funkygao/golib/timewheel"
 	log "github.com/funkygao/log4go"
+	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
 // Gateway is a distributed Pub/Sub HTTP endpoint.
@@ -187,6 +188,44 @@ func (this *Gateway) Start() (err error) {
 		log.Info("gateway[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))
 		this.stop()
 	}, syscall.SIGINT, syscall.SIGTERM) // yes we ignore HUP
+
+	// keep watch on zk connection jitter
+	go func() {
+		evtCh, ok := this.zkzone.SessionEvents()
+		if !ok {
+			log.Error("someone else is consuming my zk events?")
+			return
+		}
+
+		// during connecting phase, the following events are fired:
+		// StateConnecting -> StateConnected -> StateHasSession
+		firstHandShaked := false
+		for {
+			select {
+			case <-this.shutdownCh:
+				return
+
+			case evt, ok := <-evtCh:
+				if !ok {
+					return
+				}
+
+				if !firstHandShaked {
+					if evt.State == zklib.StateHasSession {
+						firstHandShaked = true
+					}
+
+					continue
+				}
+
+				log.Warn("zk jitter: %+v", evt)
+
+				if evt.State == zklib.StateHasSession {
+					log.Warn("zk reconnected after session lost")
+				}
+			}
+		}
+	}()
 
 	meta.Default.Start()
 	log.Trace("meta store[%s] started", meta.Default.Name())

@@ -6,7 +6,6 @@ import (
 
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
-	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
 type zkreg struct {
@@ -38,27 +37,11 @@ func (this *zkreg) Name() string {
 
 func (this *zkreg) Register() error {
 	err := this.zkzone.CreateEphemeralZnode(this.mypath(), this.data)
-
-	go this.keepalive()
-	return err
-}
-
-func (this *zkreg) keepalive() {
-	for {
-		select {
-		case <-this.shutdownCh:
-			return
-
-		case evt := <-this.zkzone.SessionEvents():
-			// after zk conn lost, zklib will automatically reconnect
-			// but the ephemeral znodes have to be recreated by ourselves
-			if evt.State == zklib.StateHasSession {
-				this.zkzone.CreateEphemeralZnode(this.mypath(), this.data)
-
-				log.Trace("registered in zk: %s", this.mypath())
-			}
-		}
+	if err == nil {
+		log.Debug("registered in zk: %s", this.mypath())
 	}
+
+	return err
 }
 
 func (this *zkreg) Deregister() error {
