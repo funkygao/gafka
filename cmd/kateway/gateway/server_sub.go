@@ -17,9 +17,9 @@ import (
 type subServer struct {
 	*webServer
 
-	idleConnsWg   sync.WaitGroup      // wait for all inflight http connections done
-	idleConns     map[string]net.Conn // in keep-alive state http connections
-	closedConnCh  chan string         // channel of remote addr
+	idleConnsWg   sync.WaitGroup // wait for all inflight http connections done
+	closedConnCh  chan string    // channel of remote addr
+	idleConns     map[net.Conn]struct{}
 	idleConnsLock sync.Mutex
 
 	auditor log.Logger
@@ -41,7 +41,7 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 	this := &subServer{
 		webServer:         newWebServer("sub", httpAddr, httpsAddr, maxClients, gw),
 		closedConnCh:      make(chan string, 1<<10),
-		idleConns:         make(map[string]net.Conn, 10000), // TODO
+		idleConns:         make(map[net.Conn]struct{}, 200),
 		wsReadLimit:       8 << 10,
 		wsPongWait:        time.Minute,
 		throttleSubStatus: ratelimiter.NewLeakyBuckets(60, time.Minute),
@@ -107,7 +107,7 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 		// After the request is handled, the state
 		// transitions to StateClosed, StateHijacked, or StateIdle.
 		this.idleConnsLock.Lock()
-		delete(this.idleConns, c.RemoteAddr().String())
+		delete(this.idleConns, c)
 		this.idleConnsLock.Unlock()
 
 	case http.StateIdle:
@@ -122,7 +122,7 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 
 		default:
 			this.idleConnsLock.Lock()
-			this.idleConns[c.RemoteAddr().String()] = c
+			this.idleConns[c] = struct{}{}
 			this.idleConnsLock.Unlock()
 		}
 
@@ -162,7 +162,7 @@ func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit
 
 	this.idleConnsLock.Lock()
 	t := time.Now().Add(time.Millisecond * 100)
-	for _, c := range this.idleConns {
+	for c := range this.idleConns {
 		c.SetReadDeadline(t)
 	}
 	this.idleConnsLock.Unlock()
