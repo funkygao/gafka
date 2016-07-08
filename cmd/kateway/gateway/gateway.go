@@ -154,6 +154,10 @@ func New(id string) *Gateway {
 }
 
 func (this *Gateway) InstanceInfo() []byte {
+	ip, err := ctx.LocalIP()
+	if err != nil {
+		panic(err)
+	}
 	info := gzk.KatewayMeta{
 		Id:        this.id,
 		Zone:      Options.Zone,
@@ -161,6 +165,7 @@ func (this *Gateway) InstanceInfo() []byte {
 		Build:     gafka.BuildId,
 		BuiltAt:   gafka.BuiltAt,
 		Host:      ctx.Hostname(),
+		Ip:        ip.String(),
 		Cpu:       ctx.NumCPUStr(),
 		Arch:      fmt.Sprintf("%s:%s-%s/%s", runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH),
 		PubAddr:   Options.PubHttpAddr,

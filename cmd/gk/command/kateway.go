@@ -159,7 +159,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 	// display mode
 	lines := make([]string, 0)
-	header := "Zone|Id|Host|Version|Build|Cpu|Mem|Uptime"
+	header := "Zone|Id|Host|Ip|Version|Build|Cpu|Mem|Uptime"
 	lines = append(lines, header)
 	forSortedZones(func(zkzone *zk.ZkZone) {
 		if this.zone != "" && zkzone.Name() != this.zone {
@@ -203,9 +203,9 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			}
 
 			if this.versionOnly {
-				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s/%s|%s|%s|%s",
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s/%s|%s|%s|%s",
 					zkzone.Name(),
-					kw.Id, kw.Host,
+					kw.Id, kw.Host, kw.Ip,
 					kw.Ver, kw.Build, kw.BuiltAt,
 					kw.Cpu,
 					this.getKatewayHeapSize(kw.ManAddr),
