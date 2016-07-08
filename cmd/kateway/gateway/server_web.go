@@ -33,6 +33,7 @@ type webServer struct {
 	onStop   func()
 	onceStop sync.Once
 
+	// FIXME if http/https listener both enabled, must able to tell them apart
 	activeConnN int32
 }
 
@@ -206,7 +207,10 @@ func (this *webServer) connStateHandler(c net.Conn, cs http.ConnState) {
 			this.onConnNewFunc(c)
 		}
 
-	case http.StateActive, http.StateIdle:
+	case http.StateIdle:
+		// TODO track the idle conns, so as to close it when shutdown
+
+	case http.StateActive:
 		// do nothing by default
 
 	case http.StateClosed, http.StateHijacked:
@@ -233,6 +237,7 @@ func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit
 	log.Trace("%s on %s listener closed", this.name, server.Addr)
 
 	waitStart := time.Now()
+	var prompt sync.Once
 	for {
 		activeConnN := atomic.LoadInt32(&this.activeConnN)
 		if activeConnN == 0 {
@@ -240,9 +245,14 @@ func (this *webServer) waitExit(server *http.Server, listener net.Listener, exit
 			break
 		}
 
+		prompt.Do(func() {
+			log.Trace("%s on %s waiting for %d clients shutdown...",
+				this.name, server.Addr, activeConnN)
+		})
+
 		// timeout mechanism
 		if time.Since(waitStart) > Options.SubTimeout+time.Second {
-			log.Warn("%s on %s still left %d conns, but forced to shutdown after %s",
+			log.Warn("%s on %s still left %d conns after %s, forced to shutdown",
 				this.name, server.Addr, activeConnN, Options.SubTimeout)
 			break
 		}

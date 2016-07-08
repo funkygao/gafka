@@ -44,3 +44,22 @@ echo
 curl http://localhost:9193/v1/clusters
 echo
 
+
+#----------------------
+# manually pub/sub
+#----------------------
+telnet localhost 9191
+POST /v1/msgs/foobar/v1 HTTP/1.1
+Host: localhost
+Appid: app1
+Pubkey: app1
+Content-Length: 1
+
+a
+
+telnet localhost 9192
+GET /v1/msgs/app1/foobar/v1?group=group1 HTTP/1.1
+Host: localhost
+Appid: app2
+Subkey: key
+
