@@ -201,10 +201,10 @@ func (this *Gateway) Start() (err error) {
 
 	if telementry.Default != nil {
 		go func() {
+			log.Trace("telementry[%s] started", telementry.Default.Name())
+
 			if err := telementry.Default.Start(); err != nil {
-				log.Error("telementry: %v", err)
-			} else {
-				log.Trace("telementry[%s] started", telementry.Default.Name())
+				log.Error("telementry[%s]: %v", telementry.Default.Name(), err)
 			}
 		}()
 	}
