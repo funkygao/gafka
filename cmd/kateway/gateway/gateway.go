@@ -104,7 +104,7 @@ func New(id string) *Gateway {
 		manager.Default = mandummy.New(Options.DummyCluster)
 
 	default:
-		panic("invalid manager store")
+		panic("invalid manager store:" + Options.ManagerStore)
 	}
 
 	// initialize the servers on demand
