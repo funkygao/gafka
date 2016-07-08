@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 	zklib "github.com/samuel/go-zookeeper/zk"
@@ -18,10 +17,10 @@ type zkreg struct {
 	shutdownCh chan struct{}
 }
 
-func New(zone string, id string, data []byte) *zkreg {
+func New(zkzone *zk.ZkZone, id string, data []byte) *zkreg {
 	this := &zkreg{
-		zkzone:     zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone))),
 		id:         id,
+		zkzone:     zkzone,
 		data:       data,
 		shutdownCh: make(chan struct{}),
 	}
@@ -38,7 +37,8 @@ func (this *zkreg) Name() string {
 }
 
 func (this *zkreg) Register() error {
-	err := this.zkzone.Connect()
+	err := this.zkzone.CreateEphemeralZnode(this.mypath(), this.data)
+
 	go this.keepalive()
 	return err
 }
@@ -75,6 +75,5 @@ func (this *zkreg) Deregister() error {
 	}
 
 	err = this.zkzone.Conn().Delete(this.mypath(), -1)
-	this.zkzone.Close()
 	return err
 }
