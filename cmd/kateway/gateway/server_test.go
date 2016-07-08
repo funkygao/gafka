@@ -6,7 +6,7 @@ import (
 )
 
 func BenchmarkConcurrentChannel(b *testing.B) {
-	ch := make(chan struct{}, 200)
+	ch := make(chan struct{}, 500)
 	go func() {
 		for {
 			<-ch
@@ -26,6 +26,16 @@ func BenchmarkConcurrentMutex(b *testing.B) {
 		for pb.Next() {
 			mu.Lock()
 			mu.Unlock()
+		}
+	})
+}
+
+func BenchmarkConcurrentRWMutex(b *testing.B) {
+	var mu sync.RWMutex
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			mu.RLock()
+			mu.RUnlock()
 		}
 	})
 }
