@@ -128,6 +128,10 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 
 	case http.StateHijacked:
 		// websocket steals the socket
+		this.idleConnsLock.Lock()
+		delete(this.idleConns, c)
+		this.idleConnsLock.Unlock()
+
 		if this.gw != nil && !Options.DisableMetrics {
 			this.gw.svrMetrics.ConcurrentSub.Dec(1)
 
@@ -146,6 +150,10 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 
 		this.closedConnCh <- remoteAddr
 		this.idleConnsWg.Done()
+
+		this.idleConnsLock.Lock()
+		delete(this.idleConns, c)
+		this.idleConnsLock.Unlock()
 	}
 }
 
