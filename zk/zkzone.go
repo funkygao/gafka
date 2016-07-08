@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/funkygao/go-simplejson"
 	log "github.com/funkygao/log4go"
@@ -19,30 +20,40 @@ import (
 // ZkZone represents a single Zookeeper ensemble where many
 // kafka clusters can reside each of which has a different chroot path.
 type ZkZone struct {
-	conf *Config
-	conn *zk.Conn
-	evt  <-chan zk.Event
-	mu   sync.Mutex
-	once sync.Once
-	errs []error
+	conf       *Config
+	conn       *zk.Conn
+	evt        <-chan zk.Event
+	evtFetched int32
+	mu         sync.Mutex
+	once       sync.Once
+	errs       []error
 
 	zkclusters map[string]*ZkCluster
 }
 
 // NewZkZone creates a new ZkZone instance.
+// All ephemeral nodes and watchers are automatically maintained
+// event after zk connection lost and reconnected.
 func NewZkZone(config *Config) *ZkZone {
 	return &ZkZone{
 		conf:       config,
 		errs:       make([]error, 0),
+		evtFetched: 0,
 		zkclusters: make(map[string]*ZkCluster),
 	}
 }
 
 // SessionEvents returns zk connection events.
-func (this *ZkZone) SessionEvents() <-chan zk.Event {
+func (this *ZkZone) SessionEvents() (<-chan zk.Event, bool) {
 	this.connectIfNeccessary()
 
-	return this.evt
+	if atomic.CompareAndSwapInt32(&this.evtFetched, 0, 1) {
+		return this.evt, true
+	}
+
+	log.Warn("zk event channel being shared? NO, it's not broadcasted!")
+
+	return nil, false
 }
 
 // Name of the zone.
