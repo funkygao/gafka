@@ -2,8 +2,8 @@ package kafka
 
 import (
 	"github.com/Shopify/sarama"
+	pool "github.com/funkygao/golib/vitesspool"
 	log "github.com/funkygao/log4go"
-	pool "github.com/youtube/vitess/go/pools"
 )
 
 type syncProducerClient struct {

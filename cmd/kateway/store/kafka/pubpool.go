@@ -5,8 +5,8 @@ import (
 
 	"github.com/funkygao/golib/breaker"
 	"github.com/funkygao/golib/set"
+	pool "github.com/funkygao/golib/vitesspool"
 	log "github.com/funkygao/log4go"
-	pool "github.com/youtube/vitess/go/pools"
 	"golang.org/x/net/context"
 )
 

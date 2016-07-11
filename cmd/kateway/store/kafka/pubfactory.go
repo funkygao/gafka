@@ -7,8 +7,8 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/store"
+	pool "github.com/funkygao/golib/vitesspool"
 	log "github.com/funkygao/log4go"
-	pool "github.com/youtube/vitess/go/pools"
 )
 
 func (this *pubPool) newSyncProducer(requiredAcks sarama.RequiredAcks) (pool.Resource, error) {
