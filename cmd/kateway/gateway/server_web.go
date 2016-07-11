@@ -39,6 +39,7 @@ type webServer struct {
 
 	// TODO channel performance is frustrating, no better than mutex/map use ring buffer
 	stateIdleCh, stateRemoveCh, stateActiveCh chan net.Conn
+	onceClose                                 sync.Once
 }
 
 func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
@@ -239,12 +240,7 @@ func (this *webServer) manageIdleConns() {
 		c             net.Conn
 		waitNextRound = make(chan struct{})
 	)
-	defer func() {
-		close(waitNextRound)
-		close(this.stateActiveCh)
-		close(this.stateIdleCh)
-		close(this.stateRemoveCh)
-	}()
+	defer close(waitNextRound)
 
 	for {
 		select {
@@ -330,6 +326,18 @@ func (this *webServer) defaultWaitExit(server *http.Server, listener net.Listene
 		time.Sleep(time.Millisecond * 50)
 	}
 	log.Trace("%s on %s all connections finished", this.name, server.Addr)
+
+	if this.httpsServer != nil {
+		this.httpsServer.ConnState = nil
+	}
+	if this.httpServer != nil {
+		this.httpServer.ConnState = nil
+	}
+	this.onceClose.Do(func() {
+		close(this.stateActiveCh)
+		close(this.stateIdleCh)
+		close(this.stateRemoveCh)
+	})
 
 	if this.onStop != nil {
 		// if both http and https, without sync once, onStop will be called twice
