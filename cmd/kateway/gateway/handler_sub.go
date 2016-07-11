@@ -43,12 +43,14 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	group = query.Get("group")
 	reset = query.Get("reset")
 	if !manager.Default.ValidateGroupName(r.Header, group) {
+		this.subMetrics.ClientError.Mark(1)
 		writeBadRequest(w, "illegal group")
 		return
 	}
 
 	limit, err = getHttpQueryInt(&query, "batch", 1)
 	if err != nil {
+		this.subMetrics.ClientError.Mark(1)
 		writeBadRequest(w, "illegal limit")
 		return
 	}
@@ -69,6 +71,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			myAppid, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
+		this.subMetrics.ClientError.Mark(1)
 		writeAuthFailure(w, err)
 		return
 	}
@@ -93,6 +96,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 					myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 					group, r.Header.Get("User-Agent"), offset)
 
+				this.subMetrics.ClientError.Mark(1)
 				writeBadRequest(w, "ack with bad offset")
 				return
 			}
@@ -102,6 +106,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 					myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 					group, r.Header.Get("User-Agent"), partition)
 
+				this.subMetrics.ClientError.Mark(1)
 				writeBadRequest(w, "ack with bad partition")
 				return
 			}
@@ -110,6 +115,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 				group, partition, offset, r.Header.Get("User-Agent"))
 
+			this.subMetrics.ClientError.Mark(1)
 			writeBadRequest(w, "partial ack not allowed")
 			return
 		}
@@ -123,6 +129,10 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			group, limit, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"))
 	}
 
+	if !Options.DisableMetrics {
+		this.subMetrics.SubQps.Mark(1)
+	}
+
 	// calculate raw topic according to shadow
 	if shadow != "" {
 		if !sla.ValidateShadowName(shadow) {
@@ -130,6 +140,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 				group, shadow, r.Header.Get("User-Agent"))
 
+			this.subMetrics.ClientError.Mark(1)
 			writeBadRequest(w, "invalid shadow name")
 			return
 		}
@@ -139,6 +150,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 				group, shadow, r.Header.Get("User-Agent"))
 
+			this.subMetrics.ClientError.Mark(1)
 			writeBadRequest(w, "register shadow first")
 			return
 		}
@@ -154,6 +166,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"))
 
+		this.subMetrics.ClientError.Mark(1)
 		writeBadRequest(w, "invalid appid")
 		return
 	}
@@ -168,6 +181,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		if store.DefaultSubStore.IsSystemError(err) {
 			writeServerError(w, err.Error())
 		} else {
+			this.subMetrics.ClientError.Mark(1)
 			writeBadRequest(w, err.Error())
 		}
 
