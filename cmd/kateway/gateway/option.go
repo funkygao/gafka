@@ -64,6 +64,7 @@ var (
 		PubPoolIdleTimeout      time.Duration
 		SubTimeout              time.Duration
 		OffsetCommitInterval    time.Duration
+		BadClientPunishDuration time.Duration
 		ReporterInterval        time.Duration
 		MetaRefresh             time.Duration
 		ManagerRefresh          time.Duration
@@ -142,6 +143,7 @@ func ParseFlags() {
 	flag.DurationVar(&Options.HttpWriteTimeout, "httpwtimeout", time.Minute, "http server write timeout")
 	flag.DurationVar(&Options.SubTimeout, "subtimeout", time.Second*30, "sub timeout before send http 204")
 	flag.DurationVar(&Options.ReporterInterval, "report", time.Minute, "reporter flush interval")
+	flag.DurationVar(&Options.BadClientPunishDuration, "punish", time.Second*2, "punish bad client by sleep")
 	flag.DurationVar(&Options.MetaRefresh, "metarefresh", time.Minute*10, "meta data refresh interval")
 	flag.DurationVar(&Options.ManagerRefresh, "manrefresh", time.Minute*5, "manager integration refresh interval")
 	flag.DurationVar(&Options.PubPoolIdleTimeout, "pubpoolidle", 0, "pub pool connect idle timeout")

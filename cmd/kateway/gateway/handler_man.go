@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
@@ -100,6 +101,14 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 
 	case "ratelimit":
 		Options.Ratelimit = boolVal
+
+	case "punish":
+		d, err := time.ParseDuration(value)
+		if err != nil {
+			log.Error("invalid punish[%s]: %v", value, err)
+		} else {
+			Options.BadClientPunishDuration = d
+		}
 
 	case "auditpub":
 		Options.AuditPub = boolVal

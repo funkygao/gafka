@@ -9,7 +9,7 @@ import (
 )
 
 func punishClient() {
-	time.Sleep(time.Second)
+	time.Sleep(Options.BadClientPunishDuration)
 }
 
 func _writeErrorResponse(w http.ResponseWriter, err string, code int) {
