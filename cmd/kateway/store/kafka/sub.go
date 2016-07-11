@@ -54,7 +54,7 @@ func (this *subStore) Start() (err error) {
 				return
 
 			case remoteAddr = <-this.closedConnCh:
-				this.subPool.killClient(remoteAddr)
+				go this.subPool.killClient(remoteAddr)
 
 			}
 		}
