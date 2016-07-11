@@ -72,6 +72,10 @@ func (*dummyStore) AllowSubWithUnregisteredGroup(yes bool) {
 }
 
 func (this *dummyStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string) error {
+	if group == "invalid" {
+		return manager.ErrInvalidGroup
+	}
+
 	return nil
 }
 
