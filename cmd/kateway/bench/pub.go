@@ -28,14 +28,12 @@ var (
 	tag      bool
 )
 
-func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-
+func init() {
+	ip, _ := ctx.LocalIP()
 	flag.IntVar(&c, "c", 10, "client concurrency")
 	flag.IntVar(&msgSize, "sz", 100, "msg size")
 	flag.StringVar(&appid, "appid", "app1", "app id")
 	flag.DurationVar(&sleep, "sleep", 0, "sleep between pub")
-	ip, _ := ctx.LocalIP()
 	flag.StringVar(&addr, "h", fmt.Sprintf("%s:9191", ip.String()), "pub http addr")
 	flag.Int64Var(&step, "step", 1, "display progress step")
 	flag.StringVar(&key, "key", "", "message key")
@@ -44,6 +42,10 @@ func main() {
 	flag.StringVar(&topic, "t", "foobar", "topic to pub")
 	flag.StringVar(&workerId, "id", "1", "worker id")
 	flag.Parse()
+}
+
+func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	for i := 0; i < c; i++ {
 		go pubGatewayLoop(i)
