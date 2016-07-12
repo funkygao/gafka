@@ -52,26 +52,35 @@ func (this *WatchPubsub) Run() {
 			return
 
 		case <-ticker.C:
-			pubsubHealth.Update(int64(1))
+			if err := this.runCheckup(); err != nil {
+				pubsubHealth.Update(1)
+			} else {
+				pubsubHealth.Update(0)
+			}
 		}
 	}
 }
 
-func (this *WatchPubsub) runCheckup() {
+func (this *WatchPubsub) runCheckup() error {
 	kws, err := this.Zkzone.KatewayInfos()
 	if err != nil {
 		log.Error("pubsub: %v", err)
-		return
+		return err
 	}
 
 	var (
-		myApp         = os.Getenv("MYAPP")
-		hisApp        = os.Getenv("HISAPP")
-		secret        = os.Getenv("APPKEY")
-		ver    string = "v1"
-		topic  string = "smoketestonly"
-		group         = "__smoketestonly__"
+		myApp  = os.Getenv("MYAPP")
+		hisApp = os.Getenv("HISAPP")
+		secret = os.Getenv("APPKEY")
+		ver    = "v1"
+		topic  = "smoketestonly"
+		group  = "__smoketestonly__"
 	)
+
+	if myApp == "" || hisApp == "" || secret == "" {
+		log.Error("empty pubsub params provided")
+		return nil
+	}
 
 	for _, kw := range kws {
 		// pub a message
@@ -87,27 +96,33 @@ func (this *WatchPubsub) runCheckup() {
 			Ver:   ver,
 		})
 		if err != nil {
-			log.Error("pub: %v", err)
-			return
+			log.Error("pub[%s]: %v", kw.Id, err)
+			return err
 		}
 
-		log.Info("pub[%s]: %s", kw.Host, pubMsg)
-
 		// confirm that sub can get the pub'ed message
-		cli.Sub(api.SubOption{
-			AppId: hisApp,
-			Topic: topic,
-			Ver:   ver,
-			Group: group,
+		err = cli.Sub(api.SubOption{
+			AppId:     hisApp,
+			Topic:     topic,
+			Ver:       ver,
+			Group:     group,
+			AutoClose: true,
 		}, func(statusCode int, subMsg []byte) error {
 			if statusCode != http.StatusOK {
 				log.Error("sub status: %s", http.StatusText(statusCode))
 			} else {
-				log.Info("sub[%s]: %s", kw.Host, string(subMsg))
+				log.Info("sub[%s]: %s", kw.Id, string(subMsg))
 			}
 
 			return api.ErrSubStop
 		})
 
+		if err != nil {
+			log.Error("sub[%s]: %v", kw.Id, err)
+			return err
+		}
+
 	}
+
+	return nil
 }
