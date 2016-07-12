@@ -87,10 +87,16 @@ func (this *Monitor) Stop() {
 		log.Info("stopping all watchers ...")
 		close(this.stop)
 
-		log.Info("stopping reporter...")
+		log.Info("stopping reporter and flush all metrics...")
 		telementry.Default.Stop()
 
-		this.candidate.Resign()
+		this.candidate.Stop()
+		log.Info("election stopped")
+
+		// because of github.com/docker/leadership problem, /_kguard/leader is left
+		// even when we stop election.
+		// so we have to manually clean it here
+		this.zkzone.Conn().Set(zk.KguardLeaderPath, []byte{}, -1)
 	}
 }
 
@@ -156,7 +162,7 @@ func (this *Monitor) ServeForever() {
 	}
 
 	ip, _ := ctx.LocalIP()
-	this.candidate = leadership.NewCandidate(backend, zk.KguardLeaderPath, ip.String(), 15*time.Second)
+	this.candidate = leadership.NewCandidate(backend, zk.KguardLeaderPath, ip.String(), 25*time.Second)
 	electedCh, errCh := this.candidate.RunForElection()
 	if err != nil {
 		panic("Cannot run for election, store is probably down")
@@ -180,8 +186,6 @@ func (this *Monitor) ServeForever() {
 			}
 
 		case <-this.quit:
-			this.candidate.Stop()
-			log.Info("election stopped")
 			log.Info("kguard[%s@%s] bye!", gafka.BuildId, gafka.BuiltAt)
 			log.Close()
 			return
