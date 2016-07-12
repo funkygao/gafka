@@ -46,7 +46,7 @@ func (this *WatchPubsub) Run() {
 	defer ticker.Stop()
 
 	this.startedAt = time.Now()
-	pubsubHealth := metrics.NewRegisteredGauge("kateway.pubsub", nil)
+	pubsubHealth := metrics.NewRegisteredGauge("kateway.pubsub.fail", nil)
 
 	for {
 		select {
