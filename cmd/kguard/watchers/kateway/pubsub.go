@@ -2,7 +2,6 @@ package kateway
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
 	"os"
 	"sync"
@@ -29,6 +28,9 @@ type WatchPubsub struct {
 	Stop   <-chan struct{}
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
+
+	startedAt time.Time
+	seq       int
 }
 
 func (this *WatchPubsub) Init(ctx monitor.Context) {
@@ -43,6 +45,7 @@ func (this *WatchPubsub) Run() {
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
+	this.startedAt = time.Now()
 	pubsubHealth := metrics.NewRegisteredGauge("kateway.pubsub", nil)
 
 	for {
@@ -88,8 +91,8 @@ func (this *WatchPubsub) runCheckup() error {
 		cf.Pub.Endpoint = kw.PubAddr
 		cf.Sub.Endpoint = kw.SubAddr
 		cli := api.NewClient(cf)
-		msgId := rand.Int()
-		pubMsg := fmt.Sprintf("smoke test[%d] from kguard", msgId)
+		this.seq++
+		pubMsg := fmt.Sprintf("kguard smoke test msg: [%s/%d]", this.startedAt, this.seq)
 
 		err = cli.Pub("", []byte(pubMsg), api.PubOption{
 			Topic: topic,
@@ -109,9 +112,10 @@ func (this *WatchPubsub) runCheckup() error {
 			AutoClose: true,
 		}, func(statusCode int, subMsg []byte) error {
 			if statusCode != http.StatusOK {
-				log.Error("sub status: %s", http.StatusText(statusCode))
-			} else {
-				log.Info("sub[%s]: %s", kw.Id, string(subMsg))
+				return fmt.Errorf("unexpected http status: %s", http.StatusText(statusCode))
+			}
+			if len(subMsg) < 10 {
+				return fmt.Errorf("unexpected sub msg: %s", string(subMsg))
 			}
 
 			return api.ErrSubStop
