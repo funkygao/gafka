@@ -15,8 +15,6 @@ import (
 type subPool struct {
 	clientMap     map[string]*consumergroup.ConsumerGroup // key is client remote addr, a client can only sub 1 topic
 	clientMapLock sync.RWMutex                            // TODO the lock is too big
-
-	rebalancing bool // FIXME 1 topic rebalance should not affect other topics
 }
 
 func newSubPool() *subPool {
@@ -27,24 +25,11 @@ func newSubPool() *subPool {
 
 func (this *subPool) PickConsumerGroup(cluster, topic, group, remoteAddr string,
 	resetOffset string, permitStandby bool) (cg *consumergroup.ConsumerGroup, err error) {
-	this.clientMapLock.Lock()
-	defer this.clientMapLock.Unlock()
-
-	for retries := 0; retries < 5; retries++ {
-		if this.rebalancing {
-			time.Sleep(time.Millisecond * 200)
-		} else {
-			break
-		}
-	}
-	if this.rebalancing {
-		err = store.ErrRebalancing
-		return
-	}
-
-	// find sub thread from cache
+	// find consumger group from cache
 	var present bool
+	this.clientMapLock.RLock()
 	cg, present = this.clientMap[remoteAddr]
+	this.clientMapLock.RUnlock()
 	if present {
 		return
 	}
@@ -88,21 +73,12 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group, remoteAddr string,
 		cf.Offsets.Initial = sarama.OffsetOldest
 	}
 
-	for i := 0; i < 3; i++ {
-		// join group will async register zk owners znodes
-		// so, if many client concurrently connects to kateway, will not
-		// strictly throw ErrTooManyConsumers
-		cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
-			meta.Default.ZkAddrs(), cf)
-		if err == nil {
-			this.clientMap[remoteAddr] = cg
-			break
-		}
-
-		// backoff
-		log.Warn("cluster:%s topic:%s join group:%s %v, retry after 100ms",
-			cluster, topic, group, err)
-		time.Sleep(time.Millisecond * 100)
+	cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
+		meta.Default.ZkAddrs(), cf)
+	if err == nil {
+		this.clientMapLock.Lock()
+		this.clientMap[remoteAddr] = cg
+		this.clientMapLock.Unlock()
 	}
 
 	return
@@ -115,21 +91,15 @@ func (this *subPool) killClient(remoteAddr string) (err error) {
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 
-	this.rebalancing = true
 	if cg, present := this.clientMap[remoteAddr]; present {
 		err = cg.Close() // will flush offset, must wait, otherwise offset is not guanranteed
-	} else {
-		// client quit before getting the chance to consume
-		// e,g. 1 partition, 2 clients, the 2nd will not get consume chance, then quit
-		this.rebalancing = false
+		if err != nil {
+			log.Error("cg[%s] close %s: %v", cg.Name(), remoteAddr, err)
+		}
 
-		return
+		delete(this.clientMap, remoteAddr)
 	}
 
-	delete(this.clientMap, remoteAddr)
-	this.rebalancing = false
-
-	log.Debug("consumer %s closed", remoteAddr)
 	return
 }
 
