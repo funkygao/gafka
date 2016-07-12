@@ -106,10 +106,10 @@ func (this *Monitor) Start() {
 	this.stop = make(chan struct{})
 
 	go func() {
+		log.Info("telementry started: %s", telementry.Default.Name())
+
 		if err := telementry.Default.Start(); err != nil {
 			log.Error("telementry: %v", err)
-		} else {
-			log.Info("telementry started: %s", telementry.Default.Name())
 		}
 	}()
 
