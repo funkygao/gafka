@@ -13,7 +13,7 @@ const (
 	charDot           = '.'
 )
 
-// Untag will extract the tags info from [encoded] metric name.
+// Untag will extract the tags info from [encoded] metric name: sanitizeName
 //
 // go-metrics pkg doesn't support tags feature, so we encode the tags
 // into metric name.

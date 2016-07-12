@@ -73,12 +73,19 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group, remoteAddr string,
 		cf.Offsets.Initial = sarama.OffsetOldest
 	}
 
+	// double check lock
+	this.clientMapLock.Lock()
+	defer this.clientMapLock.Unlock()
+	cg, present = this.clientMap[remoteAddr]
+	if present {
+		return
+	}
+
+	// runs in serial
 	cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
 		meta.Default.ZkAddrs(), cf)
 	if err == nil {
-		this.clientMapLock.Lock()
 		this.clientMap[remoteAddr] = cg
-		this.clientMapLock.Unlock()
 	}
 
 	return
