@@ -23,7 +23,6 @@ func init() {
 }
 
 // WatchPubsub monitors aliveness of kateway cluster.
-// TODO alarm when pub/sub latency is too high.
 type WatchPubsub struct {
 	Zkzone *zk.ZkZone
 	Stop   <-chan struct{}
@@ -32,6 +31,8 @@ type WatchPubsub struct {
 
 	startedAt time.Time
 	seq       int
+
+	pubLatency, subLatency metrics.Histogram
 }
 
 func (this *WatchPubsub) Init(ctx monitor.Context) {
@@ -48,6 +49,8 @@ func (this *WatchPubsub) Run() {
 
 	this.startedAt = time.Now()
 	pubsubHealth := metrics.NewRegisteredGauge("kateway.pubsub.fail", nil)
+	this.pubLatency = metrics.NewRegisteredHistogram("kateway.pubsub.latency.pub", nil, metrics.NewExpDecaySample(1028, 0.015))
+	this.subLatency = metrics.NewRegisteredHistogram("kateway.pubsub.latency.sub", nil, metrics.NewExpDecaySample(1028, 0.015))
 
 	for {
 		select {
@@ -95,6 +98,7 @@ func (this *WatchPubsub) runCheckup() error {
 		this.seq++
 		pubMsg := fmt.Sprintf("kguard smoke test msg: [%s/%d]", this.startedAt, this.seq)
 
+		t0 := time.Now()
 		err = cli.Pub("", []byte(pubMsg), api.PubOption{
 			Topic: topic,
 			Ver:   ver,
@@ -103,6 +107,9 @@ func (this *WatchPubsub) runCheckup() error {
 			log.Error("pub[%s]: %v", kw.Id, err)
 			return err
 		}
+		this.pubLatency.Update(time.Since(t0).Nanoseconds() / 1e6) // in ms
+
+		t0 = time.Now()
 
 		// confirm that sub can get the pub'ed message
 		err = cli.Sub(api.SubOption{
@@ -121,12 +128,12 @@ func (this *WatchPubsub) runCheckup() error {
 
 			return api.ErrSubStop
 		})
-
 		if err != nil {
 			log.Error("sub[%s]: %v", kw.Id, err)
 			return err
 		}
 
+		this.subLatency.Update(time.Since(t0).Nanoseconds() / 1e6) // in ms
 	}
 
 	return nil
