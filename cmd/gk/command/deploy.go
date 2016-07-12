@@ -141,7 +141,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	}
 
 	if validateArgs(this, this.Ui).
-		require("-broker.id", "-port", "-ip", "-log.dirs", "-influx").
+		require("-broker.id", "-port", "-ip", "-log.dirs").
 		invalid(args) {
 		return 2
 	}
@@ -392,12 +392,12 @@ func (this *Deploy) demo() {
 
 	influxAddr := ctx.ZoneInfluxdbAddr(this.zone)
 	if influxAddr != "" {
-		this.Ui.Output(fmt.Sprintf("gk deploy -z %s -c %s -broker.id %d -port %d -ip %s -influx %s -log.dirs %s",
+		this.Ui.Output(fmt.Sprintf("gk deploy -z %s -c %s -broker.id %d -port %d -ip %s -log.dirs %s -influx %s",
 			this.zone, this.cluster,
 			myBrokerId, myPort,
 			ip.String(),
-			influxAddr,
-			strings.Join(logDirs, ",")))
+			strings.Join(logDirs, ","),
+			influxAddr))
 	} else {
 		this.Ui.Output(fmt.Sprintf("gk deploy -z %s -c %s -broker.id %d -port %d -ip %s -log.dirs %s",
 			this.zone, this.cluster,
