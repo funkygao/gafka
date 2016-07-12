@@ -23,6 +23,7 @@ func init() {
 }
 
 // WatchPubsub monitors aliveness of kateway cluster.
+// TODO alarm when pub/sub latency is too high.
 type WatchPubsub struct {
 	Zkzone *zk.ZkZone
 	Stop   <-chan struct{}
