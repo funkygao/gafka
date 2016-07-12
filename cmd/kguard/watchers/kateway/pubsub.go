@@ -1,7 +1,6 @@
 package kateway
 
 import (
-	"bytes"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -61,7 +60,8 @@ func (this *WatchPubsub) Run() {
 func (this *WatchPubsub) runCheckup() {
 	kws, err := this.Zkzone.KatewayInfos()
 	if err != nil {
-		// TODO
+		log.Error("pubsub: %v", err)
+		return
 	}
 
 	var (
@@ -87,8 +87,11 @@ func (this *WatchPubsub) runCheckup() {
 			Ver:   ver,
 		})
 		if err != nil {
-			// TODO
+			log.Error("pub: %v", err)
+			return
 		}
+
+		log.Info("pub[%s]: %s", kw.Host, pubMsg)
 
 		// confirm that sub can get the pub'ed message
 		cli.Sub(api.SubOption{
@@ -98,10 +101,9 @@ func (this *WatchPubsub) runCheckup() {
 			Group: group,
 		}, func(statusCode int, subMsg []byte) error {
 			if statusCode != http.StatusOK {
-				// TODO
-			}
-			if !bytes.Equal(pubMsg, subMsg) {
-				// TODO
+				log.Error("sub status: %s", http.StatusText(statusCode))
+			} else {
+				log.Info("sub[%s]: %s", kw.Host, string(subMsg))
 			}
 
 			return api.ErrSubStop
