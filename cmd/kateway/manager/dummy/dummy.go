@@ -60,10 +60,18 @@ func (this *dummyStore) ValidateTopicName(topic string) bool {
 }
 
 func (this *dummyStore) ValidateGroupName(header http.Header, group string) bool {
+	if group == "invalid" {
+		return false
+	}
+
 	return true
 }
 
 func (this *dummyStore) OwnTopic(appid, pubkey, topic string) error {
+	if topic == "invalid" {
+		return manager.ErrAuthorizationFail
+	}
+
 	return nil
 }
 
@@ -80,6 +88,10 @@ func (this *dummyStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 }
 
 func (this *dummyStore) LookupCluster(appid string) (string, bool) {
+	if appid == "invalid" {
+		return "", false
+	}
+
 	return this.cluster, true
 }
 
