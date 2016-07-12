@@ -96,7 +96,7 @@ func (this *Monitor) Stop() {
 		// because of github.com/docker/leadership problem, /_kguard/leader is left
 		// even when we stop election.
 		// so we have to manually clean it here
-		if _, err := this.zkzone.Conn().Set(zk.KguardLeaderPath, []byte{}, -1); err != nil {
+		if _, err := this.zkzone.Conn().Set("/"+zk.KguardLeaderPath, []byte{}, -1); err != nil {
 			log.Error("cleanup: %v", err)
 		} else {
 			log.Info("cleanup leader zk node done")
