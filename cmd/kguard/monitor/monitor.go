@@ -89,6 +89,8 @@ func (this *Monitor) Stop() {
 
 		log.Info("stopping reporter...")
 		telementry.Default.Stop()
+
+		this.candidate.Resign()
 	}
 }
 
@@ -173,7 +175,9 @@ func (this *Monitor) ServeForever() {
 			}
 
 		case err := <-errCh:
-			log.Error("Error during election: %v", err)
+			if err != nil {
+				log.Error("Error during election: %v", err)
+			}
 
 		case <-this.quit:
 			this.candidate.Stop()
