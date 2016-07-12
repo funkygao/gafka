@@ -21,6 +21,7 @@ type SubOption struct {
 	Reset      string // newest | oldest
 	Shadow     string
 	Wait       string
+	AutoClose  bool
 }
 
 type SubHandler func(statusCode int, msg []byte) error
@@ -49,6 +50,9 @@ func (this *Client) Sub(opt SubOption, h SubHandler) error {
 	if err != nil {
 		return err
 	}
+	if opt.AutoClose {
+		req.Close = true
+	}
 
 	req.Header.Set(gateway.HttpHeaderAppid, this.cf.AppId)
 	req.Header.Set(gateway.HttpHeaderSubkey, this.cf.Secret)
@@ -74,6 +78,10 @@ func (this *Client) Sub(opt SubOption, h SubHandler) error {
 		response.Body.Close()
 
 		if err = h(response.StatusCode, b); err != nil {
+			if err == ErrSubStop {
+				return nil
+			}
+
 			return err
 		}
 	}
