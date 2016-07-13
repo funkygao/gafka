@@ -57,7 +57,7 @@ func (l *queue) Open() error {
 	l.segments = segments
 
 	if len(l.segments) == 0 {
-		_, err := l.addSegment()
+		_, err = l.addSegment()
 		if err != nil {
 			return err
 		}

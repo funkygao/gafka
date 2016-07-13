@@ -102,7 +102,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 
 	msgLen := int(r.ContentLength)
 	msg := make([]byte, 0, msgLen)
-	if _, err := io.ReadAtLeast(r.Body, msg, msgLen); err != nil {
+	if _, err = io.ReadAtLeast(r.Body, msg, msgLen); err != nil {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
 			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)

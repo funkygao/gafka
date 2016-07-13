@@ -10,6 +10,7 @@ deps:
 check:
 	-go vet
 	-golint
+	-go tool vet -shadow .
 	go tool nm -size -sort=size kateway | head -n 50
 
 build:

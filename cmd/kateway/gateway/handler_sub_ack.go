@@ -67,7 +67,7 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 	msg = mpool.NewMessage(msgLen)
 	msg.Body = msg.Body[0:msgLen]
 	lbr := io.LimitReader(r.Body, Options.MaxPubSize+1)
-	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
+	if _, err = io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
 		msg.Free()
 
 		writeBadRequest(w, ErrTooBigMessage.Error())
