@@ -255,6 +255,10 @@ func (this *webServer) manageIdleConns() {
 
 			t := time.Now().Add(time.Millisecond * 100)
 			for conn := range idleConns {
+				if conn == nil {
+					continue
+				}
+
 				log.Debug("%s closing %s", this.name, conn.RemoteAddr())
 				conn.SetDeadline(t)
 			}
@@ -270,6 +274,10 @@ func (this *webServer) manageIdleConns() {
 
 			t := time.Now().Add(time.Millisecond * 100)
 			for conn := range idleConns {
+				if conn == nil {
+					continue
+				}
+
 				log.Debug("%s closing %s", this.name, conn.RemoteAddr())
 				conn.SetDeadline(t)
 			}
