@@ -42,6 +42,11 @@ func (this *pubPool) newSyncProducer(requiredAcks sarama.RequiredAcks) (pool.Res
 	cf.Metadata.Retry.Max = 3
 	cf.Metadata.Retry.Backoff = time.Millisecond * 10
 
+	// explicitly specify the batch size zero
+	cf.Producer.Flush.Frequency = 0
+	cf.Producer.Flush.Bytes = 0
+	cf.Producer.Flush.Messages = 0
+
 	cf.Producer.Timeout = time.Second * 1
 	cf.Producer.RequiredAcks = requiredAcks
 	cf.Producer.Partitioner = NewExclusivePartitioner
