@@ -161,16 +161,31 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 	}
 }
 
-// If http/https both enabled, waitExit will be called twice
-func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit <-chan struct{}) {
+func (this *subServer) waitExit(exit <-chan struct{}) {
 	<-exit
 
-	// HTTP response will have "Connection: close"
-	server.SetKeepAlivesEnabled(false)
+	if this.httpServer != nil {
+		// HTTP response will have "Connection: close"
+		this.httpServer.SetKeepAlivesEnabled(false)
 
-	// avoid new connections
-	if err := listener.Close(); err != nil {
-		log.Error(err.Error())
+		// avoid new connections
+		if err := this.httpListener.Close(); err != nil {
+			log.Error(err.Error())
+		}
+
+		log.Trace("%s on %s listener closed", this.name, this.httpServer.Addr)
+	}
+
+	if this.httpsServer != nil {
+		// HTTP response will have "Connection: close"
+		this.httpsServer.SetKeepAlivesEnabled(false)
+
+		// avoid new connections
+		if err := this.httpsListener.Close(); err != nil {
+			log.Error(err.Error())
+		}
+
+		log.Trace("%s on %s listener closed", this.name, this.httpsServer.Addr)
 	}
 
 	this.idleConnsLock.Lock()
@@ -180,7 +195,6 @@ func (this *subServer) waitExit(server *http.Server, listener net.Listener, exit
 	}
 	this.idleConnsLock.Unlock()
 
-	log.Trace("%s waiting for all connected client close...", this.name)
 	if waitTimeout(&this.idleConnsWg, Options.SubTimeout) {
 		log.Warn("%s waiting for all connected client close timeout: %s",
 			this.name, Options.SubTimeout)

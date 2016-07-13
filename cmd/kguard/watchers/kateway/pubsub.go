@@ -134,6 +134,9 @@ func (this *WatchPubsub) runCheckup() error {
 		}
 
 		this.subLatency.Update(time.Since(t0).Nanoseconds() / 1e6) // in ms
+
+		// wait for server cleanup the sub conn
+		time.Sleep(time.Second)
 	}
 
 	return nil

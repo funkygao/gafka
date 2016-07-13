@@ -19,7 +19,7 @@ func (this *runner) dump(pts []client.Point) {
 			log.Error("influxdb quit this tick: %v", err)
 			return
 		} else {
-			log.Info("influxdb connect retry ok")
+			log.Info("influxdb connected")
 		}
 	}
 

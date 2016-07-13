@@ -159,7 +159,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 	// display mode
 	lines := make([]string, 0)
-	header := "Zone|Id|Host|Ip|Version|Build|Cpu|Mem|Uptime"
+	header := "Zone|Id|Host|Ip|Version|Build|Cpu|Mem|P/S|Uptime"
 	lines = append(lines, header)
 	forSortedZones(func(zkzone *zk.ZkZone) {
 		if this.zone != "" && zkzone.Name() != this.zone {
@@ -202,13 +202,29 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 				continue
 			}
 
+			statusMap, _ := this.getKatewayStatusMap(kw.ManAddr)
+			logLevel := statusMap["loglevel"].(string)
+			heapSize, ok := statusMap["heap"].(string)
+			if !ok {
+				heapSize = ""
+			}
+			pubConn, ok := statusMap["pubconn"].(string)
+			if !ok {
+				pubConn = ""
+			}
+			subConn, ok := statusMap["subconn"].(string)
+			if !ok {
+				subConn = ""
+			}
+
 			if this.versionOnly {
-				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s/%s|%s|%s|%s",
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s/%s|%s|%s|%s/%s|%s",
 					zkzone.Name(),
 					kw.Id, kw.Host, kw.Ip,
 					kw.Ver, kw.Build, kw.BuiltAt,
 					kw.Cpu,
-					this.getKatewayHeapSize(kw.ManAddr),
+					heapSize,
+					pubConn, subConn,
 					gofmt.PrettySince(kw.Ctime)))
 				continue
 			}
@@ -221,7 +237,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 				kw.Arch,
 				color.Red(kw.Build),
 				kw.BuiltAt,
-				this.getKatewayLogLevel(kw.ManAddr),
+				logLevel,
 				kw.PubAddr,
 				kw.SubAddr,
 				kw.ManAddr,
@@ -317,32 +333,16 @@ func (this Kateway) getKatewayStatus(url string) string {
 	return string(body)
 }
 
-func (this *Kateway) getKatewayLogLevel(url string) string {
+func (this *Kateway) getKatewayStatusMap(url string) (map[string]interface{}, error) {
 	url = fmt.Sprintf("http://%s/v1/status", url)
 	body, err := this.callHttp(url, "GET")
 	if err != nil {
-		return err.Error()
+		return nil, err
 	}
 
 	var v map[string]interface{}
-	json.Unmarshal(body, &v)
-	return v["loglevel"].(string)
-}
-
-func (this *Kateway) getKatewayHeapSize(url string) string {
-	url = fmt.Sprintf("http://%s/v1/status", url)
-	body, err := this.callHttp(url, "GET")
-	if err != nil {
-		return err.Error()
-	}
-
-	var v map[string]interface{}
-	json.Unmarshal(body, &v)
-	if heap, ok := v["heap"].(string); ok {
-		return heap
-	}
-
-	return ""
+	err = json.Unmarshal(body, &v)
+	return v, err
 }
 
 func (this *Kateway) callHttp(url string, method string) (body []byte, err error) {
