@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -55,6 +56,11 @@ func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, par
 		}
 	}
 	output["heap"] = gofmt.ByteSize(heapSize).String()
+	pubConns := int(atomic.LoadInt32(&this.gw.pubServer.activeConnN))
+	subConns := int(atomic.LoadInt32(&this.gw.subServer.activeConnN))
+	output["pubconn"] = strconv.Itoa(pubConns)
+	output["subconn"] = strconv.Itoa(subConns)
+
 	b, _ := json.MarshalIndent(output, "", "    ")
 
 	w.Write(b)

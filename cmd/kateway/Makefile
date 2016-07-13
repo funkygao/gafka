@@ -10,6 +10,9 @@ deps:
 check:
 	-go vet
 	-golint
+	-go tool vet -shadow .
+	#go get github.com/barakmich/go-nyet
+	-go-nyet ./...
 	go tool nm -size -sort=size kateway | head -n 50
 
 build:

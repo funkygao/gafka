@@ -55,6 +55,11 @@ func (this *Client) Pub(key string, msg []byte, opt PubOption) (err error) {
 
 	var response *http.Response
 	response, err = this.pubConn.Do(req)
+	// when you get a redirection failure both response and err will be non-nil
+	if response != nil {
+		// reuse the connection
+		defer response.Body.Close()
+	}
 	if err != nil {
 		return
 	}
@@ -65,9 +70,6 @@ func (this *Client) Pub(key string, msg []byte, opt PubOption) (err error) {
 	if err != nil {
 		return
 	}
-
-	// reuse the connection
-	response.Body.Close()
 
 	if response.StatusCode != http.StatusCreated {
 		return errors.New(string(b))

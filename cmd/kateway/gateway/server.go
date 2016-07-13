@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-type waitExitFunc func(server *http.Server, listener net.Listener, exit <-chan struct{})
+type waitExitFunc func(exit <-chan struct{})
 type connStateFunc func(c net.Conn, cs http.ConnState)
 type onConnNewFunc func(net.Conn)
 type onConnCloseFunc func(net.Conn)

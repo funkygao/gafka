@@ -31,15 +31,15 @@ type webServer struct {
 	onConnNewFunc   onConnNewFunc
 	onConnCloseFunc onConnCloseFunc
 
-	onStop   func()
-	onceStop sync.Once
+	onStop        func()
+	mu            sync.Mutex
+	waiterStarted bool
 
 	// FIXME if http/https listener both enabled, must able to tell them apart
 	activeConnN int32
 
 	// TODO channel performance is frustrating, no better than mutex/map use ring buffer
 	stateIdleCh, stateRemoveCh, stateActiveCh chan net.Conn
-	onceClose                                 sync.Once
 }
 
 func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
@@ -195,12 +195,14 @@ func (this *webServer) startServer(https bool) {
 	// wait for the listener up
 	<-waitListenerUp
 
-	this.gw.wg.Add(1)
-	if https {
-		go this.waitExitFunc(this.httpsServer, this.httpsListener, this.gw.shutdownCh)
-	} else {
-		go this.waitExitFunc(this.httpServer, this.httpListener, this.gw.shutdownCh)
+	this.mu.Lock()
+	if !this.waiterStarted {
+		this.waiterStarted = true
+
+		this.gw.wg.Add(1)
+		go this.waitExitFunc(this.gw.shutdownCh)
 	}
+	this.mu.Unlock()
 
 	if https {
 		log.Info("%s https server ready on %s", this.name, this.httpsServer.Addr)
@@ -253,6 +255,10 @@ func (this *webServer) manageIdleConns() {
 
 			t := time.Now().Add(time.Millisecond * 100)
 			for conn := range idleConns {
+				if conn == nil {
+					continue
+				}
+
 				log.Debug("%s closing %s", this.name, conn.RemoteAddr())
 				conn.SetDeadline(t)
 			}
@@ -268,6 +274,10 @@ func (this *webServer) manageIdleConns() {
 
 			t := time.Now().Add(time.Millisecond * 100)
 			for conn := range idleConns {
+				if conn == nil {
+					continue
+				}
+
 				log.Debug("%s closing %s", this.name, conn.RemoteAddr())
 				conn.SetDeadline(t)
 			}
@@ -287,21 +297,34 @@ func (this *webServer) manageIdleConns() {
 	}
 }
 
-// If http/https both enabled, defaultWaitExit will be called twice
-func (this *webServer) defaultWaitExit(server *http.Server, listener net.Listener, exit <-chan struct{}) {
+func (this *webServer) defaultWaitExit(exit <-chan struct{}) {
 	<-exit
 
-	// HTTP response will have "Connection: close"
-	server.SetKeepAlivesEnabled(false)
+	if this.httpServer != nil {
+		// HTTP response will have "Connection: close"
+		this.httpServer.SetKeepAlivesEnabled(false)
 
-	// avoid new connections
-	if err := listener.Close(); err != nil {
-		log.Error(err.Error())
+		// avoid new connections
+		if err := this.httpListener.Close(); err != nil {
+			log.Error(err.Error())
+		}
+
+		log.Trace("%s on %s listener closed", this.name, this.httpServer.Addr)
 	}
 
-	log.Trace("%s on %s listener closed", this.name, server.Addr)
+	if this.httpsServer != nil {
+		// HTTP response will have "Connection: close"
+		this.httpsServer.SetKeepAlivesEnabled(false)
 
-	// wait for all established conns close
+		// avoid new connections
+		if err := this.httpsListener.Close(); err != nil {
+			log.Error(err.Error())
+		}
+
+		log.Trace("%s on %s listener closed", this.name, this.httpsServer.Addr)
+	}
+
+	// wait for all established http/https conns close
 	waitStart := time.Now()
 	var prompt sync.Once
 	for {
@@ -312,20 +335,19 @@ func (this *webServer) defaultWaitExit(server *http.Server, listener net.Listene
 		}
 
 		prompt.Do(func() {
-			log.Trace("%s on %s waiting for %d clients shutdown...",
-				this.name, server.Addr, activeConnN)
+			log.Trace("%s waiting for %d clients shutdown...", this.name, activeConnN)
 		})
 
 		// timeout mechanism
 		if time.Since(waitStart) > Options.SubTimeout+time.Second {
-			log.Warn("%s on %s still left %d conns after %s, forced to shutdown",
-				this.name, server.Addr, activeConnN, Options.SubTimeout)
+			log.Warn("%s still left %d conns after %s, forced to shutdown",
+				this.name, activeConnN, Options.SubTimeout)
 			break
 		}
 
 		time.Sleep(time.Millisecond * 50)
 	}
-	log.Trace("%s on %s all connections finished", this.name, server.Addr)
+	log.Trace("%s all connections finished", this.name)
 
 	if this.httpsServer != nil {
 		this.httpsServer.ConnState = nil
@@ -333,17 +355,13 @@ func (this *webServer) defaultWaitExit(server *http.Server, listener net.Listene
 	if this.httpServer != nil {
 		this.httpServer.ConnState = nil
 	}
-	this.onceClose.Do(func() {
-		close(this.stateActiveCh)
-		close(this.stateIdleCh)
-		close(this.stateRemoveCh)
-	})
+
+	close(this.stateActiveCh)
+	close(this.stateIdleCh)
+	close(this.stateRemoveCh)
 
 	if this.onStop != nil {
-		// if both http and https, without sync once, onStop will be called twice
-		this.onceStop.Do(func() {
-			this.onStop()
-		})
+		this.onStop()
 	}
 
 	this.gw.wg.Done()

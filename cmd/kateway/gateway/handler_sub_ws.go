@@ -53,7 +53,7 @@ func (this *subServer) subWsHandler(w http.ResponseWriter, r *http.Request, para
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
-	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
+	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
 		log.Error("consumer[%s] %s {hisapp:%s, topic:%s, ver:%s, group:%s, limit:%d}: %s",
 			myAppid, r.RemoteAddr, hisAppid, topic, ver, group, limit, err)
@@ -141,7 +141,7 @@ func (this *subServer) wsWritePump(clientGone chan struct{}, ws *websocket.Conn,
 				return
 			}
 
-			if err := fetcher.CommitUpto(msg); err != nil {
+			if err = fetcher.CommitUpto(msg); err != nil {
 				log.Error(err) // TODO add more ctx
 			}
 
