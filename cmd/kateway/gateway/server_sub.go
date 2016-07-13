@@ -95,6 +95,7 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 		// Connections begin at StateNew and then
 		// transition to either StateActive or StateClosed
 		this.idleConnsWg.Add(1)
+		atomic.AddInt32(&this.activeConnN, 1)
 
 		if this.gw != nil && !Options.DisableMetrics {
 			this.gw.svrMetrics.ConcurrentSub.Inc(1)
@@ -136,6 +137,8 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 		delete(this.idleConns, c)
 		this.idleConnsLock.Unlock()
 
+		atomic.AddInt32(&this.activeConnN, -1)
+
 		if this.gw != nil && !Options.DisableMetrics {
 			this.gw.svrMetrics.ConcurrentSub.Dec(1)
 
@@ -154,6 +157,7 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 
 		this.closedConnCh <- remoteAddr
 		this.idleConnsWg.Done()
+		atomic.AddInt32(&this.activeConnN, -1)
 
 		this.idleConnsLock.Lock()
 		delete(this.idleConns, c)
