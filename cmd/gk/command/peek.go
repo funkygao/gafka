@@ -141,7 +141,9 @@ LOOP:
 			elapsed := time.Since(startAt).Seconds()
 			if elapsed > 1. {
 				this.Ui.Output(fmt.Sprintf("Speed: %d/s", total/int(elapsed)))
-				this.Ui.Output(fmt.Sprintf("Size : %s/msg", gofmt.ByteSize(bytesN/int64(total))))
+				if total > 0 {
+					this.Ui.Output(fmt.Sprintf("Size : %s/msg", gofmt.ByteSize(bytesN/int64(total))))
+				}
 			}
 
 			return
