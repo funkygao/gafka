@@ -1,7 +1,7 @@
 package gafka
 
 var (
-	Version string
-	BuildId string
+	Version string = "unknown"
+	BuildId string = "?"
 	BuiltAt string
 )
