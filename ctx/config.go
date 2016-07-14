@@ -12,17 +12,15 @@ var (
 )
 
 type config struct {
-	hostname string // not config, but runtime
+	hostname string // not by config, but runtime, cached value
 
-	kafkaHome       string
-	logLevel        string
-	consulBootstrap string            // consul bootstrap nodes addrs
-	zones           map[string]string // zone:zkConn
-	influxdbs       map[string]string // zone:influxdb addr
-	zkDefaultZone   string            // zk command default zone name
-	aliases         map[string]string
-	reverseDns      map[string][]string // ip: domain names
-	upgradeCenter   string
+	kafkaHome     string
+	logLevel      string
+	zkDefaultZone string // zk command default zone name
+	upgradeCenter string
+	zones         map[string]*zone // name:zone
+	aliases       map[string]string
+	reverseDns    map[string][]string // ip: domain names
 }
 
 func (c *config) sortedZones() []string {

@@ -50,7 +50,7 @@ func (this *Zones) Run(args []string) (exitCode int) {
 			continue
 		}
 
-		influxDbAddr := ctx.ZoneInfluxdbAddr(zone)
+		influxDbAddr := ctx.Zone(zone).InfluxAddr
 		if this.influxOnly && influxDbAddr == "" {
 			continue
 		}

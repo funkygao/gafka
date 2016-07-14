@@ -390,7 +390,7 @@ func (this *Deploy) demo() {
 		}
 	}
 
-	influxAddr := ctx.ZoneInfluxdbAddr(this.zone)
+	influxAddr := ctx.Zone(this.zone).InfluxAddr
 	if influxAddr != "" {
 		this.Ui.Output(fmt.Sprintf("gk deploy -z %s -c %s -broker.id %d -port %d -ip %s -log.dirs %s -influx %s",
 			this.zone, this.cluster,

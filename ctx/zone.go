@@ -5,16 +5,18 @@ import (
 )
 
 type zone struct {
-	name       string
-	zk         string
-	influxAddr string // 10.1.1.1:8086
+	Name       string // prod
+	Zk         string // localhost:2181,localhost:2182
+	InfluxAddr string // localhost:8086
+	SwfAddr    string // localhost:9195
 }
 
 func (this *zone) loadConfig(section *ljconf.Conf) {
-	this.name = section.String("name", "")
-	this.zk = section.String("zk", "")
-	this.influxAddr = section.String("influxdb", "")
-	if this.name == "" {
+	this.Name = section.String("name", "")
+	this.Zk = section.String("zk", "")
+	this.InfluxAddr = section.String("influxdb", "")
+	this.SwfAddr = section.String("swf", "")
+	if this.Name == "" {
 		panic("empty zone name not allowed")
 	}
 }

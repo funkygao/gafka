@@ -21,11 +21,9 @@ func LoadConfig(fn string) {
 	conf.hostname, _ = os.Hostname()
 	conf.kafkaHome = cf.String("kafka_home", "")
 	conf.logLevel = cf.String("loglevel", "info")
-	conf.zones = make(map[string]string)
-	conf.influxdbs = make(map[string]string)
-	conf.consulBootstrap = cf.String("consul_bootstrap", "")
 	conf.zkDefaultZone = cf.String("zk_default_zone", "")
 	conf.upgradeCenter = cf.String("upgrade_center", "")
+
 	conf.aliases = make(map[string]string)
 	for i := 0; i < len(cf.List("aliases", nil)); i++ {
 		section, err := cf.Section(fmt.Sprintf("aliases[%d]", i))
@@ -36,6 +34,7 @@ func LoadConfig(fn string) {
 		conf.aliases[section.String("cmd", "")] = section.String("alias", "")
 	}
 
+	conf.zones = make(map[string]*zone)
 	for i := 0; i < len(cf.List("zones", nil)); i++ {
 		section, err := cf.Section(fmt.Sprintf("zones[%d]", i))
 		if err != nil {
@@ -44,8 +43,7 @@ func LoadConfig(fn string) {
 
 		z := new(zone)
 		z.loadConfig(section)
-		conf.zones[z.name] = z.zk
-		conf.influxdbs[z.name] = z.influxAddr
+		conf.zones[z.Name] = z
 	}
 
 	conf.reverseDns = make(map[string][]string)

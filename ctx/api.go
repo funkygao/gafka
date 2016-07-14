@@ -10,6 +10,60 @@ import (
 	"strings"
 )
 
+func NamedZoneZkAddrs(zone string) string {
+	parts := strings.Split(ZoneZkAddrs(zone), ",")
+	addrs := make([]string, 0, len(parts))
+	for _, p := range parts {
+		ip, port, err := net.SplitHostPort(p)
+		if err != nil {
+			fmt.Printf("zone[%s]: %s\n", zone, err)
+			os.Exit(1)
+		}
+
+		host, present := ReverseDnsLookup(ip, 0)
+		if present {
+			ip = host
+		}
+
+		addrs = append(addrs, net.JoinHostPort(ip, port))
+	}
+	return strings.Join(addrs, ",")
+}
+
+func ZoneZkAddrs(zone string) (zkAddrs string) {
+	ensureLogLoaded()
+
+	if z, present := conf.zones[zone]; present {
+		return z.Zk
+	}
+
+	// should never happen
+	fmt.Printf("zone[%s] undefined\n", zone)
+	os.Exit(1)
+	return ""
+}
+
+func Zones() map[string]string {
+	ensureLogLoaded()
+
+	r := make(map[string]string, len(conf.zones))
+	for name, z := range conf.zones {
+		r[name] = z.Zk
+	}
+	return r
+}
+
+func Zone(z string) *zone {
+	ensureLogLoaded()
+
+	return conf.zones[z]
+}
+
+func ZkDefaultZone() string {
+	ensureLogLoaded()
+	return conf.zkDefaultZone
+}
+
 func Hostname() string {
 	ensureLogLoaded()
 	return conf.hostname
@@ -18,16 +72,6 @@ func Hostname() string {
 func LogLevel() string {
 	ensureLogLoaded()
 	return conf.logLevel
-}
-
-func Zones() map[string]string {
-	ensureLogLoaded()
-	return conf.zones
-}
-
-func ZkDefaultZone() string {
-	ensureLogLoaded()
-	return conf.zkDefaultZone
 }
 
 // UpgradeCenter return the uri where to fetch gk/kguard/kateway/.gafka.cf files.
@@ -65,15 +109,6 @@ func ReverseDnsLookup(ip string, port int) (string, bool) {
 	return "", false
 }
 
-func ConsulBootstrap() string {
-	ensureLogLoaded()
-	return conf.consulBootstrap
-}
-
-func ConsulBootstrapList() []string {
-	return strings.Split(ConsulBootstrap(), ",")
-}
-
 func KafkaHome() string {
 	ensureLogLoaded()
 	return conf.kafkaHome
@@ -99,43 +134,6 @@ func Aliases() []string {
 
 func AliasesWithValue() map[string]string {
 	return conf.aliases
-}
-
-func ZoneInfluxdbAddr(zone string) string {
-	return conf.influxdbs[zone]
-}
-
-func NamedZoneZkAddrs(zone string) string {
-	parts := strings.Split(ZoneZkAddrs(zone), ",")
-	addrs := make([]string, 0, len(parts))
-	for _, p := range parts {
-		ip, port, err := net.SplitHostPort(p)
-		if err != nil {
-			fmt.Printf("zone[%s]: %s\n", zone, err)
-			os.Exit(1)
-		}
-
-		host, present := ReverseDnsLookup(ip, 0)
-		if present {
-			ip = host
-		}
-
-		addrs = append(addrs, net.JoinHostPort(ip, port))
-	}
-	return strings.Join(addrs, ",")
-}
-
-func ZoneZkAddrs(zone string) (zkAddrs string) {
-	ensureLogLoaded()
-	var present bool
-	if zkAddrs, present = conf.zones[zone]; present {
-		return
-	}
-
-	// should never happen
-	fmt.Printf("zone[%s] undefined\n", zone)
-	os.Exit(1)
-	return ""
 }
 
 // LocalIP tries to determine a non-loopback address for the local machine
