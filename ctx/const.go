@@ -8,7 +8,7 @@ const (
             "name": "local"
             "zk": "localhost:2181"
             "influxdb": "localhost:8086"
-            "swf": "localhost:9195"
+            "swf": "http://localhost:9195/v1"
         }
         
     ]

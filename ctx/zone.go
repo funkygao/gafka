@@ -8,7 +8,7 @@ type zone struct {
 	Name       string // prod
 	Zk         string // localhost:2181,localhost:2182
 	InfluxAddr string // localhost:8086
-	SwfAddr    string // localhost:9195
+	SwfAddr    string // swf endpoint, http://192.168.10.134:9195/v1
 }
 
 func (this *zone) loadConfig(section *ljconf.Conf) {
