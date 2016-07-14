@@ -11,6 +11,7 @@ import (
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/kafka"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/kateway"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/zk"
+	_ "github.com/funkygao/gafka/cmd/kguard/watchers/zone"
 )
 
 func main() {
