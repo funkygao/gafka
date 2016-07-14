@@ -8,8 +8,9 @@ import (
 type Client struct {
 	cf *Config
 
-	pubConn *http.Client
-	subConn *http.Client
+	pubConn   *http.Client
+	subConn   *http.Client
+	adminConn *http.Client
 }
 
 // NewClient will create a PubSub client.
@@ -30,6 +31,19 @@ func NewClient(cf *Config) *Client {
 			},
 		},
 		subConn: &http.Client{
+			Timeout: cf.Timeout,
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: 1,
+				Proxy:               http.ProxyFromEnvironment,
+				Dial: (&net.Dialer{
+					Timeout: cf.Timeout,
+				}).Dial,
+				DisableKeepAlives:     false, // enable http conn reuse
+				ResponseHeaderTimeout: cf.Timeout,
+				TLSHandshakeTimeout:   cf.Timeout,
+			},
+		},
+		adminConn: &http.Client{
 			Timeout: cf.Timeout,
 			Transport: &http.Transport{
 				MaxIdleConnsPerHost: 1,

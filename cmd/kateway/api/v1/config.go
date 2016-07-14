@@ -21,6 +21,11 @@ type Config struct {
 		Endpoint string // host:port
 	}
 
+	Admin struct {
+		Scheme   string
+		Endpoint string
+	}
+
 	Debug bool
 }
 
@@ -34,5 +39,6 @@ func DefaultConfig(appid, secret string) *Config {
 	}
 	cf.Sub.Scheme = "http"
 	cf.Pub.Scheme = "http"
+	cf.Admin.Scheme = "http"
 	return cf
 }
