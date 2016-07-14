@@ -30,6 +30,7 @@ type Monitor struct {
 	influxdbAddr   string
 	influxdbDbName string
 	apiAddr        string
+	externalDir    string
 
 	router *httprouter.Router
 	zkzone *zk.ZkZone
@@ -49,6 +50,7 @@ func (this *Monitor) Init() {
 	flag.StringVar(&this.apiAddr, "http", ":10025", "api http server addr")
 	flag.StringVar(&this.influxdbAddr, "influxAddr", "", "influxdb addr, required")
 	flag.StringVar(&this.influxdbDbName, "db", "", "influxdb db name, required")
+	flag.StringVar(&this.externalDir, "confd", "", "external script config dir")
 	flag.Parse()
 
 	if zone == "" || this.influxdbDbName == "" || this.influxdbAddr == "" {
@@ -216,4 +218,8 @@ func (this *Monitor) InfluxAddr() string {
 
 func (this *Monitor) InfluxDB() string {
 	return this.influxdbDbName
+}
+
+func (this *Monitor) ExternalDir() string {
+	return this.externalDir
 }

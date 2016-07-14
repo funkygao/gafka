@@ -13,4 +13,5 @@ type Context interface {
 	Inflight() *sync.WaitGroup
 	InfluxAddr() string
 	InfluxDB() string
+	ExternalDir() string
 }
