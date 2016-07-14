@@ -26,7 +26,6 @@ func LoadConfig(fn string) {
 	conf.consulBootstrap = cf.String("consul_bootstrap", "")
 	conf.zkDefaultZone = cf.String("zk_default_zone", "")
 	conf.upgradeCenter = cf.String("upgrade_center", "")
-	conf.tunnels = make(map[string]string)
 	conf.aliases = make(map[string]string)
 	for i := 0; i < len(cf.List("aliases", nil)); i++ {
 		section, err := cf.Section(fmt.Sprintf("aliases[%d]", i))
@@ -46,7 +45,6 @@ func LoadConfig(fn string) {
 		z := new(zone)
 		z.loadConfig(section)
 		conf.zones[z.name] = z.zk
-		conf.tunnels[z.name] = z.tunnel
 		conf.influxdbs[z.name] = z.influxAddr
 	}
 

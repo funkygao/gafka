@@ -18,7 +18,6 @@ type config struct {
 	logLevel        string
 	consulBootstrap string            // consul bootstrap nodes addrs
 	zones           map[string]string // zone:zkConn
-	tunnels         map[string]string // zone:tunnel host ip
 	influxdbs       map[string]string // zone:influxdb addr
 	zkDefaultZone   string            // zk command default zone name
 	aliases         map[string]string

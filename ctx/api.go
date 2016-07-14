@@ -41,11 +41,6 @@ func UpgradeCenter() string {
 	return conf.upgradeCenter
 }
 
-func Tunnels() map[string]string {
-	ensureLogLoaded()
-	return conf.tunnels
-}
-
 func ReverseDnsLookup(ip string, port int) (string, bool) {
 	ensureLogLoaded()
 	hosts, present := conf.reverseDns[ip]
