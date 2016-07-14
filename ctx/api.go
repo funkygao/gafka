@@ -64,6 +64,11 @@ func ZkDefaultZone() string {
 	return conf.zkDefaultZone
 }
 
+func DefaultZone() string {
+	ensureLogLoaded()
+	return conf.zkDefaultZone
+}
+
 func Hostname() string {
 	ensureLogLoaded()
 	return conf.hostname
