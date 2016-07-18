@@ -134,6 +134,24 @@ func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
+func (this *ZkZone) KguardInfos() ([]*KguardMeta, error) {
+	this.connectIfNeccessary()
+
+	r := make([]*KguardMeta, 0)
+	data, stat, err := this.Conn().Get("/" + KguardLeaderPath)
+	if err != nil {
+		return nil, err
+	}
+
+	children, _, _ := this.Conn().Children("/" + KguardLeaderPath)
+	r = append(r, &KguardMeta{
+		Host:       string(data),
+		Candidates: len(children),
+		Ctime:      ZkTimestamp(stat.Ctime).Time(),
+	})
+	return r, nil
+}
+
 // KatewayInfos return online kateway instances meta sort by id.
 func (this *ZkZone) KatewayInfos() ([]*KatewayMeta, error) {
 	this.connectIfNeccessary()

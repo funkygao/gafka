@@ -204,3 +204,9 @@ type KatewayMeta struct {
 
 	Ctime time.Time `json:"-"`
 }
+
+type KguardMeta struct {
+	Host       string
+	Candidates int
+	Ctime      time.Time
+}

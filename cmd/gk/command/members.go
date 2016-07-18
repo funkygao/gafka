@@ -23,13 +23,14 @@ import (
 // - agents
 //   - brokers
 //   - kateway
+//   - kguard
 type Members struct {
 	Ui  cli.Ui
 	Cmd string
 
-	brokerHosts, zkHosts, katewayHosts map[string]struct{}
-	nodeHostMap, hostNodeMap           map[string]string // consul members node->ip
-	debug                              bool
+	brokerHosts, zkHosts, katewayHosts, kguardHosts map[string]struct{}
+	nodeHostMap, hostNodeMap                        map[string]string // consul members node->ip
+	debug                                           bool
 }
 
 func (this *Members) Run(args []string) (exitCode int) {
@@ -72,11 +73,12 @@ func (this *Members) Run(args []string) (exitCode int) {
 	}
 
 	consulLiveMap := make(map[string]struct{})
-	brokerN, zkN, katewayN, unknownN := 0, 0, 0, 0
+	brokerN, zkN, katewayN, kguardN, unknownN := 0, 0, 0, 0, 0
 	for _, node := range consulLiveNode {
 		_, presentInBroker := this.brokerHosts[node]
 		_, presentInZk := this.zkHosts[node]
 		_, presentInKateway := this.katewayHosts[node]
+		_, presentInKguard := this.kguardHosts[node]
 		if presentInBroker {
 			brokerN++
 		}
@@ -86,8 +88,11 @@ func (this *Members) Run(args []string) (exitCode int) {
 		if presentInKateway {
 			katewayN++
 		}
+		if presentInKguard {
+			kguardN++
+		}
 
-		if !presentInBroker && !presentInZk && !presentInKateway {
+		if !presentInBroker && !presentInZk && !presentInKateway && !presentInKguard {
 			unknownN++
 		}
 
@@ -136,6 +141,13 @@ func (this *Members) fetchAllRunningHostsFromZk(zkzone *zk.ZkZone) {
 		zkNode, _, err := net.SplitHostPort(addr)
 		swallow(err)
 		this.zkHosts[zkNode] = struct{}{}
+	}
+
+	this.kguardHosts = make(map[string]struct{})
+	kgs, err := zkzone.KguardInfos()
+	swallow(err)
+	for _, kg := range kgs {
+		this.kguardHosts[kg.Host] = struct{}{}
 	}
 
 	this.katewayHosts = make(map[string]struct{})
@@ -347,6 +359,9 @@ func (this *Members) roleOfHost(host string) string {
 	if _, present := this.katewayHosts[host]; present {
 		return "K"
 	}
+	if _, present := this.kguardHosts[host]; present {
+		return "G"
+	}
 	return "?"
 }
 
@@ -360,6 +375,8 @@ func (this *Members) nodesOfRole(role string) []string {
 		container = this.zkHosts
 	case "K":
 		container = this.katewayHosts
+	case "G":
+		container = this.kguardHosts
 	default:
 		return nil
 	}

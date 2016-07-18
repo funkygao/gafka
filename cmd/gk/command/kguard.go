@@ -28,18 +28,16 @@ func (this *Kguard) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
-	data, stat, err := zkzone.Conn().Get("/" + zk.KguardLeaderPath)
+	kguards, err := zkzone.KguardInfos()
 	if err != nil {
 		this.Ui.Error(fmt.Sprintf("%s %v", zk.KguardLeaderPath, err.Error()))
 		return
 	}
 
-	children, _, _ := zkzone.Conn().Children("/" + zk.KguardLeaderPath)
-
+	leader := kguards[0]
 	this.Ui.Output(fmt.Sprintf("%s(out of %d candidates) up: %s",
-		color.Green(string(data)),
-		len(children),
-		gofmt.PrettySince(zk.ZkTimestamp(stat.Mtime).Time())))
+		color.Green(leader.Host), leader.Candidates,
+		gofmt.PrettySince(leader.Ctime)))
 
 	return
 }
