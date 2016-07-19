@@ -358,7 +358,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 
 		hasTopicMatched = true
 		if this.verbose {
-			linesInTopicMode = this.echoOrBuffer(strings.Repeat(" ", 4)+color.Blue(topic), linesInTopicMode)
+			linesInTopicMode = this.echoOrBuffer(strings.Repeat(" ", 4)+color.Cyan(topic), linesInTopicMode)
 		}
 
 		// get partitions and check if some dead
@@ -368,7 +368,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		swallow(err)
 		if len(alivePartitions) != len(partions) {
 			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%30s %s %s P: %s/%+v",
-				zkcluster.Name(), color.Blue("%-50s", topic), color.Red("partial dead"), color.Green("%+v", alivePartitions), partions), linesInTopicMode)
+				zkcluster.Name(), color.Cyan("%-50s", topic), color.Red("partial dead"), color.Green("%+v", alivePartitions), partions), linesInTopicMode)
 		}
 
 		replicas, err := kfk.Replicas(topic, partions[0])
@@ -380,7 +380,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		if !this.verbose {
 			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%30s %s %3dP %dR %s",
 				zkcluster.Name(),
-				color.Blue("%-50s", topic),
+				color.Cyan("%-50s", topic),
 				len(partions), len(replicas),
 				gofmt.PrettySince(topicsCtime[topic])), linesInTopicMode)
 			continue
