@@ -20,7 +20,7 @@ const (
 	preferredReplicaJsonFile = "preferred-replica.json"
 )
 
-type Leader struct {
+type Rebalance struct {
 	Ui  cli.Ui
 	Cmd string
 
@@ -31,8 +31,8 @@ type Leader struct {
 	partition string
 }
 
-func (this *Leader) Run(args []string) (exitCode int) {
-	cmdFlags := flag.NewFlagSet("leader", flag.ContinueOnError)
+func (this *Rebalance) Run(args []string) (exitCode int) {
+	cmdFlags := flag.NewFlagSet("rebalance", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
@@ -64,7 +64,7 @@ func (this *Leader) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Leader) generateReassignFile() string {
+func (this *Rebalance) generateReassignFile() string {
 	// {"partitions":[{"topic":"t1", "partition":1}]}
 
 	type PartitionMeta struct {
@@ -77,6 +77,7 @@ func (this *Leader) generateReassignFile() string {
 
 	var js ReassignMeta
 	js.Partitions = make([]PartitionMeta, 0)
+	this.normalizePartitions()
 	for _, p := range strings.Split(this.partition, ",") {
 		p = strings.TrimSpace(p)
 		pid, err := strconv.Atoi(p)
@@ -96,7 +97,28 @@ func (this *Leader) generateReassignFile() string {
 	return string(b)
 }
 
-func (this *Leader) executeReassignment() {
+func (this *Rebalance) normalizePartitions() {
+	if strings.Contains(this.partition, "-") {
+		// e,g. 0-10
+		parts := strings.Split(this.partition, "-")
+		startId, err := strconv.Atoi(parts[0])
+		swallow(err)
+		endId, err := strconv.Atoi(parts[1])
+		swallow(err)
+		if startId >= endId {
+			panic("invalid partition id")
+		}
+
+		partitions := make([]string, 0)
+		for i := startId; i <= endId; i++ {
+			partitions = append(partitions, strconv.Itoa(i))
+		}
+
+		this.partition = strings.Join(partitions, ",")
+	}
+}
+
+func (this *Rebalance) executeReassignment() {
 	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-preferred-replica-election.sh", ctx.KafkaHome()),
 		fmt.Sprintf("--zookeeper %s", this.zkcluster.ZkConnectAddr()),
 		fmt.Sprintf("--path-to-json-file %s", preferredReplicaJsonFile),
@@ -114,27 +136,28 @@ func (this *Leader) executeReassignment() {
 	}
 }
 
-func (*Leader) Synopsis() string {
+func (*Rebalance) Synopsis() string {
 	return "Restore the leadership balance for a given topic partition"
 }
 
-func (this *Leader) Help() string {
+func (this *Rebalance) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s leader -z zone -c cluster [options]
+Usage: %s rebalance -z zone -c cluster [options]
 
-    Restore the leadership balance for a given topic partition.   
+    %s  
 
     e,g.
-      gk leader -z prod -c trade -t order -p 0,1
+      gk rebalance -z prod -c trade -t order -p 0,1
 
 Options:
 
     -t topic
 
     -p partitionId
-      Multiple partition ids seperated by comma.
+      Multiple partition ids seperated by comma or -.
       e,g. -p 0,1
+      e,g. -p 0-19
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

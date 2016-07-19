@@ -74,8 +74,8 @@ func init() {
 			}, nil
 		},
 
-		"leader": func() (cli.Command, error) {
-			return &command.Leader{
+		"rebalance": func() (cli.Command, error) {
+			return &command.Rebalance{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
