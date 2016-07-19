@@ -187,57 +187,67 @@ func (this *Histogram) drawAll(offsetTs []time.Time, offsets []int64,
 	termui.UseTheme("helloworld")
 
 	w, h := termbox.Size()
+	maxItems := (w - 2) / 4
+	begin := 0
+	if len(offsetTs) > maxItems {
+		begin = len(offsetTs) - maxItems
+	}
 
 	bc1 := termui.NewBarChart()
 	bc1.Border.Label = "Messages Produced/in million"
-	data := make([]int, 0)
-	for _, off := range offsets {
-		data = append(data, int(off/1000000)) // in million
+	dataOffsets := make([]int, 0)
+
+	for _, off := range offsets[begin:] {
+		dataOffsets = append(dataOffsets, int(off/1000000)) // in million
 	}
-	bclabels := make([]string, 0)
-	for _, t := range offsetTs {
-		bclabels = append(bclabels, fmt.Sprintf("%02d", t.Hour()))
+	offsetsLabels := make([]string, 0)
+	for _, t := range offsetTs[begin:] {
+		offsetsLabels = append(offsetsLabels, fmt.Sprintf("%02d", t.Hour()))
 	}
-	bc1.Data = data
+	bc1.Data = dataOffsets
 	bc1.Width = w
 	bc1.SetY(0)
 	bc1.Height = h / 3
-	bc1.DataLabels = bclabels
+	bc1.DataLabels = offsetsLabels
 	bc1.TextColor = termui.ColorWhite
 	bc1.BarColor = termui.ColorRed
 	bc1.NumColor = termui.ColorYellow
 
-	bclabels = make([]string, 0) // shared between bc2 and bc3
-	for _, t := range netTs {
-		bclabels = append(bclabels, fmt.Sprintf("%02d", t.Hour()))
+	if len(netTs) > maxItems {
+		begin = len(netTs) - maxItems
+	}
+
+	netLabels := make([]string, 0) // shared between bc2 and bc3
+	for _, t := range netTs[begin:] {
+		netLabels = append(netLabels, fmt.Sprintf("%02d", t.Hour()))
 	}
 
 	bc2 := termui.NewBarChart()
 	bc2.Border.Label = "Network RX/in 10GB"
-	data = make([]int, 0)
-	for _, r := range rx {
-		data = append(data, int(r>>30)/10)
+	rxData := make([]int, 0)
+	for _, r := range rx[begin:] {
+		rxData = append(rxData, int(r>>30)/10)
 	}
-	bc2.Data = data
+	bc2.Data = rxData
 	bc2.Width = w
 	bc2.SetY(h / 3)
 	bc2.Height = h / 3
-	bc2.DataLabels = bclabels
+	bc2.DataLabels = netLabels
 	bc2.TextColor = termui.ColorGreen
 	bc2.BarColor = termui.ColorRed
 	bc2.NumColor = termui.ColorYellow
 
 	bc3 := termui.NewBarChart()
 	bc3.Border.Label = "Network TX/in 10GB"
-	data = make([]int, 0)
-	for _, t := range tx {
-		data = append(data, int(t>>30)/10)
+	txData := make([]int, 0)
+	for _, t := range tx[begin:] {
+		txData = append(txData, int(t>>30)/10)
 	}
-	bc3.Data = data
+	bc3.Data = txData
 	bc3.Width = w
 	bc3.SetY(h * 2 / 3)
 	bc3.Height = h / 3
-	bc3.DataLabels = bclabels
+	bc3.DataLabels = netLabels
 	bc3.TextColor = termui.ColorGreen
 	bc3.BarColor = termui.ColorRed
 	bc3.NumColor = termui.ColorYellow
