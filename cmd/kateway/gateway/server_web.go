@@ -240,7 +240,7 @@ func (this *webServer) manageIdleConns() {
 	var (
 		idleConns     = make(map[net.Conn]struct{}, 200)
 		c             net.Conn
-		waitNextRound = make(chan struct{})
+		waitNextRound = make(chan struct{}, 10)
 	)
 	defer close(waitNextRound)
 
