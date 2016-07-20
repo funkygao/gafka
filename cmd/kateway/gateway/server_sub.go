@@ -11,14 +11,15 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/golib/ratelimiter"
+	"github.com/funkygao/golib/sync2"
 	log "github.com/funkygao/log4go"
 )
 
 type subServer struct {
 	*webServer
 
-	idleConnsWg   sync.WaitGroup // wait for all inflight http connections done
-	closedConnCh  chan string    // channel of remote addr
+	idleConnsWg   sync2.WaitGroupTimeout // wait for all inflight http connections done
+	closedConnCh  chan string            // channel of remote addr
 	idleConns     map[net.Conn]struct{}
 	idleConnsLock sync.Mutex
 
@@ -199,7 +200,7 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 	}
 	this.idleConnsLock.Unlock()
 
-	if waitTimeout(&this.idleConnsWg, Options.SubTimeout) {
+	if this.idleConnsWg.WaitTimeout(Options.SubTimeout) {
 		log.Warn("%s waiting for all connected client close timeout: %s",
 			this.name, Options.SubTimeout)
 	}
