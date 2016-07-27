@@ -40,6 +40,7 @@ func (this *runner) makeClient() (err error) {
 		URL:      this.cf.url,
 		Username: this.cf.username,
 		Password: this.cf.password,
+		Timeout:  time.Second * 4,
 	})
 
 	_, _, err = this.client.Ping()
