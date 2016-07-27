@@ -37,9 +37,13 @@ func getHttpQueryInt(query *url.Values, key string, defaultVal int) (int, error)
 func getHttpRemoteIp(r *http.Request) string {
 	forwardFor := r.Header.Get(HttpHeaderXForwardedFor) // client_ip,proxy_ip,proxy_ip,...
 	if forwardFor == "" {
-		// not behind haproxy, directly connected
-		p := strings.SplitN(r.RemoteAddr, ":", 2)
-		return p[0]
+		// directly connected
+		idx := strings.LastIndex(r.RemoteAddr, ":")
+		if idx == -1 {
+			return r.RemoteAddr
+		}
+
+		return r.RemoteAddr[:idx]
 	}
 
 	return forwardFor // FIXME forwardFor might be comma seperated ip list, but here for performance ignore it
