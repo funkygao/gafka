@@ -10,4 +10,5 @@ var (
 	ErrTooSmallMessage      = errors.New("too small message")
 	ErrIllegalTaggedMessage = errors.New("illegal tagged message")
 	ErrClientKilled         = errors.New("client killed")
+	ErrBadResponseWriter    = errors.New("ResponseWriter Close not supported")
 )

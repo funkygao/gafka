@@ -229,7 +229,10 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 	fetcher store.Fetcher, limit int, myAppid, hisAppid, topic, ver,
 	group string, delayedAck bool, tagFilters []MsgTag) error {
-	clientGoneCh := w.(http.CloseNotifier).CloseNotify()
+	clientGoneCh, ok := w.(http.CloseNotifier).CloseNotify()
+	if !ok {
+		return ErrBadResponseWriter
+	}
 
 	var (
 		metaBuf     []byte = nil
