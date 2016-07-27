@@ -109,8 +109,8 @@ func (this *subServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 		}
 	}
 
-	log.Info("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d}",
-		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN)
+	log.Info("peek[%s] %s(%s): {app:%s topic:%s ver:%s n:%d wait:%s}",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, waitParam)
 
 	if lastN > 100 {
 		lastN = 100
@@ -127,26 +127,38 @@ func (this *subServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 	defer kfk.Close()
 
 	msgChan := make(chan *sarama.ConsumerMessage, 10)
-	errs := make(chan error)
+	errs := make(chan error, 5)
 	stopCh := make(chan struct{})
 
 	go func() {
 		partitions, err := kfk.Partitions(rawTopic)
 		if err != nil {
-			errs <- err
-			return
+			select {
+			case errs <- err:
+				return
+			case <-stopCh:
+				return
+			}
 		}
 
 		for _, p := range partitions {
 			latestOffset, err := kfk.GetOffset(rawTopic, p, sarama.OffsetNewest)
 			if err != nil {
-				errs <- err
-				return
+				select {
+				case errs <- err:
+					return
+				case <-stopCh:
+					return
+				}
 			}
 			oldestOffset, err := kfk.GetOffset(rawTopic, p, sarama.OffsetOldest)
 			if err != nil {
-				errs <- err
-				return
+				select {
+				case errs <- err:
+					return
+				case <-stopCh:
+					return
+				}
 			}
 
 			offset := latestOffset - int64(lastN)
@@ -157,15 +169,23 @@ func (this *subServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 			go func(partitionId int32, offset int64) {
 				consumer, err := sarama.NewConsumerFromClient(kfk)
 				if err != nil {
-					errs <- err
-					return
+					select {
+					case errs <- err:
+						return
+					case <-stopCh:
+						return
+					}
 				}
 				defer consumer.Close()
 
 				p, err := consumer.ConsumePartition(rawTopic, partitionId, offset)
 				if err != nil {
-					errs <- err
-					return
+					select {
+					case errs <- err:
+						return
+					case <-stopCh:
+						return
+					}
 				}
 				defer p.Close()
 
@@ -192,6 +212,8 @@ LOOP:
 			break LOOP
 
 		case err = <-errs:
+			close(stopCh)
+
 			log.Error("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d} %+v",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, err)
 
