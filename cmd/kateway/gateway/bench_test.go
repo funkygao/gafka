@@ -70,9 +70,12 @@ func newGatewayForTest(b *testing.B, store string) *Gateway {
 	Options.PubHttpAddr = ":9191"
 	Options.SubHttpAddr = ":9192"
 	Options.Store = store
+	Options.PubPoolCapcity = 100
 	Options.Debug = false
 	Options.ManagerStore = "dummy"
+	Options.DummyCluster = "me"
 	Options.DisableMetrics = false
+	Options.MaxPubSize = 1 << 20
 	Options.MetaRefresh = time.Hour
 
 	ctx.LoadFromHome()
@@ -115,8 +118,6 @@ func runBenchmarkPub(b *testing.B, store string, msgSize int64) {
 }
 
 func BenchmarkDirectKafkaProduce1K(b *testing.B) {
-	b.Skip("skipped")
-
 	msgSize := 1 << 10
 	b.ReportAllocs()
 	b.SetBytes(int64(msgSize))
@@ -138,9 +139,7 @@ func BenchmarkDirectKafkaProduce1K(b *testing.B) {
 	}
 }
 
-func BenchmarkKatewayPubKafka(b *testing.B) {
-	b.Skip("skipped")
-
+func BenchmarkKatewayPubKafka1K(b *testing.B) {
 	runBenchmarkPub(b, "kafka", 1<<10)
 }
 

@@ -14,7 +14,7 @@ Host: localhost:9191
 User-Agent: Go-http-client/1.1
 Content-Length: %d
 Content-Type: application/x-www-form-urlencoded
-Appid: myappid
+Appid: app1
 Pubkey: mypubkey
 X-Forwarded-For: 1.1.1.12
 Accept-Encoding: gzip`, 100)) + "\r\n\r\n"
