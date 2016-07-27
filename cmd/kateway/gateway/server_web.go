@@ -94,7 +94,7 @@ func (this *webServer) Start() {
 		this.waitExitFunc = this.defaultWaitExit
 	}
 	if this.connStateFunc == nil {
-		this.connStateFunc = this.defaultConnStateHook
+		this.connStateFunc = this.defaultConnStateMachine
 
 		go this.manageIdleConns()
 	}
@@ -211,7 +211,7 @@ func (this *webServer) startServer(https bool) {
 	}
 }
 
-func (this *webServer) defaultConnStateHook(c net.Conn, cs http.ConnState) {
+func (this *webServer) defaultConnStateMachine(c net.Conn, cs http.ConnState) {
 	switch cs {
 	case http.StateNew:
 		atomic.AddInt32(&this.activeConnN, 1)
@@ -243,6 +243,8 @@ func (this *webServer) manageIdleConns() {
 		waitNextRound = make(chan struct{}, 10)
 	)
 	defer close(waitNextRound)
+
+	log.Debug("%s is managing idle connections", this.name)
 
 	for {
 		select {
@@ -298,6 +300,8 @@ func (this *webServer) manageIdleConns() {
 }
 
 func (this *webServer) defaultWaitExit(exit <-chan struct{}) {
+	log.Debug("%s enter default wait exit", this.name)
+
 	<-exit
 
 	if this.httpServer != nil {
