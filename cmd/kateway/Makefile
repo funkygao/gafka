@@ -39,8 +39,8 @@ buildrace:
 	@go build -race -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY) -X github.com/funkygao/gafka.BuiltAt=$(BUILD_TIME)"
 
 heap:
-	go tool pprof http://1.1.2.2:9999/debug/pprof/heap
-	go tool pprof --alloc_space http://1.1.2.2:9999/debug/pprof/heap
+	go tool pprof http://localhost:9194/debug/pprof/heap
+	go tool pprof --alloc_space http://localhost:9194/debug/pprof/heap
 
 genkey:
 	@mkdir ssl
