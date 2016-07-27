@@ -148,16 +148,12 @@ func (this *webServer) startServer(https bool) {
 					continue
 				}
 
-				this.httpsListener, err = setupHttpsListener(this.httpsListener,
-					this.gw.certFile, this.gw.keyFile)
+				theListener, err = setupHttpsListener(this.httpsListener, this.gw.certFile, this.gw.keyFile)
 				if err != nil {
 					panic(err)
 				}
-
-				theListener = this.httpsListener
 			} else {
-				this.httpListener, err = net.Listen("tcp", this.httpServer.Addr)
-				theListener = this.httpListener
+				theListener, err = net.Listen("tcp", this.httpServer.Addr)
 			}
 
 			if err != nil {
@@ -181,8 +177,16 @@ func (this *webServer) startServer(https bool) {
 
 			// on non-temporary err, net/http will close the listener
 			if https {
+				this.mu.Lock()
+				this.httpsListener = theListener
+				this.mu.Unlock()
+
 				err = this.httpsServer.Serve(theListener)
 			} else {
+				this.mu.Lock()
+				this.httpListener = theListener
+				this.mu.Unlock()
+
 				err = this.httpServer.Serve(theListener)
 			}
 
@@ -308,13 +312,20 @@ func (this *webServer) defaultWaitExit(exit <-chan struct{}) {
 
 	<-exit
 
+	var err error
 	if this.httpServer != nil {
 		// HTTP response will have "Connection: close"
 		this.httpServer.SetKeepAlivesEnabled(false)
 
 		// avoid new connections
-		if err := this.httpListener.Close(); err != nil {
-			log.Error(err.Error())
+		this.mu.Lock()
+		if this.httpListener != nil {
+			err = this.httpListener.Close()
+		}
+		this.mu.Unlock()
+
+		if err != nil {
+			log.Error("%s on %s: %+v", this.name, this.httpServer.Addr, err)
 		}
 
 		log.Trace("%s on %s listener closed", this.name, this.httpServer.Addr)
@@ -325,8 +336,14 @@ func (this *webServer) defaultWaitExit(exit <-chan struct{}) {
 		this.httpsServer.SetKeepAlivesEnabled(false)
 
 		// avoid new connections
-		if err := this.httpsListener.Close(); err != nil {
-			log.Error(err.Error())
+		this.mu.Lock()
+		if this.httpsListener != nil {
+			err = this.httpsListener.Close()
+		}
+		this.mu.Unlock()
+
+		if err != nil {
+			log.Error("%s on %s: %+v", this.name, this.httpsServer.Addr, err)
 		}
 
 		log.Trace("%s on %s listener closed", this.name, this.httpsServer.Addr)
@@ -364,9 +381,10 @@ func (this *webServer) defaultWaitExit(exit <-chan struct{}) {
 		this.httpServer.ConnState = nil
 	}
 
-	close(this.stateActiveCh)
-	close(this.stateIdleCh)
-	close(this.stateRemoveCh)
+	// TODO close will lead to race condition
+	//close(this.stateActiveCh)
+	//close(this.stateIdleCh)
+	//close(this.stateRemoveCh)
 
 	if this.onStop != nil {
 		this.onStop()
