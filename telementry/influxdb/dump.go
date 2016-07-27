@@ -34,7 +34,7 @@ func (this *runner) dump(pts []client.Point) {
 	}
 }
 
-func (this *runner) export() (pts []client.Point) {
+func (this *runner) export(pts *[]client.Point) {
 	var (
 		now               = time.Now()
 		appid, topic, ver string
@@ -62,7 +62,7 @@ func (this *runner) export() (pts []client.Point) {
 
 		switch m := i.(type) {
 		case metrics.Counter:
-			pts = append(pts, client.Point{
+			*pts = append(*pts, client.Point{
 				Measurement: fmt.Sprintf("%s.count", name), // TODO perf
 				Fields: map[string]interface{}{
 					"value": m.Count(),
@@ -72,7 +72,7 @@ func (this *runner) export() (pts []client.Point) {
 			})
 
 		case metrics.Gauge:
-			pts = append(pts, client.Point{
+			*pts = append(*pts, client.Point{
 				Measurement: fmt.Sprintf("%s.gauge", name),
 				Fields: map[string]interface{}{
 					"value": m.Value(),
@@ -82,7 +82,7 @@ func (this *runner) export() (pts []client.Point) {
 			})
 
 		case metrics.GaugeFloat64:
-			pts = append(pts, client.Point{
+			*pts = append(*pts, client.Point{
 				Measurement: fmt.Sprintf("%s.gauge", name),
 				Fields: map[string]interface{}{
 					"value": m.Value(),
@@ -93,7 +93,7 @@ func (this *runner) export() (pts []client.Point) {
 
 		case metrics.Histogram:
 			ps := m.Percentiles([]float64{0.5, 0.75, 0.95, 0.99, 0.999, 0.9999})
-			pts = append(pts, client.Point{
+			*pts = append(*pts, client.Point{
 				Measurement: fmt.Sprintf("%s.histogram", name),
 				Fields: map[string]interface{}{
 					"count":    m.Count(),
@@ -115,7 +115,7 @@ func (this *runner) export() (pts []client.Point) {
 
 		case metrics.Timer:
 			ps := m.Percentiles([]float64{0.5, 0.75, 0.95, 0.99, 0.999, 0.9999})
-			pts = append(pts, client.Point{
+			*pts = append(*pts, client.Point{
 				Measurement: fmt.Sprintf("%s.timer", name),
 				Fields: map[string]interface{}{
 					"count":    m.Count(),
@@ -140,7 +140,7 @@ func (this *runner) export() (pts []client.Point) {
 			})
 
 		case metrics.Meter:
-			pts = append(pts, client.Point{
+			*pts = append(*pts, client.Point{
 				Measurement: fmt.Sprintf("%s.meter", name),
 				Fields: map[string]interface{}{
 					"count": m.Count(),

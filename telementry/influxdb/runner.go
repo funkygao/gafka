@@ -68,16 +68,22 @@ func (this *runner) Start() error {
 	}()
 
 	intervalTicker := time.Tick(this.cf.interval)
+	pts := make([]client.Point, 0, 1<<8)
 	for {
 		select {
 		case <-this.quiting:
 			// flush
-			this.dump(this.export())
+			pts = pts[:0]
+			this.export(&pts)
+			this.dump(pts)
+
 			close(this.quit)
 			return nil
 
 		case <-intervalTicker:
-			this.dump(this.export())
+			pts = pts[:0]
+			this.export(&pts)
+			this.dump(pts)
 
 		}
 	}
