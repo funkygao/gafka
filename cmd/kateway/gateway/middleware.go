@@ -27,6 +27,14 @@ func (this *Gateway) middleware(h httprouter.Handle) httprouter.Handle {
 		// kateway response is always json, including error reponse
 		w.Header().Set("Content-Type", "application/json; charset=utf8")
 
+		// CORS: cross origin resource sharing
+		if origin := r.Header.Get("Origin"); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+		}
+
 		var gz *gzip.Writer = nil
 		var writer http.ResponseWriter = w
 		if Options.EnableGzip && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
