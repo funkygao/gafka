@@ -98,13 +98,13 @@ func (this *subServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 		return
 	}
 	waitParam := q.Get("wait")
-	defaultWait := time.Second * 3
+	defaultWait := time.Second * 2
 	var wait time.Duration = defaultWait
 	if waitParam != "" {
 		wait, _ = time.ParseDuration(waitParam)
 		if wait.Seconds() < 1 {
 			wait = defaultWait
-		} else if wait.Seconds() > 10. {
+		} else if wait.Seconds() > 5. {
 			wait = defaultWait
 		}
 	}
