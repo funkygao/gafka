@@ -63,7 +63,7 @@ func (this *ClientStates) UnregisterPubClient(haproxyHostPort string) {
 	this.pubClientsLock.Lock()
 	realHostPort := this.pubMap[haproxyHostPort]
 	if realHostPort == "" {
-		log.Warn("pub try to unregister a non-exist haproxy client: %s", haproxyHostPort)
+		log.Debug("pub try to unregister a non-exist haproxy client: %s", haproxyHostPort)
 
 		this.pubClientsLock.Unlock()
 		return
@@ -93,7 +93,7 @@ func (this *ClientStates) UnregisterSubClient(haproxyHostPort string) {
 	this.subClientsLock.Lock()
 	realHostPort := this.subMap[haproxyHostPort]
 	if realHostPort == "" {
-		log.Warn("sub try to unregister a non-exist haproxy client: %s", haproxyHostPort)
+		log.Debug("sub try to unregister a non-exist haproxy client: %s", haproxyHostPort)
 
 		this.subClientsLock.Unlock()
 		return
