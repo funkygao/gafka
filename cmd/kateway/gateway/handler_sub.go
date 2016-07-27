@@ -229,17 +229,18 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 	fetcher store.Fetcher, limit int, myAppid, hisAppid, topic, ver,
 	group string, delayedAck bool, tagFilters []MsgTag) error {
-	clientGoneCh, ok := w.(http.CloseNotifier).CloseNotify()
+	cn, ok := w.(http.CloseNotifier)
 	if !ok {
 		return ErrBadResponseWriter
 	}
 
 	var (
-		metaBuf     []byte = nil
-		n                  = 0
-		idleTimeout        = Options.SubTimeout
-		realIp             = getHttpRemoteIp(r)
-		chunkedEver        = false
+		metaBuf      []byte = nil
+		n                   = 0
+		idleTimeout         = Options.SubTimeout
+		realIp              = getHttpRemoteIp(r)
+		chunkedEver         = false
+		clientGoneCh        = cn.CloseNotify()
 	)
 	for {
 		select {
