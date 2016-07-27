@@ -1,9 +1,11 @@
 package gateway
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -128,6 +130,11 @@ func (this *webServer) startServer(https bool) {
 			if https {
 				this.httpsListener, err = net.Listen("tcp", this.httpsServer.Addr)
 				if err != nil {
+					if strings.HasSuffix(err.Error(), "address already in use") {
+						// non-retriable error encountered
+						panic(fmt.Errorf("%s listener: %v", this.name, err))
+					}
+
 					if retryDelay == 0 {
 						retryDelay = 50 * time.Millisecond
 					} else {
@@ -188,9 +195,6 @@ func (this *webServer) startServer(https bool) {
 			}
 		}
 	}()
-
-	// FIXME if net.Listen fails, kateway will not be able to stop
-	// e,g. start a kateway, then start another, the 2nd will not be able to stop
 
 	// wait for the listener up
 	<-waitListenerUp
