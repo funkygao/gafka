@@ -3,6 +3,7 @@ package gateway
 import (
 	"fmt"
 	"os"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 // AccessLogger is a daily rotating/unblocking logger to record access log.
 type AccessLogger struct {
 	filename string
+	mu       sync.Mutex
 	fd       *os.File
 
 	discarded uint64
@@ -57,6 +59,7 @@ func (this *AccessLogger) Start() error {
 				return
 
 			case t := <-tick.C:
+				this.mu.Lock()
 				if this.fd != nil &&
 					t.Day() != lastDay &&
 					t.Hour() == 0 &&
@@ -65,6 +68,7 @@ func (this *AccessLogger) Start() error {
 					this.doRotate()
 					lastDay = t.Day() // only once a day
 				}
+				this.mu.Unlock()
 
 			case line, ok := <-this.lines:
 				// FIXME at 00:00:00, buffer might overflow and lose log entry
@@ -118,6 +122,9 @@ func (this *AccessLogger) doRotate() {
 }
 
 func (this *AccessLogger) Stop() {
+	this.mu.Lock()
+	defer this.mu.Unlock()
+
 	if this.stop != nil {
 		close(this.stop)
 	} else {
