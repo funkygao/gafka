@@ -24,7 +24,7 @@ type ZkZone struct {
 	conn       *zk.Conn
 	evt        <-chan zk.Event
 	evtFetched int32
-	mu         sync.Mutex
+	mu         sync.RWMutex
 	once       sync.Once
 	errs       []error
 
@@ -77,8 +77,12 @@ func (this *ZkZone) Ping() error {
 
 func (this *ZkZone) Close() {
 	this.once.Do(func() {
-		this.conn.Close()
-		this.conn = nil
+		this.mu.Lock()
+		if this.conn != nil {
+			this.conn.Close()
+			this.conn = nil
+		}
+		this.mu.Unlock()
 	})
 }
 
@@ -254,7 +258,11 @@ func (this *ZkZone) ResetErrors() {
 }
 
 func (this *ZkZone) connectIfNeccessary() {
-	if this.conn == nil {
+	this.mu.RLock()
+	connected := this.conn != nil
+	this.mu.RUnlock()
+
+	if !connected {
 		this.Connect()
 	}
 }
