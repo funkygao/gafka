@@ -11,8 +11,8 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/sla"
+	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
-	"github.com/julienschmidt/httprouter"
 )
 
 // GET /v1/raw/msgs/:appid/:topic/:ver?group=xx

@@ -25,9 +25,9 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/mpool"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/mux"
-	"github.com/julienschmidt/httprouter"
 )
 
 type neverEnding byte

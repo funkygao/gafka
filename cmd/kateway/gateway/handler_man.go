@@ -15,8 +15,8 @@ import (
 	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
-	"github.com/julienschmidt/httprouter"
 )
 
 // GET /v1/schema/:appid/:topic/:ver

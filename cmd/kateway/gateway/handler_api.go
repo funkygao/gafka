@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/funkygao/httprouter"
 	"github.com/influxdata/influxdb/client"
-	"github.com/julienschmidt/httprouter"
 )
 
 // TODO

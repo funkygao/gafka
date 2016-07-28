@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/store"
+	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
-	"github.com/julienschmidt/httprouter"
 )
 
 // POST /v1/raw/msgs/:cluster/:topic?key=mykey&async=1&ack=all

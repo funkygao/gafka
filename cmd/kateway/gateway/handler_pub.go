@@ -12,8 +12,8 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/mpool"
+	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
-	"github.com/julienschmidt/httprouter"
 )
 
 // POST /v1/msgs/:topic/:ver?key=mykey&async=1&ack=all&batch=1

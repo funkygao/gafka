@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/mpool"
+	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
-	"github.com/julienschmidt/httprouter"
 )
 
 func (this *Gateway) middleware(h httprouter.Handle) httprouter.Handle {

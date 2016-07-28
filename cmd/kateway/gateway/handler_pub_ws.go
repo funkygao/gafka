@@ -5,8 +5,8 @@ package gateway
 import (
 	"net/http"
 
+	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
-	"github.com/julienschmidt/httprouter"
 )
 
 // POST /v1/ws/msgs/:topic/:ver

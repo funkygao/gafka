@@ -6,9 +6,9 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/store"
+	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
 	"github.com/gorilla/websocket"
-	"github.com/julienschmidt/httprouter"
 )
 
 // GET /v1/ws/msgs/:appid/:topic/:ver?group=xx

@@ -9,8 +9,8 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/sla"
+	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
-	"github.com/julienschmidt/httprouter"
 )
 
 // PUT /v1/bury/:appid/:topic/:ver?group=xx&q=yy

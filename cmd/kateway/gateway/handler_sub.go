@@ -10,8 +10,8 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/golib/hack"
+	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
-	"github.com/julienschmidt/httprouter"
 )
 
 // GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&reset=<newest|oldest>&ack=1&q=<dead|retry>
