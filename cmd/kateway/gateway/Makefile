@@ -7,28 +7,28 @@ test:
 	go test -v -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY)"
 
 benchmark-metrics-pubok:
-	go test -v -benchmem -bench=^BenchmarkMetricsPubOkCounter -benchtime=20s -cpuprofile=prof.cpu; go tool pprof gateway.test prof.cpu
+	go test -v -run=XXX -benchmem -bench=^BenchmarkMetricsPubOkCounter -benchtime=20s -cpuprofile=prof.cpu; go tool pprof gateway.test prof.cpu
 
 benchmark-metrics:
-	go test -v -benchmem -bench=^BenchmarkMetrics 
+	go test -v -run=XXX -benchmem -bench=^BenchmarkMetrics 
 
 benchmark-logappend:
-	go test -v -benchmem -bench=^BenchmarkLogAppend -benchtime=20s 
+	go test -v -run=none -benchmem -bench=^BenchmarkLogAppend -benchtime=20s 
 
 benchmark-cpu-fastdumb:
-	go test -v -benchmem -tags fasthttp -bench=^BenchmarkKatewayPubDummy1K -benchtime=20s -cpuprofile=prof.cpu; go tool pprof gateway.test prof.cpu
+	go test -v -run=XXX -benchmem -tags fasthttp -bench=^BenchmarkKatewayPubDummy1K -benchtime=20s -cpuprofile=prof.cpu; go tool pprof gateway.test prof.cpu
 
 benchmark-cpu-dumb:
-	go test -v -benchmem -bench=^BenchmarkKatewayPubDummy1K -benchtime=20s -cpuprofile=prof.cpu; go tool pprof gateway.test prof.cpu
+	go test -v -run=XXX -benchmem -bench=^BenchmarkKatewayPubDummy1K -benchtime=20s -cpuprofile=prof.cpu; go tool pprof gateway.test prof.cpu
 
 benchmark-cpu-pub-kafka:
-	go test -v -benchmem -bench=^BenchmarkKatewayPubKafka1K -benchtime=20s -cpuprofile=prof.cpu; go tool pprof gateway.test prof.cpu
+	go test -v -run=XXX -benchmem -bench=^BenchmarkKatewayPubKafka1K -benchtime=20s -cpuprofile=prof.cpu; go tool pprof gateway.test prof.cpu
 
 benchmark-mem-fastdumb:
-	go test -v -benchmem -tags fasthttp -bench=^BenchmarkKatewayPubDummy1K -benchtime=20s -memprofile=prof.mem; go tool pprof gateway.test prof.mem
+	go test -v -run=XXX -benchmem -tags fasthttp -bench=^BenchmarkKatewayPubDummy1K -benchtime=20s -memprofile=prof.mem; go tool pprof gateway.test prof.mem
 
 benchmark-mem-dumb:
-	go test -v -benchmem -bench=^BenchmarkKatewayPubDummy1K -benchtime=20s -memprofile=prof.mem; go tool pprof gateway.test prof.mem
+	go test -v -run=XXX -benchmem -bench=^BenchmarkKatewayPubDummy1K -benchtime=20s -memprofile=prof.mem; go tool pprof gateway.test prof.mem
 
 pprof-cpu:
 	go tool pprof http://localhost:9194/debug/pprof/profile?seconds=30
