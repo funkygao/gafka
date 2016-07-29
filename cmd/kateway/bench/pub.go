@@ -25,7 +25,7 @@ var (
 	key      string
 	workerId string
 	sleep    time.Duration
-	tag      bool
+	tag      string
 )
 
 func init() {
@@ -38,7 +38,7 @@ func init() {
 	flag.Int64Var(&step, "step", 1, "display progress step")
 	flag.StringVar(&key, "key", "", "message key")
 	flag.BoolVar(&debug, "debug", false, "debug")
-	flag.BoolVar(&tag, "tag", false, "add random tag to each message")
+	flag.StringVar(&tag, "tag", "", "add tag to each message")
 	flag.StringVar(&topic, "t", "foobar", "topic to pub")
 	flag.StringVar(&workerId, "id", "1", "worker id")
 	flag.Parse()
@@ -77,9 +77,10 @@ func pubGatewayLoop(seq int) {
 		msg = fmt.Sprintf("%s w:%s seq:%-2d no:%-10d payload:%s",
 			time.Now(),
 			workerId, seq, no, strings.Repeat("X", sz))
-		if tag {
-			opt.Tag = fmt.Sprintf("id=%d", no)
+		if tag != "" {
+			opt.Tag = tag
 		}
+
 		err = client.Pub(key, []byte(msg), opt)
 		if err != nil {
 			fmt.Println(err)

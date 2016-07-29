@@ -22,6 +22,7 @@ var (
 	mode  string
 	step  int
 	sleep time.Duration
+	tag   string
 )
 
 func init() {
@@ -32,6 +33,7 @@ func init() {
 	flag.IntVar(&step, "step", 1, "display progress step")
 	flag.StringVar(&mode, "mode", "subx", "sub mode")
 	flag.StringVar(&topic, "t", "foobar", "topic to sub")
+	flag.StringVar(&tag, "tag", "", "tag filter")
 	flag.DurationVar(&sleep, "sleep", 0, "sleep between pub")
 	flag.IntVar(&n, "n", 1000000, "run sub how many times")
 	flag.Parse()
@@ -52,6 +54,7 @@ func main() {
 		Topic: topic,
 		Ver:   "v1",
 		Group: group,
+		Tag:   tag,
 	}
 	if mode == "subx" {
 		err = c.SubX(opt, func(statusCode int, msg []byte,
