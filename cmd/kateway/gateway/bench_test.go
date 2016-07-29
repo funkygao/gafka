@@ -66,7 +66,11 @@ func BenchmarkStrconvItoa(b *testing.B) {
 }
 
 func newGatewayForTest(b *testing.B, store string) *Gateway {
-	Options.Zone = "local"
+	zone := os.Getenv("BENCH_ZONE")
+	if zone == "" {
+		zone = "local"
+	}
+	Options.Zone = zone
 	Options.PubHttpAddr = ":9191"
 	Options.SubHttpAddr = ":9192"
 	Options.Store = store
