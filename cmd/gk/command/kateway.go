@@ -309,10 +309,14 @@ func (this *Kateway) displayPprof() {
 				continue
 			}
 
-			lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s",
+			pprofAddr := kw.DebugAddr
+			pprofAddr[0]==':' {
+				pprofAddr=kw.Ip+pprofAddr
+			}
+			lines = append(lines, fmt.Sprintf("%s|%s|%s|%s/%s|%s",
 				zkzone.Name(),
-				kw.Id, kw.Host, kw.Build,
-				fmt.Sprintf("%s/debug/pprof/", kw.DebugAddr)))
+				kw.Id, kw.Host, kw.Build, kw.BuiltAt,
+				fmt.Sprintf("%s/debug/pprof/", pprofAddr)))
 		}
 	})
 
@@ -523,11 +527,13 @@ func (*Kateway) Synopsis() string {
 
 func (this *Kateway) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s kateway -z zone [options]
+Usage: %s kateway [options]
 
     List/Config online kateway instances
 
 Options:
+
+    -z zone
 
     -i
       Install kateway guide
