@@ -21,6 +21,7 @@ type SubOption struct {
 	Reset      string // newest | oldest
 	Shadow     string
 	Wait       string
+	Tag        string // tag filter
 	AutoClose  bool
 }
 
@@ -56,6 +57,9 @@ func (this *Client) Sub(opt SubOption, h SubHandler) error {
 
 	req.Header.Set(gateway.HttpHeaderAppid, this.cf.AppId)
 	req.Header.Set(gateway.HttpHeaderSubkey, this.cf.Secret)
+	if opt.Tag != "" {
+		req.Header.Set(gateway.HttpHeaderMsgTag, opt.Tag)
+	}
 	for {
 		response, err := this.subConn.Do(req)
 		if err != nil {
@@ -130,6 +134,9 @@ func (this *Client) SubX(opt SubOption, h SubXHandler) error {
 		Set("User-Agent", UserAgent).
 		Set(gateway.HttpHeaderPartition, "-1").
 		Set(gateway.HttpHeaderOffset, "-1")
+	if opt.Tag != "" {
+		req.Set(gateway.HttpHeaderMsgTag, opt.Tag)
+	}
 	r := &SubXResult{}
 	for {
 		response, b, errs := req.EndBytes()
