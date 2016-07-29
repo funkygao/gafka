@@ -27,17 +27,17 @@ func TestAddAndExtractMessageTag(t *testing.T) {
 }
 
 func TestParseMessageTag(t *testing.T) {
-	tags := parseMessageTag("a=b;xx_=y_;")
+	tags := parseMessageTag("a;y_;")
 	assert.Equal(t, 2, len(tags))
-	assert.Equal(t, "a", tags[0].Name)
-	assert.Equal(t, "y_", tags[1].Value)
+	assert.Equal(t, "a", tags[0])
+	assert.Equal(t, "y_", tags[1])
 }
 
 func BenchmarkAddTagToMessage(b *testing.B) {
 	b.ReportAllocs()
 	m := mpool.NewMessage(1024)
 	m.Body = m.Body[:1024]
-	tag := "a=b;c=d"
+	tag := "a;c"
 	m.Body = []byte(strings.Repeat("X", 900))
 	for i := 0; i < b.N; i++ {
 		AddTagToMessage(m, tag)
@@ -49,7 +49,7 @@ func BenchmarkExtractMessageTag(b *testing.B) {
 	b.ReportAllocs()
 	m := mpool.NewMessage(1024)
 	m.Body = m.Body[:1024]
-	tag := "a=b;c=d"
+	tag := "a;c"
 	m.Body = []byte(strings.Repeat("X", 900))
 	AddTagToMessage(m, tag)
 	for i := 0; i < b.N; i++ {
