@@ -61,6 +61,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "", "")
 	cmdFlags.StringVar(&this.visualLog, "visualog", "", "")
 	cmdFlags.BoolVar(&this.checkup, "checkup", false, "")
+	cmdFlags.BoolVar(&this.pprofOnly, "pprof", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
 	}
