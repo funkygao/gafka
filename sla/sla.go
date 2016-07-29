@@ -23,7 +23,7 @@ const (
 
 	maxReplicas       = 3
 	maxPartitions     = 50
-	maxRetentionHours = 3 * 7 * 24
+	maxRetentionHours = 20 * 7 * 24
 )
 
 type TopicSla struct {
