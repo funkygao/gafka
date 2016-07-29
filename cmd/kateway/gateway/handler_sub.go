@@ -9,7 +9,6 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/sla"
-	"github.com/funkygao/golib/hack"
 	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
 )
@@ -28,10 +27,9 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		partition  string
 		partitionN int = -1
 		offset     string
-		offsetN    int64    = -1
-		limit      int      // max messages to include in the message set
-		delayedAck bool     // explicit application level acknowledgement
-		tagFilters []MsgTag = nil
+		offsetN    int64 = -1
+		limit      int   // max messages to include in the message set
+		delayedAck bool  // explicit application level acknowledgement
 		err        error
 	)
 
@@ -205,12 +203,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		}
 	}
 
-	tag := r.Header.Get(HttpHeaderMsgTag)
-	if tag != "" {
-		tagFilters = parseMessageTag(tag)
-	}
-
-	err = this.pumpMessages(w, r, fetcher, limit, myAppid, hisAppid, topic, ver, group, delayedAck, tagFilters)
+	err = this.pumpMessages(w, r, fetcher, limit, myAppid, hisAppid, topic, ver, group, delayedAck)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s} %v",
@@ -227,22 +220,44 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 }
 
 func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
-	fetcher store.Fetcher, limit int, myAppid, hisAppid, topic, ver,
-	group string, delayedAck bool, tagFilters []MsgTag) error {
+	fetcher store.Fetcher, limit int, myAppid, hisAppid, topic, ver, group string, delayedAck bool) error {
 	cn, ok := w.(http.CloseNotifier)
 	if !ok {
 		return ErrBadResponseWriter
 	}
 
 	var (
-		metaBuf      []byte = nil
-		n                   = 0
-		idleTimeout         = Options.SubTimeout
-		realIp              = getHttpRemoteIp(r)
-		chunkedEver         = false
-		clientGoneCh        = cn.CloseNotify()
+		metaBuf       []byte = nil
+		n                    = 0
+		idleTimeout          = Options.SubTimeout
+		realIp               = getHttpRemoteIp(r)
+		chunkedEver          = false
+		tagConditions        = make(map[string]struct{})
+		clientGoneCh         = cn.CloseNotify()
+		startedAt            = time.Now()
 	)
+
+	// parse http tag header as filter condition
+	if tagFilter := r.Header.Get(HttpHeaderMsgTag); tagFilter != "" {
+		for _, t := range parseMessageTag(tagFilter) {
+			if t != "" {
+				tagConditions[t] = struct{}{}
+			}
+		}
+	}
+
 	for {
+		if time.Since(startedAt) > idleTimeout {
+			// e,g. tag filter got 1000 msgs, but no tag hit after timeout, we'll return 204
+			if chunkedEver {
+				return nil
+			}
+
+			w.WriteHeader(http.StatusNoContent)
+			w.Write([]byte{})
+			return nil
+		}
+
 		select {
 		case <-clientGoneCh:
 			// FIXME access log will not be able to record this behavior
@@ -263,7 +278,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			// e,g. consume a non-existent topic
 			// e,g. conn with broker is broken
 			// e,g. kafka: error while consuming foobar/0: EOF
-			// e,g. kafka: error while consuming foobar/2: read tcp 10.209.36.33:60088->10.209.18.16:11005: i/o timeout
+			// e,g. kafka: error while consuming foobar/2: read tcp 10.1.1.1:60088->10.1.1.2:11005: i/o timeout
 			return err
 
 		case <-this.gw.timer.After(idleTimeout):
@@ -297,23 +312,44 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			}
 
 			var (
-				tags    []MsgTag
+				tags    []string
 				bodyIdx int
 				err     error
 			)
 			if IsTaggedMessage(msg.Value) {
-				// TagMarkStart + tag + TagMarkEnd + body
 				tags, bodyIdx, err = ExtractMessageTag(msg.Value)
-				if limit == 1 && err == nil {
-					// needn't check 'index out of range' here
-					w.Header().Set(HttpHeaderMsgTag, hack.String(msg.Value[1:bodyIdx-1]))
-				} else {
-					// not a valid tagged message, treat it as non-tagged message
+				if err != nil {
+					log.Error("sub[%s] %s(%s): {G:%s T:%s/%d O:%d} %v",
+						myAppid, r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset, err)
+
+					if !delayedAck {
+						fetcher.CommitUpto(msg)
+					}
+
+					continue
 				}
 			}
 
-			if len(tags) > 0 {
-				// TODO compare with tagFilters
+			// assert tag conditions are satisfied. if empty, feed all messages
+			if len(tagConditions) > 0 {
+				tagSatisfied := false
+				for _, t := range tags {
+					if _, present := tagConditions[t]; present {
+						tagSatisfied = true
+						break
+					}
+				}
+
+				if !tagSatisfied {
+					if !delayedAck {
+						log.Debug("sub auto commit offset with tag unmatched %s(%s): {G:%s, T:%s/%d, O:%d} %+v/%+v",
+							r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset, tagConditions, tags)
+
+						fetcher.CommitUpto(msg)
+					}
+
+					continue
+				}
 			}
 
 			if limit == 1 {
@@ -342,7 +378,6 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 				if err = writeI32(w, metaBuf, int32(len(msg.Value[bodyIdx:]))); err != nil {
 					return err
 				}
-				// TODO add tag?
 				if _, err = w.Write(msg.Value[bodyIdx:]); err != nil {
 					return err
 				}
