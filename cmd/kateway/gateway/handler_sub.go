@@ -234,6 +234,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 		chunkedEver          = false
 		tagConditions        = make(map[string]struct{})
 		clientGoneCh         = cn.CloseNotify()
+		startedAt            = time.Now()
 	)
 
 	// parse http tag header as filter condition
@@ -246,6 +247,17 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 	}
 
 	for {
+		if time.Since(startedAt) > idleTimeout {
+			// e,g. tag filter got 1000 msgs, but no tag hit after timeout, we'll return 204
+			if chunkedEver {
+				return nil
+			}
+
+			w.WriteHeader(http.StatusNoContent)
+			w.Write([]byte{})
+			return nil
+		}
+
 		select {
 		case <-clientGoneCh:
 			// FIXME access log will not be able to record this behavior
@@ -266,7 +278,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			// e,g. consume a non-existent topic
 			// e,g. conn with broker is broken
 			// e,g. kafka: error while consuming foobar/0: EOF
-			// e,g. kafka: error while consuming foobar/2: read tcp 10.209.36.33:60088->10.209.18.16:11005: i/o timeout
+			// e,g. kafka: error while consuming foobar/2: read tcp 10.1.1.1:60088->10.1.1.2:11005: i/o timeout
 			return err
 
 		case <-this.gw.timer.After(idleTimeout):
@@ -366,7 +378,6 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 				if err = writeI32(w, metaBuf, int32(len(msg.Value[bodyIdx:]))); err != nil {
 					return err
 				}
-				// TODO add tag?
 				if _, err = w.Write(msg.Value[bodyIdx:]); err != nil {
 					return err
 				}
