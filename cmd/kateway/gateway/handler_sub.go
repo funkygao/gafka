@@ -247,7 +247,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 	}
 
 	for {
-		if time.Since(startedAt) > idleTimeout {
+		if len(tagConditions) > 0 && time.Since(startedAt) > idleTimeout {
 			// e,g. tag filter got 1000 msgs, but no tag hit after timeout, we'll return 204
 			if chunkedEver {
 				return nil
@@ -319,9 +319,6 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			if IsTaggedMessage(msg.Value) {
 				tags, bodyIdx, err = ExtractMessageTag(msg.Value)
 				if err != nil {
-					log.Error("sub[%s] %s(%s): {G:%s T:%s/%d O:%d} %v",
-						myAppid, r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset, err)
-
 					if !delayedAck {
 						fetcher.CommitUpto(msg)
 					}
