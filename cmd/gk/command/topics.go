@@ -255,7 +255,10 @@ func (this *Topics) configTopic(zkcluster *zk.ZkCluster, topic string, retention
 	ts := sla.DefaultSla()
 	ts.RetentionHours = float64(retentionInMinute) / 60
 	output, err := zkcluster.AlterTopic(topic, ts)
-	swallow(err)
+	if err != nil {
+		this.Ui.Error(fmt.Sprintf("%+v: %v", ts, err))
+		os.Exit(1)
+	}
 
 	path := zkcluster.GetTopicConfigPath(topic)
 	this.Ui.Info(path)
