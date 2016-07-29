@@ -1,4 +1,4 @@
-package influx
+package influxquery
 
 import (
 	"encoding/json"
@@ -14,17 +14,17 @@ import (
 
 func init() {
 	monitor.RegisterWatcher("influx.query", func() monitor.Watcher {
-		return &WatchInfluxDB{
+		return &WatchInfluxQuery{
 			Tick: time.Minute,
 		}
 	})
 }
 
-// WatchInfluxDB continuously query InfluxDB for major metrics.
+// WatchInfluxQuery continuously query InfluxDB for major metrics.
 //
 // kateway itself will report metrics to influxdb, but there are
 // several kateway instances in a cluster, we need kguard to aggregate them.
-type WatchInfluxDB struct {
+type WatchInfluxQuery struct {
 	Zkzone *zk.ZkZone
 	Stop   <-chan struct{}
 	Tick   time.Duration
@@ -35,7 +35,7 @@ type WatchInfluxDB struct {
 	cli  client.Client
 }
 
-func (this *WatchInfluxDB) Init(ctx monitor.Context) {
+func (this *WatchInfluxQuery) Init(ctx monitor.Context) {
 	this.Zkzone = ctx.ZkZone()
 	this.Stop = ctx.StopChan()
 	this.Wg = ctx.Inflight()
@@ -43,7 +43,7 @@ func (this *WatchInfluxDB) Init(ctx monitor.Context) {
 	this.db = ctx.InfluxDB()
 }
 
-func (this *WatchInfluxDB) Run() {
+func (this *WatchInfluxQuery) Run() {
 	defer this.Wg.Done()
 
 	if this.addr == "" || this.db == "" {
@@ -72,7 +72,7 @@ func (this *WatchInfluxDB) Run() {
 	}
 }
 
-func (this *WatchInfluxDB) pubLatency() (float64, error) {
+func (this *WatchInfluxQuery) pubLatency() (float64, error) {
 	res, err := this.queryDB(`SELECT mean("p99") FROM "pub.latency.histogram" where time > now() - 1m`)
 	if err != nil {
 		return 0, err
@@ -97,7 +97,7 @@ func (this *WatchInfluxDB) pubLatency() (float64, error) {
 }
 
 // queryDB convenience function to query the database
-func (this *WatchInfluxDB) queryDB(cmd string) (res []client.Result, err error) {
+func (this *WatchInfluxQuery) queryDB(cmd string) (res []client.Result, err error) {
 	if this.cli == nil {
 		this.cli, err = client.NewHTTPClient(client.HTTPConfig{
 			Addr:     this.addr,
