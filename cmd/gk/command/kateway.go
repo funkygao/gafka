@@ -310,8 +310,8 @@ func (this *Kateway) displayPprof() {
 			}
 
 			pprofAddr := kw.DebugAddr
-			pprofAddr[0]==':' {
-				pprofAddr=kw.Ip+pprofAddr
+			if pprofAddr[0] == ':' {
+				pprofAddr = kw.Ip + pprofAddr
 			}
 			lines = append(lines, fmt.Sprintf("%s|%s|%s|%s/%s|%s",
 				zkzone.Name(),
