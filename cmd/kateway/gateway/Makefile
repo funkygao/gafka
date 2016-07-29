@@ -29,8 +29,8 @@ benchmark-mem-fastdumb:
 
 benchmark-mem-dumb:
 	go test -v -run=XXX -benchmem -bench=^BenchmarkKatewayPubDummy1K -benchtime=20s -memprofile=prof.mem
-	go tool pprof --inuse_space gateway.test prof.mem
-	go tool pprof --alloc_space gateway.test prof.mem
+	go tool pprof --lines --inuse_space gateway.test prof.mem
+	go tool pprof --lines --alloc_space gateway.test prof.mem
 
 pprof-cpu:
 	go tool pprof http://localhost:9194/debug/pprof/profile?seconds=30
