@@ -77,6 +77,9 @@ func newGatewayForTest(b *testing.B, store string) *Gateway {
 	Options.DisableMetrics = false
 	Options.MaxPubSize = 1 << 20
 	Options.MetaRefresh = time.Hour
+	Options.ReporterInterval = time.Hour
+	Options.InfluxServer = "none"
+	Options.InfluxDbName = "none"
 
 	ctx.LoadFromHome()
 
