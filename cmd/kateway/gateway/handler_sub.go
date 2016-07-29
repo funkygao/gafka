@@ -319,11 +319,10 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			if IsTaggedMessage(msg.Value) {
 				tags, bodyIdx, err = ExtractMessageTag(msg.Value)
 				if err != nil {
-					if !delayedAck {
-						fetcher.CommitUpto(msg)
-					}
+					// always move offset cursor ahead, otherwise will be blocked forever
+					fetcher.CommitUpto(msg)
 
-					continue
+					return err
 				}
 			}
 
