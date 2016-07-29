@@ -42,6 +42,7 @@ type Kateway struct {
 	sign         string
 	checkup      bool
 	versionOnly  bool
+	pprofOnly    bool
 }
 
 func (this *Kateway) Run(args []string) (exitCode int) {
@@ -76,6 +77,11 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 	if this.sign != "" {
 		this.Ui.Output(fmt.Sprintf("%s\n%d", this.sign, adler32.Checksum([]byte(this.sign))))
+		return
+	}
+
+	if this.pprofOnly {
+		this.displayPprof()
 		return
 	}
 
@@ -276,6 +282,40 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Kateway) displayPprof() {
+	lines := make([]string, 0)
+	header := "Zone|Id|Host|Build|Pprof"
+	lines = append(lines, header)
+	forSortedZones(func(zkzone *zk.ZkZone) {
+		if this.zone != "" && zkzone.Name() != this.zone {
+			return
+		}
+
+		kateways, err := zkzone.KatewayInfos()
+		if err != nil {
+			if err == zklib.ErrNoNode {
+				this.Ui.Output("no kateway running")
+				return
+			} else {
+				swallow(err)
+			}
+		}
+
+		for _, kw := range kateways {
+			if this.id != "" && this.id != kw.Id {
+				continue
+			}
+
+			lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s",
+				zkzone.Name(),
+				kw.Id, kw.Host, kw.Build,
+				fmt.Sprintf("%s/debug/pprof/", kw.DebugAddr)))
+		}
+	})
+
+	this.Ui.Output(columnize.SimpleFormat(lines))
 }
 
 func (this *Kateway) installGuide() {
@@ -493,6 +533,9 @@ Options:
 
     -ver
       Display kateway version only
+
+    -pprof
+      Display kateway pprof addresses only
 
     -sign message
       Use adler32 to sign the message and return the signature
