@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>eco.windrain.kafka</groupId>
+  <artifactId>zzz-kafka-influxdb-reporter</artifactId>
+  <packaging>jar</packaging>
+  <version>1.0.0</version>
+  <name>Kafka metrics output to influxdb</name>
+
+
+	 
+
+  <prerequisites>
+    <maven>3.0.4</maven>
+  </prerequisites>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka_2.10</artifactId>
+      <version>0.8.2.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.yammer.metrics</groupId>
+      <artifactId>metrics-graphite</artifactId>
+      <version>2.2.0</version>
+    </dependency>
+
+    <!-- Fix lame kafka pom -->
+    <dependency>
+      <groupId>org.apache.zookeeper</groupId>
+      <artifactId>zookeeper</artifactId>
+      <version>3.3.4</version>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>jline</groupId>
+          <artifactId>jline</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>2.9.2</version>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.15</version>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.jms</groupId>
+          <artifactId>jms</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>com.sun.jmx</groupId>
+            <artifactId>jmxri</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>com.sun.jdmk</groupId>
+            <artifactId>jmxtools</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>net.sf.jopt-simple</groupId>
+      <artifactId>jopt-simple</artifactId>
+      <version>3.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.6.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-compiler</artifactId>
+      <version>2.9.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.101tec</groupId>
+      <artifactId>zkclient</artifactId>
+      <version>0.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.xerial.snappy</groupId>
+      <artifactId>snappy-java</artifactId>
+      <version>1.0.4.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.yammer.metrics</groupId>
+      <artifactId>metrics-core</artifactId>
+      <version>2.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.yammer.metrics</groupId>
+      <artifactId>metrics-annotation</artifactId>
+      <version>2.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.easymock</groupId>
+      <artifactId>easymock</artifactId>
+      <version>3.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.11</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_2.9.2</artifactId>
+      <version>1.8</version>
+      <scope>test</scope>
+    </dependency>
+    
+    
+    <!-- influxdb -->
+    <dependency>
+        <groupId>org.influxdb</groupId>
+        <artifactId>influxdb-java</artifactId>
+        <version>2.0</version>
+    </dependency>
+    
+  </dependencies>
+
+  <distributionManagement>
+    <repository>
+      <id>myfitnesspal.releases</id>
+      <name>Myfitnesspal Releases</name>
+      <url>http://maven/content/repositories/myfitnesspal.releases</url>
+    </repository>
+    <snapshotRepository>
+      <id>myfitnesspal.snapshots</id>
+      <name>Myfitnesspal Snapshots</name>
+      <url>http://maven/content/repositories/myfitnesspal.snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <shaded.name>uber</shaded.name>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+
+      <!-- Download sources and javadocs for eclipse -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-eclipse-plugin</artifactId>
+        <version>2.9</version>
+        <configuration>
+          <downloadSources>true</downloadSources>
+          <downloadJavadocs>true</downloadJavadocs>
+        </configuration>
+      </plugin>
+
+      <!-- Create jar of sources and javadocs -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.2.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.9</version>
+        <configuration>
+          <!-- Add nice UML graph -->
+          <doclet>org.umlgraph.doclet.UmlGraphDoc</doclet>
+          <docletArtifact>
+            <groupId>org.umlgraph</groupId>
+            <artifactId>doclet</artifactId>
+            <version>5.1</version>
+          </docletArtifact>
+          <additionalparam>-views</additionalparam>
+          <useStandardDocletOptions>true</useStandardDocletOptions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Build an ÜberJar -->
+      <!-- Uncomment to have a standalone jar -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>${shaded.name}</shadedClassifierName>
+              <artifactSet>
+                <includes>
+                  <include>*:*</include>
+                </includes>
+              </artifactSet>
+              <minimizeJar>true</minimizeJar>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+     <!-- Add infos in the manifest -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <archive>
+            <index>true</index>
+            <manifest>
+              <addDefaultImplementationEntries>true
+                </addDefaultImplementationEntries>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
