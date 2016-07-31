@@ -248,7 +248,7 @@ func pubGatewayLoop(seq int) {
 				log.Printf("Error sending request to API endpoint. %+v", err)
 			}
 		} else {
-			if response.StatusCode != http.StatusOK {
+			if response.StatusCode != http.StatusCreated {
 				stress.IncCounter("fail", 1)
 				if !suppressError {
 					log.Printf("Error sending request to API endpoint. %+v", response.Status)
