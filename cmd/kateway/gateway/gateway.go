@@ -315,20 +315,25 @@ func (this *Gateway) ServeForever() {
 			log.Info("deregistered from %s", registry.Default.Name())
 		}
 
-		log.Info("waiting for servers shutdown...")
-		this.wg.Wait()
-		log.Info("<----- all servers shutdown ----->")
+		// store can only be closed after web server closed
+		<-this.pubServer.Closed()
+		<-this.subServer.Closed()
+		<-this.manServer.Closed()
 
 		this.accessLogger.Stop()
 
 		log.Trace("stopping pub store")
 		if store.DefaultPubStore != nil {
-			store.DefaultPubStore.Stop()
+			go store.DefaultPubStore.Stop()
 		}
 		log.Trace("stopping sub store")
 		if store.DefaultSubStore != nil {
-			store.DefaultSubStore.Stop()
+			go store.DefaultSubStore.Stop()
 		}
+
+		log.Info("...waiting for services shutdown...")
+		this.wg.Wait()
+		log.Info("<----- all services shutdown ----->")
 
 		this.svrMetrics.Flush()
 		log.Trace("svr metrics flushed")
