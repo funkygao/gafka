@@ -41,11 +41,12 @@ func (this *subStore) Name() string {
 
 func (this *subStore) Start() (err error) {
 	this.wg.Add(1)
-	defer this.wg.Done()
 
 	this.subPool = newSubPool()
 
 	go func() {
+		defer this.wg.Done()
+
 		var remoteAddr string
 		for {
 			select {

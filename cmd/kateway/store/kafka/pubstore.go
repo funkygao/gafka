@@ -61,7 +61,6 @@ func (this *pubStore) Name() string {
 
 func (this *pubStore) Start() (err error) {
 	this.wg.Add(1)
-	defer this.wg.Done()
 
 	// warmup: create pools according the current kafka topology
 	for _, cluster := range meta.Default.ClusterNames() {
@@ -73,6 +72,8 @@ func (this *pubStore) Start() (err error) {
 	this.refreshJobPoolNodes()
 
 	go func() {
+		defer this.wg.Done()
+
 		for {
 			select {
 			case <-meta.Default.RefreshEvent():
