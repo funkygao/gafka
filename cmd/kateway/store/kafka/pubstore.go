@@ -108,7 +108,7 @@ func (this *pubStore) refreshJobPoolNodes() {
 		for cluster, addrs := range disqueAddrs {
 			if _, present := this.jobPools[cluster]; !present {
 				// found a new cluster of disque
-				this.jobPools[cluster] = newJobPool(addrs)
+				this.jobPools[cluster] = newJobPool(cluster, addrs)
 				if e := this.jobPools[cluster].RefreshNodes(); e != nil {
 					log.Error("disque[%s] refresh nodes: %v", cluster, e)
 
