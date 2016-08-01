@@ -149,7 +149,7 @@ func LocalIP() (net.IP, error) {
 	}
 	for _, addr := range addrs {
 		if ipnet, ok := addr.(*net.IPNet); ok && ipnet.IP.IsGlobalUnicast() {
-			if ipnet.IP.To4() != nil || ipnet.IP.To16() != nil {
+			if ipnet.IP.To4() != nil {
 				return ipnet.IP, nil
 			}
 		}
