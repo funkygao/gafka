@@ -95,6 +95,8 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	value := params.ByName("value")
 	boolVal := value == "true"
 
+	// TODO auth
+
 	switch option {
 	case "debug":
 		Options.Debug = boolVal
@@ -121,6 +123,20 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 			log.Error("invalid punish[%s]: %v", value, err)
 		} else {
 			Options.BadClientPunishDuration = d
+		}
+
+	case "dryrun":
+		if value == "clear" {
+			manager.Default.ClearDryrunTopics()
+		} else {
+			parts := strings.SplitN(value, ".", 3) // appid.topic.ver
+			if len(parts) != 3 {
+				log.Warn("invalid option:%s=%s", option, value)
+				writeBadRequest(w, "invalid option")
+				return
+			}
+
+			manager.Default.MarkTopicDryrun(parts[0], parts[1], parts[2])
 		}
 
 	case "auditpub":
@@ -152,7 +168,6 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 
 	default:
 		log.Warn("invalid option:%s=%s", option, value)
-
 		writeBadRequest(w, "invalid option")
 		return
 	}

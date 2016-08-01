@@ -44,6 +44,15 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	appid = r.Header.Get(HttpHeaderAppid)
 	topic = params.ByName(UrlParamTopic)
 	ver = params.ByName(UrlParamVersion)
+
+	if manager.Default.IsDryrunTopic(appid, topic, ver) {
+		log.Debug("pub[%s] %s(%s) dryrun {topic:%s ver:%s}", appid, r.RemoteAddr, realIp, topic, ver)
+
+		w.WriteHeader(http.StatusCreated)
+		w.Write(ResponseOk)
+		return
+	}
+
 	if err := manager.Default.OwnTopic(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
 		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} %s",
 			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), err)
