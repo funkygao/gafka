@@ -202,6 +202,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			} else {
 				swallow(err)
 			}
+
 		}
 
 		for _, kw := range kateways {
@@ -572,8 +573,13 @@ Options:
     -loglevel <info|debug|trace|warn|alarm|error>
       Set kateway log level
     
-    -option <debug|clients|gzip|accesslog|punish|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|int>
+    -option <debug|clients|gzip|accesslog|punish|dryrun|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|val>
       Set kateway options value
+      e,g.
+      dryrun=<appid.topic.ver|clear>
+      refreshdb=true
+      punish=3s
+      maxreq=1000
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
