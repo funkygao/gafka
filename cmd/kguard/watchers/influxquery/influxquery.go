@@ -55,6 +55,7 @@ func (this *WatchInfluxQuery) Run() {
 	defer ticker.Stop()
 
 	pubLatency := metrics.NewRegisteredGauge("_pub.latency.99", nil) // private metric name
+	katewayMaxHeap := metrics.NewRegisteredGauge("_kateway.max_heap", nil)
 	for {
 		select {
 		case <-this.Stop:
@@ -64,12 +65,29 @@ func (this *WatchInfluxQuery) Run() {
 		case <-ticker.C:
 			p99, err := this.pubLatency()
 			if err != nil {
-				log.Error(err.Error())
+				log.Error("influx.query[_pub.latency.99]: %v", err)
 			} else {
 				pubLatency.Update(int64(p99))
 			}
+
+			maxHeap, err := this.katewayMaxHeapSize()
+			if err != nil {
+				log.Error("influx.query[_kateway.max_heap]: %v", err)
+			} else {
+				katewayMaxHeap.Update(int64(maxHeap))
+			}
 		}
 	}
+}
+
+func (this *WatchInfluxQuery) katewayMaxHeapSize() (float64, error) {
+	res, err := this.queryDB(`SELECT max("value") FROM "runtime.MemStats.HeapSys.gauge" WHERE time > now() - 1m`)
+	if err != nil {
+		return 0, err
+	}
+
+	maxHeapSysInBytes := res[0].Series[0].Values[0][1].(json.Number)
+	return maxHeapSysInBytes.Float64()
 }
 
 func (this *WatchInfluxQuery) pubLatency() (float64, error) {
