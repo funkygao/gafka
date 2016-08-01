@@ -18,7 +18,7 @@ type subStore struct {
 	wg           *sync.WaitGroup
 	hostname     string
 
-	subPool *subPool
+	subManager *subManager
 }
 
 func NewSubStore(wg *sync.WaitGroup, closedConnCh <-chan string, debug bool) *subStore {
@@ -42,7 +42,7 @@ func (this *subStore) Name() string {
 func (this *subStore) Start() (err error) {
 	this.wg.Add(1)
 
-	this.subPool = newSubPool()
+	this.subManager = newSubManager()
 
 	go func() {
 		defer this.wg.Done()
@@ -55,7 +55,7 @@ func (this *subStore) Start() (err error) {
 				return
 
 			case remoteAddr = <-this.closedConnCh:
-				go this.subPool.killClient(remoteAddr)
+				go this.subManager.killClient(remoteAddr)
 
 			}
 		}
@@ -65,13 +65,13 @@ func (this *subStore) Start() (err error) {
 }
 
 func (this *subStore) Stop() {
-	this.subPool.Stop()
+	this.subManager.Stop()
 	close(this.shutdownCh)
 }
 
 func (this *subStore) Fetch(cluster, topic, group, remoteAddr,
 	resetOffset string, permitStandby bool) (store.Fetcher, error) {
-	cg, err := this.subPool.PickConsumerGroup(cluster, topic, group, remoteAddr, resetOffset, permitStandby)
+	cg, err := this.subManager.PickConsumerGroup(cluster, topic, group, remoteAddr, resetOffset, permitStandby)
 	if err != nil {
 		return nil, err
 	}

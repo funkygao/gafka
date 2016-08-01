@@ -12,18 +12,18 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-type subPool struct {
+type subManager struct {
 	clientMap     map[string]*consumergroup.ConsumerGroup // key is client remote addr, a client can only sub 1 topic
 	clientMapLock sync.RWMutex                            // TODO the lock is too big
 }
 
-func newSubPool() *subPool {
-	return &subPool{
+func newSubManager() *subManager {
+	return &subManager{
 		clientMap: make(map[string]*consumergroup.ConsumerGroup, 500),
 	}
 }
 
-func (this *subPool) PickConsumerGroup(cluster, topic, group, remoteAddr string,
+func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr string,
 	resetOffset string, permitStandby bool) (cg *consumergroup.ConsumerGroup, err error) {
 	// find consumger group from cache
 	var present bool
@@ -94,7 +94,7 @@ func (this *subPool) PickConsumerGroup(cluster, topic, group, remoteAddr string,
 // For a given consumer client, it might be killed twice:
 // 1. on socket level, the socket is closed
 // 2. websocket/sub handler, conn closed or error occurs, explicitly kill the client
-func (this *subPool) killClient(remoteAddr string) (err error) {
+func (this *subManager) killClient(remoteAddr string) (err error) {
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 
@@ -110,7 +110,7 @@ func (this *subPool) killClient(remoteAddr string) (err error) {
 	return
 }
 
-func (this *subPool) Stop() {
+func (this *subManager) Stop() {
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 

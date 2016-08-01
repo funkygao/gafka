@@ -11,5 +11,5 @@ type consumerFetcher struct {
 }
 
 func (this *consumerFetcher) Close() error {
-	return this.store.subPool.killClient(this.remoteAddr)
+	return this.store.subManager.killClient(this.remoteAddr)
 }
