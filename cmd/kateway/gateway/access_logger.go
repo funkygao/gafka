@@ -3,7 +3,6 @@ package gateway
 import (
 	"fmt"
 	"os"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -12,22 +11,22 @@ import (
 
 // AccessLogger is a daily rotating/unblocking logger to record access log.
 type AccessLogger struct {
-	filename string
-	mu       sync.Mutex
-	fd       *os.File
-
-	discarded uint64
+	filename  string
+	fd        *os.File
 	lines     chan []byte
-	stop      chan struct{}
+	discarded uint64
+	stopped   chan struct{}
 }
 
 func NewAccessLogger(fn string, poolSize int) *AccessLogger {
 	return &AccessLogger{
 		filename: fn,
 		lines:    make(chan []byte, poolSize),
+		stopped:  make(chan struct{}),
 	}
 }
 
+// Caution: NEVER call Log after Stop is called.
 func (this *AccessLogger) Log(line []byte) {
 	select {
 	case this.lines <- line:
@@ -46,8 +45,6 @@ func (this *AccessLogger) Start() error {
 		return err
 	}
 
-	this.stop = make(chan struct{})
-
 	go func() {
 		tick := time.NewTicker(time.Second)
 		defer tick.Stop()
@@ -55,11 +52,7 @@ func (this *AccessLogger) Start() error {
 		var lastDay int
 		for {
 			select {
-			case <-this.stop:
-				return
-
 			case t := <-tick.C:
-				this.mu.Lock()
 				if this.fd != nil &&
 					t.Day() != lastDay &&
 					t.Hour() == 0 &&
@@ -68,18 +61,23 @@ func (this *AccessLogger) Start() error {
 					this.doRotate()
 					lastDay = t.Day() // only once a day
 				}
-				this.mu.Unlock()
 
 			case line, ok := <-this.lines:
-				// FIXME at 00:00:00, buffer might overflow and lose log entry
 				if !ok {
-					// stopped
+					// Stop() called, all inflight log lines flushed
+					if this.fd != nil {
+						this.fd.Close() // auto flush
+						this.fd = nil
+					}
+
+					close(this.stopped)
 					return
 				}
 
 				if this.fd != nil {
 					this.fd.Write(line)
 				}
+
 			}
 		}
 	}()
@@ -122,17 +120,10 @@ func (this *AccessLogger) doRotate() {
 }
 
 func (this *AccessLogger) Stop() {
-	this.mu.Lock()
-	defer this.mu.Unlock()
+	close(this.lines)
+	<-this.stopped
+}
 
-	if this.stop != nil {
-		close(this.stop)
-	} else {
-		// call Stop when not Started
-	}
-
-	if this.fd != nil {
-		this.fd.Close()
-		this.fd = nil
-	}
+func (this *AccessLogger) Discarded() uint64 {
+	return atomic.LoadUint64(&this.discarded)
 }
