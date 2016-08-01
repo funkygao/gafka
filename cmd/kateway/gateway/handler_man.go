@@ -39,6 +39,13 @@ func (this *manServer) schemaHandler(w http.ResponseWriter, r *http.Request, par
 	}
 
 	// TODO lookup from manager and send reponse
+	schema, err := manager.Default.TopicSchema(hisAppid, topic, ver)
+	if err != nil {
+		writeBadRequest(w, err.Error())
+		return
+	}
+
+	w.Write([]byte(strings.TrimSpace(schema)))
 }
 
 // GET /v1/status

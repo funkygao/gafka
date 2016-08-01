@@ -22,13 +22,14 @@ type mysqlStore struct {
 
 	// mysql store, initialized on refresh
 	// TODO https://github.com/hashicorp/go-memdb
-	appClusterMap       map[string]string              // appid:cluster
-	appSecretMap        map[string]string              // appid:secret
-	appSubMap           map[string]map[string]struct{} // appid:subscribed topics
-	appTopicsMap        map[string]map[string]bool     // appid:topics enabled
-	appConsumerGroupMap map[string]map[string]struct{} // appid:groups
-	shadowQueueMap      map[string]string              // hisappid.topic.ver.myappid:group
-	deadPartitionMap    map[string]map[int32]struct{}  // topic:partitionId
+	appClusterMap       map[string]string                       // appid:cluster
+	appSecretMap        map[string]string                       // appid:secret
+	appSubMap           map[string]map[string]struct{}          // appid:subscribed topics
+	appTopicsMap        map[string]map[string]bool              // appid:topics enabled
+	appConsumerGroupMap map[string]map[string]struct{}          // appid:groups
+	shadowQueueMap      map[string]string                       // hisappid.topic.ver.myappid:group
+	deadPartitionMap    map[string]map[int32]struct{}           // topic:partitionId
+	topicSchemaMap      map[string]map[string]map[string]string // appid:topic:ver:schema
 }
 
 func New(cf *config) *mysqlStore {
@@ -129,6 +130,10 @@ func (this *mysqlStore) refreshFromMysql() error {
 	}
 
 	if false {
+		if err = this.fetchSchemas(db); err != nil {
+			return err
+		}
+
 		if err = this.fetchShadowQueueRecords(db); err != nil {
 			return err
 		}
@@ -140,6 +145,36 @@ func (this *mysqlStore) refreshFromMysql() error {
 
 func (this *mysqlStore) shadowKey(hisAppid, topic, ver, myAppid string) string {
 	return hisAppid + "." + topic + "." + ver + "." + myAppid
+}
+
+func (this *mysqlStore) fetchSchemas(db *sql.DB) error {
+	rows, err := db.Query("SELECT AppId,TopicName,Ver,Schema FROM topic_schema")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	schemas := make(map[string]map[string]map[string]string)
+	var schema topicSchemaRecord
+	for rows.Next() {
+		err = rows.Scan(&schema.AppId, &schema.TopicName, &schema.Ver, &schema.Schema)
+		if err != nil {
+			log.Error("mysql manager store: %v", err)
+			continue
+		}
+
+		if _, present := schemas[schema.AppId]; !present {
+			schemas[schema.AppId] = make(map[string]map[string]string)
+		}
+		if _, present := schemas[schema.AppId][schema.TopicName]; !present {
+			schemas[schema.AppId][schema.TopicName] = make(map[string]string)
+		}
+
+		schemas[schema.AppId][schema.TopicName][schema.Ver] = schema.Schema
+	}
+
+	this.topicSchemaMap = schemas
+	return nil
 }
 
 func (this *mysqlStore) fetchDeadPartitions(db *sql.DB) error {

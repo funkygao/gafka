@@ -25,3 +25,8 @@ type deadPartitionRecord struct {
 	KafkaTopic  string
 	PartitionId int32
 }
+
+type topicSchemaRecord struct {
+	AppId, TopicName, Ver string
+	Schema                string
+}

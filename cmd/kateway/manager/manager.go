@@ -23,6 +23,9 @@ type Manager interface {
 	// KafkaTopic returns raw kafka topic name.
 	KafkaTopic(appid string, topic string, ver string) string
 
+	// TopicSchema returns the avro schema definition json string.
+	TopicSchema(appid, topic, ver string) (string, error)
+
 	// ShadowTopic returns raw kafka topic name of a shadowed topic.
 	ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group string) string
 

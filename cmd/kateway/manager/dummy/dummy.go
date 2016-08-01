@@ -34,6 +34,20 @@ func (this *dummyStore) KafkaTopic(appid string, topic string, ver string) (r st
 	return
 }
 
+func (this *dummyStore) TopicSchema(appid, topic, ver string) (string, error) {
+	return `
+{
+   "type" : "record",
+   "namespace" : "dummy",
+   "name" : "Sample",
+   "fields" : [
+      { "name" : "Name" , "type" : "string" },
+      { "name" : "Age" , "type" : "int" }
+   ]
+}
+	`, nil
+}
+
 func (this *dummyStore) ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group string) (r string) {
 	r = this.KafkaTopic(hisAppid, topic, ver)
 	return r + "." + myAppid + "." + group + "." + shadow

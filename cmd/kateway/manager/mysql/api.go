@@ -36,6 +36,14 @@ func (this *mysqlStore) KafkaTopic(appid string, topic string, ver string) (r st
 	return
 }
 
+func (this *mysqlStore) TopicSchema(appid, topic, ver string) (string, error) {
+	if schema, present := this.topicSchemaMap[appid][topic][ver]; present {
+		return schema, nil
+	}
+
+	return "", manager.ErrSchemaNotFound
+}
+
 func (this *mysqlStore) ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group string) (r string) {
 	r = this.KafkaTopic(hisAppid, topic, ver)
 	return r + "." + myAppid + "." + group + "." + shadow

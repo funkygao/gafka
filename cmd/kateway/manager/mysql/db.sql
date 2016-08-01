@@ -120,14 +120,24 @@ CREATE TABLE `user_role` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `application_group` (
-`GroupId` bigint(20) NOT NULL,
-`AppId` bigint(20) NOT NULL,
-`GroupName` varchar(64) NOT NULL COMMENT '组名称',
-`GroupIntro` varchar(255) NOT NULL COMMENT '组作用描述',
-`CreateById` bigint(18) NOT NULL DEFAULT '0',
-`CreateBy` varchar(64) NOT NULL,
-`CreateTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-`Status` tinyint(2) NOT NULL COMMENT '状态：1正常|-2废弃',
-PRIMARY KEY (`GroupId`),
-UNIQUE KEY `AppId` (`AppId`,`GroupName`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
+  `GroupId` bigint(20) NOT NULL,
+  `AppId` bigint(20) NOT NULL,
+  `GroupName` varchar(64) NOT NULL COMMENT '组名称',
+  `GroupIntro` varchar(255) NOT NULL COMMENT '组作用描述',
+  `CreateById` bigint(18) NOT NULL DEFAULT '0',
+  `CreateBy` varchar(64) NOT NULL,
+  `CreateTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `Status` tinyint(2) NOT NULL COMMENT '状态：1正常|-2废弃',
+  PRIMARY KEY (`GroupId`),
+  UNIQUE KEY `AppId` (`AppId`,`GroupName`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `topic_schema` (
+  `AppId` bigint(20) NOT NULL,
+  `TopicName` varchar(255) NOT NULL, 
+  `Ver` varchar(50) NOT NULL,
+  `Schema` text,
+  `CreateTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `Status` tinyint(2) NOT NULL COMMENT '状态：1正常|-2废弃',
+  PRIMARY KEY (`AppId`, `TopicName`, `Ver`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
