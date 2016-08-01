@@ -208,6 +208,7 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 	this.subMetrics.Flush()
 
 	this.gw.wg.Done()
+	close(this.closed)
 }
 
 func (this *subServer) ackCommitter() {

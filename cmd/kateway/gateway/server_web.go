@@ -42,6 +42,8 @@ type webServer struct {
 
 	// TODO channel performance is frustrating, no better than mutex/map use ring buffer
 	stateIdleCh, stateRemoveCh, stateActiveCh chan net.Conn
+
+	closed chan struct{}
 }
 
 func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
@@ -55,6 +57,7 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 		stateIdleCh:   make(chan net.Conn, initialConnBuckets),
 		stateRemoveCh: make(chan net.Conn, initialConnBuckets),
 		router:        httprouter.New(),
+		closed:        make(chan struct{}),
 	}
 
 	if Options.EnableHttpPanicRecover {
@@ -391,6 +394,11 @@ func (this *webServer) defaultWaitExit(exit <-chan struct{}) {
 	}
 
 	this.gw.wg.Done()
+	close(this.closed)
+}
+
+func (this *webServer) Closed() <-chan struct{} {
+	return this.closed
 }
 
 func (this *webServer) notFoundHandler(w http.ResponseWriter, r *http.Request) {
