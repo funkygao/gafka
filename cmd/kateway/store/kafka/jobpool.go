@@ -63,6 +63,10 @@ func (this *jobPool) AddJob(topic string, payload []byte, delay time.Duration) (
 		this.lk.Unlock()
 	}
 
+	// Disque is a synchronously replicated job queue.
+	// By default when a new job is added, it is replicated to W nodes before the client gets an acknowledgement
+	// about the job being added.
+	// W-1 nodes can fail and the message will still be delivered.
 	jobId, err = c.Add(disque.AddRequest{
 		Job: disque.Job{
 			Queue: topic,
@@ -71,7 +75,8 @@ func (this *jobPool) AddJob(topic string, payload []byte, delay time.Duration) (
 		Delay:   delay,
 		TTL:     delay + time.Hour, // 1h should be enough? TODO
 		Timeout: time.Millisecond * 100,
-		Retry:   1,
+		Retry:   time.Minute, // 消息取走没有收到ack sec秒，那么重新把消息放回队列
+		Async:   false,
 	})
 
 	c.Close() // recycle to pool

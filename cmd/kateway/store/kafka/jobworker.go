@@ -35,5 +35,8 @@ func (this *jobPool) pumpQueue(queue string) {
 		}
 
 		log.Debug("%s %s", job.Id(), string(job.Data))
+		if err = c.Ack(job.Id()); err != nil {
+			log.Error(err)
+		}
 	}
 }
