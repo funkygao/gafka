@@ -256,13 +256,13 @@ func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topicPattern string,
 
 	for _, t := range topics {
 		if patternMatched(t, topicPattern) {
-			go this.simpleConsumeTopic(kfk, t, int32(partitionId), msgChan)
+			go this.simpleConsumeTopic(zkcluster, kfk, t, int32(partitionId), msgChan)
 		}
 	}
 
 }
 
-func (this *Peek) simpleConsumeTopic(kfk sarama.Client, topic string, partitionId int32,
+func (this *Peek) simpleConsumeTopic(zkcluster *zk.ZkCluster, kfk sarama.Client, topic string, partitionId int32,
 	msgCh chan *sarama.ConsumerMessage) {
 	consumer, err := sarama.NewConsumerFromClient(kfk)
 	if err != nil {
@@ -297,7 +297,7 @@ func (this *Peek) simpleConsumeTopic(kfk sarama.Client, topic string, partitionI
 				}
 			}
 
-			go this.consumePartition(kfk, consumer, topic, p, msgCh, offset)
+			go this.consumePartition(zkcluster, kfk, consumer, topic, p, msgCh, offset)
 		}
 
 	} else {
@@ -310,16 +310,16 @@ func (this *Peek) simpleConsumeTopic(kfk sarama.Client, topic string, partitionI
 				offset = sarama.OffsetOldest
 			}
 		}
-		this.consumePartition(kfk, consumer, topic, partitionId, msgCh, offset)
+		this.consumePartition(zkcluster, kfk, consumer, topic, partitionId, msgCh, offset)
 	}
 
 }
 
-func (this *Peek) consumePartition(kfk sarama.Client, consumer sarama.Consumer,
+func (this *Peek) consumePartition(zkcluster *zk.ZkCluster, kfk sarama.Client, consumer sarama.Consumer,
 	topic string, partitionId int32, msgCh chan *sarama.ConsumerMessage, offset int64) {
 	p, err := consumer.ConsumePartition(topic, partitionId, offset)
 	if err != nil {
-		this.Ui.Error(fmt.Sprintf("%s/%d: offset=%d %v", topic, partitionId, offset, err))
+		this.Ui.Error(fmt.Sprintf("%s %s/%d: offset=%d %v", zkcluster.Name(), topic, partitionId, offset, err))
 		return
 	}
 	defer p.Close()
