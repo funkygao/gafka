@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
@@ -30,11 +29,6 @@ type WatchAppError struct {
 	Zkzone *zk.ZkZone
 	Stop   <-chan struct{}
 	Wg     *sync.WaitGroup
-
-	startedAt time.Time
-	seq       int
-
-	pubLatency, subLatency metrics.Histogram
 }
 
 func (this *WatchAppError) Init(ctx monitor.Context) {
@@ -105,15 +99,20 @@ func (this *WatchAppError) consumeAppErrLogs(msgChan chan<- *sarama.ConsumerMess
 		return err
 	}
 
+	var wg sync.WaitGroup
 	for _, p := range partitions {
-		go this.consumePartition(zkcluster, consumer, topic, p, sarama.OffsetOldest, msgChan)
+		wg.Add(1)
+		go this.consumePartition(zkcluster, consumer, topic, p, sarama.OffsetOldest, msgChan, &wg)
 	}
 
+	wg.Wait()
 	return nil
 }
 
 func (this *WatchAppError) consumePartition(zkcluster *zk.ZkCluster, consumer sarama.Consumer,
-	topic string, partitionId int32, offset int64, msgCh chan<- *sarama.ConsumerMessage) {
+	topic string, partitionId int32, offset int64, msgCh chan<- *sarama.ConsumerMessage, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	p, err := consumer.ConsumePartition(topic, partitionId, offset)
 	if err != nil {
 		log.Error("%s %s/%d: offset=%d %v", zkcluster.Name(), topic, partitionId, offset, err)
