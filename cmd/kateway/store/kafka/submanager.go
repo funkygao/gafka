@@ -56,7 +56,7 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, rea
 	// kafka Fetch MaxWaitTime 250ms, MinByte=1 by default
 
 	cf.Consumer.Return.Errors = true
-	cf.Consumer.MaxProcessingTime = 100 * time.Millisecond // chan recv timeout
+	cf.Consumer.MaxProcessingTime = time.Second * 2 // chan recv timeout
 	cf.Zookeeper.Chroot = meta.Default.ZkChroot(cluster)
 	cf.Zookeeper.Timeout = zk.DefaultZkSessionTimeout()
 	cf.Offsets.CommitInterval = time.Minute

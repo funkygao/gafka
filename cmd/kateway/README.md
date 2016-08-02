@@ -207,7 +207,6 @@ It is designed to be programmer friendly.
 
 ### TODO
 
-- [ ] Sarama 2016/08/02 14:05:29 consumer.go:636: consumer/broker/0 abandoned subscription to app1.foobar.v1/0 because consuming was taking too long
 - [ ] github.com/funkygao/go-metrics/sample.go:151 heap
 - [ ] failure tolerance
   - pub breaker
