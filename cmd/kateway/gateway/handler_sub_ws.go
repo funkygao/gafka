@@ -53,6 +53,7 @@ func (this *subServer) subWsHandler(w http.ResponseWriter, r *http.Request, para
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
+	realIp := getHttpRemoteIp(r)
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
 		log.Error("consumer[%s] %s {hisapp:%s, topic:%s, ver:%s, group:%s, limit:%d}: %s",
@@ -74,7 +75,7 @@ func (this *subServer) subWsHandler(w http.ResponseWriter, r *http.Request, para
 	}
 
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
-		myAppid+"."+group, r.RemoteAddr, resetOffset, Options.PermitStandbySub)
+		myAppid+"."+group, r.RemoteAddr, realIp, resetOffset, Options.PermitStandbySub)
 	if err != nil {
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 
