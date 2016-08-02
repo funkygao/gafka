@@ -24,7 +24,8 @@ func (this *Gateway) middleware(h httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		w.Header().Set("Server", "kateway")
 
-		// kateway response is always json, including error reponse
+		// kateway response is mostly json, including error reponse
+		// for non-json response, handler can override this
 		w.Header().Set("Content-Type", "application/json; charset=utf8")
 
 		// CORS: cross origin resource sharing

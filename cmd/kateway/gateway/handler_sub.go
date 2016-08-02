@@ -308,6 +308,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			partition := strconv.FormatInt(int64(msg.Partition), 10)
 
 			if limit == 1 {
+				w.Header().Set("Content-Type", "text/plain; charset=utf8") // override middleware header
 				w.Header().Set(HttpHeaderMsgKey, string(msg.Key))
 				w.Header().Set(HttpHeaderPartition, partition)
 				w.Header().Set(HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
@@ -363,8 +364,8 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 					// initialize the reuseable buffer
 					metaBuf = make([]byte, 8)
 
-					// remove the middleware added header
-					w.Header().Del("Content-Type")
+					// override the middleware added header
+					w.Header().Set("Content-Type", "application/octet-stream")
 				}
 
 				if err = writeI32(w, metaBuf, msg.Partition); err != nil {
