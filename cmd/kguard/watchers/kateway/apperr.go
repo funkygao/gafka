@@ -102,7 +102,7 @@ func (this *WatchAppError) consumeAppErrLogs(msgChan chan<- *sarama.ConsumerMess
 	var wg sync.WaitGroup
 	for _, p := range partitions {
 		wg.Add(1)
-		go this.consumePartition(zkcluster, consumer, topic, p, sarama.OffsetOldest, msgChan, &wg)
+		go this.consumePartition(zkcluster, consumer, topic, p, sarama.OffsetNewest, msgChan, &wg)
 	}
 
 	wg.Wait()
