@@ -152,6 +152,12 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 		Options.PermitUnregisteredGroup = boolVal
 		manager.Default.AllowSubWithUnregisteredGroup(boolVal)
 
+	case "loglevel":
+		logLevel = toLogLevel(value)
+		for _, filter := range log.Global {
+			filter.Level = logLevel
+		}
+
 	case "maxreq":
 		Options.MaxRequestPerConn, _ = strconv.Atoi(value)
 
