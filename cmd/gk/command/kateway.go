@@ -569,17 +569,15 @@ Options:
 
     -reset metrics name
       Reset kateway metric counter by name
-
-    -loglevel <info|debug|trace|warn|alarm|error>
-      Set kateway log level
     
-    -option <debug|clients|gzip|accesslog|punish|dryrun|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|val>
+    -option <debug|clients|gzip|accesslog|punish|loglevel|dryrun|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|val>
       Set kateway options value
       e,g.
       dryrun=<appid.topic.ver|clear>
       refreshdb=true
       punish=3s
       maxreq=1000
+      loglevel=<info|debug|trace|warn|alarm|error>
 
 `, this.Cmd)
 	return strings.TrimSpace(help)

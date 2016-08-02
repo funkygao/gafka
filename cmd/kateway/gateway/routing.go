@@ -21,7 +21,6 @@ func (this *Gateway) buildRouting() {
 		this.manServer.Router().GET("/v1/clients", m(this.manServer.clientsHandler))
 		this.manServer.Router().GET("/v1/status", m(this.manServer.statusHandler))
 		this.manServer.Router().PUT("/v1/options/:option/:value", m(this.manServer.setOptionHandler))
-		this.manServer.Router().PUT("/v1/log/:level", m(this.manServer.setlogHandler))
 		this.manServer.Router().DELETE("/v1/counter/:name", m(this.manServer.resetCounterHandler))
 
 		// api for pubsub manager

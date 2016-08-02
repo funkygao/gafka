@@ -184,20 +184,6 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	w.Write(ResponseOk)
 }
 
-// PUT /v1/log/:level
-func (this *manServer) setlogHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	logLevel = toLogLevel(params.ByName("level"))
-	for name, filter := range log.Global {
-		log.Info("log[%s] level: %s -> %s", name, filter.Level, logLevel)
-
-		filter.Level = logLevel
-	}
-
-	log.Info("log %s(%s): %s", r.RemoteAddr, getHttpRemoteIp(r), logLevel)
-
-	w.Write(ResponseOk)
-}
-
 // DELETE /v1/counter/:name
 func (this *manServer) resetCounterHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	log.Info("reset counter %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
