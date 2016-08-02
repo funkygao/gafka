@@ -221,7 +221,7 @@ func (this *Gateway) Start() (err error) {
 				log.Warn("zk jitter: %+v", evt)
 
 				if evt.State == zklib.StateHasSession {
-					log.Warn("zk reconnected after session lost")
+					log.Warn("zk reconnected after session lost, watcher/ephemeral lost")
 				}
 			}
 		}
