@@ -45,7 +45,7 @@ func (this *subStore) IsSystemError(error) bool {
 	return false
 }
 
-func (this *subStore) Fetch(cluster, topic, group, remoteAddr,
+func (this *subStore) Fetch(cluster, topic, group, remoteAddr, realIp,
 	reset string, permitStandby bool) (store.Fetcher, error) {
 	return this.fetcher, nil
 }

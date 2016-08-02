@@ -207,33 +207,26 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] [Sarama]2016/08/02 14:05:29 consumer.go:636: consumer/broker/0 abandoned subscription to app1.foobar.v1/0 because consuming was taking too long
+- [ ] when http handler panic, client recv 200
 - [ ] github.com/funkygao/go-metrics/sample.go:151 heap
 - [ ] failure tolerance
   - pub breaker
   - migration partition from a to b
   - what if a broker killed
-- [ ] async pub
+- [ ] async pub mem pool
 - [ ] sub: what if broker moved
-- [ ] pub in batch
-- [X] change all handler declaration to xxxServer instead of Gateway
-- [X] cf.ChannelBufferSize=20
 - [X] topic name obfuscation
 - [ ] sub with delayed ack
   - StatusNotModified
   - what if rebalanced, and ack buffered p/o
 - [ ] test max body/header size limit
-- [ ] refactor api pkg
-- [ ] bugs
-  - [ ] sit 36.topic-owl-biz.v1 has 20 partitions, cg only consumes part of it
-  - [ ] kateway/clients.go need work for w-haproxy
-- [ ] verify
-- [ ] max request for a single persitent connection
-  - make load balancer distribute req more evenly
 - [ ] pub/sub a disabled topic, discard?
 - [ ] features confirm
   - delayed job
   - bury
   - msg tag
+  - avro schema registry
 - [ ] fetchShadowQueueRecords enable
 - [ ] why make sub with 15s sleep fails
 - [ ] Plugins
@@ -241,7 +234,6 @@ It is designed to be programmer friendly.
   - transform
   - hooks
   - other stuff related to message-oriented middleware
-- [ ] schema registry with Avro
 - [ ] check hack pkg
 - [ ] https://github.com/allinurl/goaccess
 - [ ] https, outer ip must https

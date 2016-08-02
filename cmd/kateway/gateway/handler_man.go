@@ -73,14 +73,6 @@ func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, par
 	w.Write(b)
 }
 
-// GET /v1/clients
-func (this *manServer) clientsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	log.Info("clients %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
-
-	b, _ := json.Marshal(this.gw.clientStates.Export())
-	w.Write(b)
-}
-
 // GET /v1/clusters
 func (this *manServer) clustersHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	log.Info("clusters %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
@@ -100,10 +92,6 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	switch option {
 	case "debug":
 		Options.Debug = boolVal
-
-	case "clients":
-		Options.EnableClientStats = boolVal
-		this.gw.clientStates.Reset()
 
 	case "nometrics":
 		Options.DisableMetrics = boolVal
@@ -203,21 +191,23 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	appid := r.Header.Get(HttpHeaderAppid)
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
+	realIp := getHttpRemoteIp(r)
+
 	if !manager.Default.AuthAdmin(appid, pubkey) {
 		log.Warn("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s}",
-			r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
+			r.RemoteAddr, realIp, cluster, appid, pubkey, topic, ver)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
 	log.Info("partitions %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s}",
-		r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
+		r.RemoteAddr, realIp, cluster, appid, pubkey, topic, ver)
 
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
 		log.Error("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s} undefined cluster",
-			r.RemoteAddr, getHttpRemoteIp(r), cluster, appid, pubkey, topic, ver)
+			r.RemoteAddr, realIp, cluster, appid, pubkey, topic, ver)
 
 		writeBadRequest(w, "undefined cluster")
 		return
@@ -235,7 +225,7 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	partitions, err := kfk.Partitions(manager.Default.KafkaTopic(hisAppid, topic, ver))
 	if err != nil {
 		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
-			zkcluster.Name(), r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, err)
+			zkcluster.Name(), r.RemoteAddr, realIp, hisAppid, topic, ver, err)
 
 		writeServerError(w, err.Error())
 		return
@@ -254,7 +244,9 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	if !this.throttleAddTopic.Pour(getHttpRemoteIp(r), 1) {
+	realIp := getHttpRemoteIp(r)
+
+	if !this.throttleAddTopic.Pour(realIp, 1) {
 		writeQuotaExceeded(w)
 		return
 	}
@@ -266,7 +258,7 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 	ver := params.ByName(UrlParamVersion)
 	if !manager.Default.AuthAdmin(appid, pubkey) {
 		log.Warn("suspicous add topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
-			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
+			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
@@ -275,7 +267,7 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
 		log.Error("add topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
-			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
+			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
 
 		writeBadRequest(w, "undefined cluster")
 		return
@@ -311,7 +303,7 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 	}
 
 	log.Info("app[%s] from %s(%s) add topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
-		appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
+		appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver, query.Encode())
 
 	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	lines, err := zkcluster.AddTopic(rawTopic, ts)
@@ -366,7 +358,9 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	if !this.throttleAddTopic.Pour(getHttpRemoteIp(r), 1) {
+	realIp := getHttpRemoteIp(r)
+
+	if !this.throttleAddTopic.Pour(realIp, 1) {
 		writeQuotaExceeded(w)
 		return
 	}
@@ -378,7 +372,7 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 	ver := params.ByName(UrlParamVersion)
 	if !manager.Default.AuthAdmin(appid, pubkey) {
 		log.Warn("suspicous update topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
-			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
+			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
@@ -387,7 +381,7 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
 		log.Error("update topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
-			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey, cluster, topic, ver)
+			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
 
 		writeBadRequest(w, "undefined cluster")
 		return
@@ -420,13 +414,13 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	log.Info("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
-		appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
+		appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver, query.Encode())
 
 	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	alterConfig := ts.DumpForAlterTopic()
 	if len(alterConfig) == 0 {
 		log.Warn("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} nothing updated",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode())
+			appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver, query.Encode())
 
 		writeBadRequest(w, "nothing updated")
 		return
@@ -435,7 +429,7 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 	lines, err := zkcluster.AlterTopic(rawTopic, ts)
 	if err != nil {
 		log.Error("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} %v",
-			appid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, cluster, topic, ver, query.Encode(), err)
+			appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver, query.Encode(), err)
 
 		writeServerError(w, err.Error())
 		return
@@ -452,15 +446,17 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 func (this *manServer) refreshManagerHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	appid := r.Header.Get(HttpHeaderAppid)
 	pubkey := r.Header.Get(HttpHeaderPubkey)
+	realIp := getHttpRemoteIp(r)
+
 	if !manager.Default.AuthAdmin(appid, pubkey) {
 		log.Warn("suspicous refresh call from %s(%s): {app:%s key:%s}",
-			r.RemoteAddr, getHttpRemoteIp(r), appid, pubkey)
+			r.RemoteAddr, realIp, appid, pubkey)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
-	if !this.throttleAddTopic.Pour(getHttpRemoteIp(r), 1) {
+	if !this.throttleAddTopic.Pour(realIp, 1) {
 		writeQuotaExceeded(w)
 		return
 	}
@@ -483,12 +479,12 @@ func (this *manServer) refreshManagerHandler(w http.ResponseWriter, r *http.Requ
 			if err := this.gw.callKateway(kw, "PUT", "v1/options/refreshdb/true"); err != nil {
 				// don't retry, just log
 				log.Error("refresh from %s(%s) %s@%s: %v",
-					r.RemoteAddr, getHttpRemoteIp(r), kw.Id, kw.Host, err)
+					r.RemoteAddr, realIp, kw.Id, kw.Host, err)
 			}
 		}
 	}
 
-	log.Info("refresh from %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
+	log.Info("refresh from %s(%s)", r.RemoteAddr, realIp)
 
 	w.Write(ResponseOk)
 }

@@ -45,7 +45,6 @@ var (
 		CpuAffinity             bool
 		EnableAccessLog         bool
 		EnableHttpPanicRecover  bool
-		EnableClientStats       bool
 		GolangTrace             bool
 		PermitUnregisteredGroup bool
 		UseCompress             bool
@@ -118,7 +117,6 @@ func ParseFlags() {
 	flag.BoolVar(&Options.UseCompress, "snappy", false, "backend store will snappy compress messages")
 	flag.BoolVar(&Options.EnableAccessLog, "accesslog", false, "en(dis)able access log")
 	flag.BoolVar(&Options.EnableRegistry, "withreg", true, "self register in zk, otherwise isolated from cluster")
-	flag.BoolVar(&Options.EnableClientStats, "clientsmap", false, "record online pub/sub clients")
 	flag.BoolVar(&Options.DryRun, "dryrun", false, "dry run mode")
 	flag.BoolVar(&Options.PermitUnregisteredGroup, "unregrp", false, "permit sub group usage without being registered")
 	flag.BoolVar(&Options.PermitStandbySub, "standbysub", false, "permits sub threads exceed partitions")

@@ -28,7 +28,7 @@ type SubStore interface {
 	Stop()
 
 	// Fetch returns a Fetcher.
-	Fetch(cluster, topic, group, remoteAddr, resetOffset string, permitStandby bool) (Fetcher, error)
+	Fetch(cluster, topic, group, remoteAddr, realIp, resetOffset string, permitStandby bool) (Fetcher, error)
 
 	IsSystemError(error) bool
 }

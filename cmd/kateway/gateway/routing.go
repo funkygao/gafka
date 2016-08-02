@@ -18,7 +18,6 @@ func (this *Gateway) buildRouting() {
 
 		// api for 'gk kateway'
 		this.manServer.Router().GET("/v1/clusters", m(this.manServer.clustersHandler))
-		this.manServer.Router().GET("/v1/clients", m(this.manServer.clientsHandler))
 		this.manServer.Router().GET("/v1/status", m(this.manServer.statusHandler))
 		this.manServer.Router().PUT("/v1/options/:option/:value", m(this.manServer.setOptionHandler))
 		this.manServer.Router().DELETE("/v1/counter/:name", m(this.manServer.resetCounterHandler))

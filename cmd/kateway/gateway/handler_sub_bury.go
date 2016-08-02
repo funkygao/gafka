@@ -42,11 +42,12 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
+	realIp := getHttpRemoteIp(r)
 
 	bury = r.Header.Get(HttpHeaderMsgBury)
 	if !sla.ValidateShadowName(bury) {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} illegal bury: %s",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), bury)
 
 		writeBadRequest(w, "illegal bury")
@@ -57,7 +58,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
 		writeAuthFailure(w, err)
@@ -68,7 +69,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	offset = r.Header.Get(HttpHeaderOffset)
 	if partition == "" || offset == "" {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} empty offset or partition",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"))
 
 		writeBadRequest(w, "empty offset or partition")
@@ -78,7 +79,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	offsetN, err = strconv.ParseInt(offset, 10, 64)
 	if err != nil || offsetN < 0 {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} illegal offset:%s",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), offset)
 
 		writeBadRequest(w, "bad offset")
@@ -87,7 +88,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	partitionN, err = strconv.Atoi(partition)
 	if err != nil || partitionN < 0 {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} illegal partition:%s",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), partition)
 
 		writeBadRequest(w, "bad partition")
@@ -97,14 +98,14 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	shadow = query.Get("q")
 
 	log.Debug("bury[%s] %s(%s): {app:%s bury:%s shadow=%s topic:%s ver:%s group:%s partition:%s offset:%s UA:%s}",
-		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, bury, shadow, topic, ver,
+		myAppid, r.RemoteAddr, realIp, hisAppid, bury, shadow, topic, ver,
 		partition, offset, r.Header.Get("User-Agent"))
 
 	msgLen := int(r.ContentLength)
 	msg := make([]byte, 0, msgLen)
 	if _, err = io.ReadAtLeast(r.Body, msg, msgLen); err != nil {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
 		writeBadRequest(w, err.Error())
@@ -114,7 +115,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} invalid appid:%s",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), hisAppid)
 
 		writeBadRequest(w, "invalid appid")
@@ -125,7 +126,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	if shadow != "" {
 		if !sla.ValidateShadowName(shadow) {
 			log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s q:%s UA:%s} invalid shadow name",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 				group, shadow, r.Header.Get("User-Agent"))
 
 			writeBadRequest(w, "invalid shadow name")
@@ -134,7 +135,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 
 		if !manager.Default.IsShadowedTopic(hisAppid, topic, ver, myAppid, group) {
 			log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s q:%s UA:%s} not a shadowed topic",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 				group, shadow, r.Header.Get("User-Agent"))
 
 			writeBadRequest(w, "register shadow first")
@@ -147,10 +148,10 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	}
 
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
-		myAppid+"."+group, r.RemoteAddr, "", Options.PermitStandbySub)
+		myAppid+"."+group, r.RemoteAddr, realIp, "", Options.PermitStandbySub)
 	if err != nil {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver,
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
 
 		writeBadRequest(w, err.Error())
@@ -162,7 +163,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	_, _, err = store.DefaultPubStore.SyncPub(cluster, shadowTopic, nil, msg)
 	if err != nil {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group, err)
 
 		writeServerError(w, err.Error())
 		return
@@ -175,7 +176,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 		Offset:    offsetN,
 	}); err != nil {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
-			myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group, err)
+			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group, err)
 
 		writeServerError(w, err.Error())
 		return

@@ -16,10 +16,6 @@ import (
 func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	t1 := time.Now()
 
-	if Options.EnableClientStats { // TODO enable pub or sub client stats
-		this.gw.clientStates.RegisterPubClient(r)
-	}
-
 	appid := r.Header.Get(HttpHeaderAppid)
 	realIp := getHttpRemoteIp(r)
 	if Options.Ratelimit && !this.throttlePub.Pour(realIp, 1) {
