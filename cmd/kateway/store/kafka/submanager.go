@@ -23,7 +23,7 @@ func newSubManager() *subManager {
 	}
 }
 
-func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr string,
+func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, realIp string,
 	resetOffset string, permitStandby bool) (cg *consumergroup.ConsumerGroup, err error) {
 	// find consumger group from cache
 	var present bool
@@ -82,7 +82,7 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr stri
 	}
 
 	// runs in serial
-	cg, err = consumergroup.JoinConsumerGroup(group, []string{topic},
+	cg, err = consumergroup.JoinConsumerGroupRealIp(realIp, group, []string{topic},
 		meta.Default.ZkAddrs(), cf)
 	if err == nil {
 		this.clientMap[remoteAddr] = cg
