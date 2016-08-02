@@ -61,9 +61,10 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
 	}
 
 	if Options.EnableHttpPanicRecover {
-		this.router.PanicHandler = func(w http.ResponseWriter,
-			r *http.Request, err interface{}) {
-			log.Error("%s %s(%s) %s %s: %+v", this.name, r.RemoteAddr, getHttpRemoteIp(r), r.Method, r.RequestURI, err)
+		this.router.PanicHandler = func(w http.ResponseWriter, r *http.Request, err interface{}) {
+			log.Error("PANIC %s %s(%s) %s %s: %+v", this.name, r.RemoteAddr, getHttpRemoteIp(r), r.Method, r.RequestURI, err)
+
+			writeServerError(w, http.StatusText(http.StatusInternalServerError))
 		}
 	}
 
