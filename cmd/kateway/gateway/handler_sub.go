@@ -167,7 +167,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	}
 
 	fetcherIp := ""
-	if !strings.HasPrefix(r.RemoteAddr, realIp) {
+	if !strings.HasPrefix(r.RemoteAddr[:strings.LastIndexByte(r.RemoteAddr, ':')], realIp) {
 		// proxy mode
 		fetcherIp = realIp
 	}
