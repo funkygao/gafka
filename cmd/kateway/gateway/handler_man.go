@@ -73,14 +73,6 @@ func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, par
 	w.Write(b)
 }
 
-// GET /v1/clients
-func (this *manServer) clientsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	log.Info("clients %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
-
-	b, _ := json.Marshal(this.gw.clientStates.Export())
-	w.Write(b)
-}
-
 // GET /v1/clusters
 func (this *manServer) clustersHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	log.Info("clusters %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
@@ -100,10 +92,6 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	switch option {
 	case "debug":
 		Options.Debug = boolVal
-
-	case "clients":
-		Options.EnableClientStats = boolVal
-		this.gw.clientStates.Reset()
 
 	case "nometrics":
 		Options.DisableMetrics = boolVal

@@ -58,17 +58,14 @@ type Gateway struct {
 	subServer *subServer
 	manServer *manServer
 	debugMux  *http.ServeMux
-
-	clientStates *ClientStates
 }
 
 func New(id string) *Gateway {
 	this := &Gateway{
-		id:           id,
-		shutdownCh:   make(chan struct{}),
-		certFile:     Options.CertFile,
-		keyFile:      Options.KeyFile,
-		clientStates: NewClientStates(),
+		id:         id,
+		shutdownCh: make(chan struct{}),
+		certFile:   Options.CertFile,
+		keyFile:    Options.KeyFile,
 	}
 
 	this.zkzone = gzk.NewZkZone(gzk.DefaultConfig(Options.Zone, ctx.ZoneZkAddrs(Options.Zone)))

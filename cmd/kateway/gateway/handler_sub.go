@@ -34,10 +34,6 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		err        error
 	)
 
-	if Options.EnableClientStats {
-		this.gw.clientStates.RegisterSubClient(r)
-	}
-
 	query := r.URL.Query()
 	group = query.Get("group")
 	reset = query.Get("reset")

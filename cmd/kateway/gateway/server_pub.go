@@ -67,8 +67,4 @@ func (this *pubServer) onConnClose(c net.Conn) {
 	if this.gw != nil && !Options.DisableMetrics {
 		this.gw.svrMetrics.ConcurrentPub.Dec(1)
 	}
-
-	if Options.EnableClientStats {
-		this.gw.clientStates.UnregisterPubClient(c.RemoteAddr().String())
-	}
 }

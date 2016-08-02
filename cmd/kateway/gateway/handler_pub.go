@@ -28,10 +28,6 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		t1           = time.Now()
 	)
 
-	if Options.EnableClientStats { // TODO enable pub or sub client stats
-		this.gw.clientStates.RegisterPubClient(r)
-	}
-
 	realIp := getHttpRemoteIp(r)
 	if Options.Ratelimit && !this.throttlePub.Pour(realIp, 1) {
 		log.Warn("pub[%s] %s(%s) rate limit reached: %d/s", appid, r.RemoteAddr, realIp, Options.PubQpsLimit)

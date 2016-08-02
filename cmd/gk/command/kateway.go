@@ -10,7 +10,6 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"sort"
 	"strings"
 	"time"
 
@@ -37,7 +36,6 @@ type Kateway struct {
 	longFmt      bool
 	install      bool
 	resetCounter string
-	listClients  bool
 	visualLog    string
 	sign         string
 	checkup      bool
@@ -57,7 +55,6 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.sign, "sign", "", "")
 	cmdFlags.StringVar(&this.resetCounter, "reset", "", "")
 	cmdFlags.BoolVar(&this.versionOnly, "ver", false, "")
-	cmdFlags.BoolVar(&this.listClients, "clients", false, "")
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "", "")
 	cmdFlags.StringVar(&this.visualLog, "visualog", "", "")
 	cmdFlags.BoolVar(&this.checkup, "checkup", false, "")
@@ -257,24 +254,6 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 				this.Ui.Output(this.getKatewayStatus(kw.ManAddr))
 			}
 
-			if this.listClients {
-				clients := this.getClientsInfo(kw.ManAddr)
-				this.Ui.Output("    pub clients:")
-				pubClients := clients["pub"]
-				sort.Strings(pubClients)
-				for _, client := range pubClients {
-					// pub client in blue
-					this.Ui.Output(color.Blue("      %s", client))
-				}
-
-				this.Ui.Output("    sub clients:")
-				subClients := clients["sub"]
-				sort.Strings(subClients)
-				for _, client := range subClients {
-					// sub client in
-					this.Ui.Output(color.Yellow("      %s", client))
-				}
-			}
 		}
 
 	})
@@ -355,18 +334,6 @@ output {
 		`))
 	this.Ui.Info("chkconfig --add logstash")
 	this.Ui.Info("/etc/init.d/logstash start")
-}
-
-func (this *Kateway) getClientsInfo(url string) map[string][]string {
-	url = fmt.Sprintf("http://%s/v1/clients", url)
-	body, err := this.callHttp(url, "GET")
-	if err != nil {
-		return nil
-	}
-
-	var v map[string][]string
-	json.Unmarshal(body, &v)
-	return v
 }
 
 func (this Kateway) getKatewayStatus(url string) string {
@@ -557,10 +524,7 @@ Options:
 
     -id kateway id
       Execute on a single kateway instance. By default, apply on all
-
-    -clients
-      List online pub/sub clients
-
+  
     -l
       Use a long listing format
    
@@ -570,7 +534,7 @@ Options:
     -reset metrics name
       Reset kateway metric counter by name
     
-    -option <debug|clients|gzip|accesslog|punish|loglevel|dryrun|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|val>
+    -option <debug|gzip|accesslog|punish|loglevel|dryrun|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|val>
       Set kateway options value
       e,g.
       dryrun=<appid.topic.ver|clear>
