@@ -258,3 +258,10 @@ func BenchmarkLogAppend(b *testing.B) {
 	b.SetBytes(int64(sz))
 	os.Remove("log.log")
 }
+
+// 4.79 ns/op
+func BenchmarkStringsHasPrefix(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = strings.HasPrefix("192.168.10.135:121212", "192.168.10.135")
+	}
+}
