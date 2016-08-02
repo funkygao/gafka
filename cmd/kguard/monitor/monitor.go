@@ -54,7 +54,7 @@ func (this *Monitor) Init() {
 	flag.Parse()
 
 	if zone == "" || this.influxdbDbName == "" || this.influxdbAddr == "" {
-		panic("run help ")
+		panic("zone or influxdb empty, run help ")
 	}
 
 	ctx.LoadFromHome()
