@@ -27,5 +27,6 @@ func (this *Config) ZkServers() []string {
 
 func DefaultZkSessionTimeout() time.Duration {
 	// online zk tickTime=2000, valid timeout: 4s ~ 40s
+	// io timeout: 13s  ping interval: 6.5s
 	return time.Second * 20
 }
