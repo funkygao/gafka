@@ -275,15 +275,20 @@ func (this *Gateway) Start() (err error) {
 		this.manServer.Start()
 	}
 	if this.pubServer != nil {
-		if err := store.DefaultPubStore.Start(); err != nil {
+		if err = store.DefaultPubStore.Start(); err != nil {
 			panic(err)
 		}
 		log.Trace("pub store[%s] started", store.DefaultPubStore.Name())
 
+		if err = job.Default.Start(); err != nil {
+			panic(err)
+		}
+		log.Trace("job store[%s] started", job.Default.Name())
+
 		this.pubServer.Start()
 	}
 	if this.subServer != nil {
-		if err := store.DefaultSubStore.Start(); err != nil {
+		if err = store.DefaultSubStore.Start(); err != nil {
 			panic(err)
 		}
 		log.Trace("sub store[%s] started", store.DefaultSubStore.Name())
@@ -293,7 +298,7 @@ func (this *Gateway) Start() (err error) {
 
 	// the last thing is to register: notify others: come on baby!
 	if registry.Default != nil {
-		if err := registry.Default.Register(); err != nil {
+		if err = registry.Default.Register(); err != nil {
 			panic(err)
 		}
 
@@ -333,13 +338,17 @@ func (this *Gateway) ServeForever() {
 
 		this.accessLogger.Stop()
 
-		log.Trace("stopping pub store")
 		if store.DefaultPubStore != nil {
+			log.Trace("stopping pub store[%s]", store.DefaultPubStore.Name())
 			go store.DefaultPubStore.Stop()
 		}
-		log.Trace("stopping sub store")
 		if store.DefaultSubStore != nil {
+			log.Trace("stopping sub store[%s]", store.DefaultSubStore.Name())
 			go store.DefaultSubStore.Stop()
+		}
+		if job.Default != nil {
+			log.Trace("stopping job store[%s]", job.Default.Name())
+			job.Default.Stop()
 		}
 
 		log.Info("...waiting for services shutdown...")
@@ -351,13 +360,13 @@ func (this *Gateway) ServeForever() {
 
 		if telementry.Default != nil {
 			telementry.Default.Stop()
-			log.Trace("telementry stopped")
+			log.Trace("telementry[%s] stopped", telementry.Default.Name())
 		}
 
 		meta.Default.Stop()
-		log.Trace("meta store stopped")
+		log.Trace("meta store[%s] stopped", meta.Default.Name())
 		manager.Default.Stop()
-		log.Trace("manager store stopped")
+		log.Trace("manager store[%s] stopped", manager.Default.Name())
 
 		if this.zkzone != nil {
 			this.zkzone.Close()

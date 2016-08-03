@@ -21,7 +21,7 @@ func (this *mysqlStore) Delete(cluster, jobId int64) (err error) {
 }
 
 func (this *mysqlStore) Name() string {
-	return "mysqlStore"
+	return "mysql"
 }
 
 func (this *mysqlStore) Start() error {
