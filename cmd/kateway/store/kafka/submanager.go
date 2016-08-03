@@ -117,10 +117,10 @@ func (this *subManager) Stop() {
 	var wg sync.WaitGroup
 	for _, cg := range this.clientMap {
 		wg.Add(1)
-		go func() {
+		go func(cg *consumergroup.ConsumerGroup) {
 			cg.Close() // will commit inflight offsets
 			wg.Done()
-		}()
+		}(cg)
 	}
 
 	wg.Wait()
