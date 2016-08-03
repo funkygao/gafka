@@ -8,6 +8,7 @@ import (
 	"github.com/funkygao/assert"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/go-metrics"
+	"github.com/influxdata/influxdb/client"
 )
 
 func createRunner() *runner {
@@ -22,7 +23,9 @@ func TestDump(t *testing.T) {
 	g.Update(1)
 
 	r := createRunner()
-	t.Logf("%+v", r.export())
+	pts := make([]client.Point, 0, 1<<8)
+	r.export(&pts)
+	t.Logf("%+v", pts)
 }
 
 func TestExtractTags(t *testing.T) {

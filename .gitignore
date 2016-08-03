@@ -51,3 +51,8 @@ cmd/gk/gk
 misc/scripts
 prof/
 cmd/kateway/DEPLOY.md
+cmd/kateway/gateway/cover
+audit/
+cpuprof
+prof.mem
+access_log*

@@ -30,9 +30,9 @@ validate() {
     echo "validating..."
     check_gofmt
     if [ $GOVER -gt 4 ]; then
-        go test $(go list ./... | grep -v '/bench' | grep -v '/misc' | grep -v '/client') -ldflags "-X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
+        go test -cover $(go list ./... | grep -v '/bench' | grep -v '/demo' | grep -v '/misc' | grep -v '/client') -ldflags "-X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
     else
-        go test $(go list ./... | grep -v '/bench' | grep -v '/misc' | grep -v '/client') -ldflags "-X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
+        go test -cover $(go list ./... | grep -v '/bench' | grep -v '/demo' | grep -v '/misc' | grep -v '/client') -ldflags "-X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
     fi
 }
 

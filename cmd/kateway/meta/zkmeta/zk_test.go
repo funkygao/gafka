@@ -5,6 +5,7 @@ import (
 
 	"github.com/funkygao/assert"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/zk"
 )
 
 func init() {
@@ -12,8 +13,9 @@ func init() {
 }
 
 func TestAll(t *testing.T) {
-	cf := DefaultConfig("local")
-	z := New(cf)
+	zkzone := zk.NewZkZone(zk.DefaultConfig(ctx.DefaultZone(), ctx.ZoneZkAddrs(ctx.DefaultZone())))
+	defer zkzone.Close()
+	z := New(DefaultConfig(), zkzone)
 	z.Start()
 
 	assert.Equal(t, "/kafka_pubsub", z.ZkChroot("me"))
