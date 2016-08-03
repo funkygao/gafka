@@ -45,7 +45,7 @@ func main() {
 	if len(os.Args) > 1 {
 		// command given, convert alias
 		if alias, present := ctx.Alias(os.Args[1]); present {
-			cargs := make([]string, 0)
+			var cargs []string
 			cargs = append(cargs, strings.Split(alias, " ")...)
 			if len(os.Args) > 2 {
 				cargs = append(cargs, os.Args[2:]...)

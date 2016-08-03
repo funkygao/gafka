@@ -37,6 +37,7 @@ validate() {
 }
 
 show_usage() {
+    echo -e "build tool for gafka components"
     echo -e "`printf %-18s "Usage: $0"` [-h] help"
     echo -e "`printf %-18s ` [-f] enable fasthttp pub"
     echo -e "`printf %-18s ` [-g] enable gc compile output"
@@ -112,8 +113,8 @@ echo "compiling $TARGET"
 cd cmd/$TARGET
 check_gofmt
 if [ $QA == "yes" ]; then
-    go vet
-    golint
+    go vet ./...
+    golint ./...
     exit $?
 fi
 go generate ./...
