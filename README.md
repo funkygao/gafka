@@ -40,13 +40,12 @@ A full ecosystem that is built around kafka powered by golang.
     #========================================
     go get github.com/funkygao/gafka
     cd $GOPATH/src/github.com/funkygao/gafka
-    go get ./...
     ./build.sh -h
 
     #========================================
     # install gafka command 'gk'
     #========================================
-    ./build -i -t gk
+    ./build -it gk # go get dependencies manually
 
     #========================================
     # try the gafka command 'gk'
@@ -65,3 +64,4 @@ Currently gafka manages:
 - 10Billion messages per day
 - peak load
   - 0.6Million message per second
+
