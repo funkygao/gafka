@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/job"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
-	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/mpool"
 	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
@@ -94,7 +94,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	jobId, err := store.DefaultPubStore.AddJob(cluster,
+	jobId, err := job.Default.Add(cluster,
 		manager.Default.KafkaTopic(appid, topic, ver),
 		msg.Body, delay)
 	if err != nil {
@@ -155,7 +155,7 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if err := store.DefaultPubStore.DeleteJob(cluster, jobId); err != nil {
+	if err := job.Default.Delete(cluster, jobId); err != nil {
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %v",
 			appid, r.RemoteAddr, realIp, topic, ver, err)
 
