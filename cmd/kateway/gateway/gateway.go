@@ -134,7 +134,11 @@ func New(id string) *Gateway {
 
 		switch Options.JobStore {
 		case "mysql":
-			job.Default = jobmysql.New()
+			jm, err := jobmysql.New(id)
+			if err != nil {
+				panic(err)
+			}
+			job.Default = jm
 
 		case "dummy":
 			job.Default = jobdummy.New()
