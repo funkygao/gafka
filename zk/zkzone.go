@@ -110,19 +110,6 @@ func (this *ZkZone) ensureParentDirExists(path string) error {
 	return nil
 }
 
-func (this *ZkZone) KatewayDisqueAddrs() (map[string][]string, error) {
-	this.connectIfNeccessary()
-
-	data, _, err := this.conn.Get(KatewayDisquePath)
-	if err != nil {
-		return nil, err
-	}
-
-	r := make(map[string][]string)
-	err = json.Unmarshal(data, &r)
-	return r, err
-}
-
 func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 	this.connectIfNeccessary()
 

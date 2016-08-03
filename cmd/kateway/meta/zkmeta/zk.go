@@ -130,10 +130,6 @@ func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) int 
 	return c.OnlineConsumersCount(topic, group)
 }
 
-func (this *zkMetaStore) KatewayDisqueAddrs() (map[string][]string, error) {
-	return this.zkzone.KatewayDisqueAddrs()
-}
-
 func (this *zkMetaStore) TopicPartitions(cluster, topic string) []int32 {
 	clusterNotPresent := true
 

@@ -207,6 +207,7 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] deregister before web listener closed
 - [ ] github.com/funkygao/go-metrics/sample.go:151 heap
 - [ ] failure tolerance
   - pub breaker

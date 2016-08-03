@@ -21,7 +21,7 @@ type pubServer struct {
 
 func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubServer {
 	this := &pubServer{
-		webServer:   newWebServer("pub", httpAddr, httpsAddr, maxClients, gw),
+		webServer:   newWebServer("pub_server", httpAddr, httpsAddr, maxClients, gw),
 		throttlePub: ratelimiter.NewLeakyBuckets(Options.PubQpsLimit, time.Minute),
 	}
 	this.pubMetrics = NewPubMetrics(this.gw)
