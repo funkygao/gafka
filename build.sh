@@ -12,6 +12,7 @@ GCDEBUG="no"
 RACE="no"
 FASTHTTP="no"
 QA="no"
+GOSTATUS="no"
 VALIDATE="no"
 TARGET="gk"
 PREFIX=$GOPATH
@@ -47,11 +48,12 @@ show_usage() {
     echo -e "`printf %-18s ` [-p] install prefix path"
     echo -e "`printf %-18s ` [-q] quality assurance of code"
     echo -e "`printf %-18s ` [-r] enable data race detection"
+    echo -e "`printf %-18s ` [-s] gostatus checks dependent pkg status"
     echo -e "`printf %-18s ` [-v] validate"
     echo -e "`printf %-18s ` -t <target> `ls -Cm cmd`"
 }
 
-args=`getopt vqfgrhidlt:p: $*`
+args=`getopt vqfgrhidslt:p: $*`
 [ $? != 0 ] && echo "hs" && show_usage && exit 1
 
 set -- $args
@@ -72,6 +74,9 @@ do
           ;;
       -h): 
           show_usage; exit 0
+          ;;
+      -s) 
+          GOSTATUS="yes"; shift
           ;;
       -i) 
           INSTALL="yes"; shift
@@ -106,6 +111,10 @@ if [ $FASTHTTP == "yes" ]; then
 fi
 if [ $VALIDATE == "yes" ]; then
     validate
+fi
+if [ $GOSTATUS == "yes" ]; then
+    gostatus all
+    exit
 fi
 
 echo "compiling $TARGET"
