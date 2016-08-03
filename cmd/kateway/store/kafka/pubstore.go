@@ -190,7 +190,7 @@ func (this *pubStore) watchDeadPartitions() {
 				lastTopics[topic] = struct{}{}
 			}
 
-			for lastDeadTopic, _ := range lastTopics {
+			for lastDeadTopic := range lastTopics {
 				if _, present := deadPartitions[lastDeadTopic]; !present {
 					// this topic was marked dead last round, but this round it comes alive
 

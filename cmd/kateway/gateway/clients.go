@@ -112,7 +112,7 @@ func (this *ClientStates) Export() map[string][]string {
 	pubClients := this.pubClients
 	this.pubClientsLock.RUnlock()
 	r["pub"] = make([]string, 0, len(pubClients))
-	for realHostPort, _ := range pubClients {
+	for realHostPort := range pubClients {
 		r["pub"] = append(r["pub"], realHostPort)
 	}
 
@@ -120,7 +120,7 @@ func (this *ClientStates) Export() map[string][]string {
 	subClients := this.subClients
 	this.subClientsLock.RUnlock()
 	r["sub"] = make([]string, 0, len(subClients))
-	for realHostPort, _ := range subClients {
+	for realHostPort := range subClients {
 		r["sub"] = append(r["sub"], realHostPort)
 	}
 	return r

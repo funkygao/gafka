@@ -66,7 +66,7 @@ func (this *zkMetaStore) refreshTopologyCache() {
 
 	// remove dead clusters
 	cachedClusters := this.clusters
-	for cluster, _ := range cachedClusters {
+	for cluster := range cachedClusters {
 		if _, present := liveClusters[cluster]; !present {
 			delete(this.clusters, cluster)
 			delete(this.brokerList, cluster)
@@ -186,9 +186,9 @@ func (this *zkMetaStore) ZkChroot(cluster string) string {
 
 	if ok {
 		return c.Chroot()
-	} else {
-		return ""
 	}
+
+	return ""
 }
 
 func (this *zkMetaStore) Clusters() []map[string]string {
@@ -215,7 +215,7 @@ func (this *zkMetaStore) Clusters() []map[string]string {
 func (this *zkMetaStore) ClusterNames() []string {
 	this.mu.RLock()
 	r := make([]string, 0, len(this.clusters))
-	for name, _ := range this.clusters {
+	for name := range this.clusters {
 		r = append(r, name)
 	}
 	this.mu.RUnlock()

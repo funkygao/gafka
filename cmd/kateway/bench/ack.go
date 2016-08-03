@@ -56,10 +56,10 @@ func main() {
 			r.Partition = "-1"
 			r.Offset = "-1"
 			return nil
-		} else {
-			r.Offset = fmt.Sprintf("%d", offset+10)
-			log.Println("try error: commit too large offset")
 		}
+
+		r.Offset = fmt.Sprintf("%d", offset+10)
+		log.Println("try error: commit too large offset")
 
 		if i == 4 {
 			r.Offset = fmt.Sprintf("%d", offset-10)

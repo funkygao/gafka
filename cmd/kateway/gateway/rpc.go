@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -50,7 +49,7 @@ func (this *Gateway) callKateway(kw *zk.KatewayMeta, method string, uri string) 
 	response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		err = errors.New(fmt.Sprintf("%s[%s] -> %d %s", method, url, response.StatusCode, string(body)))
+		err = fmt.Errorf("%s[%s] -> %d %s", method, url, response.StatusCode, string(body))
 	}
 
 	return

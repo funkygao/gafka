@@ -117,9 +117,9 @@ func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 		if enabled, present := topics[topic]; present {
 			if enabled {
 				return nil
-			} else {
-				return manager.ErrDisabledTopic
 			}
+
+			return manager.ErrDisabledTopic
 		}
 	}
 

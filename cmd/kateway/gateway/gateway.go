@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	_ "expvar"
+	_ "expvar" // register /debug/vars HTTP handler
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/manager"

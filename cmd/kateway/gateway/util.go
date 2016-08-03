@@ -83,7 +83,7 @@ func topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
 		return nil, err
 	}
 	sortedGroups := make([]string, 0, len(consumersByGroup))
-	for grp, _ := range consumersByGroup {
+	for grp := range consumersByGroup {
 		sortedGroups = append(sortedGroups, grp)
 	}
 	sort.Strings(sortedGroups)

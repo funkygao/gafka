@@ -10,7 +10,6 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/gateway"
 )
 
-// Pub publish a keyed message to specified versioned topic.
 func (this *Client) AddTopic(cluster, appid, topic, ver string) (err error) {
 	var req *http.Request
 	var u url.URL

@@ -33,7 +33,7 @@ type Message struct {
 }
 
 func DecodeMessageSet(messageSet []byte) []Message {
-	r := make([]Message, 0)
+	var r []Message
 
 	idx := 0
 	for {
