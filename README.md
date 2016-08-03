@@ -18,11 +18,11 @@ A full ecosystem that is built around kafka powered by golang.
 
 - [zk](https://github.com/funkygao/gafka/tree/master/cmd/zk)
 
-  A handy zookeeper CLI that supports recursive query.
+  A handy zookeeper CLI that supports recursive operation without any dependency.
 
 - [kguard](https://github.com/funkygao/gafka/tree/master/cmd/kguard)
 
-  Kafka clusters body guard that emits health info to InfluxDB.
+  Kafka clusters body guard that emits health info to InfluxDB and exports key warnings to zabbix for alarming.
 
 ### Install
 
