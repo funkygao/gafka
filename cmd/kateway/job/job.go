@@ -15,10 +15,10 @@ type JobStore interface {
 	Stop()
 
 	// Add pub a schedulable message(job) synchronously.
-	Add(cluster, topic string, payload []byte, delay time.Duration) (jobId int64, err error)
+	Add(cluster, topic string, payload []byte, delay time.Duration) (jobId string, err error)
 
 	// DeleteJob removes a job by jobId.
-	Delete(cluster, jobId int64) (err error)
+	Delete(cluster, jobId string) (err error)
 }
 
 var Default JobStore

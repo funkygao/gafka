@@ -12,11 +12,11 @@ func New() job.JobStore {
 	return &mysqlStore{}
 }
 
-func (this *mysqlStore) Add(cluster, topic string, payload []byte, delay time.Duration) (jobId int64, err error) {
+func (this *mysqlStore) Add(cluster, topic string, payload []byte, delay time.Duration) (jobId string, err error) {
 	return
 }
 
-func (this *mysqlStore) Delete(cluster, jobId int64) (err error) {
+func (this *mysqlStore) Delete(cluster, jobId string) (err error) {
 	return
 }
 
