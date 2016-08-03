@@ -16,7 +16,7 @@ func (this *dummy) Add(cluster, topic string, payload []byte, delay time.Duratio
 	return
 }
 
-func (this *dummy) Delete(cluster, jobId string) (err error) {
+func (this *dummy) Delete(cluster, topic, jobId string) (err error) {
 	return
 }
 

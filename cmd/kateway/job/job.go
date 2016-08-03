@@ -18,7 +18,7 @@ type JobStore interface {
 	Add(cluster, topic string, payload []byte, delay time.Duration) (jobId string, err error)
 
 	// Delete removes a job by jobId.
-	Delete(cluster, jobId string) (err error)
+	Delete(cluster, topic, jobId string) (err error)
 }
 
 var Default JobStore

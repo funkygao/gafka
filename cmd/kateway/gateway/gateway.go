@@ -13,6 +13,7 @@ import (
 
 	_ "expvar" // register /debug/vars HTTP handler
 
+	"github.com/funkygao/fae/config"
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/job"
 	jobdummy "github.com/funkygao/gafka/cmd/kateway/job/dummy"
@@ -134,10 +135,20 @@ func New(id string) *Gateway {
 
 		switch Options.JobStore {
 		case "mysql":
-			jm, err := jobmysql.New(id)
+			var mcc = &config.ConfigMysql{}
+			b, err := this.zkzone.KatewayJobClusterConfig()
 			if err != nil {
 				panic(err)
 			}
+			if err = mcc.From(b); err != nil {
+				panic(err)
+			}
+			log.Debug("%+v", *mcc)
+			jm, err := jobmysql.New(id, mcc)
+			if err != nil {
+				panic(err)
+			}
+
 			job.Default = jm
 
 		case "dummy":
@@ -306,7 +317,7 @@ func (this *Gateway) Start() (err error) {
 			panic(err)
 		}
 
-		log.Info("gateway[%s:%s] ready, registered in %s", ctx.Hostname(), this.id,
+		log.Info("gateway[%s:%s] ready, registered in %s :-)", ctx.Hostname(), this.id,
 			registry.Default.Name())
 	} else {
 		log.Info("gateway[%s:%s] ready, unregistered", ctx.Hostname(), this.id)
@@ -351,8 +362,8 @@ func (this *Gateway) ServeForever() {
 			go store.DefaultSubStore.Stop()
 		}
 		if job.Default != nil {
-			log.Trace("stopping job store[%s]", job.Default.Name())
 			job.Default.Stop()
+			log.Trace("job store[%s] stopped", job.Default.Name())
 		}
 
 		log.Info("...waiting for services shutdown...")
@@ -369,6 +380,7 @@ func (this *Gateway) ServeForever() {
 
 		meta.Default.Stop()
 		log.Trace("meta store[%s] stopped", meta.Default.Name())
+
 		manager.Default.Stop()
 		log.Trace("manager store[%s] stopped", manager.Default.Name())
 

@@ -155,7 +155,7 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if err := job.Default.Delete(cluster, jobId); err != nil {
+	if err := job.Default.Delete(cluster, manager.Default.KafkaTopic(appid, topic, ver), jobId); err != nil {
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %v",
 			appid, r.RemoteAddr, realIp, topic, ver, err)
 
