@@ -16,8 +16,8 @@ s:
 	go run pubsub.go -c1 1 -c2 1 -mode sub -appid app2 -key xxx -subappid app1 -ep 10.1.114.159:9192 -topic foobar -group bench_go -batch 2000  -sleep 0s -debug=false
 
 sub:sub.go
-	go run sub.go -t foobar -mode sub -tag "hello"
-	#go run sub.go -t foobar -mode sub -sleep 1s
+	go run sub.go -t foobar -mode sub -sleep 1s
+	#go run sub.go -t foobar -mode sub -sleep 1s -tag hello
 
 kwsync:bench.go
 	@echo bench against kateway in sync pub mode
