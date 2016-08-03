@@ -125,6 +125,22 @@ func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
+func (this *ZkZone) KatewayJobClusterConfig() (data []byte, err error) {
+	this.connectIfNeccessary()
+
+	this.ensureParentDirExists(KatewayJobMysqlClusterPath)
+	data, _, err = this.conn.Get(KatewayJobMysqlClusterPath)
+	if err != nil {
+		if err == zk.ErrNoNode {
+			return nil, errors.New(fmt.Sprintf("please write mysql dsn in zk %s", KatewayJobMysqlClusterPath))
+		}
+
+		return
+	}
+
+	return
+}
+
 func (this *ZkZone) KguardInfos() ([]*KguardMeta, error) {
 	this.connectIfNeccessary()
 
