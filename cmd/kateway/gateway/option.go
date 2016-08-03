@@ -23,6 +23,7 @@ var (
 		ManHttpsAddr            string
 		DebugHttpAddr           string
 		Store                   string
+		JobStore                string
 		ManagerStore            string
 		PidFile                 string
 		CertFile                string
@@ -102,7 +103,8 @@ func ParseFlags() {
 	flag.StringVar(&Options.PidFile, "pid", "", "pid file")
 	flag.StringVar(&Options.KeyFile, "keyfile", "", "key file path")
 	flag.StringVar(&Options.DebugHttpAddr, "debughttp", "", "debug http bind addr")
-	flag.StringVar(&Options.Store, "store", "kafka", "backend store")
+	flag.StringVar(&Options.Store, "store", "kafka", "message underlying store")
+	flag.StringVar(&Options.JobStore, "jstore", "mysql", "job underlying store")
 	flag.StringVar(&Options.DummyCluster, "dummycluster", "me", "dummy store's cluster name")
 	flag.StringVar(&Options.ManagerStore, "mstore", "mysql", "store integration with manager")
 	flag.StringVar(&Options.ConfigFile, "conf", "", "config file, defaults $HOME/.gafka.cf")

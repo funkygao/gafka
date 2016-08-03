@@ -14,6 +14,9 @@ import (
 	_ "expvar" // register /debug/vars HTTP handler
 
 	"github.com/funkygao/gafka"
+	"github.com/funkygao/gafka/cmd/kateway/job"
+	jobdummy "github.com/funkygao/gafka/cmd/kateway/job/dummy"
+	jobmysql "github.com/funkygao/gafka/cmd/kateway/job/mysql"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	mandummy "github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	mandb "github.com/funkygao/gafka/cmd/kateway/manager/mysql"
@@ -126,7 +129,18 @@ func New(id string) *Gateway {
 			store.DefaultPubStore = storedummy.NewPubStore(&this.wg, Options.Debug)
 
 		default:
-			panic("invalid store")
+			panic("invalid message store")
+		}
+
+		switch Options.JobStore {
+		case "mysql":
+			job.Default = jobmysql.New()
+
+		case "dummy":
+			job.Default = jobdummy.New()
+
+		default:
+			panic("invalid job store")
 		}
 	}
 	if Options.SubHttpAddr != "" || Options.SubHttpsAddr != "" {
