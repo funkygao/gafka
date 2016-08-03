@@ -20,7 +20,7 @@ func init() {
 	})
 }
 
-// SubLag monitors aliveness of kateway cluster.
+// WatchSubLag monitors aliveness of kateway cluster.
 type WatchSubLag struct {
 	Zkzone *zk.ZkZone
 	Stop   <-chan struct{}
@@ -97,7 +97,7 @@ func (this *WatchSubLag) report() (lags, conflictGroups int) {
 				}
 
 				// record each group is consuming what topics
-				for topic, _ := range c.ConsumerZnode.Subscription {
+				for topic := range c.ConsumerZnode.Subscription {
 					if _, present := groupTopicsMap[group]; !present {
 						groupTopicsMap[group] = make(map[string]struct{}, 5)
 					}
@@ -148,7 +148,7 @@ func (this *WatchSubLag) report() (lags, conflictGroups int) {
 
 			// the same consumer group is consuming more than 1 topics
 			topicsLabel := make([]string, 0, len(topics))
-			for t, _ := range topics {
+			for t := range topics {
 				topicsLabel = append(topicsLabel, t)
 			}
 			sort.Strings(topicsLabel)

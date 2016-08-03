@@ -73,7 +73,7 @@ func (this *WatchBrokers) report() (dead, unregistered int64) {
 			}
 
 			if !foundInRoster {
-				unregistered += 1
+				unregistered++
 			}
 		}
 
@@ -89,7 +89,7 @@ func (this *WatchBrokers) report() (dead, unregistered int64) {
 			}
 
 			if !foundInLive {
-				dead += 1
+				dead++
 			}
 		}
 	})

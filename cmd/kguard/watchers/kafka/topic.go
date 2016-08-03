@@ -104,7 +104,7 @@ func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 				continue
 			}
 
-			topicsN += 1
+			topicsN++
 
 			for _, partitionId := range partions {
 				latestOffset, err := kfk.GetOffset(topic, partitionId,
@@ -115,7 +115,7 @@ func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 					continue
 				}
 
-				partitionN += 1
+				partitionN++
 				totalOffsets += latestOffset
 			}
 		}

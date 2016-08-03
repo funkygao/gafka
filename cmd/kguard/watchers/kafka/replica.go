@@ -91,7 +91,7 @@ func (this *WatchReplicas) report() (deadPartitions, outOfSyncPartitions int64) 
 
 			// some partitions are dead
 			if len(alivePartitions) != len(partions) {
-				deadPartitions += 1
+				deadPartitions++
 			}
 
 			for _, partitionID := range alivePartitions {
@@ -104,7 +104,7 @@ func (this *WatchReplicas) report() (deadPartitions, outOfSyncPartitions int64) 
 
 				isr, _, _ := zkcluster.Isr(topic, partitionID)
 				if len(isr) != len(replicas) {
-					outOfSyncPartitions += 1
+					outOfSyncPartitions++
 				}
 			}
 		}

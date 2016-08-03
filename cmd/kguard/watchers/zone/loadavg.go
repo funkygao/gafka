@@ -18,7 +18,7 @@ func init() {
 	})
 }
 
-// WatchZk watches all servers load avg within a zone.
+// WatchLoadAvg watches all servers load avg within a zone.
 // These includes kateway/kafka/zk/, etc.
 type WatchLoadAvg struct {
 	Stop <-chan struct{}

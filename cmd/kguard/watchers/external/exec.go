@@ -16,7 +16,7 @@ func init() {
 	})
 }
 
-// WatchZk watches external scripts stdout and feeds into influxdb.
+// WatchExec watches external scripts stdout and feeds into influxdb.
 type WatchExec struct {
 	Stop <-chan struct{}
 	Wg   *sync.WaitGroup

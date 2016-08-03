@@ -58,9 +58,9 @@ func (this *WatchConsumers) report() (online, offline int64) {
 	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		for _, cgInfo := range zkcluster.ConsumerGroups() {
 			if len(cgInfo) > 0 {
-				online += 1
+				online++
 			} else {
-				offline += 1
+				offline++
 			}
 		}
 	})

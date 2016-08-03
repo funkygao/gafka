@@ -75,7 +75,7 @@ func (this *WatchZk) collectMetrics() (received, conns, znodes, dead int64) {
 		n, _ = strconv.Atoi(stat.Znodes) // each node in zk should the same amount of znode
 		znodes = int64(n)
 		if stat.Mode == "" {
-			dead += 1
+			dead++
 		}
 	}
 
