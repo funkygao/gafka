@@ -13,6 +13,7 @@ import (
 )
 
 // POST /v1/jobs/:topic/:ver?delay=100s
+// TODO tag, partitionKey
 func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	t1 := time.Now()
 

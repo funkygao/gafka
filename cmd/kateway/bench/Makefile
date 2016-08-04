@@ -1,5 +1,9 @@
 bench:kwsync
 
+job:job.go
+	# job does not support tag
+	@go run job.go -step 1 -t foobar -c 1 -sz 50 -sleep 3s 
+
 pub:pub.go
 	@echo keep pub to kateway to check mem/thread leakeage
 	@go run pub.go -step 1 -t foobar -c 1 -sz 50 -tag hello -sleep 3s 

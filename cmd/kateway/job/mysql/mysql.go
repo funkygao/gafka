@@ -42,6 +42,10 @@ func New(id string, cf *config.ConfigMysql) (job.JobStore, error) {
 	}, nil
 }
 
+func (this *mysqlStore) CreateJob(cluster, topic string) (err error) {
+	return
+}
+
 func (this *mysqlStore) Add(cluster, topic string, payload []byte, delay time.Duration) (jobId string, err error) {
 	jid := this.nextId()
 	_, _, err = this.mc.Exec(cluster, topic, int(jid), sqlAdd, jid, payload)

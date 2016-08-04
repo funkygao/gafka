@@ -20,6 +20,10 @@ func (this *dummy) Delete(cluster, topic, jobId string) (err error) {
 	return
 }
 
+func (this *dummy) CreateJob(cluster, topic string) (err error) {
+	return
+}
+
 func (this *dummy) Name() string {
 	return "dummy"
 }
