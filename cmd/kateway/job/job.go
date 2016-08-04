@@ -15,13 +15,13 @@ type JobStore interface {
 	Stop()
 
 	// CreateJob creates a bucket where jobs will persist.
-	CreateJob(cluster, topic string) (err error)
+	CreateJob(appid, topic string) (err error)
 
 	// Add pubs a schedulable message(job) synchronously.
-	Add(cluster, topic string, payload []byte, delay time.Duration) (jobId string, err error)
+	Add(appid, topic string, payload []byte, delay time.Duration) (jobId string, err error)
 
 	// Delete removes a job by jobId.
-	Delete(cluster, topic, jobId string) (err error)
+	Delete(appid, topic, jobId string) (err error)
 }
 
 var Default JobStore

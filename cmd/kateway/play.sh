@@ -7,7 +7,7 @@
 zk create -p /kafka_pubsub
 gk clusters -z local -add me -p /kafka_pubsub
 gk clusters -z local -c me -s -public 1 -nickname me
-echo '{"shard_stategy":"standard","timeout":10000000000,"idle_timeout":0,"max_idle_conns":5,"max_conns":20,"breaker":{"FailureAllowance":5,"RetryTimeout":10000000000},"pools":{"me":{"pool":"me","host":"127.0.0.1","port":"3306","user":"root","pass":"","db":"pubsub","charset":"utf8"}}}' | zk set -p /_kateway/jobcluster
+echo '{"shard_stategy":"standard","timeout":10000000000,"global_pools":{"ShardLookup":true},"idle_timeout":14400000000000,"max_idle_conns":5,"max_conns":50,"breaker":{"FailureAllowance":10,"RetryTimeout":5000000000},"pools":{"AppShard1":{"pool":"AppShard1","host":"127.0.0.1","port":"3306","user":"root","pass":"","db":"pubsub","charset":"utf8"},"ShardLookup":{"pool":"ShardLookup","host":"127.0.0.1","port":"3306","user":"root","pass":"","db":"pubsub","charset":"utf8"}},"cache_store":"mem","cache_cap":1024,"cache_keyhash":false,"lookup_cache_max_items":1048576,"lookup_pool":"ShardLookup","default_lookup_table":"AppLookup"}' | zk set -p /_kateway/jobcluster
 
 # register a job
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9193/v1/jobs/me/app1/foobar/v1'

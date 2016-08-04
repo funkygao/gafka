@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"hash/adler32"
 	"io"
 	"net/http"
 	"time"
@@ -86,7 +87,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	cluster, found := manager.Default.LookupCluster(appid)
+	_, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
 			appid, r.RemoteAddr, realIp, topic, ver)
@@ -95,7 +96,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	jobId, err := job.Default.Add(cluster,
+	jobId, err := job.Default.Add(appid,
 		manager.Default.KafkaTopic(appid, topic, ver),
 		msg.Body, delay)
 	msg.Free()
@@ -108,6 +109,12 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 			appid, r.RemoteAddr, realIp, topic, ver, err)
 		writeServerError(w, err.Error())
 		return
+	}
+
+	if Options.AuditPub {
+		this.auditor.Trace("+job[%s] %s(%s) {topic:%s ver:%s UA:%s} vlen:%d h:%d",
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"),
+			msgLen, adler32.Checksum(msg.Body))
 	}
 
 	w.Header().Set(HttpHeaderJobId, jobId)
@@ -138,7 +145,7 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	cluster, found := manager.Default.LookupCluster(appid)
+	_, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
 			appid, r.RemoteAddr, realIp, topic, ver)
@@ -153,12 +160,17 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if err := job.Default.Delete(cluster, manager.Default.KafkaTopic(appid, topic, ver), jobId); err != nil {
+	if err := job.Default.Delete(appid, manager.Default.KafkaTopic(appid, topic, ver), jobId); err != nil {
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %v",
 			appid, r.RemoteAddr, realIp, topic, ver, err)
 
 		writeServerError(w, err.Error())
 		return
+	}
+
+	if Options.AuditPub {
+		this.auditor.Trace("-job[%s] %s(%s) {topic:%s ver:%s UA:%s jid:%s}",
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), jobId)
 	}
 
 	w.Write(ResponseOk)

@@ -12,15 +12,15 @@ func New() job.JobStore {
 	return &dummy{}
 }
 
-func (this *dummy) Add(cluster, topic string, payload []byte, delay time.Duration) (jobId string, err error) {
+func (this *dummy) Add(appid, topic string, payload []byte, delay time.Duration) (jobId string, err error) {
 	return
 }
 
-func (this *dummy) Delete(cluster, topic, jobId string) (err error) {
+func (this *dummy) Delete(appid, topic, jobId string) (err error) {
 	return
 }
 
-func (this *dummy) CreateJob(cluster, topic string) (err error) {
+func (this *dummy) CreateJob(appid, topic string) (err error) {
 	return
 }
 
