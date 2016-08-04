@@ -128,11 +128,11 @@ func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 func (this *ZkZone) KatewayJobClusterConfig() (data []byte, err error) {
 	this.connectIfNeccessary()
 
-	this.ensureParentDirExists(KatewayJobMysqlClusterPath)
-	data, _, err = this.conn.Get(KatewayJobMysqlClusterPath)
+	this.ensureParentDirExists(PubsubJobConfig)
+	data, _, err = this.conn.Get(PubsubJobConfig)
 	if err != nil {
 		if err == zk.ErrNoNode {
-			return nil, errors.New(fmt.Sprintf("please write mysql dsn in zk %s", KatewayJobMysqlClusterPath))
+			return nil, errors.New(fmt.Sprintf("please write mysql dsn in zk %s", PubsubJobConfig))
 		}
 
 		return
@@ -209,6 +209,13 @@ func (this *ZkZone) FlushKatewayMetrics(katewayId string, key string, data []byt
 	}
 
 	return err
+}
+
+func (this *ZkZone) CreateJob(cluster string, topic string) error {
+	this.connectIfNeccessary()
+
+	this.ensureParentDirExists(PubsubJobs)
+	return this.createZnode(PubsubJobs, []byte(cluster))
 }
 
 func (this *ZkZone) LoadKatewayMetrics(katewayId string, key string) ([]byte, error) {
