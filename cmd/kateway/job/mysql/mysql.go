@@ -57,7 +57,7 @@ func (this *mysqlStore) CreateJob(shardId int, appid, topic string) (err error) 
 		return
 	}
 
-	// create the job table
+	// create the job table and job histrory table
 	sql := fmt.Sprintf(`
 CREATE TABLE %s (
     app_id bigint unsigned NOT NULL DEFAULT 0,
@@ -71,6 +71,24 @@ CREATE TABLE %s (
 ) ENGINE = INNODB DEFAULT CHARSET utf8
 		`, table)
 	_, _, err = this.mc.Exec(AppPool, table, aid, sql)
+	if err != nil {
+		return
+	}
+
+	historyTable := table + "_history"
+	sql = fmt.Sprintf(`
+CREATE TABLE %s (
+    app_id bigint unsigned NOT NULL DEFAULT 0,
+    job_id bigint unsigned NOT NULL DEFAULT 0,
+    payload blob,
+    ctime timestamp NOT NULL DEFAULT 0,
+    due_time timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (app_id, job_id),
+    KEY(due_time),
+    KEY(ctime),
+) ENGINE = INNODB DEFAULT CHARSET utf8
+		`, historyTable)
+	_, _, err = this.mc.Exec(AppPool, historyTable, aid, sql)
 	return
 }
 
