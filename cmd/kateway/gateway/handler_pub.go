@@ -174,6 +174,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 			[]byte(partitionKey), msg.Body)
 	}
 
+	// in case of request panic, mem pool leakage
 	msg.Free()
 
 	if err != nil {
