@@ -76,7 +76,7 @@ CREATE TABLE %s (
 		return
 	}
 
-	historyTable := table + "_history"
+	historyTable := table + "_archive"
 	sql = fmt.Sprintf(`
 CREATE TABLE %s (
     app_id bigint unsigned NOT NULL DEFAULT 0,
@@ -84,6 +84,7 @@ CREATE TABLE %s (
     payload blob,
     ctime timestamp NOT NULL DEFAULT 0,
     due_time timestamp NULL DEFAULT NULL,
+    actor_id char(64) NOT NULL,
     PRIMARY KEY (app_id, job_id),
     KEY(due_time),
     KEY(ctime),
