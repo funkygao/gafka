@@ -58,6 +58,7 @@ func (this *mysqlStore) CreateJob(shardId int, appid, topic string) (err error) 
 	}
 
 	// create the job table and job histrory table
+	// in mysql InnoDB, blob is []byte while text is string, both length limit 1<<16(64KB)
 	sql := fmt.Sprintf(`
 CREATE TABLE %s (
     app_id bigint unsigned NOT NULL DEFAULT 0,
