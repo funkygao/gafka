@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+type JobItem struct {
+	AppId   int
+	JobId   int64
+	Payload []byte
+	DueTime time.Time
+}
+
 // JobStore is the backend storage layer for jobs(schedulable message).
 type JobStore interface {
 

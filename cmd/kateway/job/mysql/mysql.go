@@ -15,8 +15,8 @@ import (
 
 const (
 	lookupPool     = "ShardLookup"
-	appPool        = "AppShard"
 	appLookupTable = "AppLookup"
+	AppPool        = "AppShard"
 
 	sqlInsertAppLookup = "INSERT IGNORE INTO AppLookup(entityId, shardId, name, ctime) VALUES(?,?,?,?)"
 )
@@ -50,9 +50,9 @@ func New(id string, cf *config.ConfigMysql) (job.JobStore, error) {
 
 func (this *mysqlStore) CreateJob(shardId int, appid, topic string) (err error) {
 	// first, insert into app if not present
-	aid, table := this.app_id(appid), this.table(topic)
+	aid, table := App_id(appid), this.table(topic)
 	_, _, err = this.mc.Exec(lookupPool, appLookupTable, 0, sqlInsertAppLookup,
-		this.app_id(appid), shardId, appid, time.Now())
+		aid, shardId, appid, time.Now())
 	if err != nil {
 		return
 	}
@@ -70,17 +70,17 @@ CREATE TABLE %s (
     KEY(due_time)
 ) ENGINE = INNODB DEFAULT CHARSET utf8
 		`, table)
-	_, _, err = this.mc.Exec(appPool, table, aid, sql)
+	_, _, err = this.mc.Exec(AppPool, table, aid, sql)
 	return
 }
 
 func (this *mysqlStore) Add(appid, topic string, payload []byte, delay time.Duration) (jobId string, err error) {
 	jid := this.nextId()
-	table, aid := this.table(topic), this.app_id(appid)
+	table, aid := this.table(topic), App_id(appid)
 	t0 := time.Now()
 	t1 := t0.Add(delay)
 	sql := fmt.Sprintf("INSERT INTO %s(app_id, job_id, payload, ctime, due_time) VALUES(?,?,?,?,?)", table)
-	_, _, err = this.mc.Exec(appPool, table, aid, sql,
+	_, _, err = this.mc.Exec(AppPool, table, aid, sql,
 		aid, jid, payload, t0, t1)
 	jobId = strconv.FormatInt(jid, 10)
 	return
@@ -95,9 +95,9 @@ func (this *mysqlStore) Delete(appid, topic, jobId string) (err error) {
 	}
 
 	var affectedRows int64
-	table, aid := this.table(topic), this.app_id(appid)
+	table, aid := this.table(topic), App_id(appid)
 	sql := fmt.Sprintf("DELETE FROM %s WHERE app_id=? AND job_id=?", table)
-	affectedRows, _, err = this.mc.Exec(appPool, table, aid, sql,
+	affectedRows, _, err = this.mc.Exec(AppPool, table, aid, sql,
 		aid, jid)
 	if affectedRows == 0 {
 		err = job.ErrNothingDeleted
@@ -123,6 +123,7 @@ func (this *mysqlStore) table(topic string) string {
 	return strings.Replace(topic, ".", "_", -1)
 }
 
-func (this *mysqlStore) app_id(appid string) int {
+// App_id convert a string appid to hash int which is used to locate shard.
+func App_id(appid string) int {
 	return int(adler32.Checksum([]byte(appid)))
 }

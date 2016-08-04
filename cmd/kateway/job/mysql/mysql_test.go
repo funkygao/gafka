@@ -7,8 +7,7 @@ import (
 )
 
 func TestAppId(t *testing.T) {
-	m := mysqlStore{}
-	assert.Equal(t, 65601907, m.app_id("app1"))
+	assert.Equal(t, 65601907, App_id("app1"))
 }
 
 func TestTableName(t *testing.T) {
