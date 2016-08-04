@@ -2,6 +2,8 @@ package mpool
 
 import (
 	"errors"
+
+	log "github.com/funkygao/log4go"
 )
 
 var ErrorMessageOverflow = errors.New("message overflow")
@@ -30,6 +32,36 @@ var messagePool = []slabClass{
 	{maxSize: 256 << 10, ch: make(chan *Message, 1<<7)}, // 32MB  = 256K * 128
 }
 
+// NewMessage is the supported way to obtain a new Message.  This makes
+// use of a "slab allocator" which greatly reduces the load on the
+// garbage collector.
+func NewMessage(size int) *Message {
+	var ch chan *Message
+	for _, slabClass := range messagePool { // TODO binary search
+		if size <= slabClass.maxSize {
+			ch = slabClass.ch
+			size = slabClass.maxSize
+			break
+		}
+	}
+
+	var msg *Message
+	select {
+	case msg = <-ch:
+	default:
+		// message pool empty:
+		// too busy or size greater than largest slab class
+		log.Debug("allocating message memory pool: %dB", size)
+
+		msg = &Message{}
+		msg.slabSize = size
+		msg.bodyBuf = make([]byte, 0, msg.slabSize)
+	}
+
+	msg.Body = msg.bodyBuf
+	return msg
+}
+
 // Free decrements the reference count on a message, and releases its
 // resources if no further references remain.  While this is not
 // strictly necessary thanks to GC, doing so allows for the resources to
@@ -47,12 +79,15 @@ func (this *Message) Free() (recycled bool) {
 	select {
 	case ch <- this:
 	default:
-		// this slab class pool is full, silently drop
+		// should never happen
+		log.Critical("slab class[%d] full, silently drop", this.slabSize)
 	}
 
 	return true
 }
 
+// Reset resets the buffer to be empty, but it retains the underlying
+// storage for use by future writes.
 func (this *Message) Reset() {
 	this.offset = 0
 }
@@ -79,36 +114,4 @@ func (this *Message) Write(b []byte) error {
 	copy(this.Body[this.offset:], b)
 	this.offset += len(b)
 	return nil
-}
-
-func (this *Message) Bytes() []byte {
-	return this.Body[0:]
-}
-
-// NewMessage is the supported way to obtain a new Message.  This makes
-// use of a "slab allocator" which greatly reduces the load on the
-// garbage collector.
-func NewMessage(size int) *Message {
-	var msg *Message
-	var ch chan *Message
-	for _, slabClass := range messagePool { // TODO binary search
-		if size <= slabClass.maxSize {
-			ch = slabClass.ch
-			size = slabClass.maxSize
-			break
-		}
-	}
-
-	select {
-	case msg = <-ch:
-	default:
-		// message pool empty:
-		// too busy or size greater than largest slab class
-		msg = &Message{}
-		msg.slabSize = size
-		msg.bodyBuf = make([]byte, 0, msg.slabSize)
-	}
-
-	msg.Body = msg.bodyBuf
-	return msg
 }

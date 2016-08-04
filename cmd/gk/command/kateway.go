@@ -180,15 +180,6 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 				this.Ui.Output(fmt.Sprintf("zone[%s] manager db: %s",
 					color.Cyan(zkzone.Name()), mysqlDsn))
 			}
-
-			disques, err := zkzone.KatewayDisqueAddrs()
-			if err != nil {
-				this.Ui.Warn(fmt.Sprintf("kateway[%s] disque not set on zk:%s", zkzone.Name(),
-					zk.KatewayDisquePath))
-			} else {
-				this.Ui.Output(fmt.Sprintf("zone[%s]     disque: %+v",
-					color.Cyan(zkzone.Name()), disques))
-			}
 		}
 
 		kateways, err := zkzone.KatewayInfos()

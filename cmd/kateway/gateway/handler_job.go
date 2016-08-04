@@ -1,18 +1,20 @@
 package gateway
 
 import (
+	"hash/adler32"
 	"io"
 	"net/http"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/job"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
-	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/mpool"
 	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
 )
 
 // POST /v1/jobs/:topic/:ver?delay=100s
+// TODO tag, partitionKey
 func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	t1 := time.Now()
 
@@ -44,7 +46,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		writeBadRequest(w, "invalid content length")
 		return
 
-	case int64(msgLen) > Options.MaxPubSize:
+	case int64(msgLen) > Options.MaxJobSize:
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} too big content length: %d",
 			appid, r.RemoteAddr, realIp, topic, ver, msgLen)
 		writeBadRequest(w, ErrTooBigMessage.Error())
@@ -57,7 +59,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	lbr := io.LimitReader(r.Body, Options.MaxPubSize+1)
+	lbr := io.LimitReader(r.Body, Options.MaxJobSize+1)
 	msg := mpool.NewMessage(msgLen)
 	msg.Body = msg.Body[0:msgLen]
 	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
@@ -85,7 +87,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	cluster, found := manager.Default.LookupCluster(appid)
+	_, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
 			appid, r.RemoteAddr, realIp, topic, ver)
@@ -94,12 +96,11 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	jobId, err := store.DefaultPubStore.AddJob(cluster,
+	jobId, err := job.Default.Add(appid,
 		manager.Default.KafkaTopic(appid, topic, ver),
 		msg.Body, delay)
+	msg.Free()
 	if err != nil {
-		msg.Free() // defer is costly
-
 		if !Options.DisableMetrics {
 			this.pubMetrics.PubFail(appid, topic, ver)
 		}
@@ -110,7 +111,11 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	msg.Free()
+	if Options.AuditPub {
+		this.auditor.Trace("+job[%s] %s(%s) {topic:%s ver:%s UA:%s} vlen:%d h:%d",
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"),
+			msgLen, adler32.Checksum(msg.Body))
+	}
 
 	w.Header().Set(HttpHeaderJobId, jobId)
 	w.WriteHeader(http.StatusCreated)
@@ -140,7 +145,7 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	cluster, found := manager.Default.LookupCluster(appid)
+	_, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
 			appid, r.RemoteAddr, realIp, topic, ver)
@@ -155,12 +160,17 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if err := store.DefaultPubStore.DeleteJob(cluster, jobId); err != nil {
+	if err := job.Default.Delete(appid, manager.Default.KafkaTopic(appid, topic, ver), jobId); err != nil {
 		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %v",
 			appid, r.RemoteAddr, realIp, topic, ver, err)
 
 		writeServerError(w, err.Error())
 		return
+	}
+
+	if Options.AuditPub {
+		this.auditor.Trace("-job[%s] %s(%s) {topic:%s ver:%s UA:%s jid:%s}",
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), jobId)
 	}
 
 	w.Write(ResponseOk)

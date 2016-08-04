@@ -110,19 +110,6 @@ func (this *ZkZone) ensureParentDirExists(path string) error {
 	return nil
 }
 
-func (this *ZkZone) KatewayDisqueAddrs() (map[string][]string, error) {
-	this.connectIfNeccessary()
-
-	data, _, err := this.conn.Get(KatewayDisquePath)
-	if err != nil {
-		return nil, err
-	}
-
-	r := make(map[string][]string)
-	err = json.Unmarshal(data, &r)
-	return r, err
-}
-
 func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 	this.connectIfNeccessary()
 
@@ -136,6 +123,22 @@ func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 	}
 
 	return strings.TrimSpace(string(data)), nil
+}
+
+func (this *ZkZone) KatewayJobClusterConfig() (data []byte, err error) {
+	this.connectIfNeccessary()
+
+	this.ensureParentDirExists(KatewayJobMysqlClusterPath)
+	data, _, err = this.conn.Get(KatewayJobMysqlClusterPath)
+	if err != nil {
+		if err == zk.ErrNoNode {
+			return nil, errors.New(fmt.Sprintf("please write mysql dsn in zk %s", KatewayJobMysqlClusterPath))
+		}
+
+		return
+	}
+
+	return
 }
 
 func (this *ZkZone) KguardInfos() ([]*KguardMeta, error) {

@@ -23,6 +23,7 @@ var (
 		ManHttpsAddr            string
 		DebugHttpAddr           string
 		Store                   string
+		JobStore                string
 		ManagerStore            string
 		PidFile                 string
 		CertFile                string
@@ -52,6 +53,7 @@ var (
 		EnableRegistry          bool
 		HttpHeaderMaxBytes      int
 		MaxPubSize              int64
+		MaxJobSize              int64
 		LogRotateSize           int
 		MaxMsgTagLen            int
 		MinPubSize              int
@@ -102,7 +104,8 @@ func ParseFlags() {
 	flag.StringVar(&Options.PidFile, "pid", "", "pid file")
 	flag.StringVar(&Options.KeyFile, "keyfile", "", "key file path")
 	flag.StringVar(&Options.DebugHttpAddr, "debughttp", "", "debug http bind addr")
-	flag.StringVar(&Options.Store, "store", "kafka", "backend store")
+	flag.StringVar(&Options.Store, "store", "kafka", "message underlying store")
+	flag.StringVar(&Options.JobStore, "jstore", "mysql", "job underlying store")
 	flag.StringVar(&Options.DummyCluster, "dummycluster", "me", "dummy store's cluster name")
 	flag.StringVar(&Options.ManagerStore, "mstore", "mysql", "store integration with manager")
 	flag.StringVar(&Options.ConfigFile, "conf", "", "config file, defaults $HOME/.gafka.cf")
@@ -127,6 +130,7 @@ func ParseFlags() {
 	flag.BoolVar(&Options.DisableMetrics, "metricsoff", false, "disable metrics reporter")
 	flag.IntVar(&Options.HttpHeaderMaxBytes, "maxheader", 4<<10, "http header max size in bytes")
 	flag.Int64Var(&Options.MaxPubSize, "maxpub", 512<<10, "max Pub message size")
+	flag.Int64Var(&Options.MaxJobSize, "maxjob", 16<<10, "max Pub job size")
 	flag.IntVar(&Options.MinPubSize, "minpub", 1, "min Pub message size")
 	flag.IntVar(&Options.MaxRequestPerConn, "maxreq", -1, "max request per connection")
 	flag.IntVar(&Options.MaxMsgTagLen, "tagsz", 1024, "max message tag length permitted")

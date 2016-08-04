@@ -8,10 +8,10 @@ const (
 	clusterRoot     = "/_kafka_clusters"
 	clusterInfoRoot = "/_kafa_clusters_info"
 
-	KatewayIdsRoot     = "/_kateway/ids"
-	katewayMetricsRoot = "/_kateway/metrics"
-	KatewayMysqlPath   = "/_kateway/mysql"
-	KatewayDisquePath  = "/_kateway/disque"
+	KatewayIdsRoot             = "/_kateway/ids"
+	katewayMetricsRoot         = "/_kateway/metrics"
+	KatewayMysqlPath           = "/_kateway/mysql"
+	KatewayJobMysqlClusterPath = "/_kateway/jobcluster"
 
 	KguardLeaderPath = "_kguard/leader"
 

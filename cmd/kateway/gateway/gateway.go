@@ -13,7 +13,11 @@ import (
 
 	_ "expvar" // register /debug/vars HTTP handler
 
+	"github.com/funkygao/fae/config"
 	"github.com/funkygao/gafka"
+	"github.com/funkygao/gafka/cmd/kateway/job"
+	jobdummy "github.com/funkygao/gafka/cmd/kateway/job/dummy"
+	jobmysql "github.com/funkygao/gafka/cmd/kateway/job/mysql"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	mandummy "github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	mandb "github.com/funkygao/gafka/cmd/kateway/manager/mysql"
@@ -126,7 +130,32 @@ func New(id string) *Gateway {
 			store.DefaultPubStore = storedummy.NewPubStore(&this.wg, Options.Debug)
 
 		default:
-			panic("invalid store")
+			panic("invalid message store")
+		}
+
+		switch Options.JobStore {
+		case "mysql":
+			var mcc = &config.ConfigMysql{}
+			b, err := this.zkzone.KatewayJobClusterConfig()
+			if err != nil {
+				panic(err)
+			}
+			if err = mcc.From(b); err != nil {
+				panic(err)
+			}
+			log.Debug("%+v", *mcc)
+			jm, err := jobmysql.New(id, mcc)
+			if err != nil {
+				panic(err)
+			}
+
+			job.Default = jm
+
+		case "dummy":
+			job.Default = jobdummy.New()
+
+		default:
+			panic("invalid job store")
 		}
 	}
 	if Options.SubHttpAddr != "" || Options.SubHttpsAddr != "" {
@@ -261,15 +290,20 @@ func (this *Gateway) Start() (err error) {
 		this.manServer.Start()
 	}
 	if this.pubServer != nil {
-		if err := store.DefaultPubStore.Start(); err != nil {
+		if err = store.DefaultPubStore.Start(); err != nil {
 			panic(err)
 		}
 		log.Trace("pub store[%s] started", store.DefaultPubStore.Name())
 
+		if err = job.Default.Start(); err != nil {
+			panic(err)
+		}
+		log.Trace("job store[%s] started", job.Default.Name())
+
 		this.pubServer.Start()
 	}
 	if this.subServer != nil {
-		if err := store.DefaultSubStore.Start(); err != nil {
+		if err = store.DefaultSubStore.Start(); err != nil {
 			panic(err)
 		}
 		log.Trace("sub store[%s] started", store.DefaultSubStore.Name())
@@ -279,11 +313,11 @@ func (this *Gateway) Start() (err error) {
 
 	// the last thing is to register: notify others: come on baby!
 	if registry.Default != nil {
-		if err := registry.Default.Register(); err != nil {
+		if err = registry.Default.Register(); err != nil {
 			panic(err)
 		}
 
-		log.Info("gateway[%s:%s] ready, registered in %s", ctx.Hostname(), this.id,
+		log.Info("gateway[%s:%s] ready, registered in %s :-)", ctx.Hostname(), this.id,
 			registry.Default.Name())
 	} else {
 		log.Info("gateway[%s:%s] ready, unregistered", ctx.Hostname(), this.id)
@@ -319,13 +353,17 @@ func (this *Gateway) ServeForever() {
 
 		this.accessLogger.Stop()
 
-		log.Trace("stopping pub store")
 		if store.DefaultPubStore != nil {
+			log.Trace("stopping pub store[%s]", store.DefaultPubStore.Name())
 			go store.DefaultPubStore.Stop()
 		}
-		log.Trace("stopping sub store")
 		if store.DefaultSubStore != nil {
+			log.Trace("stopping sub store[%s]", store.DefaultSubStore.Name())
 			go store.DefaultSubStore.Stop()
+		}
+		if job.Default != nil {
+			job.Default.Stop()
+			log.Trace("job store[%s] stopped", job.Default.Name())
 		}
 
 		log.Info("...waiting for services shutdown...")
@@ -337,13 +375,14 @@ func (this *Gateway) ServeForever() {
 
 		if telementry.Default != nil {
 			telementry.Default.Stop()
-			log.Trace("telementry stopped")
+			log.Trace("telementry[%s] stopped", telementry.Default.Name())
 		}
 
 		meta.Default.Stop()
-		log.Trace("meta store stopped")
+		log.Trace("meta store[%s] stopped", meta.Default.Name())
+
 		manager.Default.Stop()
-		log.Trace("manager store stopped")
+		log.Trace("manager store[%s] stopped", manager.Default.Name())
 
 		if this.zkzone != nil {
 			this.zkzone.Close()

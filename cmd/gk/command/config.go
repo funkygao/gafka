@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gocli"
 )
 
@@ -19,12 +18,10 @@ type Config struct {
 
 func (this *Config) Run(args []string) (exitCode int) {
 	var (
-		showAliases      bool
 		bashAutocomplete bool
 	)
 	cmdFlags := flag.NewFlagSet("config", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.BoolVar(&showAliases, "alias", false, "")
 	cmdFlags.BoolVar(&bashAutocomplete, "auto", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -37,15 +34,6 @@ func (this *Config) Run(args []string) (exitCode int) {
 		this.Ui.Info("next:")
 		this.Ui.Warn("yum install -y bash-completion")
 		this.Ui.Warn("source /etc/bash_completion.d/gk")
-		return
-	}
-
-	if showAliases {
-		this.Ui.Output("Active aliases:")
-		for _, cmd := range ctx.Aliases() {
-			alias, _ := ctx.Alias(cmd)
-			this.Ui.Output(fmt.Sprintf("%10s = %s", cmd, alias))
-		}
 		return
 	}
 
@@ -73,10 +61,7 @@ Usage: %s config [options]
 Options:
 
     -auto
-      Install gk bash autocomplete script.
-   
-    -alias
-      Display active aliases.
+      Install gk bash autocomplete script.  
 
 `, this.Cmd, this.Cmd)
 	return strings.TrimSpace(help)

@@ -123,6 +123,7 @@ cd cmd/$TARGET
 check_gofmt
 if [ $QA == "yes" ]; then
     go vet ./...
+    go install github.com/golang/lint/golint
     golint ./...
     exit $?
 fi

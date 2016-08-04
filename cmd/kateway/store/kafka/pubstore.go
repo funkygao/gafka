@@ -27,9 +27,6 @@ type pubStore struct {
 	pubPoolsLock    sync.RWMutex
 	idleTimeout     time.Duration
 
-	jobPools     map[string]*jobPool // key is cluster
-	jobPoolsLock sync.RWMutex
-
 	// to avoid too frequent refresh
 	// TODO refresh by cluster: current implementation will refresh zone
 	lastRefreshedAt time.Time
@@ -48,7 +45,6 @@ func NewPubStore(poolCapcity int, idleTimeout time.Duration, compress bool,
 		idleTimeout:     idleTimeout,
 		pubPoolsCapcity: poolCapcity,
 		pubPools:        make(map[string]*pubPool),
-		jobPools:        make(map[string]*jobPool),
 		wg:              wg,
 		dryRun:          dryRun,
 		shutdownCh:      make(chan struct{}),
@@ -67,9 +63,6 @@ func (this *pubStore) Start() (err error) {
 		this.pubPools[cluster] = newPubPool(this, cluster,
 			meta.Default.BrokerList(cluster), this.pubPoolsCapcity)
 	}
-
-	// TODO watch KatewayDisqueAddrs znode
-	this.refreshJobPoolNodes()
 
 	go func() {
 		defer this.wg.Done()
@@ -101,40 +94,11 @@ func (this *pubStore) Stop() {
 	close(this.shutdownCh)
 }
 
-func (this *pubStore) refreshJobPoolNodes() {
-	if disqueAddrs, err := meta.Default.KatewayDisqueAddrs(); err == nil {
-		log.Debug("disques: %+v", disqueAddrs)
-
-		for cluster, addrs := range disqueAddrs {
-			if _, present := this.jobPools[cluster]; !present {
-				// found a new cluster of disque
-				this.jobPools[cluster] = newJobPool(cluster, addrs)
-				if e := this.jobPools[cluster].RefreshNodes(); e != nil {
-					log.Error("disque[%s] refresh nodes: %v", cluster, e)
-
-					// unload this problemetic cluster
-					delete(this.jobPools, cluster)
-				}
-			} else {
-				this.jobPools[cluster].RefreshNodes()
-			}
-		}
-	} else {
-		// just log, still using the current pools
-		log.Error("disque addrs fetch: %v", err)
-	}
-}
-
 func (this *pubStore) doRefresh() {
 	if time.Since(this.lastRefreshedAt) <= time.Second*5 {
 		log.Warn("ignored too frequent refresh: %s", time.Since(this.lastRefreshedAt))
 		return
 	}
-
-	// job pools
-	this.jobPoolsLock.Lock()
-	this.refreshJobPoolNodes()
-	this.jobPoolsLock.Unlock()
 
 	this.pubPoolsLock.Lock()
 	defer this.pubPoolsLock.Unlock()

@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	internPool sync.Pool = sync.Pool{
+	internPool = sync.Pool{
 		New: func() interface{} {
 			return make(map[string]string)
 		},

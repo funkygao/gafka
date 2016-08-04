@@ -15,7 +15,7 @@ type manServer struct {
 
 func newManServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *manServer {
 	this := &manServer{
-		webServer:        newWebServer("man", httpAddr, httpsAddr, maxClients, gw),
+		webServer:        newWebServer("man_server", httpAddr, httpsAddr, maxClients, gw),
 		throttleAddTopic: ratelimiter.NewLeakyBuckets(60, time.Minute),
 	}
 
