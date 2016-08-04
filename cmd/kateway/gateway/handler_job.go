@@ -15,11 +15,21 @@ import (
 
 // POST /v1/jobs/:topic/:ver?delay=100s
 // TODO tag, partitionKey
+// TODO use dedicated metrics
 func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	t1 := time.Now()
-
-	appid := r.Header.Get(HttpHeaderAppid)
 	realIp := getHttpRemoteIp(r)
+	appid := r.Header.Get(HttpHeaderAppid)
+
+	delayParam := r.URL.Query().Get("delay")
+	delay, err := time.ParseDuration(delayParam)
+	if err != nil {
+		log.Error("+job[%s] %s(%s) %s: %s", appid, r.RemoteAddr, realIp, delayParam, err)
+
+		writeBadRequest(w, "invalid delay format")
+		return
+	}
+
 	if Options.Ratelimit && !this.throttlePub.Pour(realIp, 1) {
 		log.Warn("+job[%s] %s(%s) rate limit reached", appid, r.RemoteAddr, realIp)
 
@@ -81,15 +91,9 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		this.pubMetrics.PubMsgSize.Update(int64(len(msg.Body)))
 	}
 
-	delay, err := time.ParseDuration(r.URL.Query().Get("delay"))
-	if err != nil {
-		writeBadRequest(w, "invalid delay format")
-		return
-	}
-
 	_, found := manager.Default.LookupCluster(appid)
 	if !found {
-		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
+		log.Error("+job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
 			appid, r.RemoteAddr, realIp, topic, ver)
 
 		writeBadRequest(w, "invalid appid")
@@ -131,14 +135,14 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 	}
 }
 
-// DELETE /v1/jobs/:topic/:ver?id=D-1d13f5e8-9NVhoRqjowkLy6iTE/QnZw/l-05a1
+// DELETE /v1/jobs/:topic/:ver?id=22323
 func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	appid := r.Header.Get(HttpHeaderAppid)
 	topic := params.ByName(UrlParamTopic)
 	ver := params.ByName(UrlParamVersion)
 	realIp := getHttpRemoteIp(r)
 	if err := manager.Default.OwnTopic(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
-		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %s",
+		log.Error("-job[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, realIp, topic, ver, err)
 
 		writeAuthFailure(w, err)
@@ -147,7 +151,7 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 
 	_, found := manager.Default.LookupCluster(appid)
 	if !found {
-		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
+		log.Error("-job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
 			appid, r.RemoteAddr, realIp, topic, ver)
 
 		writeBadRequest(w, "invalid appid")
@@ -155,14 +159,14 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 	}
 
 	jobId := r.URL.Query().Get("id")
-	if len(jobId) < 30 { // jobId e,g. D-1d13f5e8-W6ZuLg2WVrIo6KblpXlycpze-05a1
+	if len(jobId) < 18 { // jobId e,g. 341647700585877504
 		writeBadRequest(w, "invalid job id")
 		return
 	}
 
 	if err := job.Default.Delete(appid, manager.Default.KafkaTopic(appid, topic, ver), jobId); err != nil {
-		log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s} %v",
-			appid, r.RemoteAddr, realIp, topic, ver, err)
+		log.Error("-job[%s] %s(%s) {topic:%s, ver:%s jid:%s} %v",
+			appid, r.RemoteAddr, realIp, topic, ver, jobId, err)
 
 		writeServerError(w, err.Error())
 		return

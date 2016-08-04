@@ -9,17 +9,16 @@ CREATE TABLE AppLookup (
     PRIMARY KEY (entityId)
 ) ENGINE = INNODB DEFAULT CHARSET=utf8;
 
-INSERT INTO AppLookup(entityId, shardId, name, shardLock, ctime) VALUES(1, 1, "demo", 0, now());
+INSERT INTO AppLookup(entityId, shardId, name, shardLock, ctime) VALUES(65601907, 1, "app1", 0, now());
 
 CREATE TABLE app1_foobar_v1 (
     app_id bigint unsigned NOT NULL DEFAULT 0,
     job_id bigint unsigned NOT NULL DEFAULT 0 COMMENT "",
-    time_start timestamp NOT NULL DEFAULT "0000-00-00 00:00:00" COMMENT "start time point of the event",
-    time_end timestamp NULL DEFAULT NULL COMMENT "end time point of the event",
     payload blob,
     ctime timestamp NOT NULL DEFAULT 0,
     mtime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    due_time timestamp NULL DEFAULT NULL COMMENT "end time point of the event",
     PRIMARY KEY (app_id, job_id),
-    KEY(time_end)
+    KEY(due_time)
 ) ENGINE = INNODB DEFAULT CHARSET utf8;
 

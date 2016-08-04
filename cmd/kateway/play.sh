@@ -22,14 +22,19 @@ cd cmd/kateway/bench
 make pub
 make sub
 
-# sub a topic
-curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/app1/foobar/v1?group=group1&reset=newest&limit=1'
-curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/app1/foobar/v1?group=group1'
+# pub a job
+curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hhhhhhhello world!' 'http://localhost:9191/v1/jobs/foobar/v1?delay=20m'
+# del a job
+curl -XDELETE -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9191/v1/jobs/foobar/v1?id=341659367487049728'
 
 # pub a topic
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hhhhhhhello world!' 'http://localhost:9191/v1/msgs/foobar/v1'
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hello world!' 'http://localhost:9191/v1/msgs/foobar/v1'
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d '@/Users/funky/gopkg/src/github.com/funkygao/fae/contrib/resources/dashboard.png' 'http://localhost:9191/v1/msgs/foobar/v1'
+
+# sub a topic
+curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/app1/foobar/v1?group=group1&reset=newest&limit=1'
+curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/app1/foobar/v1?group=group1'
 
 # raw sub
 curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9192/v1/raw/msgs/app1/foobar/v1?group=xx'

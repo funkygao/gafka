@@ -20,7 +20,7 @@ func (this *dummy) Delete(appid, topic, jobId string) (err error) {
 	return
 }
 
-func (this *dummy) CreateJob(appid, topic string) (err error) {
+func (this *dummy) CreateJob(shardId int, appid, topic string) (err error) {
 	return
 }
 

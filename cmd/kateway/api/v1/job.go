@@ -8,10 +8,11 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/funkygao/gafka/cmd/kateway/gateway"
 	"github.com/funkygao/gafka/mpool"
 )
 
-func (this *Client) AddJob(payload []byte, delay string, opt PubOption) (err error) {
+func (this *Client) AddJob(payload []byte, delay string, opt PubOption) (jobId string, err error) {
 	buf := mpool.BytesBufferGet()
 	defer mpool.BytesBufferPut(buf)
 
@@ -52,15 +53,17 @@ func (this *Client) AddJob(payload []byte, delay string, opt PubOption) (err err
 	response.Body.Close()
 
 	if response.StatusCode != http.StatusCreated {
-		return errors.New(string(b))
+		return "", errors.New(string(b))
 	}
+
+	jobId = response.Header.Get(gateway.HttpHeaderJobId)
 
 	if this.cf.Debug {
 		log.Printf("--> [%s]", response.Status)
-		log.Printf("JobId:%s", response.Header.Get("X-Offset"))
+		log.Printf("JobId:%s", response.Header.Get(gateway.HttpHeaderJobId))
 	}
 
-	return nil
+	return
 }
 
 func (this *Client) DeleteJob(jobId string, opt PubOption) (err error) {

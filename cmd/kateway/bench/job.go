@@ -70,6 +70,7 @@ func pubJobGatewayLoop(seq int) {
 	var opt api.PubOption
 	opt.Topic = topic
 	opt.Ver = "v1"
+	var jobId string
 	for {
 		sz = msgSize + rand.Intn(msgSize)
 		no = atomic.AddInt64(&n, 1)
@@ -81,13 +82,13 @@ func pubJobGatewayLoop(seq int) {
 			opt.Tag = tag
 		}
 
-		err = client.AddJob([]byte(msg), "1m", opt)
+		jobId, err = client.AddJob([]byte(msg), "1m", opt)
 		if err != nil {
 			fmt.Println(err)
 			no = atomic.AddInt64(&n, -1)
 		} else {
 			if no%step == 0 {
-				log.Println(msg)
+				log.Println(jobId, msg)
 			}
 		}
 
