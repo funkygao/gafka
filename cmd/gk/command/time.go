@@ -37,7 +37,7 @@ func (this *Time) timestampToTime(t string) time.Time {
 	i, err := strconv.ParseInt(t, 10, 64)
 	swallow(err)
 
-	if i > 1469686979 {
+	if i > 133761237100 {
 		// in ms
 		i = i / 1000
 	}
