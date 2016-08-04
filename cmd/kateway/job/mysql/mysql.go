@@ -39,7 +39,7 @@ func New(id string, cf *config.ConfigMysql) (job.JobStore, error) {
 	}, nil
 }
 
-func (this *mysqlStore) CreateJob(appid, topic string) (err error) {
+func (this *mysqlStore) CreateJob(shardId int, appid, topic string) (err error) {
 	return
 }
 
@@ -63,11 +63,11 @@ func (this *mysqlStore) Delete(appid, topic, jobId string) (err error) {
 		return
 	}
 
-	aid, _ := strconv.Atoi(appid)
+	aid := 1
 
 	table := this.table(topic)
 	sql := fmt.Sprintf("DELETE FROM %s WHERE app_id=? AND job_id=?", table)
-	_, _, err = this.mc.Exec(appid, table, aid, sql, appid, jid)
+	_, _, err = this.mc.Exec("AppShard", table, aid, sql, aid, jid)
 
 	return
 }

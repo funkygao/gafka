@@ -62,6 +62,7 @@ var (
 		MaxClients              int
 		MaxRequestPerConn       int // to make load balancer distribute request even for persistent conn
 		PubPoolCapcity          int
+		AssignJobShardId        int // how to assign shard id for new app
 		PubPoolIdleTimeout      time.Duration
 		SubTimeout              time.Duration
 		OffsetCommitInterval    time.Duration
@@ -133,6 +134,7 @@ func ParseFlags() {
 	flag.Int64Var(&Options.MaxJobSize, "maxjob", 16<<10, "max Pub job size")
 	flag.IntVar(&Options.MinPubSize, "minpub", 1, "min Pub message size")
 	flag.IntVar(&Options.MaxRequestPerConn, "maxreq", -1, "max request per connection")
+	flag.IntVar(&Options.AssignJobShardId, "shardid", 1, "how to assign shard id for new app")
 	flag.IntVar(&Options.MaxMsgTagLen, "tagsz", 1024, "max message tag length permitted")
 	// kafka Fetch maxFetchSize=1MB, so if our msg agv size is 250B, batch size can be 4000
 	flag.IntVar(&Options.MaxSubBatchSize, "maxbatch", 4000, "max sub batch size")

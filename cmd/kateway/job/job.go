@@ -15,7 +15,7 @@ type JobStore interface {
 	Stop()
 
 	// CreateJob creates a bucket where jobs will persist.
-	CreateJob(appid, topic string) (err error)
+	CreateJob(shardId int, appid, topic string) (err error)
 
 	// Add pubs a schedulable message(job) synchronously.
 	Add(appid, topic string, payload []byte, delay time.Duration) (jobId string, err error)

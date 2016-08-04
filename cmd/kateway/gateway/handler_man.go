@@ -106,6 +106,14 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	case "ratelimit":
 		Options.Ratelimit = boolVal
 
+	case "shardid":
+		shardId, err := strconv.Atoi(value)
+		if err != nil {
+			log.Error("invalid shard id[%s]: %v", value, err)
+		} else {
+			Options.AssignJobShardId = shardId
+		}
+
 	case "punish":
 		d, err := time.ParseDuration(value)
 		if err != nil {
@@ -277,9 +285,10 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 	log.Info("app[%s] %s(%s) create job: {appid:%s cluster:%s topic:%s ver:%s}",
 		appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver)
 
-	if err := job.Default.CreateJob(cluster, manager.Default.KafkaTopic(appid, topic, ver)); err != nil {
-		log.Error("app[%s] %s(%s) create job: {appid:%s cluster:%s topic:%s ver:%s} %v",
-			appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver, err)
+	if err := job.Default.CreateJob(Options.AssignJobShardId, cluster,
+		manager.Default.KafkaTopic(appid, topic, ver)); err != nil {
+		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s cluster:%s topic:%s ver:%s} %v",
+			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, cluster, topic, ver, err)
 
 		writeServerError(w, err.Error())
 	} else {
