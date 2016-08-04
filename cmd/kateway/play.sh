@@ -25,7 +25,7 @@ make sub
 # pub a job
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hhhhhhhello world!' 'http://localhost:9191/v1/jobs/foobar/v1?delay=20m'
 # del a job
-curl -XDELETE -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9191/v1/jobs/foobar/v1?id=341647700585877504'
+curl -XDELETE -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9191/v1/jobs/foobar/v1?id=341659367487049728'
 
 # pub a topic
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hhhhhhhello world!' 'http://localhost:9191/v1/msgs/foobar/v1'

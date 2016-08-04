@@ -9,7 +9,7 @@ CREATE TABLE AppLookup (
     PRIMARY KEY (entityId)
 ) ENGINE = INNODB DEFAULT CHARSET=utf8;
 
-INSERT INTO AppLookup(entityId, shardId, name, shardLock, ctime) VALUES(1, 1, "demo", 0, now());
+INSERT INTO AppLookup(entityId, shardId, name, shardLock, ctime) VALUES(65601907, 1, "app1", 0, now());
 
 CREATE TABLE app1_foobar_v1 (
     app_id bigint unsigned NOT NULL DEFAULT 0,
