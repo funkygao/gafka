@@ -174,11 +174,11 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 			[]byte(partitionKey), msg.Body)
 	}
 
+	msg.Free()
+
 	if err != nil {
 		log.Error("pub[%s] %s(%s) {topic:%s ver:%s} %s",
 			appid, r.RemoteAddr, realIp, topic, ver, err)
-
-		msg.Free() // defer is costly
 
 		if !Options.DisableMetrics {
 			this.pubMetrics.PubFail(appid, topic, ver)
@@ -188,7 +188,6 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
-	msg.Free()
 	w.Header().Set(HttpHeaderPartition, strconv.FormatInt(int64(partition), 10))
 	w.Header().Set(HttpHeaderOffset, strconv.FormatInt(offset, 10))
 	w.WriteHeader(http.StatusCreated)

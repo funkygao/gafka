@@ -53,6 +53,7 @@ var (
 		EnableRegistry          bool
 		HttpHeaderMaxBytes      int
 		MaxPubSize              int64
+		MaxJobSize              int64
 		LogRotateSize           int
 		MaxMsgTagLen            int
 		MinPubSize              int
@@ -129,6 +130,7 @@ func ParseFlags() {
 	flag.BoolVar(&Options.DisableMetrics, "metricsoff", false, "disable metrics reporter")
 	flag.IntVar(&Options.HttpHeaderMaxBytes, "maxheader", 4<<10, "http header max size in bytes")
 	flag.Int64Var(&Options.MaxPubSize, "maxpub", 512<<10, "max Pub message size")
+	flag.Int64Var(&Options.MaxJobSize, "maxjob", 16<<10, "max Pub job size")
 	flag.IntVar(&Options.MinPubSize, "minpub", 1, "min Pub message size")
 	flag.IntVar(&Options.MaxRequestPerConn, "maxreq", -1, "max request per connection")
 	flag.IntVar(&Options.MaxMsgTagLen, "tagsz", 1024, "max message tag length permitted")

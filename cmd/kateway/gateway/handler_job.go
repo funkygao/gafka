@@ -44,7 +44,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		writeBadRequest(w, "invalid content length")
 		return
 
-	case int64(msgLen) > Options.MaxPubSize:
+	case int64(msgLen) > Options.MaxJobSize:
 		log.Warn("+job[%s] %s(%s) {topic:%s, ver:%s} too big content length: %d",
 			appid, r.RemoteAddr, realIp, topic, ver, msgLen)
 		writeBadRequest(w, ErrTooBigMessage.Error())
@@ -57,7 +57,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	lbr := io.LimitReader(r.Body, Options.MaxPubSize+1)
+	lbr := io.LimitReader(r.Body, Options.MaxJobSize+1)
 	msg := mpool.NewMessage(msgLen)
 	msg.Body = msg.Body[0:msgLen]
 	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
@@ -97,9 +97,8 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 	jobId, err := job.Default.Add(cluster,
 		manager.Default.KafkaTopic(appid, topic, ver),
 		msg.Body, delay)
+	msg.Free()
 	if err != nil {
-		msg.Free() // defer is costly
-
 		if !Options.DisableMetrics {
 			this.pubMetrics.PubFail(appid, topic, ver)
 		}
@@ -109,8 +108,6 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		writeServerError(w, err.Error())
 		return
 	}
-
-	msg.Free()
 
 	w.Header().Set(HttpHeaderJobId, jobId)
 	w.WriteHeader(http.StatusCreated)
