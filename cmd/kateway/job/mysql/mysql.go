@@ -18,7 +18,7 @@ const (
 	appPool        = "AppShard"
 	appLookupTable = "AppLookup"
 
-	sqlInsertAppLookup = "INSERT INTO AppLookup(entityId, shardId, shardLock, ctime) VALUES(?,?,?,?)"
+	sqlInsertAppLookup = "INSERT IGNORE INTO AppLookup(entityId, shardId, name, ctime) VALUES(?,?,?,?)"
 )
 
 type mysqlStore struct {
@@ -50,9 +50,27 @@ func New(id string, cf *config.ConfigMysql) (job.JobStore, error) {
 
 func (this *mysqlStore) CreateJob(shardId int, appid, topic string) (err error) {
 	// first, insert into app if not present
-	this.mc.Exec(lookupPool, appLookupTable, 0, sqlInsertAppLookup)
+	aid, table := this.app_id(appid), this.table(topic)
+	_, _, err = this.mc.Exec(lookupPool, appLookupTable, 0, sqlInsertAppLookup,
+		this.app_id(appid), shardId, appid, time.Now())
+	if err != nil {
+		return
+	}
 
 	// create the job table
+	sql := fmt.Sprintf(`
+CREATE TABLE %s (
+    app_id bigint unsigned NOT NULL DEFAULT 0,
+    job_id bigint unsigned NOT NULL DEFAULT 0,
+    payload blob,
+    ctime timestamp NOT NULL DEFAULT 0,
+    mtime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    due_time timestamp NULL DEFAULT NULL COMMENT "end time point of the event",
+    PRIMARY KEY (app_id, job_id),
+    KEY(due_time)
+) ENGINE = INNODB DEFAULT CHARSET utf8
+		`, table)
+	_, _, err = this.mc.Exec(appPool, table, aid, sql)
 	return
 }
 
@@ -61,8 +79,9 @@ func (this *mysqlStore) Add(appid, topic string, payload []byte, delay time.Dura
 	table, aid := this.table(topic), this.app_id(appid)
 	t0 := time.Now()
 	t1 := t0.Add(delay)
-	sql := fmt.Sprintf("INSERT INTO %s(app_id, job_id, time_start, time_end, payload, ctime) VALUES(?,?,?,?,?,?)", table)
-	_, _, err = this.mc.Exec(appPool, table, aid, sql, aid, jid, t0, t1, payload, t0)
+	sql := fmt.Sprintf("INSERT INTO %s(app_id, job_id, payload, ctime, due_time) VALUES(?,?,?,?,?)", table)
+	_, _, err = this.mc.Exec(appPool, table, aid, sql,
+		aid, jid, payload, t0, t1)
 	jobId = strconv.FormatInt(jid, 10)
 	return
 }
@@ -78,7 +97,8 @@ func (this *mysqlStore) Delete(appid, topic, jobId string) (err error) {
 	var affectedRows int64
 	table, aid := this.table(topic), this.app_id(appid)
 	sql := fmt.Sprintf("DELETE FROM %s WHERE app_id=? AND job_id=?", table)
-	affectedRows, _, err = this.mc.Exec(appPool, table, aid, sql, aid, jid)
+	affectedRows, _, err = this.mc.Exec(appPool, table, aid, sql,
+		aid, jid)
 	if affectedRows == 0 {
 		err = job.ErrNothingDeleted
 	}

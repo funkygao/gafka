@@ -285,8 +285,8 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 	log.Info("app[%s] %s(%s) create job: {appid:%s cluster:%s topic:%s ver:%s}",
 		appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver)
 
-	if err := job.Default.CreateJob(Options.AssignJobShardId, cluster,
-		manager.Default.KafkaTopic(appid, topic, ver)); err != nil {
+	if err := job.Default.CreateJob(Options.AssignJobShardId, hisAppid,
+		manager.Default.KafkaTopic(hisAppid, topic, ver)); err != nil {
 		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s cluster:%s topic:%s ver:%s} %v",
 			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, cluster, topic, ver, err)
 
