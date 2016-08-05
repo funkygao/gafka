@@ -11,30 +11,30 @@ Kafka clusters body guard that emits health info to InfluxDB.
         | alarm                  | dashboard
         |               +-----------------+
         |               |                 |
-    +--------+     +----------+      +----------+
-    | zabbix |     | InfluxDB |      | OpenTSDB |
-    +--------+     +----------+      +----------+
-        |            |                   |
-        |            +-------------------+
-        |                  ^
-        | periodically     |
-        | call             | flush
-        | RESTful          |
-        |             +------------+
-        |             | telementry |
-        |             +------------+
-        |                  | collect
-        |                  V
-        |    +-------------------+
-        |    | in-memory metrics |
-        |    +-------------------+                                       +- external scripts(plugin)
+    +--------+     +----------+      +----------+    +---------+
+    | zabbix |     | InfluxDB |      | OpenTSDB |    | TSDB... |
+    +--------+     +----------+      +----------+    +---------+
+        |            |                   |                  |
+        |            +--------------------------------------+
+        |                      ^
+        | periodically         |
+        | call                 | flush
+        | RESTful              |
+        |                 +------------+
+        |                 | telementry |
+        |                 +------------+
+        |                      | collect
+        |                      V
+        |     +-------------------+
+        |     | in-memory metrics |
+        |     +-------------------+                                      +- external scripts(plugin)
         |       ^               ^                                        |- F5 latency
         |       | read          | write                                  |- zone wide servers
         |       |            +----------------------+                    |- influx query
         V       |            |                      |                    |- influxdb server
-    +-------------+   +--------------+   +----------------------------+  |- pubsub
+    +-------------+   +--------------+   +----------------------------+  |- kateway/pubsub
     | HTTP server |   | SOS receiver |   | Watchers/MonitorAggregator |--|- kafka
-    +-------------+   +--------------+   +----------------------------+  |- zk
+    +-------------+   +--------------+   +----------------------------+  |- zookeeper 
         |                    |                      |                    +- ...
         +-------------------------------------------+
                              | contains
