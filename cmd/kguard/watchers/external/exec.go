@@ -6,7 +6,7 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	//"github.com/funkygao/go-metrics"
-	"github.com/fsnotify/fsnotify"
+	//"github.com/fsnotify/fsnotify"
 	log "github.com/funkygao/log4go"
 )
 
@@ -59,39 +59,40 @@ func (this *WatchExec) Run() {
 }
 
 func (this *WatchExec) watchConfigDir() error {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return err
-	}
+	/*
+		watcher, err := fsnotify.NewWatcher()
+		if err != nil {
+			return err
+		}
 
-	err = watcher.Add(this.confDir)
-	if err != nil {
-		return err
-	}
+		err = watcher.Add(this.confDir)
+		if err != nil {
+			return err
+		}
 
-	go func() {
-		for {
-			select {
-			case <-this.Stop:
-				watcher.Close()
-				return
+		go func() {
+			for {
+				select {
+				case <-this.Stop:
+					watcher.Close()
+					return
 
-			case err := <-watcher.Errors:
-				log.Error("inotify %s: %v", this.confDir, err)
+				case err := <-watcher.Errors:
+					log.Error("inotify %s: %v", this.confDir, err)
 
-			case event := <-watcher.Events:
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					// file modified
-				}
-				if event.Op&fsnotify.Remove == fsnotify.Remove {
-					// file deleted
-				}
-				if event.Op&fsnotify.Create == fsnotify.Create {
-					// file added
+				case event := <-watcher.Events:
+					if event.Op&fsnotify.Write == fsnotify.Write {
+						// file modified
+					}
+					if event.Op&fsnotify.Remove == fsnotify.Remove {
+						// file deleted
+					}
+					if event.Op&fsnotify.Create == fsnotify.Create {
+						// file added
+					}
 				}
 			}
-		}
-	}()
+		}()*/
 
 	return nil
 }
