@@ -5,9 +5,9 @@ Kafka clusters body guard that emits health info to InfluxDB.
 ### Architecture
 
     
-      👥 ✉                       👥
-        |                       |
-        |               +-----------------+
+                       👥 ✉ here I am
+                        |              
+        +---------------------------------+
         |               |                 |
     +--------+     +----------+      +----------+
     | zabbix |     | InfluxDB |      | OpenTSDB |
@@ -15,20 +15,19 @@ Kafka clusters body guard that emits health info to InfluxDB.
         |            |                   |
         |            +-------------------+
         |               ^
-        |               | flush
-        |               |
+        | periodically  |
+        | call          | flush
+        | RESTful       |
         |          +------------+
         |          | telementry |
         |          +------------+
-        |               |
         |               | collect
         |               V
         |    +-------------------+
         |    | in-memory metrics |
         |    +-------------------+
         |               ^
-        | REST          | write
-        |               |
+        |               | write
         |       +-----------------------------------+
         V       |            |                      |
     +-------------+   +--------------+   +----------------------------+
@@ -36,15 +35,13 @@ Kafka clusters body guard that emits health info to InfluxDB.
     +-------------+   +--------------+   +----------------------------+
         |                    |                      |
         +-------------------------------------------+
-                             |
+                             | contains
                      +---------------+          +-----------------+     +-----------------+
                      | kguard leader |          | kguard standby1 |     | kguard standby2 | 
                      +---------------+          +-----------------+     +-----------------+
                              |                          |                       |
                              +--------------------------------------------------+
-                                                  |
                                                   | election
-                                                  |
                                           +--------------------+
                                           | zookeeper ensemble |
                                           +--------------------+
