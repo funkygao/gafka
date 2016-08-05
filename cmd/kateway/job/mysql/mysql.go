@@ -87,7 +87,7 @@ CREATE TABLE %s (
     actor_id char(64) NOT NULL,
     PRIMARY KEY (app_id, job_id),
     KEY(due_time),
-    KEY(ctime),
+    KEY(ctime)
 ) ENGINE = INNODB DEFAULT CHARSET utf8
 		`, historyTable)
 	_, _, err = this.mc.Exec(AppPool, historyTable, aid, sql)
