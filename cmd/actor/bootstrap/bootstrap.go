@@ -39,9 +39,44 @@ func Main() {
 	}()
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(Options.Zone, ctx.ZoneZkAddrs(Options.Zone)))
+	go watchZk(zkzone)
+
+	// TODO signals
+
 	c := controller.New(zkzone)
 	if err := c.ServeForever(); err != nil {
 		panic(err)
+	}
+
+}
+
+// keep watch on zk connection jitter
+func watchZk(zkzone *zk.ZkZone) {
+	evtCh, ok := zkzone.SessionEvents()
+	if !ok {
+		panic("someone else is consuming my zk events?")
+	}
+
+	// during connecting phase, the following events are fired:
+	// StateConnecting -> StateConnected -> StateHasSession
+	firstHandShaked := false
+	for evt := range evtCh {
+		if !firstHandShaked {
+			if evt.State == zklib.StateHasSession {
+				firstHandShaked = true
+			}
+
+			continue
+		}
+
+		log.Warn("zk jitter: %+v", evt)
+
+		if evt.State == zklib.StateHasSession {
+			log.Warn("zk reconnected after session lost, watcher/ephemeral lost")
+			if evt.State == zklib.StateHasSession {
+				log.Warn("zk reconnected after session lost, watcher/ephemeral lost")
+			}
+		}
 	}
 
 }
