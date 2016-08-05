@@ -14,21 +14,21 @@ Kafka clusters body guard that emits health info to InfluxDB.
     +--------+     +----------+      +----------+
         |            |                   |
         |            +-------------------+
-        |               ^
-        | periodically  |
-        | call          | flush
-        | RESTful       |
-        |          +------------+
-        |          | telementry |
-        |          +------------+
-        |               | collect
-        |               V
+        |                  ^
+        | periodically     |
+        | call             | flush
+        | RESTful          |
+        |             +------------+
+        |             | telementry |
+        |             +------------+
+        |                  | collect
+        |                  V
         |    +-------------------+
         |    | in-memory metrics |
         |    +-------------------+                                       +- external scripts(plugin)
-        |               ^                                                |- F5 latency
-        |               | write                                          |- zone wide servers
-        |       +-----------------------------------+                    |- influx query
+        |       ^               ^                                        |- F5 latency
+        |       | read          | write                                  |- zone wide servers
+        |       |            +----------------------+                    |- influx query
         V       |            |                      |                    |- influxdb server
     +-------------+   +--------------+   +----------------------------+  |- pubsub
     | HTTP server |   | SOS receiver |   | Watchers/MonitorAggregator |--|- kafka
@@ -36,9 +36,9 @@ Kafka clusters body guard that emits health info to InfluxDB.
         |                    |                      |                    +- ...
         +-------------------------------------------+
                              | contains
-                     +---------------+          +-----------------+     +-----------------+
-                     | kguard leader |          | kguard standby1 |     | kguard standby2 | 
-                     +---------------+          +-----------------+     +-----------------+
+                     +---------------+          +---------------------+     +---------------------+
+                     | kguard leader |          | kguard hot standby1 |     | kguard hot standby2 | 
+                     +---------------+          +---------------------+     +---------------------+
                              |                          |                       |
                              +--------------------------------------------------+
                                                   | election
