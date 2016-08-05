@@ -1,7 +1,9 @@
 package worker
 
 import (
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/funkygao/fae/servant/mysql"
 	"github.com/funkygao/gafka/cmd/kateway/job"
@@ -16,7 +18,7 @@ type Worker struct {
 	mc             *mysql.MysqlCluster
 	stopper        <-chan struct{}
 
-	c chan job.JobItem
+	dueJobs chan job.JobItem
 }
 
 func New(cluster, topic string, mc *mysql.MysqlCluster, stopper <-chan struct{}) *Worker {
@@ -25,38 +27,55 @@ func New(cluster, topic string, mc *mysql.MysqlCluster, stopper <-chan struct{})
 		topic:   topic,
 		mc:      mc,
 		stopper: stopper,
+		dueJobs: make(chan job.JobItem, 1000),
 	}
 }
 
 // poll mysql for due jobs and send to kafka.
 func (this *Worker) Run() {
-	p := strings.SplitN(this.topic, ".", 1)
-	aid := jm.App_id(p[0])
+	appid := this.topic[:strings.IndexByte(this.topic, '.')]
+	aid := jm.App_id(appid)
+	table := jm.JobTable(this.topic)
 
-	log.Trace("starting")
+	log.Trace("starting worker[%d] on cluster[%s] %s/%s", aid, this.cluster, this.topic, table)
+
+	go this.handleDueJobs()
 
 	var ji job.JobItem
-	sql := ""
-	rows, err := this.mc.Query(jm.AppPool, this.topic, aid, sql, []interface{}{})
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	for rows.Next() {
-		err = rows.Scan(&ji.AppId, &ji.JobId, &ji.DueTime, &ji.Payload)
-		if err == nil {
-			this.c <- ji
+	tick := time.NewTicker(time.Second)
+	sql := fmt.Sprintf("SELECT * FROM %s WHERE due_time<=?", table)
+	for {
+
+		select {
+		case <-this.stopper:
+			return
+
+		case now := <-tick.C:
+			rows, err := this.mc.Query(jm.AppPool, this.topic, aid, sql, []interface{}{now.Unix()})
+			if err != nil {
+				log.Error(err)
+				return
+			}
+
+			for rows.Next() {
+				err = rows.Scan(&ji.AppId, &ji.JobId, &ji.DueTime, &ji.Payload)
+				if err == nil {
+					this.dueJobs <- ji
+				}
+			}
+
+			rows.Close()
+
 		}
 	}
 
-	rows.Close()
 }
 
-func (this *Worker) m() {
+func (this *Worker) handleDueJobs() {
 	var batch int64
 	for {
 		select {
-		case ji := <-this.c:
+		case ji := <-this.dueJobs:
 			batch += 1
 			if batch%int64(100) == 0 {
 				// update table set xx where id in ()
