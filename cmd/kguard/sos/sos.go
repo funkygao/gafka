@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/funkygao/gafka/sos"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 )
@@ -18,7 +19,7 @@ var (
 
 func init() {
 	http.HandleFunc("/", handleSOS)
-	go http.ListenAndServe(fmt.Sprintf(":%d", SOSPort), nil)
+	go http.ListenAndServe(fmt.Sprintf(":%d", sos.SOSPort), nil)
 	go maintainSosCounter()
 
 	log.Info("SOS receiver started")
@@ -30,7 +31,7 @@ func handleSOS(w http.ResponseWriter, r *http.Request) {
 
 	sosMetrics.Inc(1)
 	lastSos = time.Now()
-	log.Critical("SOS[%s] from %s %s", r.Header.Get(IdentHeader), r.RemoteAddr, string(sosMsg))
+	log.Critical("SOS[%s] from %s %s", r.Header.Get(sos.IdentHeader), r.RemoteAddr, string(sosMsg))
 
 	w.WriteHeader(http.StatusAccepted)
 }

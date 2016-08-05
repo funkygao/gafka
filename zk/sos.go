@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka"
-	"github.com/funkygao/gafka/cmd/kguard/sos"
+	"github.com/funkygao/gafka/sos"
 	"github.com/funkygao/gorequest"
 	log "github.com/funkygao/log4go"
 )

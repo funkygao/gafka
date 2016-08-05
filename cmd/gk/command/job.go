@@ -41,7 +41,7 @@ func (this *Job) printJob(zkzone *zk.ZkZone) {
 	lines := make([]string, 0)
 	header := "JobId|Cluster|Ctime|Mtime"
 	lines = append(lines, header)
-	jobs := zkzone.ChildrenWithData(zk.PubsubJobs)
+	jobs := zkzone.ChildrenWithData(zk.PubsubJobQueues)
 	sortedName := make([]string, 0, len(jobs))
 	for name := range jobs {
 		sortedName = append(sortedName, name)
