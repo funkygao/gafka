@@ -33,11 +33,11 @@ func TestOrchestatorAll(t *testing.T) {
 	assert.Equal(t, 1, len(w))
 	assert.Equal(t, actorId, w[0])
 
-	err = zkzone.CreateJob("cluster", "topic")
+	err = zkzone.CreateJobQueue("cluster", "topic")
 	if err != nil {
 		assert.Equal(t, zk.ErrNodeExists, err)
 	} else {
-		j, c, err := o.WatchJobs()
+		j, c, err := o.WatchJobQueues()
 		assert.Equal(t, nil, err)
 
 		assert.Equal(t, true, c != nil)
