@@ -60,6 +60,13 @@ func init() {
 			}, nil
 		},
 
+		"job": func() (cli.Command, error) {
+			return &command.Job{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"ping": func() (cli.Command, error) {
 			return &command.Ping{
 				Ui:  ui,
