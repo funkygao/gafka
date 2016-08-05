@@ -3,6 +3,8 @@ package controller
 import (
 	"sync"
 
+	"github.com/funkygao/fae/config"
+	"github.com/funkygao/fae/servant/mysql"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 )
@@ -15,13 +17,25 @@ type Controller interface {
 type controller struct {
 	orchestrator *zk.Orchestrator
 	wg           sync.WaitGroup
+	mc           *mysql.MysqlCluster
 	quiting      chan struct{}
 }
 
 func New(zkzone *zk.ZkZone) Controller {
+	var mcc = &config.ConfigMysql{}
+	b, err := zkzone.KatewayJobClusterConfig()
+	if err != nil {
+		panic(err)
+	}
+	if err = mcc.From(b); err != nil {
+		panic(err)
+	}
+	log.Debug("%+v", *mcc)
+
 	return &controller{
 		quiting:      make(chan struct{}),
 		orchestrator: zkzone.NewOrchestrator(),
+		mc:           mysql.New(mcc),
 	}
 }
 
@@ -40,7 +54,7 @@ func (this *controller) ServeForever() (err error) {
 		default:
 		}
 
-		jobs, jobChanges, err := this.orchestrator.WatchJobQueues()
+		jobQueues, jobQueueChanges, err := this.orchestrator.WatchJobQueues()
 		if err != nil {
 			return err
 		}
@@ -50,27 +64,28 @@ func (this *controller) ServeForever() (err error) {
 			return err
 		}
 
-		decision := assignJobsToActors(actors, jobs)
-		myJobs := decision[id]
+		log.Info("rebalancing, found %d job queues, %d actors", len(jobQueues), len(actors))
+		decision := assignJobsToActors(actors, jobQueues)
+		myJobQueues := decision[id]
 
-		if len(myJobs) == 0 {
+		if len(myJobQueues) == 0 {
 			// standby mode
 			log.Warn("no job assignment, awaiting rebalance...")
 		}
 
-		workStopper := make(chan struct{})
-		for _, job := range myJobs {
+		workerStopper := make(chan struct{})
+		for _, jobQueue := range myJobQueues {
 			this.wg.Add(1)
-			go this.workOnJob(job, workStopper)
+			go this.startWorker(jobQueue, workerStopper)
 		}
 
 		select {
 		case <-this.quiting:
-			close(workStopper)
-			//return
+			close(workerStopper)
+			//return FIXME
 
-		case <-jobChanges:
-			close(workStopper)
+		case <-jobQueueChanges:
+			close(workerStopper)
 			this.wg.Wait()
 
 		case <-actorChanges:
@@ -81,10 +96,9 @@ func (this *controller) ServeForever() (err error) {
 				this.orchestrator.RegisterActor(id)
 			}
 
-			close(workStopper)
+			close(workerStopper)
 			this.wg.Wait()
 		}
-
 	}
 
 }
@@ -94,10 +108,5 @@ func (this *controller) Stop() {
 }
 
 func (this *controller) id() string {
-	return ""
-}
-
-func (this *controller) workOnJob(job string, stopper <-chan struct{}) {
-	defer this.wg.Done()
-
+	return "actor1"
 }

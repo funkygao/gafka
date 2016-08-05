@@ -57,11 +57,11 @@ func (this *Orchestrator) WatchJobQueues() (JobQueueList, <-chan zk.Event, error
 	return r, c, nil
 }
 
-func (this *Orchestrator) ClaimJobQueue() {
-
+func (this *Orchestrator) ClaimJobQueue(jobQueue string) (err error) {
+	return
 }
 
-func (this *Orchestrator) ReleaseJobQueue() {
+func (this *Orchestrator) ReleaseJobQueue(jobQueue string) {
 
 }
 

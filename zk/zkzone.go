@@ -220,6 +220,14 @@ func (this *ZkZone) CreateJobQueue(cluster string, topic string) error {
 	return this.createZnode(path, []byte(cluster))
 }
 
+func (this *Orchestrator) JobQueueCluster(jobQueue string) (string, error) {
+	this.connectIfNeccessary()
+
+	path := fmt.Sprintf("%s/%s", PubsubJobQueues, jobQueue)
+	data, _, err := this.conn.Get(path)
+	return string(data), err
+}
+
 func (this *ZkZone) LoadKatewayMetrics(katewayId string, key string) ([]byte, error) {
 	this.connectIfNeccessary()
 

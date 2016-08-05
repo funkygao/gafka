@@ -10,6 +10,8 @@ import (
 	"github.com/funkygao/gafka/cmd/actor/controller"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
+	log "github.com/funkygao/log4go"
+	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
 func init() {
