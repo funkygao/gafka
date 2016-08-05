@@ -123,7 +123,7 @@ if [ $GOSTATUS == "yes" ]; then
 fi
 if [ $BUILDALL == "yes" ]; then
     for target in `ls cmd`; do
-        $0 -t $target
+        $0 -it $target
     done
     exit
 fi
