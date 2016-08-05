@@ -6,31 +6,32 @@ import (
 	"github.com/funkygao/gafka/zk"
 )
 
-func assignJobsToActors(actors zk.ActorList, jobs zk.JobQueueList) (decision map[string]zk.JobQueueList) {
+func assignJobsToActors(actors zk.ActorList, jobQueues zk.JobQueueList) (decision map[string]zk.JobQueueList) {
 	decision = make(map[string]zk.JobQueueList)
 
-	jLen, aLen := len(jobs), len(actors)
-	if aLen == 0 {
+	jLen, aLen := len(jobQueues), len(actors)
+	if aLen == 0 || jLen == 0 {
 		return
 	}
 
-	sort.Sort(jobs)
+	sort.Sort(jobQueues)
 	sort.Sort(actors)
 
-	nJobsPerActor, nActorsWithExtraJob := jLen/aLen, jLen%aLen
+	nJobQueuesPerActor, nActorsWithExtraJobQueue := jLen/aLen, jLen%aLen
 
-	for myActorPosition := 0; myActorPosition < aLen; myActorPosition++ {
+	for currentActorIdx := 0; currentActorIdx < aLen; currentActorIdx++ {
 		extraN := 1
-		if myActorPosition+1 > nActorsWithExtraJob {
+		if currentActorIdx+1 > nActorsWithExtraJobQueue {
 			extraN = 0
 		}
-		nJobs := nJobsPerActor + extraN
-		startJob := nJobsPerActor*myActorPosition + min(myActorPosition, nActorsWithExtraJob)
-		for jobIdx := startJob; jobIdx < startJob+nJobs; jobIdx++ {
-			if _, present := decision[actors[myActorPosition]]; !present {
-				decision[actors[myActorPosition]] = make(zk.JobQueueList, 0)
+
+		nJobQueues := nJobQueuesPerActor + extraN
+		startJobQueueIdx := nJobQueuesPerActor*currentActorIdx + min(currentActorIdx, nActorsWithExtraJobQueue)
+		for j := startJobQueueIdx; j < startJobQueueIdx+nJobQueues; j++ {
+			if _, present := decision[actors[currentActorIdx]]; !present {
+				decision[actors[currentActorIdx]] = make(zk.JobQueueList, 0)
 			}
-			decision[actors[myActorPosition]] = append(decision[actors[myActorPosition]], jobs[jobIdx])
+			decision[actors[currentActorIdx]] = append(decision[actors[currentActorIdx]], jobQueues[j])
 		}
 	}
 	return

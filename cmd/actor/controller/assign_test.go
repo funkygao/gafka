@@ -7,8 +7,8 @@ import (
 	"github.com/funkygao/gafka/zk"
 )
 
-func TestAssignJobsToActors(t *testing.T) {
-	jobs := zk.JobList([]string{"a", "b", "c", "d", "e"})
+func TestAssignJobsToActors_Normal(t *testing.T) {
+	jobs := zk.JobQueueList([]string{"a", "b", "c", "d", "e"})
 	actors := zk.ActorList([]string{"1", "2"})
 
 	decision := assignJobsToActors(actors, jobs)
@@ -17,10 +17,20 @@ func TestAssignJobsToActors(t *testing.T) {
 	assert.Equal(t, 2, len(decision["2"]))
 }
 
-func TestAssignJobsToActorsEmpty(t *testing.T) {
-	jobs := zk.JobList([]string{})
+func TestAssignJobsToActors_EmptyJobQueues(t *testing.T) {
+	jobs := zk.JobQueueList([]string{})
 	actors := zk.ActorList([]string{"1", "2"})
 
 	decision := assignJobsToActors(actors, jobs)
 	t.Logf("%+v", decision)
+}
+
+func TestAssignJobsToActors_ActorMoreThanJobQueues(t *testing.T) {
+	jobs := zk.JobQueueList([]string{"job1"})
+	actors := zk.ActorList([]string{"1", "2"})
+
+	decision := assignJobsToActors(actors, jobs)
+	t.Logf("%+v", decision)
+	assert.Equal(t, 0, len(decision["2"]))
+	assert.Equal(t, 1, len(decision["1"]))
 }

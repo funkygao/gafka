@@ -20,3 +20,7 @@
     +------------------+       +------------------+     +------------------+
           Host1                      Host2                      HostN
 
+### TODO
+
+- [ ] any update/delete Job table need lock to avoid race condition with worker
+- [ ]
