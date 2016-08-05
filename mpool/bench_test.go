@@ -2,7 +2,13 @@ package mpool
 
 import (
 	"testing"
+
+	log "github.com/funkygao/log4go"
 )
+
+func init() {
+	log.Disable()
+}
 
 func BenchmarkBytesPoolGetThenPut(b *testing.B) {
 	b.ReportAllocs()
