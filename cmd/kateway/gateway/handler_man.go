@@ -286,7 +286,7 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 		appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver)
 
 	rawTopic := manager.Default.KafkaTopic(appid, topic, ver)
-	if err := job.Default.CreateJob(Options.AssignJobShardId, hisAppid, rawTopic); err != nil {
+	if err := job.Default.CreateJobQueue(Options.AssignJobShardId, hisAppid, rawTopic); err != nil {
 		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s cluster:%s topic:%s ver:%s} %v",
 			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, cluster, topic, ver, err)
 
@@ -294,7 +294,7 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if err := this.gw.zkzone.CreateJob(cluster, rawTopic); err != nil {
+	if err := this.gw.zkzone.CreateJobQueue(cluster, rawTopic); err != nil {
 		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s cluster:%s topic:%s ver:%s} %v",
 			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, cluster, topic, ver, err)
 

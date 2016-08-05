@@ -6,8 +6,8 @@ import (
 	"github.com/funkygao/gafka/zk"
 )
 
-func dispatchJobsToActors(actors zk.ActorList, jobs zk.JobList) (decision map[string]zk.JobList) {
-	decision = make(map[string]zk.JobList)
+func assignJobsToActors(actors zk.ActorList, jobs zk.JobQueueList) (decision map[string]zk.JobQueueList) {
+	decision = make(map[string]zk.JobQueueList)
 
 	jLen, aLen := len(jobs), len(actors)
 	if aLen == 0 {
@@ -28,7 +28,7 @@ func dispatchJobsToActors(actors zk.ActorList, jobs zk.JobList) (decision map[st
 		startJob := nJobsPerActor*myActorPosition + min(myActorPosition, nActorsWithExtraJob)
 		for jobIdx := startJob; jobIdx < startJob+nJobs; jobIdx++ {
 			if _, present := decision[actors[myActorPosition]]; !present {
-				decision[actors[myActorPosition]] = make(zk.JobList, 0)
+				decision[actors[myActorPosition]] = make(zk.JobQueueList, 0)
 			}
 			decision[actors[myActorPosition]] = append(decision[actors[myActorPosition]], jobs[jobIdx])
 		}

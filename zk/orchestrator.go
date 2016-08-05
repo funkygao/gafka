@@ -42,26 +42,26 @@ func (this *Orchestrator) WatchActors() (ActorList, <-chan zk.Event, error) {
 	return r, c, nil
 }
 
-func (this *Orchestrator) WatchJobs() (JobList, <-chan zk.Event, error) {
+func (this *Orchestrator) WatchJobQueues() (JobQueueList, <-chan zk.Event, error) {
 	this.connectIfNeccessary()
 
-	children, _, c, err := this.conn.ChildrenW(PubsubJobs)
+	children, _, c, err := this.conn.ChildrenW(PubsubJobQueues)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	r := make(JobList, 0, len(children))
+	r := make(JobQueueList, 0, len(children))
 	for _, job := range children {
 		r = append(r, job)
 	}
 	return r, c, nil
 }
 
-func (this *Orchestrator) ClaimJob() {
+func (this *Orchestrator) ClaimJobQueue() {
 
 }
 
-func (this *Orchestrator) ReleaseJob() {
+func (this *Orchestrator) ReleaseJobQueue() {
 
 }
 
@@ -79,16 +79,16 @@ func (this ActorList) Swap(i, j int) {
 	this[i], this[j] = this[j], this[i]
 }
 
-type JobList []string
+type JobQueueList []string
 
-func (this JobList) Len() int {
+func (this JobQueueList) Len() int {
 	return len(this)
 }
 
-func (this JobList) Less(i, j int) bool {
+func (this JobQueueList) Less(i, j int) bool {
 	return this[i] < this[j]
 }
 
-func (this JobList) Swap(i, j int) {
+func (this JobQueueList) Swap(i, j int) {
 	this[i], this[j] = this[j], this[i]
 }

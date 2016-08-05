@@ -48,7 +48,7 @@ func New(id string, cf *config.ConfigMysql) (job.JobStore, error) {
 	}, nil
 }
 
-func (this *mysqlStore) CreateJob(shardId int, appid, topic string) (err error) {
+func (this *mysqlStore) CreateJobQueue(shardId int, appid, topic string) (err error) {
 	// first, insert into app if not present
 	aid, table := App_id(appid), this.table(topic)
 	_, _, err = this.mc.Exec(lookupPool, appLookupTable, 0, sqlInsertAppLookup,

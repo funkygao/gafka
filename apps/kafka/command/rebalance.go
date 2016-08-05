@@ -36,13 +36,13 @@ func (this *Rebalance) Run(args []string) (exitCode int) {
 	partitionOwnershipDecision := make(map[int][]int)
 
 	for myConsumerPosition := 0; myConsumerPosition < curConsumers; myConsumerPosition++ {
-		startPart := nPartsPerConsumer*myConsumerPosition + min(myConsumerPosition, nConsumersWithExtraPart)
 		x := 1
 		if myConsumerPosition+1 > nConsumersWithExtraPart {
 			x = 0
 		}
 		nParts := nPartsPerConsumer + x
 
+		startPart := nPartsPerConsumer*myConsumerPosition + min(myConsumerPosition, nConsumersWithExtraPart)
 		for pid := startPart; pid < startPart+nParts; pid++ {
 			if _, present := partitionOwnershipDecision[myConsumerPosition]; !present {
 				partitionOwnershipDecision[myConsumerPosition] = []int{pid}
