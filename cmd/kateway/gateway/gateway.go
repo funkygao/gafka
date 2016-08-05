@@ -248,6 +248,8 @@ func (this *Gateway) Start() (err error) {
 
 				if evt.State == zklib.StateHasSession {
 					log.Warn("zk reconnected after session lost, watcher/ephemeral lost")
+
+					this.zkzone.CallSOS(fmt.Sprintf("kateway[%s]", this.id), "zk session expired")
 				}
 			}
 		}

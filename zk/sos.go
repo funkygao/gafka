@@ -1,40 +1,43 @@
 package zk
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"time"
 
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kguard/sos"
+	"github.com/funkygao/gorequest"
 	log "github.com/funkygao/log4go"
 )
 
 // CallSOS will send SOS message to the zone wide kguard leader.
-func (this *ZkZone) CallSOS(msg []byte) error {
-	log.Critical("calling SOS: %s", string(msg))
+func (this *ZkZone) CallSOS(caller string, msg string) {
+	log.Critical("SOS[%s] %s: sending...", caller, msg)
 
+	// kguard leader might float, so refresh on each SOS message
 	kguards, err := this.KguardInfos()
 	if err != nil {
-		return err
+		log.Error("SOS[%s] %s: %v", caller, msg, err)
+		return
 	}
 
 	leader := kguards[0]
-	url := fmt.Sprintf("http://%s:%d", leader.Host, sos.SOSPort) // TODO add User-Agent
-	res, err := http.Post(url, "", bytes.NewBuffer(msg))
-	if err != nil {
-		return err
-	}
-
-	body, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-	if err != nil {
-		return err
+	request := gorequest.New().Timeout(time.Second * 10)
+	res, body, errs := request.Post(fmt.Sprintf("http://%s:%d", leader.Host, sos.SOSPort)).
+		Set("User-Agent", fmt.Sprintf("sos-go-%s", gafka.BuildId)).
+		Set(sos.IdentHeader, caller).
+		End()
+	if len(errs) > 0 {
+		log.Error("SOS[%s] %s: %+v", caller, msg, errs)
+		return
 	}
 
 	if res.StatusCode != http.StatusAccepted {
-		return fmt.Errorf("SOS fail[%s]: %s", http.StatusText(res.StatusCode), string(body))
+		log.Error("SOS[%s] %s: HTTP %s %s", caller, msg, http.StatusText(res.StatusCode), body)
+		return
+
 	}
 
-	return nil
+	log.Info("SOS[%s] %s: sent ok", caller, msg)
 }

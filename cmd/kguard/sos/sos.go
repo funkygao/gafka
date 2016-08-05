@@ -13,7 +13,7 @@ import (
 var (
 	sosMetrics  = metrics.NewRegisteredCounter("sos", nil)
 	lastSos     time.Time
-	idleTimeout = 5 * time.Minute
+	IdleTimeout = 5 * time.Minute
 )
 
 func init() {
@@ -39,9 +39,9 @@ func maintainSosCounter() {
 	for {
 		time.Sleep(time.Minute)
 
-		if time.Since(lastSos) >= idleTimeout {
+		if time.Since(lastSos) >= IdleTimeout {
 			if sosMetrics.Count() > 0 {
-				log.Info("SOS[#%d] idle over 5m, reset", sosMetrics.Count())
+				log.Info("SOS[#%d] idle over %s, metrics reset", sosMetrics.Count(), IdleTimeout)
 			}
 			sosMetrics.Clear()
 		}
