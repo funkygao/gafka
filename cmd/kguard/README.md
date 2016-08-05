@@ -23,19 +23,19 @@ Kafka clusters body guard that emits health info to InfluxDB.
         |                 +------------+
         |                 | telementry |
         |                 +------------+
-        |                      | collect
-        |                      V
-        |     +-------------------+
-        |     | in-memory metrics |
-        |     +-------------------+                                      +- external scripts(plugin)
-        |       ^               ^                                        |- F5 latency
-        |       | read          | write                                  |- zone wide servers
-        |       |            +----------------------+                    |- influx query
-        V       |            |                      |                    |- influxdb server
-    +-------------+   +--------------+   +----------------------------+  |- kateway/pubsub
-    | HTTP server |   | SOS receiver |   | Watchers/MonitorAggregator |--|- kafka
-    +-------------+   +--------------+   +----------------------------+  |- zookeeper 
-        |                    |                      |                    +- ...
+        |                      | collect                                       +- external scripts
+        |                      V                                               |- kguard floating
+        |     +-------------------+                                            |- ehaproxy
+        |     | in-memory metrics |                                            |- actord
+        |     +-------------------+                                            |- swf
+        |       ^               ^                                              |- F5 latency
+        |       | read          | write                                        |- zone wide servers
+        |       |            +----------------------+                          |- influx query
+        V       |            |                      |                          |- influxdb server
+    +-------------+   +--------------+   +----------------------------+ plugin |- kateway/pubsub
+    | HTTP server |   | SOS receiver |   | Watchers/MonitorAggregator |--------|- kafka
+    +-------------+   +--------------+   +----------------------------+        |- zookeeper 
+        |                    |                      |                          +- ...
         +-------------------------------------------+
                              | contains
                      +---------------+          +---------------------+     +---------------------+
