@@ -2,9 +2,7 @@ package mysql
 
 import (
 	"fmt"
-	"hash/adler32"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/funkygao/fae/config"
@@ -50,7 +48,7 @@ func New(id string, cf *config.ConfigMysql) (job.JobStore, error) {
 
 func (this *mysqlStore) CreateJobQueue(shardId int, appid, topic string) (err error) {
 	// first, insert into app if not present
-	aid, table := App_id(appid), this.table(topic)
+	aid, table := App_id(appid), JobTable(topic)
 	_, _, err = this.mc.Exec(lookupPool, appLookupTable, 0, sqlInsertAppLookup,
 		aid, shardId, appid, time.Now())
 	if err != nil {
@@ -76,7 +74,7 @@ CREATE TABLE %s (
 		return
 	}
 
-	historyTable := table + "_archive"
+	historyTable := HistoryTable(topic)
 	sql = fmt.Sprintf(`
 CREATE TABLE %s (
     app_id bigint unsigned NOT NULL DEFAULT 0,
@@ -96,7 +94,7 @@ CREATE TABLE %s (
 
 func (this *mysqlStore) Add(appid, topic string, payload []byte, delay time.Duration) (jobId string, err error) {
 	jid := this.nextId()
-	table, aid := this.table(topic), App_id(appid)
+	table, aid := JobTable(topic), App_id(appid)
 	t0 := time.Now()
 	t1 := t0.Add(delay)
 	sql := fmt.Sprintf("INSERT INTO %s(app_id, job_id, payload, ctime, due_time) VALUES(?,?,?,?,?)", table)
@@ -115,7 +113,7 @@ func (this *mysqlStore) Delete(appid, topic, jobId string) (err error) {
 	}
 
 	var affectedRows int64
-	table, aid := this.table(topic), App_id(appid)
+	table, aid := JobTable(topic), App_id(appid)
 	sql := fmt.Sprintf("DELETE FROM %s WHERE app_id=? AND job_id=?", table)
 	affectedRows, _, err = this.mc.Exec(AppPool, table, aid, sql,
 		aid, jid)
@@ -137,13 +135,4 @@ func (this *mysqlStore) Start() error {
 
 func (this *mysqlStore) Stop() {
 	this.mc.Close()
-}
-
-func (this *mysqlStore) table(topic string) string {
-	return strings.Replace(topic, ".", "_", -1)
-}
-
-// App_id convert a string appid to hash int which is used to locate shard.
-func App_id(appid string) int {
-	return int(adler32.Checksum([]byte(appid)))
 }
