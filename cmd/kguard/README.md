@@ -20,9 +20,9 @@ Kafka clusters body guard that emits health info to InfluxDB.
         | periodically         |
         | call                 | flush
         | RESTful              |
-        |                 +------------+
-        |                 | telementry |
-        |                 +------------+
+        |                 +-----------+
+        |                 | telemetry |
+        |                 +-----------+
         |                      | collect                                       +- external scripts
         |                      V                                               |- kguard floating
         |     +-------------------+                                            |- ehaproxy

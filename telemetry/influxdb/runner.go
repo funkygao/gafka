@@ -5,12 +5,12 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/funkygao/gafka/telementry"
+	"github.com/funkygao/gafka/telemetry"
 	"github.com/funkygao/go-metrics"
 	"github.com/influxdata/influxdb/client"
 )
 
-var _ telementry.Reporter = &runner{}
+var _ telemetry.Reporter = &runner{}
 
 type runner struct {
 	cf     *config
@@ -24,7 +24,7 @@ type runner struct {
 // CREATE RETENTION POLICY two_hours ON food_data DURATION 2h REPLICATION 1 DEFAULT
 // SHOW RETENTION POLICIES ON food_data
 // CREATE CONTINUOUS QUERY cq_30m ON food_data BEGIN SELECT mean(website) AS mean_website,mean(phone) AS mean_phone INTO food_data."default".downsampled_orders FROM orders GROUP BY time(30m) END
-func New(r metrics.Registry, cf *config) telementry.Reporter {
+func New(r metrics.Registry, cf *config) telemetry.Reporter {
 	this := &runner{
 		reg:     r,
 		cf:      cf,

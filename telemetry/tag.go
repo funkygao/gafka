@@ -1,4 +1,4 @@
-package telementry
+package telemetry
 
 import (
 	"strings"

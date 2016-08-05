@@ -1,6 +1,6 @@
-// Package telementry perists github.com/funkygao/go-metrics
+// Package telemetry perists github.com/funkygao/go-metrics
 // metrics.Registry to durable storage.
-package telementry
+package telemetry
 
 // A Reporter continously scans metrics.Registry and
 // persists all metrics to durable storage.
