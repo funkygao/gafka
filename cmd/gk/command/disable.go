@@ -126,15 +126,15 @@ Usage: %s disable [options]
 
 Options:
 
+    -z zone
+
+    -c cluster
+
     -l
       List all disabled partitions
 
     -d
       Delete the disable entry: enable it again
-
-    -z zone
-
-    -c cluster
 
     -t topic
 

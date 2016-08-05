@@ -301,10 +301,8 @@ Usage: %s brokers [options]
 Options:
 
     -z zone
-      Only print brokers within a zone
 
     -c cluster name
-      Only print brokers of this cluster
 
     -ver
       Display kafka instances versions by host

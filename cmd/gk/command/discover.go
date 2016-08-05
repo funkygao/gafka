@@ -95,7 +95,6 @@ Usage: %s discover [options]
 Options:
 
     -z zone
-      Only print kafka clusters within this zone.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
