@@ -214,8 +214,10 @@ func (this *ZkZone) FlushKatewayMetrics(katewayId string, key string, data []byt
 func (this *ZkZone) CreateJob(cluster string, topic string) error {
 	this.connectIfNeccessary()
 
-	this.ensureParentDirExists(PubsubJobs)
-	return this.createZnode(PubsubJobs, []byte(cluster))
+	path := fmt.Sprintf("%s/%s", PubsubJobs, topic)
+	this.ensureParentDirExists(path)
+
+	return this.createZnode(path, []byte(cluster))
 }
 
 func (this *ZkZone) LoadKatewayMetrics(katewayId string, key string) ([]byte, error) {
