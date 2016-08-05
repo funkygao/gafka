@@ -5,7 +5,7 @@ Kafka clusters body guard that emits health info to InfluxDB.
 ### Architecture
 
     
-                       👥 ✉ here I am
+                       👥 ✉  here I am
                         |              
         +---------------------------------+
         |               |                 |
@@ -25,15 +25,15 @@ Kafka clusters body guard that emits health info to InfluxDB.
         |               V
         |    +-------------------+
         |    | in-memory metrics |
-        |    +-------------------+
-        |               ^
-        |               | write
-        |       +-----------------------------------+
-        V       |            |                      |
-    +-------------+   +--------------+   +----------------------------+
-    | HTTP server |   | SOS receiver |   | Watchers/MonitorAggregator |
-    +-------------+   +--------------+   +----------------------------+
-        |                    |                      |
+        |    +-------------------+                                       +- external scripts(plugin)
+        |               ^                                                |- F5 latency
+        |               | write                                          |- zone wide servers
+        |       +-----------------------------------+                    |- influx query
+        V       |            |                      |                    |- influxdb server
+    +-------------+   +--------------+   +----------------------------+  |- pubsub
+    | HTTP server |   | SOS receiver |   | Watchers/MonitorAggregator |--|- kafka
+    +-------------+   +--------------+   +----------------------------+  |- zk
+        |                    |                      |                    +- ...
         +-------------------------------------------+
                              | contains
                      +---------------+          +-----------------+     +-----------------+
