@@ -3,13 +3,18 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
+	"time"
 
 	"github.com/funkygao/gafka"
-	"github.com/funkygao/gafka/cmd/actor/scheduler"
+	"github.com/funkygao/gafka/cmd/actor/bootstrap"
+	"github.com/funkygao/gafka/cmd/kateway/gateway"
+	log "github.com/funkygao/log4go"
 )
 
 func init() {
-
+	gateway.EnsureServerUlimit()
+	debug.SetGCPercent(800) // same as env GOGC
 }
 
 func main() {
@@ -20,4 +25,8 @@ func main() {
 		}
 	}
 
+	t0 := time.Now()
+	bootstrap.Main()
+	log.Info("actor[%s@%s] %s, bye!", gafka.BuildId, gafka.BuiltAt, time.Since(t0))
+	log.Close()
 }

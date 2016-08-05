@@ -40,6 +40,7 @@ cmd/kateway/prof.mem
 cmd/kateway/ssl
 cmd/kguard/kguard
 cmd/ehaproxy/ehaproxy
+cmd/actor/actor
 cmd/ehaproxy/.haproxy.cf
 cmd/kateway/bench/bench
 cmd/kateway/bench/httpdserver

@@ -2,6 +2,8 @@ package bootstrap
 
 import (
 	"flag"
+	"fmt"
+	"runtime/debug"
 
 	"github.com/funkygao/gafka/cmd/actor/controller"
 	"github.com/funkygao/gafka/ctx"
@@ -21,6 +23,13 @@ func init() {
 
 // Main is the bootstrap main entry point, which will run for ever.
 func Main() {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+			debug.PrintStack()
+		}
+	}()
+
 	zkzone := zk.NewZkZone(zk.DefaultConfig(Options.Zone, ctx.ZoneZkAddrs(Options.Zone)))
 	c := controller.New(zkzone)
 	if err := c.ServeForever(); err != nil {

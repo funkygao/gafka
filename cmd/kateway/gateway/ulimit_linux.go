@@ -2,6 +2,6 @@
 
 package gateway
 
-func EnsureValidUlimit() {
+func EnsureServerUlimit() {
 	checkUlimit(65535)
 }
