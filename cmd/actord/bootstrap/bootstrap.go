@@ -7,7 +7,7 @@ import (
 	"runtime/debug"
 
 	"github.com/funkygao/gafka"
-	"github.com/funkygao/gafka/cmd/actor/controller"
+	"github.com/funkygao/gafka/cmd/actord/controller"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
@@ -17,6 +17,7 @@ import (
 func init() {
 	flag.StringVar(&Options.Zone, "z", "", "zone")
 	flag.BoolVar(&Options.ShowVersion, "v", false, "show version and exit")
+	flag.BoolVar(&Options.ShowVersion, "version", false, "show version and exit")
 	flag.Parse()
 
 	if Options.ShowVersion {

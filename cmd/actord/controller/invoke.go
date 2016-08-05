@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/funkygao/gafka/cmd/actor/worker"
+	"github.com/funkygao/gafka/cmd/actord/worker"
 	log "github.com/funkygao/log4go"
 )
 

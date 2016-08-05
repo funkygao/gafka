@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka"
-	"github.com/funkygao/gafka/cmd/actor/bootstrap"
+	"github.com/funkygao/gafka/cmd/actord/bootstrap"
 	"github.com/funkygao/gafka/cmd/kateway/gateway"
 	log "github.com/funkygao/log4go"
 )
