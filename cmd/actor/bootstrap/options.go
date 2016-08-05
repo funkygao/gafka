@@ -1,5 +1,6 @@
 package bootstrap
 
 var Options struct {
-	Zone string
+	Zone        string
+	ShowVersion bool
 }

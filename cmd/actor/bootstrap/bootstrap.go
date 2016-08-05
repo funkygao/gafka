@@ -3,8 +3,10 @@ package bootstrap
 import (
 	"flag"
 	"fmt"
+	"os"
 	"runtime/debug"
 
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/actor/controller"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
@@ -12,7 +14,13 @@ import (
 
 func init() {
 	flag.StringVar(&Options.Zone, "z", "", "zone")
+	flag.BoolVar(&Options.ShowVersion, "v", false, "show version and exit")
 	flag.Parse()
+
+	if Options.ShowVersion {
+		fmt.Fprintf(os.Stderr, "%s-%s\n", gafka.Version, gafka.BuildId)
+		os.Exit(0)
+	}
 
 	if Options.Zone == "" {
 		panic("empty zone not allowed")

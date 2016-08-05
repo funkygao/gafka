@@ -15,10 +15,22 @@
         |             |
         +-------------+
             |
+            | 1:N
+            |
     +------------------+       +------------------+     +------------------+
     | Actor/Controller |       | Actor/Controller |     | Actor/Controller |
     +------------------+       +------------------+     +------------------+
           Host1                      Host2                      HostN
+            |                          |                          |
+            +-----------------------------------------------------+
+                                     zone
+
+
+### Monitor
+
+- [ ] topology
+- [ ] work load assignment
+- [ ] dead workers
 
 ### TODO
 
