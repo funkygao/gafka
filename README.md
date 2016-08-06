@@ -12,7 +12,7 @@ A full ecosystem that is built around kafka powered by golang.
 
   A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming message/job service.
 
-- [actor](https://github.com/funkygao/gafka/tree/master/cmd/actor)
+- [actord](https://github.com/funkygao/gafka/tree/master/cmd/actord)
 
   kateway job scheduler and webhook dispatcher.
 

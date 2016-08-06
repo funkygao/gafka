@@ -27,6 +27,6 @@ func main() {
 
 	t0 := time.Now()
 	bootstrap.Main()
-	log.Info("actor[%s@%s] %s, bye!", gafka.BuildId, gafka.BuiltAt, time.Since(t0))
+	log.Info("actord[%s@%s] %s, bye!", gafka.BuildId, gafka.BuiltAt, time.Since(t0))
 	log.Close()
 }
