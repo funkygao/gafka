@@ -36,3 +36,14 @@
 
 - [ ] any update/delete Job table need lock to avoid race condition with worker
 - [ ] metrics
+- [ ] worker
+  - learn from zabbix how to mv real time table to archive table
+  - graceful shutdown
+  - test errors
+- [ ] manager
+  - call CreateJobQueue
+  - dashboard
+  - browse history
+- [ ] gk job
+  - list due jobs
+  - list real-time/archive job count

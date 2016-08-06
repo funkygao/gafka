@@ -108,7 +108,7 @@ func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
 			return
 
 		case item := <-this.dueJobs:
-			batch += 1
+			batch++
 			if batch%int64(100) == 0 {
 				// update table set xx where id in ()
 			}

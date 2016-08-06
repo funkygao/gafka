@@ -106,16 +106,23 @@ func (this *mysqlStore) Add(appid, topic string, payload []byte, delay time.Dura
 }
 
 func (this *mysqlStore) Delete(appid, topic, jobId string) (err error) {
-	// TODO race condition with actor worker
 	var jid int64
 	jid, err = strconv.ParseInt(jobId, 10, 64)
 	if err != nil {
 		return
 	}
 
+	// TODO race condition with actor worker
+	// if !redis.exists(job id):
+	//    mysql.delete(job id)
+	// else:
+	//    return err
+	//
+	// BUT that's not atomic
+
 	var affectedRows int64
 	table, aid := JobTable(topic), App_id(appid)
-	sql := fmt.Sprintf("DELETE FROM %s WHERE job_id=?", table)
+	sql := fmt.Sprintf("DELETE FROM %s WHERE job_id=?", table) // TODO what if Alice delete Bob's job?
 	affectedRows, _, err = this.mc.Exec(AppPool, table, aid, sql, jid)
 	if err == nil && affectedRows == 0 {
 		err = job.ErrNothingDeleted
