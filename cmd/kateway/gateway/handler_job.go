@@ -170,7 +170,8 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 			log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s jid:%s} %v",
 				appid, r.RemoteAddr, realIp, topic, ver, jobId, err)
 
-			writeBadRequest(w, err.Error())
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte{})
 			return
 		}
 
