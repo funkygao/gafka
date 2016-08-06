@@ -5,7 +5,7 @@ import (
 	"expvar"
 	"sync"
 
-	"github.com/funkygao/gafka/telementry"
+	"github.com/funkygao/gafka/telemetry"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 )
@@ -100,12 +100,12 @@ func (this *pubMetrics) PubFail(appid, topic, ver string) {
 	if this.expPubFail != nil {
 		this.expPubFail.Add(1)
 	}
-	telementry.UpdateCounter(appid, topic, ver, "pub.fail", 1, &this.pubFailMu, this.PubFailMap)
+	telemetry.UpdateCounter(appid, topic, ver, "pub.fail", 1, &this.pubFailMu, this.PubFailMap)
 }
 
 func (this *pubMetrics) PubOk(appid, topic, ver string) {
 	if this.expPubOk != nil {
 		this.expPubOk.Add(1)
 	}
-	telementry.UpdateCounter(appid, topic, ver, "pub.ok", 1, &this.pubOkMu, this.PubOkMap)
+	telemetry.UpdateCounter(appid, topic, ver, "pub.ok", 1, &this.pubOkMu, this.PubOkMap)
 }

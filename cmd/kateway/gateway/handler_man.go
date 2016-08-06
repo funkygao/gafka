@@ -285,15 +285,24 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 	log.Info("app[%s] %s(%s) create job: {appid:%s cluster:%s topic:%s ver:%s}",
 		appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver)
 
-	if err := job.Default.CreateJob(Options.AssignJobShardId, hisAppid,
-		manager.Default.KafkaTopic(hisAppid, topic, ver)); err != nil {
+	rawTopic := manager.Default.KafkaTopic(appid, topic, ver)
+	if err := job.Default.CreateJobQueue(Options.AssignJobShardId, hisAppid, rawTopic); err != nil {
 		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s cluster:%s topic:%s ver:%s} %v",
 			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, cluster, topic, ver, err)
 
 		writeServerError(w, err.Error())
-	} else {
-		w.Write(ResponseOk)
+		return
 	}
+
+	if err := this.gw.zkzone.CreateJobQueue(cluster, rawTopic); err != nil {
+		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s cluster:%s topic:%s ver:%s} %v",
+			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, cluster, topic, ver, err)
+
+		writeServerError(w, err.Error())
+		return
+	}
+
+	w.Write(ResponseOk)
 }
 
 // POST /v1/topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2&retention.hours=72&retention.bytes=-1

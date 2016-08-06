@@ -2,8 +2,29 @@
 package job
 
 import (
+	"fmt"
 	"time"
 )
+
+type JobItem struct {
+	AppId   int
+	JobId   int64
+	Payload []byte
+	Ctime   time.Time
+	DueTime int64
+}
+
+func (this JobItem) String() string {
+	return fmt.Sprintf("%d: %s", this.JobId, string(this.Payload))
+}
+
+func (this JobItem) PayloadString(limit int) string {
+	if limit > 0 && len(this.Payload) > limit {
+		return string(this.Payload[:limit+1])
+	}
+
+	return string(this.Payload)
+}
 
 // JobStore is the backend storage layer for jobs(schedulable message).
 type JobStore interface {
@@ -14,8 +35,8 @@ type JobStore interface {
 	Start() error
 	Stop()
 
-	// CreateJob creates a bucket where jobs will persist.
-	CreateJob(shardId int, appid, topic string) (err error)
+	// CreateJobQueue creates a storage container where jobs will persist.
+	CreateJobQueue(shardId int, appid, topic string) (err error)
 
 	// Add pubs a schedulable message(job) synchronously.
 	Add(appid, topic string, payload []byte, delay time.Duration) (jobId string, err error)

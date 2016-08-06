@@ -8,10 +8,14 @@ const (
 	clusterRoot     = "/_kafka_clusters"
 	clusterInfoRoot = "/_kafa_clusters_info"
 
-	KatewayIdsRoot             = "/_kateway/ids"
-	katewayMetricsRoot         = "/_kateway/metrics"
-	KatewayMysqlPath           = "/_kateway/mysql"
-	KatewayJobMysqlClusterPath = "/_kateway/jobcluster"
+	KatewayIdsRoot     = "/_kateway/ids"
+	katewayMetricsRoot = "/_kateway/metrics"
+	KatewayMysqlPath   = "/_kateway/mysql"
+
+	PubsubJobConfig      = "/_kateway/jobconfig"
+	PubsubJobQueues      = "/_kateway/jobs"
+	PubsubJobQueueOwners = "/_kateway/jobs/owners"
+	PubsubActors         = "/_kateway/actors/ids"
 
 	KguardLeaderPath = "_kguard/leader"
 

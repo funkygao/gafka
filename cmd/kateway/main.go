@@ -22,6 +22,9 @@ import (
 func init() {
 	gateway.ParseFlags()
 	gateway.ValidateFlags()
+
+	gateway.EnsureServerUlimit()
+	debug.SetGCPercent(800) // same env GOGC. in golang1.7, we needn't concern about this
 }
 
 func main() {
@@ -83,9 +86,6 @@ func main() {
 		}
 		ctx.LoadConfig(gateway.Options.ConfigFile)
 	}
-
-	gateway.EnsureValidUlimit()
-	debug.SetGCPercent(800) // same env GOGC TODO
 
 	gw := gateway.New(gateway.Options.Id)
 	if err := gw.Start(); err != nil {

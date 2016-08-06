@@ -468,10 +468,8 @@ Usage: %s clusters [options]
 Options:
 
     -z zone
-      Only print kafka clusters within this zone.
 
     -c cluster name
-      The new kafka cluster name.
 
     -l
       Use a long listing format.

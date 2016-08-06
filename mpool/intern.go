@@ -4,39 +4,31 @@ import (
 	"sync"
 )
 
-var (
-	internPool = sync.Pool{
-		New: func() interface{} {
-			return make(map[string]string)
-		},
-	}
-)
-
-// String returns s, interned.
-func String(s string) string {
-	m := internPool.Get().(map[string]string)
-	c, ok := m[s]
-	if ok {
-		internPool.Put(m)
-		return c
-	}
-
-	m[s] = s
-	internPool.Put(m)
-	return s
+type Intern struct {
+	sync.RWMutex
+	lookup map[string]string
 }
 
-// Bytes returns b converted to a string, interned.
-func Bytes(b []byte) string {
-	m := internPool.Get().(map[string]string)
-	c, ok := m[string(b)]
-	if ok {
-		internPool.Put(m)
-		return c
+func NewIntern() *Intern {
+	return &Intern{lookup: make(map[string]string, 10)}
+}
+
+func (this *Intern) String(s string) string {
+	this.RLock()
+	ss, present := this.lookup[s]
+	this.RUnlock()
+	if present {
+		return ss
 	}
 
-	s := string(b)
-	m[s] = s
-	internPool.Put(m)
+	this.Lock()
+	ss, present = this.lookup[s]
+	if present {
+		this.Unlock()
+		return ss
+	}
+
+	this.lookup[s] = s
+	this.Unlock()
 	return s
 }

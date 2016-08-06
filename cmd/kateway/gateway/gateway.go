@@ -29,8 +29,8 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/registry"
 	"github.com/funkygao/gafka/registry/zk"
-	"github.com/funkygao/gafka/telementry"
-	"github.com/funkygao/gafka/telementry/influxdb"
+	"github.com/funkygao/gafka/telemetry"
+	"github.com/funkygao/gafka/telemetry/influxdb"
 	gzk "github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/signal"
@@ -89,9 +89,9 @@ func New(id string) *Gateway {
 	this.svrMetrics = NewServerMetrics(Options.ReporterInterval, this)
 	rc, err := influxdb.NewConfig(Options.InfluxServer, Options.InfluxDbName, "", "", Options.ReporterInterval)
 	if err != nil {
-		log.Error("telementry: %v", err)
+		log.Error("telemetry: %v", err)
 	} else {
-		telementry.Default = influxdb.New(metrics.DefaultRegistry, rc)
+		telemetry.Default = influxdb.New(metrics.DefaultRegistry, rc)
 	}
 
 	// initialize the manager store
@@ -248,6 +248,8 @@ func (this *Gateway) Start() (err error) {
 
 				if evt.State == zklib.StateHasSession {
 					log.Warn("zk reconnected after session lost, watcher/ephemeral lost")
+
+					this.zkzone.CallSOS(fmt.Sprintf("kateway[%s]", this.id), "zk session expired")
 				}
 			}
 		}
@@ -264,12 +266,12 @@ func (this *Gateway) Start() (err error) {
 	go this.guard.Start()
 	log.Trace("guard started")
 
-	if telementry.Default != nil {
+	if telemetry.Default != nil {
 		go func() {
-			log.Trace("telementry[%s] started", telementry.Default.Name())
+			log.Trace("telemetry[%s] started", telemetry.Default.Name())
 
-			if err = telementry.Default.Start(); err != nil {
-				log.Error("telementry[%s]: %v", telementry.Default.Name(), err)
+			if err = telemetry.Default.Start(); err != nil {
+				log.Error("telemetry[%s]: %v", telemetry.Default.Name(), err)
 			}
 		}()
 	}
@@ -373,9 +375,9 @@ func (this *Gateway) ServeForever() {
 		this.svrMetrics.Flush()
 		log.Trace("svr metrics flushed")
 
-		if telementry.Default != nil {
-			telementry.Default.Stop()
-			log.Trace("telementry[%s] stopped", telementry.Default.Name())
+		if telemetry.Default != nil {
+			telemetry.Default.Stop()
+			log.Trace("telemetry[%s] stopped", telemetry.Default.Name())
 		}
 
 		meta.Default.Stop()

@@ -142,7 +142,7 @@ Usage: %s zktop [options]
 
 Options:
 
-    -z zone pattern      
+    -z zone pattern
 
     -i interval
       Refresh interval in seconds.

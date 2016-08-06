@@ -10,6 +10,7 @@ INSTALL="no"
 DEPLOY="no"
 GCDEBUG="no"
 RACE="no"
+BUILDALL="no"
 FASTHTTP="no"
 QA="no"
 GOSTATUS="no"
@@ -40,6 +41,7 @@ validate() {
 show_usage() {
     echo -e "build tool for gafka components"
     echo -e "`printf %-18s "Usage: $0"` [-h] help"
+    echo -e "`printf %-18s ` [-a] build all executables"
     echo -e "`printf %-18s ` [-f] enable fasthttp pub"
     echo -e "`printf %-18s ` [-g] enable gc compile output"
     echo -e "`printf %-18s ` [-i] install"
@@ -53,13 +55,16 @@ show_usage() {
     echo -e "`printf %-18s ` -t <target> `ls -Cm cmd`"
 }
 
-args=`getopt vqfgrhidslt:p: $*`
+args=`getopt avqfgrhidslt:p: $*`
 [ $? != 0 ] && echo "hs" && show_usage && exit 1
 
 set -- $args
 for i
 do
   case "$i" in
+      -a):
+          BUILDALL="yes"; shift
+          ;;
       -f):
           FASTHTTP="yes"; shift
           ;;
@@ -114,6 +119,12 @@ if [ $VALIDATE == "yes" ]; then
 fi
 if [ $GOSTATUS == "yes" ]; then
     gostatus all
+    exit
+fi
+if [ $BUILDALL == "yes" ]; then
+    for target in `ls cmd`; do
+        $0 -it $target
+    done
     exit
 fi
 

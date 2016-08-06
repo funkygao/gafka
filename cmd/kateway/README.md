@@ -207,6 +207,10 @@ It is designed to be programmer friendly.
 
 ### TODO
 
+- [ ] job
+  - pause/resume a job
+  - job state machine
+  - partition table?
 - [ ] deregister before web listener closed
 - [ ] github.com/funkygao/go-metrics/sample.go:151 heap
 - [ ] failure tolerance

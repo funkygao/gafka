@@ -48,9 +48,7 @@ func SetupLogging(logFile, level, crashLogFile string) {
 
 	log.LogBufferLength = 10 << 10 // default 32, chan cap
 
-	if logFile == "stdout" {
-		log.AddFilter("stdout", logLevel, log.NewConsoleLogWriter())
-	} else {
+	if logFile != "stdout" {
 		log.DeleteFilter("stdout")
 
 		rotateEnabled, discardWhenDiskFull := true, false
@@ -59,7 +57,7 @@ func SetupLogging(logFile, level, crashLogFile string) {
 		if Options.LogRotateSize > 0 {
 			filer.SetRotateSize(Options.LogRotateSize)
 		}
-		filer.SetRotateKeepDuration(time.Hour * 7 * 24)
+		filer.SetRotateKeepDuration(time.Hour * 24 * 30)
 		filer.SetRotateLines(0)
 		filer.SetRotateDaily(true)
 		log.AddFilter("file", logLevel, filer)

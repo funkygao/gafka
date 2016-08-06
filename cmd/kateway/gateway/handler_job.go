@@ -165,6 +165,15 @@ func (this *pubServer) deleteJobHandler(w http.ResponseWriter, r *http.Request, 
 	}
 
 	if err := job.Default.Delete(appid, manager.Default.KafkaTopic(appid, topic, ver), jobId); err != nil {
+		if err == job.ErrNothingDeleted {
+			// race failed, actor worker wins
+			log.Warn("-job[%s] %s(%s) {topic:%s, ver:%s jid:%s} %v",
+				appid, r.RemoteAddr, realIp, topic, ver, jobId, err)
+
+			writeBadRequest(w, err.Error())
+			return
+		}
+
 		log.Error("-job[%s] %s(%s) {topic:%s, ver:%s jid:%s} %v",
 			appid, r.RemoteAddr, realIp, topic, ver, jobId, err)
 

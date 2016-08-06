@@ -7,7 +7,10 @@ import (
 	"testing"
 
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/mpool"
 )
+
+var intern = mpool.NewIntern()
 
 func kafkaTopicWithStrConcat(m *mysqlStore, appid string, topic string, ver string) string {
 	return appid + "." + topic + "." + ver
@@ -19,6 +22,10 @@ func kafkaTopicWithSprintf(m *mysqlStore, appid string, topic string, ver string
 
 func kafkaTopicWithStringsJoin(m *mysqlStore, appid string, topic string, ver string) string {
 	return strings.Join([]string{appid, topic, ver}, ".")
+}
+
+func kafkaTopicWithIntern(appid string, topic string, ver string) string {
+	return intern.String(appid + "." + topic + "." + ver)
 }
 
 // 456 ns/op	      64 B/op	       4 allocs/op
@@ -61,6 +68,12 @@ func BenchmarkMd5Sum(b *testing.B) {
 	topic := "asdfasdfasfa"
 	for i := 0; i < b.N; i++ {
 		m.Sum([]byte(app + topic))
+	}
+}
+
+func BenchmarkKafkaTopicWithIntern(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = kafkaTopicWithIntern("appid", "topic", "ver")
 	}
 }
 

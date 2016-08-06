@@ -5,7 +5,7 @@ import (
 	"expvar"
 	"sync"
 
-	"github.com/funkygao/gafka/telementry"
+	"github.com/funkygao/gafka/telemetry"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 )
@@ -92,9 +92,9 @@ func (this *subMetrics) ConsumeOk(appid, topic, ver string) {
 	if this.expConsumeOk != nil {
 		this.expConsumeOk.Add(1)
 	}
-	telementry.UpdateCounter(appid, topic, ver, "sub.ok", 1, &this.consumeMapMu, this.ConsumeMap)
+	telemetry.UpdateCounter(appid, topic, ver, "sub.ok", 1, &this.consumeMapMu, this.ConsumeMap)
 }
 
 func (this *subMetrics) ConsumedOk(appid, topic, ver string) {
-	telementry.UpdateCounter(appid, topic, ver, "subd.ok", 1, &this.consumedMapMu, this.ConsumedMap)
+	telemetry.UpdateCounter(appid, topic, ver, "subd.ok", 1, &this.consumedMapMu, this.ConsumedMap)
 }

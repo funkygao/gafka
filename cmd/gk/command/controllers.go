@@ -88,7 +88,6 @@ Usage: %s controllers [options]
 Options:
 
     -z zone
-      Only print kafka controllers within this zone.
 
     -c cluster
 

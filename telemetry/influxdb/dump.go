@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/funkygao/gafka/telementry"
+	"github.com/funkygao/gafka/telemetry"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
 	"github.com/influxdata/influxdb/client"
@@ -46,7 +46,7 @@ func (this *runner) export(pts *[]client.Point) {
 			return
 		}
 
-		appid, topic, ver, name = telementry.Untag(name)
+		appid, topic, ver, name = telemetry.Untag(name)
 		if appid == "" {
 			tags = map[string]string{
 				"host": this.cf.hostname,

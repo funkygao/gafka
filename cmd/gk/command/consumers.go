@@ -370,7 +370,6 @@ Usage: %s consumers [options]
 Options:
 
     -z zone
-      Only print kafka controllers within this zone.
 
     -c cluster
 
