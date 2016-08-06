@@ -80,9 +80,10 @@ CREATE TABLE %s (
 CREATE TABLE %s (
     app_id bigint unsigned NOT NULL DEFAULT 0,
     job_id bigint unsigned NOT NULL DEFAULT 0,
-    payload blob,
+    payload blob NOT NULL,
     ctime timestamp NOT NULL DEFAULT 0,
-    due_time timestamp NULL DEFAULT NULL,
+    due_time int NOT NULL,
+    invoke_time bigint NOT NULL DEFAULT 0,
     actor_id char(64) NOT NULL,
     PRIMARY KEY (app_id, job_id),
     KEY(due_time),
@@ -111,15 +112,6 @@ func (this *mysqlStore) Delete(appid, topic, jobId string) (err error) {
 	if err != nil {
 		return
 	}
-
-	// TODO race condition with actor worker
-	// if !redis.exists(job id):
-	//    redis.create(job id)
-	//    mysql.delete(job id)
-	// else:
-	//    return err
-	//
-	// BUT that's not atomic
 
 	var affectedRows int64
 	table, aid := JobTable(topic), App_id(appid)

@@ -118,7 +118,10 @@ func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
 				log.Error("%s: %s", this.ident, err)
 			} else {
 				// mv job to archive table
-				this.mc.Exec(jm.AppPool, this.table, this.aid, sqlDeleteJob, item.JobId)
+				affectedRows, _, err := this.mc.Exec(jm.AppPool, this.table, this.aid, sqlDeleteJob, item.JobId)
+				if affectedRows == 0 {
+					// race fails, client Delete wins
+				}
 			}
 
 		}
