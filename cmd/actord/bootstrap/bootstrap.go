@@ -7,7 +7,9 @@ import (
 	golog "log"
 	"os"
 	"runtime/debug"
+	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/funkygao/gafka"
@@ -18,6 +20,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
 	zklib "github.com/samuel/go-zookeeper/zk"
 )
@@ -26,6 +29,9 @@ func init() {
 	flag.StringVar(&Options.Zone, "z", "", "zone")
 	flag.BoolVar(&Options.ShowVersion, "v", false, "show version and exit")
 	flag.BoolVar(&Options.ShowVersion, "version", false, "show version and exit")
+	flag.StringVar(&Options.LogFile, "log", "stdout", "log file")
+	flag.StringVar(&Options.LogLevel, "level", "debug", "log level")
+	flag.IntVar(&Options.LogRotateSize, "logsize", 10<<30, "max unrotated log file size")
 	flag.Parse()
 
 	if Options.ShowVersion {
@@ -38,6 +44,7 @@ func init() {
 	}
 
 	golog.SetOutput(ioutil.Discard)
+	SetupLogging(Options.LogFile, Options.LogLevel, "panic")
 
 	ctx.LoadFromHome()
 }
@@ -53,8 +60,7 @@ func Main() {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(Options.Zone, ctx.ZoneZkAddrs(Options.Zone)))
 
-	// TODO signals
-
+	// meta pkg is required for store pkg
 	metaConf := zkmeta.DefaultConfig()
 	metaConf.Refresh = time.Minute * 5
 	meta.Default = zkmeta.New(metaConf, zkzone)
@@ -69,11 +75,16 @@ func Main() {
 	c := controller.New(zkzone)
 	go watchZk(c, zkzone)
 
+	signal.RegisterSignalsHandler(func(sig os.Signal) {
+		log.Info("actord[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))
+		c.Stop()
+		store.DefaultPubStore.Stop()
+		wg.Wait()
+	}, syscall.SIGINT, syscall.SIGTERM)
+
 	if err := c.ServeForever(); err != nil {
 		panic(err)
 	}
-
-	wg.Wait()
 
 }
 
