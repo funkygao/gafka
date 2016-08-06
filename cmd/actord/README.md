@@ -35,3 +35,4 @@
 ### TODO
 
 - [ ] any update/delete Job table need lock to avoid race condition with worker
+- [ ] metrics

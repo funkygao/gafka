@@ -20,7 +20,7 @@ type Worker struct {
 	stopper        <-chan struct{}
 	dueJobs        chan job.JobItem
 
-	// transient values
+	// cached values
 	appid string
 	aid   int
 	table string
@@ -62,6 +62,7 @@ func (this *Worker) Run() {
 	for {
 		select {
 		case <-this.stopper:
+			log.Debug("%s stopping", this.ident)
 			wg.Wait()
 			return
 
@@ -96,25 +97,28 @@ func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	var (
-		batch int64
-		err   error
-		sql   = fmt.Sprintf("DELETE FROM %s WHERE job_id=?", this.table)
+		batch        int64
+		err          error
+		sqlDeleteJob = fmt.Sprintf("DELETE FROM %s WHERE job_id=?", this.table)
 	)
 	for {
 		select {
+		case <-this.stopper:
+			// TODO care about the ongoing mysql insert/delete
+			return
+
 		case item := <-this.dueJobs:
 			batch += 1
 			if batch%int64(100) == 0 {
 				// update table set xx where id in ()
 			}
 
-			log.Debug("%s fire %s", this.ident, item)
 			_, _, err = store.DefaultPubStore.SyncPub(this.cluster, this.topic, nil, item.Payload)
 			if err != nil {
 				log.Error("%s: %s", this.ident, err)
 			} else {
 				// mv job to archive table
-				this.mc.Exec(jm.AppPool, this.table, this.aid, sql, item.JobId)
+				this.mc.Exec(jm.AppPool, this.table, this.aid, sqlDeleteJob, item.JobId)
 			}
 
 		}

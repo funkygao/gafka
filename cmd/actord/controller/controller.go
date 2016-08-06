@@ -21,11 +21,10 @@ type Controller interface {
 
 type controller struct {
 	orchestrator *zk.Orchestrator
-	wg           sync.WaitGroup
 	mc           *mysql.MysqlCluster
 	quiting      chan struct{}
 
-	ident string
+	ident string // cache
 }
 
 func New(zkzone *zk.ZkZone) Controller {
@@ -38,7 +37,6 @@ func New(zkzone *zk.ZkZone) Controller {
 	if err = mcc.From(b); err != nil {
 		panic(err)
 	}
-	log.Debug("%+v", *mcc)
 
 	this := &controller{
 		quiting:      make(chan struct{}),
@@ -49,32 +47,38 @@ func New(zkzone *zk.ZkZone) Controller {
 	if err != nil {
 		panic(err)
 	}
+
 	return this
 }
 
 func (this *controller) ServeForever() (err error) {
+	log.Info("controller[%s] starting", this.Id())
+
 	if err = this.orchestrator.RegisterActor(this.Id()); err != nil {
 		return err
 	}
 	defer this.orchestrator.ResignActor(this.Id())
 
+REBALANCE:
 	for {
 		// each loop is a new rebalance process
 
 		select {
 		case <-this.quiting:
-			return nil
+			break REBALANCE
 		default:
 		}
 
 		jobQueues, jobQueueChanges, err := this.orchestrator.WatchJobQueues()
 		if err != nil {
-			return err
+			log.Error("watch job queues: %s", err)
+			continue REBALANCE
 		}
 
 		actors, actorChanges, err := this.orchestrator.WatchActors()
 		if err != nil {
-			return err
+			log.Error("watch actors: %s", err)
+			continue REBALANCE
 		}
 
 		log.Info("rebalancing, found %d job queues, %d actors", len(jobQueues), len(actors))
@@ -84,22 +88,29 @@ func (this *controller) ServeForever() (err error) {
 		if len(myJobQueues) == 0 {
 			// standby mode
 			log.Warn("no job assignment, awaiting rebalance...")
+		} else {
+			log.Info("claiming %d/%d job queues", len(jobQueues), len(myJobQueues))
 		}
 
-		workerStopper := make(chan struct{})
+		var (
+			wg            sync.WaitGroup
+			workerStopper = make(chan struct{})
+		)
 		for _, jobQueue := range myJobQueues {
-			this.wg.Add(1)
-			go this.invokeWorker(jobQueue, workerStopper)
+			wg.Add(1)
+			log.Trace("invoking worker for %s", jobQueue)
+			go this.invokeWorker(jobQueue, &wg, workerStopper)
 		}
 
 		select {
 		case <-this.quiting:
 			close(workerStopper)
-			//return FIXME
+			wg.Wait()
+			break REBALANCE
 
 		case <-jobQueueChanges:
 			close(workerStopper)
-			this.wg.Wait()
+			wg.Wait()
 
 		case <-actorChanges:
 			stillAlive, err := this.orchestrator.ActorRegistered(this.Id())
@@ -110,10 +121,12 @@ func (this *controller) ServeForever() (err error) {
 			}
 
 			close(workerStopper)
-			this.wg.Wait()
+			wg.Wait()
 		}
 	}
 
+	log.Info("controller[%s] stopped", this.Id())
+	return nil
 }
 
 func (this *controller) Stop() {
@@ -122,6 +135,10 @@ func (this *controller) Stop() {
 
 func (this *controller) Id() string {
 	return this.ident
+}
+
+func (this *controller) shortId() string {
+	return ""
 }
 
 func (this *controller) generateIdent() (string, error) {

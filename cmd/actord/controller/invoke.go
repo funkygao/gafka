@@ -1,19 +1,20 @@
 package controller
 
 import (
+	"sync"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/actord/worker"
 	log "github.com/funkygao/log4go"
 )
 
-func (this *controller) invokeWorker(jobQueue string, stopper <-chan struct{}) {
-	defer this.wg.Done()
+func (this *controller) invokeWorker(jobQueue string, wg *sync.WaitGroup, stopper <-chan struct{}) {
+	defer wg.Done()
 
 	for retries := 0; retries < 3; retries++ {
-		log.Trace("%s claiming owner of %s #%d", this.Id(), jobQueue, retries)
+		log.Trace("claiming owner of %s #%d", jobQueue, retries)
 		if err := this.orchestrator.ClaimJobQueue(jobQueue); err == nil {
-			log.Info("%s claimed owner of %s", this.Id(), jobQueue)
+			log.Info("claimed owner of %s", jobQueue)
 			break
 		} else {
 			time.Sleep(time.Second)
@@ -22,7 +23,7 @@ func (this *controller) invokeWorker(jobQueue string, stopper <-chan struct{}) {
 
 	defer func(q string) {
 		this.orchestrator.ReleaseJobQueue(q)
-		log.Info("%s de-claimed owner of %s", this.Id(), q)
+		log.Info("de-claimed owner of %s", q)
 	}(jobQueue)
 
 	cluster, err := this.orchestrator.JobQueueCluster(jobQueue)
