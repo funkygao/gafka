@@ -59,6 +59,7 @@ func (this *Job) printJob(zkzone *zk.ZkZone) {
 
 	lines = lines[:0]
 	header = "Actor|Ctime|Mtime"
+	lines = append(lines, header)
 	actors := zkzone.ChildrenWithData(zk.PubsubActors)
 	sortedName = make([]string, 0, len(actors))
 	for name := range actors {
@@ -72,6 +73,7 @@ func (this *Job) printJob(zkzone *zk.ZkZone) {
 			zdata.Ctime(), zdata.Mtime()))
 	}
 	if len(lines) > 1 {
+		this.Ui.Output("")
 		this.Ui.Output(columnize.SimpleFormat(lines))
 	}
 }
