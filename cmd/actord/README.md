@@ -41,7 +41,7 @@
 - [ ] worker
   - learn from zabbix how to mv real time table to archive table
   - graceful shutdown
-  - test errors
+  - test dependent components outage
 - [ ] manager
   - call CreateJobQueue
   - dashboard
