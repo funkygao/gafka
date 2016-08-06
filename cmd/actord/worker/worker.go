@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/funkygao/fae/servant/mysql"
@@ -17,71 +18,109 @@ type Worker struct {
 	cluster, topic string
 	mc             *mysql.MysqlCluster
 	stopper        <-chan struct{}
+	dueJobs        chan job.JobItem
 
-	dueJobs chan job.JobItem
+	// transient values
+	appid string
+	aid   int
+	table string
+	ident string
 }
 
 func New(cluster, topic string, mc *mysql.MysqlCluster, stopper <-chan struct{}) *Worker {
-	return &Worker{
+	this := &Worker{
 		cluster: cluster,
 		topic:   topic,
 		mc:      mc,
 		stopper: stopper,
-		dueJobs: make(chan job.JobItem, 1000),
+		dueJobs: make(chan job.JobItem, 200),
 	}
+
+	this.appid = topic[:strings.IndexByte(topic, '.')]
+	this.aid = jm.App_id(this.appid)
+	this.table = jm.JobTable(topic)
+	this.ident = fmt.Sprintf("worker{cluster:%s app:%s aid:%d topic:%s table:%s}",
+		this.cluster, this.appid, this.aid, this.topic, this.table)
+
+	return this
 }
 
 // poll mysql for due jobs and send to kafka.
 func (this *Worker) Run() {
-	appid := this.topic[:strings.IndexByte(this.topic, '.')]
-	aid := jm.App_id(appid)
-	table := jm.JobTable(this.topic)
+	log.Trace("starting %s", this.Ident())
 
-	log.Trace("starting worker[%d] on cluster[%s] %s/%s", aid, this.cluster, this.topic, table)
+	var (
+		wg   sync.WaitGroup
+		item job.JobItem
+		tick = time.NewTicker(time.Second)
+		sql  = fmt.Sprintf("SELECT job_id,app_id,payload,due_time FROM %s WHERE due_time<=?", this.table)
+	)
 
-	go this.handleDueJobs()
+	wg.Add(1)
+	go this.handleDueJobs(&wg)
 
-	var ji job.JobItem
-	tick := time.NewTicker(time.Second)
-	sql := fmt.Sprintf("SELECT * FROM %s WHERE due_time<=?", table)
 	for {
-
 		select {
 		case <-this.stopper:
+			wg.Wait()
 			return
 
 		case now := <-tick.C:
-			rows, err := this.mc.Query(jm.AppPool, this.topic, aid, sql, []interface{}{now.Unix()})
+			log.Debug("%s scheduled %s %d", this.ident, sql, now.Unix())
+
+			rows, err := this.mc.Query(jm.AppPool, this.topic, this.aid, sql, now.Unix())
 			if err != nil {
-				log.Error(err)
-				return
+				log.Error("%s: %v", this.ident, err)
+				continue
 			}
 
 			for rows.Next() {
-				err = rows.Scan(&ji.AppId, &ji.JobId, &ji.DueTime, &ji.Payload)
+				err = rows.Scan(&item.JobId, &item.AppId, &item.Payload, &item.DueTime)
 				if err == nil {
-					this.dueJobs <- ji
+					this.dueJobs <- item
+					log.Debug("%s due %+v", this.ident, item)
+				} else {
+					log.Error("%s: %s", this.ident, err)
 				}
 			}
 
-			rows.Close()
+			if err = rows.Err(); err != nil {
+				log.Error("%s: %s", this.ident, err)
+			}
 
+			rows.Close()
 		}
 	}
 
 }
 
-func (this *Worker) handleDueJobs() {
-	var batch int64
+func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	var (
+		batch int64
+		err   error
+	)
 	for {
 		select {
-		case ji := <-this.dueJobs:
+		case item := <-this.dueJobs:
 			batch += 1
 			if batch%int64(100) == 0 {
 				// update table set xx where id in ()
 			}
-			store.DefaultPubStore.SyncPub(this.cluster, this.topic, nil, ji.Payload)
+
+			log.Debug("%s fire %+v", this.ident, item)
+			_, _, err = store.DefaultPubStore.SyncPub(this.cluster, this.topic, nil, item.Payload)
+			if err != nil {
+				log.Error("%s: %s", this.ident, err)
+			} else {
+				// mv job to archive table
+			}
 
 		}
 	}
+}
+
+func (this *Worker) Ident() string {
+	return this.ident
 }

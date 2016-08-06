@@ -5,9 +5,15 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"sync"
+	"time"
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/actord/controller"
+	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
+	"github.com/funkygao/gafka/cmd/kateway/store"
+	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
@@ -46,10 +52,20 @@ func Main() {
 
 	// TODO signals
 
+	metaConf := zkmeta.DefaultConfig()
+	metaConf.Refresh = time.Minute * 5
+	meta.Default = zkmeta.New(metaConf, zkzone)
+	meta.Default.Start()
+
+	var wg sync.WaitGroup
+	store.DefaultPubStore = kafka.NewPubStore(100, 0, false, &wg, false, false)
+
 	c := controller.New(zkzone)
 	if err := c.ServeForever(); err != nil {
 		panic(err)
 	}
+
+	wg.Wait()
 
 }
 

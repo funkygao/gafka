@@ -1,12 +1,15 @@
 package controller
 
 import (
+	"fmt"
+	"os"
 	"sync"
 
 	"github.com/funkygao/fae/config"
 	"github.com/funkygao/fae/servant/mysql"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
+	"github.com/hashicorp/go-uuid"
 )
 
 type Controller interface {
@@ -19,9 +22,12 @@ type controller struct {
 	wg           sync.WaitGroup
 	mc           *mysql.MysqlCluster
 	quiting      chan struct{}
+
+	ident string
 }
 
 func New(zkzone *zk.ZkZone) Controller {
+	// mysql cluster config
 	var mcc = &config.ConfigMysql{}
 	b, err := zkzone.KatewayJobClusterConfig()
 	if err != nil {
@@ -32,11 +38,16 @@ func New(zkzone *zk.ZkZone) Controller {
 	}
 	log.Debug("%+v", *mcc)
 
-	return &controller{
+	this := &controller{
 		quiting:      make(chan struct{}),
 		orchestrator: zkzone.NewOrchestrator(),
 		mc:           mysql.New(mcc),
 	}
+	this.ident, err = this.generateIdent()
+	if err != nil {
+		panic(err)
+	}
+	return this
 }
 
 func (this *controller) ServeForever() (err error) {
@@ -44,6 +55,7 @@ func (this *controller) ServeForever() (err error) {
 	if err = this.orchestrator.RegisterActor(id); err != nil {
 		return err
 	}
+	defer this.orchestrator.ResignActor(id)
 
 	for {
 		// each loop is a new rebalance process
@@ -76,7 +88,7 @@ func (this *controller) ServeForever() (err error) {
 		workerStopper := make(chan struct{})
 		for _, jobQueue := range myJobQueues {
 			this.wg.Add(1)
-			go this.startWorker(jobQueue, workerStopper)
+			go this.invokeWorker(jobQueue, workerStopper)
 		}
 
 		select {
@@ -108,5 +120,19 @@ func (this *controller) Stop() {
 }
 
 func (this *controller) id() string {
-	return "actor1"
+	return this.ident
+}
+
+func (this *controller) generateIdent() (string, error) {
+	uuid, err := uuid.GenerateUUID()
+	if err != nil {
+		return "", err
+	}
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s:%s", hostname, uuid), nil
 }

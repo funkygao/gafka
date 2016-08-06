@@ -27,6 +27,11 @@ func (this *Orchestrator) RegisterActor(id string) error {
 	return this.CreateEphemeralZnode(path, nil)
 }
 
+func (this *Orchestrator) ResignActor(id string) error {
+	path := fmt.Sprintf("%s/%s", PubsubActors, id)
+	return this.conn.Delete(path, -1)
+}
+
 func (this *Orchestrator) WatchActors() (ActorList, <-chan zk.Event, error) {
 	this.connectIfNeccessary()
 

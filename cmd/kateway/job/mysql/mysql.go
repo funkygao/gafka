@@ -59,13 +59,14 @@ func (this *mysqlStore) CreateJobQueue(shardId int, appid, topic string) (err er
 	// in mysql InnoDB, blob is []byte while text is string, both length limit 1<<16(64KB)
 	sql := fmt.Sprintf(`
 CREATE TABLE %s (
-    app_id bigint unsigned NOT NULL DEFAULT 0,
     job_id bigint unsigned NOT NULL DEFAULT 0,
+    app_id bigint unsigned NOT NULL DEFAULT 0,
     payload blob,
     ctime timestamp NOT NULL DEFAULT 0,
     mtime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    due_time timestamp NULL DEFAULT NULL COMMENT "end time point of the event",
-    PRIMARY KEY (app_id, job_id),
+    due_time int NOT NULL,
+    PRIMARY KEY (job_id),
+    KEY(app_id),
     KEY(due_time)
 ) ENGINE = INNODB DEFAULT CHARSET utf8
 		`, table)
@@ -99,7 +100,7 @@ func (this *mysqlStore) Add(appid, topic string, payload []byte, delay time.Dura
 	t1 := t0.Add(delay)
 	sql := fmt.Sprintf("INSERT INTO %s(app_id, job_id, payload, ctime, due_time) VALUES(?,?,?,?,?)", table)
 	_, _, err = this.mc.Exec(AppPool, table, aid, sql,
-		aid, jid, payload, t0, t1)
+		aid, jid, payload, t0, t1.Unix())
 	jobId = strconv.FormatInt(jid, 10)
 	return
 }
@@ -114,10 +115,9 @@ func (this *mysqlStore) Delete(appid, topic, jobId string) (err error) {
 
 	var affectedRows int64
 	table, aid := JobTable(topic), App_id(appid)
-	sql := fmt.Sprintf("DELETE FROM %s WHERE app_id=? AND job_id=?", table)
-	affectedRows, _, err = this.mc.Exec(AppPool, table, aid, sql,
-		aid, jid)
-	if affectedRows == 0 {
+	sql := fmt.Sprintf("DELETE FROM %s WHERE job_id=?", table)
+	affectedRows, _, err = this.mc.Exec(AppPool, table, aid, sql, jid)
+	if err == nil && affectedRows == 0 {
 		err = job.ErrNothingDeleted
 	}
 

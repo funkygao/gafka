@@ -9,7 +9,7 @@ type JobItem struct {
 	AppId   int
 	JobId   int64
 	Payload []byte
-	DueTime time.Time
+	DueTime int64
 }
 
 // JobStore is the backend storage layer for jobs(schedulable message).
