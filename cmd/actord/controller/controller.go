@@ -15,6 +15,8 @@ import (
 type Controller interface {
 	ServeForever() error
 	Stop()
+
+	Id() string
 }
 
 type controller struct {
@@ -51,11 +53,10 @@ func New(zkzone *zk.ZkZone) Controller {
 }
 
 func (this *controller) ServeForever() (err error) {
-	id := this.id()
-	if err = this.orchestrator.RegisterActor(id); err != nil {
+	if err = this.orchestrator.RegisterActor(this.Id()); err != nil {
 		return err
 	}
-	defer this.orchestrator.ResignActor(id)
+	defer this.orchestrator.ResignActor(this.Id())
 
 	for {
 		// each loop is a new rebalance process
@@ -78,7 +79,7 @@ func (this *controller) ServeForever() (err error) {
 
 		log.Info("rebalancing, found %d job queues, %d actors", len(jobQueues), len(actors))
 		decision := assignJobsToActors(actors, jobQueues)
-		myJobQueues := decision[id]
+		myJobQueues := decision[this.Id()]
 
 		if len(myJobQueues) == 0 {
 			// standby mode
@@ -101,11 +102,11 @@ func (this *controller) ServeForever() (err error) {
 			this.wg.Wait()
 
 		case <-actorChanges:
-			stillAlive, err := this.orchestrator.ActorRegistered(id)
+			stillAlive, err := this.orchestrator.ActorRegistered(this.Id())
 			if err != nil {
 				log.Error(err)
 			} else if !stillAlive {
-				this.orchestrator.RegisterActor(id)
+				this.orchestrator.RegisterActor(this.Id())
 			}
 
 			close(workerStopper)
@@ -119,7 +120,7 @@ func (this *controller) Stop() {
 	close(this.quiting)
 }
 
-func (this *controller) id() string {
+func (this *controller) Id() string {
 	return this.ident
 }
 

@@ -66,8 +66,6 @@ func (this *Worker) Run() {
 			return
 
 		case now := <-tick.C:
-			log.Debug("%s scheduled %s %d", this.ident, sql, now.Unix())
-
 			rows, err := this.mc.Query(jm.AppPool, this.topic, this.aid, sql, now.Unix())
 			if err != nil {
 				log.Error("%s: %v", this.ident, err)
@@ -78,7 +76,7 @@ func (this *Worker) Run() {
 				err = rows.Scan(&item.JobId, &item.AppId, &item.Payload, &item.DueTime)
 				if err == nil {
 					this.dueJobs <- item
-					log.Debug("%s due %+v", this.ident, item)
+					log.Debug("%s due %s", this.ident, item)
 				} else {
 					log.Error("%s: %s", this.ident, err)
 				}
@@ -100,6 +98,7 @@ func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
 	var (
 		batch int64
 		err   error
+		sql   = fmt.Sprintf("DELETE FROM %s WHERE job_id=?", this.table)
 	)
 	for {
 		select {
@@ -109,12 +108,13 @@ func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
 				// update table set xx where id in ()
 			}
 
-			log.Debug("%s fire %+v", this.ident, item)
+			log.Debug("%s fire %s", this.ident, item)
 			_, _, err = store.DefaultPubStore.SyncPub(this.cluster, this.topic, nil, item.Payload)
 			if err != nil {
 				log.Error("%s: %s", this.ident, err)
 			} else {
 				// mv job to archive table
+				this.mc.Exec(jm.AppPool, this.table, this.aid, sql, item.JobId)
 			}
 
 		}

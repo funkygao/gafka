@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
+	golog "log"
 	"os"
 	"runtime/debug"
 	"sync"
@@ -35,6 +37,8 @@ func init() {
 		panic("empty zone not allowed")
 	}
 
+	golog.SetOutput(ioutil.Discard)
+
 	ctx.LoadFromHome()
 }
 
@@ -48,7 +52,6 @@ func Main() {
 	}()
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(Options.Zone, ctx.ZoneZkAddrs(Options.Zone)))
-	go watchZk(zkzone)
 
 	// TODO signals
 
@@ -59,8 +62,13 @@ func Main() {
 
 	var wg sync.WaitGroup
 	store.DefaultPubStore = kafka.NewPubStore(100, 0, false, &wg, false, false)
+	if err := store.DefaultPubStore.Start(); err != nil {
+		panic(err)
+	}
 
 	c := controller.New(zkzone)
+	go watchZk(c, zkzone)
+
 	if err := c.ServeForever(); err != nil {
 		panic(err)
 	}
@@ -70,7 +78,7 @@ func Main() {
 }
 
 // keep watch on zk connection jitter
-func watchZk(zkzone *zk.ZkZone) {
+func watchZk(c controller.Controller, zkzone *zk.ZkZone) {
 	evtCh, ok := zkzone.SessionEvents()
 	if !ok {
 		panic("someone else is consuming my zk events?")
@@ -92,9 +100,8 @@ func watchZk(zkzone *zk.ZkZone) {
 
 		if evt.State == zklib.StateHasSession {
 			log.Warn("zk reconnected after session lost, watcher/ephemeral lost")
-			if evt.State == zklib.StateHasSession {
-				log.Warn("zk reconnected after session lost, watcher/ephemeral lost")
-			}
+
+			zkzone.CallSOS(fmt.Sprintf("actord[%s]", c.Id()), "zk session expired")
 		}
 	}
 

@@ -2,6 +2,7 @@
 package job
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -10,6 +11,10 @@ type JobItem struct {
 	JobId   int64
 	Payload []byte
 	DueTime int64
+}
+
+func (this JobItem) String() string {
+	return fmt.Sprintf("%d: %s", this.JobId, string(this.Payload))
 }
 
 // JobStore is the backend storage layer for jobs(schedulable message).

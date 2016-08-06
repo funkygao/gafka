@@ -11,9 +11,9 @@ func (this *controller) invokeWorker(jobQueue string, stopper <-chan struct{}) {
 	defer this.wg.Done()
 
 	for retries := 0; retries < 3; retries++ {
-		log.Trace("%s claiming owner of %s #%d", this.id(), jobQueue, retries)
+		log.Trace("%s claiming owner of %s #%d", this.Id(), jobQueue, retries)
 		if err := this.orchestrator.ClaimJobQueue(jobQueue); err == nil {
-			log.Info("%s claimed owner of %s", this.id(), jobQueue)
+			log.Info("%s claimed owner of %s", this.Id(), jobQueue)
 			break
 		} else {
 			time.Sleep(time.Second)
@@ -22,7 +22,7 @@ func (this *controller) invokeWorker(jobQueue string, stopper <-chan struct{}) {
 
 	defer func(q string) {
 		this.orchestrator.ReleaseJobQueue(q)
-		log.Info("%s de-claimed owner of %s", this.id(), q)
+		log.Info("%s de-claimed owner of %s", this.Id(), q)
 	}(jobQueue)
 
 	cluster, err := this.orchestrator.JobQueueCluster(jobQueue)
