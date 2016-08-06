@@ -31,11 +31,11 @@ type controller struct {
 
 func New(zkzone *zk.ZkZone) Controller {
 	// mysql cluster config
-	var mcc = &config.ConfigMysql{}
 	b, err := zkzone.KatewayJobClusterConfig()
 	if err != nil {
 		panic(err)
 	}
+	var mcc = &config.ConfigMysql{}
 	if err = mcc.From(b); err != nil {
 		panic(err)
 	}
