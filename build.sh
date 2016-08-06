@@ -7,7 +7,6 @@ GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 BUILD_TIME=$(date '+%Y-%m-%d-%H:%M:%S')
 
 INSTALL="no"
-DEPLOY="no"
 GCDEBUG="no"
 RACE="no"
 BUILDALL="no"
@@ -45,7 +44,6 @@ show_usage() {
     echo -e "`printf %-18s ` [-f] enable fasthttp pub"
     echo -e "`printf %-18s ` [-g] enable gc compile output"
     echo -e "`printf %-18s ` [-i] install"
-    echo -e "`printf %-18s ` [-d] deploy binary, nc -l 10001"
     echo -e "`printf %-18s ` [-l] display line of code"
     echo -e "`printf %-18s ` [-p] install prefix path"
     echo -e "`printf %-18s ` [-q] quality assurance of code"
@@ -55,7 +53,7 @@ show_usage() {
     echo -e "`printf %-18s ` -t <target> `ls -Cm cmd`"
 }
 
-args=`getopt avqfgrhidslt:p: $*`
+args=`getopt avqfgrhislt:p: $*`
 [ $? != 0 ] && echo "hs" && show_usage && exit 1
 
 set -- $args
@@ -85,9 +83,6 @@ do
           ;;
       -i) 
           INSTALL="yes"; shift
-          ;;
-      -d) 
-          DEPLOY="yes"; shift
           ;;
       -l) 
           show_line_of_code; exit 0
@@ -155,8 +150,3 @@ fi
 #---------
 ./$TARGET -version
 
-
-if [ $DEPLOY == "yes" ]; then
-    echo "nc -l 10001 < $TARGET"
-    nc -l 10001 < $TARGET
-fi
