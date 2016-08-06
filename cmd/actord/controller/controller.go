@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/funkygao/fae/config"
@@ -24,7 +25,8 @@ type controller struct {
 	mc           *mysql.MysqlCluster
 	quiting      chan struct{}
 
-	ident string // cache
+	ident   string // cache
+	shortId string // cache
 }
 
 func New(zkzone *zk.ZkZone) Controller {
@@ -47,6 +49,10 @@ func New(zkzone *zk.ZkZone) Controller {
 	if err != nil {
 		panic(err)
 	}
+
+	// hostname:95f333fb-731c-9c95-c598-8d6b99a9ec7d
+	p := strings.SplitN(this.ident, ":", 2)
+	this.shortId = fmt.Sprintf("%s:%s", p[0], this.ident[strings.LastIndexByte(this.ident, '-')+1:])
 
 	return this
 }
@@ -135,10 +141,6 @@ func (this *controller) Stop() {
 
 func (this *controller) Id() string {
 	return this.ident
-}
-
-func (this *controller) shortId() string {
-	return ""
 }
 
 func (this *controller) generateIdent() (string, error) {

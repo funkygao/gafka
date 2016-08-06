@@ -15,6 +15,7 @@ import (
 
 // Worker polls a single JobQueue and handle each Job.
 type Worker struct {
+	parentId       string // controller short id
 	cluster, topic string
 	mc             *mysql.MysqlCluster
 	stopper        <-chan struct{}
@@ -27,13 +28,14 @@ type Worker struct {
 	ident string
 }
 
-func New(cluster, topic string, mc *mysql.MysqlCluster, stopper <-chan struct{}) *Worker {
+func New(parentId, cluster, topic string, mc *mysql.MysqlCluster, stopper <-chan struct{}) *Worker {
 	this := &Worker{
-		cluster: cluster,
-		topic:   topic,
-		mc:      mc,
-		stopper: stopper,
-		dueJobs: make(chan job.JobItem, 200),
+		parentId: parentId,
+		cluster:  cluster,
+		topic:    topic,
+		mc:       mc,
+		stopper:  stopper,
+		dueJobs:  make(chan job.JobItem, 200),
 	}
 
 	this.appid = topic[:strings.IndexByte(topic, '.')]
@@ -74,6 +76,7 @@ func (this *Worker) Run() {
 			}
 
 			for rows.Next() {
+				// FIXME ctime not handled
 				err = rows.Scan(&item.JobId, &item.AppId, &item.Payload, &item.DueTime)
 				if err == nil {
 					this.dueJobs <- item
@@ -93,13 +96,14 @@ func (this *Worker) Run() {
 
 }
 
+// TODO batch DELETE/INSERT for better performance.
 func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	var (
-		batch        int64
-		err          error
-		sqlDeleteJob = fmt.Sprintf("DELETE FROM %s WHERE job_id=?", this.table)
+		sqlDeleteJob     = fmt.Sprintf("DELETE FROM %s WHERE job_id=?", this.table)
+		sqlInsertArchive = fmt.Sprintf("INSERT INTO %s(app_id,job_id,payload,ctime,due_time,invoke_time,actor_id) VALUES(?,?,?,?,?,?,?)",
+			jm.HistoryTable(this.topic))
 	)
 	for {
 		select {
@@ -108,19 +112,33 @@ func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
 			return
 
 		case item := <-this.dueJobs:
-			batch++
-			if batch%int64(100) == 0 {
-				// update table set xx where id in ()
+			log.Debug("%s handling %s", this.ident, item)
+			affectedRows, _, err := this.mc.Exec(jm.AppPool, this.table, this.aid, sqlDeleteJob, item.JobId)
+			if err != nil {
+				log.Error("%s: %s", this.ident, err)
+				continue
+			}
+			if affectedRows == 0 {
+				// race fails, client Delete wins
+				log.Warn("%s: %s race fails", this.ident, item)
+				continue
 			}
 
+			log.Debug("%s deleted from real time table: %s", this.ident, item)
 			_, _, err = store.DefaultPubStore.SyncPub(this.cluster, this.topic, nil, item.Payload)
 			if err != nil {
 				log.Error("%s: %s", this.ident, err)
+				// TODO insert back to job table
 			} else {
+				log.Debug("%s sent to kafka: %s", this.ident, item)
+
 				// mv job to archive table
-				affectedRows, _, err := this.mc.Exec(jm.AppPool, this.table, this.aid, sqlDeleteJob, item.JobId)
-				if affectedRows == 0 {
-					// race fails, client Delete wins
+				_, _, err = this.mc.Exec(jm.AppPool, this.table, this.aid, sqlInsertArchive,
+					item.AppId, item.JobId, item.Payload, item.Ctime, item.DueTime, time.Now().UnixNano(), this.parentId)
+				if err != nil {
+					log.Error("%s: %s", this.ident, err)
+				} else {
+					log.Debug("%s archived %s", this.ident, item)
 				}
 			}
 
