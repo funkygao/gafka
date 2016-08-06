@@ -114,6 +114,7 @@ func (this *mysqlStore) Delete(appid, topic, jobId string) (err error) {
 
 	// TODO race condition with actor worker
 	// if !redis.exists(job id):
+	//    redis.create(job id)
 	//    mysql.delete(job id)
 	// else:
 	//    return err
