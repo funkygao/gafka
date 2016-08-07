@@ -14,8 +14,8 @@ const (
 
 	PubsubJobConfig      = "/_kateway/jobconfig"
 	PubsubJobQueues      = "/_kateway/jobs"
-	PubsubJobQueueOwners = "/_kateway/jobs/owners"
 	PubsubActors         = "/_kateway/actors/ids"
+	PubsubJobQueueOwners = "/_kateway/actors/owners"
 
 	KguardLeaderPath = "_kguard/leader"
 

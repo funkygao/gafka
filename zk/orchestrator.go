@@ -62,12 +62,38 @@ func (this *Orchestrator) WatchJobQueues() (JobQueueList, <-chan zk.Event, error
 	return r, c, nil
 }
 
-func (this *Orchestrator) ClaimJobQueue(jobQueue string) (err error) {
+func (this *Orchestrator) ClaimJobQueue(actorId, jobQueue string) (err error) {
+	this.connectIfNeccessary()
+
+	path := fmt.Sprintf("%s/%s", PubsubJobQueueOwners, jobQueue)
+	this.ensureParentDirExists(path)
+	err = this.CreateEphemeralZnode(path, []byte(actorId))
+	if err == zk.ErrNodeExists {
+		data, _, err := this.conn.Get(path)
+		if err != nil {
+			return err
+		}
+		if string(data) != actorId {
+			return ErrClaimedByOthers
+		}
+		return nil
+	}
+
 	return
 }
 
-func (this *Orchestrator) ReleaseJobQueue(jobQueue string) {
+func (this *Orchestrator) ReleaseJobQueue(actorId, jobQueue string) error {
+	path := fmt.Sprintf("%s/%s", PubsubJobQueueOwners, jobQueue)
+	data, _, err := this.conn.Get(path)
+	if err != nil && err != zk.ErrNoNode {
+		return err
+	}
 
+	if data == nil || string(data) != actorId {
+		return ErrNotClaimed
+	}
+
+	return this.conn.Delete(path, -1)
 }
 
 type ActorList []string
