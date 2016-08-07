@@ -7,6 +7,7 @@ import (
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	_ "github.com/funkygao/gafka/cmd/kguard/sos"
+	_ "github.com/funkygao/gafka/cmd/kguard/watchers/actord"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/external"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/influxdb"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/influxquery"
