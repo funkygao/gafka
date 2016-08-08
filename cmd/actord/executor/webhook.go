@@ -1,11 +1,16 @@
 package executor
 
 import (
+	"io"
+	"io/ioutil"
+	"net"
+	"net/http"
 	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/mpool"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/golib/breaker"
 	"github.com/funkygao/kafka-cg/consumergroup"
@@ -23,9 +28,10 @@ type WebhookExecutor struct {
 	stopper        <-chan struct{}
 	auditor        log.Logger
 
-	circuits map[string]breaker.Consecutive
+	circuits map[string]*breaker.Consecutive
 	fetcher  *consumergroup.ConsumerGroup
 	msgCh    chan *sarama.ConsumerMessage
+	sender   *http.Client // it has builtin pooling
 }
 
 func NewWebhookExecutor(parentId, cluster, topic string, endpoints []string,
@@ -38,11 +44,23 @@ func NewWebhookExecutor(parentId, cluster, topic string, endpoints []string,
 		endpoints: endpoints,
 		auditor:   auditor,
 		msgCh:     make(chan *sarama.ConsumerMessage, 20),
-		circuits:  make(map[string]breaker.Consecutive, len(endpoints)),
+		circuits:  make(map[string]*breaker.Consecutive, len(endpoints)),
+		sender: &http.Client{
+			Timeout: time.Second * 4,
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: 20, // pooling
+				Dial: (&net.Dialer{
+					Timeout: time.Second * 4,
+				}).Dial,
+				DisableKeepAlives:     false, // enable http conn reuse
+				ResponseHeaderTimeout: time.Second * 4,
+				TLSHandshakeTimeout:   time.Second * 4,
+			},
+		},
 	}
 
 	for _, ep := range endpoints {
-		this.circuits[ep] = breaker.Consecutive{
+		this.circuits[ep] = &breaker.Consecutive{
 			RetryTimeout:     time.Second * 5,
 			FailureAllowance: 5,
 		}
@@ -118,6 +136,42 @@ func (this *WebhookExecutor) pump(wg *sync.WaitGroup) {
 
 }
 
-func (this *WebhookExecutor) pushToEndpoint(msg *sarama.ConsumerMessage, uri string) {
+func (this *WebhookExecutor) pushToEndpoint(msg *sarama.ConsumerMessage, uri string) (ok bool) {
 	log.Debug("%s sending[%s] %s", this.topic, uri, string(msg.Value))
+
+	if this.circuits[uri].Open() {
+		log.Warn("%s %s circuit open", this.topic, uri)
+		return false
+	}
+
+	body := mpool.BytesBufferGet()
+	defer mpool.BytesBufferPut(body)
+
+	body.Reset()
+	body.Write(msg.Value)
+
+	req, err := http.NewRequest("POST", uri, body)
+	if err != nil {
+		this.circuits[uri].Fail()
+		return false
+	}
+
+	//req.Header.Set("X-Offset", msg.Offset)
+	response, err := this.sender.Do(req)
+	if err != nil {
+		log.Error("%s %s %s", this.topic, uri, err)
+		this.circuits[uri].Fail()
+		return false
+	}
+
+	io.Copy(ioutil.Discard, response.Body)
+	response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		log.Warn("%s %s response: %s", this.topic, uri, http.StatusText(response.StatusCode))
+	}
+
+	// audit
+	log.Info("pushed %s/%d %d", this.topic, msg.Partition, msg.Offset)
+	return true
 }
