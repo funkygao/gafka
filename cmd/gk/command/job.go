@@ -133,7 +133,7 @@ func (this *Job) printJobQueueAndActors() {
 	header = "Actor|Ctime|Mtime"
 	lines = append(lines, header)
 	actors := this.zkzone.ChildrenWithData(zk.PubsubActors)
-	sortedName = make([]string, 0, len(actors))
+	sortedName = sortedName[:0]
 	for name := range actors {
 		sortedName = append(sortedName, name)
 	}
@@ -142,6 +142,26 @@ func (this *Job) printJobQueueAndActors() {
 	for _, name := range sortedName {
 		zdata := actors[name]
 		lines = append(lines, fmt.Sprintf("%s|%s|%s", name,
+			zdata.Ctime(), zdata.Mtime()))
+	}
+	if len(lines) > 1 {
+		this.Ui.Output("")
+		this.Ui.Output(columnize.SimpleFormat(lines))
+	}
+
+	lines = lines[:0]
+	header = "JobQueue|Actor|Ctime|Mtime"
+	lines = append(lines, header)
+	jobQueueOwners := this.zkzone.ChildrenWithData(zk.PubsubJobQueueOwners)
+	sortedName = sortedName[:0]
+	for name := range jobQueueOwners {
+		sortedName = append(sortedName, name)
+	}
+	sort.Strings(sortedName)
+
+	for _, jobQueue := range sortedName {
+		zdata := jobQueueOwners[jobQueue]
+		lines = append(lines, fmt.Sprintf("%s|%s|%s|%s", jobQueue, string(zdata.Data()),
 			zdata.Ctime(), zdata.Mtime()))
 	}
 	if len(lines) > 1 {
@@ -184,10 +204,7 @@ Options:
       List app's real-time and archive job table contents.
 
     -d <due time in seconds>
-      List jobs due from now within how many seconds.    
-
-    TODO
-      actor <-> job queue mapping table
+      List jobs due from now within how many seconds.
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
