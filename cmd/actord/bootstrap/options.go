@@ -6,4 +6,6 @@ var Options struct {
 	LogFile       string
 	LogLevel      string
 	LogRotateSize int
+	InfluxAddr    string
+	InfluxDbname  string
 }

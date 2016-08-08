@@ -19,7 +19,10 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/cmd/kateway/store/kafka"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/telemetry"
+	"github.com/funkygao/gafka/telemetry/influxdb"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
 	zklib "github.com/samuel/go-zookeeper/zk"
@@ -32,6 +35,8 @@ func init() {
 	flag.StringVar(&Options.LogFile, "log", "stdout", "log file")
 	flag.StringVar(&Options.LogLevel, "level", "debug", "log level")
 	flag.IntVar(&Options.LogRotateSize, "logsize", 10<<30, "max unrotated log file size")
+	flag.StringVar(&Options.InfluxAddr, "influxaddr", "", "influxdb server addr")
+	flag.StringVar(&Options.InfluxDbname, "influxdb", "", "influxdb db name")
 	flag.Parse()
 
 	if Options.ShowVersion {
@@ -62,6 +67,7 @@ func Main() {
 		}
 	}()
 
+	var err error
 	zkzone := zk.NewZkZone(zk.DefaultConfig(Options.Zone, ctx.ZoneZkAddrs(Options.Zone)))
 
 	// meta pkg is required for store pkg
@@ -71,9 +77,24 @@ func Main() {
 	meta.Default.Start()
 	log.Trace("meta store[%s] started", meta.Default.Name())
 
+	if Options.InfluxAddr != "" && Options.InfluxDbname != "" {
+		rc, err := influxdb.NewConfig(Options.InfluxAddr, Options.InfluxDbname, "", "", time.Minute)
+		if err != nil {
+			panic(err)
+		}
+		telemetry.Default = influxdb.New(metrics.DefaultRegistry, rc)
+		go func() {
+			log.Info("telemetry[%s] started", telemetry.Default.Name())
+
+			if err := telemetry.Default.Start(); err != nil {
+				log.Error("telemetry[%s]: %v", telemetry.Default.Name(), err)
+			}
+		}()
+	}
+
 	var pubStoreWg sync.WaitGroup
 	store.DefaultPubStore = kafka.NewPubStore(100, 0, false, &pubStoreWg, false, false)
-	if err := store.DefaultPubStore.Start(); err != nil {
+	if err = store.DefaultPubStore.Start(); err != nil {
 		panic(err)
 	}
 	log.Trace("pub store[%s] started", store.DefaultPubStore.Name())
@@ -90,7 +111,7 @@ func Main() {
 
 	}, syscall.SIGINT, syscall.SIGTERM)
 
-	if err := c.ServeForever(); err != nil {
+	if err = c.ServeForever(); err != nil {
 		panic(err)
 	}
 
@@ -103,6 +124,11 @@ func Main() {
 
 	meta.Default.Stop()
 	log.Trace("meta store[%s] stopped", meta.Default.Name())
+
+	if telemetry.Default != nil {
+		telemetry.Default.Stop()
+		log.Info("telemetry[%s] stopped", telemetry.Default.Name())
+	}
 
 	zkzone.Close()
 	log.Trace("zkzone stopped")
