@@ -31,6 +31,12 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - REST API
   - http/https/websocket/http2 interface for Pub/Sub
 - Support both FIFO and Schedulable queue
+- Flexible delivery options
+  - Both push- and pull-style subscriptions supported
+- Communication can be 
+  - one-to-many (fan-out)
+  - many-to-one (fan-in)
+  - many-to-many
 - Systemic Quality Requirements
   - Performance & Throughput
     - > 100K msg/sec delivery on a single host without batch
@@ -42,35 +48,28 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
     - < 1s delivery
   - Availability
     - Graceful shutdown without downtime
+  - Long polling
   - Graceful Degrade
     - throttle
     - circuit breaker
     - hinted handoff
-  - Rich monitoring and alarm 
-- Load balancer friendly
 - Fully-managed
   - Discovery
   - Create versioned topics, subscribe to topics
-  - Dedicated real-time metrics, fully-functional dashboard and alarming
+  - Rich real-time tagged metrics, fully-functional dashboard and alarming
   - Easy trouble shooting
   - Controlled GC
   - Visualize message flow
   - Managed integration service via Webhooks
   - Hot configurable
-- Communication can be 
-  - one-to-many (fan-out)
-  - many-to-one (fan-in)
-  - many-to-many
 - Mirror across data centers
 - Replicated storage and guaranteed at-least-once message delivery
-- Flexible delivery options
-  - Both push- and pull-style subscriptions supported
 - Functional Features
   - schedulable message
   - server side message filter by tag
   - managed message routing
   - avro based message schema registration and versioning
-  - retry|deadletter queue
+  - retry|dead queue
   - sub in batch
   - message backtracking
   - hot dryrun topic
@@ -79,6 +78,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - user can check sub status/lag
   - topic owners can check subscribers and their status
 - Enables sophisticated streaming data processing
+- Load balancer friendly
 - [ ] Quotas and rate limit, QoS
   - Flow control: Dynamic rate limiting
 - [ ] Encryption of all message data on the wire
@@ -93,64 +93,6 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - Logging to multiple systems
 - Data streaming from various processes or devices
 - Reliability improvement
-
-### Design philosophy
-
-kateway is designed as an open system that can easily integrate with other system.
-
-It is designed to be programmer friendly.
-
-### Architecture
-
-           +----+      +-----------------+          
-           | DB |------|   manager UI    |
-           +----+      +-----------------+                                                  
-                               |                                                           
-                               ^ register [application|topic|version|subscription]                       
-                               |                                                          
-                       +-----------------+                                                 
-                       |  Application    |                                                
-                       +-----------------+                                               
-                               |                                                        
-                               V                                                       
-            PUB                |               SUB                                    
-            +-------------------------------------+                                  
-            |                                     |                                         
-       HTTP |                                HTTP | keep-alive 
-       POST |                                 GET | session sticky                        
-            |                                     |                                      
-        +------------+                      +------------+                 application 
-     ---| PubEndpoint|----------------------| SubEndpoint|---------------------------- 
-        +------------+           |          +------------+                     kateway
-        | stateless  |        Plugins       | stateful   |                           
-        +------------+  +----------------+  +------------+                          
-        | quota      |  | Authentication |  | quota      |      
-        +------------+  +----------------+  +------------+     
-        | metrics    |  | Authorization  |  | metrics    |    
-        +------------+  +----------------+  +------------+   
-        | guard      |  | ......         |  | guard      |  
-        +------------+  +----------------+  +------------+                      
-        | registry   |                      | registry   |  
-        +------------+                      +------------+                      
-        | meta       |                      | meta       |  
-        +------------+                      +------------+                      
-        | manager    |                      | manager    |  
-        +------------+                      +------------+                      
-            |                                     |    
-            |    +----------------------+         |  
-            |----| ZK or other ensemble |---------| 
-            |    +----------------------+         |
-            |                                     |    
-            | Append                              | Fetch
-            |                                     |                     
-            |       +------------------+          |     
-            |       |      Store       |          |    
-            +-------+------------------+----------+   
-                    |  kafka or else   |
-           +----+   +------------------+        +---------------+
-           | gk |---|     monitor      |--------| elastic scale |
-           +----+   +------------------+        +---------------+
-
 
 ### APIs
 

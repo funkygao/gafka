@@ -20,7 +20,7 @@ A full ecosystem that is built around kafka powered by golang.
      |            | LB          |                                        |                       |
      |            |             |   +--------------------+           +--------+                  |
      |            |             +---|                    | election  |        | watch            |
-     |            |                 | zookeeper ensemble |-----------| kguard |-------------+    |
+     |            |keepalive        | zookeeper ensemble |-----------| kguard |-------------+    |
      |            |             +---|                    |           |        | aggragator  |    |
      |            |             |   +--------------------+           +--------+             |    |
      |            |     +-------+           |                            |                  |    |
