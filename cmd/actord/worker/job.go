@@ -14,8 +14,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-// Worker polls a single JobQueue and handle each Job.
-type Worker struct {
+// JobWorker polls a single JobQueue and handle each Job.
+type JobWorker struct {
 	parentId       string // controller short id
 	cluster, topic string
 	mc             *mysql.MysqlCluster
@@ -30,9 +30,9 @@ type Worker struct {
 	ident string
 }
 
-func New(parentId, cluster, topic string, mc *mysql.MysqlCluster,
-	stopper <-chan struct{}, auditor log.Logger) *Worker {
-	this := &Worker{
+func NewJobWorker(parentId, cluster, topic string, mc *mysql.MysqlCluster,
+	stopper <-chan struct{}, auditor log.Logger) *JobWorker {
+	this := &JobWorker{
 		parentId: parentId,
 		cluster:  cluster,
 		topic:    topic,
@@ -46,9 +46,7 @@ func New(parentId, cluster, topic string, mc *mysql.MysqlCluster,
 }
 
 // poll mysql for due jobs and send to kafka.
-func (this *Worker) Run() {
-	log.Trace("starting %s", this.Ident())
-
+func (this *JobWorker) Run() {
 	manager.Default = dummy.New("")
 	this.appid = manager.Default.TopicAppid(this.topic)
 	if this.appid == "" {
@@ -59,6 +57,8 @@ func (this *Worker) Run() {
 	this.table = jm.JobTable(this.topic)
 	this.ident = fmt.Sprintf("worker{cluster:%s app:%s aid:%d topic:%s table:%s}",
 		this.cluster, this.appid, this.aid, this.topic, this.table)
+
+	log.Trace("starting %s", this.Ident())
 
 	var (
 		wg   sync.WaitGroup
@@ -109,7 +109,7 @@ func (this *Worker) Run() {
 }
 
 // TODO batch DELETE/INSERT for better performance.
-func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
+func (this *JobWorker) handleDueJobs(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	var (
@@ -157,6 +157,6 @@ func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
 	}
 }
 
-func (this *Worker) Ident() string {
+func (this *JobWorker) Ident() string {
 	return this.ident
 }
