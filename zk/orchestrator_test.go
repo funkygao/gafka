@@ -45,14 +45,22 @@ func TestOrchestatorAll(t *testing.T) {
 	}
 }
 
-func TestCreateWebhook(t *testing.T) {
+func TestCreateOrUpdateWebhook(t *testing.T) {
 	zkzone := NewZkZone(DefaultConfig(ctx.DefaultZone(), ctx.ZoneZkAddrs(ctx.DefaultZone())))
 	defer zkzone.Close()
 
 	o := zkzone.NewOrchestrator()
-	err := o.CreateWebhook("cluster", "topic")
+	var hook WebhookMeta
+	hook.Cluster = "me"
+	hook.Endpoints = []string{"http://localhost"}
+	err := o.CreateOrUpdateWebhook("topic_webhook", hook)
 	assert.Equal(t, nil, err)
 
-	err = o.CreateWebhook("cluster", "topic")
+	err = o.CreateOrUpdateWebhook("topic_webhook", hook)
 	assert.Equal(t, nil, err)
+
+	h, err := o.WebhookInfo("topic_webhook")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "me", h.Cluster)
+	assert.Equal(t, 1, len(h.Endpoints))
 }

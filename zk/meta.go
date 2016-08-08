@@ -51,6 +51,15 @@ type WebhookMeta struct {
 	Endpoints []string `json:"endpoints"`
 }
 
+func (this *WebhookMeta) From(b []byte) error {
+	return json.Unmarshal(b, this)
+}
+
+func (this *WebhookMeta) Bytes() []byte {
+	b, _ := json.Marshal(this)
+	return b
+}
+
 type ControllerMeta struct {
 	Broker *BrokerZnode
 	Mtime  ZkTimestamp

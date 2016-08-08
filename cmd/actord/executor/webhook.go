@@ -23,5 +23,6 @@ func NewWebhookExecutor(parentId, cluster, topic string, stopper <-chan struct{}
 }
 
 func (this *WebhookExecutor) Run() {
+	// watch the znode change, its endpoint might change any time
 
 }
