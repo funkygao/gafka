@@ -138,7 +138,8 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 - how to consume multiple messages in Sub?
 
-  kateway uses chunked transfer encoding
+  add param `batch` when Sub.
+  kateway uses chunked transfer encoding and client MUST use TLV to decode.
 
 - http header size limit?
 
@@ -155,14 +156,6 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - if sub with no arriving message, how long do client get http 204?
 
   30s
-
-### Migration
-
-    pub write both kafka and kateway
-    pub write EOF to kafka while writing START to kateway atomically (for multiple partitions?)
-        from then only pub write only to kateway
-    sub(kafka) handles messages till encounter EOF
-    sub(kateway) not handles message till encounter START
 
 ### TODO
 
