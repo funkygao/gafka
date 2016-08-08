@@ -79,6 +79,8 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - hot dryrun topic
   - multi-tenant metrics
   - self-servicable topic scaling and message rentention SLA
+  - user can check sub status/lag
+  - topic owners can check subscribers and their status
 - Enables sophisticated streaming data processing
 - [ ] Quotas and rate limit, QoS
   - Flow control: Dynamic rate limiting
