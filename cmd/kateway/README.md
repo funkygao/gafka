@@ -39,6 +39,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - Systemic Quality Requirements
   - Performance & Throughput
     - > 100K msg/sec delivery on a single host without batch
+    - fully benchmark tested and profiler'ed
   - Scalability
     - scales to 1M msg/sec
     - elastic scales
@@ -76,6 +77,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - avro based message schema registration and versioning
   - retry|deadletter queue
   - sub in batch
+  - replay messages at specified offset
   - hot dryrun topic
   - multi-tenant metrics
   - self-servicable topic scaling and message rentention SLA
