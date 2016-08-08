@@ -60,7 +60,7 @@ func (this *WatchTopics) Run() {
 			brokers.Update(b)
 
 			if lastTotalOffsets > 0 {
-				if o-lastTotalOffsets > 0 {
+				if o-lastTotalOffsets >= 0 {
 					pubQps.Mark(o - lastTotalOffsets)
 					lastTotalOffsets = o
 				} else {
