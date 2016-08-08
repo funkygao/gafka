@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/funkygao/fae/config"
 	"github.com/funkygao/fae/servant/mysql"
@@ -15,7 +13,7 @@ import (
 )
 
 type Controller interface {
-	ServeForever() error
+	RunForever() error
 	Stop()
 
 	Id() string
@@ -60,7 +58,7 @@ func New(zkzone *zk.ZkZone) Controller {
 	return this
 }
 
-func (this *controller) ServeForever() (err error) {
+func (this *controller) RunForever() (err error) {
 	log.Info("controller[%s] starting", this.Id())
 
 	if err = this.orchestrator.RegisterActor(this.Id()); err != nil {
@@ -68,80 +66,21 @@ func (this *controller) ServeForever() (err error) {
 	}
 	defer this.orchestrator.ResignActor(this.Id())
 
-REBALANCE:
-	for {
-		// each loop is a new rebalance process
+	jobDispatchQuit := make(chan struct{})
+	go this.dispatchJobQueues(jobDispatchQuit)
 
-		select {
-		case <-this.quiting:
-			break REBALANCE
-		default:
-		}
+	webhookDispatchQuit := make(chan struct{})
+	go this.dispatchWebhooks(webhookDispatchQuit)
 
-		jobQueues, jobQueueChanges, err := this.orchestrator.WatchJobQueues()
-		if err != nil {
-			log.Error("watch job queues: %s", err)
-			time.Sleep(time.Second)
-			continue REBALANCE
-		}
+	select {
+	case <-jobDispatchQuit:
+		log.Warn("dispatchJobQueues quit")
 
-		actors, actorChanges, err := this.orchestrator.WatchActors()
-		if err != nil {
-			log.Error("watch actors: %s", err)
-			time.Sleep(time.Second)
-			continue REBALANCE
-		}
-
-		log.Info("deciding: found %d job queues, %d actors", len(jobQueues), len(actors))
-		decision := assignJobsToActors(actors, jobQueues)
-		myJobQueues := decision[this.Id()]
-
-		if len(myJobQueues) == 0 {
-			// standby mode
-			log.Warn("decided: no job assignment, awaiting rebalance...")
-		} else {
-			log.Info("decided: claiming %d/%d job queues", len(jobQueues), len(myJobQueues))
-		}
-
-		var (
-			wg            sync.WaitGroup
-			workerStopper = make(chan struct{})
-		)
-		for _, jobQueue := range myJobQueues {
-			wg.Add(1)
-			log.Trace("invoking worker for %s", jobQueue)
-			go this.invokeWorker(jobQueue, &wg, workerStopper)
-		}
-
-		select {
-		case <-this.quiting:
-			close(workerStopper)
-			wg.Wait()
-			break REBALANCE
-
-		case <-jobQueueChanges:
-			log.Info("rebalance due to job queue changes")
-
-			close(workerStopper)
-			wg.Wait()
-
-		case <-actorChanges:
-			log.Info("rebalance due to actor changes")
-
-			stillAlive, err := this.orchestrator.ActorRegistered(this.Id())
-			if err != nil {
-				log.Error(err)
-			} else if !stillAlive {
-				this.orchestrator.RegisterActor(this.Id())
-			}
-
-			close(workerStopper)
-			wg.Wait()
-		}
+	case <-webhookDispatchQuit:
+		log.Warn("dispatchWebhooks quit")
 	}
 
-	log.Info("controller[%s] stopped", this.Id())
-	return nil
+	return
 }
 
 func (this *controller) Stop() {

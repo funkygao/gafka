@@ -15,7 +15,9 @@ const (
 	PubsubJobConfig      = "/_kateway/orchestrator/jobconfig"
 	PubsubJobQueues      = "/_kateway/orchestrator/jobs"
 	PubsubActors         = "/_kateway/orchestrator/actors/ids"
-	PubsubJobQueueOwners = "/_kateway/orchestrator/actors/owners"
+	PubsubJobQueueOwners = "/_kateway/orchestrator/actors/job_owners"
+	PubsubWebhooks       = "/_kateway/orchestrator/webhooks"
+	PubsubWebhookOwners  = "/_kateway/orchestrator/actors/webhook_owners"
 	//PubsubActorRebalance = "/_kateway/orchestrator/rebalance"
 
 	KguardLeaderPath = "_kguard/leader"

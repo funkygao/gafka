@@ -113,7 +113,7 @@ func Main() {
 
 	}, syscall.SIGINT, syscall.SIGTERM)
 
-	if err = c.ServeForever(); err != nil {
+	if err = c.RunForever(); err != nil {
 		panic(err)
 	}
 

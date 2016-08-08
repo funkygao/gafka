@@ -1,20 +1,21 @@
-package worker
+package executor
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/funkygao/fae/servant/mysql"
 	"github.com/funkygao/gafka/cmd/kateway/job"
 	jm "github.com/funkygao/gafka/cmd/kateway/job/mysql"
+	"github.com/funkygao/gafka/cmd/kateway/manager"
+	"github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 )
 
-// Worker polls a single JobQueue and handle each Job.
-type Worker struct {
+// JobExecutor polls a single JobQueue and handle each Job.
+type JobExecutor struct {
 	parentId       string // controller short id
 	cluster, topic string
 	mc             *mysql.MysqlCluster
@@ -29,9 +30,9 @@ type Worker struct {
 	ident string
 }
 
-func New(parentId, cluster, topic string, mc *mysql.MysqlCluster,
-	stopper <-chan struct{}, auditor log.Logger) *Worker {
-	this := &Worker{
+func NewJobExecutor(parentId, cluster, topic string, mc *mysql.MysqlCluster,
+	stopper <-chan struct{}, auditor log.Logger) *JobExecutor {
+	this := &JobExecutor{
 		parentId: parentId,
 		cluster:  cluster,
 		topic:    topic,
@@ -41,17 +42,22 @@ func New(parentId, cluster, topic string, mc *mysql.MysqlCluster,
 		auditor:  auditor,
 	}
 
-	this.appid = topic[:strings.IndexByte(topic, '.')]
-	this.aid = jm.App_id(this.appid)
-	this.table = jm.JobTable(topic)
-	this.ident = fmt.Sprintf("worker{cluster:%s app:%s aid:%d topic:%s table:%s}",
-		this.cluster, this.appid, this.aid, this.topic, this.table)
-
 	return this
 }
 
 // poll mysql for due jobs and send to kafka.
-func (this *Worker) Run() {
+func (this *JobExecutor) Run() {
+	manager.Default = dummy.New("")
+	this.appid = manager.Default.TopicAppid(this.topic)
+	if this.appid == "" {
+		log.Warn("invalid topic: %s", this.topic)
+		return
+	}
+	this.aid = jm.App_id(this.appid)
+	this.table = jm.JobTable(this.topic)
+	this.ident = fmt.Sprintf("exe{cluster:%s app:%s aid:%d topic:%s table:%s}",
+		this.cluster, this.appid, this.aid, this.topic, this.table)
+
 	log.Trace("starting %s", this.Ident())
 
 	var (
@@ -103,7 +109,7 @@ func (this *Worker) Run() {
 }
 
 // TODO batch DELETE/INSERT for better performance.
-func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
+func (this *JobExecutor) handleDueJobs(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	var (
@@ -151,6 +157,6 @@ func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
 	}
 }
 
-func (this *Worker) Ident() string {
+func (this *JobExecutor) Ident() string {
 	return this.ident
 }

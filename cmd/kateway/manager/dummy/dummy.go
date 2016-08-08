@@ -94,10 +94,6 @@ func (this *dummyStore) ShadowTopic(shadow, myAppid, hisAppid, topic, ver, group
 	return r + "." + myAppid + "." + group + "." + shadow
 }
 
-func (this *dummyStore) WebHooks() ([]manager.WebHook, error) {
-	return nil, nil
-}
-
 func (this *dummyStore) DeadPartitions() map[string]map[int32]struct{} {
 	return nil
 }

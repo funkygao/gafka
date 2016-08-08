@@ -9,9 +9,9 @@
         |               |
         | 1:1           |
         |               |
-    +----------+  +----------+  
-    |  Worker  |  |  Worker  |
-    +----------+  +----------+  
+    +-----------+  +----------+  
+    |  Executor |  | Executor |
+    +-----------+  +----------+  
         |             |
         +-------------+
             |
@@ -34,7 +34,7 @@
 - [X] metrics and alarm
 - [ ] force rebalance
 - [X] audit
-- [ ] worker
+- [ ] executor
   - learn from zabbix how to mv real time table to archive table
   - graceful shutdown
   - test dependent components outage
