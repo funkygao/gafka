@@ -61,7 +61,7 @@ func (this *Worker) Run() {
 		sql  = fmt.Sprintf("SELECT job_id,app_id,payload,due_time FROM %s WHERE due_time<=?", this.table)
 	)
 
-	// handler pool
+	// handler pool FIXME
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go this.handleDueJobs(&wg)

@@ -7,22 +7,23 @@ Kafka clusters body guard that emits health info to InfluxDB.
     
                        👥 ✉  here I am
                         |              
-        +------------------------+
-        | alarm                  | dashboard
-        |               +-----------------+
-        |               |                 |
-    +--------+     +----------+      +----------+    +---------+
-    | zabbix |     | InfluxDB |      | OpenTSDB |    | TSDB... |
-    +--------+     +----------+      +----------+    +---------+
-        |            |                   |                  |
-        |            +--------------------------------------+
+        +------------------------+------------------------------------------------+
+        | alarm                  | dashboard                                alarm |
+        | (aggregated)           | Grafana                            (threshold) |
+        |               +-----------------+                                       |
+        |               |                 |                                       |
+    +--------+     +----------+      +----------+    +---------+               +--------+
+    | zabbix |     | InfluxDB |      | OpenTSDB |    | TSDB... |               | zabbix |- OS level monitor
+    +--------+     +----------+      +----------+    +---------+               +--------+
+        |            |                   |                  |                     |
+        |            +--------------------------------------+                 zabbix agents
         |                      ^
         | periodically         |
         | call                 | flush
         | RESTful              |
         |                 +-----------+
         |                 | telemetry |
-        |                 +-----------+
+        |                 +-----------+                                        
         |                      | collect                                       +- external scripts
         |                      V                                               |- kguard floating
         |     +-------------------+                                            |- ehaproxy
