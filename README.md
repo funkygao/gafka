@@ -32,9 +32,9 @@ A full ecosystem that is built around kafka powered by golang.
 
                 +-----------+
                 | VirtualIP |
-                +-----------+                                +-------+     +-----------+
-                      |                                      | alarm |     | dashboard |
-              +--------------+                               +-------+     +-----------+
+                +-----------+                                
+                      |
+              +--------------+                                 Alarm         Dashboard
               |              |                                    |             |              gk
      +-------------------------------------------------------------------------------------------+
      |        |              |                                    |             |                |
@@ -77,9 +77,7 @@ A full ecosystem that is built around kafka powered by golang.
      |      |                                                                               zone |   
      +-------------------------------------------------------------------------------------------+
             |
-        +-------------+
-        | web console |
-        +-------------+
+        WebConsole 
 
 
 ### Install
