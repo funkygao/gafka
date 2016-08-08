@@ -36,11 +36,10 @@
 ### TODO
 
 - [X] any update/delete Job table need lock to avoid race condition with worker
-- [ ] app tables migration
+- [ ] watch orchestrator/jobconfig change, tables migration
 - [ ] metrics and alarm
-- [ ] watch orchestrator/jobconfig change
 - [ ] force rebalance
-- [ ] audit
+- [X] audit
 - [ ] worker
   - learn from zabbix how to mv real time table to archive table
   - graceful shutdown
@@ -49,6 +48,3 @@
   - call CreateJobQueue
   - dashboard
   - browse history
-- [ ] gk job
-  - list due jobs
-  - list real-time/archive job count

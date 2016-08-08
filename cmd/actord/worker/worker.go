@@ -20,6 +20,7 @@ type Worker struct {
 	mc             *mysql.MysqlCluster
 	stopper        <-chan struct{}
 	dueJobs        chan job.JobItem
+	auditor        log.Logger
 
 	// cached values
 	appid string
@@ -28,7 +29,8 @@ type Worker struct {
 	ident string
 }
 
-func New(parentId, cluster, topic string, mc *mysql.MysqlCluster, stopper <-chan struct{}) *Worker {
+func New(parentId, cluster, topic string, mc *mysql.MysqlCluster,
+	stopper <-chan struct{}, auditor log.Logger) *Worker {
 	this := &Worker{
 		parentId: parentId,
 		cluster:  cluster,
@@ -36,6 +38,7 @@ func New(parentId, cluster, topic string, mc *mysql.MysqlCluster, stopper <-chan
 		mc:       mc,
 		stopper:  stopper,
 		dueJobs:  make(chan job.JobItem, 200),
+		auditor:  auditor,
 	}
 
 	this.appid = topic[:strings.IndexByte(topic, '.')]
@@ -132,7 +135,7 @@ func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
 				log.Error("%s: %s", this.ident, err)
 				// TODO insert back to job table
 			} else {
-				log.Debug("%s sent to kafka: %s", this.ident, item)
+				this.auditor.Trace(item.String())
 
 				// mv job to archive table
 				_, _, err = this.mc.Exec(jm.AppPool, this.table, this.aid, sqlInsertArchive,

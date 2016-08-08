@@ -42,7 +42,7 @@ func (this *controller) invokeWorker(jobQueue string, wg *sync.WaitGroup, stoppe
 		log.Error(err)
 	}
 
-	w := worker.New(this.shortId, cluster, jobQueue, this.mc, stopper)
+	w := worker.New(this.shortId, cluster, jobQueue, this.mc, stopper, this.auditor)
 	w.Run()
 
 }

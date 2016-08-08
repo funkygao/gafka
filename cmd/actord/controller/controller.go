@@ -25,6 +25,7 @@ type controller struct {
 	orchestrator *zk.Orchestrator
 	mc           *mysql.MysqlCluster
 	quiting      chan struct{}
+	auditor      log.Logger
 
 	ident   string // cache
 	shortId string // cache
@@ -54,6 +55,7 @@ func New(zkzone *zk.ZkZone) Controller {
 	// hostname:95f333fb-731c-9c95-c598-8d6b99a9ec7d
 	p := strings.SplitN(this.ident, ":", 2)
 	this.shortId = fmt.Sprintf("%s:%s", p[0], this.ident[strings.LastIndexByte(this.ident, '-')+1:])
+	this.setupAuditor()
 
 	return this
 }
@@ -90,15 +92,15 @@ REBALANCE:
 			continue REBALANCE
 		}
 
-		log.Info("deciding, found %d job queues, %d actors", len(jobQueues), len(actors))
+		log.Info("deciding: found %d job queues, %d actors", len(jobQueues), len(actors))
 		decision := assignJobsToActors(actors, jobQueues)
 		myJobQueues := decision[this.Id()]
 
 		if len(myJobQueues) == 0 {
 			// standby mode
-			log.Warn("decided, no job assignment, awaiting rebalance...")
+			log.Warn("decided: no job assignment, awaiting rebalance...")
 		} else {
-			log.Info("decided, claiming %d/%d job queues", len(jobQueues), len(myJobQueues))
+			log.Info("decided: claiming %d/%d job queues", len(jobQueues), len(myJobQueues))
 		}
 
 		var (
