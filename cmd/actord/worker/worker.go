@@ -2,13 +2,14 @@ package worker
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/funkygao/fae/servant/mysql"
 	"github.com/funkygao/gafka/cmd/kateway/job"
 	jm "github.com/funkygao/gafka/cmd/kateway/job/mysql"
+	"github.com/funkygao/gafka/cmd/kateway/manager"
+	"github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 )
@@ -41,18 +42,23 @@ func New(parentId, cluster, topic string, mc *mysql.MysqlCluster,
 		auditor:  auditor,
 	}
 
-	this.appid = topic[:strings.IndexByte(topic, '.')]
-	this.aid = jm.App_id(this.appid)
-	this.table = jm.JobTable(topic)
-	this.ident = fmt.Sprintf("worker{cluster:%s app:%s aid:%d topic:%s table:%s}",
-		this.cluster, this.appid, this.aid, this.topic, this.table)
-
 	return this
 }
 
 // poll mysql for due jobs and send to kafka.
 func (this *Worker) Run() {
 	log.Trace("starting %s", this.Ident())
+
+	manager.Default = dummy.New("")
+	this.appid = manager.Default.TopicAppid(this.topic)
+	if this.appid == "" {
+		log.Warn("invalid topic: %s", this.topic)
+		return
+	}
+	this.aid = jm.App_id(this.appid)
+	this.table = jm.JobTable(this.topic)
+	this.ident = fmt.Sprintf("worker{cluster:%s app:%s aid:%d topic:%s table:%s}",
+		this.cluster, this.appid, this.aid, this.topic, this.table)
 
 	var (
 		wg   sync.WaitGroup
