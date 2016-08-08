@@ -5,9 +5,11 @@ import (
 	"strings"
 )
 
+const jobTablePrefix = "job_"
+
 // JobTable converts a topic name to a mysql table name.
 func JobTable(topic string) string {
-	return strings.Replace(topic, ".", "_", -1)
+	return jobTablePrefix + strings.Replace(topic, ".", "_", -1)
 }
 
 // HistoryTable converts a topic name to a mysql history table name.
