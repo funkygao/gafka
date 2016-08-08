@@ -46,6 +46,11 @@ type ConsumerMeta struct {
 	ConsumerZnode  *ConsumerZnode
 }
 
+type WebhookMeta struct {
+	Cluster   string   `json:"cluster"`
+	Endpoints []string `json:"endpoints"`
+}
+
 type ControllerMeta struct {
 	Broker *BrokerZnode
 	Mtime  ZkTimestamp
