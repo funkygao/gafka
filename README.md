@@ -2,32 +2,6 @@
 
 A full ecosystem that is built around kafka powered by golang.
 
-### Components
-
-- [ehaproxy](https://github.com/funkygao/gafka/tree/master/cmd/ehaproxy)
-
-  Elastic haproxy that sits in front of kateway.
-
-- [kateway](https://github.com/funkygao/gafka/tree/master/cmd/kateway)
-
-  A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming message/job service.
-
-- [actord](https://github.com/funkygao/gafka/tree/master/cmd/actord)
-
-  kateway job scheduler and webhook dispatcher.
-
-- [gk](https://github.com/funkygao/gafka/tree/master/cmd/gk)
- 
-  Unified multi-datacenter multi-cluster kafka swiss-knife management console.
-
-- [zk](https://github.com/funkygao/gafka/tree/master/cmd/zk)
-
-  A handy zookeeper CLI that supports recursive operation without any dependency.
-
-- [kguard](https://github.com/funkygao/gafka/tree/master/cmd/kguard)
-
-  Kafka clusters body guard that emits health info to InfluxDB and exports key warnings to zabbix for alarming.
-
 ### The Whole Picture
 
                 +-----------+
@@ -79,6 +53,31 @@ A full ecosystem that is built around kafka powered by golang.
             |
         WebConsole 
 
+### Components
+
+- [ehaproxy](https://github.com/funkygao/gafka/tree/master/cmd/ehaproxy)
+
+  Elastic haproxy that sits in front of kateway.
+
+- [kateway](https://github.com/funkygao/gafka/tree/master/cmd/kateway)
+
+  A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming message/job service.
+
+- [actord](https://github.com/funkygao/gafka/tree/master/cmd/actord)
+
+  kateway job scheduler and webhook dispatcher.
+
+- [gk](https://github.com/funkygao/gafka/tree/master/cmd/gk)
+ 
+  Unified multi-datacenter multi-cluster kafka swiss-knife management console.
+
+- [zk](https://github.com/funkygao/gafka/tree/master/cmd/zk)
+
+  A handy zookeeper CLI that supports recursive operation without any dependency.
+
+- [kguard](https://github.com/funkygao/gafka/tree/master/cmd/kguard)
+
+  Kafka clusters body guard that emits health info to InfluxDB and exports key warnings to zabbix for alarming.
 
 ### Install
 
