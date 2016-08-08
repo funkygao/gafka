@@ -35,7 +35,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 - REST API
   - http/https/websocket/http2 interface for Pub/Sub
-- Support both FIFO and Priority queue
+- Support both FIFO and Schedulable queue
 - Systemic Quality Requirements
   - Performance & Throughput
     - > 100K msg/sec delivery on a single host without batch
@@ -49,23 +49,36 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - Graceful Degrade
     - throttle
     - circuit breaker
+    - hinted handoff
   - Rich monitoring and alarm 
+- Load balancer friendly
 - Fully-managed
   - Discovery
   - Create versioned topics, subscribe to topics
-  - Dedicated real-time metrics and fully-functional dashboard 
+  - Dedicated real-time metrics, fully-functional dashboard and alarming
   - Easy trouble shooting
+  - Controlled GC
   - Visualize message flow
-  - [ ] Managed integration service via Webhooks
+  - Managed integration service via Webhooks
+  - Hot configurable
 - Communication can be 
   - one-to-many (fan-out)
   - many-to-one (fan-in)
   - many-to-many
+- Mirror across data centers
 - Replicated storage and guaranteed at-least-once message delivery
 - Flexible delivery options
   - Both push- and pull-style subscriptions supported
+- Functional Features
+  - schedulable message
+  - server side message filter by tag
+  - managed message routing
+  - avro based message schema registration and versioning
+  - retry|deadletter queue
+  - sub in batch
+  - hot dryrun topic
+  - multi-tenant metrics
 - Enables sophisticated streaming data processing
-  - because one app may emit kateway stream data into another kateway stream
 - [ ] Quotas and rate limit, QoS
   - Flow control: Dynamic rate limiting
 - [ ] Encryption of all message data on the wire
@@ -195,7 +208,7 @@ It is designed to be programmer friendly.
 
 - what is limit of a job message in size?
 
-  1 ~ 64KB
+  1 ~ 16KB
 
 - if sub with no arriving message, how long do client get http 204?
 
@@ -227,7 +240,6 @@ It is designed to be programmer friendly.
 - [ ] sub with delayed ack
   - StatusNotModified
   - what if rebalanced, and ack buffered p/o
-- [ ] test max body/header size limit
 - [ ] pub/sub a disabled topic, discard?
 - [ ] features confirm
   - delayed job
@@ -240,7 +252,6 @@ It is designed to be programmer friendly.
   - authentication and authorization
   - transform
   - hooks
-  - other stuff related to message-oriented middleware
 - [ ] check hack pkg
 - [ ] https://github.com/allinurl/goaccess
 - [ ] https, outer ip must https
