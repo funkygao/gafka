@@ -13,6 +13,8 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 - Google Cloud Pub/Sub
 - Amazon kenesis/SQS
+  - kenesis is aws kafka
+  - SQS is aws beanstalkd
 - Azure EventHub
 - IBM Bluemix Message Hub
 - aliyun MNS
