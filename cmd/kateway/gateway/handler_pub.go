@@ -77,6 +77,19 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
+	query := r.URL.Query() // reuse the query will save 100ns
+
+	partitionKey = query.Get("key")
+	if len(partitionKey) > MaxPartitionKeyLen {
+		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} too big key: %s",
+			appid, r.RemoteAddr, realIp, topic, ver,
+			r.Header.Get("User-Agent"), partitionKey)
+
+		this.pubMetrics.ClientError.Inc(1)
+		writeBadRequest(w, "too big key")
+		return
+	}
+
 	var msg *mpool.Message
 	tag = r.Header.Get(HttpHeaderMsgTag)
 	if tag != "" {
@@ -120,19 +133,8 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		this.pubMetrics.PubMsgSize.Update(int64(len(msg.Body)))
 	}
 
-	query := r.URL.Query() // reuse the query will save 100ns
 	if query.Get("batch") == "1" {
 		// TODO
-	}
-	partitionKey = query.Get("key")
-	if len(partitionKey) > MaxPartitionKeyLen {
-		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} too big key: %s",
-			appid, r.RemoteAddr, realIp, topic, ver,
-			r.Header.Get("User-Agent"), partitionKey)
-
-		this.pubMetrics.ClientError.Inc(1)
-		writeBadRequest(w, "too big key")
-		return
 	}
 
 	cluster, found := manager.Default.LookupCluster(appid)
