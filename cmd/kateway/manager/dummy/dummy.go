@@ -41,7 +41,11 @@ func (this *dummyStore) KafkaTopic(appid string, topic string, ver string) (r st
 }
 
 func (this *dummyStore) TopicAppid(kafkaTopic string) string {
-	return kafkaTopic[:strings.IndexByte(kafkaTopic, '.')]
+	firstDot := strings.IndexByte(kafkaTopic, '.')
+	if firstDot == -1 || firstDot > len(kafkaTopic) {
+		return ""
+	}
+	return kafkaTopic[:firstDot]
 }
 
 func (this *dummyStore) IsDryrunTopic(appid, topic, ver string) bool {

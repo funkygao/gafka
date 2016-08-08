@@ -90,6 +90,8 @@ func Main() {
 				log.Error("telemetry[%s]: %v", telemetry.Default.Name(), err)
 			}
 		}()
+	} else {
+		log.Warn("empty influx flag, telemetry disabled")
 	}
 
 	var pubStoreWg sync.WaitGroup

@@ -27,17 +27,11 @@
                                      zone
 
 
-### Monitor
-
-- [ ] topology
-- [ ] work load assignment
-- [ ] dead workers
-
 ### TODO
 
 - [X] any update/delete Job table need lock to avoid race condition with worker
 - [ ] watch orchestrator/jobconfig change, tables migration
-- [ ] metrics and alarm
+- [X] metrics and alarm
 - [ ] force rebalance
 - [X] audit
 - [ ] worker
