@@ -1,4 +1,4 @@
-package worker
+package executor
 
 import (
 	"fmt"
@@ -14,8 +14,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-// JobWorker polls a single JobQueue and handle each Job.
-type JobWorker struct {
+// JobExecutor polls a single JobQueue and handle each Job.
+type JobExecutor struct {
 	parentId       string // controller short id
 	cluster, topic string
 	mc             *mysql.MysqlCluster
@@ -30,9 +30,9 @@ type JobWorker struct {
 	ident string
 }
 
-func NewJobWorker(parentId, cluster, topic string, mc *mysql.MysqlCluster,
-	stopper <-chan struct{}, auditor log.Logger) *JobWorker {
-	this := &JobWorker{
+func NewJobExecutor(parentId, cluster, topic string, mc *mysql.MysqlCluster,
+	stopper <-chan struct{}, auditor log.Logger) *JobExecutor {
+	this := &JobExecutor{
 		parentId: parentId,
 		cluster:  cluster,
 		topic:    topic,
@@ -46,7 +46,7 @@ func NewJobWorker(parentId, cluster, topic string, mc *mysql.MysqlCluster,
 }
 
 // poll mysql for due jobs and send to kafka.
-func (this *JobWorker) Run() {
+func (this *JobExecutor) Run() {
 	manager.Default = dummy.New("")
 	this.appid = manager.Default.TopicAppid(this.topic)
 	if this.appid == "" {
@@ -55,7 +55,7 @@ func (this *JobWorker) Run() {
 	}
 	this.aid = jm.App_id(this.appid)
 	this.table = jm.JobTable(this.topic)
-	this.ident = fmt.Sprintf("worker{cluster:%s app:%s aid:%d topic:%s table:%s}",
+	this.ident = fmt.Sprintf("exe{cluster:%s app:%s aid:%d topic:%s table:%s}",
 		this.cluster, this.appid, this.aid, this.topic, this.table)
 
 	log.Trace("starting %s", this.Ident())
@@ -109,7 +109,7 @@ func (this *JobWorker) Run() {
 }
 
 // TODO batch DELETE/INSERT for better performance.
-func (this *JobWorker) handleDueJobs(wg *sync.WaitGroup) {
+func (this *JobExecutor) handleDueJobs(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	var (
@@ -157,6 +157,6 @@ func (this *JobWorker) handleDueJobs(wg *sync.WaitGroup) {
 	}
 }
 
-func (this *JobWorker) Ident() string {
+func (this *JobExecutor) Ident() string {
 	return this.ident
 }

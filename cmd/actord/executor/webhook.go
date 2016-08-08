@@ -1,18 +1,18 @@
-package worker
+package executor
 
 import (
 	log "github.com/funkygao/log4go"
 )
 
-type WebhookWorker struct {
+type WebhookExecutor struct {
 	parentId       string // controller short id
 	cluster, topic string
 	stopper        <-chan struct{}
 	auditor        log.Logger
 }
 
-func NewWebhookWorker(parentId, cluster, topic string, stopper <-chan struct{}, auditor log.Logger) *WebhookWorker {
-	this := &WebhookWorker{
+func NewWebhookExecutor(parentId, cluster, topic string, stopper <-chan struct{}, auditor log.Logger) *WebhookExecutor {
+	this := &WebhookExecutor{
 		parentId: parentId,
 		cluster:  cluster,
 		topic:    topic,
@@ -22,6 +22,6 @@ func NewWebhookWorker(parentId, cluster, topic string, stopper <-chan struct{}, 
 	return this
 }
 
-func (this *WebhookWorker) Run() {
+func (this *WebhookExecutor) Run() {
 
 }

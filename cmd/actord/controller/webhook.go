@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/funkygao/gafka/cmd/actord/worker"
+	"github.com/funkygao/gafka/cmd/actord/executor"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 )
@@ -48,25 +48,25 @@ REBALANCE:
 		}
 
 		var (
-			wg            sync.WaitGroup
-			workerStopper = make(chan struct{})
+			wg               sync.WaitGroup
+			executorsStopper = make(chan struct{})
 		)
 		for _, topic := range myWebhooks {
 			wg.Add(1)
-			log.Trace("invoking worker for %s", topic)
-			go this.invokeWebhookWorker(topic, &wg, workerStopper)
+			log.Trace("invoking executor for %s", topic)
+			go this.invokeWebhookExecutor(topic, &wg, executorsStopper)
 		}
 
 		select {
 		case <-this.quiting:
-			close(workerStopper)
+			close(executorsStopper)
 			wg.Wait()
 			break REBALANCE
 
 		case <-webhookChanges:
 			log.Info("rebalance due to webhooks changes")
 
-			close(workerStopper)
+			close(executorsStopper)
 			wg.Wait()
 
 		case <-actorChanges:
@@ -79,7 +79,7 @@ REBALANCE:
 				this.orchestrator.RegisterActor(this.Id())
 			}
 
-			close(workerStopper)
+			close(executorsStopper)
 			wg.Wait()
 		}
 	}
@@ -88,7 +88,7 @@ REBALANCE:
 	return
 }
 
-func (this *controller) invokeWebhookWorker(topic string, wg *sync.WaitGroup, stopper <-chan struct{}) {
+func (this *controller) invokeWebhookExecutor(topic string, wg *sync.WaitGroup, stopper <-chan struct{}) {
 	defer wg.Done()
 
 	var err error
@@ -121,7 +121,7 @@ func (this *controller) invokeWebhookWorker(topic string, wg *sync.WaitGroup, st
 		log.Error(err)
 	}
 
-	w := worker.NewWebhookWorker(this.shortId, cluster, topic, stopper, this.auditor)
-	w.Run()
+	exe := executor.NewWebhookExecutor(this.shortId, cluster, topic, stopper, this.auditor)
+	exe.Run()
 
 }

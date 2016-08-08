@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/funkygao/gafka/cmd/actord/worker"
+	"github.com/funkygao/gafka/cmd/actord/executor"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 )
@@ -48,25 +48,25 @@ REBALANCE:
 		}
 
 		var (
-			wg            sync.WaitGroup
-			workerStopper = make(chan struct{})
+			wg              sync.WaitGroup
+			executorStopper = make(chan struct{})
 		)
 		for _, jobQueue := range myJobQueues {
 			wg.Add(1)
-			log.Trace("invoking worker for %s", jobQueue)
-			go this.invokeJobWorker(jobQueue, &wg, workerStopper)
+			log.Trace("invoking executor for %s", jobQueue)
+			go this.invokeJobExexutor(jobQueue, &wg, executorStopper)
 		}
 
 		select {
 		case <-this.quiting:
-			close(workerStopper)
+			close(executorStopper)
 			wg.Wait()
 			break REBALANCE
 
 		case <-jobQueueChanges:
 			log.Info("rebalance due to job queue changes")
 
-			close(workerStopper)
+			close(executorStopper)
 			wg.Wait()
 
 		case <-actorChanges:
@@ -79,7 +79,7 @@ REBALANCE:
 				this.orchestrator.RegisterActor(this.Id())
 			}
 
-			close(workerStopper)
+			close(executorStopper)
 			wg.Wait()
 		}
 	}
@@ -88,7 +88,7 @@ REBALANCE:
 	return
 }
 
-func (this *controller) invokeJobWorker(jobQueue string, wg *sync.WaitGroup, stopper <-chan struct{}) {
+func (this *controller) invokeJobExexutor(jobQueue string, wg *sync.WaitGroup, stopper <-chan struct{}) {
 	defer wg.Done()
 
 	var err error
@@ -121,7 +121,7 @@ func (this *controller) invokeJobWorker(jobQueue string, wg *sync.WaitGroup, sto
 		log.Error(err)
 	}
 
-	w := worker.NewJobWorker(this.shortId, cluster, jobQueue, this.mc, stopper, this.auditor)
-	w.Run()
+	exe := executor.NewJobExecutor(this.shortId, cluster, jobQueue, this.mc, stopper, this.auditor)
+	exe.Run()
 
 }
