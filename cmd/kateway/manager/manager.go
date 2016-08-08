@@ -38,9 +38,6 @@ type Manager interface {
 	// LookupCluster locate the cluster name of an appid.
 	LookupCluster(appid string) (cluster string, found bool)
 
-	// WebHooks returns all registered webhooks object.
-	WebHooks() ([]WebHook, error)
-
 	// ForceRefresh will force manager to refresh the management data at once.
 	ForceRefresh()
 
