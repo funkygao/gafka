@@ -116,12 +116,13 @@ func (this *controller) invokeWebhookExecutor(topic string, wg *sync.WaitGroup, 
 		log.Info("de-claimed owner of %s", topic)
 	}(topic)
 
-	cluster, err := this.orchestrator.WebhookCluster(topic)
+	info, err := this.orchestrator.WebhookInfo(topic)
 	if err != nil {
 		log.Error(err)
+		return
 	}
 
-	exe := executor.NewWebhookExecutor(this.shortId, cluster, topic, stopper, this.auditor)
+	exe := executor.NewWebhookExecutor(this.shortId, info.Cluster, topic, info.Endpoints, stopper, this.auditor)
 	exe.Run()
 
 }

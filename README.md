@@ -28,6 +28,8 @@ A full ecosystem that is built around kafka powered by golang.
 
   Kafka clusters body guard that emits health info to InfluxDB and exports key warnings to zabbix for alarming.
 
+### Architecture
+
 ### Install
 
     export PATH=$PATH:$GOPATH/bin
