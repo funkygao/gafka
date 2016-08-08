@@ -12,10 +12,11 @@ const (
 	katewayMetricsRoot = "/_kateway/metrics"
 	KatewayMysqlPath   = "/_kateway/mysql"
 
-	PubsubJobConfig      = "/_kateway/jobconfig"
-	PubsubJobQueues      = "/_kateway/jobs"
-	PubsubActors         = "/_kateway/actors/ids"
-	PubsubJobQueueOwners = "/_kateway/actors/owners"
+	PubsubJobConfig      = "/_kateway/orchestrator/jobconfig"
+	PubsubJobQueues      = "/_kateway/orchestrator/jobs"
+	PubsubActors         = "/_kateway/orchestrator/actors/ids"
+	PubsubJobQueueOwners = "/_kateway/orchestrator/actors/owners"
+	//PubsubActorRebalance = "/_kateway/orchestrator/rebalance"
 
 	KguardLeaderPath = "_kguard/leader"
 

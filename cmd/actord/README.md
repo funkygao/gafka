@@ -37,7 +37,9 @@
 
 - [X] any update/delete Job table need lock to avoid race condition with worker
 - [ ] app tables migration
-- [ ] metrics
+- [ ] metrics and alarm
+- [ ] watch orchestrator/jobconfig change
+- [ ] force rebalance
 - [ ] worker
   - learn from zabbix how to mv real time table to archive table
   - graceful shutdown

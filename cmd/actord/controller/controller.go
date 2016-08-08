@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/funkygao/fae/config"
 	"github.com/funkygao/fae/servant/mysql"
@@ -78,24 +79,26 @@ REBALANCE:
 		jobQueues, jobQueueChanges, err := this.orchestrator.WatchJobQueues()
 		if err != nil {
 			log.Error("watch job queues: %s", err)
+			time.Sleep(time.Second)
 			continue REBALANCE
 		}
 
 		actors, actorChanges, err := this.orchestrator.WatchActors()
 		if err != nil {
 			log.Error("watch actors: %s", err)
+			time.Sleep(time.Second)
 			continue REBALANCE
 		}
 
-		log.Info("rebalancing, found %d job queues, %d actors", len(jobQueues), len(actors))
+		log.Info("deciding, found %d job queues, %d actors", len(jobQueues), len(actors))
 		decision := assignJobsToActors(actors, jobQueues)
 		myJobQueues := decision[this.Id()]
 
 		if len(myJobQueues) == 0 {
 			// standby mode
-			log.Warn("no job assignment, awaiting rebalance...")
+			log.Warn("decided, no job assignment, awaiting rebalance...")
 		} else {
-			log.Info("claiming %d/%d job queues", len(jobQueues), len(myJobQueues))
+			log.Info("decided, claiming %d/%d job queues", len(jobQueues), len(myJobQueues))
 		}
 
 		var (
@@ -115,10 +118,14 @@ REBALANCE:
 			break REBALANCE
 
 		case <-jobQueueChanges:
+			log.Info("rebalance due to job queue changes")
+
 			close(workerStopper)
 			wg.Wait()
 
 		case <-actorChanges:
+			log.Info("rebalance due to actor changes")
+
 			stillAlive, err := this.orchestrator.ActorRegistered(this.Id())
 			if err != nil {
 				log.Error(err)
