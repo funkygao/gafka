@@ -11,6 +11,8 @@ import (
 	"github.com/funkygao/fae/servant/mysql"
 	"github.com/funkygao/gafka/cmd/kateway/job"
 	jm "github.com/funkygao/gafka/cmd/kateway/job/mysql"
+	"github.com/funkygao/gafka/cmd/kateway/manager"
+	"github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
@@ -120,10 +122,17 @@ func (this *Job) printJobQueueAndActors() {
 	}
 	sort.Strings(sortedName)
 
-	for _, name := range sortedName {
-		zdata := jobQueues[name]
-		lines = append(lines, fmt.Sprintf("%s|%s|%s|%s", name,
-			string(zdata.Data()), zdata.Ctime(), zdata.Mtime()))
+	manager.Default = dummy.New("")
+	for _, topic := range sortedName {
+		zdata := jobQueues[topic]
+		if appid := manager.Default.TopicAppid(topic); appid == "" {
+			lines = append(lines, fmt.Sprintf("?%s|%s|%s|%s", topic,
+				string(zdata.Data()), zdata.Ctime(), zdata.Mtime()))
+		} else {
+			lines = append(lines, fmt.Sprintf("%s|%s|%s|%s", topic,
+				string(zdata.Data()), zdata.Ctime(), zdata.Mtime()))
+		}
+
 	}
 	if len(lines) > 1 {
 		this.Ui.Output(columnize.SimpleFormat(lines))
