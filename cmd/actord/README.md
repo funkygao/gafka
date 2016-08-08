@@ -40,6 +40,7 @@
 - [ ] metrics and alarm
 - [ ] watch orchestrator/jobconfig change
 - [ ] force rebalance
+- [ ] audit
 - [ ] worker
   - learn from zabbix how to mv real time table to archive table
   - graceful shutdown

@@ -58,8 +58,11 @@ func (this *Worker) Run() {
 		sql  = fmt.Sprintf("SELECT job_id,app_id,payload,due_time FROM %s WHERE due_time<=?", this.table)
 	)
 
-	wg.Add(1)
-	go this.handleDueJobs(&wg)
+	// handler pool
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go this.handleDueJobs(&wg)
+	}
 
 	for {
 		select {
@@ -108,7 +111,6 @@ func (this *Worker) handleDueJobs(wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-this.stopper:
-			// TODO care about the ongoing mysql insert/delete
 			return
 
 		case item := <-this.dueJobs:
