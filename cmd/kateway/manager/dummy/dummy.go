@@ -2,6 +2,7 @@ package dummy
 
 import (
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
@@ -37,6 +38,10 @@ func (this *dummyStore) KafkaTopic(appid string, topic string, ver string) (r st
 	r = b.String()
 	mpool.BytesBufferPut(b)
 	return
+}
+
+func (this *dummyStore) TopicAppid(kafkaTopic string) string {
+	return kafkaTopic[:strings.IndexByte(kafkaTopic, '.')]
 }
 
 func (this *dummyStore) IsDryrunTopic(appid, topic, ver string) bool {

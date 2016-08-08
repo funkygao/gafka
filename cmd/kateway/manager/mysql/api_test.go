@@ -24,6 +24,11 @@ func TestKafkaTopic(t *testing.T) {
 	}
 }
 
+func TestTopicAppid(t *testing.T) {
+	m := &mysqlStore{}
+	assert.Equal(t, "app1", m.TopicAppid("app1.foobar.v1"))
+}
+
 func TestKafkaTopicWithObfuscation(t *testing.T) {
 	ctx.LoadFromHome()
 	m := New(DefaultConfig("local"))

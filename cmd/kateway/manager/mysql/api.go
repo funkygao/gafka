@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/mpool"
@@ -13,6 +14,14 @@ import (
 var (
 	topicNameRegex = regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 )
+
+func (this *mysqlStore) TopicAppid(kafkaTopic string) string {
+	firstDot := strings.IndexByte(kafkaTopic, '.')
+	if firstDot == -1 || firstDot > len(kafkaTopic) {
+		return ""
+	}
+	return kafkaTopic[:firstDot]
+}
 
 func (this *mysqlStore) KafkaTopic(appid string, topic string, ver string) (r string) {
 	b := mpool.BytesBufferGet()
