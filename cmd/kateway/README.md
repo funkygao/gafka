@@ -191,7 +191,11 @@ It is designed to be programmer friendly.
 
 - what is limit of a pub message in size?
 
-  1 ~ 256KB
+  1 ~ 512KB
+
+- what is limit of a job message in size?
+
+  1 ~ 64KB
 
 - if sub with no arriving message, how long do client get http 204?
 
