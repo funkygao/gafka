@@ -23,6 +23,7 @@ type Upgrade struct {
 	upgradeKateway bool
 	upgradeZk      bool
 	upgradeKguard  bool
+	upgradeActord  bool
 	upgradeConfig  bool
 }
 
@@ -33,6 +34,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.mode, "m", "d", "")
 	cmdFlags.BoolVar(&this.upgradeConfig, "c", false, "")
 	cmdFlags.BoolVar(&this.upgradeKateway, "k", false, "")
+	cmdFlags.BoolVar(&this.upgradeActord, "at", false, "")
 	cmdFlags.BoolVar(&this.upgradeZk, "zk", false, "")
 	cmdFlags.BoolVar(&this.upgradeKguard, "kg", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -50,6 +52,20 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 
 		case "u":
 			this.runCmd("cp", []string{"-f", filepath.Join(usr.HomeDir, ".gafka.cf"), this.uploadDir})
+		}
+
+		return
+	}
+
+	if this.upgradeActord {
+		switch this.mode {
+		case "d":
+			this.runCmd("wget", []string{this.storeUrl("actord"), "-O", "actord"})
+			this.runCmd("chmod", []string{"a+x", "actord"})
+			this.runCmd("mv", []string{"-f", "actord", "/var/wd/actord/actord"})
+
+		case "u":
+			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/actord", gopath), this.uploadDir})
 		}
 
 		return
@@ -172,6 +188,9 @@ Options:
 
     -kg
       Upgrade kguard instead of gk
+
+    -at
+      Upgrade actord instead of gk
 
     -m <d|u>
       Download or upload mode
