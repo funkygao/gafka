@@ -12,7 +12,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 ### Alternatives
 
 - Google Cloud Pub/Sub
-- Amazon kenesis
+- Amazon kenesis/SQS
 - Azure EventHub
 - IBM Bluemix Message Hub
 - aliyun MNS
