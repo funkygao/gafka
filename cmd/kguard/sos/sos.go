@@ -21,8 +21,6 @@ func init() {
 	http.HandleFunc("/", handleSOS)
 	go http.ListenAndServe(fmt.Sprintf(":%d", sos.SOSPort), nil)
 	go maintainSosCounter()
-
-	log.Info("SOS receiver started")
 }
 
 func handleSOS(w http.ResponseWriter, r *http.Request) {
