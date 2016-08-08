@@ -228,6 +228,27 @@ func (this *Orchestrator) JobQueueCluster(jobQueue string) (string, error) {
 	return string(data), err
 }
 
+func (this *ZkZone) CreateWebhook(cluster string, topic string) error {
+	this.connectIfNeccessary()
+
+	path := fmt.Sprintf("%s/%s", PubsubWebhooks, topic)
+	this.ensureParentDirExists(path)
+
+	err := this.createZnode(path, []byte(cluster))
+	if err == zk.ErrNodeExists {
+		return nil
+	}
+	return err
+}
+
+func (this *Orchestrator) WebhookCluster(topic string) (string, error) {
+	this.connectIfNeccessary()
+
+	path := fmt.Sprintf("%s/%s", PubsubWebhooks, topic)
+	data, _, err := this.conn.Get(path)
+	return string(data), err
+}
+
 func (this *ZkZone) LoadKatewayMetrics(katewayId string, key string) ([]byte, error) {
 	this.connectIfNeccessary()
 

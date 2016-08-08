@@ -47,25 +47,25 @@ func (this *Orchestrator) WatchActors() (ActorList, <-chan zk.Event, error) {
 	return r, c, nil
 }
 
-func (this *Orchestrator) WatchJobQueues() (JobQueueList, <-chan zk.Event, error) {
+func (this *Orchestrator) WatchResources(path string) (ResourceList, <-chan zk.Event, error) {
 	this.connectIfNeccessary()
 
-	children, _, c, err := this.conn.ChildrenW(PubsubJobQueues)
+	children, _, c, err := this.conn.ChildrenW(path)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	r := make(JobQueueList, 0, len(children))
+	r := make(ResourceList, 0, len(children))
 	for _, job := range children {
 		r = append(r, job)
 	}
 	return r, c, nil
 }
 
-func (this *Orchestrator) ClaimJobQueue(actorId, jobQueue string) (err error) {
+func (this *Orchestrator) ClaimResource(actorId, root, resource string) (err error) {
 	this.connectIfNeccessary()
 
-	path := fmt.Sprintf("%s/%s", PubsubJobQueueOwners, jobQueue)
+	path := fmt.Sprintf("%s/%s", root, resource)
 	this.ensureParentDirExists(path)
 	err = this.CreateEphemeralZnode(path, []byte(actorId))
 	if err == zk.ErrNodeExists {
@@ -82,8 +82,8 @@ func (this *Orchestrator) ClaimJobQueue(actorId, jobQueue string) (err error) {
 	return
 }
 
-func (this *Orchestrator) ReleaseJobQueue(actorId, jobQueue string) error {
-	path := fmt.Sprintf("%s/%s", PubsubJobQueueOwners, jobQueue)
+func (this *Orchestrator) ReleaseResource(actorId, root, resource string) error {
+	path := fmt.Sprintf("%s/%s", root, resource)
 	data, _, err := this.conn.Get(path)
 	if err != nil && err != zk.ErrNoNode {
 		return err
@@ -110,16 +110,16 @@ func (this ActorList) Swap(i, j int) {
 	this[i], this[j] = this[j], this[i]
 }
 
-type JobQueueList []string
+type ResourceList []string
 
-func (this JobQueueList) Len() int {
+func (this ResourceList) Len() int {
 	return len(this)
 }
 
-func (this JobQueueList) Less(i, j int) bool {
+func (this ResourceList) Less(i, j int) bool {
 	return this[i] < this[j]
 }
 
-func (this JobQueueList) Swap(i, j int) {
+func (this ResourceList) Swap(i, j int) {
 	this[i], this[j] = this[j], this[i]
 }

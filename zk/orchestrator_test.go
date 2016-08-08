@@ -37,10 +37,22 @@ func TestOrchestatorAll(t *testing.T) {
 	if err != nil {
 		assert.Equal(t, zk.ErrNodeExists, err)
 	} else {
-		j, c, err := o.WatchJobQueues()
+		j, c, err := o.WatchResources(PubsubJobQueues)
 		assert.Equal(t, nil, err)
 
 		assert.Equal(t, true, c != nil)
 		assert.Equal(t, true, len(j) >= 1)
 	}
+}
+
+func TestCreateWebhook(t *testing.T) {
+	zkzone := NewZkZone(DefaultConfig(ctx.DefaultZone(), ctx.ZoneZkAddrs(ctx.DefaultZone())))
+	defer zkzone.Close()
+
+	o := zkzone.NewOrchestrator()
+	err := o.CreateWebhook("cluster", "topic")
+	assert.Equal(t, nil, err)
+
+	err = o.CreateWebhook("cluster", "topic")
+	assert.Equal(t, nil, err)
 }
