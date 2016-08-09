@@ -151,12 +151,17 @@ func (this *Job) printResourcesAndActors() {
 	}
 	sort.Strings(sortedName)
 
-	for _, name := range sortedName {
-		zdata := webhoooks[name]
+	for _, topic := range sortedName {
+		zdata := webhoooks[topic]
 		var hook zk.WebhookMeta
 		hook.From(zdata.Data())
-		lines = append(lines, fmt.Sprintf("%s|%+v|%s|%s", name, hook.Endpoints,
-			zdata.Ctime(), zdata.Mtime()))
+		if appid := manager.Default.TopicAppid(topic); appid == "" {
+			lines = append(lines, fmt.Sprintf("?%s|%+v|%s|%s", topic, hook.Endpoints,
+				zdata.Ctime(), zdata.Mtime()))
+		} else {
+			lines = append(lines, fmt.Sprintf("%s|%+v|%s|%s", topic, hook.Endpoints,
+				zdata.Ctime(), zdata.Mtime()))
+		}
 	}
 	if len(lines) > 1 {
 		this.Ui.Info("Webhooks")
