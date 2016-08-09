@@ -28,8 +28,8 @@ func (this *Gateway) buildRouting() {
 		this.manServer.Router().GET("/v1/partitions/:cluster/:appid/:topic/:ver",
 			m(this.manServer.partitionsHandler))
 		this.manServer.Router().POST("/v1/topics/:cluster/:appid/:topic/:ver",
-			m(this.manServer.addTopicHandler))
-		this.manServer.Router().POST("/v1/jobs/:cluster/:appid/:topic/:ver",
+			m(this.manServer.addTopicHandler)) // FIXME :cluster is not required
+		this.manServer.Router().POST("/v1/jobs/:appid/:topic/:ver",
 			this.manServer.createJobHandler)
 		this.manServer.Router().PUT("/v1/webhooks/:appid/:topic/:ver",
 			this.manServer.createWebhookHandler)

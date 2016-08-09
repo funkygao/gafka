@@ -303,7 +303,7 @@ func (this *manServer) createWebhookHandler(w http.ResponseWriter, r *http.Reque
 	w.Write(ResponseOk)
 }
 
-// POST /v1/jobs/:cluster/:appid/:topic/:ver
+// POST /v1/jobs/:appid/:topic/:ver
 func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	if !manager.Default.ValidateTopicName(topic) {
@@ -320,43 +320,42 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	cluster := params.ByName(UrlParamCluster)
 	hisAppid := params.ByName(UrlParamAppid)
 	appid := r.Header.Get(HttpHeaderAppid)
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
 	if !manager.Default.AuthAdmin(appid, pubkey) {
-		log.Warn("suspicous create job %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
-			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
+		log.Warn("suspicous create job %s(%s): {appid:%s pubkey:%s topic:%s ver:%s}",
+			r.RemoteAddr, realIp, appid, pubkey, topic, ver)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
-	zkcluster := meta.Default.ZkCluster(cluster)
-	if zkcluster == nil {
-		log.Error("create job %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
-			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("create job %s(%s): {appid:%s pubkey:%s topic:%s ver:%s} undefined cluster",
+			r.RemoteAddr, realIp, appid, pubkey, topic, ver)
 
 		writeBadRequest(w, "undefined cluster")
 		return
 	}
 
-	log.Info("app[%s] %s(%s) create job: {appid:%s cluster:%s topic:%s ver:%s}",
-		appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver)
+	log.Info("app[%s] %s(%s) create job: {appid:%s topic:%s ver:%s}",
+		appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 	rawTopic := manager.Default.KafkaTopic(appid, topic, ver)
 	if err := job.Default.CreateJobQueue(Options.AssignJobShardId, hisAppid, rawTopic); err != nil {
-		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s cluster:%s topic:%s ver:%s} %v",
-			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, cluster, topic, ver, err)
+		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s topic:%s ver:%s} %v",
+			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, topic, ver, err)
 
 		writeServerError(w, err.Error())
 		return
 	}
 
 	if err := this.gw.zkzone.CreateJobQueue(cluster, rawTopic); err != nil {
-		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s cluster:%s topic:%s ver:%s} %v",
-			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, cluster, topic, ver, err)
+		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s topic:%s ver:%s} %v",
+			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, topic, ver, err)
 
 		writeServerError(w, err.Error())
 		return

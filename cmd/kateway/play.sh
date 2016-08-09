@@ -9,11 +9,11 @@ gk clusters -z local -add me -p /kafka_pubsub
 gk clusters -z local -c me -s -public 1 -nickname me
 echo '{"shard_stategy":"standard","timeout":10000000000,"global_pools":{"ShardLookup":true},"idle_timeout":14400000000000,"max_idle_conns":5,"max_conns":50,"breaker":{"FailureAllowance":10,"RetryTimeout":5000000000},"pools":{"AppShard1":{"pool":"AppShard1","host":"127.0.0.1","port":"3306","user":"root","pass":"","db":"pubsub","charset":"utf8"},"ShardLookup":{"pool":"ShardLookup","host":"127.0.0.1","port":"3306","user":"root","pass":"","db":"pubsub","charset":"utf8"}},"cache_store":"mem","cache_cap":1024,"cache_keyhash":false,"lookup_cache_max_items":1048576,"lookup_pool":"ShardLookup","default_lookup_table":"AppLookup"}' | zk set -p /_kateway/orchestrator/jobconfig
 
-# register a job
-curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9193/v1/jobs/me/app1/foobar/v1'
-
 # register a topic
-curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9193/v1/topics/me/app1/foobar/v1?partitions=1&replicas=1'
+curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9193/v1/topics/app1/foobar/v1?partitions=1&replicas=1'
+
+# register a job
+curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9193/v1/jobs/app1/foobar/v1'
 
 # register a webhook
 curl -XPUT -H'Appid: app1' -H'Pubkey: mypubkey' -d '{"endpoints":["http://localhost:9876"]}' 'http://localhost:9193/v1/webhooks/app1/foobar/v1'
