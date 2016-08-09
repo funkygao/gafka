@@ -143,7 +143,7 @@ func Main() {
 func watchZk(c controller.Controller, zkzone *zk.ZkZone, stop chan struct{}) {
 	evtCh, ok := zkzone.SessionEvents()
 	if !ok {
-		panic("someone else is consuming my zk events?")
+		panic("someone else is stealing my zk events?")
 	}
 
 	// during connecting phase, the following events are fired:

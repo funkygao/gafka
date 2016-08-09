@@ -28,7 +28,7 @@ REBALANCE:
 			time.Sleep(time.Second)
 			continue REBALANCE
 		}
-		this.jobQueueN.Set(int32(len(jobQueues)))
+		this.JobQueueN.Set(int32(len(jobQueues)))
 
 		actors, actorChanges, err := this.orchestrator.WatchActors()
 		if err != nil {
@@ -36,7 +36,7 @@ REBALANCE:
 			time.Sleep(time.Second)
 			continue REBALANCE
 		}
-		this.actorN.Set(int32(len(actors)))
+		this.ActorN.Set(int32(len(actors)))
 
 		log.Info("deciding: found %d job queues, %d actors", len(jobQueues), len(actors))
 		decision := assignResourcesToActors(actors, jobQueues)
@@ -55,7 +55,7 @@ REBALANCE:
 		)
 		for _, jobQueue := range myJobQueues {
 			wg.Add(1)
-			this.jobExecutorN.Add(1)
+			this.JobExecutorN.Add(1)
 			log.Trace("invoking executor for %s", jobQueue)
 			go this.invokeJobExexutor(jobQueue, &wg, executorStopper)
 		}
@@ -94,7 +94,7 @@ REBALANCE:
 func (this *controller) invokeJobExexutor(jobQueue string, wg *sync.WaitGroup, stopper <-chan struct{}) {
 	defer func() {
 		wg.Done()
-		this.jobExecutorN.Add(-1)
+		this.JobExecutorN.Add(-1)
 	}()
 
 	var err error

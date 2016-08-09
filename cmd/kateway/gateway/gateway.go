@@ -219,7 +219,7 @@ func (this *Gateway) Start() (err error) {
 	go func() {
 		evtCh, ok := this.zkzone.SessionEvents()
 		if !ok {
-			log.Error("someone else is consuming my zk events?")
+			log.Error("someone else is stealing my zk events?")
 			return
 		}
 

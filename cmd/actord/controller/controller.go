@@ -29,8 +29,8 @@ type controller struct {
 
 	ListenAddr string `json:"addr"`
 
-	actorN, jobQueueN, webhookN    sync2.AtomicInt32
-	jobExecutorN, webhookExecutorN sync2.AtomicInt32
+	ActorN, JobQueueN, WebhookN    sync2.AtomicInt32
+	JobExecutorN, WebhookExecutorN sync2.AtomicInt32
 
 	ident   string // cache
 	shortId string // cache
@@ -73,6 +73,8 @@ func (this *controller) RunForever() (err error) {
 		return err
 	}
 	defer this.orchestrator.ResignActor(this.Id())
+
+	go this.runWebServer()
 
 	jobDispatchQuit := make(chan struct{})
 	go this.dispatchJobQueues(jobDispatchQuit)
