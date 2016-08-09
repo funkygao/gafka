@@ -31,6 +31,8 @@ func (this *Gateway) buildRouting() {
 			m(this.manServer.addTopicHandler))
 		this.manServer.Router().POST("/v1/jobs/:cluster/:appid/:topic/:ver",
 			this.manServer.createJobHandler)
+		this.manServer.Router().PUT("/v1/webhooks/:appid/:topic/:ver",
+			this.manServer.createWebhookHandler)
 		this.manServer.Router().GET("/v1/schema/:appid/:topic/:ver",
 			m(this.manServer.schemaHandler))
 		this.manServer.Router().PUT("/v1/topics/:cluster/:appid/:topic/:ver",

@@ -29,3 +29,10 @@ func TestConsumerZnode(t *testing.T) {
 	c := newConsumerZnode("cloudparkingGroup_orderMsg_BJS0-D134-018-1447657979158-fa9d1dc8")
 	assert.Equal(t, "BJS0-D134-018", c.Host())
 }
+
+func TestWebhook(t *testing.T) {
+	var hook WebhookMeta
+	hook.Cluster = "trade"
+	hook.Endpoints = []string{"http://localhost:9876"}
+	t.Logf("%s", string(hook.Bytes()))
+}

@@ -14,6 +14,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/sla"
+	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/httprouter"
@@ -243,6 +244,65 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	w.Write([]byte(fmt.Sprintf(`{"num": %d}`, len(partitions))))
 }
 
+// PUT /v1/webhook/:appid/:topic/:ver
+func (this *manServer) createWebhookHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	topic := params.ByName(UrlParamTopic)
+	if !manager.Default.ValidateTopicName(topic) {
+		log.Warn("illegal topic: %s", topic)
+
+		writeBadRequest(w, "illegal topic")
+		return
+	}
+
+	realIp := getHttpRemoteIp(r)
+	hisAppid := params.ByName(UrlParamAppid)
+	appid := r.Header.Get(HttpHeaderAppid)
+	pubkey := r.Header.Get(HttpHeaderPubkey)
+	ver := params.ByName(UrlParamVersion)
+	if !manager.Default.AuthAdmin(appid, pubkey) {
+		log.Warn("suspicous create webhook %s(%s): {appid:%s pubkey:%s topic:%s ver:%s}",
+			r.RemoteAddr, realIp, appid, pubkey, topic, ver)
+
+		writeAuthFailure(w, manager.ErrAuthenticationFail)
+		return
+	}
+
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("create webhook %s(%s): {appid:%s topic:%s ver:%s} undefined cluster",
+			r.RemoteAddr, realIp, appid, topic, ver)
+
+		writeBadRequest(w, "undefined cluster")
+		return
+	}
+
+	log.Info("app[%s] %s(%s) create webhook: {appid:%s topic:%s ver:%s}",
+		appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
+
+	rawTopic := manager.Default.KafkaTopic(appid, topic, ver)
+	var hook zk.WebhookMeta
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&hook); err != nil {
+		log.Error("app[%s] %s(%s) create job: {appid:%s topic:%s ver:%s} %v",
+			appid, r.RemoteAddr, realIp, hisAppid, topic, ver, err)
+
+		writeServerError(w, err.Error())
+		return
+	}
+	r.Body.Close()
+
+	hook.Cluster = cluster // cluster is decided by server
+	if err := this.gw.zkzone.CreateOrUpdateWebhook(rawTopic, hook); err != nil {
+		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s topic:%s ver:%s} %v",
+			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, topic, ver, err)
+
+		writeServerError(w, err.Error())
+		return
+	}
+
+	w.Write(ResponseOk)
+}
+
 // POST /v1/jobs/:cluster/:appid/:topic/:ver
 func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
@@ -275,7 +335,7 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
-		log.Error("add topic %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
+		log.Error("create job %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
 			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
 
 		writeBadRequest(w, "undefined cluster")
