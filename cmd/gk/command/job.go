@@ -48,7 +48,7 @@ func (this *Job) Run(args []string) (exitCode int) {
 		return
 	}
 
-	this.printJobQueueAndActors()
+	this.printResourcesAndActors()
 
 	return
 }
@@ -111,10 +111,11 @@ func (this *Job) forSortedJobQueues(f func(jobQueue string)) {
 	}
 }
 
-func (this *Job) printJobQueueAndActors() {
+func (this *Job) printResourcesAndActors() {
 	lines := make([]string, 0)
-	header := "JobQueue|Cluster|Ctime|Mtime"
+	header := "Topic|Cluster|Ctime|Mtime"
 	lines = append(lines, header)
+	// jobs
 	jobQueues := this.zkzone.ChildrenWithData(zk.PubsubJobQueues)
 	sortedName := make([]string, 0, len(jobQueues))
 	for name := range jobQueues {
@@ -135,9 +136,34 @@ func (this *Job) printJobQueueAndActors() {
 
 	}
 	if len(lines) > 1 {
+		this.Ui.Info("Jobs")
 		this.Ui.Output(columnize.SimpleFormat(lines))
 	}
 
+	// webhooks
+	lines = lines[:0]
+	header = "Topic|Endpoints|Ctime|Mtime"
+	lines = append(lines, header)
+	webhoooks := this.zkzone.ChildrenWithData(zk.PubsubWebhooks)
+	sortedName = sortedName[:0]
+	for name := range webhoooks {
+		sortedName = append(sortedName, name)
+	}
+	sort.Strings(sortedName)
+
+	for _, name := range sortedName {
+		zdata := webhoooks[name]
+		var hook zk.WebhookMeta
+		hook.From(zdata.Data())
+		lines = append(lines, fmt.Sprintf("%s|%+v|%s|%s", name, hook.Endpoints,
+			zdata.Ctime(), zdata.Mtime()))
+	}
+	if len(lines) > 1 {
+		this.Ui.Info("Webhooks")
+		this.Ui.Output(columnize.SimpleFormat(lines))
+	}
+
+	// actors
 	lines = lines[:0]
 	header = "Actor|Ctime|Mtime"
 	lines = append(lines, header)
@@ -154,12 +180,13 @@ func (this *Job) printJobQueueAndActors() {
 			zdata.Ctime(), zdata.Mtime()))
 	}
 	if len(lines) > 1 {
-		this.Ui.Output("")
+		this.Ui.Info("Actors")
 		this.Ui.Output(columnize.SimpleFormat(lines))
 	}
 
+	// job <-> actor
 	lines = lines[:0]
-	header = "JobQueue|Actor|Ctime|Mtime"
+	header = "Topic|Actor|Ctime|Mtime"
 	lines = append(lines, header)
 	jobQueueOwners := this.zkzone.ChildrenWithData(zk.PubsubJobQueueOwners)
 	sortedName = sortedName[:0]
@@ -174,7 +201,28 @@ func (this *Job) printJobQueueAndActors() {
 			zdata.Ctime(), zdata.Mtime()))
 	}
 	if len(lines) > 1 {
-		this.Ui.Output("")
+		this.Ui.Info("Job<->Actor")
+		this.Ui.Output(columnize.SimpleFormat(lines))
+	}
+
+	// webhook <-> actor
+	lines = lines[:0]
+	header = "Topic|Actor|Ctime|Mtime"
+	lines = append(lines, header)
+	webhookOwners := this.zkzone.ChildrenWithData(zk.PubsubWebhookOwners)
+	sortedName = sortedName[:0]
+	for name := range webhookOwners {
+		sortedName = append(sortedName, name)
+	}
+	sort.Strings(sortedName)
+
+	for _, topic := range sortedName {
+		zdata := webhookOwners[topic]
+		lines = append(lines, fmt.Sprintf("%s|%s|%s|%s", topic, string(zdata.Data()),
+			zdata.Ctime(), zdata.Mtime()))
+	}
+	if len(lines) > 1 {
+		this.Ui.Info("Webhook<->Actor")
 		this.Ui.Output(columnize.SimpleFormat(lines))
 	}
 }
