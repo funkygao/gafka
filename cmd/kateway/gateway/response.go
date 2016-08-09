@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -12,7 +13,12 @@ func punishClient() {
 }
 
 func _writeErrorResponse(w http.ResponseWriter, err string, code int) {
-	http.Error(w, `{"errmsg":"`+err+`"}`, code)
+	var out = map[string]string{
+		"errmsg": err,
+	}
+	b, _ := json.Marshal(out)
+
+	http.Error(w, string(b), code)
 }
 
 func writeNotFound(w http.ResponseWriter) {
