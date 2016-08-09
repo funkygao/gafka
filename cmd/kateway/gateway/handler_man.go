@@ -353,7 +353,7 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if err := this.gw.zkzone.CreateJobQueue(cluster, rawTopic); err != nil {
+	if err := this.gw.zkzone.CreateJobQueue(rawTopic, cluster); err != nil {
 		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s topic:%s ver:%s} %v",
 			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, topic, ver, err)
 

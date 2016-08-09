@@ -211,8 +211,7 @@ func (this *ZkZone) FlushKatewayMetrics(katewayId string, key string, data []byt
 	return err
 }
 
-// TODO CreateJobQueue(topic, cluster string)
-func (this *ZkZone) CreateJobQueue(cluster string, topic string) error {
+func (this *ZkZone) CreateJobQueue(topic, cluster string) error {
 	this.connectIfNeccessary()
 
 	path := fmt.Sprintf("%s/%s", PubsubJobQueues, topic)
