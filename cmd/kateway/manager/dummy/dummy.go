@@ -48,6 +48,10 @@ func (this *dummyStore) TopicAppid(kafkaTopic string) string {
 	return kafkaTopic[:firstDot]
 }
 
+func (this *dummyStore) Signature(appid string) string {
+	return ""
+}
+
 func (this *dummyStore) IsDryrunTopic(appid, topic, ver string) bool {
 	this.dryrunLock.RLock()
 	_, present := this.dryrunTopics[appid][topic][ver]

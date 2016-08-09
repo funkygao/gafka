@@ -1,14 +1,19 @@
 package executor
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka"
+	"github.com/funkygao/gafka/cmd/kateway/gateway"
+	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/mpool"
 	"github.com/funkygao/gafka/zk"
@@ -28,6 +33,8 @@ type WebhookExecutor struct {
 	stopper        <-chan struct{}
 	auditor        log.Logger
 
+	appid, appSignature, userAgent string
+
 	circuits map[string]*breaker.Consecutive
 	fetcher  *consumergroup.ConsumerGroup
 	msgCh    chan *sarama.ConsumerMessage
@@ -43,6 +50,7 @@ func NewWebhookExecutor(parentId, cluster, topic string, endpoints []string,
 		stopper:   stopper,
 		endpoints: endpoints,
 		auditor:   auditor,
+		userAgent: fmt.Sprintf("actor.%s", gafka.BuildId),
 		msgCh:     make(chan *sarama.ConsumerMessage, 20),
 		circuits:  make(map[string]*breaker.Consecutive, len(endpoints)),
 		sender: &http.Client{
@@ -71,6 +79,17 @@ func NewWebhookExecutor(parentId, cluster, topic string, endpoints []string,
 
 func (this *WebhookExecutor) Run() {
 	// TODO watch the znode change, its endpoint might change any time
+
+	this.appid = manager.Default.TopicAppid(this.topic)
+	if this.appid == "" {
+		log.Warn("invalid topic: %s", this.topic)
+		return
+	}
+
+	this.appSignature = manager.Default.Signature(this.appid)
+	if this.appSignature == "" {
+		log.Warn("%s/%s invalid app signature", this.topic, this.appid)
+	}
 
 	cf := consumergroup.NewConfig()
 	cf.Net.DialTimeout = time.Second * 10
@@ -156,7 +175,10 @@ func (this *WebhookExecutor) pushToEndpoint(msg *sarama.ConsumerMessage, uri str
 		return false
 	}
 
-	//req.Header.Set("X-Offset", msg.Offset)
+	req.Header.Set(gateway.HttpHeaderOffset, strconv.FormatInt(msg.Offset, 10))
+	req.Header.Set(gateway.HttpHeaderPartition, strconv.FormatInt(int64(msg.Partition), 10))
+	req.Header.Set("User-Agent", this.userAgent)
+	req.Header.Set("X-App-Signature", this.appSignature)
 	response, err := this.sender.Do(req)
 	if err != nil {
 		log.Error("%s %s %s", this.topic, uri, err)

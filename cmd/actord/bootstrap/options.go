@@ -9,4 +9,5 @@ var Options struct {
 	InfluxAddr    string
 	InfluxDbname  string
 	ListenAddr    string
+	ManagerType   string
 }

@@ -1,6 +1,9 @@
 package mysql
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
 	"hash/adler32"
 	"net/http"
 	"regexp"
@@ -43,6 +46,15 @@ func (this *mysqlStore) KafkaTopic(appid string, topic string, ver string) (r st
 	r = b.String()
 	mpool.BytesBufferPut(b)
 	return
+}
+
+func (this *mysqlStore) Signature(appid string) string {
+	if secret, present := this.appSecretMap[appid]; present {
+		src := sha256.Sum256([]byte(fmt.Sprintf("%s:%s", appid, secret)))
+		return base64.URLEncoding.EncodeToString(src[:])
+	} else {
+		return ""
+	}
 }
 
 func (this *mysqlStore) TopicSchema(appid, topic, ver string) (string, error) {

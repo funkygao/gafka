@@ -9,7 +9,6 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/job"
 	jm "github.com/funkygao/gafka/cmd/kateway/job/mysql"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
-	"github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 )
@@ -47,7 +46,6 @@ func NewJobExecutor(parentId, cluster, topic string, mc *mysql.MysqlCluster,
 
 // poll mysql for due jobs and send to kafka.
 func (this *JobExecutor) Run() {
-	manager.Default = dummy.New("")
 	this.appid = manager.Default.TopicAppid(this.topic)
 	if this.appid == "" {
 		log.Warn("invalid topic: %s", this.topic)

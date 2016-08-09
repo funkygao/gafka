@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/funkygao/fae/config"
 	"github.com/funkygao/fae/servant/mysql"
+	"github.com/funkygao/gafka/cmd/kateway/manager"
+	mdummy "github.com/funkygao/gafka/cmd/kateway/manager/dummy"
+	mmysql "github.com/funkygao/gafka/cmd/kateway/manager/mysql"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/golib/sync2"
 	log "github.com/funkygao/log4go"
@@ -36,7 +40,7 @@ type controller struct {
 	shortId string // cache
 }
 
-func New(zkzone *zk.ZkZone, listenAddr string) Controller {
+func New(zkzone *zk.ZkZone, listenAddr string, managerType string) Controller {
 	// mysql cluster config
 	b, err := zkzone.KatewayJobClusterConfig()
 	if err != nil {
@@ -63,6 +67,19 @@ func New(zkzone *zk.ZkZone, listenAddr string) Controller {
 	this.shortId = fmt.Sprintf("%s:%s", p[0], this.ident[strings.LastIndexByte(this.ident, '-')+1:])
 	this.setupAuditor()
 
+	switch managerType {
+	case "mysql":
+		cf := mmysql.DefaultConfig(zkzone.Name())
+		cf.Refresh = time.Minute * 5
+		manager.Default = mmysql.New(cf)
+
+	case "dummy":
+		manager.Default = mdummy.New("")
+
+	default:
+		panic("unknown manager: " + managerType)
+	}
+
 	return this
 }
 
@@ -73,6 +90,11 @@ func (this *controller) RunForever() (err error) {
 		return err
 	}
 	defer this.orchestrator.ResignActor(this.Id())
+
+	if err = manager.Default.Start(); err != nil {
+		return
+	}
+	log.Trace("manager[%s] started", manager.Default.Name())
 
 	go this.runWebServer()
 
@@ -89,6 +111,9 @@ func (this *controller) RunForever() (err error) {
 	case <-webhookDispatchQuit:
 		log.Warn("dispatchWebhooks quit")
 	}
+
+	manager.Default.Stop()
+	log.Trace("manager[%s] stopped", manager.Default.Name())
 
 	return
 }

@@ -18,6 +18,9 @@ type Manager interface {
 	// OwnTopic checks if an appid owns a topic.
 	OwnTopic(appid, pubkey, topic string) error
 
+	// Signature returns the hashed appid:secret of an app for identification.
+	Signature(appid string) string
+
 	AllowSubWithUnregisteredGroup(bool)
 
 	// KafkaTopic returns raw kafka topic name.

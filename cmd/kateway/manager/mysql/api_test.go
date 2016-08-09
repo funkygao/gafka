@@ -13,6 +13,14 @@ func validateTopicName(topic string) bool {
 	return m.ValidateTopicName(topic)
 }
 
+func TestAppSignature(t *testing.T) {
+	m := &mysqlStore{}
+	m.appSecretMap = map[string]string{
+		"app1": "31f0250df55743ee31efcf75db3d08a1",
+	}
+	assert.Equal(t, "t9maByh7MhdSoPoJlgJ5XerJjvSju99Yb3EQxyHy0CE=", m.Signature("app1"))
+}
+
 func TestKafkaTopic(t *testing.T) {
 	m := &mysqlStore{}
 
