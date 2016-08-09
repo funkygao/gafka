@@ -37,6 +37,7 @@ func init() {
 	flag.IntVar(&Options.LogRotateSize, "logsize", 10<<30, "max unrotated log file size")
 	flag.StringVar(&Options.InfluxAddr, "influxaddr", "", "influxdb server addr")
 	flag.StringVar(&Options.InfluxDbname, "influxdb", "", "influxdb db name")
+	flag.StringVar(&Options.ListenAddr, "addr", ":9065", "monitor http server addr")
 	flag.Parse()
 
 	if Options.ShowVersion {
@@ -101,7 +102,7 @@ func Main() {
 	}
 	log.Trace("pub store[%s] started", store.DefaultPubStore.Name())
 
-	c := controller.New(zkzone)
+	c := controller.New(zkzone, Options.ListenAddr)
 	stopZkWatcher := make(chan struct{})
 	go watchZk(c, zkzone, stopZkWatcher)
 

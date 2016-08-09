@@ -8,4 +8,5 @@ var Options struct {
 	LogRotateSize int
 	InfluxAddr    string
 	InfluxDbname  string
+	ListenAddr    string
 }

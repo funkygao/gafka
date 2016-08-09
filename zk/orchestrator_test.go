@@ -18,7 +18,7 @@ func TestOrchestatorAll(t *testing.T) {
 
 	actorId := "actor1"
 	o := zkzone.NewOrchestrator()
-	err := o.RegisterActor(actorId)
+	err := o.RegisterActor(actorId, []byte{})
 	assert.Equal(t, nil, err)
 	ok, err := o.ActorRegistered(actorId)
 	assert.Equal(t, true, ok)

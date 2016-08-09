@@ -22,9 +22,9 @@ func (this *Orchestrator) ActorRegistered(id string) (bool, error) {
 	return r, err
 }
 
-func (this *Orchestrator) RegisterActor(id string) error {
+func (this *Orchestrator) RegisterActor(id string, val []byte) error {
 	path := fmt.Sprintf("%s/%s", PubsubActors, id)
-	return this.CreateEphemeralZnode(path, nil)
+	return this.CreateEphemeralZnode(path, val)
 }
 
 func (this *Orchestrator) ResignActor(id string) error {

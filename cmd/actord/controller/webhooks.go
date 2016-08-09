@@ -28,6 +28,7 @@ REBALANCE:
 			time.Sleep(time.Second)
 			continue REBALANCE
 		}
+		this.webhookN.Set(int32(len(webhooks)))
 
 		actors, actorChanges, err := this.orchestrator.WatchActors()
 		if err != nil {
@@ -35,6 +36,7 @@ REBALANCE:
 			time.Sleep(time.Second)
 			continue REBALANCE
 		}
+		this.actorN.Set(int32(len(actors)))
 
 		log.Info("deciding: found %d webhooks, %d actors", len(webhooks), len(actors))
 		decision := assignResourcesToActors(actors, webhooks)
@@ -53,6 +55,7 @@ REBALANCE:
 		)
 		for _, topic := range myWebhooks {
 			wg.Add(1)
+			this.webhookExecutorN.Add(1)
 			log.Trace("invoking executor for %s", topic)
 			go this.invokeWebhookExecutor(topic, &wg, executorsStopper)
 		}
@@ -76,7 +79,7 @@ REBALANCE:
 			if err != nil {
 				log.Error(err)
 			} else if !stillAlive {
-				this.orchestrator.RegisterActor(this.Id())
+				this.orchestrator.RegisterActor(this.Id(), this.Bytes())
 			}
 
 			close(executorsStopper)
@@ -89,7 +92,10 @@ REBALANCE:
 }
 
 func (this *controller) invokeWebhookExecutor(topic string, wg *sync.WaitGroup, stopper <-chan struct{}) {
-	defer wg.Done()
+	defer func() {
+		wg.Done()
+		this.webhookExecutorN.Add(-1)
+	}()
 
 	hook, err := this.orchestrator.WebhookInfo(topic)
 	if err != nil {

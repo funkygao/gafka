@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"github.com/funkygao/fae/config"
 	"github.com/funkygao/fae/servant/mysql"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/golib/sync2"
 	log "github.com/funkygao/log4go"
 	"github.com/hashicorp/go-uuid"
 )
@@ -25,11 +27,16 @@ type controller struct {
 	quiting      chan struct{}
 	auditor      log.Logger
 
+	ListenAddr string `json:"addr"`
+
+	actorN, jobQueueN, webhookN    sync2.AtomicInt32
+	jobExecutorN, webhookExecutorN sync2.AtomicInt32
+
 	ident   string // cache
 	shortId string // cache
 }
 
-func New(zkzone *zk.ZkZone) Controller {
+func New(zkzone *zk.ZkZone, listenAddr string) Controller {
 	// mysql cluster config
 	b, err := zkzone.KatewayJobClusterConfig()
 	if err != nil {
@@ -44,6 +51,7 @@ func New(zkzone *zk.ZkZone) Controller {
 		quiting:      make(chan struct{}),
 		orchestrator: zkzone.NewOrchestrator(),
 		mc:           mysql.New(mcc),
+		ListenAddr:   listenAddr,
 	}
 	this.ident, err = this.generateIdent()
 	if err != nil {
@@ -61,7 +69,7 @@ func New(zkzone *zk.ZkZone) Controller {
 func (this *controller) RunForever() (err error) {
 	log.Info("controller[%s] starting", this.Id())
 
-	if err = this.orchestrator.RegisterActor(this.Id()); err != nil {
+	if err = this.orchestrator.RegisterActor(this.Id(), this.Bytes()); err != nil {
 		return err
 	}
 	defer this.orchestrator.ResignActor(this.Id())
@@ -89,6 +97,11 @@ func (this *controller) Stop() {
 
 func (this *controller) Id() string {
 	return this.ident
+}
+
+func (this *controller) Bytes() []byte {
+	b, _ := json.Marshal(this)
+	return b
 }
 
 func (this *controller) generateIdent() (string, error) {
