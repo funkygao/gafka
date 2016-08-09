@@ -91,7 +91,12 @@ REBALANCE:
 func (this *controller) invokeWebhookExecutor(topic string, wg *sync.WaitGroup, stopper <-chan struct{}) {
 	defer wg.Done()
 
-	var err error
+	hook, err := this.orchestrator.WebhookInfo(topic)
+	if err != nil {
+		log.Error("%s: %s", topic, err)
+		return
+	}
+
 	for retries := 0; retries < 3; retries++ {
 		log.Trace("claiming owner of %s #%d", topic, retries)
 		if err = this.orchestrator.ClaimResource(this.Id(), zk.PubsubWebhookOwners, topic); err == nil {
@@ -116,13 +121,6 @@ func (this *controller) invokeWebhookExecutor(topic string, wg *sync.WaitGroup, 
 		log.Info("de-claimed owner of %s", topic)
 	}(topic)
 
-	info, err := this.orchestrator.WebhookInfo(topic)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	exe := executor.NewWebhookExecutor(this.shortId, info.Cluster, topic, info.Endpoints, stopper, this.auditor)
+	exe := executor.NewWebhookExecutor(this.shortId, hook.Cluster, topic, hook.Endpoints, stopper, this.auditor)
 	exe.Run()
-
 }

@@ -86,7 +86,7 @@ func (this *WebhookExecutor) Run() {
 	cf.Offsets.ResetOffsets = false
 	cf.Offsets.Initial = sarama.OffsetOldest
 	cg, err := consumergroup.JoinConsumerGroup(groupName, []string{this.topic}, meta.Default.ZkAddrs(), cf)
-	if err == nil {
+	if err != nil {
 		log.Error("%s stopped: %s", this.topic, err)
 		return
 	}
