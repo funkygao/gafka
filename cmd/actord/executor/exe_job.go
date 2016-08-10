@@ -111,7 +111,10 @@ func (this *JobExecutor) handleDueJobs(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	var (
-		sqlDeleteJob     = fmt.Sprintf("DELETE FROM %s WHERE job_id=?", this.table)
+		// zabbix maintains a in-memory delete queue
+		// delete from history_uint where itemid=? and clock<min_clock
+		sqlDeleteJob = fmt.Sprintf("DELETE FROM %s WHERE job_id=?", this.table)
+
 		sqlInsertArchive = fmt.Sprintf("INSERT INTO %s(app_id,job_id,payload,ctime,due_time,invoke_time,actor_id) VALUES(?,?,?,?,?,?,?)",
 			jm.HistoryTable(this.topic))
 	)
