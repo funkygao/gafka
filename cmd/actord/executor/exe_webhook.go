@@ -35,10 +35,10 @@ type WebhookExecutor struct {
 
 	appid, appSignature, userAgent string
 
-	circuits map[string]*breaker.Consecutive
-	fetcher  *consumergroup.ConsumerGroup
-	msgCh    chan *sarama.ConsumerMessage
-	sender   *http.Client // it has builtin pooling
+	circuits   map[string]*breaker.Consecutive
+	fetcher    *consumergroup.ConsumerGroup
+	msgCh      chan *sarama.ConsumerMessage
+	httpClient *http.Client // it has builtin pooling
 }
 
 func NewWebhookExecutor(parentId, cluster, topic string, endpoints []string,
@@ -53,7 +53,7 @@ func NewWebhookExecutor(parentId, cluster, topic string, endpoints []string,
 		userAgent: fmt.Sprintf("actor.%s", gafka.BuildId),
 		msgCh:     make(chan *sarama.ConsumerMessage, 20),
 		circuits:  make(map[string]*breaker.Consecutive, len(endpoints)),
-		sender: &http.Client{
+		httpClient: &http.Client{
 			Timeout: time.Second * 4,
 			Transport: &http.Transport{
 				MaxIdleConnsPerHost: 20, // pooling
@@ -169,6 +169,7 @@ func (this *WebhookExecutor) pushToEndpoint(msg *sarama.ConsumerMessage, uri str
 	body.Reset()
 	body.Write(msg.Value)
 
+	// TODO user defined post body schema, e,g. ElasticSearch
 	req, err := http.NewRequest("POST", uri, body)
 	if err != nil {
 		this.circuits[uri].Fail()
@@ -179,7 +180,7 @@ func (this *WebhookExecutor) pushToEndpoint(msg *sarama.ConsumerMessage, uri str
 	req.Header.Set(gateway.HttpHeaderPartition, strconv.FormatInt(int64(msg.Partition), 10))
 	req.Header.Set("User-Agent", this.userAgent)
 	req.Header.Set("X-App-Signature", this.appSignature)
-	response, err := this.sender.Do(req)
+	response, err := this.httpClient.Do(req)
 	if err != nil {
 		log.Error("%s %s %s", this.topic, uri, err)
 		this.circuits[uri].Fail()
