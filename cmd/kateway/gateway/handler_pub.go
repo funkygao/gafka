@@ -193,7 +193,11 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 
 	w.Header().Set(HttpHeaderPartition, strconv.FormatInt(int64(partition), 10))
 	w.Header().Set(HttpHeaderOffset, strconv.FormatInt(offset, 10))
-	w.WriteHeader(http.StatusCreated)
+	if async {
+		w.WriteHeader(http.StatusAccepted)
+	} else {
+		w.WriteHeader(http.StatusCreated)
+	}
 
 	if _, err = w.Write(ResponseOk); err != nil {
 		log.Error("%s: %v", r.RemoteAddr, err)

@@ -8,7 +8,7 @@ A full ecosystem that is built around kafka powered by golang.
                 | VirtualIP |
                 +-----------+                                
                       |
-              +--------------+                                 Alarm         Dashboard
+              +--------------+                                 Alert         Dashboard
               |              |                                    |             |              gk
      +-------------------------------------------------------------------------------------------+
      |        |              |                                    |             |                |
@@ -77,7 +77,7 @@ A full ecosystem that is built around kafka powered by golang.
 
 - [kguard](https://github.com/funkygao/gafka/tree/master/cmd/kguard)
 
-  Kafka clusters body guard that emits health info to InfluxDB and exports key warnings to zabbix for alarming.
+  Kafka clusters body guard that emits health info to InfluxDB and exports key warnings to zabbix for alarting.
 
 ### Install
 

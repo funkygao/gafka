@@ -8,7 +8,7 @@ Kafka clusters body guard that emits health info to InfluxDB.
                        👥 ✉  here I am
                         |              
         +------------------------+------------------------------------------------+
-        | alarm                  | dashboard                                alarm |
+        | alert                  | dashboard                                alert |
         | (aggregated)           | Grafana                            (threshold) |
         |               +-----------------+                                       |
         |               |                 |                                       |
