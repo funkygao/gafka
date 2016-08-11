@@ -249,15 +249,9 @@ func (this *webServer) defaultConnStateMachine(c net.Conn, cs http.ConnState) {
 }
 
 func (this *webServer) manageIdleConns() {
-	var (
-		idleConns     = make(map[net.Conn]struct{}, 200)
-		c             net.Conn
-		waitNextRound = make(chan struct{}, 10)
-	)
-	defer close(waitNextRound)
-
 	log.Debug("%s is managing idle connections", this.name)
 
+	var idleConns = make(map[net.Conn]struct{}, 100)
 	for {
 		select {
 		case <-this.gw.shutdownCh:
@@ -267,45 +261,26 @@ func (this *webServer) manageIdleConns() {
 				return
 			}
 
-			t := time.Now().Add(time.Millisecond * 100)
+			t := time.Now().Add(time.Millisecond * 10)
 			for conn := range idleConns {
 				if conn == nil {
 					continue
 				}
 
-				log.Debug("%s closing %s", this.name, conn.RemoteAddr())
+				log.Debug("%s setting deadline 10ms for %s", this.name, conn.RemoteAddr())
 				conn.SetDeadline(t)
 			}
 
-			// wait for next loop
-			waitNextRound <- struct{}{}
+			// in golang, close the shutdownCh will keep me inside the loop: NOT once
+			return
 
-		case <-waitNextRound:
-			if len(idleConns) == 0 {
-				log.Debug("%s closed all idle conns", this.name)
-				return
-			}
-
-			t := time.Now().Add(time.Millisecond * 100)
-			for conn := range idleConns {
-				if conn == nil {
-					continue
-				}
-
-				log.Debug("%s closing %s", this.name, conn.RemoteAddr())
-				conn.SetDeadline(t)
-			}
-
-			// wait for next loop
-			waitNextRound <- struct{}{}
-
-		case c = <-this.stateActiveCh:
+		case c := <-this.stateActiveCh:
 			delete(idleConns, c)
 
-		case c = <-this.stateIdleCh:
+		case c := <-this.stateIdleCh:
 			idleConns[c] = struct{}{}
 
-		case c = <-this.stateRemoveCh:
+		case c := <-this.stateRemoveCh:
 			delete(idleConns, c)
 		}
 	}
