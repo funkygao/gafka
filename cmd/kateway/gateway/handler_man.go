@@ -279,7 +279,7 @@ func (this *manServer) createWebhookHandler(w http.ResponseWriter, r *http.Reque
 	log.Info("app[%s] %s(%s) create webhook: {appid:%s topic:%s ver:%s}",
 		appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
-	rawTopic := manager.Default.KafkaTopic(appid, topic, ver)
+	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	var hook zk.WebhookMeta
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&hook); err != nil {
@@ -344,7 +344,7 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 	log.Info("app[%s] %s(%s) create job: {appid:%s topic:%s ver:%s}",
 		appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
-	rawTopic := manager.Default.KafkaTopic(appid, topic, ver)
+	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	if err := job.Default.CreateJobQueue(Options.AssignJobShardId, hisAppid, rawTopic); err != nil {
 		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s topic:%s ver:%s} %v",
 			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, topic, ver, err)
