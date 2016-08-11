@@ -79,6 +79,10 @@ func NewWebhookExecutor(parentId, cluster, topic string, endpoints []string,
 
 func (this *WebhookExecutor) Run() {
 	// TODO watch the znode change, its endpoint might change any time
+	if len(this.endpoints) == 0 {
+		log.Warn("%s disabled webhook: empty endpoints", this.topic)
+		return
+	}
 
 	this.appid = manager.Default.TopicAppid(this.topic)
 	if this.appid == "" {
