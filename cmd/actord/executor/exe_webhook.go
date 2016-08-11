@@ -194,8 +194,10 @@ func (this *WebhookExecutor) pushToEndpoint(msg *sarama.ConsumerMessage, uri str
 	io.Copy(ioutil.Discard, response.Body)
 	response.Body.Close()
 
-	if response.StatusCode != http.StatusOK {
-		log.Warn("%s %s response: %s", this.topic, uri, http.StatusText(response.StatusCode))
+	if response.StatusCode >= 300 {
+		this.circuits[uri].Fail()
+		log.Error("%s %s response: %s", this.topic, uri, http.StatusText(response.StatusCode))
+		return
 	}
 
 	// audit
