@@ -39,7 +39,7 @@ Unified multi-datacenter multi-cluster kafka swiss-knife management console.
         partition          Add partition num to a topic for better parallel
         peek               Peek kafka cluster messages ongoing from any offset
         ping               Ping liveness of all registered brokers in a zone
-        publish            Publish a message to specified kafka topic
+        produce            Produce a message to specified kafka topic
         sample             Java sample code of producer/consumer
         segment            Scan the kafka segments and display summary
         top                Unix “top” like utility for kafka topics

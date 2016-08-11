@@ -11,15 +11,15 @@ import (
 	"github.com/funkygao/gocli"
 )
 
-type Publish struct {
+type Produce struct {
 	Ui  cli.Ui
 	Cmd string
 
 	zone, cluster, topic string
 }
 
-func (this *Publish) Run(args []string) (exitCode int) {
-	cmdFlags := flag.NewFlagSet("publish", flag.ContinueOnError)
+func (this *Produce) Run(args []string) (exitCode int) {
+	cmdFlags := flag.NewFlagSet("produce", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
@@ -59,15 +59,15 @@ func (this *Publish) Run(args []string) (exitCode int) {
 	return
 }
 
-func (*Publish) Synopsis() string {
-	return "Publish a message to specified kafka topic"
+func (*Produce) Synopsis() string {
+	return "Produce a message to specified kafka topic"
 }
 
-func (this *Publish) Help() string {
+func (this *Produce) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s publish -z zone [options]
+Usage: %s produce [options]
 
-    Publish a message to specified kafka topic
+    %s
 
     -z zone
 
@@ -75,6 +75,6 @@ Usage: %s publish -z zone [options]
 
     -t topic
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

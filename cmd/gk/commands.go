@@ -109,8 +109,8 @@ func init() {
 			}, nil
 		},
 
-		"publish": func() (cli.Command, error) {
-			return &command.Publish{
+		"produce": func() (cli.Command, error) {
+			return &command.Produce{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
