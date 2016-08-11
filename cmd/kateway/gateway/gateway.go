@@ -51,9 +51,9 @@ type Gateway struct {
 	guard        *guard
 	timer        *timewheel.TimeWheel
 
-	shutdownOnce sync.Once
-	shutdownCh   chan struct{}
-	wg           sync.WaitGroup
+	shutdownOnce        sync.Once
+	shutdownCh, quiting chan struct{}
+	wg                  sync.WaitGroup
 
 	certFile string
 	keyFile  string
@@ -68,6 +68,7 @@ func New(id string) *Gateway {
 	this := &Gateway{
 		id:         id,
 		shutdownCh: make(chan struct{}),
+		quiting:    make(chan struct{}),
 		certFile:   Options.CertFile,
 		keyFile:    Options.KeyFile,
 	}
@@ -332,13 +333,13 @@ func (this *Gateway) stop() {
 	this.shutdownOnce.Do(func() {
 		log.Info("stopping gateway...")
 
-		close(this.shutdownCh)
+		close(this.quiting)
 	})
 }
 
 func (this *Gateway) ServeForever() {
 	select {
-	case <-this.shutdownCh:
+	case <-this.quiting:
 		// the 1st thing is to deregister
 		if registry.Default != nil {
 			if err := registry.Default.Deregister(); err != nil {
@@ -347,6 +348,9 @@ func (this *Gateway) ServeForever() {
 
 			log.Info("deregistered from %s", registry.Default.Name())
 		}
+
+		time.Sleep(time.Second) // wait for ehaproxy remove me from backend
+		close(this.shutdownCh)
 
 		// store can only be closed after web server closed
 		<-this.pubServer.Closed()

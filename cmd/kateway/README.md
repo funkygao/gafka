@@ -165,7 +165,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - pause/resume a job
   - job state machine
   - partition table?
-- [ ] deregister before web listener closed
+- [X] deregister before web listener closed
 - [ ] github.com/funkygao/go-metrics/sample.go:151 heap
 - [ ] failure tolerance
   - pub breaker
