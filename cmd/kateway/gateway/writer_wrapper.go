@@ -2,10 +2,27 @@ package gateway
 
 import (
 	"bufio"
+	"compress/gzip"
 	"io"
 	"net"
 	"net/http"
+	"strings"
 )
+
+func gzipWriter(w http.ResponseWriter, r *http.Request) (writer http.ResponseWriter, gz *gzip.Writer) {
+	writer = w
+
+	if Options.EnableGzip && strings.Contains(r.Header.Get(HttpHeaderAcceptEncoding), HttpEncodingGzip) {
+		w.Header().Set(HttpHeaderContentEncoding, HttpEncodingGzip)
+
+		gz = gzip.NewWriter(w)
+		writer = gzipResponseWriter{
+			Writer:         gz,
+			ResponseWriter: w,
+		}
+	}
+	return
+}
 
 type gzipResponseWriter struct {
 	io.Writer

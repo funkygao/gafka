@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"compress/gzip"
 	"net/http"
 	"strconv"
 	"strings"
@@ -205,7 +206,12 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		}
 	}
 
+	var gz *gzip.Writer
+	w, gz = gzipWriter(w, r)
 	err = this.pumpMessages(w, r, fetcher, limit, myAppid, hisAppid, topic, ver, group, delayedAck)
+	if gz != nil {
+		gz.Close()
+	}
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s} %v",
