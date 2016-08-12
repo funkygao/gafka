@@ -36,18 +36,21 @@ func (this *Gateway) middleware(h httprouter.Handle) httprouter.Handle {
 
 		// max request per conn to rebalance the session sticky http conns
 		if Options.MaxRequestPerConn > 1 {
+			maxReqReached := false
 			connectionsMu.Lock()
-
 			if n, present := connections[r.RemoteAddr]; present && n >= Options.MaxRequestPerConn {
-				log.Trace("%s max req per conn reached: %d", r.RemoteAddr, n)
-
-				w.Header().Set("Connection", "close")
+				maxReqReached = true
 				delete(connections, r.RemoteAddr)
 			} else {
 				connections[r.RemoteAddr]++ // in golang, works even when present=false
 			}
-
 			connectionsMu.Unlock()
+
+			if maxReqReached {
+				log.Trace("%s max req per conn reached: %d", r.RemoteAddr, Options.MaxRequestPerConn)
+
+				w.Header().Set("Connection", "close")
+			}
 		}
 
 		if !Options.EnableAccessLog {
