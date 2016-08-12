@@ -3,10 +3,8 @@
 package gateway
 
 import (
-	"compress/gzip"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -17,7 +15,7 @@ import (
 
 func (this *Gateway) middleware(h httprouter.Handle) httprouter.Handle {
 	var (
-		connections   = make(map[string]int, 1000) // remoteAddr:counter
+		connections   = make(map[string]int, 500) // remoteAddr:counter
 		connectionsMu sync.Mutex
 	)
 
@@ -34,15 +32,6 @@ func (this *Gateway) middleware(h httprouter.Handle) httprouter.Handle {
 			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
-		}
-
-		var gz *gzip.Writer = nil
-		var writer http.ResponseWriter = w
-		if Options.EnableGzip && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			w.Header().Set("Content-Encoding", "gzip")
-
-			gz = gzip.NewWriter(w) // TODO only gzip more than N bytes response body
-			writer = gzipResponseWriter{Writer: gz, ResponseWriter: w}
 		}
 
 		// max request per conn to rebalance the session sticky http conns
@@ -62,11 +51,7 @@ func (this *Gateway) middleware(h httprouter.Handle) httprouter.Handle {
 		}
 
 		if !Options.EnableAccessLog {
-			h(writer, r, params)
-
-			if gz != nil {
-				gz.Close()
-			}
+			h(w, r, params)
 
 			return
 		}
@@ -74,12 +59,8 @@ func (this *Gateway) middleware(h httprouter.Handle) httprouter.Handle {
 		// TODO latency histogram here
 		// TODO slow response recording here
 
-		ww := SniffWriter(writer) // sniff the status and content size for logging
-		h(ww, r, params)          // delegate request to the given handle
-
-		if gz != nil {
-			gz.Close()
-		}
+		ww := SniffWriter(w) // sniff the status and content size for logging
+		h(ww, r, params)     // delegate request to the given handle
 
 		if this.accessLogger != nil {
 			// NCSA Common Log Format (CLF)
