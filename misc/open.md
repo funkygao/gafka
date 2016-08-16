@@ -32,6 +32,8 @@ create a separate Facebook user account:
 
 ### aws IAM
 
+There is great distinguation between account and user/group.
+
 #### Terms
 When you sign up for AWS, you provide an email address and password that is associated with your AWS account.
 The account email address and password are root-level credentials, and anyone who uses these credentials has full access to all resources in the account. 
@@ -84,7 +86,61 @@ SAML Security Assertion Markup Language
 
     type Statement struct {
         Effect string // Allow/Deny
-        Action string // e,g. ec2:Describe
-        Resource string
-        Condition map[string]map[string]string // e,g. StringEquals : ec2:ResourceTag/Environment : Development
+        Action string // the specific API action e,g. ec2:Describe
+        Resource string // Amazon Resource Name(arn)
+        Condition map[string]map[string]string // condition: key->value e,g. StringEquals : ec2:ResourceTag/Environment : Development
     }
+
+#### Kinesis policy example
+
+Action
+- kinesis:CreateStream
+- kinesis:ListStreams
+- kinesis:DescribeStream
+
+Resource: arn:aws:kinesis:{region}:{account-id}:stream/{stream-name}
+
+A full example
+
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "kinesis: Get*"
+                ],
+                "Resource": [
+                    "arn:aws:kinesis:us-east-1:111122223333:stream/stream1"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "kinesis:DescribeStream"
+                ],
+                "Resource": [
+                    "arn:aws:kinesis:us-east-1:111122223333:stream/stream1"
+                ]
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "kinesis:ListStreams"
+                ],
+                "Resource": [
+                    "*"
+                ]
+            }
+            {
+               "Effect": "Allow",
+               "Action": [
+                   "kinesis:PutRecord"
+               ],
+               "Resource": [
+                   "arn:aws:kinesis:us-east-1:111122223333:stream/*"
+               ]
+            }
+        ]
+    }
+    
