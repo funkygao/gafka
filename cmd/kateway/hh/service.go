@@ -5,7 +5,8 @@ type Service interface {
 	Start() error
 	Stop()
 
-	Append(cluster, topic string, key, value []byte) error
+	Append(cluster, topic string, key string, value []byte) error
+	Empty(cluster, topic string) bool
 }
 
 var Default Service

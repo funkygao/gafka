@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/hh"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/mpool"
@@ -16,7 +17,7 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-// POST /v1/msgs/:topic/:ver?key=mykey&async=1&ack=all&batch=1
+// POST /v1/msgs/:topic/:ver?key=mykey&async=1&ack=all
 func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		appid        string
@@ -133,10 +134,6 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		this.pubMetrics.PubMsgSize.Update(int64(len(msg.Body)))
 	}
 
-	if query.Get("batch") == "1" {
-		// TODO
-	}
-
 	cluster, found := manager.Default.LookupCluster(appid)
 	if !found {
 		log.Warn("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} cluster not found",
@@ -147,6 +144,13 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
+	var (
+		partition int32
+		offset    int64
+		err       error
+		rawTopic  = manager.Default.KafkaTopic(appid, topic, ver)
+	)
+
 	pubMethod := store.DefaultPubStore.SyncPub
 	async = query.Get("async") == "1"
 	if async {
@@ -156,24 +160,18 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		pubMethod = store.DefaultPubStore.SyncAllPub
 	}
 
-	var (
-		partition int32
-		offset    int64
-		err       error
-	)
-	if async {
+	if Options.EnableHintedHandoff && !hh.Default.Empty(cluster, rawTopic) {
+		err = hh.Default.Append(cluster, rawTopic, partitionKey, msg.Body)
+	} else if async {
 		// message pool can't be applied on async pub because
 		// we don't know when to recycle the memory
 		// TODO a big performance problem
 		body := make([]byte, 0, len(msg.Body))
 		copy(body, msg.Body)
-		partition, offset, err = pubMethod(cluster,
-			manager.Default.KafkaTopic(appid, topic, ver),
-			[]byte(partitionKey), body)
+		partition, offset, err = pubMethod(cluster, rawTopic, []byte(partitionKey), body)
 	} else {
-		partition, offset, err = pubMethod(cluster,
-			manager.Default.KafkaTopic(appid, topic, ver),
-			[]byte(partitionKey), msg.Body)
+		// hack byte string conv TODO
+		partition, offset, err = pubMethod(cluster, rawTopic, []byte(partitionKey), msg.Body)
 	}
 
 	// in case of request panic, mem pool leakage
