@@ -13,6 +13,10 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+const (
+	LagThreshold = 3 // in sec
+)
+
 // JobExecutor polls a single JobQueue and handle each Job.
 type JobExecutor struct {
 	parentId       string // controller short id
@@ -53,8 +57,7 @@ func (this *JobExecutor) Run() {
 	}
 	this.aid = jm.App_id(this.appid)
 	this.table = jm.JobTable(this.topic)
-	this.ident = fmt.Sprintf("exe{cluster:%s app:%s aid:%d topic:%s table:%s}",
-		this.cluster, this.appid, this.aid, this.topic, this.table)
+	this.ident = this.topic
 
 	log.Trace("starting %s", this.Ident())
 
@@ -89,8 +92,12 @@ func (this *JobExecutor) Run() {
 				// FIXME ctime not handled
 				err = rows.Scan(&item.JobId, &item.AppId, &item.Payload, &item.DueTime)
 				if err == nil {
-					this.dueJobs <- item
 					log.Debug("%s due %s", this.ident, item)
+					if lag := now.Unix() - item.DueTime; lag > LagThreshold {
+						log.Warn("%s lag %ds %s", this.ident, lag, item)
+					}
+
+					this.dueJobs <- item
 				} else {
 					log.Error("%s: %s", this.ident, err)
 				}
@@ -124,7 +131,7 @@ func (this *JobExecutor) handleDueJobs(wg *sync.WaitGroup) {
 			return
 
 		case item := <-this.dueJobs:
-			log.Debug("%s handling %s", this.ident, item)
+			now := time.Now()
 			affectedRows, _, err := this.mc.Exec(jm.AppPool, this.table, this.aid, sqlDeleteJob, item.JobId)
 			if err != nil {
 				log.Error("%s: %s", this.ident, err)
@@ -136,17 +143,18 @@ func (this *JobExecutor) handleDueJobs(wg *sync.WaitGroup) {
 				continue
 			}
 
-			log.Debug("%s deleted from real time table: %s", this.ident, item)
+			log.Debug("%s unloaded %s", this.ident, item)
 			_, _, err = store.DefaultPubStore.SyncPub(this.cluster, this.topic, nil, item.Payload)
 			if err != nil {
 				log.Error("%s: %s", this.ident, err)
 				// TODO insert back to job table
 			} else {
+				log.Debug("%s fired %s", this.ident, item)
 				this.auditor.Trace(item.String())
 
 				// mv job to archive table
 				_, _, err = this.mc.Exec(jm.AppPool, this.table, this.aid, sqlInsertArchive,
-					item.AppId, item.JobId, item.Payload, item.Ctime, item.DueTime, time.Now().UnixNano(), this.parentId)
+					item.AppId, item.JobId, item.Payload, item.Ctime, item.DueTime, now.Unix(), this.parentId)
 				if err != nil {
 					log.Error("%s: %s", this.ident, err)
 				} else {
