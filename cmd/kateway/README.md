@@ -162,6 +162,9 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
+- [ ] pause a webhook
+- [ ] kafka timeout 1ms can work with hinted handoff
+
 - [ ] DFS/Kahn webhook dead loop detection
 - [ ] job
   - pause/resume a job
