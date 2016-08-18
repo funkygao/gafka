@@ -25,18 +25,18 @@ func (this *Gateway) buildRouting() {
 		this.manServer.Router().DELETE("/v1/counter/:name", m(this.manServer.resetCounterHandler))
 
 		// api for pubsub manager
-		this.manServer.Router().GET("/v1/partitions/:cluster/:appid/:topic/:ver",
+		this.manServer.Router().GET("/v1/partitions/:appid/:topic/:ver",
 			m(this.manServer.partitionsHandler))
-		this.manServer.Router().POST("/v1/topics/:cluster/:appid/:topic/:ver",
-			m(this.manServer.addTopicHandler)) // FIXME :cluster is not required
+		this.manServer.Router().POST("/v1/topics/:appid/:topic/:ver",
+			m(this.manServer.createTopicHandler))
+		this.manServer.Router().PUT("/v1/topics/:appid/:topic/:ver",
+			m(this.manServer.alterTopicHandler))
 		this.manServer.Router().POST("/v1/jobs/:appid/:topic/:ver",
 			this.manServer.createJobHandler)
 		this.manServer.Router().PUT("/v1/webhooks/:appid/:topic/:ver",
 			this.manServer.createWebhookHandler)
 		this.manServer.Router().GET("/v1/schema/:appid/:topic/:ver",
 			m(this.manServer.schemaHandler))
-		this.manServer.Router().PUT("/v1/topics/:cluster/:appid/:topic/:ver",
-			m(this.manServer.alterTopicHandler))
 		this.manServer.Router().DELETE("/v1/manager/cache",
 			m(this.manServer.refreshManagerHandler))
 	}

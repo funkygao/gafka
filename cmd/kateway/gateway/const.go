@@ -15,7 +15,6 @@ const (
 	HttpHeaderContentEncoding = "Content-Encoding"
 	HttpEncodingGzip          = "gzip"
 
-	UrlParamCluster = "cluster"
 	UrlParamTopic   = "topic"
 	UrlParamVersion = "ver"
 	UrlParamAppid   = "appid"

@@ -193,15 +193,23 @@ func (this *manServer) resetCounterHandler(w http.ResponseWriter, r *http.Reques
 	w.Write(ResponseOk)
 }
 
-// GET /v1/partitions/:cluster/:appid/:topic/:ver
+// GET /v1/partitions/:appid/:topic/:ver
 func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
-	cluster := params.ByName(UrlParamCluster)
 	hisAppid := params.ByName(UrlParamAppid)
 	appid := r.Header.Get(HttpHeaderAppid)
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
 	realIp := getHttpRemoteIp(r)
+
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("partitions[%s] %s(%s): {app:%s topic:%s ver:%s} invalid appid",
+			appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
+
+		writeBadRequest(w, "invalid appid")
+		return
+	}
 
 	if !manager.Default.AuthAdmin(appid, pubkey) {
 		log.Warn("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s}",
@@ -211,8 +219,8 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	log.Info("partitions %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s}",
-		r.RemoteAddr, realIp, cluster, appid, pubkey, topic, ver)
+	log.Info("partitions[%s] %s(%s): {cluster:%s app:%s topic:%s ver:%s}",
+		appid, r.RemoteAddr, realIp, cluster, hisAppid, topic, ver)
 
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
@@ -334,19 +342,19 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("create job %s(%s): {appid:%s pubkey:%s topic:%s ver:%s} undefined cluster",
-			r.RemoteAddr, realIp, appid, pubkey, topic, ver)
+		log.Error("create job %s(%s): {appid:%s topic:%s ver:%s} invalid appid",
+			r.RemoteAddr, realIp, hisAppid, topic, ver)
 
-		writeBadRequest(w, "undefined cluster")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
-	log.Info("app[%s] %s(%s) create job: {appid:%s topic:%s ver:%s}",
+	log.Info("create job[%s] %s(%s): {appid:%s topic:%s ver:%s}",
 		appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	if err := job.Default.CreateJobQueue(Options.AssignJobShardId, hisAppid, rawTopic); err != nil {
-		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s topic:%s ver:%s} %v",
+		log.Error("create job[%s] %s(%s): {shard:%d appid:%s topic:%s ver:%s} %v",
 			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, topic, ver, err)
 
 		writeServerError(w, err.Error())
@@ -365,8 +373,8 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 	w.Write(ResponseOk)
 }
 
-// POST /v1/topics/:cluster/:appid/:topic/:ver?partitions=1&replicas=2&retention.hours=72&retention.bytes=-1
-func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+// POST /v1/topics/:appid/:topic/:ver?partitions=1&replicas=2&retention.hours=72&retention.bytes=-1
+func (this *manServer) createTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	if !manager.Default.ValidateTopicName(topic) {
 		log.Warn("illegal topic: %s", topic)
@@ -382,13 +390,22 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	cluster := params.ByName(UrlParamCluster)
 	hisAppid := params.ByName(UrlParamAppid)
 	appid := r.Header.Get(HttpHeaderAppid)
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
+
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("create topic[%s] %s(%s): {appid:%s topic:%s ver:%s} invalid appid",
+			appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
+
+		writeBadRequest(w, "invalid appid")
+		return
+	}
+
 	if !manager.Default.AuthAdmin(appid, pubkey) {
-		log.Warn("suspicous add topic %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
+		log.Warn("suspicous create topic %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
 			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
@@ -397,8 +414,8 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
-		log.Error("add topic %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
-			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
+		log.Error("create topic[%s] %s(%s): {appid:%s cluster:%s topic:%s ver:%s} undefined cluster",
+			appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver)
 
 		writeBadRequest(w, "undefined cluster")
 		return
@@ -406,7 +423,7 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 
 	info := zkcluster.RegisteredInfo()
 	if !info.Public {
-		log.Warn("app[%s] %s(%s) adding topic:%s in non-public cluster: %+v", hisAppid, r.RemoteAddr, realIp, topic, params)
+		log.Warn("create topic[%s] %s(%s) adding topic:%s in non-public cluster: %+v", hisAppid, r.RemoteAddr, realIp, topic, params)
 
 		writeBadRequest(w, "invalid cluster")
 		return
@@ -433,13 +450,13 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	log.Info("app[%s] %s(%s) add topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
+	log.Info("app[%s] %s(%s) create topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
 		appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver, query.Encode())
 
 	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	lines, err := zkcluster.AddTopic(rawTopic, ts)
 	if err != nil {
-		log.Error("app[%s] %s(%s) add topic[%s]: %s", appid, r.RemoteAddr, realIp, rawTopic, err.Error())
+		log.Error("app[%s] %s(%s) create topic[%s]: %s", appid, r.RemoteAddr, realIp, rawTopic, err.Error())
 
 		writeServerError(w, err.Error())
 		return
@@ -447,7 +464,7 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 
 	createdOk := false
 	for _, l := range lines {
-		log.Trace("app[%s] %s(%s) add topic[%s] in cluster %s: %s", appid, r.RemoteAddr, realIp, rawTopic, cluster, l)
+		log.Trace("app[%s] %s(%s) create topic[%s] in cluster %s: %s", appid, r.RemoteAddr, realIp, rawTopic, cluster, l)
 
 		if strings.Contains(l, "Created topic") {
 			createdOk = true
@@ -479,7 +496,7 @@ func (this *manServer) addTopicHandler(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
-// PUT /v1/topics/:cluster/:appid/:topic/:ver?partitions=1&retention.hours=72&retention.bytes=-1
+// PUT /v1/topics/:appid/:topic/:ver?partitions=1&retention.hours=72&retention.bytes=-1
 func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	if !manager.Default.ValidateTopicName(topic) {
@@ -496,22 +513,30 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	cluster := params.ByName(UrlParamCluster)
 	hisAppid := params.ByName(UrlParamAppid)
 	appid := r.Header.Get(HttpHeaderAppid)
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
 	if !manager.Default.AuthAdmin(appid, pubkey) {
-		log.Warn("suspicous update topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
-			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
+		log.Warn("suspicous alter topic from %s(%s): {appid:%s pubkey:%s topic:%s ver:%s}",
+			r.RemoteAddr, realIp, appid, pubkey, topic, ver)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		log.Error("alter topic[%s] %s(%s): {app:%s topic:%s ver:%s} invalid appid",
+			appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
+
+		writeBadRequest(w, "invalid appid")
+		return
+	}
+
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
-		log.Error("update topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
+		log.Error("alter topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
 			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
 
 		writeBadRequest(w, "undefined cluster")
@@ -520,7 +545,7 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 
 	info := zkcluster.RegisteredInfo()
 	if !info.Public {
-		log.Warn("app[%s] update topic:%s in non-public cluster: %+v", hisAppid, topic, params)
+		log.Warn("app[%s] alter topic:%s in non-public cluster: %+v", hisAppid, topic, params)
 
 		writeBadRequest(w, "invalid cluster")
 		return
@@ -538,19 +563,19 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 
 	// validate the sla
 	if err := ts.Validate(); err != nil {
-		log.Error("app[%s] update topic:%s %s: %+v", hisAppid, topic, query.Encode(), err)
+		log.Error("app[%s] alter topic:%s %s: %+v", hisAppid, topic, query.Encode(), err)
 
 		writeBadRequest(w, err.Error())
 		return
 	}
 
-	log.Info("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
+	log.Info("app[%s] from %s(%s) alter topic: {appid:%s cluster:%s topic:%s ver:%s query:%s}",
 		appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver, query.Encode())
 
 	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	alterConfig := ts.DumpForAlterTopic()
 	if len(alterConfig) == 0 {
-		log.Warn("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} nothing updated",
+		log.Warn("app[%s] from %s(%s) alter topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} nothing updated",
 			appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver, query.Encode())
 
 		writeBadRequest(w, "nothing updated")
@@ -559,7 +584,7 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 
 	lines, err := zkcluster.AlterTopic(rawTopic, ts)
 	if err != nil {
-		log.Error("app[%s] from %s(%s) update topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} %v",
+		log.Error("app[%s] from %s(%s) alter topic: {appid:%s cluster:%s topic:%s ver:%s query:%s} %v",
 			appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver, query.Encode(), err)
 
 		writeServerError(w, err.Error())
@@ -567,7 +592,7 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	for _, l := range lines {
-		log.Trace("app[%s] update topic[%s] in cluster %s: %s", appid, rawTopic, cluster, l)
+		log.Trace("app[%s] alter topic[%s] in cluster %s: %s", appid, rawTopic, cluster, l)
 	}
 
 	w.Write(ResponseOk)
