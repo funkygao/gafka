@@ -3,14 +3,13 @@ package job
 
 import (
 	"fmt"
-	"time"
 )
 
 type JobItem struct {
 	AppId   int
 	JobId   int64
 	Payload []byte
-	Ctime   time.Time
+	Ctime   int64
 	DueTime int64
 }
 

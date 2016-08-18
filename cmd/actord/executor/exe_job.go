@@ -65,7 +65,7 @@ func (this *JobExecutor) Run() {
 		wg   sync.WaitGroup
 		item job.JobItem
 		tick = time.NewTicker(time.Second)
-		sql  = fmt.Sprintf("SELECT job_id,app_id,payload,due_time FROM %s WHERE due_time<=?", this.table)
+		sql  = fmt.Sprintf("SELECT job_id,app_id,payload,ctime,due_time FROM %s WHERE due_time<=?", this.table)
 	)
 
 	// handler pool, currently to guarantee the order, we use pool=1
@@ -89,8 +89,7 @@ func (this *JobExecutor) Run() {
 			}
 
 			for rows.Next() {
-				// FIXME ctime not handled
-				err = rows.Scan(&item.JobId, &item.AppId, &item.Payload, &item.DueTime)
+				err = rows.Scan(&item.JobId, &item.AppId, &item.Payload, &item.Ctime, &item.DueTime)
 				if err == nil {
 					log.Debug("%s due %s", this.ident, item)
 					if lag := now.Unix() - item.DueTime; lag > LagThreshold {
@@ -122,8 +121,9 @@ func (this *JobExecutor) handleDueJobs(wg *sync.WaitGroup) {
 		// delete from history_uint where itemid=? and clock<min_clock
 		sqlDeleteJob = fmt.Sprintf("DELETE FROM %s WHERE job_id=?", this.table)
 
-		sqlInsertArchive = fmt.Sprintf("INSERT INTO %s(app_id,job_id,payload,ctime,due_time,invoke_time,actor_id) VALUES(?,?,?,?,?,?,?)",
+		sqlInsertArchive = fmt.Sprintf("INSERT INTO %s(app_id,job_id,payload,ctime,due_time,etime,actor_id) VALUES(?,?,?,?,?,?,?)",
 			jm.HistoryTable(this.topic))
+		sqlReinject = fmt.Sprintf("INSERT INTO %s(app_id, job_id, payload, ctime, due_time) VALUES(?,?,?,?,?)", this.table)
 	)
 	for {
 		select {
@@ -138,28 +138,29 @@ func (this *JobExecutor) handleDueJobs(wg *sync.WaitGroup) {
 				continue
 			}
 			if affectedRows == 0 {
-				// race fails, client Delete wins
-				log.Warn("%s: %s race fails", this.ident, item)
+				// race fails: client Delete wins or this handler is too slow and the job fetched twice in ticker
 				continue
 			}
 
-			log.Debug("%s unloaded %s", this.ident, item)
+			log.Debug("%s land %s", this.ident, item)
 			_, _, err = store.DefaultPubStore.SyncPub(this.cluster, this.topic, nil, item.Payload)
 			if err != nil {
 				log.Error("%s: %s", this.ident, err)
-				// TODO insert back to job table
-			} else {
-				log.Debug("%s fired %s", this.ident, item)
-				this.auditor.Trace(item.String())
+				this.mc.Exec(jm.AppPool, this.table, this.aid, sqlReinject,
+					item.AppId, item.JobId, item.Payload, item.Ctime, item.DueTime)
+				continue
+			}
 
-				// mv job to archive table
-				_, _, err = this.mc.Exec(jm.AppPool, this.table, this.aid, sqlInsertArchive,
-					item.AppId, item.JobId, item.Payload, item.Ctime, item.DueTime, now.Unix(), this.parentId)
-				if err != nil {
-					log.Error("%s: %s", this.ident, err)
-				} else {
-					log.Debug("%s archived %s", this.ident, item)
-				}
+			log.Debug("%s fired %s", this.ident, item)
+			this.auditor.Trace(item.String())
+
+			// mv job to archive table
+			_, _, err = this.mc.Exec(jm.AppPool, this.table, this.aid, sqlInsertArchive,
+				item.AppId, item.JobId, item.Payload, item.Ctime, item.DueTime, now.Unix(), this.parentId)
+			if err != nil {
+				log.Error("%s: %s", this.ident, err)
+			} else {
+				log.Debug("%s archived %s", this.ident, item)
 			}
 
 		}

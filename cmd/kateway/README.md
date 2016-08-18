@@ -105,7 +105,6 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
     POST /v1/ws/msgs/:topic/:ver
 
     POST    /v1/jobs/:topic/:ver
-    POST /v1/ws/jobs/:topic/:ver
     DELETE  /v1/jobs/:topic/:ver
 
 #### Sub

@@ -62,8 +62,8 @@ CREATE TABLE %s (
     job_id bigint unsigned NOT NULL DEFAULT 0,
     app_id bigint unsigned NOT NULL DEFAULT 0,
     payload blob,
-    ctime timestamp NOT NULL DEFAULT 0,
-    mtime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    ctime int NOT NULL DEFAULT 0,
+    mtime int NOT NULL DEFAULT 0,
     due_time int NOT NULL,
     PRIMARY KEY (job_id),
     KEY(app_id),
@@ -81,9 +81,9 @@ CREATE TABLE %s (
     app_id bigint unsigned NOT NULL DEFAULT 0,
     job_id bigint unsigned NOT NULL DEFAULT 0,
     payload blob NOT NULL,
-    ctime timestamp NOT NULL DEFAULT 0,
+    ctime int NOT NULL DEFAULT 0,
+    etime int NOT NULL DEFAULT 0,
     due_time int NOT NULL,
-    invoke_time bigint NOT NULL DEFAULT 0,
     actor_id char(64) NOT NULL,
     PRIMARY KEY (app_id, job_id),
     KEY(due_time),
@@ -97,11 +97,10 @@ CREATE TABLE %s (
 func (this *mysqlStore) Add(appid, topic string, payload []byte, delay time.Duration) (jobId string, err error) {
 	jid := this.nextId()
 	table, aid := JobTable(topic), App_id(appid)
-	t0 := time.Now()
-	t1 := t0.Add(delay)
+	now := time.Now()
 	sql := fmt.Sprintf("INSERT INTO %s(app_id, job_id, payload, ctime, due_time) VALUES(?,?,?,?,?)", table)
 	_, _, err = this.mc.Exec(AppPool, table, aid, sql,
-		aid, jid, payload, t0, t1.Unix())
+		aid, jid, payload, now.Unix(), now.Add(delay).Unix())
 	jobId = strconv.FormatInt(jid, 10)
 	return
 }
