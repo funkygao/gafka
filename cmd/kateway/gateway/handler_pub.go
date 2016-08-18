@@ -3,7 +3,6 @@
 package gateway
 
 import (
-	"hash/adler32"
 	"io"
 	"net/http"
 	"strconv"
@@ -123,12 +122,6 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		AddTagToMessage(msg, tag)
 	}
 
-	if Options.AuditPub {
-		this.auditor.Trace("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} k:%s vlen:%d h:%d",
-			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"),
-			partitionKey, msgLen, adler32.Checksum(msg.Body))
-	}
-
 	if !Options.DisableMetrics {
 		this.pubMetrics.PubQps.Mark(1)
 		this.pubMetrics.PubMsgSize.Update(int64(len(msg.Body)))
@@ -176,6 +169,12 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 
 	// in case of request panic, mem pool leakage
 	msg.Free()
+
+	if Options.AuditPub {
+		this.auditor.Trace("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} {P:%d O:%d}",
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"),
+			partition, offset)
+	}
 
 	if err != nil {
 		log.Error("pub[%s] %s(%s) {topic:%s ver:%s} %s",
