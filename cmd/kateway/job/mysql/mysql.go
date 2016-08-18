@@ -60,13 +60,11 @@ func (this *mysqlStore) CreateJobQueue(shardId int, appid, topic string) (err er
 	sql := fmt.Sprintf(`
 CREATE TABLE %s (
     job_id bigint unsigned NOT NULL DEFAULT 0,
-    app_id bigint unsigned NOT NULL DEFAULT 0,
     payload blob,
     ctime int NOT NULL DEFAULT 0,
     mtime int NOT NULL DEFAULT 0,
     due_time int NOT NULL,
     PRIMARY KEY (job_id),
-    KEY(app_id),
     KEY(due_time)
 ) ENGINE = INNODB DEFAULT CHARSET utf8
 		`, table)
@@ -78,16 +76,14 @@ CREATE TABLE %s (
 	historyTable := HistoryTable(topic)
 	sql = fmt.Sprintf(`
 CREATE TABLE %s (
-    app_id bigint unsigned NOT NULL DEFAULT 0,
     job_id bigint unsigned NOT NULL DEFAULT 0,
     payload blob NOT NULL,
-    ctime int NOT NULL DEFAULT 0,
-    etime int NOT NULL DEFAULT 0,
+    ctime int NOT NULL DEFAULT 0,    
     due_time int NOT NULL,
+    etime int NOT NULL DEFAULT 0,
     actor_id char(64) NOT NULL,
-    PRIMARY KEY (app_id, job_id),
-    KEY(due_time),
-    KEY(ctime)
+    PRIMARY KEY (job_id),
+    KEY(due_time)
 ) ENGINE = INNODB DEFAULT CHARSET utf8
 		`, historyTable)
 	_, _, err = this.mc.Exec(AppPool, historyTable, aid, sql)
@@ -98,9 +94,9 @@ func (this *mysqlStore) Add(appid, topic string, payload []byte, delay time.Dura
 	jid := this.nextId()
 	table, aid := JobTable(topic), App_id(appid)
 	now := time.Now()
-	sql := fmt.Sprintf("INSERT INTO %s(app_id, job_id, payload, ctime, due_time) VALUES(?,?,?,?,?)", table)
+	sql := fmt.Sprintf("INSERT INTO %s(job_id, payload, ctime, due_time) VALUES(?,?,?,?)", table)
 	_, _, err = this.mc.Exec(AppPool, table, aid, sql,
-		aid, jid, payload, now.Unix(), now.Add(delay).Unix())
+		jid, payload, now.Unix(), now.Add(delay).Unix())
 	jobId = strconv.FormatInt(jid, 10)
 	return
 }

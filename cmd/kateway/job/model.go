@@ -6,7 +6,6 @@ import (
 )
 
 type JobItem struct {
-	AppId   int
 	JobId   int64
 	Payload []byte
 	Ctime   int64
