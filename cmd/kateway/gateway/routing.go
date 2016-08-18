@@ -35,7 +35,7 @@ func (this *Gateway) buildRouting() {
 			this.manServer.createJobHandler)
 		this.manServer.Router().PUT("/v1/webhooks/:appid/:topic/:ver",
 			this.manServer.createWebhookHandler)
-		this.manServer.Router().GET("/v1/schema/:appid/:topic/:ver",
+		this.manServer.Router().GET("/v1/schemas/:appid/:topic/:ver",
 			m(this.manServer.schemaHandler))
 		this.manServer.Router().DELETE("/v1/manager/cache",
 			m(this.manServer.refreshManagerHandler))
