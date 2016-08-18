@@ -110,7 +110,7 @@ func (this *mysqlStore) Delete(appid, topic, jobId string) (err error) {
 
 	var affectedRows int64
 	table, aid := JobTable(topic), App_id(appid)
-	sql := fmt.Sprintf("DELETE FROM %s WHERE job_id=?", table) // TODO what if Alice delete Bob's job?
+	sql := fmt.Sprintf("DELETE FROM %s WHERE job_id=?", table)
 	affectedRows, _, err = this.mc.Exec(AppPool, table, aid, sql, jid)
 	if err == nil && affectedRows == 0 {
 		err = job.ErrNothingDeleted
