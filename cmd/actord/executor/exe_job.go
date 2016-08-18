@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	LagThreshold = 3 // in sec
+	LagWarnThreshold   = 3  // in sec
+	HandlerConcurrentN = 10 // FIXME breaks the delivery order guarantee
 )
 
 // JobExecutor polls a single JobQueue and handle each Job.
@@ -68,8 +69,7 @@ func (this *JobExecutor) Run() {
 		sql  = fmt.Sprintf("SELECT job_id,payload,ctime,due_time FROM %s WHERE due_time<=?", this.table)
 	)
 
-	// handler pool, currently to guarantee the order, we use pool=1
-	for i := 0; i < 1; i++ {
+	for i := 0; i < HandlerConcurrentN; i++ {
 		wg.Add(1)
 		go this.handleDueJobs(&wg)
 	}
@@ -92,7 +92,7 @@ func (this *JobExecutor) Run() {
 				err = rows.Scan(&item.JobId, &item.Payload, &item.Ctime, &item.DueTime)
 				if err == nil {
 					log.Debug("%s due %s", this.ident, item)
-					if lag := now.Unix() - item.DueTime; lag > LagThreshold {
+					if lag := now.Unix() - item.DueTime; lag > LagWarnThreshold {
 						log.Warn("%s lag %ds %s", this.ident, lag, item)
 					}
 
