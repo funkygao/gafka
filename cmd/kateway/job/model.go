@@ -15,7 +15,7 @@ type JobItem struct {
 }
 
 func (this JobItem) String() string {
-	return fmt.Sprintf("%d: %s", this.JobId, string(this.Payload))
+	return fmt.Sprintf("{%d:%d %s}", this.JobId, this.DueTime, string(this.Payload))
 }
 
 func (this JobItem) PayloadString(limit int) string {
