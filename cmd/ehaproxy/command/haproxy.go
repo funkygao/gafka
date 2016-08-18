@@ -40,6 +40,7 @@ type Backend struct {
 	Name string
 	Addr string
 	Cpu  string
+	Port string
 }
 
 func (this *Start) createConfigFile(servers BackendServers) error {

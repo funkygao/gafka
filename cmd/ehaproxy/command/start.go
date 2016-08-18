@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -132,30 +133,36 @@ func (this *Start) main() {
 
 				// pub
 				if info["pub"] != "" {
+					_, port, _ := net.SplitHostPort(info["pub"])
 					be := Backend{
 						Name: "p" + info["id"],
 						Addr: info["pub"],
 						Cpu:  info["cpu"],
+						Port: port,
 					}
 					servers.Pub = append(servers.Pub, be)
 				}
 
 				// sub
 				if info["sub"] != "" {
+					_, port, _ := net.SplitHostPort(info["sub"])
 					be := Backend{
 						Name: "s" + info["id"],
 						Addr: info["sub"],
 						Cpu:  info["cpu"],
+						Port: port,
 					}
 					servers.Sub = append(servers.Sub, be)
 				}
 
 				// man
 				if info["man"] != "" {
+					_, port, _ := net.SplitHostPort(info["man"])
 					be := Backend{
 						Name: "m" + info["id"],
 						Addr: info["man"],
 						Cpu:  info["cpu"],
+						Port: port,
 					}
 					servers.Man = append(servers.Man, be)
 				}
