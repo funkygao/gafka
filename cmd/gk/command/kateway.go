@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"hash/adler32"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -37,7 +36,6 @@ type Kateway struct {
 	install      bool
 	resetCounter string
 	visualLog    string
-	sign         string
 	checkup      bool
 	versionOnly  bool
 }
@@ -51,7 +49,6 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.install, "i", false, "")
 	cmdFlags.BoolVar(&this.longFmt, "l", false, "")
 	cmdFlags.StringVar(&this.configOption, "option", "", "")
-	cmdFlags.StringVar(&this.sign, "sign", "", "")
 	cmdFlags.StringVar(&this.resetCounter, "reset", "", "")
 	cmdFlags.BoolVar(&this.versionOnly, "ver", false, "")
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "", "")
@@ -68,11 +65,6 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 	if this.install {
 		this.installGuide()
-		return
-	}
-
-	if this.sign != "" {
-		this.Ui.Output(fmt.Sprintf("%s\n%d", this.sign, adler32.Checksum([]byte(this.sign))))
 		return
 	}
 
@@ -459,10 +451,7 @@ Options:
 
     -ver
       Display kateway version only
-   
-    -sign message
-      Use adler32 to sign the message and return the signature
-
+      
     -checkup
       Checkup for online kateway instances
 

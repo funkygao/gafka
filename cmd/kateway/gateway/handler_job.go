@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"hash/adler32"
 	"io"
 	"net/http"
 	"time"
@@ -116,9 +115,8 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 	}
 
 	if Options.AuditPub {
-		this.auditor.Trace("+job[%s] %s(%s) {topic:%s ver:%s UA:%s} vlen:%d h:%d",
-			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"),
-			msgLen, adler32.Checksum(msg.Body))
+		this.auditor.Trace("+job[%s] %s(%s) {topic:%s ver:%s UA:%s} job id:%s",
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), jobId)
 	}
 
 	w.Header().Set(HttpHeaderJobId, jobId)
