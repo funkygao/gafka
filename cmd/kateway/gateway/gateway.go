@@ -356,8 +356,8 @@ func (this *Gateway) ServeForever() {
 		}
 		<-this.manServer.Closed()
 
-		log.Trace("stopping access logger")
-		this.accessLogger.Stop()
+		//log.Trace("stopping access logger")
+		//this.accessLogger.Stop() FIXME it will hang on linux
 
 		if store.DefaultPubStore != nil {
 			log.Trace("stopping pub store[%s]", store.DefaultPubStore.Name())
