@@ -7,6 +7,7 @@ import (
 	"github.com/funkygao/gafka/cmd/actord/executor"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
+	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
 func (this *controller) dispatchWebhooks(quit chan<- struct{}) {
@@ -28,7 +29,6 @@ REBALANCE:
 			time.Sleep(time.Second)
 			continue REBALANCE
 		}
-		this.WebhookN.Set(int32(len(webhooks)))
 
 		actors, actorChanges, err := this.orchestrator.WatchActors()
 		if err != nil {
@@ -38,15 +38,36 @@ REBALANCE:
 		}
 		this.ActorN.Set(int32(len(actors)))
 
-		log.Info("deciding: found %d webhooks, %d actors", len(webhooks), len(actors))
-		decision := assignResourcesToActors(actors, webhooks)
+		// some webhooks might be disabled
+		// e,g. to protect against deadloop
+		offs, offChanges, err := this.orchestrator.WatchResources(zk.PubsubWebhooksOff)
+		if err != nil && err != zklib.ErrNoNode {
+			log.Error("watch disabled webhooks: %s", err)
+			time.Sleep(time.Second)
+			continue REBALANCE
+		}
+		offMap := make(map[string]struct{}, len(offs))
+		for _, off := range offs {
+			offMap[off] = struct{}{}
+		}
+		activeHooks := make(zk.ResourceList, 0, len(webhooks))
+		for _, hook := range webhooks {
+			if _, present := offMap[hook]; !present {
+				activeHooks = append(activeHooks, hook)
+			}
+		}
+
+		this.WebhookN.Set(int32(len(activeHooks)))
+
+		log.Info("deciding: found %d webhooks, %d actors", len(activeHooks), len(actors))
+		decision := assignResourcesToActors(actors, activeHooks)
 		myWebhooks := decision[this.Id()]
 
 		if len(myWebhooks) == 0 {
 			// standby mode
 			log.Warn("decided: no webhook assignment, awaiting rebalance...")
 		} else {
-			log.Info("decided: claiming %d/%d webhooks", len(webhooks), len(myWebhooks))
+			log.Info("decided: claiming %d/%d webhooks", len(activeHooks), len(myWebhooks))
 		}
 
 		var (
@@ -65,6 +86,12 @@ REBALANCE:
 			close(executorsStopper)
 			wg.Wait()
 			break REBALANCE
+
+		case <-offChanges:
+			log.Info("rebalance due to disabled webhooks changes")
+
+			close(executorsStopper)
+			wg.Wait()
 
 		case <-webhookChanges:
 			log.Info("rebalance due to webhooks changes")

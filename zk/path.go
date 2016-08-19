@@ -17,6 +17,7 @@ const (
 	PubsubActors         = "/_kateway/orchestrator/actors/ids"
 	PubsubJobQueueOwners = "/_kateway/orchestrator/actors/job_owners"
 	PubsubWebhooks       = "/_kateway/orchestrator/webhooks"
+	PubsubWebhooksOff    = "/_kateway/orchestrator/webhooks_off"
 	PubsubWebhookOwners  = "/_kateway/orchestrator/actors/webhook_owners"
 	//PubsubActorRebalance = "/_kateway/orchestrator/rebalance"
 
