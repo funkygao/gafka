@@ -146,7 +146,6 @@ func New(id string) *Gateway {
 			if err = mcc.From(b); err != nil {
 				panic(err)
 			}
-			log.Debug("%+v", *mcc)
 			jm, err := jobmysql.New(id, mcc)
 			if err != nil {
 				panic(err)
@@ -214,8 +213,11 @@ func (this *Gateway) Start() (err error) {
 	log.Info("starting gateway[%s@%s]...", gafka.BuildId, gafka.BuiltAt)
 
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
-		log.Info("gateway[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))
-		this.stop()
+		this.shutdownOnce.Do(func() {
+			log.Info("gateway[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))
+
+			close(this.quiting)
+		})
 	}, syscall.SIGINT, syscall.SIGTERM) // yes we ignore HUP
 
 	// keep watch on zk connection jitter
@@ -329,27 +331,18 @@ func (this *Gateway) Start() (err error) {
 	return nil
 }
 
-func (this *Gateway) stop() {
-	this.shutdownOnce.Do(func() {
-		log.Info("stopping gateway...")
-
-		close(this.quiting)
-	})
-}
-
 func (this *Gateway) ServeForever() {
 	select {
 	case <-this.quiting:
 		// the 1st thing is to deregister
 		if registry.Default != nil {
 			if err := registry.Default.Deregister(); err != nil {
-				log.Error("Deregister: %v", err)
+				log.Error("de-register: %v", err)
+			} else {
+				log.Info("de-registered from %s", registry.Default.Name())
 			}
-
-			log.Info("deregistered from %s", registry.Default.Name())
 		}
 
-		time.Sleep(time.Second) // wait for ehaproxy remove me from backend
 		close(this.shutdownCh)
 
 		// store can only be closed after web server closed
