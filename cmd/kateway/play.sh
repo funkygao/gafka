@@ -20,6 +20,9 @@ curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9193/v1/jobs/
 # register a webhook
 curl -XPUT -H'Appid: app1' -H'Pubkey: mypubkey' -d '{"endpoints":["http://localhost:9876"]}' 'http://localhost:9193/v1/webhooks/app1/foobar/v1'
 
+# auth token
+curl -XGET -H'X-App-Id: app1' -H'X-App-Secret: helllo' 'http://localhost:9191/v1/auth'
+
 # register a shadow topic
 curl -i -XPOST -H'Appid: app14' -H'Subkey: mysubkey' http://localhost:9192/v1/guard/app1/foobar/v1/mygroup1
 

@@ -67,6 +67,8 @@ func (this *Gateway) buildRouting() {
 		this.pubServer.Router().POST("/v1/jobs/:topic/:ver", m(this.pubServer.addJobHandler))
 		this.pubServer.Router().DELETE("/v1/jobs/:topic/:ver", m(this.pubServer.deleteJobHandler))
 
+		this.pubServer.Router().GET("/v1/auth", m(this.pubServer.authHandler))
+
 		// TODO deprecated
 		this.pubServer.Router().POST("/topics/:topic/:ver", m(this.pubServer.pubHandler))
 	}
