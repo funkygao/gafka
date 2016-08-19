@@ -9,7 +9,8 @@ import (
 
 func main() {
 	http.HandleFunc("/", handle)
-	log.Fatal(http.ListenAndServe(":9199", nil))
+	log.Println("listening on :9876")
+	log.Fatal(http.ListenAndServe(":9876", nil))
 }
 
 func handle(w http.ResponseWriter, r *http.Request) {
@@ -21,5 +22,5 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("%s %s[%s] %+v %s", r.Method, r.RequestURI, r.UserAgent(), r.Header, string(body))
+	log.Printf("%s %s %+v %s", r.Method, r.RequestURI, r.Header, string(body))
 }
