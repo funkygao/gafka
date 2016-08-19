@@ -11,7 +11,7 @@ func (this *controller) runWebServer() {
 	log.Info("web server on %s ready", this.ListenAddr)
 	err := http.ListenAndServe(this.ListenAddr, nil)
 	if err != nil {
-		log.Error("ListenAndServe: ", err)
+		log.Error("ListenAndServe: %s", err)
 	}
 }
 
