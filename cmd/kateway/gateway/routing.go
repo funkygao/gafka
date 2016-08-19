@@ -39,6 +39,22 @@ func (this *Gateway) buildRouting() {
 			m(this.manServer.schemaHandler))
 		this.manServer.Router().DELETE("/v1/manager/cache",
 			m(this.manServer.refreshManagerHandler))
+
+		// Sub related api for pubsub manager
+		this.manServer.Router().GET("/v1/raw/msgs/:appid/:topic/:ver",
+			m(this.manServer.subRawHandler))
+		this.manServer.Router().GET("/v1/peek/:appid/:topic/:ver",
+			m(this.manServer.peekHandler))
+		this.manServer.Router().POST("/v1/shadow/:appid/:topic/:ver/:group",
+			m(this.manServer.addTopicShadowHandler))
+		this.manServer.Router().GET("/v1/subd/:topic/:ver",
+			m(this.manServer.subdStatusHandler))
+		this.manServer.Router().GET("/v1/status/:appid/:topic/:ver",
+			m(this.manServer.subStatusHandler))
+		this.manServer.Router().DELETE("/v1/groups/:appid/:topic/:ver/:group",
+			m(this.manServer.delSubGroupHandler))
+		this.manServer.Router().PUT("/v1/offset/:appid/:topic/:ver/:group/:partition",
+			m(this.manServer.resetSubOffsetHandler))
 	}
 
 	if this.pubServer != nil {
@@ -63,15 +79,6 @@ func (this *Gateway) buildRouting() {
 		this.subServer.Router().GET("/v1/ws/msgs/:appid/:topic/:ver", m(this.subServer.subWsHandler))
 		this.subServer.Router().PUT("/v1/bury/:appid/:topic/:ver", m(this.subServer.buryHandler))
 		this.subServer.Router().PUT("/v1/offsets/:appid/:topic/:ver/:group", m(this.subServer.ackHandler))
-
-		// api for pubsub manager
-		this.subServer.Router().GET("/v1/raw/msgs/:appid/:topic/:ver", m(this.subServer.subRawHandler))
-		this.subServer.Router().GET("/v1/peek/:appid/:topic/:ver", m(this.subServer.peekHandler))
-		this.subServer.Router().POST("/v1/shadow/:appid/:topic/:ver/:group", m(this.subServer.addTopicShadowHandler))
-		this.subServer.Router().GET("/v1/subd/:topic/:ver", m(this.subServer.subdStatusHandler))
-		this.subServer.Router().GET("/v1/status/:appid/:topic/:ver", m(this.subServer.subStatusHandler))
-		this.subServer.Router().DELETE("/v1/groups/:appid/:topic/:ver/:group", m(this.subServer.delSubGroupHandler))
-		this.subServer.Router().PUT("/v1/offset/:appid/:topic/:ver/:group/:partition", m(this.subServer.resetSubOffsetHandler))
 
 		// TODO deprecated
 		this.subServer.Router().GET("/topics/:appid/:topic/:ver", m(this.subServer.subHandler))
