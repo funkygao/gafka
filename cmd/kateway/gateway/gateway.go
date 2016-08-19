@@ -117,6 +117,8 @@ func New(id string) *Gateway {
 	if Options.ManHttpAddr != "" || Options.ManHttpsAddr != "" {
 		this.manServer = newManServer(Options.ManHttpAddr, Options.ManHttpsAddr,
 			Options.MaxClients, this)
+	} else {
+		panic("manager server must be present")
 	}
 	if Options.PubHttpAddr != "" || Options.PubHttpsAddr != "" {
 		this.pubServer = newPubServer(Options.PubHttpAddr, Options.PubHttpsAddr,
@@ -289,9 +291,7 @@ func (this *Gateway) Start() (err error) {
 	go startRuntimeMetrics(Options.ReporterInterval)
 
 	// start up the servers
-	if this.manServer != nil {
-		this.manServer.Start()
-	}
+	this.manServer.Start() // man server is always present
 	if this.pubServer != nil {
 		if err = store.DefaultPubStore.Start(); err != nil {
 			panic(err)
@@ -353,10 +353,17 @@ func (this *Gateway) ServeForever() {
 		close(this.shutdownCh)
 
 		// store can only be closed after web server closed
-		<-this.pubServer.Closed()
-		<-this.subServer.Closed()
+		if this.pubServer != nil {
+			log.Trace("awaiting pub server stop...")
+			<-this.pubServer.Closed()
+		}
+		if this.subServer != nil {
+			log.Trace("awaiting sub server stop...")
+			<-this.subServer.Closed()
+		}
 		<-this.manServer.Closed()
 
+		log.Trace("stopping access logger")
 		this.accessLogger.Stop()
 
 		if store.DefaultPubStore != nil {
