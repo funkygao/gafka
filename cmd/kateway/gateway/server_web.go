@@ -40,24 +40,16 @@ type webServer struct {
 	// FIXME if http/https listener both enabled, must able to tell them apart
 	activeConnN int32
 
-	// TODO channel performance is frustrating, no better than mutex/map use ring buffer
-	stateIdleCh, stateRemoveCh, stateActiveCh chan net.Conn
-
 	closed chan struct{}
 }
 
-func newWebServer(name string, httpAddr, httpsAddr string, maxClients int,
-	gw *Gateway) *webServer {
-	const initialConnBuckets = 200
+func newWebServer(name string, httpAddr, httpsAddr string, maxClients int, gw *Gateway) *webServer {
 	this := &webServer{
-		name:          name,
-		gw:            gw,
-		maxClients:    maxClients,
-		stateActiveCh: make(chan net.Conn, initialConnBuckets),
-		stateIdleCh:   make(chan net.Conn, initialConnBuckets),
-		stateRemoveCh: make(chan net.Conn, initialConnBuckets),
-		router:        httprouter.New(),
-		closed:        make(chan struct{}),
+		name:       name,
+		gw:         gw,
+		maxClients: maxClients,
+		router:     httprouter.New(),
+		closed:     make(chan struct{}),
 	}
 
 	if Options.EnableHttpPanicRecover {
@@ -101,8 +93,6 @@ func (this *webServer) Start() {
 	}
 	if this.connStateFunc == nil {
 		this.connStateFunc = this.defaultConnStateMachine
-
-		go this.manageIdleConns()
 	}
 
 	if this.httpsServer != nil {
@@ -233,55 +223,14 @@ func (this *webServer) defaultConnStateMachine(c net.Conn, cs http.ConnState) {
 		}
 
 	case http.StateIdle:
-		this.stateIdleCh <- c
 
 	case http.StateActive:
-		this.stateActiveCh <- c
 
 	case http.StateClosed, http.StateHijacked:
 		atomic.AddInt32(&this.activeConnN, -1)
-		this.stateRemoveCh <- c
 
 		if this.onConnCloseFunc != nil {
 			this.onConnCloseFunc(c)
-		}
-	}
-}
-
-func (this *webServer) manageIdleConns() {
-	log.Debug("%s is managing idle connections", this.name)
-
-	var idleConns = make(map[net.Conn]struct{}, 100)
-	for {
-		select {
-		case <-this.gw.shutdownCh:
-			if len(idleConns) == 0 {
-				// happy ending
-				log.Debug("%s closed all idle conns", this.name)
-				return
-			}
-
-			t := time.Now().Add(time.Millisecond * 10)
-			for conn := range idleConns {
-				if conn == nil {
-					continue
-				}
-
-				log.Debug("%s setting deadline 10ms for %s", this.name, conn.RemoteAddr())
-				conn.SetDeadline(t)
-			}
-
-			// in golang, close the shutdownCh will keep me inside the loop: NOT once
-			return
-
-		case c := <-this.stateActiveCh:
-			delete(idleConns, c)
-
-		case c := <-this.stateIdleCh:
-			idleConns[c] = struct{}{}
-
-		case c := <-this.stateRemoveCh:
-			delete(idleConns, c)
 		}
 	}
 }
