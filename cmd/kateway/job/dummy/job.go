@@ -1,8 +1,6 @@
 package dummy
 
 import (
-	"time"
-
 	"github.com/funkygao/gafka/cmd/kateway/job"
 )
 
@@ -12,7 +10,7 @@ func New() job.JobStore {
 	return &dummy{}
 }
 
-func (this *dummy) Add(appid, topic string, payload []byte, delay time.Duration) (jobId string, err error) {
+func (this *dummy) Add(appid, topic string, payload []byte, due int64) (jobId string, err error) {
 	return
 }
 

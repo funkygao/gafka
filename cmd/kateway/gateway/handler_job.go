@@ -3,6 +3,7 @@ package gateway
 import (
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/job"
@@ -12,7 +13,7 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-// POST /v1/jobs/:topic/:ver?delay=100s
+// POST /v1/jobs/:topic/:ver?delay=100|due=1471565204
 // TODO tag, partitionKey
 // TODO use dedicated metrics
 func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -20,12 +21,36 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 	realIp := getHttpRemoteIp(r)
 	appid := r.Header.Get(HttpHeaderAppid)
 
-	delayParam := r.URL.Query().Get("delay")
-	delay, err := time.ParseDuration(delayParam)
-	if err != nil {
-		log.Error("+job[%s] %s(%s) %s: %s", appid, r.RemoteAddr, realIp, delayParam, err)
+	var due int64
+	q := r.URL.Query()
+	dueParam := q.Get("due")
+	if dueParam != "" {
+		d, err := strconv.ParseInt(dueParam, 10, 64)
+		if err != nil {
+			log.Error("+job[%s] %s(%s) due:%s %s", appid, r.RemoteAddr, realIp, dueParam, err)
 
-		writeBadRequest(w, "invalid delay format")
+			writeBadRequest(w, "invalid due param")
+			return
+		}
+
+		due = d
+	} else {
+		delayParam := q.Get("delay") // in sec
+		delay, err := strconv.ParseInt(delayParam, 10, 64)
+		if err != nil {
+			log.Error("+job[%s] %s(%s) delay:%s %s", appid, r.RemoteAddr, realIp, delayParam, err)
+
+			writeBadRequest(w, "invalid delay param")
+			return
+		}
+
+		due = t1.Unix() + delay
+	}
+
+	if due < t1.Unix() {
+		log.Error("+job[%s] %s(%s) due=%d before now?", appid, r.RemoteAddr, realIp, due)
+
+		writeBadRequest(w, "invalid param")
 		return
 	}
 
@@ -80,10 +105,8 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	if Options.Debug {
-		log.Debug("+job[%s] %s(%s) {topic:%s, ver:%s} %s",
-			appid, r.RemoteAddr, realIp, topic, ver, string(msg.Body))
-	}
+	log.Debug("+job[%s] %s(%s) {topic:%s, ver:%s} due:%d/%ds",
+		appid, r.RemoteAddr, realIp, topic, ver, due, due-t1.Unix())
 
 	if !Options.DisableMetrics {
 		this.pubMetrics.PubQps.Mark(1)
@@ -92,6 +115,8 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 
 	_, found := manager.Default.LookupCluster(appid)
 	if !found {
+		msg.Free()
+
 		log.Error("+job[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
 			appid, r.RemoteAddr, realIp, topic, ver)
 
@@ -99,9 +124,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	jobId, err := job.Default.Add(appid,
-		manager.Default.KafkaTopic(appid, topic, ver),
-		msg.Body, delay)
+	jobId, err := job.Default.Add(appid, manager.Default.KafkaTopic(appid, topic, ver), msg.Body, due)
 	msg.Free()
 	if err != nil {
 		if !Options.DisableMetrics {
@@ -115,8 +138,8 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 	}
 
 	if Options.AuditPub {
-		this.auditor.Trace("+job[%s] %s(%s) {topic:%s ver:%s UA:%s} job id:%s",
-			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), jobId)
+		this.auditor.Trace("+job[%s] %s(%s) {topic:%s ver:%s UA:%s} due:%d id:%s",
+			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), due, jobId)
 	}
 
 	w.Header().Set(HttpHeaderJobId, jobId)

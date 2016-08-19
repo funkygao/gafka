@@ -90,13 +90,12 @@ CREATE TABLE %s (
 	return
 }
 
-func (this *mysqlStore) Add(appid, topic string, payload []byte, delay time.Duration) (jobId string, err error) {
+func (this *mysqlStore) Add(appid, topic string, payload []byte, due int64) (jobId string, err error) {
 	jid := this.nextId()
 	table, aid := JobTable(topic), App_id(appid)
-	now := time.Now()
 	sql := fmt.Sprintf("INSERT INTO %s(job_id, payload, ctime, due_time) VALUES(?,?,?,?)", table)
 	_, _, err = this.mc.Exec(AppPool, table, aid, sql,
-		jid, payload, now.Unix(), now.Add(delay).Unix())
+		jid, payload, time.Now().Unix(), due)
 	jobId = strconv.FormatInt(jid, 10)
 	return
 }
