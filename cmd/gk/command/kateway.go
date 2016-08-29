@@ -404,6 +404,9 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 
 		this.Ui.Info(fmt.Sprintf("ok for %+v", kw))
 
+		// wait for server cleanup the sub conn
+		time.Sleep(time.Second)
+
 		// 1. 查询某个pubsub topic的partition数量
 		// 2. 查看pubsub系统某个topic的生产、消费状态
 		// 3. pub
