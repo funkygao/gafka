@@ -350,24 +350,15 @@ func (this *Kateway) callKateway(kw *zk.KatewayMeta, method string, uri string) 
 }
 
 func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
+	zone := ctx.Zone(zkzone.Name())
 	var (
-		myApp  string
-		hisApp string
-		secret string
-		ver    string = "v1"
-		topic  string = "smoketestonly"
+		myApp  = zone.SmokeApp
+		hisApp = zone.SmokeHisApp
+		secret = zone.SmokeSecret
+		ver    = zone.SmokeTopicVersion
+		topic  = zone.SmokeTopic
+		group  = "__smoketestonly__"
 	)
-	switch zkzone.Name() {
-	case "sit":
-		myApp = "35"
-		hisApp = "35"
-		secret = "04dd44d8dad048e6a18ffd153eb8f642"
-
-	case "prod":
-		myApp = "30"
-		hisApp = "30"
-		secret = "32f02594f55743eeb1efcf75db6dd8a0"
-	}
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
@@ -378,39 +369,40 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 			continue
 		}
 
+		// pub a message
 		cf := api.DefaultConfig(myApp, secret)
 		cf.Pub.Endpoint = kw.PubAddr
 		cf.Sub.Endpoint = kw.SubAddr
 		cli := api.NewClient(cf)
-		msgId := rand.Int()
-		msg := fmt.Sprintf("smoke %d", msgId)
-		this.Ui.Output(fmt.Sprintf("Pub: %s", msg))
 
-		err := cli.Pub("", []byte(msg), api.PubOption{
+		pubMsg := fmt.Sprintf("gk smoke test msg: [%s]", time.Now())
+
+		err = cli.Pub("", []byte(pubMsg), api.PubOption{
 			Topic: topic,
 			Ver:   ver,
 		})
 		swallow(err)
 
-		cli.Sub(api.SubOption{
-			AppId: hisApp,
-			Topic: topic,
-			Ver:   ver,
-			Group: "__smoketestonly__",
-		}, func(statusCode int, msg []byte) error {
-			if statusCode == http.StatusNoContent {
-				this.Ui.Output("no content, sub again")
-				return nil
+		// confirm that sub can get the pub'ed message
+		err = cli.Sub(api.SubOption{
+			AppId:     hisApp,
+			Topic:     topic,
+			Ver:       ver,
+			Group:     group,
+			AutoClose: true,
+		}, func(statusCode int, subMsg []byte) error {
+			if statusCode != http.StatusOK {
+				return fmt.Errorf("unexpected http status: %s", http.StatusText(statusCode))
 			}
-
-			this.Ui.Output(fmt.Sprintf("Sub: %s, http:%s", string(msg),
-				http.StatusText(statusCode)))
+			if len(subMsg) < 10 {
+				return fmt.Errorf("unexpected sub msg: %s", string(subMsg))
+			}
 
 			return api.ErrSubStop
 		})
+		swallow(err)
 
-		this.Ui.Info(fmt.Sprintf("curl -H'Appid: %s' -H'Subkey: %s' -i http://%s/status/%s/%s/%s",
-			myApp, secret, kw.SubAddr, hisApp, topic, ver))
+		this.Ui.Info(fmt.Sprintf("ok for %+v", kw))
 
 		// 1. 查询某个pubsub topic的partition数量
 		// 2. 查看pubsub系统某个topic的生产、消费状态
@@ -451,7 +443,7 @@ Options:
 
     -ver
       Display kateway version only
-      
+
     -checkup
       Checkup for online kateway instances
 
@@ -461,16 +453,16 @@ Options:
 
     -id kateway id
       Execute on a single kateway instance. By default, apply on all
-  
+
     -l
       Use a long listing format
-   
+
     -cf
       Enter config mode
 
     -reset metrics name
       Reset kateway metric counter by name
-    
+
     -option <debug|gzip|accesslog|punish|loglevel|dryrun|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|val>
       Set kateway options value
       e,g.
