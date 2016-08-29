@@ -48,7 +48,6 @@ type Gateway struct {
 	zkzone       *gzk.ZkZone // load/resume/flush counter metrics to zk
 	svrMetrics   *serverMetrics
 	accessLogger *AccessLogger
-	guard        *guard
 	timer        *timewheel.TimeWheel
 
 	shutdownOnce        sync.Once
@@ -84,7 +83,6 @@ func New(id string) *Gateway {
 	metaConf := zkmeta.DefaultConfig()
 	metaConf.Refresh = Options.MetaRefresh
 	meta.Default = zkmeta.New(metaConf, this.zkzone)
-	this.guard = newGuard(this)
 	this.timer = timewheel.NewTimeWheel(time.Second, 120)
 	this.accessLogger = NewAccessLogger("access_log", 100)
 	this.svrMetrics = NewServerMetrics(Options.ReporterInterval, this)
@@ -267,9 +265,6 @@ func (this *Gateway) Start() (err error) {
 		return
 	}
 	log.Trace("manager store[%s] started", manager.Default.Name())
-
-	go this.guard.Start()
-	log.Trace("guard started")
 
 	if telemetry.Default != nil {
 		go func() {
