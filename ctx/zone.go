@@ -16,6 +16,7 @@ type zone struct {
 	SmokeSecret       string
 	SmokeTopic        string
 	SmokeTopicVersion string
+	SmokeGroup        string
 }
 
 func (this *zone) loadConfig(section *ljconf.Conf) {
@@ -28,6 +29,7 @@ func (this *zone) loadConfig(section *ljconf.Conf) {
 	this.SmokeTopic = section.String("smoke_topic", "smoketestonly")
 	this.SmokeTopicVersion = section.String("smoke_topic_ver", "v1")
 	this.SmokeHisApp = section.String("smoke_app_his", this.SmokeApp)
+	this.SmokeGroup = section.String("smoke_group", "__smoketestonly__")
 	if this.Name == "" {
 		panic("empty zone name not allowed")
 	}

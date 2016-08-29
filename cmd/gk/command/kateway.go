@@ -357,7 +357,7 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 		secret = zone.SmokeSecret
 		ver    = zone.SmokeTopicVersion
 		topic  = zone.SmokeTopic
-		group  = "__smoketestonly__"
+		group  = zone.SmokeGroup
 	)
 
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -392,7 +392,7 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 			AutoClose: true,
 		}, func(statusCode int, subMsg []byte) error {
 			if statusCode != http.StatusOK {
-				return fmt.Errorf("unexpected http status: %s", http.StatusText(statusCode))
+				return fmt.Errorf("unexpected http status: %s, body:%s", http.StatusText(statusCode), string(subMsg))
 			}
 			if len(subMsg) < 10 {
 				return fmt.Errorf("unexpected sub msg: %s", string(subMsg))
