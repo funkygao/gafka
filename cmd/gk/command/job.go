@@ -65,9 +65,9 @@ func (this *Job) displayAppJobs(appid string) {
 		table := jm.JobTable(topic)
 		archiveTable := jm.HistoryTable(topic)
 
-		sqlRealTime := fmt.Sprintf("SELECT job_id,app_id,payload,due_time FROM %s ORDER BY due_time DESC", table)
+		sqlRealTime := fmt.Sprintf("SELECT job_id,payload,due_time FROM %s ORDER BY due_time DESC", table)
 		if this.due > 0 {
-			sqlRealTime = fmt.Sprintf("SELECT job_id,app_id,payload,due_time FROM %s WHERE due_time<=? ORDER BY due_time DESC",
+			sqlRealTime = fmt.Sprintf("SELECT job_id,payload,due_time FROM %s WHERE due_time<=? ORDER BY due_time DESC",
 				table, time.Now().Unix()+int64(this.due))
 		}
 		rows, err := this.mc.Query(jm.AppPool, table, aid, sqlRealTime)
@@ -75,18 +75,18 @@ func (this *Job) displayAppJobs(appid string) {
 
 		var item job.JobItem
 		for rows.Next() {
-			err = rows.Scan(&item.JobId, &item.AppId, &item.Payload, &item.DueTime)
+			err = rows.Scan(&item.JobId, &item.Payload, &item.DueTime)
 			swallow(err)
 			lines = append(lines, fmt.Sprintf("%s|RT|%d|%d|%s", topic, item.JobId, item.DueTime, item.PayloadString(50)))
 		}
 		rows.Close()
 
-		sqlArchive := fmt.Sprintf("SELECT job_id,app_id,payload,due_time FROM %s ORDER BY due_time ASC LIMIT 100", archiveTable)
+		sqlArchive := fmt.Sprintf("SELECT job_id,payload,due_time FROM %s ORDER BY due_time ASC LIMIT 100", archiveTable)
 		rows, err = this.mc.Query(jm.AppPool, table, aid, sqlArchive)
 		swallow(err)
 
 		for rows.Next() {
-			err = rows.Scan(&item.JobId, &item.AppId, &item.Payload, &item.DueTime)
+			err = rows.Scan(&item.JobId, &item.Payload, &item.DueTime)
 			swallow(err)
 			lines = append(lines, fmt.Sprintf("%s|AR|%d|%d|%s", topic, item.JobId, item.DueTime, item.PayloadString(50)))
 		}
