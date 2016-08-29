@@ -4,7 +4,6 @@ import (
 	"compress/gzip"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -167,13 +166,8 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
-	fetcherIp := ""
-	if !strings.HasPrefix(r.RemoteAddr[:strings.LastIndexByte(r.RemoteAddr, ':')], realIp) {
-		// proxy mode
-		fetcherIp = realIp
-	}
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
-		myAppid+"."+group, r.RemoteAddr, fetcherIp, reset, Options.PermitStandbySub)
+		myAppid+"."+group, r.RemoteAddr, realIp, reset, Options.PermitStandbySub)
 	if err != nil {
 		log.Error("sub[%s] -(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
 			myAppid, realIp, hisAppid, topic, ver,
