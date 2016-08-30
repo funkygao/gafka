@@ -146,6 +146,14 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 		return 2
 	}
 
+	if this.dryRun {
+		this.Ui.Output(fmt.Sprintf("mkdir %s/logs and chown to %s",
+			this.instanceDir(), this.runAs))
+	}
+	err = os.MkdirAll(fmt.Sprintf("%s/logs", this.instanceDir()), 0755)
+	swallow(err)
+	chown(fmt.Sprintf("%s/logs", this.instanceDir()), this.userInfo)
+
 	invalidDir := this.validateLogDirs(this.logDirs)
 	if invalidDir != "" {
 		this.Ui.Error(fmt.Sprintf("%s in log.dirs not exists!", invalidDir))
@@ -169,14 +177,6 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	err = os.MkdirAll(fmt.Sprintf("%s/config", this.instanceDir()), 0755)
 	swallow(err)
 	chown(fmt.Sprintf("%s/config", this.instanceDir()), this.userInfo)
-
-	if this.dryRun {
-		this.Ui.Output(fmt.Sprintf("mkdir %s/logs and chown to %s",
-			this.instanceDir(), this.runAs))
-	}
-	err = os.MkdirAll(fmt.Sprintf("%s/logs", this.instanceDir()), 0755)
-	swallow(err)
-	chown(fmt.Sprintf("%s/logs", this.instanceDir()), this.userInfo)
 
 	type templateVar struct {
 		KafkaBase             string
@@ -351,27 +351,23 @@ func (this *Deploy) demo() {
 	)
 
 	this.zkzone.ForSortedBrokers(func(cluster string, liveBrokers map[string]*zk.BrokerZnode) {
-		if cluster != this.cluster {
-			return
-		}
-
 		maxBrokerId := -1
 		for _, broker := range liveBrokers {
-			myPort = broker.Port
-
-			bid, _ := strconv.Atoi(broker.Id)
-			if bid > maxBrokerId {
-				maxBrokerId = bid
-			}
-
-			// another cluster
 			if maxPort < broker.Port {
 				maxPort = broker.Port
 			}
 
+			if cluster == this.cluster {
+				myPort = broker.Port
+
+				bid, _ := strconv.Atoi(broker.Id)
+				if bid > maxBrokerId {
+					maxBrokerId = bid
+				}
+			}
 		}
 
-		myBrokerId = maxBrokerId + 1 // next deployable id
+		myBrokerId = maxBrokerId + 1 // next deployable broker id
 	})
 
 	ip, err := ctx.LocalIP()
@@ -388,6 +384,10 @@ func (this *Deploy) demo() {
 		if gio.DirExists(filepath.Dir(logDir)) {
 			logDirs = append(logDirs, logDir)
 		}
+	}
+	if len(logDirs) == 0 {
+		// deploy on a small disk host, having no /dataX dirs
+		logDirs = []string{fmt.Sprintf("%s/logs", this.instanceDir())}
 	}
 
 	influxAddr := ctx.Zone(this.zone).InfluxAddr
