@@ -107,6 +107,9 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	case "ratelimit":
 		Options.Ratelimit = boolVal
 
+	case "hh":
+		Options.EnableHintedHandoff = boolVal
+
 	case "shardid":
 		shardId, err := strconv.Atoi(value)
 		if err != nil {
