@@ -16,7 +16,7 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-// POST /v1/msgs/:topic/:ver?key=mykey&async=1&ack=all
+// POST /v1/msgs/:topic/:ver?key=mykey&async=1&ack=all&hh=0
 func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		appid        string
@@ -25,6 +25,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		tag          string
 		partitionKey string
 		async        bool
+		hhDisabled   bool // hh enabled by default
 		t1           = time.Now()
 	)
 
@@ -153,7 +154,9 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		pubMethod = store.DefaultPubStore.SyncAllPub
 	}
 
-	if Options.EnableHintedHandoff && !hh.Default.Empty(cluster, rawTopic) {
+	hhDisabled = query.Get("hh") == "0"
+
+	if !hhDisabled && Options.EnableHintedHandoff && !hh.Default.Empty(cluster, rawTopic) {
 		err = hh.Default.Append(cluster, rawTopic, partitionKey, msg.Body)
 	} else if async {
 		// message pool can't be applied on async pub because
@@ -165,6 +168,10 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	} else {
 		// hack byte string conv TODO
 		partition, offset, err = pubMethod(cluster, rawTopic, []byte(partitionKey), msg.Body)
+		if err != nil && !hhDisabled && Options.EnableHintedHandoff {
+			// resort to hinted handoff
+			err = hh.Default.Append(cluster, rawTopic, partitionKey, msg.Body)
+		}
 	}
 
 	// in case of request panic, mem pool leakage
