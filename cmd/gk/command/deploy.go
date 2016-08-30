@@ -364,10 +364,11 @@ func (this *Deploy) demo() {
 				if bid > maxBrokerId {
 					maxBrokerId = bid
 				}
+
+				myBrokerId = maxBrokerId + 1 // next deployable broker id
 			}
 		}
 
-		myBrokerId = maxBrokerId + 1 // next deployable broker id
 	})
 
 	ip, err := ctx.LocalIP()
@@ -376,6 +377,9 @@ func (this *Deploy) demo() {
 	if myPort == -1 {
 		// the 1st deployment of this cluster
 		myPort = maxPort + 1
+	}
+	if myBrokerId == -1 {
+		// 1st broker id starts with 0
 		myBrokerId = 0
 	}
 	logDirs := make([]string, 0)
