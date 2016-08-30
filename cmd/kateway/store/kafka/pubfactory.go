@@ -67,8 +67,8 @@ func (this *pubPool) newSyncProducer(requiredAcks sarama.RequiredAcks) (pool.Res
 		return nil, err
 	}
 
-	log.Debug("cluster[%s] kafka connected[%d]: %+v %s",
-		this.cluster, spc.id, this.brokerList, time.Since(t1))
+	log.Trace("cluster[%s] kafka sync producer ack:%+v connected[%d]: %+v %s",
+		this.cluster, requiredAcks, spc.id, this.brokerList, time.Since(t1))
 
 	return spc, err
 }
@@ -122,14 +122,14 @@ func (this *pubPool) asyncProducerFactory() (pool.Resource, error) {
 		return nil, err
 	}
 
-	log.Debug("cluster[%s] kafka connected[%d]: %+v %s",
+	log.Trace("cluster[%s] kafka async producer connected[%d]: %+v %s",
 		this.cluster, apc.id, this.brokerList, time.Since(t1))
 
 	// TODO
 	go func() {
 		// messages will only be returned here after all retry attempts are exhausted.
 		for err := range apc.Errors() {
-			log.Error("cluster[%s] async producer: %v", this.cluster, err)
+			log.Error("cluster[%s] kafka async producer: %v", this.cluster, err)
 		}
 	}()
 
