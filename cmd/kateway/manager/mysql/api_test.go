@@ -74,6 +74,12 @@ func TestValidateTopicName(t *testing.T) {
 	assert.Equal(t, false, validateTopicName("trade-.store"))
 	assert.Equal(t, false, validateTopicName("trade-$store"))
 	assert.Equal(t, false, validateTopicName("trade-@store"))
+	assert.Equal(t, false, validateTopicName("我们"))
+	assert.Equal(t, false, validateTopicName("ab他们"))
+	assert.Equal(t, false, validateTopicName("我e他"))
+	assert.Equal(t, false, validateTopicName("我们e"))
+	assert.Equal(t, false, validateTopicName("."))
+	assert.Equal(t, false, validateTopicName(".."))
 }
 
 func TestValidateGroupName(t *testing.T) {

@@ -14,6 +14,10 @@ import (
 	"github.com/funkygao/gafka/mpool"
 )
 
+const (
+	maxTopicLen = 100
+)
+
 var (
 	topicNameRegex = regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 )
@@ -90,7 +94,7 @@ func (this *mysqlStore) ForceRefresh() {
 }
 
 func (this *mysqlStore) ValidateTopicName(topic string) bool {
-	return len(topic) <= 100 && len(topicNameRegex.FindAllString(topic, -1)) == 1
+	return len(topic) > 0 && len(topic) <= maxTopicLen && topicNameRegex.FindString(topic) == topic
 }
 
 func (this *mysqlStore) ValidateGroupName(header http.Header, group string) bool {
