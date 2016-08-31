@@ -45,8 +45,9 @@ type queue struct {
 	mu sync.RWMutex
 
 	// Directory to create segments
-	dir  string
-	quit chan struct{}
+	dir            string
+	cluster, topic string
+	quit           chan struct{}
 
 	// The head and tail segments.  Reads are from the beginning of head,
 	// writes are appended to the tail.
@@ -66,8 +67,10 @@ type queue struct {
 
 // newQueue create a queue that will store segments in dir and that will
 // consume more than maxSize on disk.
-func newQueue(dir string, maxSize int64) *queue {
+func newQueue(cluster, topic string, dir string, maxSize int64) *queue {
 	q := &queue{
+		cluster:        cluster,
+		topic:          topic,
 		dir:            dir,
 		quit:           make(chan struct{}),
 		maxSegmentSize: defaultSegmentSize,

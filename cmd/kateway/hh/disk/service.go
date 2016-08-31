@@ -65,7 +65,9 @@ func (this *DiskService) Start() error {
 				continue
 			}
 
-			this.queues[cluster.Name()][topic.Name()] = newQueue(filepath.Join(topicDir, topic.Name()), -1)
+			this.queues[cluster.Name()][topic.Name()] = newQueue(
+				cluster.Name(), topic.Name(),
+				filepath.Join(topicDir, topic.Name()), -1)
 			if err = this.queues[cluster.Name()][topic.Name()].Open(); err != nil {
 				return err
 			}
@@ -76,6 +78,11 @@ func (this *DiskService) Start() error {
 	}
 
 	return nil
+}
+
+func (this *DiskService) Cursor(cluster, topic string) *cursor {
+	q := this.queues[cluster][topic]
+	return q.cursor
 }
 
 func (this *DiskService) Stop() {
@@ -115,7 +122,8 @@ func (this *DiskService) Append(cluster, topic string, key string, value []byte)
 		return err
 	}
 	this.queues[cluster] = make(map[string]*queue)
-	this.queues[cluster][topic] = newQueue(filepath.Join(this.cfg.Dir, cluster, topic), -1)
+	this.queues[cluster][topic] = newQueue(cluster, topic,
+		filepath.Join(this.cfg.Dir, cluster, topic), -1)
 	if err := this.queues[cluster][topic].Open(); err != nil {
 		return err
 	}

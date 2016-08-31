@@ -8,8 +8,8 @@ import (
 )
 
 func TestCursor(t *testing.T) {
-	q := newQueue("xxx", -1)
-	defer os.RemoveAll("xxx")
+	q := newQueue("cluster", "topic", "dir", -1)
+	defer os.RemoveAll("dir")
 
 	err := q.Open() // will open cursor internally
 	assert.Equal(t, nil, err)
