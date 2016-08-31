@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	monitor.RegisterWatcher("kateway.kateway", func() monitor.Watcher {
+	monitor.RegisterWatcher("kateway.engine", func() monitor.Watcher {
 		return &WatchKateway{
 			Tick: time.Minute,
 		}
