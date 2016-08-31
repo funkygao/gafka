@@ -5,7 +5,8 @@ import (
 )
 
 var (
-	ErrNotOpen     = fmt.Errorf("queue not open")
-	ErrQueueFull   = fmt.Errorf("queue is full")
-	ErrSegmentFull = fmt.Errorf("segment is full")
+	ErrNotOpen        = fmt.Errorf("queue not open")
+	ErrQueueFull      = fmt.Errorf("queue is full")
+	ErrSegmentFull    = fmt.Errorf("segment is full")
+	ErrCursorNotFound = fmt.Errorf("cursor not found")
 )

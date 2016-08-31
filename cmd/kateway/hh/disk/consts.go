@@ -1,6 +1,6 @@
 package disk
 
 const (
-	defaultSegmentSize = 10 * 1024 * 1024
-	footerSize         = 8
+	defaultSegmentSize = 10 << 20
+	cursorFile         = "_cursor_"
 )

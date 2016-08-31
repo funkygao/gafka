@@ -8,10 +8,10 @@ import (
 )
 
 func TestSegment(t *testing.T) {
-	path := "/Users/funky/gopkg/src/github.com/funkygao/gafka/cmd/kateway/hh/disk/x/segment.001"
-	s, err := newSegment(path, 2<<20)
+	path := "/Users/funky/gopkg/src/github.com/funkygao/gafka/cmd/kateway/hh/disk/segment.001"
+	s, err := newSegment(1, path, 2<<20)
 	assert.Equal(t, nil, err)
-	b := block{
+	b := &block{
 		key:   "hello",
 		value: []byte("world"),
 	}

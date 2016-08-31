@@ -25,6 +25,7 @@ import (
 type segment struct {
 	mu sync.RWMutex
 
+	id      uint64
 	size    int64
 	file    *os.File
 	maxSize int64
@@ -35,7 +36,7 @@ type segment struct {
 
 type segments []*segment
 
-func newSegment(path string, maxSize int64) (*segment, error) {
+func newSegment(id uint64, path string, maxSize int64) (*segment, error) {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, err
@@ -47,13 +48,14 @@ func newSegment(path string, maxSize int64) (*segment, error) {
 	}
 
 	return &segment{
+		id:      id,
 		file:    f,
 		size:    stats.Size(),
 		maxSize: maxSize,
 	}, nil
 }
 
-func (s *segment) Append(b block) (err error) {
+func (s *segment) Append(b *block) (err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
