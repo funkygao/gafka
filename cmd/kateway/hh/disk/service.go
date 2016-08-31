@@ -24,7 +24,7 @@ type DiskService struct {
 	//         ├── 1
 	//         ├── 2
 	//         ├── 3
-	//         └── _cursor_
+	//         └── cursor.dmp
 	queues map[string]map[string]*queue // cluster:topic->queue
 }
 

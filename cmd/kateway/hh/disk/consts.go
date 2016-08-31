@@ -2,5 +2,5 @@ package disk
 
 const (
 	defaultSegmentSize = 10 << 20
-	cursorFile         = "_cursor_"
+	cursorFile         = "cursor.dmp"
 )
