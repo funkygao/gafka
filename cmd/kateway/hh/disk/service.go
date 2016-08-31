@@ -23,7 +23,8 @@ type DiskService struct {
 	//     └── topic2
 	//         ├── 1
 	//         ├── 2
-	//         └── 3
+	//         ├── 3
+	//         └── _cursor_
 	queues map[string]map[string]*queue // cluster:topic->queue
 }
 

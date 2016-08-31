@@ -1,7 +1,7 @@
 package disk
 
 type block struct {
-	key   string
+	key   string // TODO []byte
 	value []byte
 }
 
