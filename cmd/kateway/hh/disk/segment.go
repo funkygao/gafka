@@ -3,28 +3,40 @@ package disk
 import (
 	"encoding/binary"
 	"fmt"
-	"io"
 	"os"
 	"sync"
 	"time"
 )
 
-type segments []*segment
-
+// Segment is a queue using a single file.  The structure of a segment is a series
+// of TLV block.
+// TODO add crc32 checksum
+//
+// ┌───────────────────────────────────────────────┐ ┌───────────────────────────────────────────────┐
+// |                    Block 1                    | |                    Block 2                    |
+// └───────────────────────────────────────────────┘ └───────────────────────────────────────────────┘
+// ┌─────────┐ ┌─────────┐ ┌───────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────────┐ ┌─────────┐
+// | key len | | key     | | value len | | value   | | key len | | key     | | value len | | value   |
+// | 4 bytes | | N bytes | | 4 bytes   | | N bytes | | 4 bytes | | N bytes | | 4 bytes   | | N bytes |
+// └─────────┘ └─────────┘ └───────────┘ └─────────┘ └─────────┘ └─────────┘ └───────────┘ └─────────┘
+//
+// Segments store arbitrary byte slices and leave the serialization to the caller.  Segments
+// are created with a max size and will block writes when the segment is full.
 type segment struct {
 	mu sync.RWMutex
 
-	size int64
-	file *os.File
-	path string
+	size    int64
+	file    *os.File
+	maxSize int64
 
-	pos         int64
-	currentSize int64
-	maxSize     int64
+	rbuf, wbuf [4]byte
+	buf        []byte
 }
 
+type segments []*segment
+
 func newSegment(path string, maxSize int64) (*segment, error) {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -34,191 +46,92 @@ func newSegment(path string, maxSize int64) (*segment, error) {
 		return nil, err
 	}
 
-	s := &segment{file: f, path: path, size: stats.Size(), maxSize: maxSize}
-
-	if err := s.open(); err != nil {
-		return nil, err
-	}
-
-	return s, nil
+	return &segment{
+		file:    f,
+		size:    stats.Size(),
+		maxSize: maxSize,
+	}, nil
 }
 
-func (l *segment) open() error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+func (s *segment) Append(b block) (err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	// If it's a new segment then write the location of the current record in this segment
-	if l.size == 0 {
-		l.pos = 0
-		l.currentSize = 0
-
-		if err := l.writeUint64(uint64(l.pos)); err != nil {
-			return err
-		}
-
-		if err := l.file.Sync(); err != nil {
-			return err
-		}
-
-		l.size = footerSize
-
-		return nil
-	}
-
-	// Existing segment so read the current position and the size of the current block
-	if err := l.seekEnd(-footerSize); err != nil {
-		return err
-	}
-
-	pos, err := l.readUint64()
-	if err != nil {
-		return err
-	}
-	l.pos = int64(pos)
-
-	if err := l.seekToCurrent(); err != nil {
-		return err
-	}
-
-	// If we're at the end of the segment, don't read the current block size,
-	// it's 0.
-	if l.pos < l.size-footerSize {
-		currentSize, err := l.readUint64()
-		if err != nil {
-			return err
-		}
-		l.currentSize = int64(currentSize)
-	}
-
-	return nil
-}
-
-// append adds byte slice to the end of segment
-func (l *segment) append(b []byte) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if l.file == nil {
+	if s.file == nil {
 		return ErrNotOpen
 	}
 
-	if l.size+int64(len(b)) > l.maxSize {
+	if s.size+b.size() > s.maxSize {
 		return ErrSegmentFull
 	}
 
-	if err := l.seekEnd(-footerSize); err != nil {
+	if err = s.seekEnd(0); err != nil {
+		return
+	}
+
+	if err = s.writeUint32(b.keyLen()); err != nil {
+		return
+	}
+
+	// FIXME what if fails here? crc32
+	if err := s.writeBytes([]byte(b.key)); err != nil {
 		return err
 	}
 
-	if err := l.writeUint64(uint64(len(b))); err != nil {
+	if err = s.writeUint32(b.valueLen()); err != nil {
+		return
+	}
+
+	if err = s.writeBytes(b.value); err != nil {
+		return
+	}
+
+	// TODO
+	if err := s.Flush(); err != nil {
 		return err
 	}
 
-	if err := l.writeUint64(uint64(len(b))); err != nil {
-		return err
-	}
-
-	if err := l.writeBytes(b); err != nil {
-		return err
-	}
-
-	if err := l.writeUint64(uint64(l.pos)); err != nil {
-		return err
-	}
-
-	if err := l.file.Sync(); err != nil {
-		return err
-	}
-
-	if l.currentSize == 0 {
-		l.currentSize = int64(len(b))
-	}
-
-	l.size += int64(len(b)) + 8 // uint64 for slice length
+	s.size += b.size()
 
 	return nil
 }
 
-// current returns byte slice that the current segment points
-func (l *segment) current() ([]byte, error) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if int64(l.pos) == l.size-8 {
-		return nil, io.EOF
-	}
-
-	if err := l.seekToCurrent(); err != nil {
-		return nil, err
-	}
-
-	// read the record size
-	sz, err := l.readUint64()
-	if err != nil {
-		return nil, err
-	}
-	l.currentSize = int64(sz)
-
-	if int64(sz) > l.maxSize {
-		return nil, fmt.Errorf("record size out of range: max %d: got %d", l.maxSize, sz)
-	}
-
-	b := make([]byte, sz)
-	if err := l.readBytes(b); err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
-
-// advance advances the current value pointer
-func (l *segment) advance() error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if l.file == nil {
+func (s *segment) ReadOne(b *block) error {
+	if s.file == nil {
 		return ErrNotOpen
 	}
 
-	// If we're at the end of the file, can't advance
-	if int64(l.pos) == l.size-footerSize {
-		l.currentSize = 0
-		return io.EOF
-	}
-
-	if err := l.seekEnd(-footerSize); err != nil {
-		return err
-	}
-
-	pos := l.pos + l.currentSize + 8
-	if err := l.writeUint64(uint64(pos)); err != nil {
-		return err
-	}
-
-	if err := l.file.Sync(); err != nil {
-		return err
-	}
-	l.pos = pos
-
-	if err := l.seekToCurrent(); err != nil {
-		return err
-	}
-
-	sz, err := l.readUint64()
+	keyLen, err := s.readUint32()
 	if err != nil {
 		return err
 	}
-	l.currentSize = int64(sz)
 
-	if int64(l.pos) == l.size-footerSize {
-		l.currentSize = 0
-		return io.EOF
+	if len(s.buf) == 0 {
+		s.buf = make([]byte, 1<<20)
 	}
 
+	if err = s.readBytes(s.buf[:int(keyLen)]); err != nil {
+		return err
+	}
+	b.key = string(s.buf[:int(keyLen)])
+
+	valueLen, err := s.readUint32()
+	if err != nil {
+		return err
+	}
+
+	if err = s.readBytes(s.buf[:int(valueLen)]); err != nil {
+		return err
+	}
+	b.value = s.buf[:int(valueLen)]
 	return nil
 }
 
-func (l *segment) close() error {
+func (s *segment) Flush() error {
+	return s.file.Sync()
+}
+
+func (l *segment) Close() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if err := l.file.Close(); err != nil {
@@ -228,35 +141,25 @@ func (l *segment) close() error {
 	return nil
 }
 
-func (l *segment) lastModified() (time.Time, error) {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
+func (s *segment) LastModified() (time.Time, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	stats, err := os.Stat(l.file.Name())
+	stats, err := os.Stat(s.file.Name())
 	if err != nil {
 		return time.Time{}, err
 	}
 	return stats.ModTime().UTC(), nil
 }
 
-func (l *segment) diskUsage() int64 {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-	return l.size
+func (s *segment) DiskUsage() int64 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.size
 }
 
-func (l *segment) SetMaxSegmentSize(size int64) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.maxSize = size
-}
-
-func (l *segment) seekToCurrent() error {
-	return l.seek(int64(l.pos))
-}
-
-func (l *segment) seek(pos int64) error {
-	n, err := l.file.Seek(pos, os.SEEK_SET)
+func (s *segment) Seek(pos int64) error {
+	n, err := s.file.Seek(pos, os.SEEK_SET)
 	if err != nil {
 		return err
 	}
@@ -267,8 +170,9 @@ func (l *segment) seek(pos int64) error {
 
 	return nil
 }
-func (l *segment) seekEnd(pos int64) error {
-	_, err := l.file.Seek(pos, os.SEEK_END)
+
+func (s *segment) seekEnd(pos int64) error {
+	_, err := s.file.Seek(pos, os.SEEK_END)
 	if err != nil {
 		return err
 	}
@@ -276,27 +180,20 @@ func (l *segment) seekEnd(pos int64) error {
 	return nil
 }
 
-func (l *segment) filePos() int64 {
-	n, _ := l.file.Seek(0, os.SEEK_CUR)
-	return n
-}
-
-func (l *segment) readUint64() (uint64, error) {
-	b := make([]byte, 8)
-	if err := l.readBytes(b); err != nil {
+func (s *segment) readUint32() (uint32, error) {
+	if err := s.readBytes(s.rbuf[:]); err != nil {
 		return 0, err
 	}
-	return binary.BigEndian.Uint64(b), nil
+	return binary.BigEndian.Uint32(s.rbuf[:]), nil
 }
 
-func (l *segment) writeUint64(sz uint64) error {
-	var buf [8]byte
-	binary.BigEndian.PutUint64(buf[:], sz)
-	return l.writeBytes(buf[:])
+func (s *segment) writeUint32(v uint32) error {
+	binary.BigEndian.PutUint32(s.wbuf[:], v)
+	return s.writeBytes(s.wbuf[:])
 }
 
-func (l *segment) writeBytes(b []byte) error {
-	n, err := l.file.Write(b)
+func (s *segment) writeBytes(b []byte) error {
+	n, err := s.file.Write(b)
 	if err != nil {
 		return err
 	}
@@ -307,8 +204,8 @@ func (l *segment) writeBytes(b []byte) error {
 	return nil
 }
 
-func (l *segment) readBytes(b []byte) error {
-	n, err := l.file.Read(b)
+func (s *segment) readBytes(b []byte) error {
+	n, err := s.file.Read(b)
 	if err != nil {
 		return err
 	}
