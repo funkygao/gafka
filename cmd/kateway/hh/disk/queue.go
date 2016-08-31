@@ -47,6 +47,7 @@ type queue struct {
 	// Directory to create segments
 	dir            string
 	cluster, topic string
+	maxAge         time.Duration
 	quit           chan struct{}
 
 	// The head and tail segments.  Reads are from the beginning of head,
@@ -144,24 +145,6 @@ func (l *queue) Remove() error {
 	}
 
 	return os.RemoveAll(l.dir)
-}
-
-func (l *queue) housekeeping(purgeInterval time.Duration, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	tick := time.NewTicker(purgeInterval)
-	defer tick.Stop()
-
-	// use cursor to send pub
-
-	for {
-		select {
-		case <-tick.C:
-
-		case <-l.quit:
-			return
-		}
-	}
 }
 
 func (l *queue) PurgeOlderThan(when time.Time) error {
