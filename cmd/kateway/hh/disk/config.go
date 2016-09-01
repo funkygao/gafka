@@ -6,7 +6,7 @@ import (
 )
 
 type Config struct {
-	Dir           string
+	Dir           string // TODO []string to load balance disk IO
 	PurgeInterval time.Duration
 }
 
