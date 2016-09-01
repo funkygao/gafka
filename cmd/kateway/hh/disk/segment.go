@@ -27,8 +27,9 @@ type segment struct {
 
 	id      uint64
 	size    int64
-	file    *os.File
 	maxSize int64
+
+	wfile, rfile *os.File
 
 	rbuf, wbuf [4]byte
 	buf        []byte
@@ -37,7 +38,12 @@ type segment struct {
 type segments []*segment
 
 func newSegment(id uint64, path string, maxSize int64) (*segment, error) {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
+	wf, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
+	if err != nil {
+		return nil, err
+	}
+
+	rf, err := os.OpenFile(path, os.O_RDONLY, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +55,8 @@ func newSegment(id uint64, path string, maxSize int64) (*segment, error) {
 
 	return &segment{
 		id:      id,
-		file:    f,
+		wfile:   wf,
+		rfile:   rf,
 		size:    stats.Size(),
 		maxSize: maxSize,
 	}, nil
@@ -59,16 +66,12 @@ func (s *segment) Append(b *block) (err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.file == nil {
+	if s.wfile == nil {
 		return ErrNotOpen
 	}
 
 	if s.size+b.size() > s.maxSize {
 		return ErrSegmentFull
-	}
-
-	if err = s.seekEnd(0); err != nil {
-		return
 	}
 
 	if err = s.writeUint32(b.keyLen()); err != nil {
@@ -99,7 +102,7 @@ func (s *segment) Append(b *block) (err error) {
 }
 
 func (s *segment) ReadOne(b *block) error {
-	if s.file == nil {
+	if s.rfile == nil {
 		return ErrNotOpen
 	}
 
@@ -130,16 +133,36 @@ func (s *segment) ReadOne(b *block) error {
 }
 
 func (s *segment) Flush() error {
-	return s.file.Sync()
+	return s.wfile.Sync()
+}
+
+func (s *segment) Current() int64 {
+	n, _ := s.rfile.Seek(0, os.SEEK_CUR)
+	return n
+}
+
+func (s *segment) Remove() (err error) {
+	if err = s.Close(); err != nil {
+		return
+	}
+	if err = os.Remove(s.wfile.Name()); err != nil {
+		return
+	}
+
+	return
 }
 
 func (l *segment) Close() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if err := l.file.Close(); err != nil {
+	if err := l.wfile.Close(); err != nil {
 		return err
 	}
-	l.file = nil
+	if err := l.rfile.Close(); err != nil {
+		return err
+	}
+	l.wfile = nil
+	l.rfile = nil
 	return nil
 }
 
@@ -147,7 +170,7 @@ func (s *segment) LastModified() (time.Time, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	stats, err := os.Stat(s.file.Name())
+	stats, err := os.Stat(s.wfile.Name())
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -161,22 +184,13 @@ func (s *segment) DiskUsage() int64 {
 }
 
 func (s *segment) Seek(pos int64) error {
-	n, err := s.file.Seek(pos, os.SEEK_SET)
+	n, err := s.rfile.Seek(pos, os.SEEK_SET)
 	if err != nil {
 		return err
 	}
 
 	if n != pos {
 		return fmt.Errorf("bad seek. exp %v, got %v", 0, n)
-	}
-
-	return nil
-}
-
-func (s *segment) seekEnd(pos int64) error {
-	_, err := s.file.Seek(pos, os.SEEK_END)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -195,7 +209,7 @@ func (s *segment) writeUint32(v uint32) error {
 }
 
 func (s *segment) writeBytes(b []byte) error {
-	n, err := s.file.Write(b)
+	n, err := s.wfile.Write(b)
 	if err != nil {
 		return err
 	}
@@ -207,7 +221,7 @@ func (s *segment) writeBytes(b []byte) error {
 }
 
 func (s *segment) readBytes(b []byte) error {
-	n, err := s.file.Read(b)
+	n, err := s.rfile.Read(b)
 	if err != nil {
 		return err
 	}

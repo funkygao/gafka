@@ -1,6 +1,7 @@
 package disk
 
 import (
+	"io"
 	"sync"
 	"time"
 
@@ -11,21 +12,24 @@ import (
 func (l *queue) housekeeping(purgeInterval time.Duration, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	tick := time.NewTicker(purgeInterval)
-	defer tick.Stop()
+	purgeTick := time.NewTicker(purgeInterval)
+	defer purgeTick.Stop()
+
+	cursorChkpnt := time.NewTicker(time.Second)
+	defer cursorChkpnt.Stop()
 
 	go l.pump()
 
-	purgeCh := tick.C
-	if l.maxAge == 0 {
-		purgeCh = nil
-	}
-
 	for {
 		select {
-		case now := <-purgeCh:
-			if err := l.PurgeOlderThan(now.Add(l.maxAge)); err != nil {
+		case <-purgeTick.C:
+			if err := l.Purge(); err != nil {
 				log.Error("hh purge: %s", err)
+			}
+
+		case <-cursorChkpnt.C:
+			if err := l.cursor.dump(); err != nil {
+				log.Error("hh cursor checkpoint: %s", err)
 			}
 
 		case <-l.quit:
@@ -38,6 +42,7 @@ func (l *queue) pump() {
 	var (
 		b   block
 		err error
+		i   int
 	)
 	for {
 		select {
@@ -49,10 +54,24 @@ func (l *queue) pump() {
 
 		err = l.cursor.Next(&b)
 		if err != nil {
-			log.Error("hh pump: %s", err)
+			if err == io.EOF {
+				l.emptyInflight = true
+				time.Sleep(time.Second)
+			} else {
+				log.Error("hh pump: %s", err)
+			}
 			continue // FIXME return?
 		}
 
-		store.DefaultPubStore.SyncPub(l.cluster, l.topic, []byte(b.key), b.value)
+		i++
+		l.emptyInflight = false
+		log.Info("%5d {c:%s t:%s} %s", i, l.cluster, l.topic, string(b.value))
+		continue
+
+		_, _, err = store.DefaultPubStore.SyncPub(l.cluster, l.topic, []byte(b.key), b.value)
+		if err != nil {
+			// TODO
+			log.Error("{c:%s t:%s} %s", l.cluster, l.topic, err)
+		}
 	}
 }

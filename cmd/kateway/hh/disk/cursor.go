@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	//log "github.com/funkygao/log4go"
 )
 
 type position struct {
@@ -68,7 +69,6 @@ func (c *cursor) open() error {
 
 	s, present := c.ctx.SegmentById(c.pos.SegmentId)
 	if !present {
-		// already purged
 		c.resetPosition()
 		s, present = c.ctx.SegmentById(c.pos.SegmentId)
 	}
@@ -81,10 +81,43 @@ func (c *cursor) open() error {
 	return s.Seek(c.pos.Offset)
 }
 
-func (c *cursor) Next(b *block) error {
-	err := c.seg.ReadOne(b)
-	if err == io.EOF {
-		// TODO
+func (c *cursor) Next(b *block) (err error) {
+	err = c.seg.ReadOne(b)
+	if err == nil {
+		c.pos.Offset = c.seg.Current()
 	}
-	return err
+	if err == io.EOF {
+		for {
+			ok := c.advance()
+			err = c.seg.ReadOne(b)
+			if err == nil {
+				c.pos.Offset = c.seg.Current()
+				return
+			}
+
+			// err occurs
+
+			if !ok {
+				// tail reached
+				return
+			}
+		}
+	}
+
+	return
+}
+
+func (c *cursor) advance() bool {
+	for _, seg := range c.ctx.segments {
+		if seg.id > c.pos.SegmentId {
+			c.pos.SegmentId = seg.id
+			c.seg = seg
+			c.pos.Offset = 0
+			c.seg.Seek(c.pos.Offset)
+			return true
+		}
+	}
+
+	// tail reached
+	return false
 }

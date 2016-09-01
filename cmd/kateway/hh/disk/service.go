@@ -132,5 +132,14 @@ func (this *DiskService) Append(cluster, topic string, key string, value []byte)
 }
 
 func (this *DiskService) Empty(cluster, topic string) bool {
-	return false // TODO
+	this.rwmux.RLock()
+	q, present := this.queues[cluster][topic]
+	this.rwmux.RUnlock()
+
+	if !present {
+		// should never happen
+		return true
+	}
+
+	return q.EmptyInflight()
 }

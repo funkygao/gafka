@@ -35,10 +35,10 @@ import (
 // ┌─────────────────┐ ┌─────────────────┐┌─────────────────┐
 // │Segment 1 - 10MB │ │Segment 2 - 10MB ││Segment 3 - 10MB │
 // └─────────────────┘ └─────────────────┘└─────────────────┘
-//                                                          ▲
-//                                                          │
-//                                                          │
-//                                                     ┌─────┐
+//                          ▲                               ▲
+//                          |                               │
+//                          |                               │
+//                        cursor                       ┌─────┐
 //                                                     │Tail │
 //                                                     └─────┘
 type queue struct {
@@ -47,8 +47,8 @@ type queue struct {
 	// Directory to create segments
 	dir            string
 	cluster, topic string
-	maxAge         time.Duration
 	quit           chan struct{}
+	emptyInflight  bool
 
 	// The head and tail segments.  Reads are from the beginning of head,
 	// writes are appended to the tail.
@@ -147,35 +147,43 @@ func (l *queue) Remove() error {
 	return os.RemoveAll(l.dir)
 }
 
-func (l *queue) PurgeOlderThan(when time.Time) error {
+func (l *queue) Purge() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if len(l.segments) == 0 {
+	if len(l.segments) <= 1 {
+		// head, curror, tail are in the same segment
 		return nil
 	}
 
-	cutoff := when.Truncate(time.Second)
 	for {
-		mod, err := l.head.LastModified()
-		if err != nil {
-			return err
-		}
-
-		if mod.After(cutoff) || mod.Equal(cutoff) {
-			return nil
-		}
-
 		// If this is the last segment, first append a new one allowing
 		// trimming to proceed.
 		if len(l.segments) == 1 {
-			_, err := l.addSegment()
-			if err != nil {
+			if _, err := l.addSegment(); err != nil {
 				return err
 			}
 		}
 
+		if l.cursor.pos.SegmentId > l.head.id {
+			l.trimHead()
+		} else {
+			return nil
+		}
+
 	}
+}
+
+func (l *queue) trimHead() (err error) {
+	l.segments = l.segments[1:]
+
+	if err = l.head.Remove(); err != nil {
+		return
+	}
+
+	l.head = l.segments[0]
+
+	return
 }
 
 // LastModified returns the last time the queue was modified.
@@ -309,4 +317,8 @@ func (l *queue) Append(b *block) error {
 		return err
 	}
 	return nil
+}
+
+func (l *queue) EmptyInflight() bool {
+	return l.emptyInflight
 }
