@@ -18,7 +18,8 @@ func (l *queue) housekeeping(purgeInterval time.Duration, wg *sync.WaitGroup) {
 	cursorChkpnt := time.NewTicker(time.Second)
 	defer cursorChkpnt.Stop()
 
-	go l.pump()
+	wg.Add(1)
+	go l.pump(wg)
 
 	for {
 		select {
@@ -38,11 +39,15 @@ func (l *queue) housekeeping(purgeInterval time.Duration, wg *sync.WaitGroup) {
 	}
 }
 
-func (l *queue) pump() {
+func (l *queue) pump(wg *sync.WaitGroup) {
+	defer func() {
+		wg.Done()
+		log.Trace("hh pump quit")
+	}()
+
 	var (
 		b   block
 		err error
-		i   int
 	)
 	for {
 		select {
@@ -58,14 +63,13 @@ func (l *queue) pump() {
 				l.emptyInflight = true
 				time.Sleep(time.Second)
 			} else {
-				log.Error("hh pump: %s", err)
+				log.Error("hh pump: %s +%v", err, l.cursor.pos)
 			}
 			continue // FIXME return?
 		}
 
-		i++
 		l.emptyInflight = false
-		log.Info("%5d {c:%s t:%s} %s", i, l.cluster, l.topic, string(b.value))
+		log.Info("%s", string(b.value))
 		continue
 
 		_, _, err = store.DefaultPubStore.SyncPub(l.cluster, l.topic, []byte(b.key), b.value)

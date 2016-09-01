@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/hh/disk"
+	log "github.com/funkygao/log4go"
 )
 
 func main() {
@@ -17,12 +18,14 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		if err := s.Append("c1", "t1", "key",
-			[]byte(fmt.Sprintf("value %d sent at: %s", i+1, time.Now()))); err != nil {
+			[]byte(fmt.Sprintf("<#%d sent at: %s>", i+1, time.Now()))); err != nil {
 			panic(err)
 		}
 	}
 
-	println("enter sleep...")
-	time.Sleep(time.Second * 3)
+	log.Info("ENTER sleep...")
+	time.Sleep(time.Second)
 	s.Stop()
+	log.Info("bye!")
+	log.Close()
 }

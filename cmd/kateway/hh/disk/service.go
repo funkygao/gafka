@@ -128,6 +128,8 @@ func (this *DiskService) Append(cluster, topic string, key string, value []byte)
 	if err := this.queues[cluster][topic].Open(); err != nil {
 		return err
 	}
+	this.wg.Add(1)
+	go this.queues[cluster][topic].housekeeping(this.cfg.PurgeInterval, &this.wg)
 	return this.queues[cluster][topic].Append(b)
 }
 

@@ -3,9 +3,12 @@ package disk
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"sync"
 	"time"
+
+	log "github.com/funkygao/log4go"
 )
 
 // Segment is a queue using a single file.  The structure of a segment is a series
@@ -38,6 +41,7 @@ type segment struct {
 type segments []*segment
 
 func newSegment(id uint64, path string, maxSize int64) (*segment, error) {
+	// TODO should explicitly open files
 	wf, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, err
@@ -115,10 +119,12 @@ func (s *segment) ReadOne(b *block) error {
 		s.buf = make([]byte, 1<<20)
 	}
 
-	if err = s.readBytes(s.buf[:int(keyLen)]); err != nil {
-		return err
+	if keyLen > 0 {
+		if err = s.readBytes(s.buf[:int(keyLen)]); err != nil {
+			return err
+		}
+		b.key = string(s.buf[:int(keyLen)])
 	}
-	b.key = string(s.buf[:int(keyLen)])
 
 	valueLen, err := s.readUint32()
 	if err != nil {
@@ -190,7 +196,7 @@ func (s *segment) Seek(pos int64) error {
 	}
 
 	if n != pos {
-		return fmt.Errorf("bad seek. exp %v, got %v", 0, n)
+		return fmt.Errorf("bad seek. exp %v, got %v", pos, n)
 	}
 
 	return nil
@@ -215,19 +221,19 @@ func (s *segment) writeBytes(b []byte) error {
 	}
 
 	if n != len(b) {
-		return fmt.Errorf("short write. got %d, exp %d", n, len(b))
+		return fmt.Errorf("short write. exp %d, got %d", len(b), n)
 	}
 	return nil
 }
 
 func (s *segment) readBytes(b []byte) error {
-	n, err := s.rfile.Read(b)
+	n, err := io.ReadAtLeast(s.rfile, b, len(b))
 	if err != nil {
 		return err
 	}
 
 	if n != len(b) {
-		return fmt.Errorf("bad read. exp %v, got %v", 0, n)
+		return fmt.Errorf("bad read. exp %v, got %v", len(b), n)
 	}
 	return nil
 }
