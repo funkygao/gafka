@@ -7,8 +7,6 @@ import (
 	"os"
 	"sync"
 	"time"
-
-	log "github.com/funkygao/log4go"
 )
 
 // Segment is a queue using a single file.  The structure of a segment is a series
@@ -123,7 +121,7 @@ func (s *segment) ReadOne(b *block) error {
 		if err = s.readBytes(s.buf[:int(keyLen)]); err != nil {
 			return err
 		}
-		b.key = string(s.buf[:int(keyLen)])
+		b.key = s.buf[:int(keyLen)]
 	}
 
 	valueLen, err := s.readUint32()

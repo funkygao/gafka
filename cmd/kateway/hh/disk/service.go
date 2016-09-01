@@ -98,7 +98,7 @@ func (this *DiskService) Stop() {
 	this.wg.Wait()
 }
 
-func (this *DiskService) Append(cluster, topic string, key string, value []byte) error {
+func (this *DiskService) Append(cluster, topic string, key, value []byte) error {
 	b := new(block)
 	b.key = key
 	b.value = value
