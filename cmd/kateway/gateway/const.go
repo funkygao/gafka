@@ -1,9 +1,6 @@
 package gateway
 
 const (
-	HttpHeaderAppid           = "Appid"
-	HttpHeaderPubkey          = "Pubkey"
-	HttpHeaderSubkey          = "Subkey"
 	HttpHeaderXForwardedFor   = "X-Forwarded-For"
 	HttpHeaderPartition       = "X-Partition"
 	HttpHeaderOffset          = "X-Offset"
@@ -25,4 +22,8 @@ const (
 
 var (
 	ResponseOk = []byte(`{"ok":1}`)
+
+	HttpHeaderAppid  = "Appid"
+	HttpHeaderPubkey = "Pubkey"
+	HttpHeaderSubkey = "Subkey"
 )

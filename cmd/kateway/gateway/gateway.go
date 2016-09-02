@@ -110,6 +110,9 @@ func New(id string) *Gateway {
 		cf.Refresh = Options.ManagerRefresh
 		manager.Default = manopen.New(cf)
 		manager.Default.AllowSubWithUnregisteredGroup(Options.PermitUnregisteredGroup)
+		HttpHeaderAppid = "devid"
+		HttpHeaderPubkey = "devsecret"
+		HttpHeaderSubkey = "devsecret"
 
 	default:
 		panic("invalid manager store:" + Options.ManagerStore)
