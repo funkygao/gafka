@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	log "github.com/funkygao/log4go"
 )
 
 type position struct {
@@ -29,6 +31,8 @@ func newCursor(q *queue) *cursor {
 
 // open loads latest cursor position from disk
 func (c *cursor) open() error {
+	log.Debug("cursor[%s] open...", c.cursorFile())
+
 	f, err := os.OpenFile(c.cursorFile(), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return err
@@ -69,6 +73,8 @@ func (c *cursor) cursorFile() string {
 // dump save the cursor position to disk.
 // housekeeping will periodically checkpoint with dump.
 func (c *cursor) dump() error {
+	log.Debug("cursor[%s] dump...", c.cursorFile())
+
 	f, err := os.OpenFile(c.cursorFile(), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return err

@@ -161,6 +161,8 @@ func (l *queue) Remove() error {
 
 // Purge garbage collects the segments that are behind cursor.
 func (l *queue) Purge() error {
+	log.Debug("queue[%s] purge...", l.ident())
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -349,6 +351,10 @@ func (l *queue) nextSegmentID() (uint64, error) {
 	}
 
 	return maxID + 1, nil
+}
+
+func (q *queue) ident() string {
+	return q.dir
 }
 
 func (l *queue) trimHead() (err error) {
