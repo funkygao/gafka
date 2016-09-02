@@ -372,3 +372,10 @@ func (q *queue) nextDir() string {
 	// find least loaded dir
 	return ""
 }
+
+// skipCursorSegment skip the current corrupted cursor segment and
+// advance to next segment.
+// if tail corrupts, add new segment.
+func (q *queue) skipCursorSegment() {
+
+}

@@ -61,9 +61,16 @@ func (q *queue) pump() {
 		case nil:
 			i++
 			q.emptyInflight = false
+
 			if false {
 				//log.Info("%03d %s", i, string(b.value))
 				log.Info("%04d", i)
+
+				_, _, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
+				if err != nil {
+					// TODO
+					log.Error("{c:%s t:%s} %s", q.clusterTopic.cluster, q.clusterTopic.topic, err)
+				}
 			}
 
 		case ErrNotOpen:
@@ -74,15 +81,8 @@ func (q *queue) pump() {
 			time.Sleep(time.Second)
 
 		default:
-			log.Error("hh pump: %s +%v", err, q.cursor.pos)
-		}
-
-		continue
-
-		_, _, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
-		if err != nil {
-			// TODO
-			log.Error("{c:%s t:%s} %s", q.clusterTopic.cluster, q.clusterTopic.topic, err)
+			log.Error("queue[%s] pump: %s +%v", q.ident(), err, q.cursor.pos)
+			q.skipCursorSegment()
 		}
 	}
 }
