@@ -44,6 +44,7 @@ import (
 //                       └───────┘                     └─────┘
 type queue struct {
 	mu sync.RWMutex
+	wg sync.WaitGroup
 
 	dir          string // Directory to create segments
 	clusterTopic clusterTopic
@@ -55,6 +56,8 @@ type queue struct {
 	// -1 means unlimited
 	maxSize int64
 
+	purgeInterval time.Duration
+
 	cursor     *cursor
 	head, tail *segment
 	segments   segments
@@ -65,13 +68,14 @@ type queue struct {
 
 // newQueue create a queue that will store segments in dir and that will
 // consume more than maxSize on disk.
-func newQueue(ct clusterTopic, dir string, maxSize int64) *queue {
+func newQueue(ct clusterTopic, dir string, maxSize int64, purgeInterval time.Duration) *queue {
 	q := &queue{
 		clusterTopic:   ct,
 		dir:            dir,
 		quit:           make(chan struct{}),
 		maxSegmentSize: defaultSegmentSize,
 		maxSize:        maxSize,
+		purgeInterval:  purgeInterval,
 		segments:       segments{},
 	}
 	q.cursor = newCursor(q)
@@ -108,6 +112,12 @@ func (l *queue) Open() error {
 		return err
 	}
 
+	l.wg.Add(1)
+	go l.housekeeping()
+
+	l.wg.Add(1)
+	go l.pump()
+
 	return nil
 }
 
@@ -126,6 +136,8 @@ func (l *queue) Close() error {
 	l.tail = nil
 	l.segments = nil
 	close(l.quit)
+
+	l.wg.Wait()
 	if err := l.cursor.dump(); err != nil {
 		return err
 	}
@@ -217,14 +229,14 @@ func (q *queue) Next(b *block) (err error) {
 	err = c.seg.ReadOne(b)
 	switch err {
 	case nil:
-		c.pos.Offset += b.size()
+		c.advanceOffset(b.size())
 		return
 
 	case io.EOF:
 		// cursor might have:
 		// 1. reached end of the current segment: will advance to next segment
 		// 2. reached end of tail
-		if ok := c.advance(); !ok {
+		if ok := c.advanceSegment(); !ok {
 			return ErrEOQ
 		}
 
@@ -233,7 +245,7 @@ func (q *queue) Next(b *block) (err error) {
 		switch err {
 		case nil:
 			// bingo!
-			c.pos.Offset += b.size()
+			c.advanceOffset(b.size())
 			return
 
 		case io.EOF:

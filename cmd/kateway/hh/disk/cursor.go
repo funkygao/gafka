@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 type position struct {
@@ -15,7 +16,9 @@ type cursor struct {
 	ctx *queue
 
 	seg *segment
-	pos position
+
+	rwmux sync.RWMutex
+	pos   position
 }
 
 func newCursor(q *queue) *cursor {
@@ -72,6 +75,9 @@ func (c *cursor) dump() error {
 	}
 	defer f.Close()
 
+	c.rwmux.RLock()
+	defer c.rwmux.RUnlock()
+
 	enc := json.NewEncoder(f)
 	if err = enc.Encode(&c.pos); err != nil {
 		return err
@@ -85,7 +91,13 @@ func (c *cursor) moveToHead() {
 	c.pos.SegmentID = c.ctx.head.id
 }
 
-func (c *cursor) advance() (ok bool) {
+func (c *cursor) advanceOffset(delta int64) {
+	c.rwmux.Lock()
+	c.pos.Offset += delta
+	c.rwmux.Unlock()
+}
+
+func (c *cursor) advanceSegment() (ok bool) {
 	for _, seg := range c.ctx.segments {
 		if seg.id > c.pos.SegmentID {
 			c.pos.SegmentID = seg.id

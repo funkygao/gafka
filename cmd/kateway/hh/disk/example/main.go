@@ -16,11 +16,15 @@ func main() {
 		panic(err)
 	}
 
-	for i := 0; i < 10; i++ {
-		if err := s.Append("c1", "t1", []byte("key"),
-			[]byte(fmt.Sprintf("<#%d sent at: %s>", i+1, time.Now()))); err != nil {
-			panic(err)
-		}
+	for seq := 0; seq < 5; seq++ {
+		go func(seq int) {
+			for i := 0; i < 10; i++ {
+				if err := s.Append("c1", "t1", []byte("key"),
+					[]byte(fmt.Sprintf("<#%d/%d sent at: %s>", seq, i+1, time.Now()))); err != nil {
+					panic(err)
+				}
+			}
+		}(seq)
 	}
 
 	log.Info("ENTER sleep...")

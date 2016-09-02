@@ -1,24 +1,23 @@
 package disk
 
 import (
-	"sync"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 )
 
-func (l *queue) housekeeping(purgeInterval time.Duration, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (l *queue) housekeeping() {
+	defer func() {
+		log.Trace("hh[%s] housekeeping quit", l.dir)
+		l.wg.Done()
+	}()
 
-	purgeTick := time.NewTicker(purgeInterval)
+	purgeTick := time.NewTicker(l.purgeInterval)
 	defer purgeTick.Stop()
 
 	cursorChkpnt := time.NewTicker(time.Second)
 	defer cursorChkpnt.Stop()
-
-	wg.Add(1)
-	go l.pump(wg)
 
 	for {
 		select {
@@ -38,10 +37,10 @@ func (l *queue) housekeeping(purgeInterval time.Duration, wg *sync.WaitGroup) {
 	}
 }
 
-func (l *queue) pump(wg *sync.WaitGroup) {
+func (l *queue) pump() {
 	defer func() {
-		wg.Done()
-		log.Trace("hh pump quit")
+		log.Trace("hh[%s] pump quit", l.dir)
+		l.wg.Done()
 	}()
 
 	var (

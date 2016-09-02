@@ -11,7 +11,7 @@ type Service struct {
 	cfg *Config
 
 	quiting chan struct{}
-	wg      sync.WaitGroup
+	closed  bool
 
 	rwmux sync.RWMutex
 
@@ -32,6 +32,7 @@ func New(cfg *Config) *Service {
 		cfg:     cfg,
 		quiting: make(chan struct{}),
 		queues:  make(map[clusterTopic]*queue),
+		closed:  true,
 	}
 }
 
@@ -40,20 +41,31 @@ func (this *Service) Start() (err error) {
 		return
 	}
 
-	return this.loadQueues(this.cfg.Dir)
+	if err = this.loadQueues(this.cfg.Dir); err == nil {
+		this.closed = false
+	}
+
+	return
 }
 
 func (this *Service) Stop() {
+	this.rwmux.Lock()
+	defer this.rwmux.Unlock()
+
 	close(this.quiting)
 
 	for _, q := range this.queues {
 		q.Close()
 	}
 
-	this.wg.Wait()
+	this.closed = true
 }
 
 func (this *Service) Append(cluster, topic string, key, value []byte) error {
+	if this.closed {
+		return ErrNotOpen
+	}
+
 	b := &block{key: key, value: value}
 	ct := clusterTopic{cluster: cluster, topic: topic}
 
@@ -133,12 +145,10 @@ func (this *Service) createAndStartQueue(ct clusterTopic) error {
 		return err
 	}
 
-	this.queues[ct] = newQueue(ct, ct.TopicDir(this.cfg.Dir), -1)
+	this.queues[ct] = newQueue(ct, ct.TopicDir(this.cfg.Dir), -1, this.cfg.PurgeInterval)
 	if err := this.queues[ct].Open(); err != nil {
 		return err
 	}
 
-	this.wg.Add(1)
-	go this.queues[ct].housekeeping(this.cfg.PurgeInterval, &this.wg)
 	return nil
 }
