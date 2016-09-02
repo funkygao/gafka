@@ -95,7 +95,7 @@ func (this *Gateway) buildRouting() {
 
 		go http.ListenAndServe(Options.DebugHttpAddr, gziphandler.GzipHandler(this.debugMux))
 
-		log.Info("debug http server ready on %s", Options.DebugHttpAddr)
+		log.Info("debug_server ready on %s", Options.DebugHttpAddr)
 	}
 
 }

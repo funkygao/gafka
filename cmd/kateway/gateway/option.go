@@ -35,6 +35,8 @@ var (
 		InfluxServer            string
 		InfluxDbName            string
 		KillFile                string
+		HintedHandoffType       string
+		HintedHandoffDir        string
 		ShowVersion             bool
 		Ratelimit               bool
 		PermitStandbySub        bool
@@ -107,6 +109,8 @@ func ParseFlags() {
 	flag.StringVar(&Options.KeyFile, "keyfile", "", "key file path")
 	flag.StringVar(&Options.DebugHttpAddr, "debughttp", "", "debug http bind addr")
 	flag.StringVar(&Options.Store, "store", "kafka", "message underlying store")
+	flag.StringVar(&Options.HintedHandoffType, "hhtype", "disk", "underlying hinted handoff")
+	flag.StringVar(&Options.HintedHandoffDir, "hhdir", "hhdata", "hinted handoff buffer dir")
 	flag.StringVar(&Options.JobStore, "jstore", "mysql", "job underlying store")
 	flag.StringVar(&Options.DummyCluster, "dummycluster", "me", "dummy store's cluster name")
 	flag.StringVar(&Options.ManagerStore, "mstore", "mysql", "store integration with manager")

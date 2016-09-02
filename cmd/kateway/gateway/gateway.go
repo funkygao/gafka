@@ -15,6 +15,8 @@ import (
 
 	"github.com/funkygao/fae/config"
 	"github.com/funkygao/gafka"
+	"github.com/funkygao/gafka/cmd/kateway/hh"
+	hhdisk "github.com/funkygao/gafka/cmd/kateway/hh/disk"
 	"github.com/funkygao/gafka/cmd/kateway/job"
 	jobdummy "github.com/funkygao/gafka/cmd/kateway/job/dummy"
 	jobmysql "github.com/funkygao/gafka/cmd/kateway/job/mysql"
@@ -92,6 +94,12 @@ func New(id string) *Gateway {
 		log.Error("telemetry: %v", err)
 	} else {
 		telemetry.Default = influxdb.New(metrics.DefaultRegistry, rc)
+	}
+	switch Options.HintedHandoffType {
+	case "disk":
+		cfg := hhdisk.DefaultConfig()
+		cfg.Dir = Options.HintedHandoffDir
+		hh.Default = hhdisk.New(cfg)
 	}
 
 	// initialize the manager store
@@ -268,6 +276,11 @@ func (this *Gateway) Start() (err error) {
 		}
 	}()
 
+	if err = hh.Default.Start(); err != nil {
+		return
+	}
+	log.Trace("hh[%s] started", hh.Default.Name())
+
 	meta.Default.Start()
 	log.Trace("meta store[%s] started", meta.Default.Name())
 
@@ -361,15 +374,22 @@ func (this *Gateway) ServeForever() {
 		}
 		<-this.manServer.Closed()
 
+		if hh.Default != nil {
+			log.Trace("hh[%s] stop...", hh.Default.Name())
+			hh.Default.Stop()
+			log.Trace("hh[%s] flush inflights...", hh.Default.Name())
+			hh.Default.FlushInflights()
+		}
+
 		//log.Trace("stopping access logger")
 		//this.accessLogger.Stop() FIXME it will hang on linux
 
 		if store.DefaultPubStore != nil {
-			log.Trace("stopping pub store[%s]", store.DefaultPubStore.Name())
+			log.Trace("pub store[%s] stop...", store.DefaultPubStore.Name())
 			go store.DefaultPubStore.Stop()
 		}
 		if store.DefaultSubStore != nil {
-			log.Trace("stopping sub store[%s]", store.DefaultSubStore.Name())
+			log.Trace("sub store[%s] stop...", store.DefaultSubStore.Name())
 			go store.DefaultSubStore.Stop()
 		}
 		if job.Default != nil {
