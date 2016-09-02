@@ -282,7 +282,10 @@ func (q *queue) EmptyInflight() bool {
 }
 
 func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
-	defer wg.Done()
+	defer func() {
+		q.cursor.dump() // checkpoint
+		wg.Done()
+	}()
 
 	var (
 		b       block
