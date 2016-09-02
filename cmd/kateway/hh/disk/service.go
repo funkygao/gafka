@@ -38,6 +38,10 @@ func New(cfg *Config) *Service {
 	}
 }
 
+func (this *Service) Name() string {
+	return "disk"
+}
+
 func (this *Service) Start() (err error) {
 	if err = mkdirIfNotExist(this.cfg.Dir); err != nil {
 		return

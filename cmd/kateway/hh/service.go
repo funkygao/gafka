@@ -9,6 +9,9 @@ type Service interface {
 	// Stop the hinted handoff service.
 	Stop()
 
+	// Name returns the underlying implementation name.
+	Name() string
+
 	// Append add key/value byte slice to end of the buffer.
 	Append(cluster, topic string, key, value []byte) error
 
