@@ -7,6 +7,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	log "github.com/funkygao/log4go"
 )
 
 // Segment is a queue using a single file.  The structure of a segment is a series
@@ -146,10 +148,12 @@ func (s *segment) Current() int64 {
 }
 
 func (s *segment) Remove() (err error) {
-	if err = s.Close(); err != nil {
+	log.Trace("segment[%s] removed", s.wfile.Name())
+
+	if err = os.Remove(s.wfile.Name()); err != nil {
 		return
 	}
-	if err = os.Remove(s.wfile.Name()); err != nil {
+	if err = s.Close(); err != nil {
 		return
 	}
 
