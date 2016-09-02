@@ -35,7 +35,7 @@ type segment struct {
 	wfile, rfile *os.File
 
 	rbuf, wbuf [4]byte
-	buf        []byte
+	buf        []byte // reuseable buf to read blocks
 }
 
 type segments []*segment
@@ -115,8 +115,12 @@ func (s *segment) ReadOne(b *block) error {
 		return err
 	}
 
+	if keyLen > maxBlockSize {
+		return ErrSegmentCorrupt
+	}
+
 	if len(s.buf) == 0 {
-		s.buf = make([]byte, 1<<20)
+		s.buf = make([]byte, maxBlockSize)
 	}
 
 	if keyLen > 0 {
@@ -129,6 +133,10 @@ func (s *segment) ReadOne(b *block) error {
 	valueLen, err := s.readUint32()
 	if err != nil {
 		return err
+	}
+
+	if valueLen > maxBlockSize {
+		return ErrSegmentCorrupt
 	}
 
 	if err = s.readBytes(s.buf[:int(valueLen)]); err != nil {

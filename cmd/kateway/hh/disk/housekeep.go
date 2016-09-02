@@ -80,6 +80,10 @@ func (q *queue) pump() {
 			q.emptyInflight = true
 			time.Sleep(time.Second)
 
+		case ErrSegmentCorrupt:
+			log.Error("queue[%s] pump: %s +%v", q.ident(), err, q.cursor.pos)
+			q.skipCursorSegment()
+
 		default:
 			log.Error("queue[%s] pump: %s +%v", q.ident(), err, q.cursor.pos)
 			q.skipCursorSegment()

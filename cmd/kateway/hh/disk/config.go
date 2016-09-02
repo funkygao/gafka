@@ -12,7 +12,7 @@ type Config struct {
 
 func DefaultConfig() *Config {
 	return &Config{
-		PurgeInterval: time.Minute * 10,
+		PurgeInterval: time.Second * 2,
 	}
 }
 
