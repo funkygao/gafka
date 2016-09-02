@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 )
 
@@ -114,13 +115,15 @@ func (q *queue) Open() error {
 		return err
 	}
 
+	return nil
+}
+
+func (q *queue) Start() {
 	q.wg.Add(1)
 	go q.housekeeping()
 
 	q.wg.Add(1)
 	go q.pump()
-
-	return nil
 }
 
 // Close stops the queue for reading and writing
@@ -198,7 +201,7 @@ func (q *queue) Append(b *block) error {
 	defer q.mu.Unlock()
 
 	if q.tail == nil {
-		return ErrNotOpen
+		return ErrQueueNotOpen
 	}
 
 	if q.maxSize > 0 && q.diskUsage()+b.size() > q.maxSize {
@@ -227,7 +230,7 @@ func (q *queue) Next(b *block) (err error) {
 
 	c := q.cursor
 	if c == nil {
-		return ErrNotOpen
+		return ErrQueueNotOpen
 	}
 	err = c.seg.ReadOne(b)
 	switch err {
@@ -266,6 +269,46 @@ func (q *queue) Next(b *block) (err error) {
 
 func (q *queue) EmptyInflight() bool {
 	return q.emptyInflight
+}
+
+func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	var (
+		b   block
+		err error
+		i   int
+	)
+	for {
+		err = q.Next(&b)
+		switch err {
+		case nil:
+			i++
+
+			if false {
+				_, _, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
+				if err != nil {
+					errCh <- err
+				}
+			}
+
+		case ErrQueueNotOpen:
+			errCh <- err
+			return
+
+		case ErrEOQ:
+			log.Debug("queue[%s] flushed %d inflights", q.ident(), i)
+			return
+
+		case ErrSegmentCorrupt:
+			q.skipCursorSegment()
+			errCh <- err
+
+		default:
+			q.skipCursorSegment()
+			errCh <- err
+		}
+	}
 }
 
 // diskUsage returns the total size on disk used by the queue

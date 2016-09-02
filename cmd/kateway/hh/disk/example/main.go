@@ -21,7 +21,7 @@ import (
 
 func main() {
 	go http.ListenAndServe("localhost:6786", nil)
-	log.Info("pprf ready on http://localhost:6786/debug/pprof")
+	log.Info("pprof ready on http://localhost:6786/debug/pprof")
 
 	cfg := disk.DefaultConfig()
 	cfg.Dir = "hh"
@@ -53,10 +53,12 @@ func main() {
 	log.Info("%d sent, waiting Append finish...", i*j)
 	wg.Wait()
 	log.Info("all Append done")
-	time.Sleep(time.Second * 5)
-
 	s.Stop()
+	log.Info("service stopped")
+
 	log.Info("Did you see %d messages? Inflight empty: %v", i*j, s.Empty(cluster, topic))
 	log.Info("bye!")
+
+	s.FlushInflights()
 	log.Close()
 }

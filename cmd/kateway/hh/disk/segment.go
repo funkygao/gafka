@@ -71,7 +71,7 @@ func (s *segment) Append(b *block) (err error) {
 	defer s.mu.Unlock()
 
 	if s.wfile == nil {
-		return ErrNotOpen
+		return ErrSegmentNotOpen
 	}
 
 	if s.size+b.size() > s.maxSize {
@@ -107,7 +107,7 @@ func (s *segment) Append(b *block) (err error) {
 
 func (s *segment) ReadOne(b *block) error {
 	if s.rfile == nil {
-		return ErrNotOpen
+		return ErrSegmentNotOpen
 	}
 
 	keyLen, err := s.readUint32()
@@ -148,7 +148,7 @@ func (s *segment) ReadOne(b *block) error {
 
 func (s *segment) Flush() error {
 	if s.wfile == nil {
-		return ErrNotOpen
+		return ErrSegmentNotOpen
 	}
 
 	return s.wfile.Sync()
@@ -165,7 +165,7 @@ func (s *segment) Current() int64 {
 
 func (s *segment) Remove() (err error) {
 	if s.wfile == nil {
-		return ErrNotOpen
+		return ErrSegmentNotOpen
 	}
 
 	path := s.wfile.Name()
@@ -212,7 +212,7 @@ func (s *segment) DiskUsage() int64 {
 
 func (s *segment) Seek(pos int64) error {
 	if s.rfile == nil {
-		return ErrNotOpen
+		return ErrSegmentNotOpen
 	}
 
 	n, err := s.rfile.Seek(pos, os.SEEK_SET)

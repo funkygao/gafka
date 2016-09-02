@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	log "github.com/funkygao/log4go"
 )
 
 type Service struct {
@@ -41,7 +43,7 @@ func (this *Service) Start() (err error) {
 		return
 	}
 
-	if err = this.loadQueues(this.cfg.Dir); err == nil {
+	if err = this.loadQueues(this.cfg.Dir, true); err == nil {
 		this.closed = false
 	}
 
@@ -85,7 +87,7 @@ func (this *Service) Append(cluster, topic string, key, value []byte) error {
 		return q.Append(b)
 	}
 
-	if err := this.createAndStartQueue(ct); err != nil {
+	if err := this.createAndOpenQueue(ct, true); err != nil {
 		return err
 	}
 
@@ -108,7 +110,42 @@ func (this *Service) Empty(cluster, topic string) bool {
 	return q.EmptyInflight()
 }
 
-func (this *Service) loadQueues(dir string) error {
+func (this *Service) FlushInflights() {
+	if !this.closed {
+		// will race with queue housekeeping
+		log.Error("run flush inflights with service closed!")
+		return
+	}
+
+	if err := this.loadQueues(this.cfg.Dir, false); err != nil {
+		log.Error(err)
+		return
+	}
+
+	var (
+		queueWg, errWg sync.WaitGroup
+		failCh         = make(chan error, len(this.queues))
+	)
+	for _, q := range this.queues {
+		queueWg.Add(1)
+		go q.FlushInflights(failCh, &queueWg)
+	}
+
+	errWg.Add(1)
+	go func() {
+		for err := range failCh {
+			log.Error(err)
+		}
+
+		errWg.Done()
+	}()
+
+	queueWg.Wait()
+	close(failCh)
+	errWg.Wait()
+}
+
+func (this *Service) loadQueues(dir string, startQueues bool) error {
 	clusters, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
@@ -131,7 +168,7 @@ func (this *Service) loadQueues(dir string) error {
 			}
 
 			ct := clusterTopic{cluster: cluster.Name(), topic: topic.Name()}
-			if err = this.createAndStartQueue(ct); err != nil {
+			if err = this.createAndOpenQueue(ct, startQueues); err != nil {
 				return err
 			}
 		}
@@ -140,7 +177,7 @@ func (this *Service) loadQueues(dir string) error {
 	return nil
 }
 
-func (this *Service) createAndStartQueue(ct clusterTopic) error {
+func (this *Service) createAndOpenQueue(ct clusterTopic, start bool) error {
 	if err := os.Mkdir(ct.ClusterDir(this.cfg.Dir), 0700); err != nil && !os.IsExist(err) {
 		return err
 	}
@@ -148,6 +185,9 @@ func (this *Service) createAndStartQueue(ct clusterTopic) error {
 	this.queues[ct] = newQueue(ct, ct.TopicDir(this.cfg.Dir), -1, this.cfg.PurgeInterval, this.cfg.MaxAge)
 	if err := this.queues[ct].Open(); err != nil {
 		return err
+	}
+	if start {
+		this.queues[ct].Start()
 	}
 
 	return nil

@@ -73,7 +73,7 @@ func (q *queue) pump() {
 				}
 			}
 
-		case ErrNotOpen:
+		case ErrQueueNotOpen:
 			return
 
 		case ErrEOQ:
