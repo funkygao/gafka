@@ -18,6 +18,6 @@ func BenchmarkHintedHandoffAppend(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		s.Append("cluster", "topic", "", val)
+		s.Append("cluster", "topic", nil, val)
 	}
 }

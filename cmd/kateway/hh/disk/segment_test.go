@@ -12,13 +12,13 @@ func TestSegment(t *testing.T) {
 	s, err := newSegment(1, path, 2<<20)
 	assert.Equal(t, nil, err)
 	b := &block{
-		key:   "hello",
+		key:   []byte("hello"),
 		value: []byte("world"),
 	}
 	s.Append(b)
 	s.Flush()
 
-	t.Logf("%s", s.file.Name())
+	t.Logf("%s", s.wfile.Name())
 
 	s.Seek(0)
 	b1 := new(block)
