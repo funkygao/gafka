@@ -1,7 +1,6 @@
 package disk
 
 import (
-	"io"
 	"sync"
 	"time"
 
@@ -57,19 +56,23 @@ func (l *queue) pump(wg *sync.WaitGroup) {
 		default:
 		}
 
-		err = l.cursor.Next(&b)
-		if err != nil {
-			if err == io.EOF {
-				l.emptyInflight = true
-				time.Sleep(time.Second)
-			} else {
-				log.Error("hh pump: %s +%v", err, l.cursor.pos)
-			}
-			continue // FIXME return?
+		err = l.Next(&b)
+		switch err {
+		case nil:
+			l.emptyInflight = false
+			log.Info("%s", string(b.value))
+
+		case ErrNotOpen:
+			return
+
+		case ErrEOQ:
+			l.emptyInflight = true
+			time.Sleep(time.Second)
+
+		default:
+			log.Error("hh pump: %s +%v", err, l.cursor.pos)
 		}
 
-		l.emptyInflight = false
-		log.Info("%s", string(b.value))
 		continue
 
 		_, _, err = store.DefaultPubStore.SyncPub(l.clusterTopic.cluster, l.clusterTopic.topic, b.key, b.value)

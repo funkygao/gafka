@@ -2,6 +2,7 @@ package disk
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -28,19 +29,19 @@ import (
 // segments on disk exceeds the size, write will fail.
 //
 // ┌─────┐
-// │Head │
+// │head │
 // ├─────┘
 // │
 // ▼
 // ┌─────────────────┐ ┌─────────────────┐┌─────────────────┐
-// │Segment 1 - 10MB │ │Segment 2 - 10MB ││Segment 3 - 10MB │
+// │segment 1 - 10MB │ │segment 2 - 10MB ││segment 3 - 10MB │
 // └─────────────────┘ └─────────────────┘└─────────────────┘
 //                          ▲                               ▲
 //                          │                               │
 //                          │                               │
-//                        cursor                       ┌─────┐
-//                                                     │Tail │
-//                                                     └─────┘
+//                       ┌───────┐                     ┌─────┐
+//                       │cursor │                     │tail │
+//                       └───────┘                     └─────┘
 type queue struct {
 	mu sync.RWMutex
 
@@ -54,10 +55,9 @@ type queue struct {
 	// -1 means unlimited
 	maxSize int64
 
+	cursor     *cursor
 	head, tail *segment
 	segments   segments
-
-	cursor *cursor
 
 	quit          chan struct{}
 	emptyInflight bool // FIXME
@@ -94,7 +94,8 @@ func (l *queue) Open() error {
 	l.segments = segments
 
 	if len(l.segments) == 0 {
-		if _, err := l.addSegment(); err != nil {
+		// create the 1st segment
+		if _, err = l.addSegment(); err != nil {
 			return err
 		}
 	}
@@ -156,14 +157,6 @@ func (l *queue) Purge() error {
 	}
 
 	for {
-		// If this is the last segment, first append a new one allowing
-		// trimming to proceed.
-		if len(l.segments) == 1 {
-			if _, err := l.addSegment(); err != nil {
-				return err
-			}
-		}
-
 		if l.cursor.pos.SegmentID > l.head.id {
 			l.trimHead()
 		} else {
@@ -171,22 +164,6 @@ func (l *queue) Purge() error {
 		}
 
 	}
-}
-
-func (l *queue) trimHead() (err error) {
-	l.segments = l.segments[1:]
-
-	if err = l.head.Remove(); err != nil {
-		return
-	}
-
-	l.head = l.segments[0]
-	return
-}
-
-func (l *queue) nextDir() string {
-	// find least loaded dir
-	return ""
 }
 
 // LastModified returns the last time the queue was modified.
@@ -200,14 +177,80 @@ func (l *queue) LastModified() (time.Time, error) {
 	return time.Time{}.UTC(), nil
 }
 
-func (l *queue) SegmentByID(id uint64) (*segment, bool) {
-	for _, s := range l.segments {
-		if s.id == id {
-			return s, true
-		}
+// Append appends a block to the end of the queue
+func (l *queue) Append(b *block) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.tail == nil {
+		return ErrNotOpen
 	}
 
-	return nil, false
+	if l.maxSize > 0 && l.diskUsage()+b.size() > l.maxSize {
+		return ErrQueueFull
+	}
+
+	// Append the entry to the tail, if the segment is full,
+	// try to create new segment and retry the append
+	if err := l.tail.Append(b); err == ErrSegmentFull {
+		segment, err := l.addSegment()
+		if err != nil {
+			return err
+		}
+
+		l.tail = segment
+		return l.tail.Append(b)
+	} else if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (q *queue) Next(b *block) (err error) {
+	q.mu.RLock()
+	defer q.mu.RUnlock()
+
+	c := q.cursor
+	if c == nil {
+		return ErrNotOpen
+	}
+	err = c.seg.ReadOne(b)
+	switch err {
+	case nil:
+		c.pos.Offset += b.size()
+		return
+
+	case io.EOF:
+		// cursor might have:
+		// 1. reached end of the current segment: will advance to next segment
+		// 2. reached end of tail
+		if ok := c.advance(); !ok {
+			return ErrEOQ
+		}
+
+		// advanced to next segment, read one block
+		err = c.seg.ReadOne(b)
+		switch err {
+		case nil:
+			// bingo!
+			c.pos.Offset += b.size()
+			return
+
+		case io.EOF:
+			// tail is empty
+			return ErrEOQ
+
+		default:
+			return
+		}
+
+	default:
+		return
+	}
+}
+
+func (l *queue) EmptyInflight() bool {
+	return l.emptyInflight
 }
 
 // diskUsage returns the total size on disk used by the queue
@@ -250,6 +293,7 @@ func (l *queue) loadSegments() (segments, error) {
 }
 
 // addSegment creates a new empty segment file
+// caller is responsible for the lock
 func (l *queue) addSegment() (*segment, error) {
 	nextID, err := l.nextSegmentID()
 	if err != nil {
@@ -295,35 +339,18 @@ func (l *queue) nextSegmentID() (uint64, error) {
 	return maxID + 1, nil
 }
 
-// Append appends a byte slice to the end of the queue
-func (l *queue) Append(b *block) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+func (l *queue) trimHead() (err error) {
+	l.segments = l.segments[1:]
 
-	if l.tail == nil {
-		return ErrNotOpen
+	if err = l.head.Remove(); err != nil {
+		return
 	}
 
-	if l.maxSize > 0 && l.diskUsage()+b.size() > l.maxSize {
-		return ErrQueueFull
-	}
-
-	// Append the entry to the tail, if the segment is full,
-	// try to create new segment and retry the append
-	if err := l.tail.Append(b); err == ErrSegmentFull {
-		segment, err := l.addSegment()
-		if err != nil {
-			return err
-		}
-
-		l.tail = segment
-		return l.tail.Append(b)
-	} else if err != nil {
-		return err
-	}
-	return nil
+	l.head = l.segments[0]
+	return
 }
 
-func (l *queue) EmptyInflight() bool {
-	return l.emptyInflight
+func (l *queue) nextDir() string {
+	// find least loaded dir
+	return ""
 }

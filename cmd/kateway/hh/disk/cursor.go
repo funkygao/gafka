@@ -2,10 +2,8 @@ package disk
 
 import (
 	"encoding/json"
-	"io"
 	"os"
 	"path/filepath"
-	//log "github.com/funkygao/log4go"
 )
 
 type position struct {
@@ -26,10 +24,47 @@ func newCursor(q *queue) *cursor {
 	}
 }
 
+// open loads latest cursor position from disk
+func (c *cursor) open() error {
+	f, err := os.OpenFile(c.cursorFile(), os.O_CREATE|os.O_RDWR, 0600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	dec := json.NewDecoder(f)
+	if err = dec.Decode(&c.pos); err != nil {
+		// the cursor file has just been created with empty contents
+		c.moveToHead()
+	} else if c.pos.SegmentID < c.ctx.head.id {
+		c.moveToHead()
+	}
+
+	s, present := c.findSegment(c.pos.SegmentID)
+	if !present {
+		return ErrCursorNotFound
+	}
+
+	c.seg = s
+	return s.Seek(c.pos.Offset)
+}
+
+func (c *cursor) findSegment(id uint64) (*segment, bool) {
+	for _, s := range c.ctx.segments {
+		if s.id == id {
+			return s, true
+		}
+	}
+
+	return nil, false
+}
+
 func (c *cursor) cursorFile() string {
 	return filepath.Join(c.ctx.dir, cursorFile)
 }
 
+// dump save the cursor position to disk.
+// housekeeping will periodically checkpoint with dump.
 func (c *cursor) dump() error {
 	f, err := os.OpenFile(c.cursorFile(), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
@@ -45,75 +80,18 @@ func (c *cursor) dump() error {
 	return nil
 }
 
-// goroutine unsafe
-func (c *cursor) resetPosition() {
+func (c *cursor) moveToHead() {
 	c.pos.Offset = 0
 	c.pos.SegmentID = c.ctx.head.id
 }
 
-func (c *cursor) open() error {
-	f, err := os.OpenFile(c.cursorFile(), os.O_CREATE|os.O_RDWR, 0600)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	dec := json.NewDecoder(f)
-	if err = dec.Decode(&c.pos); err != nil {
-		// the cursor file has just been created with empty contents
-		c.resetPosition()
-	} else if c.pos.SegmentID < c.ctx.head.id {
-		// the outdated segment has been purged
-		c.resetPosition()
-	}
-
-	s, present := c.ctx.SegmentByID(c.pos.SegmentID)
-	if !present {
-		c.resetPosition()
-		s, present = c.ctx.SegmentByID(c.pos.SegmentID)
-	}
-
-	if !present {
-		return ErrCursorNotFound
-	}
-
-	c.seg = s
-	return s.Seek(c.pos.Offset)
-}
-
-func (c *cursor) Next(b *block) (err error) {
-	err = c.seg.ReadOne(b)
-	if err == nil {
-		c.pos.Offset = c.seg.Current()
-	}
-	if err == io.EOF {
-		for {
-			ok := c.advance()
-			err = c.seg.ReadOne(b)
-			if err == nil {
-				c.pos.Offset = c.seg.Current()
-				return
-			}
-
-			// err occurs
-
-			if !ok {
-				// tail reached
-				return
-			}
-		}
-	}
-
-	return
-}
-
-func (c *cursor) advance() bool {
+func (c *cursor) advance() (ok bool) {
 	for _, seg := range c.ctx.segments {
 		if seg.id > c.pos.SegmentID {
 			c.pos.SegmentID = seg.id
 			c.seg = seg
 			c.pos.Offset = 0
-			c.seg.Seek(c.pos.Offset)
+			c.seg.Seek(0)
 			return true
 		}
 	}
