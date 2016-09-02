@@ -123,6 +123,8 @@ func (l *queue) Open() error {
 
 // Close stops the queue for reading and writing
 func (l *queue) Close() error {
+	close(l.quit)
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -135,7 +137,6 @@ func (l *queue) Close() error {
 	l.head = nil
 	l.tail = nil
 	l.segments = nil
-	close(l.quit)
 
 	l.wg.Wait()
 	if err := l.cursor.dump(); err != nil {
