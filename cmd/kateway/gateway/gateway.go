@@ -21,6 +21,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	mandummy "github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	mandb "github.com/funkygao/gafka/cmd/kateway/manager/mysql"
+	manopen "github.com/funkygao/gafka/cmd/kateway/manager/open"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
@@ -103,6 +104,15 @@ func New(id string) *Gateway {
 
 	case "dummy":
 		manager.Default = mandummy.New(Options.DummyCluster)
+
+	case "open":
+		cf := manopen.DefaultConfig(Options.Zone)
+		cf.Refresh = Options.ManagerRefresh
+		manager.Default = manopen.New(cf)
+		manager.Default.AllowSubWithUnregisteredGroup(Options.PermitUnregisteredGroup)
+		HttpHeaderAppid = "devid"
+		HttpHeaderPubkey = "devsecret"
+		HttpHeaderSubkey = "devsecret"
 
 	default:
 		panic("invalid manager store:" + Options.ManagerStore)

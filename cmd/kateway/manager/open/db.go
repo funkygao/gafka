@@ -1,4 +1,4 @@
-package mysql
+package open
 
 import (
 	"database/sql"
@@ -22,7 +22,7 @@ type mysqlStore struct {
 	allowUnregisteredGroup bool
 
 	// mysql store, initialized on refresh
-	// TODO flatten the map's with struct
+	// TODO https://github.com/hashicorp/go-memdb
 	appClusterMap       map[string]string                       // appid:cluster
 	appSecretMap        map[string]string                       // appid:secret
 	appSubMap           map[string]map[string]struct{}          // appid:subscribed topics
@@ -31,6 +31,7 @@ type mysqlStore struct {
 	shadowQueueMap      map[string]string                       // hisappid.topic.ver.myappid:group
 	deadPartitionMap    map[string]map[int32]struct{}           // topic:partitionId
 	topicSchemaMap      map[string]map[string]map[string]string // appid:topic:ver:schema
+	dev2appMap          map[string]string                       // devId:appId
 
 	dryrunLock   sync.RWMutex
 	dryrunTopics map[string]map[string]map[string]struct{}
@@ -134,6 +135,10 @@ func (this *mysqlStore) refreshFromMysql() error {
 		return err
 	}
 
+	if err = this.fetchDevApp(db); err != nil {
+		return err
+	}
+
 	if false {
 		if err = this.fetchSchemas(db); err != nil {
 			return err
@@ -146,6 +151,10 @@ func (this *mysqlStore) refreshFromMysql() error {
 	}
 
 	return nil
+}
+
+func (this *mysqlStore) dev2app(devId string) string {
+	return this.dev2appMap[devId]
 }
 
 func (this *mysqlStore) shadowKey(hisAppid, topic, ver, myAppid string) string {
@@ -179,6 +188,10 @@ func (this *mysqlStore) fetchSchemas(db *sql.DB) error {
 	}
 
 	this.topicSchemaMap = schemas
+	return nil
+}
+
+func (this *mysqlStore) fetchDevApp(db *sql.DB) error {
 	return nil
 }
 

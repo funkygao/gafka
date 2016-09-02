@@ -1,4 +1,4 @@
-package mysql
+package open
 
 import (
 	"crypto/sha256"
@@ -31,6 +31,8 @@ func (this *mysqlStore) TopicAppid(kafkaTopic string) string {
 }
 
 func (this *mysqlStore) KafkaTopic(appid string, topic string, ver string) (r string) {
+	appid = this.dev2app(appid)
+
 	b := mpool.BytesBufferGet()
 	b.Reset()
 	b.WriteString(appid)
@@ -124,6 +126,8 @@ func (this *mysqlStore) AuthAdmin(appid, pubkey string) bool {
 }
 
 func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
+	appid = this.dev2app(appid)
+
 	if appid == "" || topic == "" || pubkey == "" {
 		return manager.ErrEmptyIdentity
 	}
@@ -152,6 +156,8 @@ func (this *mysqlStore) AllowSubWithUnregisteredGroup(yesOrNo bool) {
 }
 
 func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string) error {
+	appid = this.dev2app(appid)
+
 	if appid == "" || hisTopic == "" {
 		return manager.ErrEmptyIdentity
 	}
@@ -188,6 +194,8 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 }
 
 func (this *mysqlStore) LookupCluster(appid string) (string, bool) {
+	appid = this.dev2app(appid)
+
 	if cluster, present := this.appClusterMap[appid]; present {
 		return cluster, present
 	}
@@ -204,6 +212,8 @@ func (this *mysqlStore) IsShadowedTopic(hisAppid, topic, ver, myAppid, group str
 }
 
 func (this *mysqlStore) IsDryrunTopic(appid, topic, ver string) bool {
+	appid = this.dev2app(appid)
+
 	this.dryrunLock.RLock()
 	_, present := this.dryrunTopics[appid][topic][ver]
 	this.dryrunLock.RUnlock()
