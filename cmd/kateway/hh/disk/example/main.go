@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,7 +23,10 @@ func main() {
 		panic(err)
 	}
 
-	i, j := 5, 5
+	placeholder := strings.Repeat(".", 1<<10)
+
+	i, j := 5, 1000
+	cluster, topic := "me", "app1.foobar.v1"
 	var wg sync.WaitGroup
 
 	for seq := 0; seq < i; seq++ {
@@ -31,8 +35,8 @@ func main() {
 			defer wg.Done()
 
 			for loops := 0; loops < j; loops++ {
-				if err := s.Append("me", "app1.foobar.v1", []byte("key"),
-					[]byte(fmt.Sprintf("<#%d/%d sent at: %s>", seq, loops+1, time.Now()))); err != nil {
+				if err := s.Append(cluster, topic, []byte("key"),
+					[]byte(fmt.Sprintf("<#%d/%d sent at: %s %s>", seq, loops+1, time.Now(), placeholder))); err != nil {
 					panic(err)
 				}
 			}
@@ -42,9 +46,10 @@ func main() {
 	log.Info("%d sent, waiting Append finish...", i*j)
 	wg.Wait()
 	log.Info("all Append done")
+	time.Sleep(time.Second * 5)
 
 	s.Stop()
-	log.Info("Did you see %d messages?", i*j)
+	log.Info("Did you see %d messages? Inflight empty: %v", i*j, s.Empty(cluster, topic))
 	log.Info("bye!")
 	log.Close()
 }
