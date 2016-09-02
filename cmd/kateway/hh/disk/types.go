@@ -16,3 +16,7 @@ func (b *block) keyLen() uint32 {
 func (b *block) valueLen() uint32 {
 	return uint32(len(b.value))
 }
+
+type clusterTopic struct {
+	cluster, topic string
+}

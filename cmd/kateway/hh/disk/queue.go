@@ -186,6 +186,11 @@ func (l *queue) trimHead() (err error) {
 	return
 }
 
+func (l *queue) nextDir() string {
+	// find least loaded dir
+	return ""
+}
+
 // LastModified returns the last time the queue was modified.
 func (l *queue) LastModified() (time.Time, error) {
 	l.mu.RLock()

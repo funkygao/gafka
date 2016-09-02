@@ -25,14 +25,14 @@ type DiskService struct {
 	//         ├── 2
 	//         ├── 3
 	//         └── cursor.dmp
-	queues map[string]map[string]*queue // cluster:topic->queue
+	queues map[clusterTopic]*queue
 }
 
 func New(cfg *Config) *DiskService {
 	return &DiskService{
 		cfg:     cfg,
 		quiting: make(chan struct{}),
-		queues:  make(map[string]map[string]*queue),
+		queues:  make(map[clusterTopic]*queue),
 	}
 }
 
@@ -54,7 +54,6 @@ func (this *DiskService) Start() error {
 			continue
 		}
 
-		this.queues[cluster.Name()] = make(map[string]*queue)
 		topicDir := filepath.Join(this.cfg.Dir, cluster.Name())
 		topics, err := ioutil.ReadDir(topicDir)
 		if err != nil {
@@ -66,15 +65,16 @@ func (this *DiskService) Start() error {
 				continue
 			}
 
-			this.queues[cluster.Name()][topic.Name()] = newQueue(
+			ct := clusterTopic{cluster.Name(), topic.Name()}
+			this.queues[ct] = newQueue(
 				cluster.Name(), topic.Name(),
 				filepath.Join(topicDir, topic.Name()), -1)
-			if err = this.queues[cluster.Name()][topic.Name()].Open(); err != nil {
+			if err = this.queues[ct].Open(); err != nil {
 				return err
 			}
 
 			this.wg.Add(1)
-			go this.queues[cluster.Name()][topic.Name()].housekeeping(this.cfg.PurgeInterval, &this.wg)
+			go this.queues[ct].housekeeping(this.cfg.PurgeInterval, &this.wg)
 		}
 	}
 
@@ -82,17 +82,15 @@ func (this *DiskService) Start() error {
 }
 
 func (this *DiskService) Cursor(cluster, topic string) *cursor {
-	q := this.queues[cluster][topic]
+	q := this.queues[clusterTopic{cluster, topic}]
 	return q.cursor
 }
 
 func (this *DiskService) Stop() {
 	close(this.quiting)
 
-	for _, topics := range this.queues {
-		for _, q := range topics {
-			q.Close()
-		}
+	for _, q := range this.queues {
+		q.Close()
 	}
 
 	this.wg.Wait()
@@ -103,8 +101,10 @@ func (this *DiskService) Append(cluster, topic string, key, value []byte) error 
 	b.key = key
 	b.value = value
 
+	ct := clusterTopic{cluster, topic}
+
 	this.rwmux.RLock()
-	q, present := this.queues[cluster][topic]
+	q, present := this.queues[ct]
 	this.rwmux.RUnlock()
 	if present {
 		return q.Append(b)
@@ -114,7 +114,7 @@ func (this *DiskService) Append(cluster, topic string, key, value []byte) error 
 	defer this.rwmux.Unlock()
 
 	// double lock check
-	q, present = this.queues[cluster][topic]
+	q, present = this.queues[ct]
 	if present {
 		return q.Append(b)
 	}
@@ -122,20 +122,20 @@ func (this *DiskService) Append(cluster, topic string, key, value []byte) error 
 	if err := os.Mkdir(filepath.Join(this.cfg.Dir, cluster), 0700); err != nil {
 		return err
 	}
-	this.queues[cluster] = make(map[string]*queue)
-	this.queues[cluster][topic] = newQueue(cluster, topic,
+	this.queues[ct] = newQueue(cluster, topic,
 		filepath.Join(this.cfg.Dir, cluster, topic), -1)
-	if err := this.queues[cluster][topic].Open(); err != nil {
+	if err := this.queues[ct].Open(); err != nil {
 		return err
 	}
 	this.wg.Add(1)
-	go this.queues[cluster][topic].housekeeping(this.cfg.PurgeInterval, &this.wg)
-	return this.queues[cluster][topic].Append(b)
+	go this.queues[ct].housekeeping(this.cfg.PurgeInterval, &this.wg)
+	return this.queues[ct].Append(b)
 }
 
 func (this *DiskService) Empty(cluster, topic string) bool {
+	ct := clusterTopic{cluster, topic}
 	this.rwmux.RLock()
-	q, present := this.queues[cluster][topic]
+	q, present := this.queues[ct]
 	this.rwmux.RUnlock()
 
 	if !present {
