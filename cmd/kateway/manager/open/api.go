@@ -132,10 +132,7 @@ func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 		return manager.ErrEmptyIdentity
 	}
 
-	// authentication
-	if secret, present := this.appSecretMap[appid]; !present || pubkey != secret {
-		return manager.ErrAuthenticationFail
-	}
+	// authentication TODO
 
 	// authorization
 	if topics, present := this.appTopicsMap[appid]; present {
@@ -162,10 +159,7 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 		return manager.ErrEmptyIdentity
 	}
 
-	// authentication
-	if secret, present := this.appSecretMap[appid]; !present || subkey != secret {
-		return manager.ErrAuthenticationFail
-	}
+	// authentication TODO
 
 	// group verification
 	if !this.allowUnregisteredGroup {
