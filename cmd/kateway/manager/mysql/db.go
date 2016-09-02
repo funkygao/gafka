@@ -22,7 +22,7 @@ type mysqlStore struct {
 	allowUnregisteredGroup bool
 
 	// mysql store, initialized on refresh
-	// TODO https://github.com/hashicorp/go-memdb
+	// TODO flatten the map's with struct
 	appClusterMap       map[string]string                       // appid:cluster
 	appSecretMap        map[string]string                       // appid:secret
 	appSubMap           map[string]map[string]struct{}          // appid:subscribed topics
