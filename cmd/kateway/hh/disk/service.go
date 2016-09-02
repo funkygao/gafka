@@ -145,7 +145,7 @@ func (this *Service) createAndStartQueue(ct clusterTopic) error {
 		return err
 	}
 
-	this.queues[ct] = newQueue(ct, ct.TopicDir(this.cfg.Dir), -1, this.cfg.PurgeInterval)
+	this.queues[ct] = newQueue(ct, ct.TopicDir(this.cfg.Dir), -1, this.cfg.PurgeInterval, this.cfg.MaxAge)
 	if err := this.queues[ct].Open(); err != nil {
 		return err
 	}

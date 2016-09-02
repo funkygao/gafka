@@ -196,15 +196,12 @@ func (s *segment) Close() error {
 	return nil
 }
 
-func (s *segment) LastModified() (time.Time, error) {
+func (s *segment) LastModified() time.Time {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	stats, err := os.Stat(s.wfile.Name())
-	if err != nil {
-		return time.Time{}, err
-	}
-	return stats.ModTime().UTC(), nil
+	stats, _ := os.Stat(s.wfile.Name())
+	return stats.ModTime().UTC()
 }
 
 func (s *segment) DiskUsage() int64 {

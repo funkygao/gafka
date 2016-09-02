@@ -57,6 +57,7 @@ type queue struct {
 	maxSize int64
 
 	purgeInterval time.Duration
+	maxAge        time.Duration
 
 	cursor     *cursor
 	head, tail *segment
@@ -68,7 +69,7 @@ type queue struct {
 
 // newQueue create a queue that will store segments in dir and that will
 // consume more than maxSize on disk.
-func newQueue(ct clusterTopic, dir string, maxSize int64, purgeInterval time.Duration) *queue {
+func newQueue(ct clusterTopic, dir string, maxSize int64, purgeInterval, maxAge time.Duration) *queue {
 	q := &queue{
 		clusterTopic:   ct,
 		dir:            dir,
@@ -76,6 +77,7 @@ func newQueue(ct clusterTopic, dir string, maxSize int64, purgeInterval time.Dur
 		maxSegmentSize: defaultSegmentSize,
 		maxSize:        maxSize,
 		purgeInterval:  purgeInterval,
+		maxAge:         maxAge,
 		segments:       segments{},
 	}
 	q.cursor = newCursor(q)
@@ -172,7 +174,8 @@ func (q *queue) Purge() error {
 	}
 
 	for {
-		if q.cursor.pos.SegmentID > q.head.id {
+		if q.cursor.pos.SegmentID > q.head.id &&
+			q.head.LastModified().Add(q.maxAge).Unix() < time.Now().Unix() {
 			q.trimHead()
 		} else {
 			return nil
@@ -182,14 +185,11 @@ func (q *queue) Purge() error {
 }
 
 // LastModified returns the last time the queue was modified.
-func (q *queue) LastModified() (time.Time, error) {
+func (q *queue) LastModified() time.Time {
 	q.mu.RLock()
 	defer q.mu.RUnlock()
 
-	if q.tail != nil {
-		return q.tail.LastModified()
-	}
-	return time.Time{}.UTC(), nil
+	return q.tail.LastModified()
 }
 
 // Append appends a block to the end of the queue
