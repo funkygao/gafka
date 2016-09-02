@@ -139,21 +139,34 @@ func (s *segment) ReadOne(b *block) error {
 }
 
 func (s *segment) Flush() error {
+	if s.wfile == nil {
+		return ErrNotOpen
+	}
+
 	return s.wfile.Sync()
 }
 
 func (s *segment) Current() int64 {
+	if s.rfile == nil {
+		return -1
+	}
+
 	n, _ := s.rfile.Seek(0, os.SEEK_CUR)
 	return n
 }
 
 func (s *segment) Remove() (err error) {
-	log.Trace("segment[%s] removed", s.wfile.Name())
+	if s.wfile == nil {
+		return ErrNotOpen
+	}
 
-	if err = os.Remove(s.wfile.Name()); err != nil {
+	path := s.wfile.Name()
+	log.Trace("segment[%s] removed", path)
+
+	if err = s.Close(); err != nil {
 		return
 	}
-	if err = s.Close(); err != nil {
+	if err = os.Remove(path); err != nil {
 		return
 	}
 
@@ -163,6 +176,7 @@ func (s *segment) Remove() (err error) {
 func (s *segment) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if err := s.wfile.Close(); err != nil {
 		return err
 	}
@@ -192,6 +206,10 @@ func (s *segment) DiskUsage() int64 {
 }
 
 func (s *segment) Seek(pos int64) error {
+	if s.rfile == nil {
+		return ErrNotOpen
+	}
+
 	n, err := s.rfile.Seek(pos, os.SEEK_SET)
 	if err != nil {
 		return err
