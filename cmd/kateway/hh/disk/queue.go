@@ -83,97 +83,97 @@ func newQueue(ct clusterTopic, dir string, maxSize int64, purgeInterval time.Dur
 }
 
 // Open opens the queue for reading and writing
-func (l *queue) Open() error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+func (q *queue) Open() error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
 
-	if err := mkdirIfNotExist(l.dir); err != nil {
+	if err := mkdirIfNotExist(q.dir); err != nil {
 		return err
 	}
 
-	segments, err := l.loadSegments()
+	segments, err := q.loadSegments()
 	if err != nil {
 		return err
 	}
-	l.segments = segments
+	q.segments = segments
 
-	if len(l.segments) == 0 {
+	if len(q.segments) == 0 {
 		// create the 1st segment
-		if _, err = l.addSegment(); err != nil {
+		if _, err = q.addSegment(); err != nil {
 			return err
 		}
 	}
 
-	l.head = l.segments[0]
-	l.tail = l.segments[len(l.segments)-1]
+	q.head = q.segments[0]
+	q.tail = q.segments[len(q.segments)-1]
 
 	// cursor open must be placed below queue open
-	if err = l.cursor.open(); err != nil {
+	if err = q.cursor.open(); err != nil {
 		return err
 	}
 
-	l.wg.Add(1)
-	go l.housekeeping()
+	q.wg.Add(1)
+	go q.housekeeping()
 
-	l.wg.Add(1)
-	go l.pump()
+	q.wg.Add(1)
+	go q.pump()
 
 	return nil
 }
 
 // Close stops the queue for reading and writing
-func (l *queue) Close() error {
-	close(l.quit)
+func (q *queue) Close() error {
+	close(q.quit)
 
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	q.mu.Lock()
+	defer q.mu.Unlock()
 
-	for _, s := range l.segments {
+	for _, s := range q.segments {
 		if err := s.Close(); err != nil {
 			return err
 		}
 	}
 
-	l.head = nil
-	l.tail = nil
-	l.segments = nil
+	q.head = nil
+	q.tail = nil
+	q.segments = nil
 
-	l.wg.Wait()
-	if err := l.cursor.dump(); err != nil {
+	q.wg.Wait()
+	if err := q.cursor.dump(); err != nil {
 		return err
 	}
-	l.cursor = nil
+	q.cursor = nil
 	return nil
 }
 
 // Remove removes all underlying file-based resources for the queue.
 // It is an error to call this on an open queue.
-func (l *queue) Remove() error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+func (q *queue) Remove() error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
 
-	if l.head != nil || l.tail != nil || l.segments != nil {
+	if q.head != nil || q.tail != nil || q.segments != nil {
 		return ErrQueueOpen
 	}
 
-	return os.RemoveAll(l.dir)
+	return os.RemoveAll(q.dir)
 }
 
 // Purge garbage collects the segments that are behind cursor.
-func (l *queue) Purge() error {
-	log.Debug("queue[%s] purge...", l.ident())
+func (q *queue) Purge() error {
+	log.Debug("queue[%s] purge...", q.ident())
 
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	q.mu.Lock()
+	defer q.mu.Unlock()
 
-	if len(l.segments) <= 1 {
+	if len(q.segments) <= 1 {
 		// head, curror, tail are in the same segment
 		return nil
 	}
 
 	for {
-		if l.cursor.pos.SegmentID > l.head.id {
-			l.trimHead()
+		if q.cursor.pos.SegmentID > q.head.id {
+			q.trimHead()
 		} else {
 			return nil
 		}
@@ -182,39 +182,39 @@ func (l *queue) Purge() error {
 }
 
 // LastModified returns the last time the queue was modified.
-func (l *queue) LastModified() (time.Time, error) {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
+func (q *queue) LastModified() (time.Time, error) {
+	q.mu.RLock()
+	defer q.mu.RUnlock()
 
-	if l.tail != nil {
-		return l.tail.LastModified()
+	if q.tail != nil {
+		return q.tail.LastModified()
 	}
 	return time.Time{}.UTC(), nil
 }
 
 // Append appends a block to the end of the queue
-func (l *queue) Append(b *block) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+func (q *queue) Append(b *block) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
 
-	if l.tail == nil {
+	if q.tail == nil {
 		return ErrNotOpen
 	}
 
-	if l.maxSize > 0 && l.diskUsage()+b.size() > l.maxSize {
+	if q.maxSize > 0 && q.diskUsage()+b.size() > q.maxSize {
 		return ErrQueueFull
 	}
 
 	// Append the entry to the tail, if the segment is full,
 	// try to create new segment and retry the append
-	if err := l.tail.Append(b); err == ErrSegmentFull {
-		segment, err := l.addSegment()
+	if err := q.tail.Append(b); err == ErrSegmentFull {
+		segment, err := q.addSegment()
 		if err != nil {
 			return err
 		}
 
-		l.tail = segment
-		return l.tail.Append(b)
+		q.tail = segment
+		return q.tail.Append(b)
 	} else if err != nil {
 		return err
 	}
@@ -264,24 +264,24 @@ func (q *queue) Next(b *block) (err error) {
 	}
 }
 
-func (l *queue) EmptyInflight() bool {
-	return l.emptyInflight
+func (q *queue) EmptyInflight() bool {
+	return q.emptyInflight
 }
 
 // diskUsage returns the total size on disk used by the queue
-func (l *queue) diskUsage() int64 {
+func (q *queue) diskUsage() int64 {
 	var size int64
-	for _, s := range l.segments {
+	for _, s := range q.segments {
 		size += s.DiskUsage()
 	}
 	return size
 }
 
 // loadSegments loads all segments on disk
-func (l *queue) loadSegments() (segments, error) {
+func (q *queue) loadSegments() (segments, error) {
 	segments := []*segment{}
 
-	files, err := ioutil.ReadDir(l.dir)
+	files, err := ioutil.ReadDir(q.dir)
 	if err != nil {
 		return segments, err
 	}
@@ -297,7 +297,7 @@ func (l *queue) loadSegments() (segments, error) {
 			continue
 		}
 
-		segment, err := newSegment(id, filepath.Join(l.dir, segment.Name()), l.maxSegmentSize)
+		segment, err := newSegment(id, filepath.Join(q.dir, segment.Name()), q.maxSegmentSize)
 		if err != nil {
 			return segments, err
 		}
@@ -309,25 +309,25 @@ func (l *queue) loadSegments() (segments, error) {
 
 // addSegment creates a new empty segment file
 // caller is responsible for the lock
-func (l *queue) addSegment() (*segment, error) {
-	nextID, err := l.nextSegmentID()
+func (q *queue) addSegment() (*segment, error) {
+	nextID, err := q.nextSegmentID()
 	if err != nil {
 		return nil, err
 	}
 
-	path := filepath.Join(l.dir, fmt.Sprintf("%020d", nextID))
-	segment, err := newSegment(nextID, path, l.maxSegmentSize)
+	path := filepath.Join(q.dir, fmt.Sprintf("%020d", nextID))
+	segment, err := newSegment(nextID, path, q.maxSegmentSize)
 	if err != nil {
 		return nil, err
 	}
 
-	l.segments = append(l.segments, segment)
+	q.segments = append(q.segments, segment)
 	return segment, nil
 }
 
 // nextSegmentID returns the next segment ID that is free
-func (l *queue) nextSegmentID() (uint64, error) {
-	segments, err := ioutil.ReadDir(l.dir)
+func (q *queue) nextSegmentID() (uint64, error) {
+	segments, err := ioutil.ReadDir(q.dir)
 	if err != nil {
 		return 0, err
 	}
@@ -357,18 +357,18 @@ func (q *queue) ident() string {
 	return q.dir
 }
 
-func (l *queue) trimHead() (err error) {
-	l.segments = l.segments[1:]
+func (q *queue) trimHead() (err error) {
+	q.segments = q.segments[1:]
 
-	if err = l.head.Remove(); err != nil {
+	if err = q.head.Remove(); err != nil {
 		return
 	}
 
-	l.head = l.segments[0]
+	q.head = q.segments[0]
 	return
 }
 
-func (l *queue) nextDir() string {
+func (q *queue) nextDir() string {
 	// find least loaded dir
 	return ""
 }
