@@ -1,25 +1,23 @@
 package disk
 
 import (
-	"io"
-	"sync"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 )
 
-func (l *queue) housekeeping(purgeInterval time.Duration, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (l *queue) housekeeping() {
+	defer func() {
+		log.Trace("hh[%s] housekeeping quit", l.dir)
+		l.wg.Done()
+	}()
 
-	purgeTick := time.NewTicker(purgeInterval)
+	purgeTick := time.NewTicker(l.purgeInterval)
 	defer purgeTick.Stop()
 
 	cursorChkpnt := time.NewTicker(time.Second)
 	defer cursorChkpnt.Stop()
-
-	wg.Add(1)
-	go l.pump(wg)
 
 	for {
 		select {
@@ -39,15 +37,16 @@ func (l *queue) housekeeping(purgeInterval time.Duration, wg *sync.WaitGroup) {
 	}
 }
 
-func (l *queue) pump(wg *sync.WaitGroup) {
+func (l *queue) pump() {
 	defer func() {
-		wg.Done()
-		log.Trace("hh pump quit")
+		log.Trace("hh[%s] pump quit", l.dir)
+		l.wg.Done()
 	}()
 
 	var (
 		b   block
 		err error
+		i   int
 	)
 	for {
 		select {
@@ -57,25 +56,30 @@ func (l *queue) pump(wg *sync.WaitGroup) {
 		default:
 		}
 
-		err = l.cursor.Next(&b)
-		if err != nil {
-			if err == io.EOF {
-				l.emptyInflight = true
-				time.Sleep(time.Second)
-			} else {
-				log.Error("hh pump: %s +%v", err, l.cursor.pos)
-			}
-			continue // FIXME return?
+		err = l.Next(&b)
+		switch err {
+		case nil:
+			i++
+			l.emptyInflight = false
+			log.Info("%03d %s", i, string(b.value))
+
+		case ErrNotOpen:
+			return
+
+		case ErrEOQ:
+			l.emptyInflight = true
+			time.Sleep(time.Second)
+
+		default:
+			log.Error("hh pump: %s +%v", err, l.cursor.pos)
 		}
 
-		l.emptyInflight = false
-		log.Info("%s", string(b.value))
 		continue
 
-		_, _, err = store.DefaultPubStore.SyncPub(l.cluster, l.topic, []byte(b.key), b.value)
+		_, _, err = store.DefaultPubStore.SyncPub(l.clusterTopic.cluster, l.clusterTopic.topic, b.key, b.value)
 		if err != nil {
 			// TODO
-			log.Error("{c:%s t:%s} %s", l.cluster, l.topic, err)
+			log.Error("{c:%s t:%s} %s", l.clusterTopic.cluster, l.clusterTopic.topic, err)
 		}
 	}
 }

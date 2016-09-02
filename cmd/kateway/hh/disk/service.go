@@ -5,16 +5,15 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-
-	gio "github.com/funkygao/golib/io"
 )
 
-type DiskService struct {
+type Service struct {
 	cfg *Config
 
 	quiting chan struct{}
-	rwmux   sync.RWMutex
-	wg      sync.WaitGroup
+	closed  bool
+
+	rwmux sync.RWMutex
 
 	// hh
 	// ├── cluster1
@@ -28,80 +27,47 @@ type DiskService struct {
 	queues map[clusterTopic]*queue
 }
 
-func New(cfg *Config) *DiskService {
-	return &DiskService{
+func New(cfg *Config) *Service {
+	return &Service{
 		cfg:     cfg,
 		quiting: make(chan struct{}),
 		queues:  make(map[clusterTopic]*queue),
+		closed:  true,
 	}
 }
 
-func (this *DiskService) Start() error {
-	if !gio.DirExists(this.cfg.Dir) {
-		if err := os.Mkdir(this.cfg.Dir, 0700); err != nil {
-			return err
-		}
+func (this *Service) Start() (err error) {
+	if err = mkdirIfNotExist(this.cfg.Dir); err != nil {
+		return
 	}
 
-	clusters, err := ioutil.ReadDir(this.cfg.Dir)
-	if err != nil {
-		return err
+	if err = this.loadQueues(this.cfg.Dir); err == nil {
+		this.closed = false
 	}
 
-	// load queues from disk
-	for _, cluster := range clusters {
-		if !cluster.IsDir() {
-			continue
-		}
-
-		topicDir := filepath.Join(this.cfg.Dir, cluster.Name())
-		topics, err := ioutil.ReadDir(topicDir)
-		if err != nil {
-			return err
-		}
-
-		for _, topic := range topics {
-			if !topic.IsDir() {
-				continue
-			}
-
-			ct := clusterTopic{cluster.Name(), topic.Name()}
-			this.queues[ct] = newQueue(
-				cluster.Name(), topic.Name(),
-				filepath.Join(topicDir, topic.Name()), -1)
-			if err = this.queues[ct].Open(); err != nil {
-				return err
-			}
-
-			this.wg.Add(1)
-			go this.queues[ct].housekeeping(this.cfg.PurgeInterval, &this.wg)
-		}
-	}
-
-	return nil
+	return
 }
 
-func (this *DiskService) Cursor(cluster, topic string) *cursor {
-	q := this.queues[clusterTopic{cluster, topic}]
-	return q.cursor
-}
+func (this *Service) Stop() {
+	this.rwmux.Lock()
+	defer this.rwmux.Unlock()
 
-func (this *DiskService) Stop() {
 	close(this.quiting)
 
 	for _, q := range this.queues {
 		q.Close()
 	}
 
-	this.wg.Wait()
+	this.closed = true
 }
 
-func (this *DiskService) Append(cluster, topic string, key, value []byte) error {
-	b := new(block)
-	b.key = key
-	b.value = value
+func (this *Service) Append(cluster, topic string, key, value []byte) error {
+	if this.closed {
+		return ErrNotOpen
+	}
 
-	ct := clusterTopic{cluster, topic}
+	b := &block{key: key, value: value}
+	ct := clusterTopic{cluster: cluster, topic: topic}
 
 	this.rwmux.RLock()
 	q, present := this.queues[ct]
@@ -119,21 +85,17 @@ func (this *DiskService) Append(cluster, topic string, key, value []byte) error 
 		return q.Append(b)
 	}
 
-	if err := os.Mkdir(filepath.Join(this.cfg.Dir, cluster), 0700); err != nil {
+	if err := this.createAndStartQueue(ct); err != nil {
 		return err
 	}
-	this.queues[ct] = newQueue(cluster, topic,
-		filepath.Join(this.cfg.Dir, cluster, topic), -1)
-	if err := this.queues[ct].Open(); err != nil {
-		return err
-	}
-	this.wg.Add(1)
-	go this.queues[ct].housekeeping(this.cfg.PurgeInterval, &this.wg)
+
 	return this.queues[ct].Append(b)
 }
 
-func (this *DiskService) Empty(cluster, topic string) bool {
-	ct := clusterTopic{cluster, topic}
+// TODO
+func (this *Service) Empty(cluster, topic string) bool {
+	ct := clusterTopic{cluster: cluster, topic: topic}
+
 	this.rwmux.RLock()
 	q, present := this.queues[ct]
 	this.rwmux.RUnlock()
@@ -144,4 +106,49 @@ func (this *DiskService) Empty(cluster, topic string) bool {
 	}
 
 	return q.EmptyInflight()
+}
+
+func (this *Service) loadQueues(dir string) error {
+	clusters, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	// load queues from disk
+	for _, cluster := range clusters {
+		if !cluster.IsDir() {
+			continue
+		}
+
+		topics, err := ioutil.ReadDir(filepath.Join(dir, cluster.Name()))
+		if err != nil {
+			return err
+		}
+
+		for _, topic := range topics {
+			if !topic.IsDir() {
+				continue
+			}
+
+			ct := clusterTopic{cluster: cluster.Name(), topic: topic.Name()}
+			if err = this.createAndStartQueue(ct); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (this *Service) createAndStartQueue(ct clusterTopic) error {
+	if err := os.Mkdir(ct.ClusterDir(this.cfg.Dir), 0700); err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	this.queues[ct] = newQueue(ct, ct.TopicDir(this.cfg.Dir), -1, this.cfg.PurgeInterval)
+	if err := this.queues[ct].Open(); err != nil {
+		return err
+	}
+
+	return nil
 }

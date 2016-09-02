@@ -156,17 +156,17 @@ func (s *segment) Remove() (err error) {
 	return
 }
 
-func (l *segment) Close() error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	if err := l.wfile.Close(); err != nil {
+func (s *segment) Close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.wfile.Close(); err != nil {
 		return err
 	}
-	if err := l.rfile.Close(); err != nil {
+	if err := s.rfile.Close(); err != nil {
 		return err
 	}
-	l.wfile = nil
-	l.rfile = nil
+	s.wfile = nil
+	s.rfile = nil
 	return nil
 }
 

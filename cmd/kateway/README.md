@@ -161,6 +161,8 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
+- [ ] swagger
+- [ ] reject Sub when the group is being used for another topic
 - [X] pause a webhook
 - [ ] kafka timeout 1ms can work with hinted handoff
 - [ ] man /v1/clusters director of cluster distribution

@@ -8,7 +8,8 @@ import (
 )
 
 func TestCursor(t *testing.T) {
-	q := newQueue("cluster", "topic", "dir", -1)
+	ct := clusterTopic{cluster: "cluster", topic: "topic"}
+	q := newQueue(ct, "dir", -1)
 	defer os.RemoveAll("dir")
 
 	err := q.Open() // will open cursor internally
