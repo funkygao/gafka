@@ -11,14 +11,14 @@ import (
 )
 
 // queue is a bounded, disk-backed, append-only type that combines queue and
-// log semantics.  byte slices can be appended and read back in-order.
-// The queue maintains a pointer to the current head
-// byte slice and can re-read from the head until it has been advanced.
+// log semantics.
+// key/value byte slices can be appended and read back in order through
+// cursor.
 //
-// Internally, the queue writes byte slices to multiple segment files so
+// Internally, the queue writes key/value byte slices to multiple segment files so
 // that disk space can be reclaimed. When a segment file is larger than
 // the max segment size, a new file is created.   Segments are removed
-// after their head pointer has advanced past the last entry.  The first
+// after cursor has advanced past the last entry.  The first
 // segment is the head, and the last segment is the tail.  Reads are from
 // the head segment and writes tail segment.
 //
