@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
-	gio "github.com/funkygao/golib/io"
 )
 
 // queue is a bounded, disk-backed, append-only type that combines queue and
@@ -45,10 +43,10 @@ type queue struct {
 	mu sync.RWMutex
 
 	// Directory to create segments
-	dir            string
-	cluster, topic string
-	quit           chan struct{}
-	emptyInflight  bool
+	dir           string
+	clusterTopic  clusterTopic
+	quit          chan struct{}
+	emptyInflight bool
 
 	// The head and tail segments.  Reads are from the beginning of head,
 	// writes are appended to the tail.
@@ -68,10 +66,9 @@ type queue struct {
 
 // newQueue create a queue that will store segments in dir and that will
 // consume more than maxSize on disk.
-func newQueue(cluster, topic string, dir string, maxSize int64) *queue {
+func newQueue(ct clusterTopic, dir string, maxSize int64) *queue {
 	q := &queue{
-		cluster:        cluster,
-		topic:          topic,
+		clusterTopic:   ct,
 		dir:            dir,
 		quit:           make(chan struct{}),
 		maxSegmentSize: defaultSegmentSize,
@@ -87,10 +84,8 @@ func (l *queue) Open() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if !gio.DirExists(l.dir) {
-		if err := os.Mkdir(l.dir, 0700); err != nil {
-			return err
-		}
+	if err := mkdirIfNotExist(l.dir); err != nil {
+		return err
 	}
 
 	segments, err := l.loadSegments()
@@ -248,7 +243,7 @@ func (l *queue) loadSegments() (segments, error) {
 
 	for _, segment := range files {
 		// Segments should be files.  Skip anything that is not a dir.
-		if segment.IsDir() {
+		if segment.IsDir() || segment.Name() == cursorFile {
 			continue
 		}
 

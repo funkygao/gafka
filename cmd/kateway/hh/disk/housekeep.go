@@ -72,10 +72,10 @@ func (l *queue) pump(wg *sync.WaitGroup) {
 		log.Info("%s", string(b.value))
 		continue
 
-		_, _, err = store.DefaultPubStore.SyncPub(l.cluster, l.topic, []byte(b.key), b.value)
+		_, _, err = store.DefaultPubStore.SyncPub(l.clusterTopic.cluster, l.clusterTopic.topic, b.key, b.value)
 		if err != nil {
 			// TODO
-			log.Error("{c:%s t:%s} %s", l.cluster, l.topic, err)
+			log.Error("{c:%s t:%s} %s", l.clusterTopic.cluster, l.clusterTopic.topic, err)
 		}
 	}
 }

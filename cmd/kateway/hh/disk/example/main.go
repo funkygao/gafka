@@ -17,7 +17,7 @@ func main() {
 	}
 
 	for i := 0; i < 10; i++ {
-		if err := s.Append("c1", "t1", "key",
+		if err := s.Append("c1", "t1", []byte("key"),
 			[]byte(fmt.Sprintf("<#%d sent at: %s>", i+1, time.Now()))); err != nil {
 			panic(err)
 		}
