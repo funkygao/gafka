@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka/cmd/kateway/hh"
 	"github.com/funkygao/gafka/cmd/kateway/job"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
@@ -109,6 +110,15 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 
 	case "hh":
 		Options.EnableHintedHandoff = boolVal
+
+	case "hhflush":
+		if hh.Default == nil {
+			log.Warn("no underlying hinted handoff")
+		} else if Options.EnableHintedHandoff {
+			log.Warn("turn off hinted handoff first")
+		} else {
+			hh.Default.FlushInflights()
+		}
 
 	case "shardid":
 		shardId, err := strconv.Atoi(value)
