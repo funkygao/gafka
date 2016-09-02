@@ -12,6 +12,10 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+// TODO
+// 1. simulate a segment corrupts
+// 2. perf tuning
+
 func main() {
 	go http.ListenAndServe("localhost:6786", nil)
 	log.Info("pprf ready on http://localhost:6786/debug/pprof")
