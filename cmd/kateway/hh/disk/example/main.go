@@ -17,6 +17,7 @@ import (
 // 2. perf tuning
 // 3. mem reuse
 // 4. load balance disk IO
+// 5. metrics for hh
 
 func main() {
 	go http.ListenAndServe("localhost:6786", nil)
