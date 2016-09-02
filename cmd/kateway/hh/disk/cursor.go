@@ -10,7 +10,7 @@ import (
 
 type position struct {
 	Offset    int64
-	SegmentId uint64
+	SegmentID uint64
 }
 
 type cursor struct {
@@ -48,7 +48,7 @@ func (c *cursor) dump() error {
 // goroutine unsafe
 func (c *cursor) resetPosition() {
 	c.pos.Offset = 0
-	c.pos.SegmentId = c.ctx.head.id
+	c.pos.SegmentID = c.ctx.head.id
 }
 
 func (c *cursor) open() error {
@@ -62,15 +62,15 @@ func (c *cursor) open() error {
 	if err = dec.Decode(&c.pos); err != nil {
 		// the cursor file has just been created with empty contents
 		c.resetPosition()
-	} else if c.pos.SegmentId < c.ctx.head.id {
+	} else if c.pos.SegmentID < c.ctx.head.id {
 		// the outdated segment has been purged
 		c.resetPosition()
 	}
 
-	s, present := c.ctx.SegmentById(c.pos.SegmentId)
+	s, present := c.ctx.SegmentByID(c.pos.SegmentID)
 	if !present {
 		c.resetPosition()
-		s, present = c.ctx.SegmentById(c.pos.SegmentId)
+		s, present = c.ctx.SegmentByID(c.pos.SegmentID)
 	}
 
 	if !present {
@@ -109,8 +109,8 @@ func (c *cursor) Next(b *block) (err error) {
 
 func (c *cursor) advance() bool {
 	for _, seg := range c.ctx.segments {
-		if seg.id > c.pos.SegmentId {
-			c.pos.SegmentId = seg.id
+		if seg.id > c.pos.SegmentID {
+			c.pos.SegmentID = seg.id
 			c.seg = seg
 			c.pos.Offset = 0
 			c.seg.Seek(c.pos.Offset)

@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-type DiskService struct {
+type Service struct {
 	cfg *Config
 
 	quiting chan struct{}
@@ -27,15 +27,15 @@ type DiskService struct {
 	queues map[clusterTopic]*queue
 }
 
-func New(cfg *Config) *DiskService {
-	return &DiskService{
+func New(cfg *Config) *Service {
+	return &Service{
 		cfg:     cfg,
 		quiting: make(chan struct{}),
 		queues:  make(map[clusterTopic]*queue),
 	}
 }
 
-func (this *DiskService) Start() (err error) {
+func (this *Service) Start() (err error) {
 	if err = mkdirIfNotExist(this.cfg.Dir); err != nil {
 		return
 	}
@@ -43,7 +43,7 @@ func (this *DiskService) Start() (err error) {
 	return this.loadQueues(this.cfg.Dir)
 }
 
-func (this *DiskService) Stop() {
+func (this *Service) Stop() {
 	close(this.quiting)
 
 	for _, q := range this.queues {
@@ -53,7 +53,7 @@ func (this *DiskService) Stop() {
 	this.wg.Wait()
 }
 
-func (this *DiskService) Append(cluster, topic string, key, value []byte) error {
+func (this *Service) Append(cluster, topic string, key, value []byte) error {
 	b := &block{key: key, value: value}
 	ct := clusterTopic{cluster: cluster, topic: topic}
 
@@ -81,7 +81,7 @@ func (this *DiskService) Append(cluster, topic string, key, value []byte) error 
 }
 
 // TODO
-func (this *DiskService) Empty(cluster, topic string) bool {
+func (this *Service) Empty(cluster, topic string) bool {
 	ct := clusterTopic{cluster: cluster, topic: topic}
 
 	this.rwmux.RLock()
@@ -96,7 +96,7 @@ func (this *DiskService) Empty(cluster, topic string) bool {
 	return q.EmptyInflight()
 }
 
-func (this *DiskService) loadQueues(dir string) error {
+func (this *Service) loadQueues(dir string) error {
 	clusters, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func (this *DiskService) loadQueues(dir string) error {
 	return nil
 }
 
-func (this *DiskService) createAndStartQueue(ct clusterTopic) error {
+func (this *Service) createAndStartQueue(ct clusterTopic) error {
 	if err := os.Mkdir(ct.ClusterDir(this.cfg.Dir), 0700); err != nil && !os.IsExist(err) {
 		return err
 	}

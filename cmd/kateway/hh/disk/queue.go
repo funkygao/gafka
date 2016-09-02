@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	log "github.com/funkygao/log4go"
 )
 
 // queue is a bounded, disk-backed, append-only type that combines queue and
@@ -34,34 +36,31 @@ import (
 // │Segment 1 - 10MB │ │Segment 2 - 10MB ││Segment 3 - 10MB │
 // └─────────────────┘ └─────────────────┘└─────────────────┘
 //                          ▲                               ▲
-//                          |                               │
-//                          |                               │
+//                          │                               │
+//                          │                               │
 //                        cursor                       ┌─────┐
 //                                                     │Tail │
 //                                                     └─────┘
 type queue struct {
 	mu sync.RWMutex
 
-	// Directory to create segments
-	dir           string
-	clusterTopic  clusterTopic
-	quit          chan struct{}
-	emptyInflight bool
-
-	// The head and tail segments.  Reads are from the beginning of head,
-	// writes are appended to the tail.
-	head, tail *segment
-
-	cursor *cursor
+	dir          string // Directory to create segments
+	clusterTopic clusterTopic
 
 	// The maximum size in bytes of a segment file before a new one should be created
 	maxSegmentSize int64
 
 	// The maximum size allowed in bytes of all segments before writes will return an error
+	// -1 means unlimited
 	maxSize int64
 
-	// The segments that exist on disk
-	segments segments
+	head, tail *segment
+	segments   segments
+
+	cursor *cursor
+
+	quit          chan struct{}
+	emptyInflight bool // FIXME
 }
 
 // newQueue create a queue that will store segments in dir and that will
@@ -95,8 +94,7 @@ func (l *queue) Open() error {
 	l.segments = segments
 
 	if len(l.segments) == 0 {
-		_, err := l.addSegment()
-		if err != nil {
+		if _, err := l.addSegment(); err != nil {
 			return err
 		}
 	}
@@ -122,11 +120,16 @@ func (l *queue) Close() error {
 			return err
 		}
 	}
+
 	l.head = nil
 	l.tail = nil
 	l.segments = nil
 	close(l.quit)
-	return l.cursor.dump()
+	if err := l.cursor.dump(); err != nil {
+		return err
+	}
+	l.cursor = nil
+	return nil
 }
 
 // Remove removes all underlying file-based resources for the queue.
@@ -136,12 +139,13 @@ func (l *queue) Remove() error {
 	defer l.mu.Unlock()
 
 	if l.head != nil || l.tail != nil || l.segments != nil {
-		return fmt.Errorf("queue is open")
+		return ErrQueueOpen
 	}
 
 	return os.RemoveAll(l.dir)
 }
 
+// Purge garbage collects the segments that are behind cursor.
 func (l *queue) Purge() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -160,7 +164,7 @@ func (l *queue) Purge() error {
 			}
 		}
 
-		if l.cursor.pos.SegmentId > l.head.id {
+		if l.cursor.pos.SegmentID > l.head.id {
 			l.trimHead()
 		} else {
 			return nil
@@ -177,7 +181,6 @@ func (l *queue) trimHead() (err error) {
 	}
 
 	l.head = l.segments[0]
-
 	return
 }
 
@@ -197,7 +200,7 @@ func (l *queue) LastModified() (time.Time, error) {
 	return time.Time{}.UTC(), nil
 }
 
-func (l *queue) SegmentById(id uint64) (*segment, bool) {
+func (l *queue) SegmentByID(id uint64) (*segment, bool) {
 	for _, s := range l.segments {
 		if s.id == id {
 			return s, true
@@ -216,22 +219,6 @@ func (l *queue) diskUsage() int64 {
 	return size
 }
 
-// addSegment creates a new empty segment file
-func (l *queue) addSegment() (*segment, error) {
-	nextID, err := l.nextSegmentID()
-	if err != nil {
-		return nil, err
-	}
-
-	segment, err := newSegment(nextID, filepath.Join(l.dir, strconv.FormatUint(nextID, 10)), l.maxSegmentSize)
-	if err != nil {
-		return nil, err
-	}
-
-	l.segments = append(l.segments, segment)
-	return segment, nil
-}
-
 // loadSegments loads all segments on disk
 func (l *queue) loadSegments() (segments, error) {
 	segments := []*segment{}
@@ -242,7 +229,6 @@ func (l *queue) loadSegments() (segments, error) {
 	}
 
 	for _, segment := range files {
-		// Segments should be files.  Skip anything that is not a dir.
 		if segment.IsDir() || segment.Name() == cursorFile {
 			continue
 		}
@@ -263,6 +249,23 @@ func (l *queue) loadSegments() (segments, error) {
 	return segments, nil
 }
 
+// addSegment creates a new empty segment file
+func (l *queue) addSegment() (*segment, error) {
+	nextID, err := l.nextSegmentID()
+	if err != nil {
+		return nil, err
+	}
+
+	path := filepath.Join(l.dir, fmt.Sprintf("%020d", nextID))
+	segment, err := newSegment(nextID, path, l.maxSegmentSize)
+	if err != nil {
+		return nil, err
+	}
+
+	l.segments = append(l.segments, segment)
+	return segment, nil
+}
+
 // nextSegmentID returns the next segment ID that is free
 func (l *queue) nextSegmentID() (uint64, error) {
 	segments, err := ioutil.ReadDir(l.dir)
@@ -280,6 +283,7 @@ func (l *queue) nextSegmentID() (uint64, error) {
 		// Segments file names are all numeric
 		segmentID, err := strconv.ParseUint(segment.Name(), 10, 64)
 		if err != nil {
+			log.Warn("unexpected segment file: %s", segment.Name())
 			continue
 		}
 
@@ -311,6 +315,7 @@ func (l *queue) Append(b *block) error {
 		if err != nil {
 			return err
 		}
+
 		l.tail = segment
 		return l.tail.Append(b)
 	} else if err != nil {
