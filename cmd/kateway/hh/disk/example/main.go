@@ -15,6 +15,8 @@ import (
 // TODO
 // 1. simulate a segment corrupts
 // 2. perf tuning
+// 3. mem reuse
+// 4. load balance disk IO
 
 func main() {
 	go http.ListenAndServe("localhost:6786", nil)
