@@ -46,6 +46,7 @@ func (l *queue) pump() {
 	var (
 		b   block
 		err error
+		i   int
 	)
 	for {
 		select {
@@ -58,8 +59,9 @@ func (l *queue) pump() {
 		err = l.Next(&b)
 		switch err {
 		case nil:
+			i++
 			l.emptyInflight = false
-			log.Info("%s", string(b.value))
+			log.Info("%03d %s", i, string(b.value))
 
 		case ErrNotOpen:
 			return
