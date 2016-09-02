@@ -332,8 +332,7 @@ func (l *queue) nextSegmentID() (uint64, error) {
 
 	var maxID uint64
 	for _, segment := range segments {
-		// Segments should be files.  Skip anything that is not a dir.
-		if segment.IsDir() {
+		if segment.IsDir() || segment.Name() == cursorFile {
 			continue
 		}
 
