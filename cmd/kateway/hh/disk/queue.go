@@ -418,7 +418,7 @@ func (q *queue) nextSegmentID() (uint64, error) {
 		// Segments file names are all numeric
 		segmentID, err := strconv.ParseUint(segment.Name(), 10, 64)
 		if err != nil {
-			log.Warn("unexpected segment file: %s", segment.Name())
+			log.Warn("unexpected segment file: %s", filepath.Join(q.dir, segment.Name()))
 			continue
 		}
 
