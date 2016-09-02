@@ -13,7 +13,7 @@ import (
 )
 
 // TODO
-// 1. simulate a segment corrupts
+// 1. simulate a segment corrupts/skipCursorSegment
 // 2. perf tuning
 // 3. mem reuse
 // 4. load balance disk IO

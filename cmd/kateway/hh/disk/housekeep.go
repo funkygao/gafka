@@ -8,10 +8,7 @@ import (
 )
 
 func (q *queue) housekeeping() {
-	defer func() {
-		log.Trace("hh[%s] housekeeping quit", q.dir)
-		q.wg.Done()
-	}()
+	defer q.wg.Done()
 
 	purgeTick := time.NewTicker(q.purgeInterval)
 	defer purgeTick.Stop()
@@ -38,15 +35,13 @@ func (q *queue) housekeeping() {
 }
 
 func (q *queue) pump() {
-	defer func() {
-		log.Trace("hh[%s] pump quit", q.dir)
-		q.wg.Done()
-	}()
+	defer q.wg.Done()
 
 	var (
-		b   block
-		err error
-		i   int
+		b       block
+		err     error
+		n       int
+		retries int
 	)
 	for {
 		select {
@@ -59,18 +54,33 @@ func (q *queue) pump() {
 		err = q.Next(&b)
 		switch err {
 		case nil:
-			i++
 			q.emptyInflight = false
 
-			if false {
-				//log.Info("%03d %s", i, string(b.value))
-				log.Info("%04d", i)
-
+			if store.DefaultPubStore != nil {
 				_, _, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
-				if err != nil {
-					// TODO
-					log.Error("{c:%s t:%s} %s", q.clusterTopic.cluster, q.clusterTopic.topic, err)
+			} else {
+				err = ErrNoUnderlying
+			}
+			if err != nil {
+				if retries >= maxRetries {
+					retries = 0
+					n++
+				} else {
+					retries++
+					log.Error("queue[%s] %d/#%d %s: %s", q.ident(), n+1, retries, err, string(b.value))
+
+					if err = q.Rollback(&b); err != nil {
+						log.Error("queue[%s] %d/#%d %s: %s", q.ident(), n+1, retries, err, string(b.value))
+
+						retries = 0
+						n++
+						continue
+					}
+
+					time.Sleep(backoffDuration)
 				}
+			} else {
+				n++
 			}
 
 		case ErrQueueNotOpen:

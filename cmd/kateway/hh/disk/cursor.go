@@ -97,10 +97,14 @@ func (c *cursor) moveToHead() {
 	c.pos.SegmentID = c.ctx.head.id
 }
 
-func (c *cursor) advanceOffset(delta int64) {
+func (c *cursor) advanceOffset(delta int64) (err error) {
 	c.rwmux.Lock()
+	if c.pos.Offset+delta < 0 {
+		return ErrCursorOutOfRange
+	}
 	c.pos.Offset += delta
 	c.rwmux.Unlock()
+	return
 }
 
 func (c *cursor) advanceSegment() (ok bool) {

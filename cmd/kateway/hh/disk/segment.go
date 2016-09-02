@@ -211,6 +211,9 @@ func (s *segment) DiskUsage() int64 {
 }
 
 func (s *segment) Seek(pos int64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if s.rfile == nil {
 		return ErrSegmentNotOpen
 	}

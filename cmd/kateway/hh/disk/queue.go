@@ -224,6 +224,16 @@ func (q *queue) Append(b *block) error {
 	return nil
 }
 
+func (q *queue) Rollback(b *block) (err error) {
+	c := q.cursor
+	if err = c.advanceOffset(-b.size()); err != nil {
+		return
+	}
+
+	// rollback needn't consider cross segment case
+	return c.seg.Seek(c.pos.Offset)
+}
+
 func (q *queue) Next(b *block) (err error) {
 	q.mu.RLock()
 	defer q.mu.RUnlock()
@@ -275,21 +285,42 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	var (
-		b   block
-		err error
-		i   int
+		b       block
+		err     error
+		n       int
+		retries int
 	)
 	for {
 		err = q.Next(&b)
 		switch err {
 		case nil:
-			i++
-
-			if false {
+			if store.DefaultPubStore != nil {
 				_, _, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
-				if err != nil {
+			} else {
+				err = ErrNoUnderlying
+			}
+			if err != nil {
+				if retries >= maxRetries {
 					errCh <- err
+					retries = 0
+					n++
+				} else {
+					retries++
+					log.Error("queue[%s] %d/#%d %s: %s", q.ident(), n+1, retries, err, string(b.value))
+
+					if err = q.Rollback(&b); err != nil {
+						log.Error("queue[%s] %d/#%d %s: %s", q.ident(), n+1, retries, err, string(b.value))
+
+						errCh <- err
+						retries = 0
+						n++
+						continue
+					}
+
+					time.Sleep(backoffDuration)
 				}
+			} else {
+				n++
 			}
 
 		case ErrQueueNotOpen:
@@ -297,7 +328,7 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 			return
 
 		case ErrEOQ:
-			log.Debug("queue[%s] flushed %d inflights", q.ident(), i)
+			log.Debug("queue[%s] flushed %d inflights", q.ident(), n)
 			return
 
 		case ErrSegmentCorrupt:
