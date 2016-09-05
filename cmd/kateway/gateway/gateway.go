@@ -276,11 +276,6 @@ func (this *Gateway) Start() (err error) {
 		}
 	}()
 
-	if err = hh.Default.Start(); err != nil {
-		return
-	}
-	log.Trace("hh[%s] started", hh.Default.Name())
-
 	meta.Default.Start()
 	log.Trace("meta store[%s] started", meta.Default.Name())
 
@@ -317,6 +312,11 @@ func (this *Gateway) Start() (err error) {
 			panic(err)
 		}
 		log.Trace("pub store[%s] started", store.DefaultPubStore.Name())
+
+		if err = hh.Default.Start(); err != nil {
+			return
+		}
+		log.Trace("hh[%s] started", hh.Default.Name())
 
 		if err = job.Default.Start(); err != nil {
 			panic(err)
