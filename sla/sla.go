@@ -67,7 +67,7 @@ func (this *TopicSla) ParseRetentionHours(s string) error {
 		return ErrNotNumber
 	}
 
-	if f < 0 {
+	if f <= 0 {
 		return ErrNegative
 	}
 
