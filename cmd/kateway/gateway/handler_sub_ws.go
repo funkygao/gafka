@@ -150,7 +150,7 @@ func (this *subServer) wsWritePump(clientGone chan struct{}, ws *websocket.Conn,
 			// TODO
 			log.Error(err)
 
-		case <-this.gw.timer.After(this.wsPongWait / 3):
+		case <-this.timer.After(this.wsPongWait / 3):
 			ws.SetWriteDeadline(time.Now().Add(time.Second * 10))
 			if err = ws.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
 				log.Error("%s: %v", ws.RemoteAddr(), err)

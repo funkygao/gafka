@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"time"
 
 	_ "expvar" // register /debug/vars HTTP handler
 
@@ -37,7 +36,6 @@ import (
 	gzk "github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/signal"
-	"github.com/funkygao/golib/timewheel"
 	log "github.com/funkygao/log4go"
 	zklib "github.com/samuel/go-zookeeper/zk"
 )
@@ -51,7 +49,6 @@ type Gateway struct {
 	zkzone       *gzk.ZkZone // load/resume/flush counter metrics to zk
 	svrMetrics   *serverMetrics
 	accessLogger *AccessLogger
-	timer        *timewheel.TimeWheel
 
 	shutdownOnce        sync.Once
 	shutdownCh, quiting chan struct{}
@@ -86,7 +83,6 @@ func New(id string) *Gateway {
 	metaConf := zkmeta.DefaultConfig()
 	metaConf.Refresh = Options.MetaRefresh
 	meta.Default = zkmeta.New(metaConf, this.zkzone)
-	this.timer = timewheel.NewTimeWheel(time.Second, 120)
 	this.accessLogger = NewAccessLogger("access_log", 100)
 	this.svrMetrics = NewServerMetrics(Options.ReporterInterval, this)
 	rc, err := influxdb.NewConfig(Options.InfluxServer, Options.InfluxDbName, "", "", Options.ReporterInterval)
@@ -419,8 +415,6 @@ func (this *Gateway) ServeForever() {
 			this.zkzone.Close()
 			log.Trace("zkzone stopped")
 		}
-
-		this.timer.Stop()
 	}
 
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/golib/sync2"
+	"github.com/funkygao/golib/timewheel"
 	log "github.com/funkygao/log4go"
 )
 
@@ -23,6 +24,8 @@ type subServer struct {
 	idleConnsLock sync.Mutex
 
 	auditor log.Logger
+
+	timer *timewheel.TimeWheel
 
 	// websocket heartbeat configuration
 	wsReadLimit int64
@@ -43,6 +46,7 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 		idleConns:    make(map[net.Conn]struct{}, 200),
 		wsReadLimit:  8 << 10,
 		wsPongWait:   time.Minute,
+		timer:        timewheel.NewTimeWheel(time.Second, 120),
 		ackShutdown:  0,
 		ackCh:        make(chan ackOffsets, 100),
 		ackedOffsets: make(map[string]map[string]map[string]map[int]int64),
@@ -198,6 +202,7 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 	}
 
 	this.subMetrics.Flush()
+	this.timer.Stop()
 
 	this.gw.wg.Done()
 	close(this.closed)
