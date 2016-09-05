@@ -110,6 +110,11 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 
 	case "hh":
 		Options.EnableHintedHandoff = boolVal
+		if !boolVal {
+			hh.Default.Stop()
+		} else {
+			hh.Default.Start()
+		}
 
 	case "hhflush":
 		if hh.Default == nil {
