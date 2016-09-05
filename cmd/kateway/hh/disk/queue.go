@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/funkygao/gafka/cmd/kateway/store"
 	log "github.com/funkygao/log4go"
 )
 
@@ -279,70 +278,6 @@ func (q *queue) Next(b *block) (err error) {
 
 func (q *queue) EmptyInflight() bool {
 	return q.emptyInflight
-}
-
-func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
-	defer func() {
-		q.cursor.dump() // checkpoint
-		wg.Done()
-	}()
-
-	var (
-		b       block
-		err     error
-		n       int
-		retries int
-	)
-	for {
-		err = q.Next(&b)
-		switch err {
-		case nil:
-			if store.DefaultPubStore != nil {
-				_, _, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
-			} else {
-				err = ErrNoUnderlying
-			}
-			if err != nil {
-				if retries >= maxRetries {
-					errCh <- err
-					retries = 0
-					n++
-				} else {
-					retries++
-					log.Error("queue[%s] %d/#%d %s: %s", q.ident(), n+1, retries, err, string(b.value))
-
-					if err = q.Rollback(&b); err != nil {
-						log.Error("queue[%s] %d/#%d %s: %s", q.ident(), n+1, retries, err, string(b.value))
-
-						errCh <- err
-						retries = 0
-						n++
-						continue
-					}
-
-					time.Sleep(backoffDuration)
-				}
-			} else {
-				n++
-			}
-
-		case ErrQueueNotOpen:
-			errCh <- err
-			return
-
-		case ErrEOQ:
-			log.Debug("queue[%s] flushed %d inflights", q.ident(), n)
-			return
-
-		case ErrSegmentCorrupt:
-			q.skipCursorSegment()
-			errCh <- err
-
-		default:
-			q.skipCursorSegment()
-			errCh <- err
-		}
-	}
 }
 
 // diskUsage returns the total size on disk used by the queue

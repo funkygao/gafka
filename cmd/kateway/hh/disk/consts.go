@@ -8,6 +8,8 @@ const (
 	defaultSegmentSize = 10 << 20
 	cursorFile         = "cursor.dmp"
 	maxBlockSize       = 1 << 20
-	backoffDuration    = time.Millisecond * 200
-	maxRetries         = 5
+	initialBackoff     = time.Millisecond * 200
+	maxBackoff         = time.Second * 31
+	defaultMaxRetries  = 8
+	pollEofSleep       = time.Second
 )
