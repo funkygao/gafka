@@ -5,12 +5,16 @@ import (
 )
 
 const (
+	cursorFile = "cursor.dmp"
+
 	defaultSegmentSize = 10 << 20
-	cursorFile         = "cursor.dmp"
 	maxBlockSize       = 1 << 20
-	initialBackoff     = time.Millisecond * 200
-	maxBackoff         = time.Second * 31
-	defaultMaxRetries  = 8
-	pollEofSleep       = time.Second
-	dumpPerBlocks      = 100
+
+	defaultPurgeInterval = time.Minute * 10
+	defaultMaxAge        = time.Hour * 24 * 7
+	initialBackoff       = time.Millisecond * 200
+	maxBackoff           = time.Second * 31
+	defaultMaxRetries    = 8
+	pollEofSleep         = time.Second
+	dumpPerBlocks        = 100
 )

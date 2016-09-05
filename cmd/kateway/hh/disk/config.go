@@ -13,8 +13,8 @@ type Config struct {
 
 func DefaultConfig() *Config {
 	return &Config{
-		PurgeInterval: time.Minute * 10,
-		MaxAge:        time.Hour * 24 * 7,
+		PurgeInterval: defaultPurgeInterval,
+		MaxAge:        defaultMaxAge,
 	}
 }
 
