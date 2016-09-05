@@ -10,12 +10,15 @@ import (
 func (q *queue) pump() {
 	defer func() {
 		log.Trace("queue[%s] pump done", q.ident())
+		q.cursor.dump()
 		q.wg.Done()
 	}()
 
 	var (
 		b          block
 		err        error
+		partition  int32
+		offset     int64
 		okN, failN int
 		retries    int
 		backoff    time.Duration
@@ -25,7 +28,6 @@ func (q *queue) pump() {
 		case <-q.quit:
 			log.Trace("queue[%s] flushed: %d/%d", q.ident(), okN, failN)
 			return
-
 		default:
 		}
 
@@ -37,8 +39,10 @@ func (q *queue) pump() {
 			q.emptyInflight = false
 
 			for retries = 0; retries < defaultMaxRetries; retries++ {
-				_, _, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
+				partition, offset, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
 				if err == nil {
+					log.Debug("queue[%s] flushed {P:%d O:%d}", q.ident(), partition, offset)
+					q.cursor.commitPosition()
 					break
 				}
 
@@ -48,9 +52,6 @@ func (q *queue) pump() {
 				select {
 				case <-q.quit:
 					log.Trace("queue[%s] flushed: %d/%d", q.ident(), okN, failN)
-
-					q.Rollback(&b)
-					q.cursor.dump()
 					return
 				case <-time.After(backoff):
 				}

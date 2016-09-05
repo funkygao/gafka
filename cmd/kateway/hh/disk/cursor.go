@@ -17,9 +17,9 @@ type cursor struct {
 
 	seg *segment
 
-	rwmux sync.RWMutex
-	pos   position
-	dirty bool
+	rwmux        sync.RWMutex
+	pos, permPos position
+	dirty        bool
 }
 
 func newCursor(q *queue) *cursor {
@@ -39,28 +39,28 @@ func (c *cursor) open() error {
 	dec := json.NewDecoder(f)
 	if err = dec.Decode(&c.pos); err != nil {
 		// the cursor file has just been created with empty contents
-		c.moveToHead()
+		c.pos.Offset = 0
+		c.pos.SegmentID = c.ctx.head.id
 	} else if c.pos.SegmentID < c.ctx.head.id {
-		c.moveToHead()
+		c.pos.Offset = 0
+		c.pos.SegmentID = c.ctx.head.id
 	}
 
-	s, present := c.findSegment(c.pos.SegmentID)
-	if !present {
+	var s *segment
+	var found = false
+	for _, s = range c.ctx.segments {
+		if s.id == c.pos.SegmentID {
+			found = true
+			break
+		}
+	}
+	if !found {
 		return ErrCursorNotFound
 	}
 
 	c.seg = s
+	c.permPos = c.pos
 	return s.Seek(c.pos.Offset)
-}
-
-func (c *cursor) findSegment(id uint64) (*segment, bool) {
-	for _, s := range c.ctx.segments {
-		if s.id == id {
-			return s, true
-		}
-	}
-
-	return nil, false
 }
 
 func (c *cursor) cursorFile() string {
@@ -84,7 +84,7 @@ func (c *cursor) dump() error {
 	defer f.Close()
 
 	enc := json.NewEncoder(f)
-	if err = enc.Encode(&c.pos); err != nil {
+	if err = enc.Encode(&c.permPos); err != nil {
 		return err
 	}
 
@@ -93,10 +93,13 @@ func (c *cursor) dump() error {
 	return nil
 }
 
-func (c *cursor) moveToHead() {
-	c.pos.Offset = 0
-	c.pos.SegmentID = c.ctx.head.id
-	c.dirty = true
+func (c *cursor) commitPosition() {
+	c.rwmux.Lock()
+	if c.permPos != c.pos {
+		c.dirty = true
+	}
+	c.permPos = c.pos
+	c.rwmux.Unlock()
 }
 
 func (c *cursor) advanceOffset(delta int64) (err error) {
@@ -107,7 +110,6 @@ func (c *cursor) advanceOffset(delta int64) (err error) {
 	}
 
 	c.pos.Offset += delta
-	c.dirty = true
 	c.rwmux.Unlock()
 	return
 }

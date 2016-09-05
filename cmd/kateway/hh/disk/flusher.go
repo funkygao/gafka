@@ -9,13 +9,18 @@ import (
 )
 
 func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
-	defer wg.Done()
+	defer func() {
+		q.cursor.dump()
+		wg.Done()
+	}()
 
 	var (
-		b       block
-		err     error
-		n       int
-		backoff = initialBackoff
+		b         block
+		err       error
+		partition int32
+		offset    int64
+		n         int
+		backoff   = initialBackoff
 	)
 	for {
 		backoff = initialBackoff
@@ -23,8 +28,10 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 		switch err {
 		case nil:
 			for retries := 0; retries < 5; retries++ {
-				_, _, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
+				partition, offset, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
 				if err == nil {
+					log.Debug("queue[%s] flushed {P:%d O:%d}", q.ident(), partition, offset)
+					q.cursor.commitPosition()
 					break
 				} else {
 					log.Debug("queue[%s] <%s>: %s", q.ident(), string(b.value), err)
@@ -38,7 +45,6 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 			}
 
 			if err == nil {
-				q.cursor.dump() // checkpoint
 				n++
 				continue
 			}
