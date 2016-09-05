@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	maxTopicLen = 100
+	maxTopicLen = 64
 )
 
 var (
