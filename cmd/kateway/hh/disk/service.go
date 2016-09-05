@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
+	"github.com/funkygao/golib/timewheel"
 	log "github.com/funkygao/log4go"
 )
 
@@ -30,6 +32,7 @@ type Service struct {
 }
 
 func New(cfg *Config) *Service {
+	timer = timewheel.NewTimeWheel(time.Second, 120)
 	return &Service{
 		cfg:     cfg,
 		quiting: make(chan struct{}),
@@ -64,6 +67,7 @@ func (this *Service) Stop() {
 		q.Close()
 	}
 
+	timer.Stop()
 	this.closed = true
 }
 
@@ -138,7 +142,7 @@ func (this *Service) FlushInflights() {
 	errWg.Add(1)
 	go func() {
 		for err := range failCh {
-			log.Error(err)
+			log.Error("flush inflights: %s", err)
 		}
 
 		errWg.Done()
