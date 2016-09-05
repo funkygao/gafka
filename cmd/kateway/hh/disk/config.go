@@ -13,8 +13,8 @@ type Config struct {
 
 func DefaultConfig() *Config {
 	return &Config{
-		PurgeInterval: time.Second * 2,  // FIXME for debug only, should be 1m
-		MaxAge:        time.Second * 10, // FIXME for debug only, should be 7d
+		PurgeInterval: time.Minute * 10,
+		MaxAge:        time.Hour * 24 * 7,
 	}
 }
 
