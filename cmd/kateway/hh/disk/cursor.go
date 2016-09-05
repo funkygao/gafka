@@ -19,6 +19,7 @@ type cursor struct {
 
 	rwmux sync.RWMutex
 	pos   position
+	dirty bool
 }
 
 func newCursor(q *queue) *cursor {
@@ -69,19 +70,25 @@ func (c *cursor) cursorFile() string {
 // dump save the cursor position to disk.
 // housekeeping will periodically checkpoint with dump.
 func (c *cursor) dump() error {
+	c.rwmux.Lock()
+	defer c.rwmux.Unlock()
+
+	if !c.dirty {
+		return nil
+	}
+
 	f, err := os.OpenFile(c.cursorFile(), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	c.rwmux.RLock()
-	defer c.rwmux.RUnlock()
-
 	enc := json.NewEncoder(f)
 	if err = enc.Encode(&c.pos); err != nil {
 		return err
 	}
+
+	c.dirty = false
 
 	return nil
 }
@@ -89,25 +96,33 @@ func (c *cursor) dump() error {
 func (c *cursor) moveToHead() {
 	c.pos.Offset = 0
 	c.pos.SegmentID = c.ctx.head.id
+	c.dirty = true
 }
 
 func (c *cursor) advanceOffset(delta int64) (err error) {
 	c.rwmux.Lock()
 	if c.pos.Offset+delta < 0 {
+		c.rwmux.Unlock()
 		return ErrCursorOutOfRange
 	}
+
 	c.pos.Offset += delta
+	c.dirty = true
 	c.rwmux.Unlock()
 	return
 }
 
 func (c *cursor) advanceSegment() (ok bool) {
+	c.rwmux.Lock()
+	defer c.rwmux.Unlock()
+
 	for _, seg := range c.ctx.segments {
 		if seg.id > c.pos.SegmentID {
 			c.pos.SegmentID = seg.id
 			c.seg = seg
 			c.pos.Offset = 0
 			c.seg.Seek(0)
+			c.dirty = true
 			return true
 		}
 	}
