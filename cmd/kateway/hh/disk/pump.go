@@ -59,7 +59,7 @@ func (q *queue) pump() {
 				case <-q.quit:
 					log.Trace("queue[%s] flushed: %d/%d", q.ident(), okN, failN)
 					return
-				case <-time.After(backoff):
+				case <-timer.After(backoff):
 				}
 
 				backoff *= 2
