@@ -283,7 +283,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 			// e,g. kafka: error while consuming foobar/2: read tcp 10.1.1.1:60088->10.1.1.2:11005: i/o timeout
 			return err
 
-		case <-this.gw.timer.After(idleTimeout):
+		case <-time.After(idleTimeout):
 			if chunkedEver {
 				// response already sent in chunk
 				log.Debug("chunked sub idle timeout %s {A:%s/G:%s->A:%s T:%s V:%s}",
