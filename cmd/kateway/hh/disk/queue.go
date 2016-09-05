@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/funkygao/golib/sync2"
 	log "github.com/funkygao/log4go"
 )
 
@@ -64,7 +65,7 @@ type queue struct {
 	segments   segments
 
 	quit          chan struct{}
-	emptyInflight bool // FIXME
+	emptyInflight sync2.AtomicInt32
 }
 
 // newQueue create a queue that will store segments in dir and that will
@@ -277,7 +278,7 @@ func (q *queue) Next(b *block) (err error) {
 }
 
 func (q *queue) EmptyInflight() bool {
-	return q.emptyInflight
+	return q.emptyInflight.Get() == 1
 }
 
 // diskUsage returns the total size on disk used by the queue

@@ -36,7 +36,7 @@ func (q *queue) pump() {
 		err = q.Next(&b)
 		switch err {
 		case nil:
-			q.emptyInflight = false
+			q.emptyInflight.Set(0)
 
 			for retries = 0; retries < defaultMaxRetries; retries++ {
 				partition, offset, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
@@ -83,7 +83,7 @@ func (q *queue) pump() {
 			return
 
 		case ErrEOQ:
-			q.emptyInflight = true
+			q.emptyInflight.Set(1)
 			select {
 			case <-q.quit:
 				return
