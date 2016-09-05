@@ -74,7 +74,6 @@ func newQueue(ct clusterTopic, dir string, maxSize int64, purgeInterval, maxAge 
 	q := &queue{
 		clusterTopic:   ct,
 		dir:            dir,
-		quit:           make(chan struct{}),
 		maxSegmentSize: defaultSegmentSize,
 		maxSize:        maxSize,
 		purgeInterval:  purgeInterval,
@@ -119,6 +118,8 @@ func (q *queue) Open() error {
 }
 
 func (q *queue) Start() {
+	q.quit = make(chan struct{})
+
 	q.wg.Add(1)
 	go q.housekeeping()
 

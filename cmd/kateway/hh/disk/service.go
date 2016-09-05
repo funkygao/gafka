@@ -14,8 +14,7 @@ import (
 type Service struct {
 	cfg *Config
 
-	quiting chan struct{}
-	closed  bool
+	closed bool
 
 	rwmux sync.RWMutex
 
@@ -34,10 +33,9 @@ type Service struct {
 func New(cfg *Config) *Service {
 	timer = timewheel.NewTimeWheel(time.Second, 120)
 	return &Service{
-		cfg:     cfg,
-		quiting: make(chan struct{}),
-		queues:  make(map[clusterTopic]*queue),
-		closed:  true,
+		cfg:    cfg,
+		queues: make(map[clusterTopic]*queue),
+		closed: true,
 	}
 }
 
@@ -61,7 +59,9 @@ func (this *Service) Stop() {
 	this.rwmux.Lock()
 	defer this.rwmux.Unlock()
 
-	close(this.quiting)
+	if this.closed {
+		return
+	}
 
 	for _, q := range this.queues {
 		q.Close()
