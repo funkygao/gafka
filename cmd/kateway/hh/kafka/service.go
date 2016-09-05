@@ -1,8 +1,8 @@
 package kafka
 
-type kafka struct {
+type Service struct {
 }
 
-func New() *kafka {
-	return &kafka{}
+func New() *Service {
+	return &Service{}
 }
