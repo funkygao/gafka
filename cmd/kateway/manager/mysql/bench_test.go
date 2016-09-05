@@ -28,6 +28,11 @@ func kafkaTopicWithIntern(appid string, topic string, ver string) string {
 	return intern.String(appid + "." + topic + "." + ver)
 }
 
+func kafkaTopicWithJoin(appid string, topic string, ver string) string {
+	const dot = "."
+	return strings.Join([]string{appid, dot, topic, dot, ver}, "")
+}
+
 // 456 ns/op	      64 B/op	       4 allocs/op
 func BenchmarkKafkaTopicWithStringsJoin(b *testing.B) {
 	m := &mysqlStore{}
@@ -49,6 +54,13 @@ func BenchmarkKafkaTopicWithMpool(b *testing.B) {
 	m := &mysqlStore{}
 	for i := 0; i < b.N; i++ {
 		m.KafkaTopic("appid", "topic", "v1")
+	}
+}
+
+//
+func BenchmarkKafkaTopicWithJoin(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		kafkaTopicWithJoin("appid", "topic", "ver")
 	}
 }
 
@@ -81,7 +93,9 @@ func BenchmarkKafkaTopicWithIntern(b *testing.B) {
 func BenchmarkKafkaTopicWithStrConcat(b *testing.B) {
 	m := &mysqlStore{}
 	for i := 0; i < b.N; i++ {
-		_ = kafkaTopicWithStrConcat(m, "appid", "topic", "ver")
+		x := kafkaTopicWithStrConcat(m, "appid", "topic", "ver")
+		if len(x) < 5 {
+		}
 	}
 }
 
