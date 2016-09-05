@@ -12,4 +12,5 @@ const (
 	maxBackoff         = time.Second * 31
 	defaultMaxRetries  = 8
 	pollEofSleep       = time.Second
+	dumpPerBlocks      = 100
 )

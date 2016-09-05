@@ -19,7 +19,7 @@ func (q *queue) pump() {
 		err        error
 		partition  int32
 		offset     int64
-		okN, failN int
+		okN, failN int64
 		retries    int
 		backoff    time.Duration
 	)
@@ -43,6 +43,12 @@ func (q *queue) pump() {
 				if err == nil {
 					log.Debug("queue[%s] flushed {P:%d O:%d}", q.ident(), partition, offset)
 					q.cursor.commitPosition()
+					okN++
+					if okN%dumpPerBlocks == 0 {
+						if e := q.cursor.dump(); e != nil {
+							log.Error("queue[%s] dump: %s", q.ident(), e)
+						}
+					}
 					break
 				}
 
@@ -63,7 +69,6 @@ func (q *queue) pump() {
 			}
 
 			if err == nil {
-				okN++
 				continue
 			}
 

@@ -19,7 +19,7 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 		err       error
 		partition int32
 		offset    int64
-		n         int
+		okN       int64
 		backoff   = initialBackoff
 	)
 	for {
@@ -32,6 +32,12 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 				if err == nil {
 					log.Debug("queue[%s] flushed {P:%d O:%d}", q.ident(), partition, offset)
 					q.cursor.commitPosition()
+					okN++
+					if okN%dumpPerBlocks == 0 {
+						if e := q.cursor.dump(); e != nil {
+							log.Error("queue[%s] dump: %s", q.ident(), e)
+						}
+					}
 					break
 				} else {
 					log.Debug("queue[%s] <%s>: %s", q.ident(), string(b.value), err)
@@ -45,7 +51,6 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 			}
 
 			if err == nil {
-				n++
 				continue
 			}
 
@@ -53,7 +58,7 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 
 			if err = q.Rollback(&b); err != nil {
 				// should never happen
-				log.Error("queue[%s] %d %s: %s", q.ident(), n+1, err, string(b.value))
+				log.Error("queue[%s] %d <%s>: %s", q.ident(), okN+1, string(b.value), err)
 				errCh <- err
 			}
 			return
@@ -63,7 +68,7 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 			return
 
 		case ErrEOQ:
-			log.Debug("queue[%s] flushed %d inflights", q.ident(), n)
+			log.Debug("queue[%s] flushed %d inflights", q.ident(), okN)
 			return
 
 		case ErrSegmentCorrupt:
