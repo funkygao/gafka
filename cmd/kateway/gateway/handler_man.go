@@ -112,23 +112,36 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 		Options.EnableHintedHandoff = boolVal
 		if !boolVal {
 			hh.Default.Stop()
+			w.Write([]byte(fmt.Sprintf("id:%s hh[%s] stopped", Options.Id, hh.Default.Name())))
+			return
 		} else {
-			hh.Default.Start()
+			if err := hh.Default.Start(); err != nil {
+				writeServerError(w, err.Error())
+				return
+			} else {
+				w.Write([]byte(fmt.Sprintf("id:%s hh[%s] started", Options.Id, hh.Default.Name())))
+				return
+			}
 		}
 
 	case "hhflush":
-		if hh.Default == nil {
-			log.Warn("no underlying hinted handoff")
-		} else if Options.EnableHintedHandoff {
-			log.Warn("turn off hinted handoff first")
-		} else {
-			hh.Default.FlushInflights()
+		if boolVal {
+			if hh.Default == nil {
+				writeServerError(w, "no underlying hinted handoff")
+			} else if Options.EnableHintedHandoff {
+				writeBadRequest(w, "turn off hinted handoff first")
+			} else {
+				hh.Default.FlushInflights()
+				w.Write([]byte(fmt.Sprintf("id:%s hh[%s] inflights flushed", Options.Id, hh.Default.Name())))
+			}
+			return
 		}
 
-	case "shardid":
+	case "jobshardid":
 		shardId, err := strconv.Atoi(value)
 		if err != nil {
-			log.Error("invalid shard id[%s]: %v", value, err)
+			writeBadRequest(w, "invalid job shard id")
+			return
 		} else {
 			Options.AssignJobShardId = shardId
 		}
@@ -136,7 +149,8 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	case "punish":
 		d, err := time.ParseDuration(value)
 		if err != nil {
-			log.Error("invalid punish[%s]: %v", value, err)
+			writeBadRequest(w, err.Error())
+			return
 		} else {
 			Options.BadClientPunishDuration = d
 		}

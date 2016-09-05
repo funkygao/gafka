@@ -113,6 +113,10 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 		if this.configOption != "" {
 			parts := strings.SplitN(this.configOption, "=", 2)
+			if len(parts) != 2 {
+				this.Ui.Error("usage: key=value")
+				return
+			}
 			k, v := parts[0], parts[1]
 			if this.id != "" {
 				kw := zkzone.KatewayInfoById(this.id)
@@ -345,7 +349,9 @@ func (this *Kateway) callHttp(url string, method string) (body []byte, err error
 
 func (this *Kateway) callKateway(kw *zk.KatewayMeta, method string, uri string) (err error) {
 	url := fmt.Sprintf("http://%s/%s", kw.ManAddr, uri)
-	_, err = this.callHttp(url, method)
+	var body []byte
+	body, err = this.callHttp(url, method)
+	this.Ui.Output(fmt.Sprintf("id[%s] -> %s", kw.Id, string(body)))
 	return
 }
 
@@ -466,7 +472,7 @@ Options:
     -reset metrics name
       Reset kateway metric counter by name
 
-    -option <debug|gzip|hh|hhflush|accesslog|punish|loglevel|dryrun|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|val>
+    -option <debug|gzip|hh|hhflush|jobshardid|accesslog|punish|loglevel|dryrun|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|val>
       Set kateway options value
       e,g.
       dryrun=<appid.topic.ver|clear>
