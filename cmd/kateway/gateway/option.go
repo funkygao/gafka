@@ -127,7 +127,7 @@ func ParseFlags() {
 	flag.BoolVar(&Options.EnableAccessLog, "accesslog", false, "en(dis)able access log")
 	flag.BoolVar(&Options.EnableRegistry, "withreg", true, "self register in zk, otherwise isolated from cluster")
 	flag.BoolVar(&Options.DryRun, "dryrun", false, "dry run mode")
-	flag.BoolVar(&Options.EnableHintedHandoff, "hh", false, "enable hinted handoff for full pub availability")
+	flag.BoolVar(&Options.EnableHintedHandoff, "hh", true, "enable hinted handoff for full pub availability")
 	flag.BoolVar(&Options.PermitUnregisteredGroup, "unregrp", false, "permit sub group usage without being registered")
 	flag.BoolVar(&Options.PermitStandbySub, "standbysub", false, "permits sub threads exceed partitions")
 	flag.BoolVar(&Options.EnableGzip, "gzip", false, "enable http response gzip")
