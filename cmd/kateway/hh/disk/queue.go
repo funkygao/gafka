@@ -166,8 +166,6 @@ func (q *queue) Remove() error {
 
 // Purge garbage collects the segments that are behind cursor.
 func (q *queue) Purge() error {
-	log.Debug("queue[%s] purge...", q.ident())
-
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
