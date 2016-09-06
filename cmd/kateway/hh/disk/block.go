@@ -15,7 +15,7 @@ type block struct {
 }
 
 func (b *block) size() int64 {
-	return int64(len(b.key) + len(b.value) + 9)
+	return int64(len(b.key) + len(b.value) + 10)
 }
 
 func (b *block) keyLen() uint32 {
