@@ -7,7 +7,7 @@ import (
 )
 
 type block struct {
-	magic [2]byte
+	magic [2]byte // TODO [0]magic [1]attr
 	key   []byte
 	value []byte
 
