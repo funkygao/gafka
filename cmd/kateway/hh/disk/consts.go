@@ -2,6 +2,8 @@ package disk
 
 import (
 	"time"
+
+	log "github.com/funkygao/log4go"
 )
 
 const (
@@ -21,6 +23,7 @@ const (
 
 var (
 	DisableBufio = true
+	Auditor      *log.Logger
 
 	currentMagic = [2]byte{0, 0}
 )

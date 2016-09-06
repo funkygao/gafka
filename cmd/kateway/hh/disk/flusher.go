@@ -30,7 +30,10 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 			for retries := 0; retries < 5; retries++ {
 				partition, offset, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
 				if err == nil {
-					log.Debug("queue[%s] flushed {P:%d O:%d}", q.ident(), partition, offset)
+					if Auditor != nil {
+						Auditor.Trace("queue[%s] {P:%d O:%d}", q.ident(), partition, offset)
+					}
+
 					q.cursor.commitPosition()
 					okN++
 					q.inflights.Add(-1)

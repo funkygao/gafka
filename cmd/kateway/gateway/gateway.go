@@ -91,13 +91,6 @@ func New(id string) *Gateway {
 	} else {
 		telemetry.Default = influxdb.New(metrics.DefaultRegistry, rc)
 	}
-	switch Options.HintedHandoffType {
-	case "disk":
-		cfg := hhdisk.DefaultConfig()
-		cfg.Dir = Options.HintedHandoffDir
-		hhdisk.DisableBufio = !Options.HintedHandoffBufio
-		hh.Default = hhdisk.New(cfg)
-	}
 
 	// initialize the manager store
 	switch Options.ManagerStore {
@@ -171,6 +164,17 @@ func New(id string) *Gateway {
 
 		default:
 			panic("invalid job store")
+		}
+
+		switch Options.HintedHandoffType {
+		case "disk":
+			cfg := hhdisk.DefaultConfig()
+			cfg.Dir = Options.HintedHandoffDir
+			hhdisk.DisableBufio = !Options.HintedHandoffBufio
+			if Options.AuditPub {
+				hhdisk.Auditor = &this.pubServer.auditor
+			}
+			hh.Default = hhdisk.New(cfg)
 		}
 	}
 	if Options.SubHttpAddr != "" || Options.SubHttpsAddr != "" {

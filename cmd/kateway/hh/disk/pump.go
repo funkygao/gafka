@@ -41,7 +41,10 @@ func (q *queue) pump() {
 			for retries = 0; retries < defaultMaxRetries; retries++ {
 				partition, offset, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
 				if err == nil {
-					log.Debug("queue[%s] delivered {P:%d O:%d}", q.ident(), partition, offset)
+					if Auditor != nil {
+						Auditor.Trace("queue[%s] {P:%d O:%d}", q.ident(), partition, offset)
+					}
+
 					q.cursor.commitPosition()
 					okN++
 					q.inflights.Add(-1)
