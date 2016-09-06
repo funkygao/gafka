@@ -32,7 +32,8 @@ type segment struct {
 	size    int64
 	maxSize int64
 
-	wfile, rfile *os.File
+	rfile *bufferReader
+	wfile *bufferWriter
 
 	rbuf, wbuf [4]byte
 	buf        []byte // reuseable buf to read blocks
@@ -59,8 +60,8 @@ func newSegment(id uint64, path string, maxSize int64) (*segment, error) {
 
 	return &segment{
 		id:      id,
-		wfile:   wf,
-		rfile:   rf,
+		wfile:   newBufferWriter(wf),
+		rfile:   newBufferReader(rf),
 		size:    stats.Size(),
 		maxSize: maxSize,
 	}, nil
