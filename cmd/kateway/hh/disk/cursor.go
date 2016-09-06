@@ -37,17 +37,23 @@ func (c *cursor) open() error {
 	defer f.Close()
 
 	dec := json.NewDecoder(f)
-	if err = dec.Decode(&c.pos); err != nil {
-		// the cursor file has just been created with empty contents
-		c.pos.Offset = 0
-		c.pos.SegmentID = c.ctx.head.id
-	} else if c.pos.SegmentID < c.ctx.head.id {
+	return dec.Decode(&c.pos)
+}
+
+func (c *cursor) initPosition(moveToHead bool) error {
+	if moveToHead || c.pos.SegmentID < c.ctx.head.id {
 		c.pos.Offset = 0
 		c.pos.SegmentID = c.ctx.head.id
 	}
+	if c.pos.SegmentID > c.ctx.tail.id {
+		c.pos.Offset = 0
+		c.pos.SegmentID = c.ctx.tail.id
+	}
 
-	var s *segment
-	var found = false
+	var (
+		s     *segment
+		found = false
+	)
 	for _, s = range c.ctx.segments {
 		if s.id == c.pos.SegmentID {
 			found = true

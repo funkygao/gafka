@@ -95,7 +95,20 @@ func (q *queue) Open() error {
 		return err
 	}
 
-	segments, err := q.loadSegments() // FIXME only load segments larger than cursor.SegmentID
+	var (
+		minId            uint64 = 0
+		moveCursorToHead bool   = false
+	)
+	if err := q.cursor.open(); err != nil {
+		// cursor file might not exist or json file corrupts
+		log.Warn("queue[%s] cursor: %s", q.ident(), err)
+		moveCursorToHead = true
+	} else {
+		// load segments from cursor checkpoint
+		minId = q.cursor.pos.SegmentID
+	}
+
+	segments, err := q.loadSegments(minId)
 	if err != nil {
 		return err
 	}
@@ -112,7 +125,7 @@ func (q *queue) Open() error {
 	q.tail = q.segments[len(q.segments)-1]
 
 	// cursor open must be placed below queue open
-	if err = q.cursor.open(); err != nil {
+	if err = q.cursor.initPosition(moveCursorToHead); err != nil {
 		return err
 	}
 
@@ -301,9 +314,9 @@ func (q *queue) diskUsage() int64 {
 	return size
 }
 
-// loadSegments loads all segments on disk
+// loadSegments loads all in-range segments on disk
 // FIXME manage q.inflights counter while loading segments
-func (q *queue) loadSegments() (segments, error) {
+func (q *queue) loadSegments(minId uint64) (segments, error) {
 	segments := []*segment{}
 
 	files, err := ioutil.ReadDir(q.dir)
@@ -316,9 +329,14 @@ func (q *queue) loadSegments() (segments, error) {
 			continue
 		}
 
-		// Segments file names are all numeric
+		// segment file names are all numeric
 		id, err := strconv.ParseUint(segment.Name(), 10, 64)
 		if err != nil {
+			log.Error("queue[%s] segment:%s %s", q.ident(), segment.Name(), err)
+			continue
+		}
+		if id < minId {
+			log.Debug("queue[%s] skip stale segment:%s", q.ident(), segment.Name())
 			continue
 		}
 
