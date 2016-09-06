@@ -95,6 +95,7 @@ func New(id string) *Gateway {
 	case "disk":
 		cfg := hhdisk.DefaultConfig()
 		cfg.Dir = Options.HintedHandoffDir
+		hhdisk.DisableBufio = !Options.HintedHandoffBufio
 		hh.Default = hhdisk.New(cfg)
 	}
 
