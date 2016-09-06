@@ -130,7 +130,7 @@ func (this *Service) Empty(cluster, topic string) bool {
 func (this *Service) FlushInflights() {
 	if !this.closed {
 		// will race with queue housekeeping
-		log.Error("run flush inflights with service closed!")
+		log.Error("hh[%s] run flush inflights with service closed!", this.Name())
 		return
 	}
 
@@ -151,7 +151,7 @@ func (this *Service) FlushInflights() {
 	errWg.Add(1)
 	go func() {
 		for err := range failCh {
-			log.Error("flush inflights: %s", err)
+			log.Error("hh[%s] flush inflights: %s", this.Name(), err)
 		}
 
 		errWg.Done()

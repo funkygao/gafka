@@ -9,7 +9,6 @@ import (
 
 func (q *queue) pump() {
 	defer func() {
-		log.Trace("queue[%s] pump done", q.ident())
 		q.cursor.dump()
 		q.wg.Done()
 	}()
@@ -26,7 +25,7 @@ func (q *queue) pump() {
 	for {
 		select {
 		case <-q.quit:
-			log.Trace("queue[%s] delivered: %d/%d", q.ident(), okN, failN)
+			log.Trace("queue[%s] pump done, delivered: %d/%d", q.ident(), okN, failN)
 			return
 		default:
 		}
@@ -61,7 +60,7 @@ func (q *queue) pump() {
 				// backoff
 				select {
 				case <-q.quit:
-					log.Trace("queue[%s] delivered: %d/%d", q.ident(), okN, failN)
+					log.Trace("queue[%s] pump done, delivered: %d/%d", q.ident(), okN, failN)
 					return
 				case <-timer.After(backoff):
 				}
@@ -91,8 +90,9 @@ func (q *queue) pump() {
 			q.emptyInflight.Set(1)
 			select {
 			case <-q.quit:
+				log.Trace("queue[%s] pump done, delivered: %d/%d", q.ident(), okN, failN)
 				return
-			case <-timer.After(pollEofSleep):
+			case <-timer.After(pollSleep):
 			}
 
 		case ErrSegmentCorrupt:

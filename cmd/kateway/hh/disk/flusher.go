@@ -27,7 +27,7 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 		err = q.Next(&b)
 		switch err {
 		case nil:
-			for retries := 0; retries < 5; retries++ {
+			for retries := 0; retries < flusherMaxRetries; retries++ {
 				partition, offset, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
 				if err == nil {
 					if Auditor != nil {

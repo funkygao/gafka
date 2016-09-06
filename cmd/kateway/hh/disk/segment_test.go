@@ -16,7 +16,7 @@ func TestSegment(t *testing.T) {
 		value: []byte("world"),
 	}
 	s.Append(b)
-	s.Flush()
+	s.flush()
 
 	t.Logf("%s", s.wfile.Name())
 

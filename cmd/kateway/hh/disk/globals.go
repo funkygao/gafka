@@ -14,10 +14,11 @@ const (
 
 	defaultPurgeInterval = time.Minute * 10
 	defaultMaxAge        = time.Hour * 24 * 7
-	initialBackoff       = time.Millisecond * 200
+	initialBackoff       = time.Second
 	maxBackoff           = time.Second * 31
-	defaultMaxRetries    = 8
-	pollEofSleep         = time.Second
+	defaultMaxRetries    = 5
+	flusherMaxRetries    = 3
+	pollSleep            = time.Second
 	dumpPerBlocks        = 100
 )
 
