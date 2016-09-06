@@ -11,7 +11,6 @@ import (
 
 // Segment is a queue using a single file.  The structure of a segment is a series
 // of TLV block.
-// TODO add crc32 checksum
 //
 // ┌───────────────────────────────────────────────────────────┐ ┌───────────────────────────────────────────────────────────┐
 // |                    Block 1                                | |                    Block 2                                |
@@ -33,13 +32,16 @@ type segment struct {
 	rfile *bufferReader
 	wfile *bufferWriter
 
+	lastFlush      time.Time
+	flushInflights int
+
 	buf []byte // reuseable buf to read blocks
 }
 
 type segments []*segment
 
 func newSegment(id uint64, path string, maxSize int64) (*segment, error) {
-	// TODO should explicitly open files
+	// TODO should explicitly open files: too many open files?
 	wf, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, err
@@ -80,8 +82,7 @@ func (s *segment) Append(b *block) (err error) {
 		return
 	}
 
-	// TODO
-	if err := s.Flush(); err != nil {
+	if err := s.flush(); err != nil {
 		return err
 	}
 
@@ -106,12 +107,32 @@ func (s *segment) ReadOne(b *block) error {
 	return nil
 }
 
-func (s *segment) Flush() error {
+func (s *segment) flush() (err error) {
 	if s.wfile == nil {
 		return ErrSegmentNotOpen
 	}
 
-	return s.wfile.Sync()
+	if s.lastFlush.IsZero() {
+		// the 1st flush always do real IO
+		if err = s.wfile.Sync(); err == nil {
+			s.lastFlush = time.Now()
+		}
+		return
+	}
+
+	now := time.Now()
+	if s.flushInflights >= flushEveryBlocks || now.Sub(s.lastFlush) >= flushInterval {
+		// time to flush the batch
+		if err = s.wfile.Sync(); err == nil {
+			s.flushInflights = 0
+			s.lastFlush = now
+		}
+	} else {
+		// batch it up to avoid real IO
+		s.flushInflights++
+	}
+
+	return
 }
 
 func (s *segment) Current() int64 {

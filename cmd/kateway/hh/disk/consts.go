@@ -26,4 +26,7 @@ var (
 	Auditor      *log.Logger
 
 	currentMagic = [2]byte{0, 0}
+
+	flushEveryBlocks = 10
+	flushInterval    = time.Second
 )

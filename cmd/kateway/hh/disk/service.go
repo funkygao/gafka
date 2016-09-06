@@ -112,7 +112,6 @@ func (this *Service) Append(cluster, topic string, key, value []byte) error {
 	return this.queues[ct].Append(b)
 }
 
-// TODO
 func (this *Service) Empty(cluster, topic string) bool {
 	ct := clusterTopic{cluster: cluster, topic: topic}
 

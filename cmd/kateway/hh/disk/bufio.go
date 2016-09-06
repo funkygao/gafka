@@ -70,7 +70,7 @@ func (w *bufferWriter) Sync() error {
 		return w.f.Sync()
 	}
 
-	if err := w.writer.Flush(); err != nil { // this will greatly impact perf TODO
+	if err := w.writer.Flush(); err != nil {
 		return err
 	}
 	return w.f.Sync()
