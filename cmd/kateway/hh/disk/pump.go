@@ -26,7 +26,7 @@ func (q *queue) pump() {
 	for {
 		select {
 		case <-q.quit:
-			log.Trace("queue[%s] flushed: %d/%d", q.ident(), okN, failN)
+			log.Trace("queue[%s] delivered: %d/%d", q.ident(), okN, failN)
 			return
 		default:
 		}
@@ -41,9 +41,10 @@ func (q *queue) pump() {
 			for retries = 0; retries < defaultMaxRetries; retries++ {
 				partition, offset, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
 				if err == nil {
-					log.Debug("queue[%s] flushed {P:%d O:%d}", q.ident(), partition, offset)
+					log.Debug("queue[%s] delivered {P:%d O:%d}", q.ident(), partition, offset)
 					q.cursor.commitPosition()
 					okN++
+					q.inflights.Add(-1)
 					if okN%dumpPerBlocks == 0 {
 						if e := q.cursor.dump(); e != nil {
 							log.Error("queue[%s] dump: %s", q.ident(), e)
@@ -52,12 +53,12 @@ func (q *queue) pump() {
 					break
 				}
 
-				log.Debug("queue[%s] <%s>: %s", q.ident(), string(b.value), err)
+				log.Debug("queue[%s] {k:%s v:%s} %s", q.ident(), string(b.key), string(b.value), err)
 
 				// backoff
 				select {
 				case <-q.quit:
-					log.Trace("queue[%s] flushed: %d/%d", q.ident(), okN, failN)
+					log.Trace("queue[%s] delivered: %d/%d", q.ident(), okN, failN)
 					return
 				case <-timer.After(backoff):
 				}
@@ -72,6 +73,7 @@ func (q *queue) pump() {
 				continue
 			}
 
+			// failed to deliver
 			if err = q.Rollback(&b); err != nil {
 				// should never happen
 				log.Warn("queue[%s] skipped block <%s/%s>", q.ident(), string(b.key), string(b.value))

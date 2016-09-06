@@ -18,3 +18,9 @@ const (
 	pollEofSleep         = time.Second
 	dumpPerBlocks        = 100
 )
+
+var (
+	DisableBufio = true
+
+	currentMagic = [2]byte{0, 0}
+)
