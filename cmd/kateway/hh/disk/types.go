@@ -5,6 +5,7 @@ import (
 )
 
 type block struct {
+	magic byte
 	key   []byte
 	value []byte
 }

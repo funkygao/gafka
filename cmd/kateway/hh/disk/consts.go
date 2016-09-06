@@ -5,6 +5,8 @@ import (
 )
 
 const (
+	currentMagic byte = 0
+
 	cursorFile = "cursor.dmp"
 
 	defaultSegmentSize = 10 << 20
