@@ -377,8 +377,10 @@ func (this *Gateway) ServeForever() {
 			hh.Default.FlushInflights()
 		}
 
-		//log.Trace("stopping access logger")
-		//this.accessLogger.Stop() FIXME it will hang on linux
+		if Options.EnableAccessLog {
+			log.Trace("stopping access logger")
+			this.accessLogger.Stop()
+		}
 
 		if store.DefaultPubStore != nil {
 			log.Trace("pub store[%s] stop...", store.DefaultPubStore.Name())
