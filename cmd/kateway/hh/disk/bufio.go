@@ -18,6 +18,9 @@ func newBufferReader(f *os.File) *bufferReader {
 }
 
 func (r *bufferReader) Read(b []byte) (n int, err error) {
+	if DisableBufio {
+		return r.f.Read(b)
+	}
 	return r.reader.Read(b)
 }
 
@@ -30,6 +33,11 @@ func (r *bufferReader) Seek(offset int64, whence int) (ret int64, err error) {
 		return
 	}
 
+	if DisableBufio {
+		return
+	}
+
+	// bufio sync with file
 	r.reader.Reset(r.f)
 	return
 }
@@ -51,10 +59,17 @@ func newBufferWriter(f *os.File) *bufferWriter {
 }
 
 func (w *bufferWriter) Write(p []byte) (nn int, err error) {
+	if DisableBufio {
+		return w.f.Write(p)
+	}
 	return w.writer.Write(p)
 }
 
 func (w *bufferWriter) Sync() error {
+	if DisableBufio {
+		return w.f.Sync()
+	}
+
 	if err := w.writer.Flush(); err != nil { // this will greatly impact perf TODO
 		return err
 	}
@@ -62,9 +77,12 @@ func (w *bufferWriter) Sync() error {
 }
 
 func (w *bufferWriter) Close() error {
-	if err := w.writer.Flush(); err != nil {
-		return err
+	if !DisableBufio {
+		if err := w.writer.Flush(); err != nil {
+			return err
+		}
 	}
+
 	w.f.Sync()
 	return w.f.Close()
 }

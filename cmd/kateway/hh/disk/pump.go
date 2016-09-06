@@ -53,7 +53,7 @@ func (q *queue) pump() {
 					break
 				}
 
-				log.Debug("queue[%s] <%s>: %s", q.ident(), string(b.value), err)
+				log.Debug("queue[%s] {k:%s v:%s} %s", q.ident(), string(b.key), string(b.value), err)
 
 				// backoff
 				select {

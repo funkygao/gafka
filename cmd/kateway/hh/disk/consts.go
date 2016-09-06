@@ -20,5 +20,7 @@ const (
 )
 
 var (
+	DisableBufio = true
+
 	currentMagic = [2]byte{0, 0}
 )
