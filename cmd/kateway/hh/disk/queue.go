@@ -57,6 +57,8 @@ type queue struct {
 	// -1 means unlimited
 	maxSize int64
 
+	inflights sync2.AtomicInt64
+
 	purgeInterval time.Duration
 	maxAge        time.Duration
 
@@ -93,7 +95,7 @@ func (q *queue) Open() error {
 		return err
 	}
 
-	segments, err := q.loadSegments()
+	segments, err := q.loadSegments() // FIXME only load segments larger than cursor.SegmentID
 	if err != nil {
 		return err
 	}
@@ -150,6 +152,10 @@ func (q *queue) Close() error {
 	}
 	q.cursor = nil
 	return nil
+}
+
+func (q *queue) Inflights() int64 {
+	return q.inflights.Get()
 }
 
 // Remove removes all underlying file-based resources for the queue.
@@ -216,10 +222,16 @@ func (q *queue) Append(b *block) error {
 		}
 
 		q.tail = segment
-		return q.tail.Append(b)
+		err = q.tail.Append(b)
+		if err == nil {
+			q.inflights.Add(1)
+		}
+		return err
 	} else if err != nil {
 		return err
 	}
+
+	q.inflights.Add(1)
 	return nil
 }
 
@@ -290,6 +302,7 @@ func (q *queue) diskUsage() int64 {
 }
 
 // loadSegments loads all segments on disk
+// FIXME manage q.inflights counter while loading segments
 func (q *queue) loadSegments() (segments, error) {
 	segments := []*segment{}
 

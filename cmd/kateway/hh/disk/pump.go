@@ -44,6 +44,7 @@ func (q *queue) pump() {
 					log.Debug("queue[%s] flushed {P:%d O:%d}", q.ident(), partition, offset)
 					q.cursor.commitPosition()
 					okN++
+					q.inflights.Add(-1)
 					if okN%dumpPerBlocks == 0 {
 						if e := q.cursor.dump(); e != nil {
 							log.Error("queue[%s] dump: %s", q.ident(), e)

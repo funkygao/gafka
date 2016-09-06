@@ -66,9 +66,19 @@ func (this *Service) Stop() {
 	for _, q := range this.queues {
 		q.Close()
 	}
+	this.queues = make(map[clusterTopic]*queue)
 
 	timer.Stop()
 	this.closed = true
+}
+
+func (this *Service) Inflights() (n int64) {
+	this.rwmux.RLock()
+	for _, q := range this.queues {
+		n += q.Inflights()
+	}
+	this.rwmux.RUnlock()
+	return
 }
 
 func (this *Service) Append(cluster, topic string, key, value []byte) error {
@@ -76,7 +86,7 @@ func (this *Service) Append(cluster, topic string, key, value []byte) error {
 		return ErrNotOpen
 	}
 
-	b := &block{key: key, value: value}
+	b := &block{magic: currentMagic, key: key, value: value}
 	ct := clusterTopic{cluster: cluster, topic: topic}
 
 	this.rwmux.RLock()
