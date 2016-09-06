@@ -7,7 +7,7 @@ import (
 )
 
 type block struct {
-	magic byte
+	magic [2]byte
 	key   []byte
 	value []byte
 
@@ -15,7 +15,7 @@ type block struct {
 }
 
 func (b *block) size() int64 {
-	return int64(len(b.key) + len(b.value) + 8)
+	return int64(len(b.key) + len(b.value) + 9)
 }
 
 func (b *block) keyLen() uint32 {
@@ -27,6 +27,10 @@ func (b *block) valueLen() uint32 {
 }
 
 func (b *block) writeTo(w io.Writer) (err error) {
+	if err = writeBytes(w, b.magic[:]); err != nil {
+		return
+	}
+
 	if err = b.writeUint32(w, b.keyLen()); err != nil {
 		return
 	}
@@ -48,6 +52,15 @@ func (b *block) writeTo(w io.Writer) (err error) {
 }
 
 func (b *block) readFrom(r io.Reader, buf []byte) error {
+	if err := readBytes(r, b.rbuf[:2]); err != nil {
+		return err
+	}
+	for i := 0; i < len(currentMagic); i++ {
+		if b.rbuf[i] != currentMagic[i] {
+			return ErrSegmentCorrupt
+		}
+	}
+
 	keyLen, err := b.readUint32(r)
 	if err != nil {
 		return err

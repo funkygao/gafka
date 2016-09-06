@@ -5,8 +5,6 @@ import (
 )
 
 const (
-	currentMagic byte = 0
-
 	cursorFile = "cursor.dmp"
 
 	defaultSegmentSize = 10 << 20
@@ -19,4 +17,8 @@ const (
 	defaultMaxRetries    = 8
 	pollEofSleep         = time.Second
 	dumpPerBlocks        = 100
+)
+
+var (
+	currentMagic = [2]byte{0, 0}
 )
