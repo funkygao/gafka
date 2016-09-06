@@ -26,7 +26,12 @@ func (r *bufferReader) Close() error {
 }
 
 func (r *bufferReader) Seek(offset int64, whence int) (ret int64, err error) {
-	return r.f.Seek(offset, whence)
+	if ret, err = r.f.Seek(offset, whence); err != nil {
+		return
+	}
+
+	r.reader.Reset(r.f)
+	return
 }
 
 func (r *bufferReader) Name() string {
