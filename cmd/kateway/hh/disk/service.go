@@ -44,14 +44,18 @@ func (this *Service) Name() string {
 }
 
 func (this *Service) Start() (err error) {
-	if err = mkdirIfNotExist(this.cfg.Dir); err != nil {
-		return
+	for _, dir := range this.cfg.Dirs {
+		if err = mkdirIfNotExist(dir); err != nil {
+			return
+		}
+
+		if err = this.loadQueues(dir, true); err != nil {
+			return
+		}
+
 	}
 
-	if err = this.loadQueues(this.cfg.Dir, true); err == nil {
-		this.closed = false
-	}
-
+	this.closed = false
 	return
 }
 
@@ -134,9 +138,11 @@ func (this *Service) FlushInflights() {
 		return
 	}
 
-	if err := this.loadQueues(this.cfg.Dir, false); err != nil {
-		log.Error(err)
-		return
+	for _, dir := range this.cfg.Dirs {
+		if err := this.loadQueues(dir, false); err != nil {
+			log.Error("hh[%s] flush inflights %s: %s", this.Name(), dir, err)
+			return
+		}
 	}
 
 	var (
@@ -195,11 +201,13 @@ func (this *Service) loadQueues(dir string, startQueues bool) error {
 }
 
 func (this *Service) createAndOpenQueue(ct clusterTopic, start bool) error {
-	if err := os.Mkdir(ct.ClusterDir(this.cfg.Dir), 0700); err != nil && !os.IsExist(err) {
+	dir := this.nextDir()
+
+	if err := os.MkdirAll(ct.ClusterDir(dir), 0700); err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	this.queues[ct] = newQueue(ct, ct.TopicDir(this.cfg.Dir), -1, this.cfg.PurgeInterval, this.cfg.MaxAge)
+	this.queues[ct] = newQueue(ct, ct.TopicDir(dir), -1, this.cfg.PurgeInterval, this.cfg.MaxAge)
 	if err := this.queues[ct].Open(); err != nil {
 		return err
 	}
@@ -208,4 +216,9 @@ func (this *Service) createAndOpenQueue(ct clusterTopic, start bool) error {
 	}
 
 	return nil
+}
+
+func (this *Service) nextDir() string {
+	// find least loaded dir
+	return this.cfg.Dirs[0] // TODO
 }
