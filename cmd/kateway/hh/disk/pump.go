@@ -36,6 +36,7 @@ func (q *queue) pump() {
 		switch err {
 		case nil:
 			q.emptyInflight.Set(0)
+			q.inflights.Add(1)
 
 			for retries = 0; retries < defaultMaxRetries; retries++ {
 				partition, offset, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
@@ -52,6 +53,12 @@ func (q *queue) pump() {
 							log.Error("queue[%s] dump: %s", q.ident(), e)
 						}
 					}
+					break
+				} else if err == store.ErrInvalidTopic {
+					q.cursor.commitPosition()
+					failN++
+					q.inflights.Add(-1)
+					err = nil // move ahead without retry
 					break
 				}
 

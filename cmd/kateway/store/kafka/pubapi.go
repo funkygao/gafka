@@ -76,10 +76,11 @@ func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 	// read tcp 10.209.36.33:50607->10.209.18.16:11005: i/o timeout
 	// dial tcp 10.209.18.65:11005: getsockopt: connection refused
 
-	case sarama.ErrUnknownTopicOrPartition:
+	case sarama.ErrUnknownTopicOrPartition, sarama.ErrInvalidTopic:
 		// this conn is still valid
 		pool.breaker.Succeed()
 		producer.Recycle()
+		err = store.ErrInvalidTopic
 		return
 
 	case breaker.ErrBreakerOpen, sarama.ErrOutOfBrokers:

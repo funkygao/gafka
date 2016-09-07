@@ -43,6 +43,13 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 						}
 					}
 					break
+				} else if err == store.ErrInvalidTopic {
+					q.cursor.commitPosition()
+					q.inflights.Add(-1)
+					log.Warn("queue[%s] {k:%s v:%s}: %s", q.ident(), string(b.key), string(b.value), err)
+
+					err = nil // move ahead without retry
+					break
 				} else {
 					log.Debug("queue[%s] {k:%s v:%s}: %s", q.ident(), string(b.key), string(b.value), err)
 
