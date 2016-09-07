@@ -112,7 +112,7 @@ func ParseFlags() {
 	flag.StringVar(&Options.DebugHttpAddr, "debughttp", "", "debug http bind addr")
 	flag.StringVar(&Options.Store, "store", "kafka", "message underlying store")
 	flag.StringVar(&Options.HintedHandoffType, "hhtype", "disk", "underlying hinted handoff")
-	flag.StringVar(&Options.HintedHandoffDir, "hhdir", "hhdata", "hinted handoff dirs seperated by comma")
+	flag.StringVar(&Options.HintedHandoffDir, "hhdirs", "hhdata", "hinted handoff dirs seperated by comma")
 	flag.BoolVar(&Options.FlushHintedOffOnly, "hhflush", false, "flush hinted handoff and exit")
 	flag.StringVar(&Options.JobStore, "jstore", "mysql", "job underlying store")
 	flag.StringVar(&Options.DummyCluster, "dummycluster", "me", "dummy store's cluster name")
