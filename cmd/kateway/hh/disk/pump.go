@@ -13,6 +13,8 @@ func (q *queue) pump() {
 		q.wg.Done()
 	}()
 
+	log.Trace("queue[%s] start pump...", q.ident())
+
 	var (
 		b          block
 		err        error

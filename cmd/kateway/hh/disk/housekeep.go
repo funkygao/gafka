@@ -12,6 +12,8 @@ func (q *queue) housekeeping() {
 		q.wg.Done()
 	}()
 
+	log.Trace("queue[%s] start housekeeping...", q.ident())
+
 	purgeTick := time.NewTicker(q.purgeInterval)
 	defer purgeTick.Stop()
 
