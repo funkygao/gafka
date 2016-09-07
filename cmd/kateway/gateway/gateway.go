@@ -166,6 +166,7 @@ func New(id string) *Gateway {
 			panic("invalid job store")
 		}
 
+		// always create hh so that we can turn on/off it online
 		switch Options.HintedHandoffType {
 		case "disk":
 			cfg := hhdisk.DefaultConfig()
@@ -179,6 +180,21 @@ func New(id string) *Gateway {
 			}
 			hh.Default = hhdisk.New(cfg)
 
+		default:
+			panic("unkown hinted handoff type")
+		}
+
+		if Options.FlushHintedOffOnly {
+			meta.Default.Start()
+			log.Trace("meta store[%s] started", meta.Default.Name())
+
+			if err = store.DefaultPubStore.Start(); err != nil {
+				panic(err)
+			}
+			log.Trace("pub store[%s] started", store.DefaultPubStore.Name())
+
+			hh.Default.FlushInflights()
+			os.Exit(0)
 		}
 	}
 	if Options.SubHttpAddr != "" || Options.SubHttpsAddr != "" {
@@ -382,8 +398,6 @@ func (this *Gateway) ServeForever() {
 		if hh.Default != nil {
 			log.Trace("hh[%s] stop...", hh.Default.Name())
 			hh.Default.Stop()
-			log.Trace("hh[%s] flush inflights...", hh.Default.Name())
-			hh.Default.FlushInflights()
 		}
 
 		if Options.EnableAccessLog {

@@ -43,6 +43,7 @@ var (
 		DisableMetrics          bool
 		EnableHintedHandoff     bool
 		HintedHandoffBufio      bool
+		FlushHintedOffOnly      bool
 		AuditPub                bool
 		AuditSub                bool
 		EnableGzip              bool
@@ -112,6 +113,7 @@ func ParseFlags() {
 	flag.StringVar(&Options.Store, "store", "kafka", "message underlying store")
 	flag.StringVar(&Options.HintedHandoffType, "hhtype", "disk", "underlying hinted handoff")
 	flag.StringVar(&Options.HintedHandoffDir, "hhdir", "hhdata", "hinted handoff dirs seperated by comma")
+	flag.BoolVar(&Options.FlushHintedOffOnly, "hhflush", false, "flush hinted handoff and exit")
 	flag.StringVar(&Options.JobStore, "jstore", "mysql", "job underlying store")
 	flag.StringVar(&Options.DummyCluster, "dummycluster", "me", "dummy store's cluster name")
 	flag.StringVar(&Options.ManagerStore, "mstore", "mysql", "store integration with manager")
