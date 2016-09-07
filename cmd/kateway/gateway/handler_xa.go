@@ -1,4 +1,6 @@
 /*
+In XA protocol, kateway acts as a RM.
+
 XA usage example
 ================
 

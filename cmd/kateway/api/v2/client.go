@@ -1,4 +1,4 @@
-package api
+package pubsub
 
 type Client struct {
 }
