@@ -2,6 +2,7 @@ package disk
 
 import (
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"sync"
@@ -109,7 +110,7 @@ func (this *Service) Append(cluster, topic string, key, value []byte) error {
 		return q.Append(b)
 	}
 
-	if err := this.createAndOpenQueue(ct, true); err != nil {
+	if err := this.createAndOpenQueue(this.nextBaseDir(), ct, true); err != nil {
 		return err
 	}
 
@@ -191,7 +192,7 @@ func (this *Service) loadQueues(dir string, startQueues bool) error {
 			}
 
 			ct := clusterTopic{cluster: cluster.Name(), topic: topic.Name()}
-			if err = this.createAndOpenQueue(ct, startQueues); err != nil {
+			if err = this.createAndOpenQueue(dir, ct, startQueues); err != nil {
 				return err
 			}
 		}
@@ -200,14 +201,12 @@ func (this *Service) loadQueues(dir string, startQueues bool) error {
 	return nil
 }
 
-func (this *Service) createAndOpenQueue(ct clusterTopic, start bool) error {
-	dir := this.nextDir()
-
-	if err := os.MkdirAll(ct.ClusterDir(dir), 0700); err != nil && !os.IsExist(err) {
+func (this *Service) createAndOpenQueue(baseDir string, ct clusterTopic, start bool) error {
+	if err := os.MkdirAll(ct.ClusterDir(baseDir), 0700); err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	this.queues[ct] = newQueue(ct, ct.TopicDir(dir), -1, this.cfg.PurgeInterval, this.cfg.MaxAge)
+	this.queues[ct] = newQueue(baseDir, ct, defaultMaxQueueSize, this.cfg.PurgeInterval, this.cfg.MaxAge)
 	if err := this.queues[ct].Open(); err != nil {
 		return err
 	}
@@ -218,7 +217,34 @@ func (this *Service) createAndOpenQueue(ct clusterTopic, start bool) error {
 	return nil
 }
 
-func (this *Service) nextDir() string {
+// nextDir choose the next directory in which to create a queue.
+// Currently this is done by calculating the number of clusters in
+// each directory and then choosing the dir with fewest clusters.
+func (this *Service) nextBaseDir() string {
 	// find least loaded dir
-	return this.cfg.Dirs[0] // TODO
+	if len(this.cfg.Dirs) == 1 {
+		return this.cfg.Dirs[0]
+	}
+
+	layout := make(map[string]int64, len(this.queues))
+	for _, q := range this.queues {
+		layout[q.baseDir]++
+	}
+
+	var (
+		min       = int64(math.MaxInt64)
+		dirChosen = this.cfg.Dirs[0]
+	)
+	for _, dir := range this.cfg.Dirs {
+		if n, present := layout[dir]; !present {
+			// empty dir always has fewest clusters
+			return dir
+		} else if n < min {
+			min = n
+			dirChosen = dir
+		}
+
+	}
+
+	return dirChosen
 }

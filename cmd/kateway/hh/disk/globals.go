@@ -16,6 +16,7 @@ const (
 	defaultMaxAge        = time.Hour * 24 * 7
 	initialBackoff       = time.Second
 	maxBackoff           = time.Second * 31
+	defaultMaxQueueSize  = -1 // unlimited
 	defaultMaxRetries    = 5
 	flusherMaxRetries    = 3
 	pollSleep            = time.Second
