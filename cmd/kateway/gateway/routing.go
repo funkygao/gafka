@@ -67,7 +67,7 @@ func (this *Gateway) buildRouting() {
 		this.pubServer.Router().POST("/v1/jobs/:topic/:ver", m(this.pubServer.addJobHandler))
 		this.pubServer.Router().DELETE("/v1/jobs/:topic/:ver", m(this.pubServer.deleteJobHandler))
 
-		// XA related
+		// pubServer acts as a XA compliant RM(resource manager)
 		this.pubServer.Router().POST("/v1/xa/prepare/:topic/:ver", m(this.pubServer.xa_prepare))
 		this.pubServer.Router().PUT("/v1/xa/rollback", m(this.pubServer.xa_commit))
 		this.pubServer.Router().PUT("/v1/xa/abort", m(this.pubServer.xa_rollback))
