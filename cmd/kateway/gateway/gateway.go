@@ -169,12 +169,16 @@ func New(id string) *Gateway {
 		switch Options.HintedHandoffType {
 		case "disk":
 			cfg := hhdisk.DefaultConfig()
-			cfg.Dir = Options.HintedHandoffDir
+			cfg.Dirs = strings.Split(Options.HintedHandoffDir, ",")
+			if err := cfg.Validate(); err != nil {
+				panic(err)
+			}
 			hhdisk.DisableBufio = !Options.HintedHandoffBufio
 			if Options.AuditPub {
 				hhdisk.Auditor = &this.pubServer.auditor
 			}
 			hh.Default = hhdisk.New(cfg)
+
 		}
 	}
 	if Options.SubHttpAddr != "" || Options.SubHttpsAddr != "" {

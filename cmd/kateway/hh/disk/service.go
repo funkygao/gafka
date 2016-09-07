@@ -2,6 +2,7 @@ package disk
 
 import (
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"sync"
@@ -23,9 +24,9 @@ type Service struct {
 	// └── cluster2
 	//     ├── topic1
 	//     └── topic2
-	//         ├── 1
-	//         ├── 2
-	//         ├── 3
+	//         ├── 00000000000000000001
+	//         ├── 00000000000000000002
+	//         ├── 00000000000000000003
 	//         └── cursor.dmp
 	queues map[clusterTopic]*queue
 }
@@ -44,14 +45,18 @@ func (this *Service) Name() string {
 }
 
 func (this *Service) Start() (err error) {
-	if err = mkdirIfNotExist(this.cfg.Dir); err != nil {
-		return
+	for _, dir := range this.cfg.Dirs {
+		if err = mkdirIfNotExist(dir); err != nil {
+			return
+		}
+
+		if err = this.loadQueues(dir, true); err != nil {
+			return
+		}
+
 	}
 
-	if err = this.loadQueues(this.cfg.Dir, true); err == nil {
-		this.closed = false
-	}
-
+	this.closed = false
 	return
 }
 
@@ -105,7 +110,7 @@ func (this *Service) Append(cluster, topic string, key, value []byte) error {
 		return q.Append(b)
 	}
 
-	if err := this.createAndOpenQueue(ct, true); err != nil {
+	if err := this.createAndOpenQueue(this.nextBaseDir(), ct, true); err != nil {
 		return err
 	}
 
@@ -134,9 +139,11 @@ func (this *Service) FlushInflights() {
 		return
 	}
 
-	if err := this.loadQueues(this.cfg.Dir, false); err != nil {
-		log.Error(err)
-		return
+	for _, dir := range this.cfg.Dirs {
+		if err := this.loadQueues(dir, false); err != nil {
+			log.Error("hh[%s] flush inflights %s: %s", this.Name(), dir, err)
+			return
+		}
 	}
 
 	var (
@@ -185,7 +192,7 @@ func (this *Service) loadQueues(dir string, startQueues bool) error {
 			}
 
 			ct := clusterTopic{cluster: cluster.Name(), topic: topic.Name()}
-			if err = this.createAndOpenQueue(ct, startQueues); err != nil {
+			if err = this.createAndOpenQueue(dir, ct, startQueues); err != nil {
 				return err
 			}
 		}
@@ -194,12 +201,12 @@ func (this *Service) loadQueues(dir string, startQueues bool) error {
 	return nil
 }
 
-func (this *Service) createAndOpenQueue(ct clusterTopic, start bool) error {
-	if err := os.Mkdir(ct.ClusterDir(this.cfg.Dir), 0700); err != nil && !os.IsExist(err) {
+func (this *Service) createAndOpenQueue(baseDir string, ct clusterTopic, start bool) error {
+	if err := os.MkdirAll(ct.ClusterDir(baseDir), 0700); err != nil && !os.IsExist(err) {
 		return err
 	}
 
-	this.queues[ct] = newQueue(ct, ct.TopicDir(this.cfg.Dir), -1, this.cfg.PurgeInterval, this.cfg.MaxAge)
+	this.queues[ct] = newQueue(baseDir, ct, defaultMaxQueueSize, this.cfg.PurgeInterval, this.cfg.MaxAge)
 	if err := this.queues[ct].Open(); err != nil {
 		return err
 	}
@@ -208,4 +215,36 @@ func (this *Service) createAndOpenQueue(ct clusterTopic, start bool) error {
 	}
 
 	return nil
+}
+
+// nextDir choose the next directory in which to create a queue.
+// Currently this is done by calculating the number of clusters in
+// each directory and then choosing the dir with fewest clusters.
+func (this *Service) nextBaseDir() string {
+	// find least loaded dir
+	if len(this.cfg.Dirs) == 1 {
+		return this.cfg.Dirs[0]
+	}
+
+	layout := make(map[string]int64, len(this.queues))
+	for _, q := range this.queues {
+		layout[q.baseDir]++
+	}
+
+	var (
+		min       = int64(math.MaxInt64)
+		dirChosen = this.cfg.Dirs[0]
+	)
+	for _, dir := range this.cfg.Dirs {
+		if n, present := layout[dir]; !present {
+			// empty dir always has fewest clusters
+			return dir
+		} else if n < min {
+			min = n
+			dirChosen = dir
+		}
+
+	}
+
+	return dirChosen
 }

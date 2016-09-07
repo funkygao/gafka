@@ -11,6 +11,6 @@ func mkdirIfNotExist(dir string) (err error) {
 		return
 	}
 
-	err = os.Mkdir(dir, 0700)
+	err = os.MkdirAll(dir, 0700)
 	return
 }

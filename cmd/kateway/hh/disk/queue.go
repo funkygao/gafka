@@ -47,6 +47,7 @@ type queue struct {
 	mu sync.RWMutex
 	wg sync.WaitGroup
 
+	baseDir      string // the slot this queue is using
 	dir          string // Directory to create segments
 	clusterTopic clusterTopic
 
@@ -72,10 +73,11 @@ type queue struct {
 
 // newQueue create a queue that will store segments in dir and that will
 // consume more than maxSize on disk.
-func newQueue(ct clusterTopic, dir string, maxSize int64, purgeInterval, maxAge time.Duration) *queue {
+func newQueue(baseDir string, ct clusterTopic, maxSize int64, purgeInterval, maxAge time.Duration) *queue {
 	q := &queue{
 		clusterTopic:   ct,
-		dir:            dir,
+		baseDir:        baseDir,
+		dir:            ct.TopicDir(baseDir),
 		maxSegmentSize: defaultSegmentSize,
 		maxSize:        maxSize,
 		purgeInterval:  purgeInterval,
@@ -409,11 +411,6 @@ func (q *queue) trimHead() (err error) {
 
 	q.head = q.segments[0]
 	return
-}
-
-func (q *queue) nextDir() string {
-	// find least loaded dir
-	return ""
 }
 
 // skipCursorSegment skip the current corrupted cursor segment and

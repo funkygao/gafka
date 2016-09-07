@@ -44,7 +44,7 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 					}
 					break
 				} else {
-					log.Debug("queue[%s] <%s>: %s", q.ident(), string(b.value), err)
+					log.Debug("queue[%s] {k:%s v:%s}: %s", q.ident(), string(b.key), string(b.value), err)
 
 					time.Sleep(backoff)
 					backoff *= 2
@@ -62,7 +62,7 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 
 			if err = q.Rollback(&b); err != nil {
 				// should never happen
-				log.Error("queue[%s] %d <%s>: %s", q.ident(), okN+1, string(b.value), err)
+				log.Error("queue[%s] {k:%s v:%s}: %s", q.ident(), string(b.key), string(b.value), err)
 				errCh <- err
 			}
 			return

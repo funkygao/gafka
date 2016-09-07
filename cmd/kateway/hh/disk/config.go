@@ -6,7 +6,7 @@ import (
 )
 
 type Config struct {
-	Dir           string // TODO []string to load balance disk IO
+	Dirs          []string
 	PurgeInterval time.Duration
 	MaxAge        time.Duration
 }
@@ -19,8 +19,8 @@ func DefaultConfig() *Config {
 }
 
 func (this *Config) Validate() error {
-	if this.Dir == "" {
-		return errors.New("Dir must be specified")
+	if len(this.Dirs) == 0 {
+		return errors.New("hh Dirs must be specified")
 	}
 
 	return nil

@@ -161,7 +161,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
-- [ ] IO load balance for hinted handoff
+- [X] IO load balance for hinted handoff
 - [ ] metrics for hh
 - [ ] swagger
 - [ ] reject Sub when the group is being used for another topic
