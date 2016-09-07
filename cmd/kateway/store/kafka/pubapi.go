@@ -71,7 +71,7 @@ func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 		return
 	}
 
-	log.Warn("cluster[%s] topic:%s %v", cluster, topic, err)
+	log.Error("cluster[%s] topic:%s %v", cluster, topic, err)
 	switch err {
 	// read tcp 10.209.36.33:50607->10.209.18.16:11005: i/o timeout
 	// dial tcp 10.209.18.65:11005: getsockopt: connection refused
