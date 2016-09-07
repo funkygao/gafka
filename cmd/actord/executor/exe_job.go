@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/funkygao/fae/servant/mysql"
+	"github.com/funkygao/gafka/cmd/kateway/hh"
 	"github.com/funkygao/gafka/cmd/kateway/job"
 	jm "github.com/funkygao/gafka/cmd/kateway/job/mysql"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
@@ -147,6 +148,10 @@ func (this *JobExecutor) handleDueJobs(wg *sync.WaitGroup) {
 			log.Debug("%s land %s", this.ident, item)
 			_, _, err = store.DefaultPubStore.SyncPub(this.cluster, this.topic, nil, item.Payload)
 			if err != nil {
+				err = hh.Default.Append(this.cluster, this.topic, nil, item.Payload)
+			}
+			if err != nil {
+				// pub fails and hinted handoff also fails: reinject job back to mysql
 				log.Error("%s: %s", this.ident, err)
 				this.mc.Exec(jm.AppPool, this.table, this.aid, sqlReinject,
 					item.JobId, item.Payload, item.Ctime, item.DueTime)

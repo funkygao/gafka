@@ -14,6 +14,8 @@ import (
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/actord/controller"
+	"github.com/funkygao/gafka/cmd/kateway/hh"
+	"github.com/funkygao/gafka/cmd/kateway/hh/disk"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/cmd/kateway/meta/zkmeta"
 	"github.com/funkygao/gafka/cmd/kateway/store"
@@ -39,6 +41,7 @@ func init() {
 	flag.StringVar(&Options.ManagerType, "man", "dummy", "manager type <dummy|mysql>")
 	flag.StringVar(&Options.InfluxDbname, "influxdb", "", "influxdb db name")
 	flag.StringVar(&Options.ListenAddr, "addr", ":9065", "monitor http server addr")
+	flag.StringVar(&Options.HintedHandoffDir, "hhdirs", "hh", "hinted handoff dirs seperated by comma")
 	flag.Parse()
 
 	if Options.ShowVersion {
@@ -106,6 +109,18 @@ func Main() {
 	c := controller.New(zkzone, Options.ListenAddr, Options.ManagerType)
 	stopZkWatcher := make(chan struct{})
 	go watchZk(c, zkzone, stopZkWatcher)
+
+	cfg := disk.DefaultConfig()
+	cfg.Dirs = strings.Split(Options.HintedHandoffDir, ",")
+	if err := cfg.Validate(); err != nil {
+		panic(err)
+	}
+	disk.Auditor = c.Auditor()
+	hh.Default = disk.New(cfg)
+	if err = hh.Default.Start(); err != nil {
+		panic(err)
+	}
+	log.Trace("hh[%s] started", hh.Default.Name())
 
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
 		log.Info("actord[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))

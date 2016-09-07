@@ -23,6 +23,7 @@ type Controller interface {
 	Stop()
 
 	Id() string
+	Auditor() *log.Logger
 }
 
 type controller struct {
@@ -124,6 +125,10 @@ func (this *controller) Stop() {
 
 func (this *controller) Id() string {
 	return this.ident
+}
+
+func (this *controller) Auditor() *log.Logger {
+	return &this.auditor
 }
 
 func (this *controller) Bytes() []byte {
