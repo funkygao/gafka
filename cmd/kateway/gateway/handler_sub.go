@@ -118,11 +118,9 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 
 	shadow = query.Get("q")
 
-	if Options.AuditSub {
-		this.auditor.Trace("sub[%s] %s(%s): {app:%s q:%s topic:%s ver:%s group:%s batch:%d ack:%s partition:%s offset:%s UA:%s}",
-			myAppid, r.RemoteAddr, realIp, hisAppid, shadow, topic, ver,
-			group, limit, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"))
-	}
+	log.Debug("sub[%s] %s(%s): {%s.%s.%s q:%s group:%s batch:%d ack:%s partition:%s offset:%s UA:%s}",
+		myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, shadow,
+		group, limit, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"))
 
 	if !Options.DisableMetrics {
 		this.subMetrics.SubQps.Mark(1)
@@ -300,8 +298,8 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 				return ErrClientKilled
 			}
 
-			if Options.Debug {
-				log.Debug("sub[%s] %s(%s): {G:%s T:%s/%d O:%d}",
+			if Options.AuditSub {
+				this.auditor.Trace("sub[%s] %s(%s): {G:%s T:%s/%d O:%d}",
 					myAppid, r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset)
 			}
 
