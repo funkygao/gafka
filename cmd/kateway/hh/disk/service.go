@@ -23,9 +23,9 @@ type Service struct {
 	// └── cluster2
 	//     ├── topic1
 	//     └── topic2
-	//         ├── 1
-	//         ├── 2
-	//         ├── 3
+	//         ├── 00000000000000000001
+	//         ├── 00000000000000000002
+	//         ├── 00000000000000000003
 	//         └── cursor.dmp
 	queues map[clusterTopic]*queue
 }
