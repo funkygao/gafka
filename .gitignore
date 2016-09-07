@@ -58,3 +58,5 @@ audit/
 cpuprof
 prof.mem
 access_log*
+cmd/kateway/hhdata/
+cmd/kateway/hh/disk/hh/

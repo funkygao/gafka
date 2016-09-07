@@ -67,7 +67,10 @@ func (this *Gateway) buildRouting() {
 		this.pubServer.Router().POST("/v1/jobs/:topic/:ver", m(this.pubServer.addJobHandler))
 		this.pubServer.Router().DELETE("/v1/jobs/:topic/:ver", m(this.pubServer.deleteJobHandler))
 
-		this.pubServer.Router().GET("/v1/auth", m(this.pubServer.authHandler))
+		// XA related
+		this.pubServer.Router().POST("/v1/xa/prepare/:topic/:ver", m(this.pubServer.xa_prepare))
+		this.pubServer.Router().PUT("/v1/xa/rollback", m(this.pubServer.xa_commit))
+		this.pubServer.Router().PUT("/v1/xa/abort", m(this.pubServer.xa_rollback))
 
 		// TODO deprecated
 		this.pubServer.Router().POST("/topics/:topic/:ver", m(this.pubServer.pubHandler))
