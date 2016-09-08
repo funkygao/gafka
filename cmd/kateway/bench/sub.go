@@ -121,7 +121,7 @@ func sub(id int) {
 			}
 
 			if i%step == 0 {
-				log.Println(statusCode, string(msg))
+				log.Println(id, statusCode, string(msg))
 			}
 
 			if sleep > 0 {
