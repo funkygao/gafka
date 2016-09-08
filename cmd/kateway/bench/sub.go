@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/api/v1"
@@ -16,6 +17,7 @@ import (
 var (
 	addr  string
 	n     int
+	c     int
 	appid string
 	group string
 	topic string
@@ -33,6 +35,7 @@ func init() {
 	flag.IntVar(&step, "step", 1, "display progress step")
 	flag.StringVar(&mode, "mode", "subx", "sub mode")
 	flag.StringVar(&topic, "t", "foobar", "topic to sub")
+	flag.IntVar(&c, "c", 1, "concurrent to simulate race condition")
 	flag.StringVar(&tag, "tag", "", "tag filter")
 	flag.DurationVar(&sleep, "sleep", 0, "sleep between pub")
 	flag.IntVar(&n, "n", 1000000, "run sub how many times")
@@ -42,6 +45,21 @@ func init() {
 }
 
 func main() {
+	var wg sync.WaitGroup
+
+	for i := 0; i < c; i++ {
+		wg.Add(1)
+
+		go func(id int) {
+			sub(id)
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
+}
+
+func sub(id int) {
 	cf := api.DefaultConfig("app2", "mysecret")
 	cf.Debug = true
 	cf.Sub.Endpoint = addr
