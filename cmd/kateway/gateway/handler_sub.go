@@ -210,7 +210,9 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"), err)
 
-		writeServerError(w, err.Error())
+		if err != ErrClientGone {
+			writeServerError(w, err.Error())
+		}
 
 		if err = fetcher.Close(); err != nil {
 			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
