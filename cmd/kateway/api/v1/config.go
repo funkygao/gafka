@@ -33,7 +33,7 @@ func DefaultConfig(appid, secret string) *Config {
 	cf := &Config{
 		AppId:     appid,
 		Secret:    secret,
-		Timeout:   time.Second * 120, // FIXME
+		Timeout:   time.Minute,
 		KeepAlive: time.Minute,
 		Debug:     false,
 	}
