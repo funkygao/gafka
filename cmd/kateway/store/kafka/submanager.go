@@ -96,15 +96,19 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, rea
 // 2. websocket/sub handler, conn closed or error occurs, explicitly kill the client
 func (this *subManager) killClient(remoteAddr string) (err error) {
 	this.clientMapLock.Lock()
-	defer this.clientMapLock.Unlock()
-
-	if cg, present := this.clientMap[remoteAddr]; present {
-		err = cg.Close() // will flush offset, must wait, otherwise offset is not guanranteed
-		if err != nil {
-			log.Error("cg[%s] close %s: %v", cg.Name(), remoteAddr, err)
-		}
-
+	cg, present := this.clientMap[remoteAddr]
+	if present {
 		delete(this.clientMap, remoteAddr)
+	}
+	this.clientMapLock.Unlock()
+
+	if !present {
+		return
+	}
+
+	if err = cg.Close(); err != nil {
+		// will flush offset, must wait, otherwise offset is not guanranteed
+		log.Error("cg[%s] close %s: %v", cg.Name(), remoteAddr, err)
 	}
 
 	return
