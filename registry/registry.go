@@ -1,6 +1,8 @@
 package registry
 
 type Backend interface {
+	Registered() (bool, error)
+
 	Register() error
 
 	Deregister() error

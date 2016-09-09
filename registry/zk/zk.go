@@ -44,6 +44,11 @@ func (this *zkreg) Register() error {
 	return err
 }
 
+func (this *zkreg) Registered() (ok bool, err error) {
+	ok, _, err = this.zkzone.Conn().Exists(this.mypath())
+	return
+}
+
 func (this *zkreg) Deregister() error {
 	close(this.shutdownCh)
 
