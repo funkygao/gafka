@@ -200,7 +200,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 
 	var gz *gzip.Writer
 	w, gz = gzipWriter(w, r)
-	err = this.pumpMessages(w, r, fetcher, limit, myAppid, hisAppid, topic, ver, group, delayedAck)
+	err = this.pumpMessages(w, r, realIp, fetcher, limit, myAppid, hisAppid, topic, ver, group, delayedAck)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s} %v",
@@ -210,6 +210,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		if err != ErrClientGone {
 			writeServerError(w, err.Error())
 		}
+		// else if ErrTooManyConsumers client bad request
 
 		if err = fetcher.Close(); err != nil {
 			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
@@ -222,7 +223,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	}
 }
 
-func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
+func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request, realIp string,
 	fetcher store.Fetcher, limit int, myAppid, hisAppid, topic, ver, group string, delayedAck bool) error {
 	cn, ok := w.(http.CloseNotifier)
 	if !ok {
@@ -233,7 +234,6 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request,
 		metaBuf       []byte = nil
 		n                    = 0
 		idleTimeout          = Options.SubTimeout
-		realIp               = getHttpRemoteIp(r)
 		chunkedEver          = false
 		tagConditions        = make(map[string]struct{})
 		clientGoneCh         = cn.CloseNotify()
