@@ -419,11 +419,11 @@ func (this *Gateway) ServeForever() {
 
 		if store.DefaultPubStore != nil {
 			log.Trace("pub store[%s] stop...", store.DefaultPubStore.Name())
-			go store.DefaultPubStore.Stop()
+			store.DefaultPubStore.Stop()
 		}
 		if store.DefaultSubStore != nil {
 			log.Trace("sub store[%s] stop...", store.DefaultSubStore.Name())
-			go store.DefaultSubStore.Stop()
+			store.DefaultSubStore.Stop()
 		}
 		if job.Default != nil {
 			job.Default.Stop()
