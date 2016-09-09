@@ -36,6 +36,7 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, rea
 
 	if !permitStandby {
 		// ensure concurrent sub threads didn't exceed partition count
+		// the 1st barrier, consumer group is the final barrier
 		onlineN := meta.Default.OnlineConsumersCount(cluster, topic, group)
 		partitionN := len(meta.Default.TopicPartitions(cluster, topic))
 		if partitionN > 0 && onlineN >= partitionN {
@@ -44,8 +45,19 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, rea
 		}
 	}
 
+	this.clientMapLock.Lock()
+	defer this.clientMapLock.Unlock()
+
+	// double check lock
+	cg, present = this.clientMap[remoteAddr]
+	if present {
+		return
+	}
+
 	// cache miss, create the consumer group for this client
 	cf := consumergroup.NewConfig()
+	cf.PermitStandby = permitStandby
+
 	cf.Net.DialTimeout = time.Second * 10
 	cf.Net.WriteTimeout = time.Second * 10
 	cf.Net.ReadTimeout = time.Second * 10
@@ -71,14 +83,6 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, rea
 	default:
 		cf.Offsets.ResetOffsets = false
 		cf.Offsets.Initial = sarama.OffsetOldest
-	}
-
-	// double check lock
-	this.clientMapLock.Lock()
-	defer this.clientMapLock.Unlock()
-	cg, present = this.clientMap[remoteAddr]
-	if present {
-		return
 	}
 
 	// runs in serial
