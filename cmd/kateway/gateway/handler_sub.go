@@ -202,7 +202,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	w, gz = gzipWriter(w, r)
 	err = this.pumpMessages(w, r, fetcher, limit, myAppid, hisAppid, topic, ver, group, delayedAck)
 	if gz != nil {
-		gz.Close()
+		defer gz.Close()
 	}
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
