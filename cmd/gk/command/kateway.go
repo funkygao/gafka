@@ -38,6 +38,7 @@ type Kateway struct {
 	visualLog    string
 	checkup      bool
 	versionOnly  bool
+	showZkNodes  bool
 }
 
 func (this *Kateway) Run(args []string) (exitCode int) {
@@ -53,6 +54,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.versionOnly, "ver", false, "")
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "", "")
 	cmdFlags.StringVar(&this.visualLog, "visualog", "", "")
+	cmdFlags.BoolVar(&this.showZkNodes, "zk", false, "")
 	cmdFlags.BoolVar(&this.checkup, "checkup", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
@@ -147,6 +149,16 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 		zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 		this.runCheckup(zkzone)
+		return
+	}
+
+	if this.showZkNodes {
+		this.Ui.Output(fmt.Sprintf(`%s pubsub manager db dsn
+%s job db cluster config
+%s turn off webhook dir`,
+			color.Green("%-50s", zk.KatewayMysqlPath),
+			color.Green("%-50s", zk.PubsubJobConfig),
+			color.Green("%-50s", zk.PubsubWebhooksOff)))
 		return
 	}
 
@@ -452,6 +464,9 @@ Options:
 
     -ver
       Display kateway version only
+
+	-zk
+	  Display kateway zk config nodes and exit
 
     -checkup
       Checkup for online kateway instances
