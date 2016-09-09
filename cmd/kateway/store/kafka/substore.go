@@ -9,6 +9,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/kafka-cg/consumergroup"
 	log "github.com/funkygao/log4go"
 )
 
@@ -85,7 +86,7 @@ func (this *subStore) Fetch(cluster, topic, group, remoteAddr, realIp,
 
 func (this *subStore) IsSystemError(err error) bool {
 	switch err {
-	case store.ErrTooManyConsumers:
+	case consumergroup.ErrTooManyConsumers, store.ErrTooManyConsumers:
 		return false
 
 	default:
