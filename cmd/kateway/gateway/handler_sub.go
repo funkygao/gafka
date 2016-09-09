@@ -211,10 +211,15 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			group, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"), err)
 
 		if err != ErrClientGone {
-			writeServerError(w, err.Error())
+			if store.DefaultSubStore.IsSystemError(err) {
+				writeServerError(w, err.Error())
+			} else {
+				this.subMetrics.ClientError.Mark(1)
+				writeBadRequest(w, err.Error())
+			}
 		}
-		// else if ErrTooManyConsumers client bad request
 
+		// fetch.Close might be called by subServer.closedConnCh
 		if err = fetcher.Close(); err != nil {
 			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
 				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group, err)
