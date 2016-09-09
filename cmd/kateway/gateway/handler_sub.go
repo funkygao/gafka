@@ -167,6 +167,8 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
 		myAppid+"."+group, r.RemoteAddr, realIp, reset, Options.PermitStandbySub)
 	if err != nil {
+		// e,g. kafka was totally shutdown
+		// e,g. too many consumers for the same group
 		log.Error("sub[%s] -(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
 			myAppid, realIp, hisAppid, topic, ver,
 			group, r.Header.Get("User-Agent"), err)
@@ -203,6 +205,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	err = this.pumpMessages(w, r, realIp, fetcher, limit, myAppid, hisAppid, topic, ver, group, delayedAck)
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
+		// e,g. kafka: error while consuming app1.foobar.v1/0: EOF (kafka was shutdown)
 		log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s ack:%s partition:%s offset:%s UA:%s} %v",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
 			group, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"), err)
