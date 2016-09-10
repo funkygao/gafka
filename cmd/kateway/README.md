@@ -161,6 +161,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
+- [ ] when startup, hh Empty?
 - [X] IO load balance for hinted handoff
 - [ ] metrics for hh
 - [ ] swagger
