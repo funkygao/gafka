@@ -41,10 +41,9 @@ func (this *subStore) Name() string {
 }
 
 func (this *subStore) Start() (err error) {
-	this.wg.Add(1)
-
 	this.subManager = newSubManager()
 
+	this.wg.Add(1)
 	go func() {
 		defer this.wg.Done()
 
@@ -56,7 +55,11 @@ func (this *subStore) Start() (err error) {
 				return
 
 			case remoteAddr = <-this.closedConnCh:
-				go this.subManager.killClient(remoteAddr)
+				this.wg.Add(1)
+				go func() {
+					this.subManager.killClient(remoteAddr)
+					this.wg.Done()
+				}()
 
 			}
 		}
@@ -68,6 +71,7 @@ func (this *subStore) Start() (err error) {
 func (this *subStore) Stop() {
 	this.subManager.Stop()
 	close(this.shutdownCh)
+	this.wg.Wait()
 }
 
 func (this *subStore) Fetch(cluster, topic, group, remoteAddr, realIp,
