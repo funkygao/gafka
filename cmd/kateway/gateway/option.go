@@ -12,71 +12,72 @@ import (
 
 var (
 	Options struct {
-		Id                      string
-		Zone                    string
-		ConfigFile              string
-		PubHttpAddr             string
-		PubHttpsAddr            string
-		SubHttpAddr             string
-		SubHttpsAddr            string
-		ManHttpAddr             string
-		ManHttpsAddr            string
-		DebugHttpAddr           string
-		Store                   string
-		JobStore                string
-		ManagerStore            string
-		PidFile                 string
-		CertFile                string
-		KeyFile                 string
-		LogFile                 string
-		LogLevel                string
-		CrashLogFile            string
-		DummyCluster            string
-		InfluxServer            string
-		InfluxDbName            string
-		KillFile                string
-		HintedHandoffType       string
-		HintedHandoffDir        string
-		ShowVersion             bool
-		Ratelimit               bool
-		PermitStandbySub        bool
-		DisableMetrics          bool
-		EnableHintedHandoff     bool
-		HintedHandoffBufio      bool
-		FlushHintedOffOnly      bool
-		AuditPub                bool
-		AuditSub                bool
-		EnableGzip              bool
-		DryRun                  bool
-		CpuAffinity             bool
-		EnableAccessLog         bool
-		EnableHttpPanicRecover  bool
-		GolangTrace             bool
-		PermitUnregisteredGroup bool
-		UseCompress             bool
-		Debug                   bool
-		EnableRegistry          bool
-		HttpHeaderMaxBytes      int
-		MaxPubSize              int64
-		MaxJobSize              int64
-		LogRotateSize           int
-		MaxMsgTagLen            int
-		MinPubSize              int
-		PubQpsLimit             int64
-		MaxSubBatchSize         int
-		MaxClients              int
-		MaxRequestPerConn       int // to make load balancer distribute request even for persistent conn
-		PubPoolCapcity          int
-		AssignJobShardId        int // how to assign shard id for new app
-		PubPoolIdleTimeout      time.Duration
-		SubTimeout              time.Duration
-		OffsetCommitInterval    time.Duration
-		BadClientPunishDuration time.Duration
-		ReporterInterval        time.Duration
-		MetaRefresh             time.Duration
-		ManagerRefresh          time.Duration
-		HttpReadTimeout         time.Duration
-		HttpWriteTimeout        time.Duration
+		Id                         string
+		Zone                       string
+		ConfigFile                 string
+		PubHttpAddr                string
+		PubHttpsAddr               string
+		SubHttpAddr                string
+		SubHttpsAddr               string
+		ManHttpAddr                string
+		ManHttpsAddr               string
+		DebugHttpAddr              string
+		Store                      string
+		JobStore                   string
+		ManagerStore               string
+		PidFile                    string
+		CertFile                   string
+		KeyFile                    string
+		LogFile                    string
+		LogLevel                   string
+		CrashLogFile               string
+		DummyCluster               string
+		InfluxServer               string
+		InfluxDbName               string
+		KillFile                   string
+		HintedHandoffType          string
+		HintedHandoffDir           string
+		ShowVersion                bool
+		Ratelimit                  bool
+		PermitStandbySub           bool
+		DisableMetrics             bool
+		EnableHintedHandoff        bool
+		HintedHandoffBufio         bool
+		FlushHintedOffOnly         bool
+		AuditPub                   bool
+		AuditSub                   bool
+		EnableGzip                 bool
+		DryRun                     bool
+		CpuAffinity                bool
+		EnableAccessLog            bool
+		EnableHttpPanicRecover     bool
+		GolangTrace                bool
+		PermitUnregisteredGroup    bool
+		UseCompress                bool
+		Debug                      bool
+		EnableRegistry             bool
+		HttpHeaderMaxBytes         int
+		MaxPubSize                 int64
+		MaxJobSize                 int64
+		LogRotateSize              int
+		MaxMsgTagLen               int
+		MinPubSize                 int
+		PubQpsLimit                int64
+		MaxSubBatchSize            int
+		MaxClients                 int
+		MaxRequestPerConn          int // to make load balancer distribute request even for persistent conn
+		PubPoolCapcity             int
+		AssignJobShardId           int // how to assign shard id for new app
+		PubPoolIdleTimeout         time.Duration
+		SubTimeout                 time.Duration
+		OffsetCommitInterval       time.Duration
+		BadClientPunishDuration    time.Duration
+		InternalServerErrorBackoff time.Duration
+		ReporterInterval           time.Duration
+		MetaRefresh                time.Duration
+		ManagerRefresh             time.Duration
+		HttpReadTimeout            time.Duration
+		HttpWriteTimeout           time.Duration
 	}
 )
 
@@ -158,9 +159,10 @@ func ParseFlags() {
 	flag.DurationVar(&Options.SubTimeout, "subtimeout", time.Second*30, "sub timeout before send http 204")
 	flag.DurationVar(&Options.ReporterInterval, "report", time.Minute, "reporter flush interval")
 	flag.DurationVar(&Options.BadClientPunishDuration, "punish", time.Second*3, "punish bad client by sleep")
-	flag.DurationVar(&Options.MetaRefresh, "metarefresh", time.Minute*10, "meta data refresh interval")
+	flag.DurationVar(&Options.MetaRefresh, "metarefresh", time.Minute*1, "meta data refresh interval")
 	flag.DurationVar(&Options.ManagerRefresh, "manrefresh", time.Minute*5, "manager integration refresh interval")
 	flag.DurationVar(&Options.PubPoolIdleTimeout, "pubpoolidle", 0, "pub pool connect idle timeout")
+	flag.DurationVar(&Options.InternalServerErrorBackoff, "500backoff", time.Second, "internal server error backoff duration")
 
 	flag.Parse()
 }

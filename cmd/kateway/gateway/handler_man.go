@@ -155,6 +155,15 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 			Options.BadClientPunishDuration = d
 		}
 
+	case "500backoff":
+		d, err := time.ParseDuration(value)
+		if err != nil {
+			writeBadRequest(w, err.Error())
+			return
+		} else {
+			Options.InternalServerErrorBackoff = d
+		}
+
 	case "dryrun":
 		if value == "clear" {
 			manager.Default.ClearDryrunTopics()
