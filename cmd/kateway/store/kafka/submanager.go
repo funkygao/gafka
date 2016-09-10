@@ -107,6 +107,7 @@ func (this *subManager) killClient(remoteAddr string) (err error) {
 	this.clientMapLock.Unlock()
 
 	if !present {
+		log.Warn("%s missing?", remoteAddr)
 		return
 	}
 

@@ -133,10 +133,10 @@ func New(id string) *Gateway {
 		switch Options.Store {
 		case "kafka":
 			store.DefaultPubStore = storekfk.NewPubStore(Options.PubPoolCapcity, Options.PubPoolIdleTimeout,
-				Options.UseCompress, &this.wg, Options.Debug, Options.DryRun)
+				Options.UseCompress, Options.Debug, Options.DryRun)
 
 		case "dummy":
-			store.DefaultPubStore = storedummy.NewPubStore(&this.wg, Options.Debug)
+			store.DefaultPubStore = storedummy.NewPubStore(Options.Debug)
 
 		default:
 			panic("invalid message store")
@@ -203,12 +203,10 @@ func New(id string) *Gateway {
 
 		switch Options.Store {
 		case "kafka":
-			store.DefaultSubStore = storekfk.NewSubStore(&this.wg,
-				this.subServer.closedConnCh, Options.Debug)
+			store.DefaultSubStore = storekfk.NewSubStore(this.subServer.closedConnCh, Options.Debug)
 
 		case "dummy":
-			store.DefaultSubStore = storedummy.NewSubStore(&this.wg,
-				this.subServer.closedConnCh, Options.Debug)
+			store.DefaultSubStore = storedummy.NewSubStore(this.subServer.closedConnCh, Options.Debug)
 
 		default:
 			panic("invalid store")
@@ -258,10 +256,13 @@ func (this *Gateway) Start() (err error) {
 	}, syscall.SIGINT, syscall.SIGTERM) // yes we ignore HUP
 
 	// keep watch on zk connection jitter
+	this.wg.Add(1)
 	go func() {
+		defer this.wg.Done()
+
 		evtCh, ok := this.zkzone.SessionEvents()
 		if !ok {
-			log.Error("someone else is stealing my zk events?")
+			log.Error("someone else is stealing my zkzone events?")
 			return
 		}
 
@@ -289,21 +290,23 @@ func (this *Gateway) Start() (err error) {
 				log.Warn("zk jitter: %+v", evt)
 
 				if evt.State == zklib.StateHasSession {
-					log.Warn("zk reconnected after session lost, watcher/ephemeral lost")
+					log.Warn("zk reconnected after session lost, watcher/ephemeral might be lost")
 
 					// TODO ensure we can re-register safely after zk session expires
-					if false && registry.Default != nil {
+					if registry.Default != nil {
 						registered, err := registry.Default.Registered()
 						if err != nil {
 							log.Error("registry: %s", err)
 						} else if !registered {
 							if err = registry.Default.Register(); err != nil {
 								log.Error("registry: %s", err)
+							} else {
+								log.Info("registry re-register kateway[%s] ok", this.id)
 							}
+						} else {
+							log.Info("registry lucky, ephemeral still present")
 						}
 					}
-
-					this.zkzone.CallSOS(fmt.Sprintf("kateway[%s]", this.id), "zk session expired")
 				}
 			}
 		}

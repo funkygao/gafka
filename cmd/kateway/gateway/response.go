@@ -47,6 +47,11 @@ func writeQuotaExceeded(w http.ResponseWriter) {
 }
 
 func writeServerError(w http.ResponseWriter, err string) {
+	// internal server error, if client brutely retry without backoff, it will
+	// hurt both server and client and its dependencies
+	// so, kateway forcefully backoff client's retry interval
+	time.Sleep(Options.InternalServerErrorBackoff)
+
 	_writeErrorResponse(w, err, http.StatusInternalServerError)
 }
 

@@ -161,6 +161,8 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
+- [ ] bug: when shutdown, consumer group is not sync'ed with sub server stop
+- [ ] when startup, hh Empty?
 - [X] IO load balance for hinted handoff
 - [ ] metrics for hh
 - [ ] swagger

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/cmd/kateway/structs"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 )
@@ -13,9 +14,10 @@ import (
 type zkMetaStore struct {
 	cf *config
 	mu sync.RWMutex
+	wg sync.WaitGroup
 
 	shutdownCh chan struct{}
-	refreshCh  chan struct{} // deadlock if no receiver
+	refreshCh  chan struct{}
 
 	zkzone *zk.ZkZone
 
@@ -24,7 +26,7 @@ type zkMetaStore struct {
 	clusters   map[string]*zk.ZkCluster // key is cluster name
 
 	// cache
-	partitionsMap map[string]map[string][]int32 // {cluster: {topic: partitions}}
+	partitionsMap map[structs.ClusterTopic][]int32
 	pmapLock      sync.RWMutex
 }
 
@@ -37,7 +39,7 @@ func New(cf *config, zkzone *zk.ZkZone) meta.MetaStore {
 
 		brokerList:    make(map[string][]string),
 		clusters:      make(map[string]*zk.ZkCluster),
-		partitionsMap: make(map[string]map[string][]int32),
+		partitionsMap: make(map[structs.ClusterTopic][]int32),
 	}
 }
 
@@ -49,11 +51,14 @@ func (this *zkMetaStore) RefreshEvent() <-chan struct{} {
 	return this.refreshCh
 }
 
-func (this *zkMetaStore) refreshTopologyCache() {
-	// refresh live clusters from Zookeeper
+func (this *zkMetaStore) refreshTopologyCache() error {
 	liveClusters := this.zkzone.Clusters()
+	if len(liveClusters) == 0 {
+		return ErrZkBroken
+	}
 
 	this.mu.Lock()
+	defer this.mu.Unlock()
 
 	// add new live clusters if not present in my cache
 	for cluster, path := range liveClusters {
@@ -61,7 +66,11 @@ func (this *zkMetaStore) refreshTopologyCache() {
 			this.clusters[cluster] = this.zkzone.NewclusterWithPath(cluster, path)
 		}
 
-		this.brokerList[cluster] = this.clusters[cluster].BrokerList()
+		brokerList := this.clusters[cluster].BrokerList()
+		if len(brokerList) == 0 {
+			return ErrZkBroken
+		}
+		this.brokerList[cluster] = brokerList
 	}
 
 	// remove dead clusters
@@ -73,36 +82,46 @@ func (this *zkMetaStore) refreshTopologyCache() {
 		}
 	}
 
-	this.mu.Unlock()
+	return nil
 }
 
 func (this *zkMetaStore) Start() {
 	// warm up
 	this.refreshTopologyCache()
 
+	this.wg.Add(1)
 	go func() {
 		ticker := time.NewTicker(this.cf.Refresh)
-		defer ticker.Stop()
+		defer func() {
+			ticker.Stop()
+			this.wg.Done()
+		}()
 
 		for {
 			select {
 			case <-ticker.C:
 				log.Debug("refreshing zk meta store")
 
-				this.refreshTopologyCache()
+				if err := this.refreshTopologyCache(); err != nil {
+					// zk connection broken, refuse to refresh cache
+					/// next tick, zk connection might be fixed
+					log.Warn("meta refresh: %s", err)
+					continue
+				}
 
 				// clear the partition cache
 				this.pmapLock.Lock()
-				this.partitionsMap = make(map[string]map[string][]int32,
-					len(this.partitionsMap))
+				this.partitionsMap = make(map[structs.ClusterTopic][]int32, len(this.partitionsMap))
 				this.pmapLock.Unlock()
 
 				// notify others that I have got the most recent data
-				this.refreshCh <- struct{}{}
+				select {
+				case this.refreshCh <- struct{}{}:
+				default:
+				}
 
 			case <-this.shutdownCh:
 				return
-
 			}
 		}
 	}()
@@ -113,6 +132,7 @@ func (this *zkMetaStore) Stop() {
 	defer this.mu.Unlock()
 
 	close(this.shutdownCh)
+	this.wg.Wait()
 }
 
 func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) int {
@@ -131,17 +151,22 @@ func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) int 
 }
 
 func (this *zkMetaStore) TopicPartitions(cluster, topic string) []int32 {
-	clusterNotPresent := true
+	ct := structs.ClusterTopic{Cluster: cluster, Topic: topic}
 
 	this.pmapLock.RLock()
-	if c, present := this.partitionsMap[cluster]; present {
-		clusterNotPresent = false
-		if p, present := c[topic]; present {
-			this.pmapLock.RUnlock()
-			return p
-		}
+	if partitionIDs, present := this.partitionsMap[ct]; present {
+		this.pmapLock.RUnlock()
+		return partitionIDs
 	}
 	this.pmapLock.RUnlock()
+
+	this.pmapLock.Lock()
+	defer this.pmapLock.Unlock()
+
+	// double check
+	if partitionIDs, present := this.partitionsMap[ct]; present {
+		return partitionIDs
+	}
 
 	// cache miss
 	this.mu.RLock()
@@ -152,16 +177,11 @@ func (this *zkMetaStore) TopicPartitions(cluster, topic string) []int32 {
 		return nil
 	}
 
-	p := c.Partitions(topic)
+	partitionIDs := c.Partitions(topic)
+	// set cache
+	this.partitionsMap[ct] = partitionIDs
 
-	this.pmapLock.Lock()
-	if clusterNotPresent {
-		this.partitionsMap[cluster] = make(map[string][]int32)
-	}
-	this.partitionsMap[cluster][topic] = p
-	this.pmapLock.Unlock()
-
-	return p
+	return partitionIDs
 }
 
 func (this *zkMetaStore) BrokerList(cluster string) []string {
