@@ -1,7 +1,7 @@
 package zk
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
 
 	"github.com/funkygao/gafka/zk"
@@ -12,16 +12,13 @@ type zkreg struct {
 	id     string
 	zkzone *zk.ZkZone
 	data   []byte
-
-	shutdownCh chan struct{}
 }
 
 func New(zkzone *zk.ZkZone, id string, data []byte) *zkreg {
 	this := &zkreg{
-		id:         id,
-		zkzone:     zkzone,
-		data:       data,
-		shutdownCh: make(chan struct{}),
+		id:     id,
+		zkzone: zkzone,
+		data:   data,
 	}
 
 	return this
@@ -50,18 +47,15 @@ func (this *zkreg) Registered() (ok bool, err error) {
 }
 
 func (this *zkreg) Deregister() error {
-	close(this.shutdownCh)
-
 	data, _, err := this.zkzone.Conn().Get(this.mypath())
 	if err != nil {
 		return err
 	}
 
 	// ensure I own this znode
-	if string(data) != string(this.data) {
-		return errors.New("a stranger intrudes:" + string(data))
+	if !bytes.Equal(data, this.data) {
+		return fmt.Errorf("registry[%s] exp %, got %s", this.id, string(this.data), string(data))
 	}
 
-	err = this.zkzone.Conn().Delete(this.mypath(), -1)
-	return err
+	return this.zkzone.Conn().Delete(this.mypath(), -1)
 }
