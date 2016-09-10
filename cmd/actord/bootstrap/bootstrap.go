@@ -8,7 +8,6 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -99,8 +98,7 @@ func Main() {
 		log.Warn("empty influx flag, telemetry disabled")
 	}
 
-	var pubStoreWg sync.WaitGroup
-	store.DefaultPubStore = kafka.NewPubStore(100, 0, false, &pubStoreWg, false, false)
+	store.DefaultPubStore = kafka.NewPubStore(100, 0, false, false, false)
 	if err = store.DefaultPubStore.Start(); err != nil {
 		panic(err)
 	}
@@ -139,7 +137,6 @@ func Main() {
 
 	log.Trace("pub store[%s] stopping", store.DefaultPubStore.Name())
 	store.DefaultPubStore.Stop()
-	pubStoreWg.Wait()
 
 	meta.Default.Stop()
 	log.Trace("meta store[%s] stopped", meta.Default.Name())
