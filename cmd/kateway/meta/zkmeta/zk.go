@@ -15,7 +15,7 @@ type zkMetaStore struct {
 	mu sync.RWMutex
 
 	shutdownCh chan struct{}
-	refreshCh  chan struct{} // deadlock if no receiver
+	refreshCh  chan struct{}
 
 	zkzone *zk.ZkZone
 
@@ -24,7 +24,7 @@ type zkMetaStore struct {
 	clusters   map[string]*zk.ZkCluster // key is cluster name
 
 	// cache
-	partitionsMap map[string]map[string][]int32 // {cluster: {topic: partitions}}
+	partitionsMap map[string]map[string][]int32 // {cluster: {topic: partitions}} TODO use ClusterTopic struct
 	pmapLock      sync.RWMutex
 }
 
@@ -49,11 +49,14 @@ func (this *zkMetaStore) RefreshEvent() <-chan struct{} {
 	return this.refreshCh
 }
 
-func (this *zkMetaStore) refreshTopologyCache() {
-	// refresh live clusters from Zookeeper
+func (this *zkMetaStore) refreshTopologyCache() error {
 	liveClusters := this.zkzone.Clusters()
+	if len(liveClusters) == 0 {
+		return ErrZkBroken
+	}
 
 	this.mu.Lock()
+	defer this.mu.Unlock()
 
 	// add new live clusters if not present in my cache
 	for cluster, path := range liveClusters {
@@ -61,7 +64,11 @@ func (this *zkMetaStore) refreshTopologyCache() {
 			this.clusters[cluster] = this.zkzone.NewclusterWithPath(cluster, path)
 		}
 
-		this.brokerList[cluster] = this.clusters[cluster].BrokerList()
+		brokerList := this.clusters[cluster].BrokerList()
+		if len(brokerList) == 0 {
+			return ErrZkBroken
+		}
+		this.brokerList[cluster] = brokerList
 	}
 
 	// remove dead clusters
@@ -73,7 +80,7 @@ func (this *zkMetaStore) refreshTopologyCache() {
 		}
 	}
 
-	this.mu.Unlock()
+	return nil
 }
 
 func (this *zkMetaStore) Start() {
@@ -89,7 +96,12 @@ func (this *zkMetaStore) Start() {
 			case <-ticker.C:
 				log.Debug("refreshing zk meta store")
 
-				this.refreshTopologyCache()
+				if err := this.refreshTopologyCache(); err != nil {
+					// zk connection broken, refuse to refresh cache
+					/// next tick, zk connection might be fixed
+					log.Warn("meta refresh: %s", err)
+					continue
+				}
 
 				// clear the partition cache
 				this.pmapLock.Lock()
@@ -98,7 +110,10 @@ func (this *zkMetaStore) Start() {
 				this.pmapLock.Unlock()
 
 				// notify others that I have got the most recent data
-				this.refreshCh <- struct{}{}
+				select {
+				case this.refreshCh <- struct{}{}:
+				default:
+				}
 
 			case <-this.shutdownCh:
 				return
