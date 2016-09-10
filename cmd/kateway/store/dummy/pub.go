@@ -1,13 +1,9 @@
 package dummy
 
-import (
-	"sync"
-)
-
 type pubStore struct {
 }
 
-func NewPubStore(wg *sync.WaitGroup, debug bool) *pubStore {
+func NewPubStore(debug bool) *pubStore {
 	return &pubStore{}
 }
 

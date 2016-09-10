@@ -133,10 +133,10 @@ func New(id string) *Gateway {
 		switch Options.Store {
 		case "kafka":
 			store.DefaultPubStore = storekfk.NewPubStore(Options.PubPoolCapcity, Options.PubPoolIdleTimeout,
-				Options.UseCompress, &this.wg, Options.Debug, Options.DryRun)
+				Options.UseCompress, Options.Debug, Options.DryRun)
 
 		case "dummy":
-			store.DefaultPubStore = storedummy.NewPubStore(&this.wg, Options.Debug)
+			store.DefaultPubStore = storedummy.NewPubStore(Options.Debug)
 
 		default:
 			panic("invalid message store")
@@ -203,12 +203,10 @@ func New(id string) *Gateway {
 
 		switch Options.Store {
 		case "kafka":
-			store.DefaultSubStore = storekfk.NewSubStore(&this.wg,
-				this.subServer.closedConnCh, Options.Debug)
+			store.DefaultSubStore = storekfk.NewSubStore(this.subServer.closedConnCh, Options.Debug)
 
 		case "dummy":
-			store.DefaultSubStore = storedummy.NewSubStore(&this.wg,
-				this.subServer.closedConnCh, Options.Debug)
+			store.DefaultSubStore = storedummy.NewSubStore(this.subServer.closedConnCh, Options.Debug)
 
 		default:
 			panic("invalid store")

@@ -16,13 +16,13 @@ import (
 type subStore struct {
 	shutdownCh   chan struct{}
 	closedConnCh <-chan string // remote addr
-	wg           *sync.WaitGroup
-	hostname     string
+	wg           sync.WaitGroup
+	hostname     string // load on startup, cached
 
 	subManager *subManager
 }
 
-func NewSubStore(wg *sync.WaitGroup, closedConnCh <-chan string, debug bool) *subStore {
+func NewSubStore(closedConnCh <-chan string, debug bool) *subStore {
 	if debug {
 		sarama.Logger = l.New(os.Stdout, color.Blue("[Sarama]"),
 			l.LstdFlags|l.Lshortfile)
@@ -30,7 +30,6 @@ func NewSubStore(wg *sync.WaitGroup, closedConnCh <-chan string, debug bool) *su
 
 	return &subStore{
 		hostname:     ctx.Hostname(),
-		wg:           wg,
 		shutdownCh:   make(chan struct{}),
 		closedConnCh: closedConnCh,
 	}
@@ -60,7 +59,6 @@ func (this *subStore) Start() (err error) {
 					this.subManager.killClient(remoteAddr)
 					this.wg.Done()
 				}()
-
 			}
 		}
 	}()

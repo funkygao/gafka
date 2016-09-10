@@ -17,7 +17,7 @@ import (
 type pubStore struct {
 	shutdownCh chan struct{}
 
-	wg       *sync.WaitGroup
+	wg       sync.WaitGroup
 	hostname string // used as kafka client id
 	dryRun   bool
 	compress bool
@@ -33,10 +33,9 @@ type pubStore struct {
 }
 
 func NewPubStore(poolCapcity int, idleTimeout time.Duration, compress bool,
-	wg *sync.WaitGroup, debug bool, dryRun bool) *pubStore {
+	debug bool, dryRun bool) *pubStore {
 	if debug {
-		sarama.Logger = l.New(os.Stdout, color.Green("[Sarama]"),
-			l.LstdFlags|l.Lshortfile)
+		sarama.Logger = l.New(os.Stdout, color.Green("[Sarama]"), l.LstdFlags|l.Lshortfile)
 	}
 
 	return &pubStore{
@@ -45,7 +44,6 @@ func NewPubStore(poolCapcity int, idleTimeout time.Duration, compress bool,
 		idleTimeout:     idleTimeout,
 		pubPoolsCapcity: poolCapcity,
 		pubPools:        make(map[string]*pubPool),
-		wg:              wg,
 		dryRun:          dryRun,
 		shutdownCh:      make(chan struct{}),
 	}
@@ -56,14 +54,13 @@ func (this *pubStore) Name() string {
 }
 
 func (this *pubStore) Start() (err error) {
-	this.wg.Add(1)
-
 	// warmup: create pools according the current kafka topology
 	for _, cluster := range meta.Default.ClusterNames() {
 		this.pubPools[cluster] = newPubPool(this, cluster,
 			meta.Default.BrokerList(cluster), this.pubPoolsCapcity)
 	}
 
+	this.wg.Add(1)
 	go func() {
 		defer this.wg.Done()
 
@@ -92,6 +89,7 @@ func (this *pubStore) Stop() {
 	}
 
 	close(this.shutdownCh)
+	this.wg.Wait()
 }
 
 func (this *pubStore) doRefresh() {
