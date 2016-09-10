@@ -14,6 +14,7 @@ import (
 type zkMetaStore struct {
 	cf *config
 	mu sync.RWMutex
+	wg sync.WaitGroup
 
 	shutdownCh chan struct{}
 	refreshCh  chan struct{}
@@ -88,9 +89,13 @@ func (this *zkMetaStore) Start() {
 	// warm up
 	this.refreshTopologyCache()
 
+	this.wg.Add(1)
 	go func() {
 		ticker := time.NewTicker(this.cf.Refresh)
-		defer ticker.Stop()
+		defer func() {
+			ticker.Stop()
+			this.wg.Done()
+		}()
 
 		for {
 			select {
@@ -117,7 +122,6 @@ func (this *zkMetaStore) Start() {
 
 			case <-this.shutdownCh:
 				return
-
 			}
 		}
 	}()
@@ -128,6 +132,7 @@ func (this *zkMetaStore) Stop() {
 	defer this.mu.Unlock()
 
 	close(this.shutdownCh)
+	this.wg.Wait()
 }
 
 func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) int {
