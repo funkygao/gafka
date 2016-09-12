@@ -87,6 +87,24 @@ func (this *Service) Inflights() (n int64) {
 	return
 }
 
+func (this *Service) AppendN() (n int64) {
+	this.rwmux.RLock()
+	for _, q := range this.queues {
+		n += q.AppendN()
+	}
+	this.rwmux.RUnlock()
+	return
+}
+
+func (this *Service) DeliverN() (n int64) {
+	this.rwmux.RLock()
+	for _, q := range this.queues {
+		n += q.DeliverN()
+	}
+	this.rwmux.RUnlock()
+	return
+}
+
 func (this *Service) Append(cluster, topic string, key, value []byte) error {
 	if this.closed {
 		return ErrNotOpen

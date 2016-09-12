@@ -15,4 +15,5 @@ var (
 	ErrEOQ              = fmt.Errorf("end of queue")
 	ErrCursorNotFound   = fmt.Errorf("cursor not found")
 	ErrCursorOutOfRange = fmt.Errorf("cursor out of range")
+	ErrHeadIsTail       = fmt.Errorf("head is tail")
 )

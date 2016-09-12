@@ -49,6 +49,7 @@ func (q *queue) pump() {
 					q.cursor.commitPosition()
 					okN++
 					q.inflights.Add(-1)
+					q.deliverN.Add(1)
 					if okN%dumpPerBlocks == 0 {
 						if e := q.cursor.dump(); e != nil {
 							log.Error("queue[%s] dump: %s", q.ident(), e)
@@ -58,6 +59,7 @@ func (q *queue) pump() {
 				} else if err == store.ErrInvalidTopic {
 					q.cursor.commitPosition()
 					failN++
+					q.deliverN.Add(1)
 					q.inflights.Add(-1)
 					err = nil // move ahead without retry
 					break

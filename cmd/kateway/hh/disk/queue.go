@@ -58,7 +58,8 @@ type queue struct {
 	// -1 means unlimited
 	maxSize int64
 
-	inflights sync2.AtomicInt64
+	inflights         sync2.AtomicInt64
+	appendN, deliverN sync2.AtomicInt64
 
 	purgeInterval time.Duration
 	maxAge        time.Duration
@@ -173,6 +174,14 @@ func (q *queue) Inflights() int64 {
 	return q.inflights.Get()
 }
 
+func (q *queue) AppendN() int64 {
+	return q.appendN.Get()
+}
+
+func (q *queue) DeliverN() int64 {
+	return q.deliverN.Get()
+}
+
 // Remove removes all underlying file-based resources for the queue.
 // It is an error to call this on an open queue.
 func (q *queue) Remove() error {
@@ -240,12 +249,14 @@ func (q *queue) Append(b *block) error {
 		err = q.tail.Append(b)
 		if err == nil {
 			q.inflights.Add(1)
+			q.appendN.Add(1)
 		}
 		return err
 	} else if err != nil {
 		return err
 	}
 
+	q.appendN.Add(1)
 	q.inflights.Add(1)
 	return nil
 }
@@ -403,6 +414,10 @@ func (q *queue) ident() string {
 }
 
 func (q *queue) trimHead() (err error) {
+	if len(q.segments) <= 1 {
+		return ErrHeadIsTail
+	}
+
 	q.segments = q.segments[1:]
 
 	if err = q.head.Remove(); err != nil {
@@ -413,7 +428,7 @@ func (q *queue) trimHead() (err error) {
 	return
 }
 
-// skipCursorSegment skip the current corrupted cursor segment and
+// TODO skipCursorSegment skip the current corrupted cursor segment and
 // advance to next segment.
 // if tail corrupts, add new segment.
 func (q *queue) skipCursorSegment() {

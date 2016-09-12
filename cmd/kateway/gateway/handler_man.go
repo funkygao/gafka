@@ -70,7 +70,8 @@ func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, par
 	subConns := int(atomic.LoadInt32(&this.gw.subServer.activeConnN))
 	output["pubconn"] = strconv.Itoa(pubConns)
 	output["subconn"] = strconv.Itoa(subConns)
-	output["hh_inflights"] = strconv.FormatInt(hh.Default.Inflights(), 10)
+	output["hh_appends"] = strconv.FormatInt(hh.Default.AppendN(), 10)
+	output["hh_delivers"] = strconv.FormatInt(hh.Default.DeliverN(), 10)
 
 	b, _ := json.MarshalIndent(output, "", "    ")
 

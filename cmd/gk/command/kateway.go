@@ -164,7 +164,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 	// display mode
 	lines := make([]string, 0)
-	header := "Zone|Id|Host|Ip|Pprof|Build|Cpu|Mem|P/H/S|Uptime"
+	header := "Zone|Id|Host|Ip|Pprof|Build|Cpu|Mem|P/S/hhIn/hhOut|Uptime"
 	lines = append(lines, header)
 	forSortedZones(func(zkzone *zk.ZkZone) {
 		if this.zone != "" && zkzone.Name() != this.zone {
@@ -209,9 +209,13 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			if !ok {
 				pubConn = ""
 			}
-			hhInflights, ok := statusMap["hh_inflights"].(string)
+			hhAppendN, ok := statusMap["hh_appends"].(string)
 			if !ok {
-				hhInflights = ""
+				hhAppendN = ""
+			}
+			hhDeliverN, ok := statusMap["hh_delivers"].(string)
+			if !ok {
+				hhDeliverN = ""
 			}
 			subConn, ok := statusMap["subconn"].(string)
 			if !ok {
@@ -224,13 +228,13 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 					pprofAddr = kw.Ip + pprofAddr
 				}
 				pprofAddr = fmt.Sprintf("%s/debug/pprof/", pprofAddr)
-				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s/%s|%s|%s|%s/%s/%s|%s",
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s/%s|%s|%s|%s/%s/%s/%s|%s",
 					zkzone.Name(),
 					kw.Id, kw.Host, kw.Ip,
 					pprofAddr, kw.Build, kw.BuiltAt,
 					kw.Cpu,
 					heapSize,
-					pubConn, hhInflights, subConn,
+					pubConn, subConn, hhAppendN, hhDeliverN,
 					gofmt.PrettySince(kw.Ctime)))
 				continue
 			}

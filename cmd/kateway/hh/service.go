@@ -21,7 +21,14 @@ type Service interface {
 	// FlushInflights flush all inflight entries inside buffer to final message storage.
 	FlushInflights()
 
+	// Inflights() returns all queues inflights messages count total.
 	Inflights() int64
+
+	// AppendN returns all queues successfully appended messages count total.
+	AppendN() int64
+
+	// DeliverN returns all queues successfully delivered messages count total.
+	DeliverN() int64
 }
 
 var Default Service
