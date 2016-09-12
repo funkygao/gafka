@@ -74,8 +74,12 @@ func (b *block) readFrom(r io.Reader, buf []byte) error {
 		if err = readBytes(r, buf[:int(keyLen)]); err != nil {
 			return err
 		}
+
+		// buf -> block.key
 		if len(b.key) < int(keyLen) {
 			b.key = make([]byte, int(keyLen))
+		} else {
+			b.key = b.key[:int(keyLen)]
 		}
 		copy(b.key, buf[:int(keyLen)])
 	}
@@ -92,8 +96,12 @@ func (b *block) readFrom(r io.Reader, buf []byte) error {
 	if err = readBytes(r, buf[:int(valueLen)]); err != nil {
 		return err
 	}
+
+	// buf -> block.value
 	if len(b.value) < int(valueLen) {
 		b.value = make([]byte, int(valueLen))
+	} else {
+		b.value = b.value[:int(valueLen)] // size() will calculate this
 	}
 	copy(b.value, buf[:int(valueLen)])
 
