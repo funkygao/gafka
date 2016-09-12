@@ -38,6 +38,7 @@ func (this *controller) watchZk() {
 				registered, err := this.orchestrator.ActorRegistered(this.Id())
 				if err != nil {
 					log.Error("registry: %s", err)
+					this.orchestrator.CallSOS(fmt.Sprintf("actord[%s]", this.Id()), "zk session expired")
 				} else if !registered {
 					if err = this.orchestrator.RegisterActor(this.Id(), this.Bytes()); err != nil {
 						log.Error("registry: %s", err)
@@ -48,7 +49,6 @@ func (this *controller) watchZk() {
 					log.Info("registry lucky, ephemeral still present")
 				}
 
-				this.orchestrator.CallSOS(fmt.Sprintf("actord[%s]", this.Id()), "zk session expired")
 			}
 		}
 	}
