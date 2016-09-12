@@ -5,5 +5,5 @@ import (
 )
 
 var (
-	ErrZkBroken = errors.New("zk connection might be broken")
+	ErrZkBroken = errors.New("zk connection might be broken cause no clusters found")
 )
