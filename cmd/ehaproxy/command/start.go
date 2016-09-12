@@ -78,7 +78,7 @@ func (this *Start) Run(args []string) (exitCode int) {
 	this.starting = true
 	this.quitCh = make(chan struct{})
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
-		log.Info("ehaproxy[%s] got signal %s", gafka.BuildId, sig)
+		log.Info("ehaproxy[%s] got signal: %s", gafka.BuildId, strings.ToUpper(sig.String()))
 		this.shutdown()
 
 		log.Info("removing %s", configFile)
