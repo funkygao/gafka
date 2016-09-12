@@ -465,8 +465,8 @@ Options:
     -ver
       Display kateway version only
 
-	-zk
-	  Display kateway zk config nodes and exit
+    -zk
+      Display kateway zk config nodes and exit
 
     -checkup
       Checkup for online kateway instances
