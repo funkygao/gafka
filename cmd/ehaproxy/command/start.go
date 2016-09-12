@@ -17,6 +17,7 @@ import (
 	zkr "github.com/funkygao/gafka/registry/zk"
 	"github.com/funkygao/gocli"
 	gio "github.com/funkygao/golib/io"
+	"github.com/funkygao/golib/locking"
 	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
 )
@@ -47,10 +48,16 @@ func (this *Start) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&this.pubPort, "pub", 10891, "")
 	cmdFlags.IntVar(&this.subPort, "sub", 10892, "")
 	cmdFlags.IntVar(&this.manPort, "man", 10893, "")
-
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
+
+	lockFilename := fmt.Sprintf("%s/.lock", this.root)
+	if locking.InstanceLocked(lockFilename) {
+		panic(fmt.Sprintf("locked[%s] by another instance", lockFilename))
+	}
+
+	locking.LockInstance(lockFilename)
 
 	err := os.Chdir(this.root)
 	swalllow(err)
@@ -69,6 +76,7 @@ func (this *Start) Run(args []string) (exitCode int) {
 
 		log.Info("removing %s", configFile)
 		os.Remove(configFile)
+		locking.UnlockInstance(lockFilename)
 
 		log.Info("ehaproxy[%s] shutdown complete", gafka.BuildId)
 	}, syscall.SIGINT, syscall.SIGTERM)
