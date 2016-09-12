@@ -41,6 +41,8 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	swalllow(err)
 	err = os.MkdirAll(fmt.Sprintf("%s/src", this.root), 0755)
 	swalllow(err)
+	err = os.MkdirAll(fmt.Sprintf("%s/conf", this.root), 0755)
+	swalllow(err)
 
 	// install files
 	b, _ := Asset("templates/haproxy-1.6.3.tar.gz")
@@ -54,6 +56,10 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	b, _ = Asset("templates/init.ehaproxy")
 	initPath := fmt.Sprintf("%s/src/init.ehaproxy", this.root)
 	err = ioutil.WriteFile(initPath, b, 0755)
+	swalllow(err)
+	b, _ = Asset("templates/503.http")
+	http503 := fmt.Sprintf("%s/conf/503.http", this.root)
+	err = ioutil.WriteFile(http503, b, 0755)
 	swalllow(err)
 
 	this.Ui.Info("will read zones from $HOME/.gafka.cf")

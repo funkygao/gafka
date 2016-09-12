@@ -23,6 +23,7 @@ defaults
     retries 0
     maxconn 15000
     balance roundrobin
+    errorfile 503 {{.HaproxyRoot}}/conf/503.http
     
     no option httpclose
     option log-separate-errors
