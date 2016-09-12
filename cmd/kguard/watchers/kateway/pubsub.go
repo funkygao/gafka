@@ -82,11 +82,23 @@ func (this *WatchPubsub) runCheckup() error {
 		ver    = "v1"
 		topic  = "smoketestonly"
 		group  = "__smoketestonly__"
+
+		pubEndpoint = os.Getenv("PUB")
+		subEndpoint = os.Getenv("SUB")
 	)
 
 	if myApp == "" || hisApp == "" || secret == "" {
 		log.Error("empty pubsub params provided")
 		return nil
+	}
+
+	if pubEndpoint != "" && subEndpoint != "" {
+		// add the load balancer endpoint
+		kws = append(kws, &zk.KatewayMeta{
+			Id:      "0",
+			PubAddr: pubEndpoint,
+			SubAddr: subEndpoint,
+		})
 	}
 
 	for _, kw := range kws {

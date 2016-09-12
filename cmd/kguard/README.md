@@ -52,5 +52,5 @@ Kafka clusters body guard that emits health info to InfluxDB.
 
 ### Usage
 
-APPLOG_CLUSTER=hippo APPLOG_TOPIC=apptopic MYAPP=myid HISAPP=hisid APPKEY=31002594f5zbc3eeb1efcf75db6dd8a0 nohup ./sbin/kguard -db xxx -z test -log kguard.log -influxAddr http://1.1.1.1:8086 &                                          
+PUB=pub.my.com SUB=sub.my.com APPLOG_CLUSTER=hippo APPLOG_TOPIC=apptopic MYAPP=myid HISAPP=hisid APPKEY=31002594f5zbc3eeb1efcf75db6dd8a0 nohup ./sbin/kguard -db xxx -z test -log kguard.log -influxAddr http://1.1.1.1:8086 &                                          
 
