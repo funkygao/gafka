@@ -13,7 +13,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -136,8 +135,7 @@ func BenchmarkDirectKafkaProduce1K(b *testing.B) {
 	cf.Refresh = time.Hour
 	meta.Default = zkmeta.New(cf, zkzone)
 	meta.Default.Start()
-	var wg sync.WaitGroup
-	store.DefaultPubStore = kafka.NewPubStore(100, 0, false, &wg, false, true)
+	store.DefaultPubStore = kafka.NewPubStore(100, 0, false, false, true)
 	store.DefaultPubStore.Start()
 
 	data := []byte(strings.Repeat("X", msgSize))
