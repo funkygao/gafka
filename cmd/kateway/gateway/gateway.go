@@ -78,7 +78,7 @@ func New(id string) *Gateway {
 	}
 
 	if Options.EnableRegistry {
-		registry.Default = zk.New(this.zkzone, this.id, this.InstanceInfo())
+		registry.Default = zk.New(this.zkzone)
 	}
 	metaConf := zkmeta.DefaultConfig()
 	metaConf.Refresh = Options.MetaRefresh
@@ -294,11 +294,11 @@ func (this *Gateway) Start() (err error) {
 
 					// ensure we can re-register safely after zk session expires
 					if registry.Default != nil {
-						registered, err := registry.Default.Registered()
+						registered, err := registry.Default.Registered(this.id)
 						if err != nil {
 							log.Error("registry: %s", err)
 						} else if !registered {
-							if err = registry.Default.Register(); err != nil {
+							if err = registry.Default.Register(this.id, this.InstanceInfo()); err != nil {
 								log.Error("registry: %s", err)
 								this.zkzone.CallSOS(fmt.Sprintf("kateway[%s]", this.id), "gone")
 							} else {
@@ -373,7 +373,7 @@ func (this *Gateway) Start() (err error) {
 
 	// the last thing is to register: notify others: come on baby!
 	if registry.Default != nil {
-		if err = registry.Default.Register(); err != nil {
+		if err = registry.Default.Register(this.id, this.InstanceInfo()); err != nil {
 			panic(err)
 		}
 
@@ -391,7 +391,7 @@ func (this *Gateway) ServeForever() {
 	case <-this.quiting:
 		// the 1st thing is to deregister
 		if registry.Default != nil {
-			if err := registry.Default.Deregister(); err != nil {
+			if err := registry.Default.Deregister(this.id, this.InstanceInfo()); err != nil {
 				log.Error("de-register: %v", err)
 			} else {
 				log.Info("de-registered from %s", registry.Default.Name())
