@@ -292,7 +292,7 @@ func (this *Gateway) Start() (err error) {
 				if evt.State == zklib.StateHasSession {
 					log.Warn("zk reconnected after session lost, watcher/ephemeral might be lost")
 
-					// TODO ensure we can re-register safely after zk session expires
+					// ensure we can re-register safely after zk session expires
 					if registry.Default != nil {
 						registered, err := registry.Default.Registered()
 						if err != nil {
@@ -300,6 +300,7 @@ func (this *Gateway) Start() (err error) {
 						} else if !registered {
 							if err = registry.Default.Register(); err != nil {
 								log.Error("registry: %s", err)
+								this.zkzone.CallSOS(fmt.Sprintf("kateway[%s]", this.id), "gone")
 							} else {
 								log.Info("registry re-register kateway[%s] ok", this.id)
 							}
