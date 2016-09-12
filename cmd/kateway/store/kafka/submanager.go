@@ -107,7 +107,8 @@ func (this *subManager) killClient(remoteAddr string) (err error) {
 	this.clientMapLock.Unlock()
 
 	if !present {
-		log.Warn("%s missing?", remoteAddr)
+		// e,g. client connects to Sub port but not Sub request(404), will lead to this case
+		log.Warn("%s not Sub client?", remoteAddr)
 		return
 	}
 
