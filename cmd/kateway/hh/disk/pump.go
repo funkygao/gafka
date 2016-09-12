@@ -96,6 +96,9 @@ func (q *queue) pump() {
 		case ErrQueueNotOpen:
 			return
 
+		case ErrCursorOutOfRange:
+			log.Error(err.Error()) // TODO
+
 		case ErrEOQ:
 			q.emptyInflight.Set(1)
 			select {
