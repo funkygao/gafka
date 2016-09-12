@@ -282,8 +282,7 @@ func (q *queue) Next(b *block) (err error) {
 	err = c.seg.ReadOne(b)
 	switch err {
 	case nil:
-		c.advanceOffset(b.size())
-		return
+		return c.advanceOffset(b.size())
 
 	case io.EOF:
 		// cursor might have:
@@ -298,8 +297,7 @@ func (q *queue) Next(b *block) (err error) {
 		switch err {
 		case nil:
 			// bingo!
-			c.advanceOffset(b.size())
-			return
+			return c.advanceOffset(b.size())
 
 		case io.EOF:
 			// tail is empty
