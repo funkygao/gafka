@@ -7,19 +7,23 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
-	"github.com/funkygao/etclib"
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/registry"
 	zkr "github.com/funkygao/gafka/registry/zk"
+	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	gio "github.com/funkygao/golib/io"
 	"github.com/funkygao/golib/locking"
 	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
+	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
 type Start struct {
@@ -35,7 +39,10 @@ type Start struct {
 	manPort    int
 	starting   bool
 	forwardFor bool
-	quitCh     chan struct{}
+
+	quitCh      chan struct{}
+	zkzone      *zk.ZkZone
+	lastServers BackendServers
 }
 
 func (this *Start) Run(args []string) (exitCode int) {
@@ -76,7 +83,11 @@ func (this *Start) Run(args []string) (exitCode int) {
 
 		log.Info("removing %s", configFile)
 		os.Remove(configFile)
+
+		log.Info("removing lock[%s]", lockFilename)
 		locking.UnlockInstance(lockFilename)
+
+		close(this.quitCh)
 
 		log.Info("ehaproxy[%s] shutdown complete", gafka.BuildId)
 	}, syscall.SIGINT, syscall.SIGTERM)
@@ -89,17 +100,53 @@ func (this *Start) Run(args []string) (exitCode int) {
 
 func (this *Start) main() {
 	ctx.LoadFromHome()
+	this.zkzone = zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	zkConnEvt, ok := this.zkzone.SessionEvents()
+	if !ok {
+		panic("someone stealing my events")
+	}
+
+	registry.Default = zkr.New(this.zkzone)
 
 	log.Info("ehaproxy[%s] starting...", gafka.BuildId)
 
-	// TODO zk session timeout
-	err := etclib.Dial(strings.Split(ctx.ZoneZkAddrs(this.zone), ","))
-	swalllow(err)
+	zkConnected := false
+	for {
+		instances, instancesChange, err := registry.Default.WatchInstances()
+		if err != nil {
+			log.Error("zone[%s] %s", this.zkzone.Name(), err)
+			time.Sleep(time.Second)
+			continue
+		}
 
-	root := zkr.Root(this.zone)
-	ch := make(chan []string, 10)
-	go etclib.WatchChildren(root, ch)
+		if zkConnected {
+			if len(instances) > 0 {
+				this.reload(instances)
+			} else {
+				log.Warn("backend all shutdown? skip this change")
+			}
+		}
 
+		select {
+		case <-this.quitCh:
+			return
+
+		case evt := <-zkConnEvt:
+			if evt.State == zklib.StateHasSession && !zkConnected {
+				log.Info("zk connected")
+				zkConnected = true
+			} else if zkConnected {
+				log.Warn("zk jitter: %+v", evt)
+			}
+
+		case <-instancesChange:
+			log.Info("instances changed!!")
+		}
+	}
+
+}
+
+func (this *Start) reload(kwInstances []string) {
 	var servers = BackendServers{
 		CpuNum:      ctx.NumCPU(),
 		HaproxyRoot: this.root,
@@ -108,86 +155,77 @@ func (this *Start) main() {
 		SubPort:     this.subPort,
 		ManPort:     this.manPort,
 	}
-	var lastInstances []string
-	for {
-		select {
-		case <-this.quitCh:
-			return
-
-		case <-ch:
-			kwInstances, err := etclib.Children(root)
-			if err != nil {
-				log.Error("%s: %v", root, err)
-				continue
-			}
-
-			log.Info("kateway ids: %+v -> %+v", lastInstances, kwInstances)
-			lastInstances = kwInstances
-
-			servers.reset()
-			for _, kwId := range kwInstances {
-				kwNode := fmt.Sprintf("%s/%s", root, kwId)
-				data, err := etclib.Get(kwNode)
-				if err != nil {
-					log.Error("%s: %v", kwNode, err)
-					continue
-				}
-
-				info := make(map[string]string)
-				if err = json.Unmarshal([]byte(data), &info); err != nil {
-					log.Error("%s: %v", data, err)
-					continue
-				}
-
-				// pub
-				if info["pub"] != "" {
-					_, port, _ := net.SplitHostPort(info["pub"])
-					be := Backend{
-						Name: "p" + info["id"],
-						Addr: info["pub"],
-						Cpu:  info["cpu"],
-						Port: port,
-					}
-					servers.Pub = append(servers.Pub, be)
-				}
-
-				// sub
-				if info["sub"] != "" {
-					_, port, _ := net.SplitHostPort(info["sub"])
-					be := Backend{
-						Name: "s" + info["id"],
-						Addr: info["sub"],
-						Cpu:  info["cpu"],
-						Port: port,
-					}
-					servers.Sub = append(servers.Sub, be)
-				}
-
-				// man
-				if info["man"] != "" {
-					_, port, _ := net.SplitHostPort(info["man"])
-					be := Backend{
-						Name: "m" + info["id"],
-						Addr: info["man"],
-						Cpu:  info["cpu"],
-						Port: port,
-					}
-					servers.Man = append(servers.Man, be)
-				}
-
-			}
-
-			if err = this.createConfigFile(servers); err != nil {
-				log.Error(err)
-				continue
-			}
-
-			if err = this.reloadHAproxy(); err != nil {
-				log.Error("reloading haproxy: %v", err)
-				panic(err)
-			}
-
+	servers.reset()
+	for _, kwNode := range kwInstances {
+		data, _, err := this.zkzone.Conn().Get(kwNode)
+		if err != nil {
+			log.Error("%s: %v", kwNode, err)
+			continue
 		}
+
+		info := make(map[string]string)
+		if err = json.Unmarshal([]byte(data), &info); err != nil {
+			log.Error("%s: %v", data, err)
+			continue
+		}
+
+		// pub
+		if info["pub"] != "" {
+			_, port, _ := net.SplitHostPort(info["pub"])
+			be := Backend{
+				Name: "p" + info["id"],
+				Addr: info["pub"],
+				Cpu:  info["cpu"],
+				Port: port,
+			}
+			servers.Pub = append(servers.Pub, be)
+		}
+
+		// sub
+		if info["sub"] != "" {
+			_, port, _ := net.SplitHostPort(info["sub"])
+			be := Backend{
+				Name: "s" + info["id"],
+				Addr: info["sub"],
+				Cpu:  info["cpu"],
+				Port: port,
+			}
+			servers.Sub = append(servers.Sub, be)
+		}
+
+		// man
+		if info["man"] != "" {
+			_, port, _ := net.SplitHostPort(info["man"])
+			be := Backend{
+				Name: "m" + info["id"],
+				Addr: info["man"],
+				Cpu:  info["cpu"],
+				Port: port,
+			}
+			servers.Man = append(servers.Man, be)
+		}
+
+	}
+
+	if servers.empty() {
+		log.Warn("empty backend servers, all shutdown?")
+		return
+	}
+
+	if reflect.DeepEqual(this.lastServers, servers) {
+		log.Warn("backend servers stays unchanged")
+		return
+	}
+
+	this.lastServers = servers
+	if err := this.createConfigFile(servers); err != nil {
+		log.Error(err)
+		return
+	}
+
+	if err := this.reloadHAproxy(); err != nil {
+		log.Error("reloading haproxy: %v", err)
+		panic(err)
 	}
 }
 
@@ -219,8 +257,6 @@ func (this *Start) shutdown() {
 
 	log.Info("removing %s", haproxyPidFile)
 	os.Remove(haproxyPidFile)
-
-	close(this.quitCh)
 }
 
 func (this *Start) Synopsis() string {

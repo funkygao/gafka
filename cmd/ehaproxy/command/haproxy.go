@@ -30,6 +30,10 @@ func (this *BackendServers) reset() {
 	this.Man = make([]Backend, 0)
 }
 
+func (this *BackendServers) empty() bool {
+	return len(this.Pub) == 0 || len(this.Sub) == 0
+}
+
 func (this *BackendServers) sort() {
 	this.Pub = sortBackendByName(this.Pub)
 	this.Sub = sortBackendByName(this.Sub)
@@ -44,8 +48,9 @@ type Backend struct {
 }
 
 func (this *Start) createConfigFile(servers BackendServers) error {
+	log.Info("backends: Pub#%d Sub#%d %+v", len(servers.Pub), len(servers.Sub), servers)
+
 	servers.sort()
-	log.Info("backends: %+v", servers)
 
 	tmpFile := fmt.Sprintf("%s.tmp", configFile)
 	cfgFile, err := os.Create(tmpFile)
