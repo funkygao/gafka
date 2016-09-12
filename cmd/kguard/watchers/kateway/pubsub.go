@@ -123,7 +123,7 @@ func (this *WatchPubsub) runCheckup() error {
 				return fmt.Errorf("unexpected http status: %s", http.StatusText(statusCode))
 			}
 			if len(subMsg) < 10 {
-				return fmt.Errorf("unexpected sub msg: %s", string(subMsg))
+				log.Warn("unexpected sub msg: %s", string(subMsg))
 			}
 
 			return api.ErrSubStop
