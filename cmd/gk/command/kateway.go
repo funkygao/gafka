@@ -413,7 +413,7 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 				return fmt.Errorf("unexpected http status: %s, body:%s", http.StatusText(statusCode), string(subMsg))
 			}
 			if len(subMsg) < 10 {
-				return fmt.Errorf("unexpected sub msg: %s", string(subMsg))
+				this.Ui.Warn(fmt.Sprintf("unexpected sub msg: %s", string(subMsg)))
 			}
 
 			return api.ErrSubStop
