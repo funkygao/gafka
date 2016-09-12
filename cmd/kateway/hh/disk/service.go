@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/hh"
 	"github.com/funkygao/golib/timewheel"
 	log "github.com/funkygao/log4go"
 )
@@ -31,7 +32,7 @@ type Service struct {
 	queues map[clusterTopic]*queue
 }
 
-func New(cfg *Config) *Service {
+func New(cfg *Config) hh.Service {
 	timer = timewheel.NewTimeWheel(time.Second, 120)
 	return &Service{
 		cfg:    cfg,

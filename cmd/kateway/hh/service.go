@@ -20,6 +20,8 @@ type Service interface {
 
 	// FlushInflights flush all inflight entries inside buffer to final message storage.
 	FlushInflights()
+
+	Inflights() int64
 }
 
 var Default Service

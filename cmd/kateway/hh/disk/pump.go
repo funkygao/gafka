@@ -38,7 +38,6 @@ func (q *queue) pump() {
 		switch err {
 		case nil:
 			q.emptyInflight.Set(0)
-			q.inflights.Add(1)
 
 			for retries = 0; retries < defaultMaxRetries; retries++ {
 				partition, offset, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
