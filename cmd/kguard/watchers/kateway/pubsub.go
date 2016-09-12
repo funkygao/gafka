@@ -14,6 +14,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+var errKatewayAllGone = fmt.Errorf("all kateway gone")
+
 func init() {
 	monitor.RegisterWatcher("kateway.pubsub", func() monitor.Watcher {
 		return &WatchPubsub{
@@ -73,6 +75,11 @@ func (this *WatchPubsub) runCheckup() error {
 	if err != nil {
 		log.Error("pubsub: %v", err)
 		return err
+	}
+
+	if len(kws) == 0 {
+		log.Error("%s", errKatewayAllGone)
+		return errKatewayAllGone
 	}
 
 	var (
