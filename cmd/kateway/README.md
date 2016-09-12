@@ -161,6 +161,8 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
+- [ ] bug: /Users/funky/gopkg/src/github.com/samuel/go-zookeeper/zk/conn.go 511 
+  panic: non-positive interval for NewTicker
 - [ ] bug: when shutdown, consumer group is not sync'ed with sub server stop
 - [ ] bug: kateway gone, but kguard kateway.pubsub.fail didn't notice
 - [ ] zk session expires and ephemeral znodes?

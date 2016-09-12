@@ -26,7 +26,6 @@ import (
 	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
-	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
 func init() {
@@ -105,8 +104,6 @@ func Main() {
 	log.Trace("pub store[%s] started", store.DefaultPubStore.Name())
 
 	c := controller.New(zkzone, Options.ListenAddr, Options.ManagerType)
-	stopZkWatcher := make(chan struct{})
-	go watchZk(c, zkzone, stopZkWatcher)
 
 	cfg := disk.DefaultConfig()
 	cfg.Dirs = strings.Split(Options.HintedHandoffDir, ",")
@@ -132,9 +129,6 @@ func Main() {
 		panic(err)
 	}
 
-	// cleanup
-	close(stopZkWatcher)
-
 	log.Trace("pub store[%s] stopping", store.DefaultPubStore.Name())
 	store.DefaultPubStore.Stop()
 
@@ -150,40 +144,4 @@ func Main() {
 	log.Trace("zkzone stopped")
 
 	log.Trace("all cleanup done")
-}
-
-// keep watch on zk connection jitter
-func watchZk(c controller.Controller, zkzone *zk.ZkZone, stop chan struct{}) {
-	evtCh, ok := zkzone.SessionEvents()
-	if !ok {
-		panic("someone else is stealing my zk events?")
-	}
-
-	// during connecting phase, the following events are fired:
-	// StateConnecting -> StateConnected -> StateHasSession
-	firstHandShaked := false
-	for {
-		select {
-		case <-stop:
-			return
-
-		case evt := <-evtCh:
-			if !firstHandShaked {
-				if evt.State == zklib.StateHasSession {
-					firstHandShaked = true
-				}
-
-				continue
-			}
-
-			log.Warn("zk jitter: %+v", evt)
-
-			if evt.State == zklib.StateHasSession {
-				log.Warn("zk reconnected after session lost, watcher/ephemeral lost")
-
-				zkzone.CallSOS(fmt.Sprintf("actord[%s]", c.Id()), "zk session expired")
-			}
-		}
-	}
-
 }
