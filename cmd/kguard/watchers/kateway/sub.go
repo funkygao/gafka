@@ -81,9 +81,47 @@ func (this *WatchSub) unsuspect(group string, topic string) {
 }
 
 func (this *WatchSub) report() (lags, conflictGroups int) {
+	// find sub conflicts
 	for _, zkcluster := range this.zkclusters {
 		groupTopicsMap := make(map[string]map[string]struct{}) // group:sub topics
 
+		for group, consumers := range zkcluster.ConsumerGroups() {
+			if len(consumers) == 0 {
+				continue
+			}
+
+			for _, c := range consumers {
+				for topic, _ := range c.Subscription {
+					if len(groupTopicsMap[group]) == 0 {
+						groupTopicsMap[group] = make(map[string]struct{}, 5)
+					}
+					groupTopicsMap[group][topic] = struct{}{}
+				}
+			}
+		}
+
+		// Sub disallow the same group to sub multiple topics
+		for group, topics := range groupTopicsMap {
+			if len(topics) <= 1 {
+				continue
+			}
+
+			// conflict found!
+			conflictGroups++
+
+			// the same consumer group is consuming more than 1 topics
+			topicsLabel := make([]string, 0, len(topics))
+			for t := range topics {
+				topicsLabel = append(topicsLabel, t)
+			}
+			sort.Strings(topicsLabel)
+
+			log.Warn("group[%s] consuming more than 1 topics: %s", group, strings.Join(topicsLabel, ", "))
+		}
+	}
+
+	// find sub lags
+	for _, zkcluster := range this.zkclusters {
 		for group, consumers := range zkcluster.ConsumersByGroup("") {
 			for _, c := range consumers {
 				if !c.Online {
@@ -94,14 +132,6 @@ func (this *WatchSub) report() (lags, conflictGroups int) {
 					log.Warn("group[%s] topic[%s/%s] unrecognized consumer", group, c.Topic, c.PartitionId)
 
 					continue
-				}
-
-				// record each group is consuming what topics
-				for topic := range c.ConsumerZnode.Subscription {
-					if _, present := groupTopicsMap[group]; !present {
-						groupTopicsMap[group] = make(map[string]struct{}, 5)
-					}
-					groupTopicsMap[group][topic] = struct{}{}
 				}
 
 				if time.Since(c.ConsumerZnode.Uptime()) < time.Minute*2 {
@@ -137,24 +167,6 @@ func (this *WatchSub) report() (lags, conflictGroups int) {
 			}
 		}
 
-		// Sub disallow the same group to sub multiple topics
-		for group, topics := range groupTopicsMap {
-			if len(topics) <= 1 {
-				continue
-			}
-
-			// conflict found!
-			conflictGroups++
-
-			// the same consumer group is consuming more than 1 topics
-			topicsLabel := make([]string, 0, len(topics))
-			for t := range topics {
-				topicsLabel = append(topicsLabel, t)
-			}
-			sort.Strings(topicsLabel)
-
-			log.Warn("group[%s] consuming more than 1 topics: %s", group, strings.Join(topicsLabel, ","))
-		}
 	}
 
 	return
