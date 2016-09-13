@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
+	"github.com/funkygao/gafka/cmd/kateway/structs"
 	"github.com/funkygao/gafka/mpool"
 )
 
@@ -178,10 +179,8 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 	}
 
 	// authorization
-	if topics, present := this.appSubMap[appid]; present {
-		if _, present := topics[hisTopic]; present {
-			return nil
-		}
+	if _, present := this.appSubMap[structs.AppTopic{AppID: appid, Topic: hisTopic}]; present {
+		return nil
 	}
 
 	return manager.ErrAuthorizationFail

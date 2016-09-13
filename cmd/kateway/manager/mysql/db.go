@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/structs"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
@@ -22,10 +23,9 @@ type mysqlStore struct {
 	allowUnregisteredGroup bool
 
 	// mysql store, initialized on refresh
-	// TODO flatten the map's with struct
 	appClusterMap       map[string]string                       // appid:cluster
 	appSecretMap        map[string]string                       // appid:secret
-	appSubMap           map[string]map[string]struct{}          // appid:subscribed topics
+	appSubMap           map[structs.AppTopic]struct{}           // appid:subscribed topics
 	appTopicsMap        map[string]map[string]bool              // appid:topics enabled
 	appConsumerGroupMap map[string]map[string]struct{}          // appid:groups
 	shadowQueueMap      map[string]string                       // hisappid.topic.ver.myappid:group
@@ -292,7 +292,7 @@ func (this *mysqlStore) fetchSubscribeRecords(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	m := make(map[string]map[string]struct{})
+	m := make(map[structs.AppTopic]struct{})
 	var app appSubscribeRecord
 	for rows.Next() {
 		err = rows.Scan(&app.AppId, &app.TopicName)
@@ -301,11 +301,7 @@ func (this *mysqlStore) fetchSubscribeRecords(db *sql.DB) error {
 			continue
 		}
 
-		if _, present := m[app.AppId]; !present {
-			m[app.AppId] = make(map[string]struct{})
-		}
-
-		m[app.AppId][app.TopicName] = struct{}{}
+		m[structs.AppTopic{AppID: app.AppId, Topic: app.TopicName}] = struct{}{}
 	}
 
 	this.appSubMap = m
