@@ -168,22 +168,23 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
+- [ ] when startup, hh Empty?
+- [ ] kguard watch for same group consuming multiple topics
+- [ ] man /v1/clusters director of cluster distribution
 - [ ] bug: /Users/funky/gopkg/src/github.com/samuel/go-zookeeper/zk/conn.go 511 
   panic: non-positive interval for NewTicker
 - [ ] go over all zk watchers, handle expire
 - [ ] ehaproxy handles zk expire
   sometimes haproxy process didn't exit normally
 - [ ] bug: when shutdown, consumer group is not sync'ed with sub server stop
-- [ ] bug: kateway gone, but kguard kateway.pubsub.fail didn't notice
-- [ ] zk session expires and ephemeral znodes?
-- [ ] when startup, hh Empty?
+- [X] bug: kateway gone, but kguard kateway.pubsub.fail didn't notice
+- [X] zk session expires and ephemeral znodes?
 - [X] IO load balance for hinted handoff
 - [ ] metrics for hh
 - [ ] swagger
 - [ ] reject Sub when the group is being used for another topic
 - [X] pause a webhook
-- [ ] kafka timeout 1ms can work with hinted handoff
-- [ ] man /v1/clusters director of cluster distribution
+- [X] kafka timeout 1ms can work with hinted handoff
 
 - [ ] DFS/Kahn webhook dead loop detection
 - [ ] job
@@ -192,7 +193,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - partition table?
 - [X] deregister before web listener closed
 - [ ] github.com/funkygao/go-metrics/sample.go:151 heap
-- [ ] failure tolerance
+- [X] failure tolerance
   - pub breaker
   - migration partition from a to b
   - what if a broker killed
@@ -209,13 +210,11 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - msg tag
   - avro schema registry
 - [ ] fetchShadowQueueRecords enable
-- [ ] why make sub with 15s sleep fails
 - [ ] Plugins
   - authentication and authorization
   - transform
   - hooks
 - [ ] check hack pkg
-- [ ] https://github.com/allinurl/goaccess
 - [ ] https, outer ip must https
 - [ ] Update to glibc 2.20 or higher
 - [ ] compress
