@@ -200,7 +200,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 			}
 
 			statusMap, _ := this.getKatewayStatusMap(kw.ManAddr)
-			logLevel := statusMap["loglevel"].(string)
+			logLevel, _ := statusMap["loglevel"].(string)
 			heapSize, ok := statusMap["heap"].(string)
 			if !ok {
 				heapSize = ""
