@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/structs"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
@@ -22,18 +23,17 @@ type mysqlStore struct {
 	allowUnregisteredGroup bool
 
 	// mysql store, initialized on refresh
-	// TODO flatten the map's with struct
-	appClusterMap       map[string]string                       // appid:cluster
-	appSecretMap        map[string]string                       // appid:secret
-	appSubMap           map[string]map[string]struct{}          // appid:subscribed topics
-	appTopicsMap        map[string]map[string]bool              // appid:topics enabled
-	appConsumerGroupMap map[string]map[string]struct{}          // appid:groups
-	shadowQueueMap      map[string]string                       // hisappid.topic.ver.myappid:group
-	deadPartitionMap    map[string]map[int32]struct{}           // topic:partitionId
-	topicSchemaMap      map[string]map[string]map[string]string // appid:topic:ver:schema
+	appClusterMap       map[string]string              // appid:cluster
+	appSecretMap        map[string]string              // appid:secret
+	appSubMap           map[structs.AppTopic]struct{}  // appid:subscribed topics
+	appTopicsMap        map[structs.AppTopic]bool      // appid:topics enabled
+	appConsumerGroupMap map[structs.AppGroup]struct{}  // appid:groups
+	shadowQueueMap      map[string]string              // hisappid.topic.ver.myappid:group
+	deadPartitionMap    map[string]map[int32]struct{}  // topic:partitionId
+	topicSchemaMap      map[structs.AppTopicVer]string // appid:topic:ver:schema
 
 	dryrunLock   sync.RWMutex
-	dryrunTopics map[string]map[string]map[string]struct{}
+	dryrunTopics map[structs.AppTopicVer]struct{}
 }
 
 func New(cf *config) *mysqlStore {
@@ -51,7 +51,7 @@ func New(cf *config) *mysqlStore {
 		shutdownCh:             make(chan struct{}),
 		refreshCh:              make(chan struct{}),
 		allowUnregisteredGroup: false,
-		dryrunTopics:           make(map[string]map[string]map[string]struct{}),
+		dryrunTopics:           make(map[structs.AppTopicVer]struct{}),
 	}
 }
 
@@ -159,7 +159,7 @@ func (this *mysqlStore) fetchSchemas(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	schemas := make(map[string]map[string]map[string]string)
+	m := make(map[structs.AppTopicVer]string)
 	var schema topicSchemaRecord
 	for rows.Next() {
 		err = rows.Scan(&schema.AppId, &schema.TopicName, &schema.Ver, &schema.Schema)
@@ -168,17 +168,10 @@ func (this *mysqlStore) fetchSchemas(db *sql.DB) error {
 			continue
 		}
 
-		if _, present := schemas[schema.AppId]; !present {
-			schemas[schema.AppId] = make(map[string]map[string]string)
-		}
-		if _, present := schemas[schema.AppId][schema.TopicName]; !present {
-			schemas[schema.AppId][schema.TopicName] = make(map[string]string)
-		}
-
-		schemas[schema.AppId][schema.TopicName][schema.Ver] = schema.Schema
+		m[structs.AppTopicVer{AppID: schema.AppId, Topic: schema.TopicName, Ver: schema.Ver}] = schema.Schema
 	}
 
-	this.topicSchemaMap = schemas
+	this.topicSchemaMap = m
 	return nil
 }
 
@@ -238,7 +231,7 @@ func (this *mysqlStore) fetchAppGroupRecords(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	appGroupMap := make(map[string]map[string]struct{})
+	m := make(map[structs.AppGroup]struct{})
 	var group appConsumerGroupRecord
 	for rows.Next() {
 		err = rows.Scan(&group.AppId, &group.GroupName)
@@ -247,14 +240,10 @@ func (this *mysqlStore) fetchAppGroupRecords(db *sql.DB) error {
 			continue
 		}
 
-		if _, present := appGroupMap[group.AppId]; !present {
-			appGroupMap[group.AppId] = make(map[string]struct{})
-		}
-
-		appGroupMap[group.AppId][group.GroupName] = struct{}{}
+		m[structs.AppGroup{AppID: group.AppId, Group: group.GroupName}] = struct{}{}
 	}
 
-	this.appConsumerGroupMap = appGroupMap
+	this.appConsumerGroupMap = m
 	return nil
 }
 
@@ -292,7 +281,7 @@ func (this *mysqlStore) fetchSubscribeRecords(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	m := make(map[string]map[string]struct{})
+	m := make(map[structs.AppTopic]struct{})
 	var app appSubscribeRecord
 	for rows.Next() {
 		err = rows.Scan(&app.AppId, &app.TopicName)
@@ -301,11 +290,7 @@ func (this *mysqlStore) fetchSubscribeRecords(db *sql.DB) error {
 			continue
 		}
 
-		if _, present := m[app.AppId]; !present {
-			m[app.AppId] = make(map[string]struct{})
-		}
-
-		m[app.AppId][app.TopicName] = struct{}{}
+		m[structs.AppTopic{AppID: app.AppId, Topic: app.TopicName}] = struct{}{}
 	}
 
 	this.appSubMap = m
@@ -320,7 +305,7 @@ func (this *mysqlStore) fetchTopicRecords(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	m := make(map[string]map[string]bool)
+	m := make(map[structs.AppTopic]bool)
 	var app appTopicRecord
 	for rows.Next() {
 		err = rows.Scan(&app.AppId, &app.TopicName, &app.Status)
@@ -329,11 +314,7 @@ func (this *mysqlStore) fetchTopicRecords(db *sql.DB) error {
 			continue
 		}
 
-		if _, present := m[app.AppId]; !present {
-			m[app.AppId] = make(map[string]bool)
-		}
-
-		m[app.AppId][app.TopicName] = app.Status == "1"
+		m[structs.AppTopic{AppID: app.AppId, Topic: app.TopicName}] = app.Status == "1"
 	}
 
 	this.appTopicsMap = m
