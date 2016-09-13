@@ -16,13 +16,15 @@ type Kguard struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone string
+	zone    string
+	longFmt bool
 }
 
 func (this *Kguard) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("kguard", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.BoolVar(&this.longFmt, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
 	}
@@ -39,7 +41,26 @@ func (this *Kguard) Run(args []string) (exitCode int) {
 		color.Green(leader.Host), leader.Candidates,
 		gofmt.PrettySince(leader.Ctime)))
 
+	if this.longFmt {
+		this.showStats(leader.Host)
+	}
+
 	return
+}
+
+func (this *Kguard) showStats(host string) {
+	url := fmt.Sprintf("http://%s:10025/metrics", host)
+	req := gorequest.New()
+	req.Get(url).Set("User-Agent", "gk")
+	_, b, errs := req.EndBytes()
+	if len(errs) > 0 {
+		for _, err := range errs {
+			this.Ui.Error(err.Error())
+		}
+		return
+	}
+
+	this.Ui.Output(string(b))
 }
 
 func (*Kguard) Synopsis() string {
@@ -51,6 +72,11 @@ func (this *Kguard) Help() string {
 Usage: %s kateway -z zone [options]
 
     List online kguard instances
+
+Options:
+
+    -l
+	  Use a long listing format.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
