@@ -25,7 +25,7 @@ func (this *Binlog) Run(args []string) (exitCode int) {
 
 	syncer := replication.NewBinlogSyncer(1001, "mysql")
 	syncer.RegisterSlave("localhost", 3306, "root", "")
-	binlogFile := "binlogFile"
+	binlogFile := "mysql-bin.000080"
 	binlogPos := uint32(1)
 	stream, err := syncer.StartSync(mysql.Position{binlogFile, binlogPos})
 	if err != nil {
