@@ -33,7 +33,7 @@ type mysqlStore struct {
 	topicSchemaMap      map[structs.AppTopicVer]string // appid:topic:ver:schema
 
 	dryrunLock   sync.RWMutex
-	dryrunTopics map[string]map[string]map[string]struct{}
+	dryrunTopics map[structs.AppTopicVer]struct{}
 }
 
 func New(cf *config) *mysqlStore {
@@ -51,7 +51,7 @@ func New(cf *config) *mysqlStore {
 		shutdownCh:             make(chan struct{}),
 		refreshCh:              make(chan struct{}),
 		allowUnregisteredGroup: false,
-		dryrunTopics:           make(map[string]map[string]map[string]struct{}),
+		dryrunTopics:           make(map[structs.AppTopicVer]struct{}),
 	}
 }
 

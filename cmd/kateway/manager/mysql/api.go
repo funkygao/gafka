@@ -204,7 +204,7 @@ func (this *mysqlStore) IsShadowedTopic(hisAppid, topic, ver, myAppid, group str
 
 func (this *mysqlStore) IsDryrunTopic(appid, topic, ver string) bool {
 	this.dryrunLock.RLock()
-	_, present := this.dryrunTopics[appid][topic][ver]
+	_, present := this.dryrunTopics[structs.AppTopicVer{AppID: appid, Topic: topic, Ver: ver}]
 	this.dryrunLock.RUnlock()
 
 	return present
@@ -212,19 +212,12 @@ func (this *mysqlStore) IsDryrunTopic(appid, topic, ver string) bool {
 
 func (this *mysqlStore) MarkTopicDryrun(appid, topic, ver string) {
 	this.dryrunLock.Lock()
-	defer this.dryrunLock.Unlock()
-
-	if _, present := this.dryrunTopics[appid]; !present {
-		this.dryrunTopics[appid] = make(map[string]map[string]struct{})
-	}
-	if _, present := this.dryrunTopics[appid][topic]; !present {
-		this.dryrunTopics[appid][topic] = make(map[string]struct{})
-	}
-	this.dryrunTopics[appid][topic][ver] = struct{}{}
+	this.dryrunTopics[structs.AppTopicVer{AppID: appid, Topic: topic, Ver: ver}] = struct{}{}
+	this.dryrunLock.Unlock()
 }
 
 func (this *mysqlStore) ClearDryrunTopics() {
 	this.dryrunLock.Lock()
-	this.dryrunTopics = make(map[string]map[string]map[string]struct{})
+	this.dryrunTopics = make(map[structs.AppTopicVer]struct{})
 	this.dryrunLock.Unlock()
 }
