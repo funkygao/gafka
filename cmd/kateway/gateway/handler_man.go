@@ -82,7 +82,7 @@ func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, par
 func (this *manServer) clustersHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	log.Info("clusters %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
 
-	b, _ := json.Marshal(meta.Default.Clusters())
+	b, _ := json.Marshal(meta.Default.AssignClusters())
 	w.Write(b)
 }
 

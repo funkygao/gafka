@@ -1,10 +1,11 @@
+// Package meta manages the global topology information.
 package meta
 
 import (
 	"github.com/funkygao/gafka/zk"
 )
 
-// MetaStore is a generic storage that fetches meta data.
+// MetaStore is a generic storage that fetches topology meta data.
 type MetaStore interface {
 	Name() string
 
@@ -19,8 +20,8 @@ type MetaStore interface {
 	// ClusterNames returns all live cluster names within the current zone.
 	ClusterNames() []string
 
-	// Clusters returns all live clusters name,nickname info.
-	Clusters() []map[string]string
+	// AssignClusters is director of cluster distribution.
+	AssignClusters() []map[string]string
 
 	TopicPartitions(cluster, topic string) []int32
 	OnlineConsumersCount(cluster, topic, group string) int

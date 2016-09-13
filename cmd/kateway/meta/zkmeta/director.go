@@ -5,7 +5,7 @@ import (
 )
 
 // Distribution of underly store clusters to multi-tenants.
-func (this *zkMetaStore) Clusters() []map[string]string {
+func (this *zkMetaStore) AssignClusters() []map[string]string {
 	r := make([]map[string]string, 0)
 
 	this.mu.RLock()
