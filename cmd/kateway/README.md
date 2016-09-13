@@ -65,6 +65,12 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - Visualize message flow
   - Managed integration service via Webhooks
   - Hot configurable
+  - Multi-tenant
+  - Authentication
+  - Authorization
+  - Quotas
+  - Optional hardware isolation
+  - REST API for provisioning, admin and stats
 - Mirror across data centers
 - Replicated storage and guaranteed at-least-once message delivery
 - Functional Features
