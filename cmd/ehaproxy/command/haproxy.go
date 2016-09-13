@@ -59,7 +59,11 @@ func (this *Start) createConfigFile(servers BackendServers) error {
 	}
 	defer cfgFile.Close()
 
-	b, _ := Asset("templates/haproxy.tpl")
+	tpl := "templates/haproxy.tpl"
+	if this.debugMode {
+		tpl = "templates/haproxy.debug.tpl"
+	}
+	b, _ := Asset(tpl)
 	t := template.Must(template.New("haproxy").Parse(string(b)))
 
 	err = t.Execute(cfgFile, servers)

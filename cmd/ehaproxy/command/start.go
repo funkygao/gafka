@@ -32,6 +32,7 @@ type Start struct {
 
 	zone       string
 	root       string
+	debugMode  bool
 	command    string
 	logfile    string
 	pubPort    int
@@ -51,6 +52,7 @@ func (this *Start) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.logfile, "log", defaultLogfile, "")
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.root, "p", defaultPrefix, "")
+	cmdFlags.BoolVar(&this.debugMode, "d", false, "")
 	cmdFlags.BoolVar(&this.forwardFor, "forwardfor", false, "")
 	cmdFlags.IntVar(&this.pubPort, "pub", 10891, "")
 	cmdFlags.IntVar(&this.subPort, "sub", 10892, "")
@@ -273,6 +275,9 @@ Options:
 
     -z zone
       Default %s
+
+    -d
+      Debug mode
 
     -forwardfor
       Default false.
