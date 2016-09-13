@@ -201,26 +201,11 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 			statusMap, _ := this.getKatewayStatusMap(kw.ManAddr)
 			logLevel, _ := statusMap["loglevel"].(string)
-			heapSize, ok := statusMap["heap"].(string)
-			if !ok {
-				heapSize = ""
-			}
-			pubConn, ok := statusMap["pubconn"].(string)
-			if !ok {
-				pubConn = ""
-			}
-			hhAppendN, ok := statusMap["hh_appends"].(string)
-			if !ok {
-				hhAppendN = ""
-			}
-			hhDeliverN, ok := statusMap["hh_delivers"].(string)
-			if !ok {
-				hhDeliverN = ""
-			}
-			subConn, ok := statusMap["subconn"].(string)
-			if !ok {
-				subConn = ""
-			}
+			heapSize, _ := statusMap["heap"].(string)
+			pubConn, _ := statusMap["pubconn"].(string)
+			hhAppendN, _ := statusMap["hh_appends"].(string)
+			hhDeliverN, _ := statusMap["hh_delivers"].(string)
+			subConn, _ := statusMap["subconn"].(string)
 
 			if this.versionOnly {
 				pprofAddr := kw.DebugAddr
