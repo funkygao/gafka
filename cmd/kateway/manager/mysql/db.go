@@ -23,14 +23,14 @@ type mysqlStore struct {
 	allowUnregisteredGroup bool
 
 	// mysql store, initialized on refresh
-	appClusterMap       map[string]string                       // appid:cluster
-	appSecretMap        map[string]string                       // appid:secret
-	appSubMap           map[structs.AppTopic]struct{}           // appid:subscribed topics
-	appTopicsMap        map[structs.AppTopic]bool               // appid:topics enabled
-	appConsumerGroupMap map[structs.AppGroup]struct{}           // appid:groups
-	shadowQueueMap      map[string]string                       // hisappid.topic.ver.myappid:group
-	deadPartitionMap    map[string]map[int32]struct{}           // topic:partitionId
-	topicSchemaMap      map[string]map[string]map[string]string // appid:topic:ver:schema
+	appClusterMap       map[string]string              // appid:cluster
+	appSecretMap        map[string]string              // appid:secret
+	appSubMap           map[structs.AppTopic]struct{}  // appid:subscribed topics
+	appTopicsMap        map[structs.AppTopic]bool      // appid:topics enabled
+	appConsumerGroupMap map[structs.AppGroup]struct{}  // appid:groups
+	shadowQueueMap      map[string]string              // hisappid.topic.ver.myappid:group
+	deadPartitionMap    map[string]map[int32]struct{}  // topic:partitionId
+	topicSchemaMap      map[structs.AppTopicVer]string // appid:topic:ver:schema
 
 	dryrunLock   sync.RWMutex
 	dryrunTopics map[string]map[string]map[string]struct{}
@@ -159,7 +159,7 @@ func (this *mysqlStore) fetchSchemas(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	schemas := make(map[string]map[string]map[string]string)
+	m := make(map[structs.AppTopicVer]string)
 	var schema topicSchemaRecord
 	for rows.Next() {
 		err = rows.Scan(&schema.AppId, &schema.TopicName, &schema.Ver, &schema.Schema)
@@ -168,17 +168,10 @@ func (this *mysqlStore) fetchSchemas(db *sql.DB) error {
 			continue
 		}
 
-		if _, present := schemas[schema.AppId]; !present {
-			schemas[schema.AppId] = make(map[string]map[string]string)
-		}
-		if _, present := schemas[schema.AppId][schema.TopicName]; !present {
-			schemas[schema.AppId][schema.TopicName] = make(map[string]string)
-		}
-
-		schemas[schema.AppId][schema.TopicName][schema.Ver] = schema.Schema
+		m[structs.AppTopicVer{AppID: schema.AppId, Topic: schema.TopicName, Ver: schema.Ver}] = schema.Schema
 	}
 
-	this.topicSchemaMap = schemas
+	this.topicSchemaMap = m
 	return nil
 }
 

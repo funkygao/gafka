@@ -63,7 +63,8 @@ func (this *mysqlStore) Signature(appid string) string {
 }
 
 func (this *mysqlStore) TopicSchema(appid, topic, ver string) (string, error) {
-	if schema, present := this.topicSchemaMap[appid][topic][ver]; present {
+	atv := structs.AppTopicVer{AppID: appid, Topic: topic, Ver: ver}
+	if schema, present := this.topicSchemaMap[atv]; present {
 		return schema, nil
 	}
 
