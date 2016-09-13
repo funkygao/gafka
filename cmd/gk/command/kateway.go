@@ -224,7 +224,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 			if this.versionOnly {
 				pprofAddr := kw.DebugAddr
-				if pprofAddr[0] == ':' {
+				if len(pprofAddr) > 0 && pprofAddr[0] == ':' {
 					pprofAddr = kw.Ip + pprofAddr
 				}
 				pprofAddr = fmt.Sprintf("%s/debug/pprof/", pprofAddr)
