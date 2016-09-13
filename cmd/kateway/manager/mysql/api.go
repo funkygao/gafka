@@ -135,12 +135,10 @@ func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 	}
 
 	// authorization
-	if topics, present := this.appTopicsMap[appid]; present {
-		if enabled, present := topics[topic]; present {
-			if enabled {
-				return nil
-			}
-
+	if enabled, present := this.appTopicsMap[structs.AppTopic{AppID: appid, Topic: topic}]; present {
+		if enabled {
+			return nil
+		} else {
 			return manager.ErrDisabledTopic
 		}
 	}

@@ -26,7 +26,7 @@ type mysqlStore struct {
 	appClusterMap       map[string]string                       // appid:cluster
 	appSecretMap        map[string]string                       // appid:secret
 	appSubMap           map[structs.AppTopic]struct{}           // appid:subscribed topics
-	appTopicsMap        map[string]map[string]bool              // appid:topics enabled
+	appTopicsMap        map[structs.AppTopic]bool               // appid:topics enabled
 	appConsumerGroupMap map[string]map[string]struct{}          // appid:groups
 	shadowQueueMap      map[string]string                       // hisappid.topic.ver.myappid:group
 	deadPartitionMap    map[string]map[int32]struct{}           // topic:partitionId
@@ -316,7 +316,7 @@ func (this *mysqlStore) fetchTopicRecords(db *sql.DB) error {
 	}
 	defer rows.Close()
 
-	m := make(map[string]map[string]bool)
+	m := make(map[structs.AppTopic]bool)
 	var app appTopicRecord
 	for rows.Next() {
 		err = rows.Scan(&app.AppId, &app.TopicName, &app.Status)
@@ -325,11 +325,7 @@ func (this *mysqlStore) fetchTopicRecords(db *sql.DB) error {
 			continue
 		}
 
-		if _, present := m[app.AppId]; !present {
-			m[app.AppId] = make(map[string]bool)
-		}
-
-		m[app.AppId][app.TopicName] = app.Status == "1"
+		m[structs.AppTopic{AppID: app.AppId, Topic: app.TopicName}] = app.Status == "1"
 	}
 
 	this.appTopicsMap = m
