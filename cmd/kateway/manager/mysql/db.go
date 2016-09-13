@@ -275,7 +275,7 @@ func (this *mysqlStore) fetchApplicationRecords(db *sql.DB) error {
 
 func (this *mysqlStore) fetchSubscribeRecords(db *sql.DB) error {
 	// FIXME a sub topic t, t disabled, this subscription entry should be disabled too
-	rows, err := db.Query("SELECT AppId,TopicName FROM topics_subscriber WHERE Status=1")
+	rows, err := db.Query("SELECT AppId,TopicName FROM topic_subscriber WHERE Status=1")
 	if err != nil {
 		return err
 	}
@@ -299,7 +299,7 @@ func (this *mysqlStore) fetchSubscribeRecords(db *sql.DB) error {
 }
 
 func (this *mysqlStore) fetchTopicRecords(db *sql.DB) error {
-	rows, err := db.Query("SELECT AppId,TopicName,Status FROM topics")
+	rows, err := db.Query("SELECT AppId,TopicName,Status FROM topic")
 	if err != nil {
 		return err
 	}
