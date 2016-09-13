@@ -9,14 +9,19 @@ import (
 )
 
 func TestAddAndExtractMessageTag(t *testing.T) {
-	m := mpool.NewMessage(1000)
+	tag := "a=b;c=d"
 	body := "hello world"
-	m.Write([]byte(body))
+	m := mpool.NewMessage(len(body) + tagLen(tag))
+	m.Body = m.Body[:len(body)+tagLen(tag)]
+	for i := 0; i < len(body); i++ {
+		m.Body[i] = body[i]
+	}
 
-	t.Logf("%s  %+v %d", string(m.Body), m.Body, len(m.Body))
-	AddTagToMessage(m, "a=b;c=d")
+	t.Logf("%s  %+v %d/%d", string(m.Body), m.Body, len(body), len(m.Body))
+	AddTagToMessage(m, tag)
 	t.Logf("%s  %+v %d", string(m.Body), m.Body, len(m.Body))
 	assert.Equal(t, TagMarkStart, m.Body[0])
+	t.Logf("%s", string(m.Body))
 
 	// extract tag
 	tags, i, err := ExtractMessageTag(m.Body)

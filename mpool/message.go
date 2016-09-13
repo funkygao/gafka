@@ -14,7 +14,6 @@ type Message struct {
 	bodyBuf []byte
 
 	slabSize int
-	offset   int
 }
 
 type slabClass struct {
@@ -84,34 +83,4 @@ func (this *Message) Free() (recycled bool) {
 	}
 
 	return true
-}
-
-// Reset resets the buffer to be empty, but it retains the underlying
-// storage for use by future writes.
-func (this *Message) Reset() {
-	this.offset = 0
-}
-
-// WriteString is a costly function. Use it only when you know its underhood.
-// Currently, kateway is not using this function.
-func (this *Message) WriteString(s string) error {
-	if len(s)+this.offset > cap(this.bodyBuf) {
-		return ErrorMessageOverflow
-	}
-
-	this.Body = this.Body[0 : this.offset+len(s)]
-	copy(this.Body[this.offset:], s)
-	this.offset += len(s)
-	return nil
-}
-
-func (this *Message) Write(b []byte) error {
-	if len(b)+this.offset > cap(this.bodyBuf) {
-		return ErrorMessageOverflow
-	}
-
-	this.Body = this.Body[0 : this.offset+len(b)]
-	copy(this.Body[this.offset:], b)
-	this.offset += len(b)
-	return nil
 }

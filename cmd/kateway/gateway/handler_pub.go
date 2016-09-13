@@ -99,8 +99,9 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 			return
 		}
 
-		msg = mpool.NewMessage(tagLen(tag) + msgLen)
-		msg.Body = msg.Body[0 : tagLen(tag)+msgLen]
+		msgSz := tagLen(tag) + msgLen
+		msg = mpool.NewMessage(msgSz)
+		msg.Body = msg.Body[0:msgSz]
 	} else {
 		msg = mpool.NewMessage(msgLen)
 		msg.Body = msg.Body[0:msgLen]

@@ -17,17 +17,23 @@ func IsTaggedMessage(msg []byte) bool {
 	return msg[0] == TagMarkStart
 }
 
-// TODO perf
-func AddTagToMessage(m *mpool.Message, tags string) {
-	body := make([]byte, len(m.Body))
-	copy(body, m.Body) // FIXME O(N)
+// ┌────────────────────────────┐ ┌────────┐
+// │TagMarkStart Tag TagMarkEnd │ │Message │
+// └────────────────────────────┘ └────────┘
+func AddTagToMessage(m *mpool.Message, tag string) {
+	shift := tagLen(tag)
+	for i := len(m.Body) - 1; i >= shift; i-- {
+		m.Body[i] = m.Body[i-shift]
+	}
 
-	m.Reset()
-	m.Write([]byte{TagMarkStart})
-	m.WriteString(tags)
-	m.Write([]byte{TagMarkEnd})
-
-	m.Write(body)
+	i := 0
+	m.Body[i] = TagMarkStart
+	i++
+	for _, b := range tag {
+		m.Body[i] = byte(b)
+		i++
+	}
+	m.Body[i] = TagMarkEnd
 }
 
 func ExtractMessageTag(msg []byte) ([]string, int, error) {
