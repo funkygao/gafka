@@ -1,6 +1,8 @@
 package command
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"strings"
@@ -10,6 +12,7 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/gorequest"
 )
 
 type Kguard struct {
@@ -60,7 +63,9 @@ func (this *Kguard) showStats(host string) {
 		return
 	}
 
-	this.Ui.Output(string(b))
+	var prettyJSON bytes.Buffer
+	json.Indent(&prettyJSON, b, "", "    ")
+	this.Ui.Output(prettyJSON.String())
 }
 
 func (*Kguard) Synopsis() string {
@@ -76,7 +81,7 @@ Usage: %s kateway -z zone [options]
 Options:
 
     -l
-	  Use a long listing format.
+      Use a long listing format.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
