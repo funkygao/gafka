@@ -169,8 +169,8 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 ### TODO
 
 - [ ] when startup, hh Empty?
-- [ ] kguard watch for same group consuming multiple topics
-- [ ] man /v1/clusters director of cluster distribution
+- [X] kguard watch for same group consuming multiple topics
+- [X] man /v1/clusters director of cluster distribution
 - [ ] bug: /Users/funky/gopkg/src/github.com/samuel/go-zookeeper/zk/conn.go 511 
   panic: non-positive interval for NewTicker
 - [ ] go over all zk watchers, handle expire

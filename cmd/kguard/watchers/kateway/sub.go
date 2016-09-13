@@ -13,15 +13,15 @@ import (
 )
 
 func init() {
-	monitor.RegisterWatcher("kateway.sublag", func() monitor.Watcher {
-		return &WatchSubLag{
+	monitor.RegisterWatcher("kateway.sub", func() monitor.Watcher {
+		return &WatchSub{
 			Tick: time.Minute,
 		}
 	})
 }
 
-// WatchSubLag monitors aliveness of kateway cluster.
-type WatchSubLag struct {
+// WatchSub monitors Sub status of kateway cluster.
+type WatchSub struct {
 	Zkzone *zk.ZkZone
 	Stop   <-chan struct{}
 	Tick   time.Duration
@@ -32,14 +32,14 @@ type WatchSubLag struct {
 	suspects map[string]struct{}
 }
 
-func (this *WatchSubLag) Init(ctx monitor.Context) {
+func (this *WatchSub) Init(ctx monitor.Context) {
 	this.Zkzone = ctx.ZkZone()
 	this.Stop = ctx.StopChan()
 	this.Wg = ctx.Inflight()
 	this.suspects = make(map[string]struct{})
 }
 
-func (this *WatchSubLag) Run() {
+func (this *WatchSub) Run() {
 	defer this.Wg.Done()
 
 	this.zkclusters = this.Zkzone.PublicClusters() // TODO sync with clusters change
@@ -52,7 +52,7 @@ func (this *WatchSubLag) Run() {
 	for {
 		select {
 		case <-this.Stop:
-			log.Info("kateway.sublag stopped")
+			log.Info("kateway.sub stopped")
 			return
 
 		case <-ticker.C:
@@ -64,7 +64,7 @@ func (this *WatchSubLag) Run() {
 	}
 }
 
-func (this *WatchSubLag) isSuspect(group string, topic string) bool {
+func (this *WatchSub) isSuspect(group string, topic string) bool {
 	if _, present := this.suspects[group+"|"+topic]; present {
 		return true
 	}
@@ -72,15 +72,15 @@ func (this *WatchSubLag) isSuspect(group string, topic string) bool {
 	return false
 }
 
-func (this *WatchSubLag) suspect(group, topic string) {
+func (this *WatchSub) suspect(group, topic string) {
 	this.suspects[group+"|"+topic] = struct{}{}
 }
 
-func (this *WatchSubLag) unsuspect(group string, topic string) {
+func (this *WatchSub) unsuspect(group string, topic string) {
 	delete(this.suspects, group+"|"+topic)
 }
 
-func (this *WatchSubLag) report() (lags, conflictGroups int) {
+func (this *WatchSub) report() (lags, conflictGroups int) {
 	for _, zkcluster := range this.zkclusters {
 		groupTopicsMap := make(map[string]map[string]struct{}) // group:sub topics
 
