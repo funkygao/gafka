@@ -24,6 +24,13 @@ func init() {
 				Cmd: cmd,
 			}, nil
 		},
+
+		"canal": func() (cli.Command, error) {
+			return &command.Canal{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
 	}
 
 }
