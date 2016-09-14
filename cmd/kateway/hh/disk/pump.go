@@ -56,7 +56,7 @@ func (q *queue) pump() {
 						}
 					}
 					break
-				} else if err == store.ErrInvalidTopic {
+				} else if err == store.ErrInvalidTopic || err == store.ErrInvalidCluster {
 					q.cursor.commitPosition()
 					failN++
 					q.deliverN.Add(1)
