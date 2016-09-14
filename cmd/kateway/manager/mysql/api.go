@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
-	"github.com/funkygao/gafka/cmd/kateway/structs"
 	"github.com/funkygao/gafka/mpool"
 )
 
@@ -63,8 +62,7 @@ func (this *mysqlStore) Signature(appid string) string {
 }
 
 func (this *mysqlStore) TopicSchema(appid, topic, ver string) (string, error) {
-	atv := structs.AppTopicVer{AppID: appid, Topic: topic, Ver: ver}
-	if schema, present := this.topicSchemaMap[atv]; present {
+	if schema, present := this.topicSchemaMap[appid][topic][ver]; present {
 		return schema, nil
 	}
 
@@ -136,10 +134,12 @@ func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 	}
 
 	// authorization
-	if enabled, present := this.appTopicsMap[structs.AppTopic{AppID: appid, Topic: topic}]; present {
-		if enabled {
-			return nil
-		} else {
+	if topics, present := this.appTopicsMap[appid]; present {
+		if enabled, present := topics[topic]; present {
+			if enabled {
+				return nil
+			}
+
 			return manager.ErrDisabledTopic
 		}
 	}
@@ -166,8 +166,7 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 		if group == "" {
 			// empty group, means we skip group verification
 		} else if group != "__smoketest__" {
-			if _, present := this.appConsumerGroupMap[structs.AppGroup{AppID: appid, Group: group}]; !present {
-				// user must register group before Sub
+			if _, present := this.appConsumerGroupMap[appid][group]; !present {
 				return manager.ErrInvalidGroup
 			}
 		}
@@ -179,8 +178,10 @@ func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string)
 	}
 
 	// authorization
-	if _, present := this.appSubMap[structs.AppTopic{AppID: appid, Topic: hisTopic}]; present {
-		return nil
+	if topics, present := this.appSubMap[appid]; present {
+		if _, present := topics[hisTopic]; present {
+			return nil
+		}
 	}
 
 	return manager.ErrAuthorizationFail
@@ -204,7 +205,7 @@ func (this *mysqlStore) IsShadowedTopic(hisAppid, topic, ver, myAppid, group str
 
 func (this *mysqlStore) IsDryrunTopic(appid, topic, ver string) bool {
 	this.dryrunLock.RLock()
-	_, present := this.dryrunTopics[structs.AppTopicVer{AppID: appid, Topic: topic, Ver: ver}]
+	_, present := this.dryrunTopics[appid][topic][ver]
 	this.dryrunLock.RUnlock()
 
 	return present
@@ -212,12 +213,19 @@ func (this *mysqlStore) IsDryrunTopic(appid, topic, ver string) bool {
 
 func (this *mysqlStore) MarkTopicDryrun(appid, topic, ver string) {
 	this.dryrunLock.Lock()
-	this.dryrunTopics[structs.AppTopicVer{AppID: appid, Topic: topic, Ver: ver}] = struct{}{}
-	this.dryrunLock.Unlock()
+	defer this.dryrunLock.Unlock()
+
+	if _, present := this.dryrunTopics[appid]; !present {
+		this.dryrunTopics[appid] = make(map[string]map[string]struct{})
+	}
+	if _, present := this.dryrunTopics[appid][topic]; !present {
+		this.dryrunTopics[appid][topic] = make(map[string]struct{})
+	}
+	this.dryrunTopics[appid][topic][ver] = struct{}{}
 }
 
 func (this *mysqlStore) ClearDryrunTopics() {
 	this.dryrunLock.Lock()
-	this.dryrunTopics = make(map[structs.AppTopicVer]struct{})
+	this.dryrunTopics = make(map[string]map[string]map[string]struct{})
 	this.dryrunLock.Unlock()
 }
