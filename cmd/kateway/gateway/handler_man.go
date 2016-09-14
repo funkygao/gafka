@@ -59,19 +59,22 @@ func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, par
 	output["options"] = Options
 	output["loglevel"] = logLevel.String()
 	output["manager"] = manager.Default.Dump()
-	var heapSize int64
-	if heap := metrics.DefaultRegistry.Get("runtime.MemStats.HeapSys"); heap != nil {
-		if gauge, ok := heap.(metrics.Gauge); ok {
-			heapSize = gauge.Value()
-		}
-	}
-	output["heap"] = gofmt.ByteSize(heapSize).String()
 	pubConns := int(atomic.LoadInt32(&this.gw.pubServer.activeConnN))
 	subConns := int(atomic.LoadInt32(&this.gw.subServer.activeConnN))
 	output["pubconn"] = strconv.Itoa(pubConns)
 	output["subconn"] = strconv.Itoa(subConns)
 	output["hh_appends"] = strconv.FormatInt(hh.Default.AppendN(), 10)
 	output["hh_delivers"] = strconv.FormatInt(hh.Default.DeliverN(), 10)
+
+	var heapSize int64
+	if metrics.DefaultRegistry != nil {
+		if heap := metrics.DefaultRegistry.Get("runtime.MemStats.HeapSys"); heap != nil {
+			if gauge, ok := heap.(metrics.Gauge); ok {
+				heapSize = gauge.Value()
+			}
+		}
+	}
+	output["heap"] = gofmt.ByteSize(heapSize).String()
 
 	b, _ := json.MarshalIndent(output, "", "    ")
 
