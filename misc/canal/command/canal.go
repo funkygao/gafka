@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/funkygao/gocli"
 	"github.com/siddontang/go-mysql/canal"
@@ -46,11 +47,14 @@ func (this *Canal) Run(args []string) (exitCode int) {
 		this.Ui.Error(err.Error())
 		return
 	}
+	defer c.Close()
 
 	c.RegRowsEventHandler(&myRowsEventHandler{})
 
 	// Start canal
 	c.Start()
+
+	time.Sleep(time.Hour)
 
 	return
 }
