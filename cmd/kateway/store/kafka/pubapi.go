@@ -104,7 +104,7 @@ func (this *pubStore) doSyncPub(allAck bool, cluster, topic string,
 
 func (this *pubStore) IsSystemError(err error) bool {
 	switch err {
-	case store.ErrInvalidCluster:
+	case store.ErrInvalidCluster, store.ErrInvalidTopic:
 		return false
 
 	default:

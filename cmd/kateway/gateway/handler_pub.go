@@ -170,7 +170,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	} else {
 		// hack byte string conv TODO
 		partition, offset, err = pubMethod(cluster, rawTopic, msgKey, msg.Body)
-		if err != nil && err != store.ErrInvalidTopic && err != store.ErrInvalidCluster && !hhDisabled && Options.EnableHintedHandoff {
+		if err != nil && store.DefaultPubStore.IsSystemError(err) && !hhDisabled && Options.EnableHintedHandoff {
 			// resort to hinted handoff
 			err = hh.Default.Append(cluster, rawTopic, msgKey, msg.Body)
 		}
@@ -193,7 +193,11 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 			this.pubMetrics.PubFail(appid, topic, ver)
 		}
 
-		writeServerError(w, err.Error())
+		if store.DefaultPubStore.IsSystemError(err) {
+			writeServerError(w, err.Error())
+		} else {
+			writeBadRequest(w, err.Error())
+		}
 		return
 	}
 

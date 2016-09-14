@@ -108,7 +108,7 @@ func (this *subManager) killClient(remoteAddr string) (err error) {
 
 	if !present {
 		// e,g. client connects to Sub port but not Sub request(404), will lead to this case
-		log.Warn("%s not Sub client?", remoteAddr)
+		// e,g. Sub a non-exist topic
 		return
 	}
 
