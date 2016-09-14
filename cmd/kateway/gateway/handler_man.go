@@ -76,7 +76,10 @@ func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, par
 	}
 	output["heap"] = gofmt.ByteSize(heapSize).String()
 
-	b, _ := json.MarshalIndent(output, "", "    ")
+	b, err := json.MarshalIndent(output, "", "    ")
+	if err != nil {
+		log.Error("%s(%s) %v", r.RemoteAddr, getHttpRemoteIp(r), err)
+	}
 
 	w.Write(b)
 }
