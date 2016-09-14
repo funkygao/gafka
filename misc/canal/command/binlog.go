@@ -9,6 +9,7 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/siddontang/go-mysql/mysql"
 	"github.com/siddontang/go-mysql/replication"
+	"golang.org/x/net/context"
 )
 
 type Binlog struct {
@@ -23,8 +24,15 @@ func (this *Binlog) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	syncer := replication.NewBinlogSyncer(1001, "mysql")
-	syncer.RegisterSlave("localhost", 3306, "root", "")
+	cfg := &replication.BinlogSyncerConfig{
+		ServerID: 100,
+		Flavor:   "mysql",
+		Host:     "127.0.0.1",
+		Port:     3306,
+		User:     "root",
+		Password: "",
+	}
+	syncer := replication.NewBinlogSyncer(cfg)
 	binlogFile := "mysql-bin.000080"
 	binlogPos := uint32(1)
 	stream, err := syncer.StartSync(mysql.Position{binlogFile, binlogPos})
@@ -32,7 +40,7 @@ func (this *Binlog) Run(args []string) (exitCode int) {
 		panic(err)
 	}
 	for {
-		evt, err := stream.GetEvent()
+		evt, err := stream.GetEvent(context.Background())
 		if err != nil {
 			panic(err)
 		}
