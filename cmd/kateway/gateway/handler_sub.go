@@ -37,7 +37,10 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	query := r.URL.Query()
 	group = query.Get("group")
 	reset = query.Get("reset")
+	realIp := getHttpRemoteIp(r)
+
 	if !manager.Default.ValidateGroupName(r.Header, group) {
+		log.Error("sub -(%s): illegal group", realIp)
 		this.subMetrics.ClientError.Mark(1)
 		writeBadRequest(w, "illegal group")
 		return
@@ -45,8 +48,9 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 
 	limit, err = getHttpQueryInt(&query, "batch", 1)
 	if err != nil {
+		log.Error("sub -(%s): illegal batch", realIp)
 		this.subMetrics.ClientError.Mark(1)
-		writeBadRequest(w, "illegal limit")
+		writeBadRequest(w, "illegal batch")
 		return
 	}
 	if limit > Options.MaxSubBatchSize && Options.MaxSubBatchSize > 0 {
@@ -57,7 +61,6 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
 	myAppid = r.Header.Get(HttpHeaderAppid)
-	realIp := getHttpRemoteIp(r)
 
 	// auth
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
