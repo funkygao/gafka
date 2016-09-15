@@ -132,6 +132,10 @@ func (q *queue) Open() error {
 		return err
 	}
 
+	if q.cursor.seg != q.tail || q.cursor.pos.Offset != q.tail.DiskUsage() {
+		q.emptyInflight.Set(0)
+	}
+
 	return nil
 }
 
@@ -184,7 +188,7 @@ func (q *queue) DeliverN() int64 {
 
 // Remove removes all underlying file-based resources for the queue.
 // It is an error to call this on an open queue.
-func (q *queue) Remove() error {
+func (q *queue) Remove() (err error) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -192,7 +196,10 @@ func (q *queue) Remove() error {
 		return ErrQueueOpen
 	}
 
-	return os.RemoveAll(q.dir)
+	if err = os.RemoveAll(q.dir); err == nil {
+		q.emptyInflight.Set(1)
+	}
+	return
 }
 
 // Purge garbage collects the segments that are behind cursor.
@@ -248,6 +255,7 @@ func (q *queue) Append(b *block) error {
 		q.tail = segment
 		err = q.tail.Append(b)
 		if err == nil {
+			q.emptyInflight.Set(0)
 			q.inflights.Add(1)
 			q.appendN.Add(1)
 		}
@@ -256,6 +264,7 @@ func (q *queue) Append(b *block) error {
 		return err
 	}
 
+	q.emptyInflight.Set(0)
 	q.appendN.Add(1)
 	q.inflights.Add(1)
 	return nil
@@ -268,6 +277,7 @@ func (q *queue) Rollback(b *block) (err error) {
 	}
 
 	// rollback needn't consider cross segment case
+	q.emptyInflight.Set(0)
 	return c.seg.Seek(c.pos.Offset)
 }
 
@@ -282,6 +292,7 @@ func (q *queue) Next(b *block) (err error) {
 	err = c.seg.ReadOne(b)
 	switch err {
 	case nil:
+		q.emptyInflight.Set(0)
 		return c.advanceOffset(b.size())
 
 	case io.EOF:
@@ -289,6 +300,7 @@ func (q *queue) Next(b *block) (err error) {
 		// 1. reached end of the current segment: will advance to next segment
 		// 2. reached end of tail
 		if ok := c.advanceSegment(); !ok {
+			q.emptyInflight.Set(1)
 			return ErrEOQ
 		}
 

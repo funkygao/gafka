@@ -168,15 +168,18 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
-- [ ] when startup, hh Empty?
 - [ ] mysql slave of manager to data sync with manager in memory
 - [X] kguard watch for same group consuming multiple topics
+- [X] when startup, hh Empty?
 - [X] man /v1/clusters director of cluster distribution
 - [ ] bug: /Users/funky/gopkg/src/github.com/samuel/go-zookeeper/zk/conn.go 511 
   panic: non-positive interval for NewTicker
 - [ ] go over all zk watchers, handle expire
-- [ ] ehaproxy handles zk expire
-  sometimes haproxy process didn't exit normally
+  - ehaproxy
+  - kateway registry
+  - actord
+  - kguard
+- [ ] ehaproxy sometimes haproxy process didn't exit normally
 - [ ] bug: when shutdown, consumer group is not sync'ed with sub server stop
 - [X] bug: kateway gone, but kguard kateway.pubsub.fail didn't notice
 - [X] zk session expires and ephemeral znodes?

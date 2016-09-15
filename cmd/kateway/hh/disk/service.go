@@ -113,6 +113,8 @@ func (this *Service) Append(cluster, topic string, key, value []byte) error {
 	b := &block{magic: currentMagic, key: key, value: value}
 	ct := clusterTopic{cluster: cluster, topic: topic}
 
+	log.Debug("hh[%s] append %s/%s", this.Name(), cluster, topic)
+
 	this.rwmux.RLock()
 	q, present := this.queues[ct]
 	this.rwmux.RUnlock()
