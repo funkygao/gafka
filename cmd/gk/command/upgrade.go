@@ -117,6 +117,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	// work on gk
 	switch this.mode {
 	case "d":
+		// upgrade gk
 		u, err := user.Current()
 		swallow(err)
 		this.runCmd("/usr/bin/gk", []string{"-v"})
@@ -128,6 +129,10 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 		this.runCmd("chmod", []string{"a+x", "gk"})
 		this.runCmd("mv", []string{"-f", "gk", "/usr/bin/gk"})
 		this.runCmd("/usr/bin/gk", []string{"-v"})
+
+		// upgrade conf
+		this.runCmd("wget", []string{this.storeUrl(".gafka.cf"), "-O", ".gafka.cf"})
+		this.runCmd("mv", []string{"-f", ".gafka.cf", filepath.Join(usr.HomeDir, ".gafka.cf")})
 
 	case "u":
 		this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/gk", gopath), this.uploadDir})
