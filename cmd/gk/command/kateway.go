@@ -278,9 +278,8 @@ input {
 
 output {
     kafka {
-        broker_list => "k11003a.mycorp.kfk.com:11003,k11003b.mycorp.kfk.com:11003"
+        bootstrap_servers => "k11003a.mycorp.kfk.com:11003,k11003b.mycorp.kfk.com:11003"
         topic_id => "pubsub_log"
-        topic_metadata_refresh_interval_ms => 600000
     }
 }
 		`))
