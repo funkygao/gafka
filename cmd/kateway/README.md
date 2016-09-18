@@ -168,6 +168,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
+- [ ] tagged metrics
 - [ ] mysql slave of manager to data sync with manager in memory
 - [X] kguard watch for same group consuming multiple topics
 - [X] when startup, hh Empty?

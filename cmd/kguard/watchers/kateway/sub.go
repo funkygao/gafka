@@ -150,7 +150,7 @@ func (this *WatchSub) subLags() (lags int) {
 
 				if this.isCriminal(group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, now) {
 					// bingo! consumer is lagging and seems to be DEAD
-					log.Warn("group[%s] confirmed topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
+					log.Error("group[%s] confirmed topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
 						group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
 
 					lags++
