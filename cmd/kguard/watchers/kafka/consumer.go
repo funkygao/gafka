@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/structs"
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
@@ -24,12 +25,15 @@ type WatchConsumers struct {
 	Stop   <-chan struct{}
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
+
+	offsetMtimeMap map[structs.GroupTopicPartition]time.Time
 }
 
 func (this *WatchConsumers) Init(ctx monitor.Context) {
 	this.Zkzone = ctx.ZkZone()
 	this.Stop = ctx.StopChan()
 	this.Wg = ctx.Inflight()
+	this.offsetMtimeMap = make(map[structs.GroupTopicPartition]time.Time, 100)
 }
 
 func (this *WatchConsumers) Run() {
@@ -38,8 +42,12 @@ func (this *WatchConsumers) Run() {
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
+	frequentCommitTick := time.NewTicker(time.Second * 30)
+	defer frequentCommitTick.Stop()
+
 	consumerGroupsOnline := metrics.NewRegisteredGauge("consumer.groups.online", nil)
 	consumerGroupsOffline := metrics.NewRegisteredGauge("consumer.groups.offline", nil)
+	tooFrequentOffsetCommit := metrics.NewRegisteredGauge("consumer.frequent.offset.commit", nil)
 	for {
 		select {
 		case <-this.Stop:
@@ -50,6 +58,9 @@ func (this *WatchConsumers) Run() {
 			online, offline := this.report()
 			consumerGroupsOffline.Update(offline)
 			consumerGroupsOnline.Update(online)
+
+		case <-frequentCommitTick.C:
+			tooFrequentOffsetCommit.Update(this.frequentOffsetCommit())
 		}
 	}
 }
@@ -64,5 +75,36 @@ func (this *WatchConsumers) report() (online, offline int64) {
 			}
 		}
 	})
+	return
+}
+
+func (this *WatchConsumers) frequentOffsetCommit() (n int64) {
+	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		for group, consumers := range zkcluster.ConsumersByGroup("") {
+			for _, c := range consumers {
+				if !c.Online {
+					continue
+				}
+
+				if c.ConsumerZnode == nil {
+					log.Warn("cluster[%s] group[%s] topic[%s/%s] unrecognized consumer", zkcluster.Name(), group, c.Topic, c.PartitionId)
+
+					continue
+				}
+
+				gtp := structs.GroupTopicPartition{Group: group, Topic: c.Topic, PartitionID: c.PartitionId}
+				if t, present := this.offsetMtimeMap[gtp]; present {
+					if interval := c.Mtime.Time().Sub(t); interval < time.Second*50 {
+						log.Error("cluster[%s] group[%s] topic[%s/%s] too frequent offset commit: %s", zkcluster.Name(), group, c.Topic, c.PartitionId, interval)
+
+						n++
+					}
+				}
+
+				this.offsetMtimeMap[gtp] = c.Mtime.Time()
+			}
+		}
+	})
+
 	return
 }

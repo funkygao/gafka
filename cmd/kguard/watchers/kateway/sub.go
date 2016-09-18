@@ -118,13 +118,13 @@ func (this *WatchSub) subLags() (lags int) {
 				}
 
 				if c.ConsumerZnode == nil {
-					log.Warn("group[%s] topic[%s/%s] unrecognized consumer", group, c.Topic, c.PartitionId)
+					log.Warn("cluster[%s] group[%s] topic[%s/%s] unrecognized consumer", zkcluster.Name(), group, c.Topic, c.PartitionId)
 
 					continue
 				}
 
 				if time.Since(c.ConsumerZnode.Uptime()) < time.Minute*2 {
-					log.Info("group[%s] just started, topic[%s/%s]", group, c.Topic, c.PartitionId)
+					log.Info("cluster[%s] group[%s] just started, topic[%s/%s]", zkcluster.Name(), group, c.Topic, c.PartitionId)
 
 					this.unsuspect(group, c.Topic, c.PartitionId)
 					continue
@@ -141,8 +141,8 @@ func (this *WatchSub) subLags() (lags int) {
 				// it might be lagging, but need confirm with last round
 				if !this.isSuspect(group, c.Topic, c.PartitionId) {
 					// suspect it, next round if it is still lagging, put on trial
-					log.Warn("group[%s] suspected topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
-						group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
+					log.Warn("cluster[%s] group[%s] suspected topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
+						zkcluster.Name(), group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
 
 					this.suspect(group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, now)
 					continue
@@ -150,13 +150,13 @@ func (this *WatchSub) subLags() (lags int) {
 
 				if this.isCriminal(group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, now) {
 					// bingo! consumer is lagging and seems to be DEAD
-					log.Error("group[%s] confirmed topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
-						group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
+					log.Error("cluster[%s] group[%s] confirmed topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
+						zkcluster.Name(), group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
 
 					lags++
 				} else {
-					log.Warn("group[%s] lagging but still alive topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
-						group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
+					log.Warn("cluster[%s] group[%s] lagging but still alive topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
+						zkcluster.Name(), group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
 				}
 
 			}
@@ -203,7 +203,7 @@ func (this *WatchSub) subConflicts() (conflictGroups int) {
 			}
 			sort.Strings(topicsLabel)
 
-			log.Error("group[%s] consuming more than 1 topics: %s", group, strings.Join(topicsLabel, ", "))
+			log.Error("cluster[%s] group[%s] consuming more than 1 topics: %s", zkcluster.Name(), group, strings.Join(topicsLabel, ", "))
 		}
 	}
 
