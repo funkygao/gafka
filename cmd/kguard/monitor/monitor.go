@@ -62,8 +62,7 @@ func (this *Monitor) Init() {
 	this.quit = make(chan struct{})
 
 	// export RESTful api
-	this.router = httprouter.New()
-	this.router.GET("/metrics", this.metricsHandler)
+	this.setupRoutes()
 
 	if logFile == "stdout" {
 		log.AddFilter("stdout", log.INFO, log.NewConsoleLogWriter())

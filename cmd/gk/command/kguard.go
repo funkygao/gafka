@@ -45,6 +45,7 @@ func (this *Kguard) Run(args []string) (exitCode int) {
 		gofmt.PrettySince(leader.Ctime)))
 
 	if this.longFmt {
+		this.showKguardVersion(leader.Host)
 		this.showStats(leader.Host)
 	}
 
@@ -66,6 +67,21 @@ func (this *Kguard) showStats(host string) {
 	var prettyJSON bytes.Buffer
 	json.Indent(&prettyJSON, b, "", "    ")
 	this.Ui.Output(prettyJSON.String())
+}
+
+func (this *Kguard) showKguardVersion(host string) {
+	url := fmt.Sprintf("http://%s:10025/ver", host)
+	req := gorequest.New()
+	req.Get(url).Set("User-Agent", "gk")
+	_, b, errs := req.EndBytes()
+	if len(errs) > 0 {
+		for _, err := range errs {
+			this.Ui.Error(err.Error())
+		}
+		return
+	}
+
+	this.Ui.Output(fmt.Sprintf("kguard ver: %s", string(b)))
 }
 
 func (*Kguard) Synopsis() string {

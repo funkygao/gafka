@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/go-metrics"
 	"github.com/julienschmidt/httprouter"
 )
@@ -19,4 +20,10 @@ func (this *Monitor) metricsHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	w.Write(b)
+}
+
+// GET /ver
+func (this *Monitor) versionHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	w.Write([]byte(gafka.BuildId))
 }
