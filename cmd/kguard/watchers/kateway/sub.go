@@ -203,7 +203,7 @@ func (this *WatchSub) subConflicts() (conflictGroups int) {
 			}
 			sort.Strings(topicsLabel)
 
-			log.Warn("group[%s] consuming more than 1 topics: %s", group, strings.Join(topicsLabel, ", "))
+			log.Error("group[%s] consuming more than 1 topics: %s", group, strings.Join(topicsLabel, ", "))
 		}
 	}
 

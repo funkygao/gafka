@@ -61,6 +61,8 @@ func (this *Segment) Run(args []string) (exitCode int) {
 	return
 }
 
+// a kafka message:
+// crc magic attributes keyLen key messageLen message
 func (this *Segment) readSegment(filename string) {
 	f, err := os.Open(filename) // readonly
 	swallow(err)
