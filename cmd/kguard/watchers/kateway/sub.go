@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/funkygao/gafka/cmd/kateway/structs"
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
@@ -20,6 +21,11 @@ func init() {
 	})
 }
 
+type subStatus struct {
+	ProducedOffset, ConsumedOffset int64
+	Time                           time.Time
+}
+
 // WatchSub monitors Sub status of kateway cluster.
 type WatchSub struct {
 	Zkzone *zk.ZkZone
@@ -29,14 +35,14 @@ type WatchSub struct {
 
 	zkclusters []*zk.ZkCluster
 
-	suspects map[string]struct{}
+	suspects map[structs.GroupTopicPartition]subStatus
 }
 
 func (this *WatchSub) Init(ctx monitor.Context) {
 	this.Zkzone = ctx.ZkZone()
 	this.Stop = ctx.StopChan()
 	this.Wg = ctx.Inflight()
-	this.suspects = make(map[string]struct{})
+	this.suspects = make(map[structs.GroupTopicPartition]subStatus)
 }
 
 func (this *WatchSub) Run() {
@@ -65,23 +71,44 @@ func (this *WatchSub) Run() {
 	}
 }
 
-func (this *WatchSub) isSuspect(group string, topic string) bool {
-	if _, present := this.suspects[group+"|"+topic]; present {
+func (this *WatchSub) isSuspect(group, topic string, partitionID string) bool {
+	if _, present := this.suspects[structs.GroupTopicPartition{Group: group, Topic: topic, PartitionID: partitionID}]; present {
 		return true
 	}
 
 	return false
 }
 
-func (this *WatchSub) suspect(group, topic string) {
-	this.suspects[group+"|"+topic] = struct{}{}
+func (this *WatchSub) suspect(group, topic string, partitionID string, producedOffset, consumedOffset int64, t time.Time) {
+	this.suspects[structs.GroupTopicPartition{Group: group, Topic: topic, PartitionID: partitionID}] = subStatus{
+		ProducedOffset: producedOffset,
+		ConsumedOffset: consumedOffset,
+		Time:           t,
+	}
 }
 
-func (this *WatchSub) unsuspect(group string, topic string) {
-	delete(this.suspects, group+"|"+topic)
+func (this *WatchSub) unsuspect(group, topic string, partitionID string) {
+	delete(this.suspects, structs.GroupTopicPartition{Group: group, Topic: topic, PartitionID: partitionID})
+}
+
+func (this *WatchSub) isCriminal(group, topic string, partitionID string, producedOffset, consumedOffset int64, t time.Time) bool {
+	lastStat, ok := this.suspects[structs.GroupTopicPartition{Group: group, Topic: topic, PartitionID: partitionID}]
+	if !ok {
+		// should never happen
+		log.Error("group[%s] topic[%s/%s] should never happen!", group, topic, partitionID)
+		return false
+	}
+
+	if lastStat.ProducedOffset < producedOffset && lastStat.ConsumedOffset >= consumedOffset {
+		// new messages produced during this period but the consumer didn't move ahead
+		return true
+	}
+
+	return false
 }
 
 func (this *WatchSub) subLags() (lags int) {
+	now := time.Now()
 	// find sub lags
 	for _, zkcluster := range this.zkclusters {
 		for group, consumers := range zkcluster.ConsumersByGroup("") {
@@ -99,7 +126,7 @@ func (this *WatchSub) subLags() (lags int) {
 				if time.Since(c.ConsumerZnode.Uptime()) < time.Minute*2 {
 					log.Info("group[%s] just started, topic[%s/%s]", group, c.Topic, c.PartitionId)
 
-					this.unsuspect(group, c.Topic)
+					this.unsuspect(group, c.Topic, c.PartitionId)
 					continue
 				}
 
@@ -107,25 +134,31 @@ func (this *WatchSub) subLags() (lags int) {
 				// TODO lag too much, even if it's still alive, emit alarm
 				elapsed := time.Since(c.Mtime.Time())
 				if c.Lag == 0 || elapsed < time.Minute*3 {
-					this.unsuspect(group, c.Topic)
+					this.unsuspect(group, c.Topic, c.PartitionId)
 					continue
 				}
 
 				// it might be lagging, but need confirm with last round
-				if !this.isSuspect(group, c.Topic) {
+				if !this.isSuspect(group, c.Topic, c.PartitionId) {
 					// suspect it, next round if it is still lagging, put on trial
 					log.Warn("group[%s] suspected topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
 						group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
 
-					this.suspect(group, c.Topic)
+					this.suspect(group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, now)
 					continue
 				}
 
-				// bingo! it IS lagging
-				log.Warn("group[%s] confirmed topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
-					group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
+				if this.isCriminal(group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, now) {
+					// bingo! consumer is lagging and seems to be DEAD
+					log.Warn("group[%s] confirmed topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
+						group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
 
-				lags++
+					lags++
+				} else {
+					log.Warn("group[%s] lagging but still alive topic[%s/%s] %d - %d = %d, offset commit elapsed: %s",
+						group, c.Topic, c.PartitionId, c.ProducerOffset, c.ConsumerOffset, c.Lag, elapsed.String())
+				}
+
 			}
 		}
 

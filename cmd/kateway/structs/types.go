@@ -33,7 +33,7 @@ type TopicPartition struct {
 	PartitionID int32
 }
 
-func (tp TopicPartition) Str1ing() string {
+func (tp TopicPartition) String() string {
 	return fmt.Sprintf("%s/%d", tp.Topic, tp.PartitionID)
 }
 
@@ -43,4 +43,12 @@ type AppGroup struct {
 
 func (ag *AppGroup) String() string {
 	return ag.AppID + "/" + ag.Group
+}
+
+type GroupTopicPartition struct {
+	Group, Topic, PartitionID string
+}
+
+func (gtp GroupTopicPartition) String() string {
+	return gtp.Group + "/" + gtp.Topic + "/" + gtp.PartitionID
 }
