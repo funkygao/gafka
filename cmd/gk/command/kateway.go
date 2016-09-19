@@ -383,11 +383,6 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 
 		this.Ui.Info(fmt.Sprintf("kateway[%s]", kw.Id))
 
-		if this.curl {
-			this.Ui.Output(fmt.Sprintf(`curl -XPOST -H'Appid: %s' -H'Pubkey: %s' -d '%s' %s`,
-				myApp, secret, pubMsg, fmt.Sprintf("http://%s/v1/msgs/%s/%s", kw.PubAddr, topic, ver)))
-		}
-
 		// pub a message
 		cf := api.DefaultConfig(myApp, secret)
 		cf.Pub.Endpoint = kw.PubAddr
@@ -395,6 +390,11 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 		cli := api.NewClient(cf)
 
 		pubMsg := fmt.Sprintf("gk smoke test msg: [%s]", time.Now())
+
+		if this.curl {
+			this.Ui.Output(fmt.Sprintf(`curl -XPOST -H'Appid: %s' -H'Pubkey: %s' -d '%s' %s`,
+				myApp, secret, pubMsg, fmt.Sprintf("http://%s/v1/msgs/%s/%s", kw.PubAddr, topic, ver)))
+		}
 
 		err = cli.Pub("", []byte(pubMsg), api.PubOption{
 			Topic: topic,
