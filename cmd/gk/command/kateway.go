@@ -37,6 +37,7 @@ type Kateway struct {
 	resetCounter string
 	visualLog    string
 	checkup      bool
+	curl         bool
 	versionOnly  bool
 	showZkNodes  bool
 }
@@ -56,6 +57,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.visualLog, "visualog", "", "")
 	cmdFlags.BoolVar(&this.showZkNodes, "zk", false, "")
 	cmdFlags.BoolVar(&this.checkup, "checkup", false, "")
+	cmdFlags.BoolVar(&this.curl, "curl", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
 	}
@@ -379,6 +381,13 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 			continue
 		}
 
+		this.Ui.Info(fmt.Sprintf("kateway[%s]", kw.Id))
+
+		if this.curl {
+			this.Ui.Output(fmt.Sprintf(`curl -XPOST -H'Appid: %s' -H'Pubkey: %s' -d '%s' %s`,
+				myApp, secret, pubMsg, fmt.Sprintf("http://%s/v1/msgs/%s/%s", kw.PubAddr, topic, ver)))
+		}
+
 		// pub a message
 		cf := api.DefaultConfig(myApp, secret)
 		cf.Pub.Endpoint = kw.PubAddr
@@ -392,6 +401,11 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 			Ver:   ver,
 		})
 		swallow(err)
+
+		if this.curl {
+			this.Ui.Output(fmt.Sprintf(`curl -XGET -H'Appid: %s' -H'Subkey: %s' -d 'hhhhhhhello world!' %s`,
+				myApp, secret, fmt.Sprintf("http://%s/v1/msgs/%s/%s/%s?group=%s", kw.SubAddr, hisApp, topic, ver, group)))
+		}
 
 		// confirm that sub can get the pub'ed message
 		err = cli.Sub(api.SubOption{
@@ -462,6 +476,9 @@ Options:
 
     -checkup
       Checkup for online kateway instances
+
+	-curl
+	  Display curl command for manually checkup
 
     -visualog access log filename
       Visualize the kateway access log with Logstalgia
