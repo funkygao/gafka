@@ -403,7 +403,7 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 		swallow(err)
 
 		if this.curl {
-			this.Ui.Output(fmt.Sprintf(`curl -XGET -H'Appid: %s' -H'Subkey: %s' -d 'hhhhhhhello world!' %s`,
+			this.Ui.Output(fmt.Sprintf(`curl -XGET -H'Appid: %s' -H'Subkey: %s' %s`,
 				myApp, secret, fmt.Sprintf("http://%s/v1/msgs/%s/%s/%s?group=%s", kw.SubAddr, hisApp, topic, ver, group)))
 		}
 
