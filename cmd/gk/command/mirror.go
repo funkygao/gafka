@@ -248,7 +248,7 @@ func (this *Mirror) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s mirror [options]
 
-    Continuously copy data between two Kafka clusters
+    %s
 
     e,g.
     gk mirror -z1 prod -c1 logstash -z2 mirror -c2 aggregator -net 100 -step 2000
@@ -280,6 +280,6 @@ Options:
       Auto commit the checkpoint offset.
       Defaults true.
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

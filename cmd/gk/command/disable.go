@@ -122,7 +122,7 @@ func (this *Disable) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s disable [options]
 
-    Disable Pub topic partition
+    %s
 
 Options:
 
@@ -141,6 +141,6 @@ Options:
     -p partition ids seperated by comma
       e,g. 0,2
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

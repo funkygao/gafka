@@ -498,7 +498,7 @@ func (this *Topics) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s topics [options]
 
-    Manage kafka topics
+    %s
 
 Options:
 
@@ -541,6 +541,6 @@ Options:
       Show network addresses as numbers.
 
     -debug
-`, this.Cmd, ctx.ZkDefaultZone())
+`, this.Cmd, this.Synopsis(), ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

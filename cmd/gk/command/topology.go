@@ -287,7 +287,7 @@ func (this *Topology) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s topology -z zone [options]
 
-    Print broker topology and balancing stats of kafka clusters
+    %s
 
 Options:
 
@@ -306,6 +306,6 @@ Options:
 
     -maxport
       Display the max kafka broker tcp port in this zone.
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

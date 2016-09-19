@@ -25,8 +25,8 @@ func (this *Haproxy) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s haproxy [options]
 
-    Query haproxy cluster for load stats
+    %s
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

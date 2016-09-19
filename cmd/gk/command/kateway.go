@@ -459,7 +459,7 @@ func (this *Kateway) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s kateway [options]
 
-    List/Config online kateway instances
+    %s
 
 Options:
 
@@ -506,6 +506,6 @@ Options:
       maxreq=1000
       loglevel=<info|debug|trace|warn|alarm|error>
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

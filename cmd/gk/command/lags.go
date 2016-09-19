@@ -279,7 +279,7 @@ func (this *Lags) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s lags [options]
 
-    Display online high level consumers lag on a topic
+    %s
 
 Options:
 
@@ -307,6 +307,6 @@ Options:
     -table
       Display in table format.
 
-`, this.Cmd, ctx.ZkDefaultZone())
+`, this.Cmd, this.Synopsis(), ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

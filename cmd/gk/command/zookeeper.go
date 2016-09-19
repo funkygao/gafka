@@ -157,7 +157,7 @@ func (this *Zookeeper) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s zookeeper [options]
 
-    Monitor zone Zookeeper status by four letter word command
+    %s
 
 Options:
 
@@ -174,6 +174,6 @@ Options:
 
     -c zk four letter word command
       conf cons dump envi reqs ruok srvr stat wchs wchc wchp mntr
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

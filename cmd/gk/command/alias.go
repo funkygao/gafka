@@ -50,8 +50,8 @@ func (this *Alias) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s alias
 
-    Display all aliases defined in $HOME/.gafka.cf
+    %s
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

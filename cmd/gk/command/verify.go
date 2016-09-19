@@ -319,7 +319,7 @@ func (this *Verify) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s verify [options]
 
-    Verify pubsub clients synced with lagacy kafka
+    %s
 
 Options:
 
@@ -334,6 +334,6 @@ Options:
       Confirmed to update KafkaTopicName in table topics.
 
 
-`, this.Cmd, ctx.ZkDefaultZone())
+`, this.Cmd, this.Synopsis(), ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

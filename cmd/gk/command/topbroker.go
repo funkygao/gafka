@@ -249,7 +249,7 @@ func (this *TopBroker) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s topbroker [options]
 
-    Unix “top” like utility for kafka brokers
+    %s
 
 Options:
 
@@ -267,6 +267,6 @@ Options:
     -shortip
 	  Print ending portion of broker ip address.
 
-`, this.Cmd, ctx.ZkDefaultZone())
+`, this.Cmd, this.Synopsis(), ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

@@ -420,7 +420,7 @@ func (this *Deploy) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s deploy -z zone -c cluster [options]
 
-    Deploy a new kafka broker on localhost
+    %s
 
 Options:
 
@@ -466,6 +466,6 @@ Options:
     -log.dirs dirs
       A comma seperated list of directories under which to store log files.
 
-`, this.Cmd, ctx.KafkaHome())
+`, this.Cmd, this.Synopsis(), ctx.KafkaHome())
 	return strings.TrimSpace(help)
 }

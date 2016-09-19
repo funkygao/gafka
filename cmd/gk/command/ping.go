@@ -109,7 +109,7 @@ func (this *Ping) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s ping [options]
 
-    Ping liveness of all registered brokers in a zone
+    %s
 
 Options:
 
@@ -126,6 +126,6 @@ Options:
     -logfile filename
       Defaults stdout in current directory
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

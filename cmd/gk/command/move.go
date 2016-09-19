@@ -57,7 +57,7 @@ func (this *Move) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s move [options]
 
-    Move kafka partition from one dir to another
+    %s
 
     If you encounter high iowait problem, this command can help.
     e,g.
@@ -68,6 +68,6 @@ Usage: %s move [options]
 
     -to dir
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

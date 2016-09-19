@@ -83,7 +83,7 @@ func (this *Controllers) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s controllers [options]
 
-    Print active controllers in kafka clusters
+    %s
 
 Options:
 
@@ -91,6 +91,6 @@ Options:
 
     -c cluster
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

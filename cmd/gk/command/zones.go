@@ -120,7 +120,7 @@ func (this *Zones) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s zones [options]
 
-    Print zones defined in $HOME/.gafka.cf
+    %s
 
 Options:
 
@@ -137,6 +137,6 @@ Options:
 
     -plain
       Display in non-table format.
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

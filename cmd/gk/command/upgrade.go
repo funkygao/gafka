@@ -171,14 +171,14 @@ func (this *Upgrade) runCmd(c string, args []string) {
 }
 
 func (*Upgrade) Synopsis() string {
-	return "Upgrade local gk to latest version"
+	return "Upgrade local gk tools to latest version"
 }
 
 func (this *Upgrade) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s upgrade [options]
 
-    Upgrade local gk to latest version
+    %s
 
 Options:
 
@@ -205,6 +205,6 @@ Options:
       Upload the gk file to target dir, only run on gk file server
       Defaults /var/www/html
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

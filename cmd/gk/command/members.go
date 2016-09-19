@@ -424,7 +424,7 @@ func (this *Members) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s members [options]
 
-    Verify consul members match kafka zone
+    %s
 
     -z zone
 
@@ -443,6 +443,6 @@ Usage: %s members [options]
 
     -debug
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

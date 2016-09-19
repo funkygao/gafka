@@ -349,7 +349,7 @@ func (this *Peek) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s peek [options]
 
-    Peek kafka cluster messages ongoing from any offset
+    %s
 
 Options:
 
@@ -392,6 +392,6 @@ Options:
 
     -color
       Enable colorized output
-`, this.Cmd, ctx.ZkDefaultZone())
+`, this.Cmd, this.Synopsis(), ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

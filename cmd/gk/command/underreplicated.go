@@ -176,7 +176,7 @@ func (this *UnderReplicated) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s underreplicated [options]
 
-    Display under-replicated partitions
+    %s
 
 Options:
 
@@ -185,6 +185,6 @@ Options:
     -c cluster
 
     -debug
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

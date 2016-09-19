@@ -86,7 +86,7 @@ func (this *Checkup) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s checkup [options]
 
-    Health checkup of kafka runtime
+    %s
 
 Options:
 
@@ -94,6 +94,6 @@ Options:
 
     -c cluster name
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

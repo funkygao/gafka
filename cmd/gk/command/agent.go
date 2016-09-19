@@ -24,16 +24,18 @@ func (this *Agent) Run(args []string) (exitCode int) {
 }
 
 func (*Agent) Synopsis() string {
-	return "Starts the gk agent and runs until an interrupt is received"
+	return "Starts the gk agent daemon TODO"
 }
 
 func (this *Agent) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s agent [options]
 
+    %s
+
     Starts the gk agent and runs until an interrupt is received. 
     The agent represents a single node in a zone.
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

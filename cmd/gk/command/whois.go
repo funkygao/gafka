@@ -199,7 +199,7 @@ func (this *Whois) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s whois [options]
 
-    Lookup PubSub App Information
+    %s
 
 Options:
 
@@ -218,6 +218,6 @@ Options:
       Like mode. 
       Pattern wildcard match of group or topic name.
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

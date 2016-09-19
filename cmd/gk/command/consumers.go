@@ -365,7 +365,7 @@ func (this *Consumers) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s consumers [options]
 
-    Print high level consumer groups from Zookeeper
+    %s
 
 Options:
 
@@ -392,6 +392,6 @@ Options:
     -byhost
       Display consumer groups by consumer hosts.
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

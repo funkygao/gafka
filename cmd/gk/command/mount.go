@@ -108,7 +108,7 @@ func (this *Mount) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s mount [options] mount_point
 
-    A FUSE module to mount a Kafka cluster in the filesystem
+    %s
 
 Pre-requisites:
     yum install -y fuse
@@ -126,6 +126,6 @@ Options:
       Default 'info'.
       
 
-`, this.Cmd, ctx.ZkDefaultZone())
+`, this.Cmd, this.Synopsis(), ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

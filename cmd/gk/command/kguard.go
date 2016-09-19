@@ -92,13 +92,13 @@ func (this *Kguard) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s kateway -z zone [options]
 
-    List online kguard instances
+    %s
 
 Options:
 
     -l
       Use a long listing format.
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

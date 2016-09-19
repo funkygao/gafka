@@ -56,13 +56,13 @@ func (this *Config) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s config [options]
 
-    Display %s config file contents
+    %s
 
 Options:
 
     -auto
       Install gk bash autocomplete script.  
 
-`, this.Cmd, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

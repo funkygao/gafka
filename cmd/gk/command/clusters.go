@@ -463,7 +463,7 @@ func (this *Clusters) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s clusters [options]
 
-    Register or display kafka clusters
+    %s
 
 Options:
 
@@ -531,6 +531,6 @@ Options:
     -verify
       Verify that the online brokers are consistent with the registered brokers.
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

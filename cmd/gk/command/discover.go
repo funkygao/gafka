@@ -90,12 +90,12 @@ func (this *Discover) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s discover [options]
 
-    Automatically discover online kafka clusters
+    %s
 
 Options:
 
     -z zone
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

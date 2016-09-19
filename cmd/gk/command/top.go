@@ -525,7 +525,7 @@ func (this *Top) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s top [options]
 
-    Unix “top” like utility for kafka topics
+    %s
 
 Options:
 
@@ -559,7 +559,7 @@ Options:
       Could be useful for sending output from top to other programs or to a file.
 
     -who <%s%s|%s%s>
-`, this.Cmd, ctx.ZkDefaultZone(), color.Colorize([]string{color.Underscore}, "p"), "roducer",
+`, this.Cmd, this.Synopsis(), ctx.ZkDefaultZone(), color.Colorize([]string{color.Underscore}, "p"), "roducer",
 		color.Colorize([]string{color.Underscore}, "c"), "onsumer")
 	return strings.TrimSpace(help)
 }

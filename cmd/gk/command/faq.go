@@ -41,8 +41,8 @@ func (this *Faq) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s ?
 
-    FAQ
+    %s
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

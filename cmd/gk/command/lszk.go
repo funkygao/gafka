@@ -68,7 +68,7 @@ func (this *LsZk) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s lszk [options] <path>
 
-    List kafka related zookeepeer znode children
+    %s
 
 Options:
 
@@ -80,6 +80,6 @@ Options:
     -R
       recursive.    
 
-`, this.Cmd, ctx.ZkDefaultZone())
+`, this.Cmd, this.Synopsis(), ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }

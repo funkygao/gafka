@@ -153,7 +153,7 @@ func (this *Sample) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s sample -mode mode
 
-    Java sample code of producer/consumer
+    %s
 
 Options:
 
@@ -161,6 +161,6 @@ Options:
       c: consumer 
       p: producer
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

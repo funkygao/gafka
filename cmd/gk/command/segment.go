@@ -271,7 +271,7 @@ func (this *Segment) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s segment [options]
 
-    Scan the kafka segments and display summary
+    %s
 
     -f segment file name
 
@@ -282,6 +282,6 @@ Usage: %s segment [options]
     -n limit
       Default unlimited.
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

@@ -24,8 +24,8 @@ func (this *Webhook) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s webhook [options]
 
-    Display kateway webhooks
+    %s
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

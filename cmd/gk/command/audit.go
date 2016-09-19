@@ -24,8 +24,8 @@ func (this *Audit) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s audit [options]
 
-    Audit of the message streams
+    %s
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

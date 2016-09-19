@@ -129,8 +129,8 @@ func (this *Host) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s host -z zone -ip addr
 
-    Diagnose a broker by ip
+    %s
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

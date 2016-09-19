@@ -72,8 +72,8 @@ func (this *Offset) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s offset -z zone -c cluster -t topic -g group -p partition -offset offset
 
-    Manually set consumer group offset
+    %s
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

@@ -169,8 +169,8 @@ func (this *Console) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s console [options]
 
-    Interactive mode
+    %s
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

@@ -118,7 +118,7 @@ func (this *ZkInstall) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s zkinstall [options]
 
-    Install a zookeeper node on localhost
+    %s
 
 Options:    
    
@@ -129,6 +129,6 @@ Options:
     -servers comma seperated ip addrs
       e,g. 1:10.213.1.225,2:10.213.10.140,3:10.213.18.207
     
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

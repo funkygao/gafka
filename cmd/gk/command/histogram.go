@@ -263,18 +263,18 @@ func (*Histogram) Synopsis() string {
 
 func (this *Histogram) Help() string {
 	help := fmt.Sprintf(`
-	Usage: %s histogram [options]
+Usage: %s histogram [options]
 
-	    Histogram of kafka produced messages and network volumn
+    %s    
 
-	Options:
-	    -d
-	      Draw mode.
+    Options:
+      -d
+        Draw mode.
 
-	    -f offset file
+      -f offset file
 
-	    -n network volumn file
+      -n network volumn file
 
-	`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }
