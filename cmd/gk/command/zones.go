@@ -46,7 +46,7 @@ func (this *Zones) Run(args []string) (exitCode int) {
 	zones := make([][]string, 0)
 	defaultZone := ctx.ZkDefaultZone()
 	for _, zone := range ctx.SortedZones() {
-		if this.zone != "" && this.zone != zone {
+		if !patternMatched(zone, this.zone) {
 			continue
 		}
 
