@@ -14,6 +14,7 @@ type subMetrics struct {
 	gw *Gateway
 
 	SubQps      metrics.Meter
+	SubTryQps   metrics.Meter
 	ClientError metrics.Meter
 
 	expConsumeOk      *expvar.Int
@@ -33,6 +34,7 @@ func NewSubMetrics(gw *Gateway) *subMetrics {
 		ConsumeMap:  make(map[string]metrics.Counter),
 		ConsumedMap: make(map[string]metrics.Counter),
 		SubQps:      metrics.NewRegisteredMeter("sub.qps", metrics.DefaultRegistry),
+		SubTryQps:   metrics.NewRegisteredMeter("sub.try.qps", metrics.DefaultRegistry),
 		ClientError: metrics.NewRegisteredMeter(("sub.clienterr"), metrics.DefaultRegistry),
 	}
 

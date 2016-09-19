@@ -25,9 +25,13 @@ type pubMetrics struct {
 	pubFailMu  sync.RWMutex
 
 	ClientError metrics.Counter
-	PubQps      metrics.Meter // FIXME if 2 servers run on 1 host, the metrics will be wrong
+	PubQps      metrics.Meter
+	PubTryQps   metrics.Meter
+	JobQps      metrics.Meter
+	JobTryQps   metrics.Meter
 	PubLatency  metrics.Histogram
 	PubMsgSize  metrics.Histogram
+	JobMsgSize  metrics.Histogram
 }
 
 func NewPubMetrics(gw *Gateway) *pubMetrics {
@@ -38,7 +42,11 @@ func NewPubMetrics(gw *Gateway) *pubMetrics {
 
 		ClientError: metrics.NewRegisteredCounter("pub.clienterr", metrics.DefaultRegistry),
 		PubQps:      metrics.NewRegisteredMeter("pub.qps", metrics.DefaultRegistry),
+		PubTryQps:   metrics.NewRegisteredMeter("pub.try.qps", metrics.DefaultRegistry),
+		JobQps:      metrics.NewRegisteredMeter("job.qps", metrics.DefaultRegistry),
+		JobTryQps:   metrics.NewRegisteredMeter("job.try.qps", metrics.DefaultRegistry),
 		PubMsgSize:  metrics.NewRegisteredHistogram("pub.msgsize", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015)),
+		JobMsgSize:  metrics.NewRegisteredHistogram("job.msgsize", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015)),
 		PubLatency:  metrics.NewRegisteredHistogram("pub.latency", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015)),
 	}
 

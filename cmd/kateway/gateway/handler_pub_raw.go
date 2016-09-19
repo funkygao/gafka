@@ -21,6 +21,10 @@ func (this *pubServer) pubRawHandler(w http.ResponseWriter, r *http.Request, par
 		t1           = time.Now()
 	)
 
+	if !Options.DisableMetrics {
+		this.pubMetrics.PubTryQps.Mark(1)
+	}
+
 	realIp := getHttpRemoteIp(r)
 	topic = params.ByName(UrlParamTopic)
 	cluster = params.ByName("cluster")

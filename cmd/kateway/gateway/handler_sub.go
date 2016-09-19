@@ -34,6 +34,10 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		err        error
 	)
 
+	if !Options.DisableMetrics {
+		this.subMetrics.SubTryQps.Mark(1)
+	}
+
 	query := r.URL.Query()
 	group = query.Get("group")
 	reset = query.Get("reset")

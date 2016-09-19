@@ -17,6 +17,10 @@ import (
 // TODO tag, partitionKey
 // TODO use dedicated metrics
 func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	if !Options.DisableMetrics {
+		this.pubMetrics.JobTryQps.Mark(1)
+	}
+
 	t1 := time.Now()
 	realIp := getHttpRemoteIp(r)
 	appid := r.Header.Get(HttpHeaderAppid)
@@ -109,8 +113,8 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		appid, r.RemoteAddr, realIp, topic, ver, due, due-t1.Unix())
 
 	if !Options.DisableMetrics {
-		this.pubMetrics.PubQps.Mark(1)
-		this.pubMetrics.PubMsgSize.Update(int64(len(msg.Body)))
+		this.pubMetrics.JobQps.Mark(1)
+		this.pubMetrics.JobMsgSize.Update(int64(len(msg.Body)))
 	}
 
 	_, found := manager.Default.LookupCluster(appid)
