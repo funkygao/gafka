@@ -45,12 +45,13 @@ curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/a
 curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/app1/foobar/v1?group=group1'
 
 # raw sub
-curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9192/v1/raw/msgs/app1/foobar/v1?group=xx'
+curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9193/v1/raw/msgs/app1/foobar/v1?group=xx'
 
-curl -XPUT -H'Appid: app2' -H'Subkey: mysubkey' -d '[{"partition":0,"offset":1221300}]' http://localhost:9192/v1/offsets/app1/foobar/v1/bench_go
+# reset offset
+curl -XPUT -H'Appid: app2' -H'Subkey: mysubkey' -d '[{"partition":0,"offset":1221300}]' http://localhost:9193/v1/offsets/app1/foobar/v1/bench_go
 
 # peek
-curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9192/v1/peek/app1/foobar/v1?n=10&wait=5s'
+curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9193/v1/peek/app1/foobar/v1?n=10&wait=5s'
 
 # sub status
 curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9193/v1/status/app1/foobar/v1?group=group1'
