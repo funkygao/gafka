@@ -449,6 +449,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, po
 	}
 
 	if len(hostsWithoutDnsRecords) > 0 {
+		this.Ui.Warn("brokers without dns record:")
 		for _, broker := range hostsWithoutDnsRecords {
 			parts := strings.SplitN(broker, ":", 2)
 			this.Ui.Output(fmt.Sprintf("%30s: %s", parts[0], color.Yellow(parts[1])))
