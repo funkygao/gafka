@@ -82,11 +82,9 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
-	realIp := getHttpRemoteIp(r)
-	log.Debug("ack[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %+v",
-		myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group,
-		r.Header.Get("User-Agent"), acks)
+	msg.Free()
 
+	realIp := getHttpRemoteIp(r)
 	realGroup := myAppid + "." + group
 	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	for i := 0; i < len(acks); i++ {
@@ -95,10 +93,11 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 		acks[i].group = realGroup
 	}
 
+	log.Debug("ack[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %+v",
+		myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group, r.Header.Get("User-Agent"), acks)
+
 	if atomic.AddInt32(&this.ackShutdown, 1) == 0 {
 		// kateway is shutting down, ackCh is already closed
-		msg.Free()
-
 		log.Warn("ack[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} server is shutting down %+v ",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group,
 			r.Header.Get("User-Agent"), acks)
@@ -110,6 +109,5 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 	this.ackCh <- acks
 	atomic.AddInt32(&this.ackShutdown, -1)
 
-	msg.Free()
 	w.Write(ResponseOk)
 }
