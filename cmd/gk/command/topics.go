@@ -37,16 +37,17 @@ type Topics struct {
 
 func (this *Topics) Run(args []string) (exitCode int) {
 	var (
-		zone              string
-		cluster           string
-		addTopic          string
-		delTopic          string
-		replicas          int
-		partitions        int
-		retentionInMinute int
-		resetConf         bool
-		debug             bool
-		configged         bool
+		zone                    string
+		cluster                 string
+		addTopic                string
+		delTopic                string
+		killTopic, restoreTopic string
+		replicas                int
+		partitions              int
+		retentionInMinute       int
+		resetConf               bool
+		debug                   bool
+		configged               bool
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -56,6 +57,8 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.StringVar(&addTopic, "add", "", "")
+	cmdFlags.StringVar(&killTopic, "kill", "", "")
+	cmdFlags.StringVar(&restoreTopic, "restore", "", "")
 	cmdFlags.BoolVar(&this.plainMode, "plain", false, "")
 	cmdFlags.StringVar(&delTopic, "del", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
@@ -527,6 +530,11 @@ Options:
 
     -del topic
       Delete a kafka topic.
+
+    -kill topic
+      Ruin a topic.
+
+    -restore topic
 
     -partitions n
       Partition count when adding a new topic. Default 1.
