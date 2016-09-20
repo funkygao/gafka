@@ -421,6 +421,7 @@ func (this *Gateway) ServeForever() {
 			this.accessLogger.Stop()
 		}
 
+		// TODO concurrent store stop
 		if store.DefaultPubStore != nil {
 			log.Trace("pub store[%s] stop...", store.DefaultPubStore.Name())
 			store.DefaultPubStore.Stop()

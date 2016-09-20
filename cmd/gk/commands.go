@@ -74,6 +74,13 @@ func init() {
 			}, nil
 		},
 
+		"logstash": func() (cli.Command, error) {
+			return &command.Logstash{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"alias": func() (cli.Command, error) {
 			return &command.Alias{
 				Ui:  ui,

@@ -17,7 +17,7 @@ func (this *Webhook) Run(args []string) (exitCode int) {
 }
 
 func (*Webhook) Synopsis() string {
-	return "Display kateway webhooks"
+	return "Display kateway webhooks TODO"
 }
 
 func (this *Webhook) Help() string {

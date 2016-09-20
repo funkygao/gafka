@@ -258,7 +258,7 @@ func (this *Histogram) drawAll(offsetTs []time.Time, offsets []int64,
 }
 
 func (*Histogram) Synopsis() string {
-	return "Histogram of kafka produced messages and network volumn"
+	return "Histogram of kafka produced messages and network traffic"
 }
 
 func (this *Histogram) Help() string {
