@@ -283,6 +283,7 @@ func (this *ZkCluster) ConsumerGroupsOfTopic(topic string) (map[string][]Consume
 	}
 	defer kfk.Close()
 
+	consumerGroups := this.ConsumerGroups()
 	for _, group := range this.zone.children(this.consumerGroupsRoot()) {
 		for t, partitionOffsets := range this.ConsumerOffsetsOfGroup(group) {
 			if t != topic {
@@ -305,17 +306,22 @@ func (this *ZkCluster) ConsumerGroupsOfTopic(topic string) (map[string][]Consume
 					return r, err
 				}
 
+				consumerInstances := this.OwnersOfGroupByTopic(group, topic)
+				consumers := consumerGroups[group]
+
 				cm := ConsumerMeta{
 					Group:          group,
 					Topic:          topic,
+					Online:         len(consumers) > 0,
 					PartitionId:    partitionId,
 					ConsumerOffset: consumerOffset,
 					OldestOffset:   oldestOffset,
 					ProducerOffset: producerOffset,
 					Lag:            producerOffset - consumerOffset,
+					ConsumerZnode:  consumers[consumerInstances[partitionId]],
 				}
 				if _, present := r[group]; !present {
-					r[group] = make([]ConsumerMeta, 0)
+					r[group] = make([]ConsumerMeta, 0, 1)
 				}
 				r[group] = append(r[group], cm)
 			}

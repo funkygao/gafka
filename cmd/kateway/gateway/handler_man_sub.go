@@ -467,6 +467,7 @@ func (this *manServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Requ
 
 // GET /v1/status/:appid/:topic/:ver?group=xx
 // TODO show shadow consumers too
+// response: [{"group":"group1","partition":"0","pold":0,"pubd":7827,"subd":324,"realip":"10.10.10.1"}]
 func (this *manServer) subStatusHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		topic    string
@@ -522,6 +523,7 @@ func (this *manServer) subStatusHandler(w http.ResponseWriter, r *http.Request, 
 }
 
 // GET /v1/subd/:topic/:ver
+// response: [{"appid":"app2","group":"group1","partition":"0","pold":0,"pubd":7827,"subd":324,"realip":"192.168.10.134"},{"appid":"app2","group":"mygroup1","partition":"0","pold":0,"pubd":7827,"subd":364,"realip":""}]
 func (this *manServer) subdStatusHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		topic   string
