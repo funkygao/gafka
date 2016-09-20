@@ -4,6 +4,12 @@ job:job.go
 	# job does not support tag
 	@go run job.go -step 1 -t foobar -c 1 -sz 50 -sleep 3s 
 
+pubn:pub.go
+	@go run pub.go -step 1 -t foobar -c 50 -sz 50 -tag hello -sleep 3s 
+
+puba:pub.go
+	@go run pub.go -step 1 -t foobar -c 1 -sz 50 -tag hello -sleep 3s -async
+
 pub:pub.go
 	@echo keep pub to kateway to check mem/thread leakeage
 	@go run pub.go -step 1 -t foobar -c 1 -sz 50 -tag hello -sleep 3s 
