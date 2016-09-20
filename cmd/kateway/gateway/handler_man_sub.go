@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
+	"github.com/samuel/go-zookeeper/zk"
 )
 
 // GET /v1/raw/msgs/:appid/:topic/:ver?group=xx
@@ -371,6 +372,11 @@ func (this *manServer) delSubGroupHandler(w http.ResponseWriter, r *http.Request
 	if err := zkcluster.ZkZone().DeleteRecursive(zkcluster.ConsumerGroupRoot(group)); err != nil {
 		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group, err)
+
+		if err == zk.ErrNotEmpty {
+			writeBadRequest(w, "delete a online group not allowed")
+			return
+		}
 
 		writeServerError(w, err.Error())
 		return

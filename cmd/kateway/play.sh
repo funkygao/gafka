@@ -59,6 +59,9 @@ curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9193/v1/status
 # subd status
 curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9193/v1/subd/foobar/v1'
 
+# delete a sub group
+curl -XDELETE -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9193/v1/groups/app1/foobar/v1/group1'
+
 
 # pprof debug 
 curl http://localhost:9194/debug/pprof/
