@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/golib/sync2"
 	"github.com/funkygao/golib/timewheel"
 	log "github.com/funkygao/log4go"
+	"github.com/samuel/go-zookeeper/zk"
 )
 
 type subServer struct {
@@ -280,6 +281,10 @@ func (this *subServer) commitOffsets() {
 					if err := zkcluster.ResetConsumerGroupOffset(topic, group,
 						strconv.Itoa(partition), offset); err != nil {
 						log.Error("commitOffsets: %v", err)
+						if err == zk.ErrNoNode {
+							// invalid offset commit request, will not retry
+							this.ackedOffsets[cluster][topic][group][partition] = -1
+						}
 					} else {
 						// mark this slot empty
 						this.ackedOffsets[cluster][topic][group][partition] = -1
