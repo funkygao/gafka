@@ -60,6 +60,42 @@ func hostOfConsumer(consumerId string) string {
 	return consumerId[lo+1 : hi]
 }
 
+func extractConsumerIdFromOwnerInfo(ownerZnodeData string) (consumerId string) {
+	// ownerZnodeData:
+	//   for java sdk: $consumerId-$threadNum  $consumerId: $group_$hostname-$timestamp-$uuidSignificantBits
+	// for golang sdk: $consumerId
+	//         others: $consumerId
+
+	consumerId = ownerZnodeData // by default
+
+	if !strings.Contains(ownerZnodeData, "_") {
+		// java consumer group always has the "_"
+		return
+	}
+
+	lastDash := strings.LastIndexByte(ownerZnodeData, '-')
+	if lastDash == -1 || lastDash == len(ownerZnodeData)-1 {
+		// java consumer group always has the '-' and not ends with '-'
+		return
+	}
+
+	maybeJavaThreadNum := ownerZnodeData[lastDash+1:]
+	if len(maybeJavaThreadNum) > 3 {
+		// not a java consumer group because thread num never above 999
+		return
+	}
+
+	for _, c := range maybeJavaThreadNum {
+		if c < '0' || c > '9' {
+			// not a java consumer group because threadNum is digit
+			return
+		}
+	}
+
+	// confirmed, it IS java api consumer group: discard the threadNum section
+	return ownerZnodeData[:lastDash]
+}
+
 // zkFourLetterWord execute ZooKeeper Commands: The Four Letter Words
 // conf, cons, crst, envi, ruok, stat, wchs, wchp
 func zkFourLetterWord(server, command string, timeout time.Duration) ([]byte, error) {

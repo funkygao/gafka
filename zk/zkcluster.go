@@ -234,22 +234,7 @@ func (this *ZkCluster) ConsumerGroups() map[string]map[string]*ConsumerZnode {
 func (this *ZkCluster) OwnersOfGroupByTopic(group, topic string) map[string]string {
 	r := make(map[string]string)
 	for partition, data := range this.zone.ChildrenWithData(this.consumerGroupOwnerOfTopicPath(group, topic)) {
-		// data:
-		// for java api: $consumerId-$threadNum  /consumers/$group/ids/$group_$hostname-$timestamp-$uuid
-		// for golang api: $consumerId
-		consumerIdNum := string(data.data)
-		var i int
-		if strings.Contains(consumerIdNum, "_") {
-			// FIXME this rule is too naive, not robust
-			// java api consumer
-			for i = len(consumerIdNum) - 1; consumerIdNum[i] != '-'; i-- {
-			}
-			r[partition] = consumerIdNum[:i]
-		} else {
-			// golang consumer
-			r[partition] = consumerIdNum
-		}
-
+		r[partition] = extractConsumerIdFromOwnerInfo(string(data.data))
 	}
 	return r
 }
