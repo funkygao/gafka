@@ -5,11 +5,13 @@ import (
 
 	"github.com/funkygao/assert"
 	"github.com/funkygao/gafka/ctx"
+	log "github.com/funkygao/log4go"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
 func init() {
 	ctx.LoadFromHome()
+	log.Disable()
 }
 
 func TestOrchestatorAll(t *testing.T) {

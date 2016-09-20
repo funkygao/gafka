@@ -4,7 +4,12 @@ import (
 	"testing"
 
 	"github.com/funkygao/assert"
+	log "github.com/funkygao/log4go"
 )
+
+func init() {
+	log.Disable()
+}
 
 func TestBrokerZnodeFrom(t *testing.T) {
 	var b BrokerZnode
@@ -28,6 +33,12 @@ func TestZkTimestamp(t *testing.T) {
 func TestConsumerZnode(t *testing.T) {
 	c := newConsumerZnode("cloudparkingGroup_orderMsg_BJS0-D134-018-1447657979158-fa9d1dc8")
 	assert.Equal(t, "BJS0-D134-018", c.Host())
+}
+
+func TestConsumerZnodeFrom(t *testing.T) {
+	c := newConsumerZnode("consumerId")
+	err := c.from([]byte(`{"version":1,"subscription":{"wifi_detail_log": 1, "wifi_store_inout_detail_log": 1, "wifi_portal_log": 1},"pattern":"white_list","timestamp":"1473402575029"}`))
+	assert.Equal(t, nil, err)
 }
 
 func TestWebhook(t *testing.T) {
