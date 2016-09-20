@@ -79,6 +79,8 @@ func (this *WatchConsumers) report() (online, offline int64) {
 }
 
 func (this *WatchConsumers) frequentOffsetCommit() (n int64) {
+	const frequentThreshold = time.Second * 10
+
 	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		for group, consumers := range zkcluster.ConsumersByGroup("") {
 			for _, c := range consumers {
@@ -94,7 +96,7 @@ func (this *WatchConsumers) frequentOffsetCommit() (n int64) {
 
 				gtp := structs.GroupTopicPartition{Group: group, Topic: c.Topic, PartitionID: c.PartitionId}
 				if t, present := this.offsetMtimeMap[gtp]; present {
-					if interval := c.Mtime.Time().Sub(t); interval < time.Second*50 {
+					if interval := c.Mtime.Time().Sub(t); interval < frequentThreshold {
 						log.Error("cluster[%s] group[%s] topic[%s/%s] too frequent offset commit: %s", zkcluster.Name(), group, c.Topic, c.PartitionId, interval)
 
 						n++
