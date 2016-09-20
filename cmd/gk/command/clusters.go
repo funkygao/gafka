@@ -443,6 +443,8 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, po
 		if len(brokers) > 0 {
 			sort.Strings(brokers)
 			this.Ui.Info(color.Green("%31s %s", " ", strings.Join(brokers, ", ")))
+		} else {
+			this.Ui.Warn(fmt.Sprintf("%31s no live brokers", " "))
 		}
 	}
 
