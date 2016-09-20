@@ -125,8 +125,11 @@ func (this *WatchAppError) consumePartition(zkcluster *zk.ZkCluster, consumer sa
 		case <-this.Stop:
 			return
 
+		case err := <-p.Errors():
+			log.Critical("cluster[%s] %s/%d: %s", zkcluster.Name(), topic, partitionId, err)
+
 		case msg := <-p.Messages():
-			if this.predicate(msg.Value) {
+			if msg != nil && this.predicate(msg.Value) {
 				msgCh <- msg
 			}
 
