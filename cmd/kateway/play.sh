@@ -52,6 +52,13 @@ curl -XPUT -H'Appid: app2' -H'Subkey: mysubkey' -d '[{"partition":0,"offset":122
 # peek
 curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9192/v1/peek/app1/foobar/v1?n=10&wait=5s'
 
+# sub status
+curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9193/v1/status/app1/foobar/v1?group=group1'
+
+# subd status
+curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9193/v1/subd/foobar/v1'
+
+
 # pprof debug 
 curl http://localhost:9194/debug/pprof/
 
