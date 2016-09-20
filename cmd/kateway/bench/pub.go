@@ -19,6 +19,7 @@ var (
 	n        int64
 	msgSize  int
 	debug    bool
+	async    bool
 	step     int64
 	appid    string
 	topic    string
@@ -38,6 +39,7 @@ func init() {
 	flag.Int64Var(&step, "step", 1, "display progress step")
 	flag.StringVar(&key, "key", "", "message key")
 	flag.BoolVar(&debug, "debug", false, "debug")
+	flag.BoolVar(&async, "async", false, "async pub")
 	flag.StringVar(&tag, "tag", "", "add tag to each message")
 	flag.StringVar(&topic, "t", "foobar", "topic to pub")
 	flag.StringVar(&workerId, "id", "1", "worker id")
@@ -70,6 +72,7 @@ func pubGatewayLoop(seq int) {
 	var opt api.PubOption
 	opt.Topic = topic
 	opt.Ver = "v1"
+	opt.Async = async
 	for {
 		sz = msgSize + rand.Intn(msgSize)
 		no = atomic.AddInt64(&n, 1)

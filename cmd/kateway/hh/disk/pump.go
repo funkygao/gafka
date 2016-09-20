@@ -38,6 +38,7 @@ func (q *queue) pump() {
 		switch err {
 		case nil:
 			for retries = 0; retries < defaultMaxRetries; retries++ {
+				// TODO we might use AsyncPub
 				partition, offset, err = store.DefaultPubStore.SyncPub(q.clusterTopic.cluster, q.clusterTopic.topic, b.key, b.value)
 				if err == nil {
 					if Auditor != nil {
