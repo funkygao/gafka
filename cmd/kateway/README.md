@@ -168,6 +168,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
 ### TODO
 
+- [ ] hh index
 - [ ] hh should use AsyncPub method instead of SyncPub
 - [ ] when consumer group decision didn't change, refuse to rebalance
 - [ ] tagged metrics

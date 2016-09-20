@@ -65,6 +65,7 @@ type queue struct {
 	maxAge        time.Duration
 
 	cursor     *cursor
+	index      *index
 	head, tail *segment
 	segments   segments
 
@@ -86,6 +87,7 @@ func newQueue(baseDir string, ct clusterTopic, maxSize int64, purgeInterval, max
 		segments:       segments{},
 	}
 	q.cursor = newCursor(q)
+	q.index = newIndex(q)
 	return q
 }
 
