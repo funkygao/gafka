@@ -55,10 +55,10 @@ func (this *subStore) Start() (err error) {
 
 			case remoteAddr = <-this.closedConnCh:
 				this.wg.Add(1)
-				go func() {
-					this.subManager.killClient(remoteAddr)
+				go func(id string) {
+					this.subManager.killClient(id)
 					this.wg.Done()
-				}()
+				}(remoteAddr)
 			}
 		}
 	}()
@@ -92,7 +92,8 @@ func (this *subStore) IsSystemError(err error) bool {
 		return false
 
 	default:
-		if e, ok := err.(*sarama.ConsumerError); ok && e.Err == consumergroup.ErrInvalidTopic || e.Err == consumergroup.ErrTooManyConsumers {
+		if e, ok := err.(*sarama.ConsumerError); ok &&
+			e.Err == consumergroup.ErrInvalidTopic || e.Err == consumergroup.ErrTooManyConsumers {
 			return false
 		}
 
