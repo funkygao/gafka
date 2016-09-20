@@ -678,18 +678,25 @@ func (this *manServer) refreshManagerHandler(w http.ResponseWriter, r *http.Requ
 	manager.Default.ForceRefresh()
 
 	// refresh zone wide
+	allOk := true
 	for _, kw := range kateways {
 		if kw.Id != this.gw.id {
 			// notify other kateways to refresh: avoid dead loop in the network
 			if err := this.gw.callKateway(kw, "PUT", "v1/options/refreshdb/true"); err != nil {
 				// don't retry, just log
-				log.Error("refresh from %s(%s) %s@%s: %v",
-					r.RemoteAddr, realIp, kw.Id, kw.Host, err)
+				log.Error("refresh from %s(%s) %s@%s: %v", r.RemoteAddr, realIp, kw.Id, kw.Host, err)
+
+				allOk = false
 			}
 		}
 	}
 
-	log.Info("refresh from %s(%s)", r.RemoteAddr, realIp)
+	log.Info("refresh from %s(%s) all ok: %v", r.RemoteAddr, realIp, allOk)
+
+	if !allOk {
+		writeServerError(w, "cache partially refreshed")
+		return
+	}
 
 	w.Write(ResponseOk)
 }
