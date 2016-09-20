@@ -44,6 +44,7 @@ func (this *WatchTopics) Run() {
 	topics := metrics.NewRegisteredGauge("topics", nil)
 	partitions := metrics.NewRegisteredGauge("partitions", nil)
 	brokers := metrics.NewRegisteredGauge("brokers", nil)
+	newTopics := metrics.NewRegisteredGauge("kfk.newtopic.1d", nil)
 	var lastTotalOffsets int64
 	for {
 
@@ -52,12 +53,13 @@ func (this *WatchTopics) Run() {
 			log.Info("kafka.topic stopped")
 			return
 
-		case <-ticker.C:
+		case now := <-ticker.C:
 			o, t, p, b := this.report()
 			offsets.Update(o)
 			topics.Update(t)
 			partitions.Update(p)
 			brokers.Update(b)
+			newTopics.Update(this.newTopicsSince(now, time.Hour*24))
 
 			if lastTotalOffsets > 0 {
 				if o-lastTotalOffsets >= 0 {
@@ -76,6 +78,32 @@ func (this *WatchTopics) Run() {
 		}
 	}
 
+}
+
+func (this *WatchTopics) newTopicsSince(now time.Time, since time.Duration) (n int64) {
+	excludedClusters := this.Zkzone.PublicClusters()
+	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		// kateway topics excluded
+		clusterExcluded := false
+		for _, cluster := range excludedClusters {
+			if cluster.Name() == zkcluster.Name() {
+				clusterExcluded = true
+				break
+			}
+		}
+		if clusterExcluded {
+			return
+		}
+
+		// find recently how many topics created
+		for _, ctime := range zkcluster.TopicsCtime() {
+			if now.Sub(ctime) <= since {
+				n += 1
+			}
+		}
+	})
+
+	return
 }
 
 func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
