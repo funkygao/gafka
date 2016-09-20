@@ -32,6 +32,7 @@ type Topics struct {
 	totalOffsets int64
 	ipInNumber   bool
 	plainMode    bool
+	since        time.Duration
 }
 
 func (this *Topics) Run(args []string) (exitCode int) {
@@ -58,6 +59,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.plainMode, "plain", false, "")
 	cmdFlags.StringVar(&delTopic, "del", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
+	cmdFlags.DurationVar(&this.since, "since", 0, "")
 	cmdFlags.BoolVar(&configged, "cf", false, "")
 	cmdFlags.BoolVar(&debug, "debug", false, "")
 	cmdFlags.BoolVar(&resetConf, "cfreset", false, "")
@@ -357,6 +359,10 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 			continue
 		}
 
+		if this.since > 0 && time.Since(topicsCtime[topic]) > this.since {
+			continue
+		}
+
 		this.topicN++
 
 		hasTopicMatched = true
@@ -533,6 +539,13 @@ Options:
     
     -l
       Use a long listing format.
+
+    -since duration
+      Only display topics with ctime more recent than $since.
+      e,g. 120h
+	  240h=10 days
+	  168h=1 week
+	  720h=1 month
 
     -plain
       Use fmt.Println instead of Ui.Output
