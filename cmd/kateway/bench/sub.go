@@ -30,7 +30,7 @@ var (
 func init() {
 	ip, _ := ctx.LocalIP()
 	flag.StringVar(&addr, "addr", fmt.Sprintf("%s:9192", ip), "sub kateway addr")
-	flag.StringVar(&group, "g", "mygroup1", "consumer group name")
+	flag.StringVar(&group, "g", "group1", "consumer group name")
 	flag.StringVar(&appid, "appid", "app1", "consume whose topic")
 	flag.IntVar(&step, "step", 1, "display progress step")
 	flag.StringVar(&mode, "mode", "subx", "sub mode")

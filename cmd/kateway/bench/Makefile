@@ -29,7 +29,7 @@ subn:sub.go
 	go run sub.go -t foobar -mode sub -sleep 1s -c 60
 
 sub:sub.go
-	go run sub.go -t foobar -mode sub -sleep 1s
+	go run sub.go -t foobar -mode sub -sleep 5s
 	#go run sub.go -t foobar -mode sub -sleep 1s -tag hello
 
 kwsync:bench.go

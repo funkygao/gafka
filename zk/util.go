@@ -34,8 +34,8 @@ func withRecover(fn func()) {
 
 func hostOfConsumer(consumerId string) string {
 	// consumer id
-	// java: $group_$hostname-$timestamp-$uuidSignificantBits
-	//   go: $hostname:$uuidFull
+	//   java: $group_$hostname-$timestamp-$uuidSignificantBits
+	// golang: $kateway_ip@real_ip:$uuidFull
 
 	if strings.Contains(consumerId, ":") {
 		// golang client

@@ -68,6 +68,7 @@ type SubStatus struct {
 	ProducedOldest int64  `json:"pold"`
 	ProducedNewest int64  `json:"pubd"`
 	Consumed       int64  `json:"subd"`
+	ClientRealIP   string `json:"realip"`
 }
 
 func topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
@@ -116,12 +117,18 @@ func topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
 				continue
 			}
 
+			var realIP string
+			if consumer.Online && consumer.ConsumerZnode != nil {
+				realIP = consumer.ConsumerZnode.ClientRealIP()
+			}
+
 			stat := SubStatus{
 				Group:          p[1],
 				Partition:      consumer.PartitionId,
 				ProducedOldest: consumer.OldestOffset,
 				ProducedNewest: consumer.ProducerOffset,
 				Consumed:       consumer.ConsumerOffset,
+				ClientRealIP:   realIP,
 			}
 			if !onlyMine {
 				stat.Appid = p[0]

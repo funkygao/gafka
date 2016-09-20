@@ -3,6 +3,7 @@ package zk
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/funkygao/gafka/ctx"
@@ -95,6 +96,22 @@ func (c *ConsumerZnode) from(zkData []byte) error {
 
 func (c *ConsumerZnode) Host() string {
 	return hostOfConsumer(c.Id)
+}
+
+func (c *ConsumerZnode) ClientRealIP() (ip string) {
+	ip = c.Host()
+	if strings.Contains(ip, "@") {
+		// Sub by kateway
+		// e,g XXCS-200040100@10.10.1.2
+		p := strings.SplitN(ip, "@", 2)
+		if len(p) != 2 {
+			return
+		}
+
+		return p[1]
+	}
+
+	return
 }
 
 func (c *ConsumerZnode) Topics() []string {
