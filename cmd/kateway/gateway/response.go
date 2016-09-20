@@ -43,7 +43,7 @@ func writeQuotaExceeded(w http.ResponseWriter) {
 	punishClient()
 
 	w.Header().Set("Connection", "close")
-	_writeErrorResponse(w, "quota exceeded", http.StatusNotAcceptable)
+	_writeErrorResponse(w, "quota exceeded", http.StatusTooManyRequests)
 }
 
 func writeServerError(w http.ResponseWriter, err string) {
