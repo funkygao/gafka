@@ -65,8 +65,8 @@ output {
             bootstrap_servers => "k11003a.mycorp.kfk.com:11003,k11003b.mycorp.kfk.com:11003"
             topic_id => "pubsub_log"
             metadata_max_age_ms => 300000
-			workers => 1
-			retries => 1
+            workers => 1
+            retries => 1
         }
     }
 }`
