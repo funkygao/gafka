@@ -21,8 +21,8 @@ public class App {
 
         // MODIFY the params before usage!!!
         boolean subMode = true;
-        PubConfig pubConfig = new PubConfig("http://pub.foo.com/v1/msgs/foobar/v1", "app1", "pubkey");
-        SubConfig subConfig = new SubConfig("http://sub.foo.com/v1/msgs/app1/foobar/v1?group=mygroup1", "app2", "subkey");
+        PubConfig pubConfig = new PubConfig("http://localhost:9191/v1/msgs/foobar/v1", "app1", "pubkey");
+        SubConfig subConfig = new SubConfig("http://localhost:9192/v1/msgs/app1/foobar/v1?group=group1", "app2", "subkey");
         HttpConfig httpConfig = new HttpConfig();
 
         if (subMode) {
@@ -51,7 +51,7 @@ public class App {
                     }
                 }
 
-                logger.trace("status:{} content:{}", statusCode, result.getData());
+                logger.info("status:{} message:<{}> content:<{}>", statusCode, result.getData(), result.getMessage());
             } catch (AuthorityErrorException ae) {
                 ae.printStackTrace();
                 break; // stop the world
