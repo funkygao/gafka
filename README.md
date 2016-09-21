@@ -8,14 +8,14 @@ A full ecosystem that is built around kafka powered by golang.
                 | VirtualIP |
                 +-----------+                                
                       |
-              +--------------+                                 Alert         Dashboard
-              |              |                                    |             |              gk
+              +--------------+                                 Alert   SOS   Dashboard
+              |              |                                    |     |       |              gk
      +-------------------------------------------------------------------------------------------+
-     |        |              |                                    |             |                |
-     |  +----------+    +----------+                              |             |                |
-     |  | ehaproxy |    | ehaproxy |                              |             |                |
-     |  +----------+    +----------+                              |             |                |
-     |      |                |  | discovery                       |             |                |
+     |        |              |                                    |     |       |                |
+     |  +----------+    +----------+                              |     |       |                |
+     |  | ehaproxy |    | ehaproxy |                              |     V       |                |
+     |  +----------+    +----------+                              |     |       |                |
+     |      |                |  | discovery                       |     |       |                |
      |      +----------------+  |                                 +-------------+                |
      |            | LB          |                                        |                       |
      |            |             |   +--------------------+           +--------+                  |
@@ -23,8 +23,8 @@ A full ecosystem that is built around kafka powered by golang.
      |            |keepalive        | zookeeper ensemble |-----------| kguard |-------------+    |
      |            |             +---|                    |           |        | aggragator  |    |
      |            |             |   +--------------------+           +--------+             |    |
-     |            |     +-------+           |                            |                  |    |
-     |            |     | registry          | orchestration             SOS                 |    |      +- Pub
+     |            |     +-------+           |                                               |    |
+     |            |     | registry          | orchestration                                 |    |      +- Pub
      |      +---------------+               |-----------+                      +---------+  |    | REST |
      |      |               |               |           |                      | kateway |--|----|------|
      |  +---------+    +---------+      +--------+    +--------+               +---------+  |    |      |
@@ -34,7 +34,7 @@ A full ecosystem that is built around kafka powered by golang.
      |                      |            +--------------+                                   |    |   
      |                      |            |              |                                   |    |  
      |                      |       +---------+    +---------+  push                        |    |  
-     |             +--------+       | JobTube |    | Webhook |------------------------------|----|---Endpoints
+     |             +--------+       | JobTube |    | Webhook |------------>-----------------|----|---Endpoints
      |             |        |       +---------+    +---------+                              |    |
      |             |        |           | scheduler     | sub                               |    |
      |        auth |        |job WAL    | dispatch      |                                   |    |
