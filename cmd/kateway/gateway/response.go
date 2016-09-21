@@ -41,6 +41,7 @@ func writeWsError(ws *websocket.Conn, err string) {
 
 func writeQuotaExceeded(w http.ResponseWriter) {
 	punishClient()
+	punishClient() // twice on purpose
 
 	w.Header().Set("Connection", "close")
 	_writeErrorResponse(w, "quota exceeded", http.StatusTooManyRequests)

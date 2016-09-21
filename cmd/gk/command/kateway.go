@@ -513,11 +513,12 @@ Options:
     -reset metrics name
       Reset kateway metric counter by name
 
-    -option <debug|gzip|hh|hhflush|jobshardid|accesslog|punish|500backoff|loglevel|dryrun|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|val>
+    -option <debug|gzip|badgroup_rater|hh|hhflush|jobshardid|accesslog|punish|500backoff|loglevel|dryrun|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq>=<true|false|val>
       Set kateway options value
       e,g.
       dryrun=<appid.topic.ver|clear>
       refreshdb=true
+      badgroup_rater=true
       punish=3s
       500backoff=2s
       maxreq=1000

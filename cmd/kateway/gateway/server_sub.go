@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/sync2"
 	"github.com/funkygao/golib/timewheel"
 	log "github.com/funkygao/log4go"
@@ -38,19 +39,25 @@ type subServer struct {
 	ackedOffsets map[string]map[string]map[string]map[int]int64 // [cluster][topic][group][partition]: offset
 
 	subMetrics *subMetrics
+
+	throttleBadGroup *ratelimiter.LeakyBuckets
+	goodGroupClients map[string]struct{} // key is remote addr(port inclusive)
+	goodGroupLock    sync.RWMutex
 }
 
 func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subServer {
 	this := &subServer{
-		webServer:    newWebServer("sub_server", httpAddr, httpsAddr, maxClients, gw),
-		closedConnCh: make(chan string, 1<<10),
-		idleConns:    make(map[net.Conn]struct{}, 200),
-		wsReadLimit:  8 << 10,
-		wsPongWait:   time.Minute,
-		timer:        timewheel.NewTimeWheel(time.Second, 120),
-		ackShutdown:  0,
-		ackCh:        make(chan ackOffsets, 100),
-		ackedOffsets: make(map[string]map[string]map[string]map[int]int64),
+		webServer:        newWebServer("sub_server", httpAddr, httpsAddr, maxClients, gw),
+		closedConnCh:     make(chan string, 1<<10),
+		idleConns:        make(map[net.Conn]struct{}, 200),
+		wsReadLimit:      8 << 10,
+		wsPongWait:       time.Minute,
+		timer:            timewheel.NewTimeWheel(time.Second, 120),
+		throttleBadGroup: ratelimiter.NewLeakyBuckets(2, time.Minute),
+		goodGroupClients: make(map[string]struct{}, 100),
+		ackShutdown:      0,
+		ackCh:            make(chan ackOffsets, 100),
+		ackedOffsets:     make(map[string]map[string]map[string]map[int]int64),
 	}
 	this.subMetrics = NewSubMetrics(this.gw)
 	this.waitExitFunc = this.waitExit
