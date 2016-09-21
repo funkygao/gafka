@@ -26,6 +26,7 @@ _testmain.go
 .DS_Store
 *.swp
 *.iml
+.idea/
 
 access_log
 prof.cpu

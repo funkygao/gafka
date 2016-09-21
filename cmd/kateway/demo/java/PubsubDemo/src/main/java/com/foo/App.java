@@ -1,26 +1,37 @@
 package com.foo;
 
-import com.wanda.pubsub.client.bean.HttpConfig;
-import com.wanda.pubsub.client.bean.PubConfig;
-import com.wanda.pubsub.client.bean.SubConfig;
-import com.wanda.pubsub.client.bean.SubResult;
+import com.wanda.pubsub.client.bean.*;
 import com.wanda.pubsub.client.enums.StatusCodeEnum;
 import com.wanda.pubsub.client.exception.AuthorityErrorException;
+import com.wanda.pubsub.client.pub.PubClient;
 import com.wanda.pubsub.client.sub.SubClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * PubSub demo!
  */
 public class App {
 
-    public static void main(String[] args) {
-        System.out.println("Welcome to PubSub!");
+    private static final Logger logger = LoggerFactory.getLogger(App.class);
 
-        PubConfig pubConfig;
-        SubConfig subConfig = new SubConfig("http://sub.foo.com/", "app1", "subkey");
+
+    public static void main(String[] args) {
+        logger.info("Welcome to PubSub!");
+
+        // MODIFY the params before usage!!!
+        boolean subMode = true;
+        PubConfig pubConfig = new PubConfig("http://pub.foo.com/v1/msgs/foobar/v1", "app1", "pubkey");
+        SubConfig subConfig = new SubConfig("http://sub.foo.com/v1/msgs/app1/foobar/v1?group=mygroup1", "app2", "subkey");
         HttpConfig httpConfig = new HttpConfig();
 
-        demoSub(subConfig, httpConfig);
+        if (subMode) {
+            demoSub(subConfig, httpConfig);
+        } else {
+            demoPub(pubConfig, httpConfig);
+        }
+
+        logger.info("Bye!");
     }
 
     public static void demoSub(SubConfig subConfig, HttpConfig httpConfig) {
@@ -34,17 +45,16 @@ public class App {
                 int statusCode = result.getStatusCode();
                 if (statusCode != StatusCodeEnum.RECEIVE_SUCCESS.getStatus()) {
                     try {
-                        Thread.sleep(200);
+                        Thread.sleep(2000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
 
-                System.out.println(result);
-
-            } catch (AuthorityErrorException ae) { //需要终止线程
+                logger.trace("status:{} content:{}", statusCode, result.getData());
+            } catch (AuthorityErrorException ae) {
                 ae.printStackTrace();
-                break;
+                break; // stop the world
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -52,7 +62,14 @@ public class App {
 
     }
 
-    public static void demoPub() {
+    public static void demoPub(PubConfig pubConfig, HttpConfig httpConfig) {
+        try {
+            PubClient client = new PubClient(pubConfig, httpConfig, false);
+            PubResult pubResult = client.send("key-001", "hello world");
+            System.out.println(pubResult.getStatusCode() + ":partition=" + pubResult.getPartition() + ":offset=" + pubResult.getOffset());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 }
