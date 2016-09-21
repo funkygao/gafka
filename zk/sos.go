@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka"
-	"github.com/funkygao/gafka/sos"
+	"github.com/funkygao/gafka/telemetry"
 	"github.com/funkygao/gorequest"
 	log "github.com/funkygao/log4go"
 )
@@ -24,9 +24,9 @@ func (this *ZkZone) CallSOS(caller string, msg string) {
 
 	leader := kguards[0]
 	request := gorequest.New().Timeout(time.Second * 10)
-	res, body, errs := request.Post(fmt.Sprintf("http://%s:%d", leader.Host, sos.SOSPort)).
+	res, body, errs := request.Post(fmt.Sprintf("http://%s:%d", leader.Host, telemetry.SOSPort)).
 		Set("User-Agent", fmt.Sprintf("sos-go-%s", gafka.BuildId)).
-		Set(sos.IdentHeader, caller).
+		Set(telemetry.SOSIdentHeader, caller).
 		End()
 	if len(errs) > 0 {
 		log.Error("SOS[%s] %s: %+v", caller, msg, errs)
