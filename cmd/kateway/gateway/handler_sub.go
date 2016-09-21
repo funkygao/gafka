@@ -44,15 +44,23 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	realIp := getHttpRemoteIp(r)
 
 	if !manager.Default.ValidateGroupName(r.Header, group) {
-		log.Error("sub -(%s): illegal group", realIp)
+		log.Error("sub -(%s): illegal group: %s", realIp, group)
 		this.subMetrics.ClientError.Mark(1)
 		writeBadRequest(w, "illegal group")
 		return
 	}
 
+	if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(group, 0) {
+		// this group is in confinement period
+		// TODO for the good group client, let it pass
+		log.Error("sub -(%s): group[%s] failure quota exceeded", realIp, group)
+		writeQuotaExceeded(w)
+		return
+	}
+
 	limit, err = getHttpQueryInt(&query, "batch", 1)
 	if err != nil {
-		log.Error("sub -(%s): illegal batch", realIp)
+		log.Error("sub -(%s): illegal batch: %v", realIp, err)
 		this.subMetrics.ClientError.Mark(1)
 		writeBadRequest(w, "illegal batch")
 		return
@@ -184,7 +192,11 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			writeServerError(w, err.Error())
 		} else {
 			this.subMetrics.ClientError.Mark(1)
-			writeBadRequest(w, err.Error())
+			if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(group, 1) {
+				writeQuotaExceeded(w)
+			} else {
+				writeBadRequest(w, err.Error())
+			}
 		}
 
 		return
