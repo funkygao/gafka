@@ -25,6 +25,8 @@ _testmain.go
 
 .DS_Store
 *.swp
+*.iml
+.idea/
 
 access_log
 prof.cpu
@@ -60,3 +62,4 @@ prof.mem
 access_log*
 cmd/kateway/hhdata/
 cmd/kateway/hh/disk/hh/
+cmd/kateway/demo/java/PubsubDemo/target
