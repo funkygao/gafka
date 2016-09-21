@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -65,6 +66,7 @@ func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, par
 	output["subconn"] = strconv.Itoa(subConns)
 	output["hh_appends"] = strconv.FormatInt(hh.Default.AppendN(), 10)
 	output["hh_delivers"] = strconv.FormatInt(hh.Default.DeliverN(), 10)
+	output["goroutines"] = strconv.Itoa(runtime.NumGoroutine())
 
 	var heapSize int64
 	if metrics.DefaultRegistry != nil {
