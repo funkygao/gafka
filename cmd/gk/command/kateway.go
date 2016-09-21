@@ -217,7 +217,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 					pprofAddr = kw.Ip + pprofAddr
 				}
 				pprofAddr = fmt.Sprintf("%s/debug/pprof/", pprofAddr)
-				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s/%s|%s|%s|%s/%s/%s/%s|%s|%s",
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s/%s|%s|%s|%s|%s/%s/%s/%s|%s",
 					zkzone.Name(),
 					kw.Id, kw.Host, kw.Ip,
 					pprofAddr, kw.Build, kw.BuiltAt,
