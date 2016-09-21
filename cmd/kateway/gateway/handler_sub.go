@@ -51,11 +51,16 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	}
 
 	if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(group, 0) {
-		// this group is in confinement period
-		// TODO for the good group client, let it pass
-		log.Error("sub -(%s): group[%s] failure quota exceeded", realIp, group)
-		writeQuotaExceeded(w)
-		return
+		this.goodGroupLock.RLock()
+		_, good := this.goodGroupClients[r.RemoteAddr]
+		this.goodGroupLock.RUnlock()
+
+		if !good {
+			// this bad group client is in confinement period
+			log.Error("sub -(%s): group[%s] failure quota exceeded", realIp, group)
+			writeQuotaExceeded(w)
+			return
+		}
 	}
 
 	limit, err = getHttpQueryInt(&query, "batch", 1)
@@ -243,6 +248,13 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			log.Error("sub[%s] %s(%s): {app:%s topic:%s ver:%s group:%s} %v",
 				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group, err)
 		}
+	}
+
+	if Options.BadGroupRateLimit {
+		// record the good consumer group client
+		this.goodGroupLock.Lock()
+		this.goodGroupClients[r.RemoteAddr] = struct{}{}
+		this.goodGroupLock.Unlock()
 	}
 
 	if gz != nil {

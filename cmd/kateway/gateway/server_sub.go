@@ -38,8 +38,11 @@ type subServer struct {
 	ackCh        chan ackOffsets                                // client ack'ed offsets
 	ackedOffsets map[string]map[string]map[string]map[int]int64 // [cluster][topic][group][partition]: offset
 
-	subMetrics       *subMetrics
+	subMetrics *subMetrics
+
 	throttleBadGroup *ratelimiter.LeakyBuckets
+	goodGroupClients map[string]struct{} // key is remote addr(port inclusive)
+	goodGroupLock    sync.RWMutex
 }
 
 func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subServer {
@@ -50,7 +53,8 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 		wsReadLimit:      8 << 10,
 		wsPongWait:       time.Minute,
 		timer:            timewheel.NewTimeWheel(time.Second, 120),
-		throttleBadGroup: ratelimiter.NewLeakyBuckets(5, time.Minute*5),
+		throttleBadGroup: ratelimiter.NewLeakyBuckets(2, time.Minute),
+		goodGroupClients: make(map[string]struct{}, 100),
 		ackShutdown:      0,
 		ackCh:            make(chan ackOffsets, 100),
 		ackedOffsets:     make(map[string]map[string]map[string]map[int]int64),
