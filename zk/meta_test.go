@@ -33,6 +33,9 @@ func TestZkTimestamp(t *testing.T) {
 func TestConsumerZnode(t *testing.T) {
 	c := newConsumerZnode("cloudparkingGroup_orderMsg_BJS0-D134-018-1447657979158-fa9d1dc8")
 	assert.Equal(t, "BJS0-D134-018", c.Host())
+
+	c = newConsumerZnode("DC-243001184@192.168.10.134:33f3a781-1dd5-488d-84fa-f8d3febce170")
+	assert.Equal(t, "192.168.10.134", c.ClientRealIP())
 }
 
 func TestConsumerZnodeFrom(t *testing.T) {
