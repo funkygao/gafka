@@ -112,6 +112,9 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	case "gzip":
 		Options.EnableGzip = boolVal
 
+	case "badgroup_rater":
+		Options.BadGroupRateLimit = boolVal
+
 	case "refreshdb":
 		manager.Default.ForceRefresh()
 
