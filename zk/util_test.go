@@ -16,6 +16,7 @@ func TestTimestampToTime(t *testing.T) {
 func TestParseConsumerHost(t *testing.T) {
 	fixtures := assert.Fixtures{
 		assert.Fixture{"console-consumer-48389_mac-2.local-1449108222694-9f9b7aa7", "mac-2.local"},
+		assert.Fixture{"mygroup_myhost-1474160855114-d726ea23", "myhost"},
 		assert.Fixture{"mac-2.local:ab3373df-02c7-4074-adc0-49078af110ff", "mac-2.local"},
 		assert.Fixture{"mac-2.local-invalid", "mac"},
 	}
