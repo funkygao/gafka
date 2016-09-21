@@ -13,8 +13,11 @@ func (this *Gateway) buildRouting() {
 	m := this.middleware
 
 	if this.manServer != nil {
-		this.manServer.Router().GET("/alive", m(this.checkAliveHandler))
 		this.manServer.Router().NotFound = http.HandlerFunc(this.manServer.notFoundHandler)
+		this.manServer.Router().MethodNotAllowed = http.HandlerFunc(this.manServer.notAllowedHandler)
+
+		// health check
+		this.manServer.Router().GET("/alive", m(this.checkAliveHandler))
 
 		// api for 'gk kateway'
 		this.manServer.Router().GET("/v1/clusters", m(this.manServer.clustersHandler))
@@ -58,8 +61,11 @@ func (this *Gateway) buildRouting() {
 	}
 
 	if this.pubServer != nil {
-		this.pubServer.Router().GET("/alive", m(this.checkAliveHandler))
 		this.pubServer.Router().NotFound = http.HandlerFunc(this.pubServer.notFoundHandler)
+		this.pubServer.Router().MethodNotAllowed = http.HandlerFunc(this.pubServer.notAllowedHandler)
+
+		// health check
+		this.pubServer.Router().GET("/alive", m(this.checkAliveHandler))
 
 		this.pubServer.Router().POST("/v1/raw/msgs/:cluster/:topic", m(this.pubServer.pubRawHandler))
 		this.pubServer.Router().POST("/v1/msgs/:topic/:ver", m(this.pubServer.pubHandler))
@@ -77,8 +83,11 @@ func (this *Gateway) buildRouting() {
 	}
 
 	if this.subServer != nil {
-		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
 		this.subServer.Router().NotFound = http.HandlerFunc(this.subServer.notFoundHandler)
+		this.subServer.Router().MethodNotAllowed = http.HandlerFunc(this.subServer.notAllowedHandler)
+
+		// health check
+		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
 
 		this.subServer.Router().GET("/v1/msgs/:appid/:topic/:ver", m(this.subServer.subHandler))
 		this.subServer.Router().GET("/v1/ws/msgs/:appid/:topic/:ver", m(this.subServer.subWsHandler))

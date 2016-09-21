@@ -327,9 +327,17 @@ func (this *webServer) Closed() <-chan struct{} {
 }
 
 func (this *webServer) notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	log.Error("%s: %s(%s) not found %s %s ", this.name,
+	log.Error("%s: %s(%s) 404 %s %s ", this.name,
 		r.RemoteAddr, getHttpRemoteIp(r),
 		r.Method, r.RequestURI)
 
 	writeNotFound(w)
+}
+
+func (this *webServer) notAllowedHandler(w http.ResponseWriter, r *http.Request) {
+	log.Error("%s: %s(%s) 405 %s %s ", this.name,
+		r.RemoteAddr, getHttpRemoteIp(r),
+		r.Method, r.RequestURI)
+
+	writeNotAllowed(w)
 }

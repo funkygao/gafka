@@ -28,6 +28,13 @@ func writeNotFound(w http.ResponseWriter) {
 	_writeErrorResponse(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 }
 
+func writeNotAllowed(w http.ResponseWriter) {
+	punishClient()
+
+	w.Header().Set("Connection", "close")
+	_writeErrorResponse(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+}
+
 func writeAuthFailure(w http.ResponseWriter, err error) {
 	punishClient()
 
