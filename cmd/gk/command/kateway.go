@@ -142,11 +142,12 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	}
 
 	if this.checkup {
-		if validateArgs(this, this.Ui).
-			require("-z").
-			requireAdminRights("-z").
-			invalid(args) {
-			return 2
+		if this.zone == "" {
+			forAllSortedZones(func(zkzone *zk.ZkZone) {
+				this.runCheckup(zkzone)
+			})
+
+			return
 		}
 
 		zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
@@ -372,16 +373,30 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 		group  = zone.SmokeGroup
 	)
 
+	if myApp == "" || secret == "" {
+		this.Ui.Warn(fmt.Sprintf("zone[%s] skipped", zkzone.Name()))
+		return
+	}
+
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	kws, err := zkzone.KatewayInfos()
 	swallow(err)
+	if zone.PubEndpoint != "" && zone.SubEndpoint != "" {
+		// add the load balancer endpoint
+		kws = append(kws, &zk.KatewayMeta{
+			Id:      "loadbalancer",
+			PubAddr: zone.PubEndpoint,
+			SubAddr: zone.SubEndpoint,
+		})
+	}
+
 	for _, kw := range kws {
 		if this.id != "" && kw.Id != this.id {
 			continue
 		}
 
-		this.Ui.Info(fmt.Sprintf("kateway[%s]", kw.Id))
+		this.Ui.Info(fmt.Sprintf("zone[%s] kateway[%s]", zkzone.Name(), kw.Id))
 
 		// pub a message
 		cf := api.DefaultConfig(myApp, secret)
@@ -426,7 +441,7 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 		})
 		swallow(err)
 
-		this.Ui.Info(fmt.Sprintf("ok for %+v", kw))
+		this.Ui.Info(fmt.Sprintf("    ok for %s@%s", kw.Id, kw.Build))
 
 		// wait for server cleanup the sub conn
 		time.Sleep(time.Second)

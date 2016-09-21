@@ -11,12 +11,13 @@ type zone struct {
 	SwfEndpoint string // http://192.168.10.134:9195/v1
 
 	// smoke test related
-	SmokeApp          string
-	SmokeHisApp       string
-	SmokeSecret       string
-	SmokeTopic        string
-	SmokeTopicVersion string
-	SmokeGroup        string
+	PubEndpoint, SubEndpoint string // the load balancer addr
+	SmokeApp                 string
+	SmokeHisApp              string
+	SmokeSecret              string
+	SmokeTopic               string
+	SmokeTopicVersion        string
+	SmokeGroup               string
 }
 
 func (this *zone) loadConfig(section *ljconf.Conf) {
@@ -24,6 +25,8 @@ func (this *zone) loadConfig(section *ljconf.Conf) {
 	this.Zk = section.String("zk", "")
 	this.InfluxAddr = section.String("influxdb", "")
 	this.SwfEndpoint = section.String("swf", "")
+	this.PubEndpoint = section.String("pub_entry", "")
+	this.SubEndpoint = section.String("sub_entry", "")
 	this.SmokeApp = section.String("smoke_app", "")
 	this.SmokeSecret = section.String("smoke_secret", "")
 	this.SmokeTopic = section.String("smoke_topic", "smoketestonly")
