@@ -10,6 +10,7 @@ gk clusters -z local -c me -s -public 1 -nickname me
 zk create -p /_kateway/orchestrator/jobconfig
 zk create -p /_kateway/orchestrator/webhooks
 echo '{"shard_stategy":"standard","timeout":10000000000,"global_pools":{"ShardLookup":true},"idle_timeout":14400000000000,"max_idle_conns":5,"max_conns":50,"breaker":{"FailureAllowance":10,"RetryTimeout":5000000000},"pools":{"AppShard1":{"pool":"AppShard1","host":"127.0.0.1","port":"3306","user":"root","pass":"","db":"pubsub","charset":"utf8"},"ShardLookup":{"pool":"ShardLookup","host":"127.0.0.1","port":"3306","user":"root","pass":"","db":"pubsub","charset":"utf8"}},"cache_store":"mem","cache_cap":1024,"cache_keyhash":false,"lookup_cache_max_items":1048576,"lookup_pool":"ShardLookup","default_lookup_table":"AppLookup"}' | zk set -p /_kateway/orchestrator/jobconfig
+# the jobconfig is created by fae/config, go test -v
 
 # register a topic
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9193/v1/topics/app1/foobar/v1?partitions=1&replicas=1'
