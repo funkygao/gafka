@@ -385,7 +385,7 @@ func (this *ZkZone) children(path string) []string {
 	children, _, err := this.conn.Children(path)
 	if err != nil {
 		if err != zk.ErrNoNode {
-			this.swallow(path, err)
+			log.Error("%s: %v", path, err)
 		}
 
 		return nil
@@ -404,7 +404,8 @@ func (this *ZkZone) ChildrenWithData(path string) map[string]zkData {
 	}
 	for _, name := range children {
 		data, stat, err := this.conn.Get(path + "/" + name)
-		if !this.swallow(path, err) {
+		if err != nil {
+			log.Error("%s: %v", path+"/"+name, err)
 			continue
 		}
 
@@ -457,7 +458,7 @@ func (this *ZkZone) ClusterPath(name string) string {
 	path := ClusterPath(name)
 	clusterPathData, _, err := this.conn.Get(path)
 	if err != nil {
-		this.swallow(path, err)
+		log.Error("%s: %v", path, err)
 		return ""
 	}
 
@@ -519,7 +520,8 @@ func (this *ZkZone) controllers() map[string]*ControllerMeta {
 
 		controllerData, stat, _ := this.conn.Get(path + ControllerPath)
 		js, err := simplejson.NewJson(controllerData)
-		if !this.swallow(path+ControllerPath, err) {
+		if err != nil {
+			log.Error("%s: %v", path+ControllerPath, err)
 			continue
 		}
 
