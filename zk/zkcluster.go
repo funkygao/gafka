@@ -109,7 +109,10 @@ func (this *ZkCluster) writeInfo(zc ZkCluster) error {
 	this.zone.createZnode(clusterInfoRoot, []byte(""))
 
 	data, err := json.Marshal(zc)
-	this.zone.swallow(err)
+	if err != nil {
+		log.Error("%v", err)
+		return err
+	}
 
 	_, err = this.zone.conn.Set(this.ClusterInfoPath(), data, -1)
 	if err == zk.ErrNoNode {
@@ -128,7 +131,7 @@ func (this *ZkCluster) RegisteredInfo() ZkCluster {
 			this.writeInfo(*this)
 			return *this
 		} else {
-			this.zone.swallow(err)
+			log.Error("%v", err)
 		}
 
 		return *this
@@ -147,35 +150,35 @@ func (this *ZkCluster) SetNickname(name string) {
 	c := this.RegisteredInfo()
 	c.Nickname = name
 	data, _ := json.Marshal(c)
-	this.zone.swallow(this.zone.setZnode(this.ClusterInfoPath(), data))
+	this.zone.swallow(this.ClusterInfoPath(), this.zone.setZnode(this.ClusterInfoPath(), data))
 }
 
 func (this *ZkCluster) SetRetention(retention int) {
 	c := this.RegisteredInfo()
 	c.Retention = retention
 	data, _ := json.Marshal(c)
-	this.zone.swallow(this.zone.setZnode(this.ClusterInfoPath(), data))
+	this.zone.swallow(this.ClusterInfoPath(), this.zone.setZnode(this.ClusterInfoPath(), data))
 }
 
 func (this *ZkCluster) SetPriority(priority int) {
 	c := this.RegisteredInfo()
 	c.Priority = priority
 	data, _ := json.Marshal(c)
-	this.zone.swallow(this.zone.setZnode(this.ClusterInfoPath(), data))
+	this.zone.swallow(this.ClusterInfoPath(), this.zone.setZnode(this.ClusterInfoPath(), data))
 }
 
 func (this *ZkCluster) SetReplicas(replicas int) {
 	c := this.RegisteredInfo()
 	c.Replicas = replicas
 	data, _ := json.Marshal(c)
-	this.zone.swallow(this.zone.setZnode(this.ClusterInfoPath(), data))
+	this.zone.swallow(this.ClusterInfoPath(), this.zone.setZnode(this.ClusterInfoPath(), data))
 }
 
 func (this *ZkCluster) SetPublic(public bool) {
 	c := this.RegisteredInfo()
 	c.Public = public
 	data, _ := json.Marshal(c)
-	this.zone.swallow(this.zone.setZnode(this.ClusterInfoPath(), data))
+	this.zone.swallow(this.ClusterInfoPath(), this.zone.setZnode(this.ClusterInfoPath(), data))
 }
 
 func (this *ZkCluster) RegisterBroker(id int, host string, port int) error {

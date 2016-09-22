@@ -281,21 +281,21 @@ func (this *ZkZone) NewclusterWithPath(cluster, path string) *ZkCluster {
 	}
 }
 
-func (this *ZkZone) swallow(err error) bool {
-	if err != nil {
-		if this.conf.PanicOnError {
-			panic(err)
-		}
-
-		log.Error(err)
-
-		this.errsLock.Lock()
-		this.errs = append(this.errs, err)
-		this.errsLock.Unlock()
-		return false
+func (this *ZkZone) swallow(path string, err error) bool {
+	if err == nil {
+		return true
 	}
 
-	return true
+	if this.conf.PanicOnError {
+		panic(err)
+	}
+
+	log.Error("%s: %v", path, err)
+
+	this.errsLock.Lock()
+	this.errs = append(this.errs, err)
+	this.errsLock.Unlock()
+	return false
 }
 
 func (this *ZkZone) Errors() []error {
@@ -385,7 +385,7 @@ func (this *ZkZone) children(path string) []string {
 	children, _, err := this.conn.Children(path)
 	if err != nil {
 		if err != zk.ErrNoNode {
-			this.swallow(err)
+			this.swallow(path, err)
 		}
 
 		return nil
@@ -404,7 +404,7 @@ func (this *ZkZone) ChildrenWithData(path string) map[string]zkData {
 	}
 	for _, name := range children {
 		data, stat, err := this.conn.Get(path + "/" + name)
-		if !this.swallow(err) {
+		if !this.swallow(path, err) {
 			continue
 		}
 
@@ -454,13 +454,14 @@ func (this *ZkZone) ForSortedClusters(fn func(zkcluster *ZkCluster)) {
 func (this *ZkZone) ClusterPath(name string) string {
 	this.connectIfNeccessary()
 
-	clusterPath, _, err := this.conn.Get(ClusterPath(name))
+	path := ClusterPath(name)
+	clusterPathData, _, err := this.conn.Get(path)
 	if err != nil {
-		this.swallow(err)
+		this.swallow(path, err)
 		return ""
 	}
 
-	return string(clusterPath)
+	return string(clusterPathData)
 }
 
 // unused yet
@@ -518,7 +519,7 @@ func (this *ZkZone) controllers() map[string]*ControllerMeta {
 
 		controllerData, stat, _ := this.conn.Get(path + ControllerPath)
 		js, err := simplejson.NewJson(controllerData)
-		if !this.swallow(err) {
+		if !this.swallow(path+ControllerPath, err) {
 			continue
 		}
 
