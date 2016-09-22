@@ -18,13 +18,14 @@ type Upgrade struct {
 	Ui  cli.Ui
 	Cmd string
 
-	uploadDir      string
-	mode           string
-	upgradeKateway bool
-	upgradeZk      bool
-	upgradeKguard  bool
-	upgradeActord  bool
-	upgradeConfig  bool
+	uploadDir       string
+	mode            string
+	upgradeKateway  bool
+	upgradeZk       bool
+	upgradeKguard   bool
+	upgradeActord   bool
+	upgradeEhaproxy bool
+	upgradeConfig   bool
 }
 
 func (this *Upgrade) Run(args []string) (exitCode int) {
@@ -34,6 +35,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.mode, "m", "d", "")
 	cmdFlags.BoolVar(&this.upgradeConfig, "c", false, "")
 	cmdFlags.BoolVar(&this.upgradeKateway, "k", false, "")
+	cmdFlags.BoolVar(&this.upgradeEhaproxy, "ha", false, "")
 	cmdFlags.BoolVar(&this.upgradeActord, "at", false, "")
 	cmdFlags.BoolVar(&this.upgradeZk, "zk", false, "")
 	cmdFlags.BoolVar(&this.upgradeKguard, "kg", false, "")
@@ -66,6 +68,20 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 
 		case "u":
 			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/actord", gopath), this.uploadDir})
+		}
+
+		return
+	}
+
+	if this.upgradeEhaproxy {
+		switch this.mode {
+		case "d":
+			this.runCmd("wget", []string{this.storeUrl("ehaproxy"), "-O", "ehaproxy"})
+			this.runCmd("chmod", []string{"a+x", "ehaproxy"})
+			this.runCmd("mv", []string{"-f", "actord", "/var/wd/ehaproxy/ehaproxy"})
+
+		case "u":
+			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/ehaproxy", gopath), this.uploadDir})
 		}
 
 		return
@@ -190,6 +206,9 @@ Options:
 
     -zk
       Upgrade zk instead of gk
+
+    -ha
+      Upgrade ehaproxy instead of gk
 
     -kg
       Upgrade kguard instead of gk
