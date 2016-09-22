@@ -236,7 +236,10 @@ func (this *Start) shutdown() {
 	log.Info("killling haproxy processes")
 
 	f, e := os.Open(haproxyPidFile)
-	swalllow(e)
+	if e != nil {
+		log.Error("shutdown %v", e)
+		return
+	}
 
 	reader := bufio.NewReader(f)
 	for {
