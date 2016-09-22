@@ -166,6 +166,16 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 
   30s
 
+### Dependencies
+
+- github.com/samuel/go-zookeeper
+
+35a5e3bf880ea78fbebad4c7f349d4852c2f75a6
+
+- github.com/Shopify/sarama
+
+d37c73f2b2bce85f7fa16b6a550d26c5372892ef
+
 ### TODO
 
 - [ ] hh index
