@@ -1,5 +1,4 @@
-all:
-	@echo hello
+all:run
 
 generate:
 	mvn archetype:generate -DgroupId=com.foo -DartifactId=PubsubDemo -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
@@ -10,4 +9,8 @@ run:
 idea:
 	cd PubsubDemo; mvn idea:idea
 
+dist:
+	cd PubsubDemo; mvn package assembly:single
 
+clean:
+	cd PubsubDemo; mvn clean
