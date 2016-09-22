@@ -78,7 +78,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 		case "d":
 			this.runCmd("wget", []string{this.storeUrl("ehaproxy"), "-O", "ehaproxy"})
 			this.runCmd("chmod", []string{"a+x", "ehaproxy"})
-			this.runCmd("mv", []string{"-f", "actord", "/var/wd/ehaproxy/ehaproxy"})
+			this.runCmd("mv", []string{"-f", "ehaproxy", "/var/wd/ehaproxy/ehaproxy"})
 
 		case "u":
 			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/ehaproxy", gopath), this.uploadDir})
