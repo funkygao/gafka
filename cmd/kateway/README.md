@@ -174,6 +174,8 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - [ ] tagged metrics
 - [ ] mysql slave of manager to data sync with manager in memory
 - [ ] kguard apperr.go Line:128 restart if kafka conn broken
+- [ ] haproxy metrics export to InfluxDB
+  http://user:pass@localhost:10890/stats?stats;csv
 - [X] kguard watch for same group consuming multiple topics
 - [X] when startup, hh Empty?
 - [X] man /v1/clusters director of cluster distribution
