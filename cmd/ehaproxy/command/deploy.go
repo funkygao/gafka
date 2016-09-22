@@ -57,10 +57,13 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	initPath := fmt.Sprintf("%s/src/init.ehaproxy", this.root)
 	err = ioutil.WriteFile(initPath, b, 0755)
 	swalllow(err)
-	b, _ = Asset("templates/503.http")
-	http503 := fmt.Sprintf("%s/conf/503.http", this.root)
-	err = ioutil.WriteFile(http503, b, 0755)
-	swalllow(err)
+	for _, errCode := range []int{500, 502, 503, 504} {
+		errFile := fmt.Sprintf("templates/%d.http", errCode)
+		b, _ = Asset(errFile)
+		dest := fmt.Sprintf("%s/conf/%d.http", this.root, errCode)
+		err = ioutil.WriteFile(dest, b, 0644)
+		swalllow(err)
+	}
 
 	this.Ui.Info("will read zones from $HOME/.gafka.cf")
 	this.Ui.Info("yum install -y zlib zlib-devel")
