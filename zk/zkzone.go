@@ -26,7 +26,9 @@ type ZkZone struct {
 	evtFetched int32
 	mu         sync.RWMutex
 	once       sync.Once
-	errs       []error
+
+	errsLock sync.Mutex
+	errs     []error
 
 	zkclusters map[string]*ZkCluster
 }
@@ -286,15 +288,14 @@ func (this *ZkZone) swallow(err error) bool {
 		}
 
 		log.Error(err)
-		this.addError(err)
+
+		this.errsLock.Lock()
+		this.errs = append(this.errs, err)
+		this.errsLock.Unlock()
 		return false
 	}
 
 	return true
-}
-
-func (this *ZkZone) addError(err error) {
-	this.errs = append(this.errs, err)
 }
 
 func (this *ZkZone) Errors() []error {
@@ -321,7 +322,6 @@ func (this *ZkZone) Connect() (err error) {
 
 	if this.conn != nil {
 		log.Warn("zk %s already connected", this.conf.ZkAddrs)
-		this.addError(ErrDupConnect)
 		return nil
 	}
 
