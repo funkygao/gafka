@@ -25,11 +25,7 @@ curl -XPUT -H'Appid: app1' -H'Pubkey: mypubkey' -d '{"endpoints":["http://localh
 curl -XGET -H'X-App-Id: app1' -H'X-App-Secret: helllo' 'http://localhost:9191/v1/auth'
 
 # register a shadow topic
-curl -i -XPOST -H'Appid: app14' -H'Subkey: mysubkey' http://localhost:9192/v1/guard/app1/foobar/v1/mygroup1
-
-cd cmd/kateway/bench
-make pub
-make sub
+curl -i -XPOST -H'Appid: app2' -H'Subkey: mysubkey' http://localhost:9193/v1/shadow/app1/foobar/v1/group1
 
 # pub a job
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hhhhhhhello world!' 'http://localhost:9191/v1/jobs/foobar/v1?delay=20'
@@ -44,6 +40,9 @@ curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d '@/Users/funky/gopkg/src/git
 # sub a topic
 curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/app1/foobar/v1?group=group1&reset=newest&limit=1'
 curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/app1/foobar/v1?group=group1'
+
+# bury a message
+curl -XPUT -H'X-Partition: 0' -H'X-Bury: retry' -H'X-Offset: 55' -H'Appid: app2' -H'Subkey: mykey' -d'message body' 'http://localhost:9192/v1/bury/app1/foobar/v1?group=group1'
 
 # raw sub
 curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9193/v1/raw/msgs/app1/foobar/v1?group=xx'
