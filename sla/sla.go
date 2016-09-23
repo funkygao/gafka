@@ -22,7 +22,7 @@ const (
 	defaultReplicas       = 2
 
 	maxReplicas       = 3
-	maxPartitions     = 50
+	maxPartitions     = 20
 	maxRetentionHours = 20 * 7 * 24
 )
 
