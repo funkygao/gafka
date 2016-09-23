@@ -57,6 +57,7 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, rea
 	// cache miss, create the consumer group for this client
 	cf := consumergroup.NewConfig()
 	cf.PermitStandby = permitStandby
+	cf.OneToOne = true
 
 	cf.Net.DialTimeout = time.Second * 10
 	cf.Net.WriteTimeout = time.Second * 10
