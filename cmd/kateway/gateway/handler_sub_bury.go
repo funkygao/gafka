@@ -13,7 +13,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-// PUT /v1/bury/:appid/:topic/:ver?group=xx&q=yy
+// PUT /v1/bury/:appid/:topic/:ver?group=xx&q=<dead|retry>
+// FIXME X-Bury and param q is duplicated
 func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		topic      string
@@ -98,11 +99,11 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	shadow = query.Get("q")
 
 	log.Debug("bury[%s] %s(%s): {app:%s bury:%s shadow=%s topic:%s ver:%s group:%s partition:%s offset:%s UA:%s}",
-		myAppid, r.RemoteAddr, realIp, hisAppid, bury, shadow, topic, ver,
+		myAppid, r.RemoteAddr, realIp, hisAppid, bury, shadow, topic, ver, group,
 		partition, offset, r.Header.Get("User-Agent"))
 
 	msgLen := int(r.ContentLength)
-	msg := make([]byte, 0, msgLen)
+	msg := make([]byte, msgLen)
 	if _, err = io.ReadAtLeast(r.Body, msg, msgLen); err != nil {
 		log.Error("bury[%s] %s(%s): {app:%s topic:%s ver:%s group:%s UA:%s} %v",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
