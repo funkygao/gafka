@@ -93,7 +93,9 @@ func (this *subStore) IsSystemError(err error) bool {
 
 	default:
 		if e, ok := err.(*sarama.ConsumerError); ok &&
-			(e.Err == consumergroup.ErrInvalidTopic || e.Err == consumergroup.ErrTooManyConsumers) {
+			(e.Err == consumergroup.ErrInvalidTopic ||
+				e.Err == consumergroup.ErrConsumerConflict ||
+				e.Err == consumergroup.ErrTooManyConsumers) {
 			return false
 		}
 
