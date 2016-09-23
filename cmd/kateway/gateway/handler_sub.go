@@ -239,8 +239,14 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 				writeServerError(w, err.Error())
 			} else {
 				this.subMetrics.ClientError.Mark(1)
-				writeBadRequest(w, err.Error())
+				if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(group, 1) {
+					writeQuotaExceeded(w)
+				} else {
+					writeBadRequest(w, err.Error())
+				}
 			}
+		} else if Options.BadGroupRateLimit && !store.DefaultSubStore.IsSystemError(err) {
+			this.throttleBadGroup.Pour(group, 1)
 		}
 
 		// fetch.Close might be called by subServer.closedConnCh
