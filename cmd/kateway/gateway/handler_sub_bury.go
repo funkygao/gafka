@@ -14,7 +14,7 @@ import (
 )
 
 // PUT /v1/msgs/:appid/:topic/:ver?group=xx&q=<dead|retry>
-// FIXME X-Bury and param q is duplicated
+// q=retry&X-Bury=dead means bury from retry queue to dead queue
 func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		topic      string
@@ -94,8 +94,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	shadow = query.Get("q")
 
 	log.Debug("bury[%s/%s] %s(%s): {%s.%s.%s bury:%s shadow=%s partition:%s offset:%s UA:%s}",
-		myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, bury, shadow,
-		partition, offset, r.Header.Get("User-Agent"))
+		myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, bury, shadow, partition, offset, r.Header.Get("User-Agent"))
 
 	msgLen := int(r.ContentLength)
 	msg := make([]byte, msgLen)
@@ -142,8 +141,8 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
 		myAppid+"."+group, r.RemoteAddr, realIp, "", Options.PermitStandbySub)
 	if err != nil {
-		log.Error("bury[%s/%s] %s(%s): {%s.%s.%s UA:%s} %v",
-			myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), err)
+		log.Error("bury[%s/%s] %s(%s): {%s UA:%s} %v",
+			myAppid, group, r.RemoteAddr, realIp, rawTopic, r.Header.Get("User-Agent"), err)
 
 		writeBadRequest(w, err.Error())
 		return
@@ -153,8 +152,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	shadowTopic := manager.Default.ShadowTopic(bury, myAppid, hisAppid, topic, ver, group)
 	_, _, err = store.DefaultPubStore.SyncPub(cluster, shadowTopic, nil, msg)
 	if err != nil {
-		log.Error("bury[%s/%s] %s(%s): %s.%s.%s %v",
-			myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, err)
+		log.Error("bury[%s/%s] %s(%s): %s %v", myAppid, group, r.RemoteAddr, realIp, shadowTopic, err)
 
 		writeServerError(w, err.Error())
 		return
@@ -162,12 +160,11 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 
 	// step2: skip this message in the master topic TODO atomic with step1
 	if err = fetcher.CommitUpto(&sarama.ConsumerMessage{
-		Topic:     rawTopic, // FIXME it's wrong!!!
+		Topic:     rawTopic,
 		Partition: int32(partitionN),
 		Offset:    offsetN,
 	}); err != nil {
-		log.Error("bury[%s/%s] %s(%s): %s.%s.%s %v",
-			myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, err)
+		log.Error("bury[%s/%s] %s(%s): %s %v", myAppid, group, r.RemoteAddr, realIp, rawTopic, err)
 
 		writeServerError(w, err.Error())
 		return
