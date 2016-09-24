@@ -24,9 +24,6 @@ func (this *Gateway) buildRouting() {
 		this.manServer.Router().GET("/v1/status", m(this.manServer.statusHandler))
 		this.manServer.Router().PUT("/v1/options/:option/:value", m(this.manServer.setOptionHandler))
 
-		// DEPRECATED
-		this.manServer.Router().DELETE("/v1/counter/:name", m(this.manServer.resetCounterHandler))
-
 		// api for pubsub manager
 		this.manServer.Router().GET("/v1/partitions/:appid/:topic/:ver",
 			m(this.manServer.partitionsHandler))

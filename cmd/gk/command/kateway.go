@@ -51,7 +51,6 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.install, "i", false, "")
 	cmdFlags.BoolVar(&this.longFmt, "l", false, "")
 	cmdFlags.StringVar(&this.configOption, "option", "", "")
-	cmdFlags.StringVar(&this.resetCounter, "reset", "", "")
 	cmdFlags.BoolVar(&this.versionOnly, "ver", false, "")
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "", "")
 	cmdFlags.StringVar(&this.visualLog, "visualog", "", "")
@@ -94,23 +93,6 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 				kws, _ := zkzone.KatewayInfos()
 				for _, kw := range kws {
 					this.callKateway(kw, "PUT", fmt.Sprintf("v1/log/%s", this.logLevel))
-				}
-			}
-		}
-
-		if this.resetCounter != "" {
-			if this.id != "" {
-				kw := zkzone.KatewayInfoById(this.id)
-				if kw == nil {
-					panic(fmt.Sprintf("kateway %s invalid entry found in zk", this.id))
-				}
-
-				this.callKateway(kw, "DELETE", fmt.Sprintf("v1/counter/%s", this.resetCounter))
-			} else {
-				// apply on all kateways
-				kws, _ := zkzone.KatewayInfos()
-				for _, kw := range kws {
-					this.callKateway(kw, "DELETE", fmt.Sprintf("v1/counter/%s", this.resetCounter))
 				}
 			}
 		}
@@ -509,10 +491,7 @@ Options:
 
     -cf
       Enter config mode
-
-    -reset metrics name
-      Reset kateway metric counter by name
-
+   
     -option <key>=<val>
       Set kateway options value
       keys:

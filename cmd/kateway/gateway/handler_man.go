@@ -236,17 +236,6 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	w.Write(ResponseOk)
 }
 
-// DELETE /v1/counter/:name
-func (this *manServer) resetCounterHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	log.Info("reset counter %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
-
-	counterName := params.ByName("name")
-
-	_ = counterName // TODO
-
-	w.Write(ResponseOk)
-}
-
 // GET /v1/partitions/:appid/:topic/:ver
 func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
