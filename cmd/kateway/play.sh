@@ -25,7 +25,7 @@ curl -XPUT -H'Appid: app1' -H'Pubkey: mypubkey' -d '{"endpoints":["http://localh
 curl -XGET -H'X-App-Id: app1' -H'X-App-Secret: helllo' 'http://localhost:9191/v1/auth'
 
 # register a shadow topic
-curl -i -XPOST -H'Appid: app2' -H'Subkey: mysubkey' http://localhost:9193/v1/shadow/app1/foobar/v1/group1
+curl -i -XPOST -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9193/v1/shadow/app1/foobar/v1/group1?replicas=1'
 
 # pub a job
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hhhhhhhello world!' 'http://localhost:9191/v1/jobs/foobar/v1?delay=20'

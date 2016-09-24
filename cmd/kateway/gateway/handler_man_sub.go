@@ -385,7 +385,7 @@ func (this *manServer) delSubGroupHandler(w http.ResponseWriter, r *http.Request
 	w.Write(ResponseOk)
 }
 
-// POST /v1/shadow/:appid/:topic/:ver/:group
+// POST /v1/shadow/:appid/:topic/:ver/:group?replicas=2
 func (this *manServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		topic    string
@@ -404,8 +404,7 @@ func (this *manServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Requ
 	realIp := getHttpRemoteIp(r)
 
 	if !manager.Default.ValidateGroupName(r.Header, group) {
-		log.Warn("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} illegal group name",
-			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group)
+		log.Warn("shadow+ [%s/%s] %s(%s): %s.%s.%s illegal group name", myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 		writeBadRequest(w, "illegal group")
 		return
@@ -413,26 +412,29 @@ func (this *manServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Requ
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
-		log.Error("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
-			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group, err)
+		log.Error("shadow+ [%s/%s] %s(%s): %s.%s.%s %v", myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, err)
 
 		writeAuthFailure(w, err)
 		return
 	}
 
-	log.Info("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s}",
-		myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group)
+	log.Info("shadow+ [%s/%s] %s(%s): %s.%s.%s", myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
-			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group)
+		log.Error("shadow+ [%s/%s] %s(%s): %s.%s.%s cluster not found", myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 		writeBadRequest(w, "invalid appid")
 		return
 	}
 
 	ts := sla.DefaultSla()
+	query := r.URL.Query()
+	ts.Replicas, err = getHttpQueryInt(&query, sla.SlaKeyReplicas, 2)
+	if err != nil {
+		writeBadRequest(w, err.Error())
+		return
+	}
 	zkcluster := meta.Default.ZkCluster(cluster)
 	shadowTopics := []string{
 		manager.Default.ShadowTopic(sla.SlaKeyRetryTopic, myAppid, hisAppid, topic, ver, group),
@@ -441,9 +443,8 @@ func (this *manServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Requ
 	for _, t := range shadowTopics {
 		lines, err := zkcluster.AddTopic(t, ts)
 		if err != nil {
-			log.Error("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %s: %s",
-				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
-				group, t, err.Error())
+			log.Error("shadow+ [%s/%s] %s(%s): %s.%s.%s %s: %s", myAppid, group, r.RemoteAddr, realIp,
+				hisAppid, topic, ver, t, err.Error())
 
 			writeServerError(w, err.Error())
 			return
@@ -458,9 +459,8 @@ func (this *manServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Requ
 		}
 
 		if !ok {
-			log.Error("shadow sub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %s: %s",
-				myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver,
-				group, t, strings.Join(lines, ";"))
+			log.Error("shadow+ [%s/%s] %s(%s): %s.%s.%s %s: %s", myAppid, group, r.RemoteAddr, realIp,
+				hisAppid, topic, ver, t, strings.Join(lines, ";"))
 
 			writeServerError(w, strings.Join(lines, ";"))
 			return
