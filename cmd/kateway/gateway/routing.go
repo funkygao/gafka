@@ -87,8 +87,8 @@ func (this *Gateway) buildRouting() {
 		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
 
 		this.subServer.Router().GET("/v1/msgs/:appid/:topic/:ver", m(this.subServer.subHandler))
+		this.subServer.Router().PUT("/v1/msgs/:appid/:topic/:ver", m(this.subServer.buryHandler))
 		this.subServer.Router().GET("/v1/ws/msgs/:appid/:topic/:ver", m(this.subServer.subWsHandler))
-		this.subServer.Router().PUT("/v1/bury/:appid/:topic/:ver", m(this.subServer.buryHandler))
 		this.subServer.Router().PUT("/v1/offsets/:appid/:topic/:ver/:group", m(this.subServer.ackHandler))
 
 		// TODO deprecated

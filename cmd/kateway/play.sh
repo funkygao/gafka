@@ -42,13 +42,13 @@ curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/a
 curl -XGET -H'Appid: app2' -H'Subkey: mysubkey' 'http://localhost:9192/v1/msgs/app1/foobar/v1?group=group1'
 
 # bury a message
-curl -XPUT -H'X-Partition: 0' -H'X-Bury: retry' -H'X-Offset: 55' -H'Appid: app2' -H'Subkey: mykey' -d'message body' 'http://localhost:9192/v1/bury/app1/foobar/v1?group=group1'
+curl -XPUT -H'X-Partition: 0' -H'X-Bury: retry' -H'X-Offset: 55' -H'Appid: app2' -H'Subkey: mykey' -d'message body' 'http://localhost:9192/v1/msgs/app1/foobar/v1?group=group1'
 
 # raw sub
 curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9193/v1/raw/msgs/app1/foobar/v1?group=xx'
 
-# reset offset
-curl -XPUT -H'Appid: app2' -H'Subkey: mysubkey' -d '[{"partition":0,"offset":1221300}]' http://localhost:9192/v1/offsets/app1/foobar/v1/bench_go
+# commit offset
+curl -XPUT -H'Appid: app2' -H'Subkey: mysubkey' -d '[{"partition":0,"offset":1221300}]' 'http://localhost:9192/v1/offsets/app1/foobar/v1/group1'
 
 # peek
 curl -XGET -H'Appid: app1' -H'Subkey: mysubkey' 'http://localhost:9193/v1/peek/app1/foobar/v1?n=10&wait=5s'
