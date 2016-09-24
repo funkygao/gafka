@@ -22,6 +22,9 @@ subx:sub.go
 	@echo sub from kateway
 	go run sub.go -t foobar -mode subx -sleep 5s
 
+bury:bury.go
+	go run bury.go -t foobar -sleep 5s
+
 s:
 	go run pubsub.go -c1 1 -c2 1 -mode sub -appid app2 -key xxx -subappid app1 -ep 10.1.114.159:9192 -topic foobar -group bench_go -batch 2000  -sleep 0s -debug=false
 
