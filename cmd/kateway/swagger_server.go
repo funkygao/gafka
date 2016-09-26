@@ -17,6 +17,11 @@ var apiurl = flag.String("api", "http://127.0.0.1", "The base path URI of the AP
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	log.Trace("%s %s", r.Method, r.RequestURI)
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
 	isJsonRequest := false
 	if acceptHeaders, ok := r.Header["Accept"]; ok {
 		for _, acceptHeader := range acceptHeaders {
@@ -36,6 +41,11 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 func ApiDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 	log.Trace("%s %s", r.Method, r.RequestURI)
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	apiKey := strings.Trim(r.RequestURI, "/")
 	if json, ok := apiDescriptionsJson[apiKey]; ok {

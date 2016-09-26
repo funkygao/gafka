@@ -25,6 +25,11 @@ k1:build
 k2:build
 	GOGC=800 GODEBUG=gctrace=0 ./kateway -zone local -pubhttp ":7091" -subhttp ":7092" -manhttp ":7093" -store kafka -id 2 -level debug -mstore dummy -accesslog -influxdbaddr= -httppanic -gzip=false -jstore dummy
 
+swagger:
+	go generate
+	go build -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY) -X github.com/funkygao/gafka.BuiltAt=$(BUILD_TIME)"
+	./kateway -swagger
+
 flush:buildrace
 	GOGC=800 GODEBUG=gctrace=0 ./kateway -zone local -pubhttp :9191 -subhttps :9292 -subhttp :9192 -manhttp :9193 -pubhttps :9291 -manhttps :9293 -store kafka -id 1 -level debug -debughttp ":9194" -keyfile ssl/server.key -certfile ssl/server.pem -mstore dummy -accesslog -influxdbaddr=http://localhost:333 -httppanic -gzip=true -hhflush
 
