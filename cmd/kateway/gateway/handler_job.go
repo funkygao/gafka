@@ -27,7 +27,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 
 	var due int64
 	q := r.URL.Query()
-	dueParam := q.Get("due")
+	dueParam := q.Get("due") // due has higher priority than delay
 	if dueParam != "" {
 		d, err := strconv.ParseInt(dueParam, 10, 64)
 		if err != nil {
