@@ -202,6 +202,7 @@ d37c73f2b2bce85f7fa16b6a550d26c5372892ef
 - [X] 1 consumer group can only Sub 1(not 2 or more) topic
   - lessen the thundering hurd because rebalance when group members change
   - better manageable
+- [ ] when delete a topic, remove its all consumer groups
 - [X] bug: kateway gone, but kguard kateway.pubsub.fail didn't notice
 - [X] zk session expires and ephemeral znodes?
 - [X] IO load balance for hinted handoff
