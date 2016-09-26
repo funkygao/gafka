@@ -16,6 +16,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+//go:generate goannotation $GOFILE
+// @rest
 // POST /v1/msgs/:topic/:ver?key=mykey&async=1&ack=all&hh=n
 func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (

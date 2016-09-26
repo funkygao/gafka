@@ -13,6 +13,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+//go:generate goannotation $GOFILE
+// @rest
 // PUT /v1/msgs/:appid/:topic/:ver?group=xx&q=<dead|retry>
 // q=retry&X-Bury=dead means bury from retry queue to dead queue
 func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

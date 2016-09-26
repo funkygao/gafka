@@ -16,6 +16,8 @@ import (
 	"github.com/samuel/go-zookeeper/zk"
 )
 
+//go:generate goannotation $GOFILE
+// @rest
 // GET /v1/raw/msgs/:appid/:topic/:ver?group=xx
 // tells client how to sub in raw mode: how to connect directly to kafka
 func (this *manServer) subRawHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -69,6 +71,7 @@ func (this *manServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 	w.Write(b)
 }
 
+// @rest
 // GET /v1/peek/:appid/:topic/:ver?n=10&q=retry&wait=5s
 func (this *manServer) peekHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
@@ -237,6 +240,7 @@ LOOP:
 	w.Write(d)
 }
 
+// @rest
 // PUT /v1/offset/:appid/:topic/:ver/:group/:partition?offset=xx
 func (this *manServer) resetSubOffsetHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
@@ -317,6 +321,7 @@ func (this *manServer) resetSubOffsetHandler(w http.ResponseWriter, r *http.Requ
 	w.Write(ResponseOk)
 }
 
+// @rest
 // DELETE /v1/groups/:appid/:topic/:ver/:group
 // TODO delete shadow consumers too
 func (this *manServer) delSubGroupHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -385,6 +390,7 @@ func (this *manServer) delSubGroupHandler(w http.ResponseWriter, r *http.Request
 	w.Write(ResponseOk)
 }
 
+// @rest
 // POST /v1/shadow/:appid/:topic/:ver/:group?replicas=2
 func (this *manServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
@@ -471,6 +477,7 @@ func (this *manServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Requ
 	w.Write(ResponseOk)
 }
 
+// @rest
 // GET /v1/status/:appid/:topic/:ver?group=xx
 // TODO show shadow consumers too
 // response: [{"group":"group1","partition":"0","pold":0,"pubd":7827,"subd":324,"realip":"10.10.10.1"}]
@@ -528,6 +535,7 @@ func (this *manServer) subStatusHandler(w http.ResponseWriter, r *http.Request, 
 	w.Write(b)
 }
 
+// @rest
 // GET /v1/subd/:topic/:ver
 // response: [{"appid":"app2","group":"group1","partition":"0","pold":0,"pubd":7827,"subd":324,"realip":"192.168.10.134"},{"appid":"app2","group":"mygroup1","partition":"0","pold":0,"pubd":7827,"subd":364,"realip":""}]
 func (this *manServer) subdStatusHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

@@ -9,6 +9,8 @@ import (
 	"github.com/funkygao/httprouter"
 )
 
+//go:generate goannotation $GOFILE
+// @rest
 // GET /v1/auth
 func (this *pubServer) authHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (

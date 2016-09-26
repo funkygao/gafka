@@ -23,6 +23,8 @@ type ackOffset struct {
 
 type ackOffsets []ackOffset
 
+//go:generate goannotation $GOFILE
+// @rest
 // PUT /v1/offsets/:appid/:topic/:ver/:group with json body
 func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (

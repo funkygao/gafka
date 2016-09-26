@@ -9,6 +9,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+//go:generate goannotation $GOFILE
+// @rest
 // POST /v1/ws/msgs/:topic/:ver
 // TODO not implemented yet
 func (this *pubServer) pubWsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

@@ -8,6 +8,8 @@ import (
 	"github.com/influxdata/influxdb/client"
 )
 
+//go:generate goannotation $GOFILE
+// @rest
 // TODO
 func (this *Gateway) appMetricsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	myAppid := r.Header.Get(HttpHeaderAppid) // TODO auth

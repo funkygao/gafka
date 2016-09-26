@@ -3,6 +3,11 @@ all:test
 GIT_ID=$(shell git rev-parse HEAD | cut -c1-7)
 GIT_DIRTY=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 
+gen:
+	go generate
+
+doc:gen
+
 test:
 	go test -v -cover -coverprofile=cover -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY)"
 

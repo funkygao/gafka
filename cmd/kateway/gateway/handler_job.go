@@ -13,6 +13,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+//go:generate goannotation $GOFILE
+// @rest
 // POST /v1/jobs/:topic/:ver?delay=100|due=1471565204
 // TODO tag, partitionKey
 // TODO use dedicated metrics

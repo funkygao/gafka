@@ -23,6 +23,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+//go:generate goannotation $GOFILE
+// @rest
 // GET /v1/schema/:appid/:topic/:ver
 func (this *manServer) schemaHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	hisAppid := params.ByName(UrlParamAppid)
@@ -52,6 +54,7 @@ func (this *manServer) schemaHandler(w http.ResponseWriter, r *http.Request, par
 	w.Write([]byte(strings.TrimSpace(schema)))
 }
 
+// @rest
 // GET /v1/status
 func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	log.Info("status %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
@@ -86,6 +89,7 @@ func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, par
 	w.Write(b)
 }
 
+// @rest
 // GET /v1/clusters
 func (this *manServer) clustersHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	log.Info("clusters %s(%s)", r.RemoteAddr, getHttpRemoteIp(r))
@@ -94,6 +98,7 @@ func (this *manServer) clustersHandler(w http.ResponseWriter, r *http.Request, p
 	w.Write(b)
 }
 
+// @rest
 // PUT /v1/options/:option/:value
 func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	option := params.ByName("option")
@@ -239,6 +244,7 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	w.Write(ResponseOk)
 }
 
+// @rest
 // GET /v1/partitions/:appid/:topic/:ver
 func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
@@ -298,6 +304,7 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	w.Write([]byte(fmt.Sprintf(`{"num": %d}`, len(partitions))))
 }
 
+// @rest
 // PUT /v1/webhook/:appid/:topic/:ver
 func (this *manServer) createWebhookHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
@@ -357,6 +364,7 @@ func (this *manServer) createWebhookHandler(w http.ResponseWriter, r *http.Reque
 	w.Write(ResponseOk)
 }
 
+// @rest
 // POST /v1/jobs/:appid/:topic/:ver
 func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
@@ -419,6 +427,7 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 	w.Write(ResponseOk)
 }
 
+// @rest
 // POST /v1/topics/:appid/:topic/:ver?partitions=1&replicas=2&retention.hours=72&retention.bytes=-1
 func (this *manServer) createTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
@@ -542,6 +551,7 @@ func (this *manServer) createTopicHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// @rest
 // PUT /v1/topics/:appid/:topic/:ver?partitions=1&retention.hours=72&retention.bytes=-1
 func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
@@ -644,6 +654,7 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 	w.Write(ResponseOk)
 }
 
+// @rest
 // DELETE /v1/manager/cache
 func (this *manServer) refreshManagerHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	appid := r.Header.Get(HttpHeaderAppid)
