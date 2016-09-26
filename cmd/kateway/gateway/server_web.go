@@ -309,11 +309,6 @@ func (this *webServer) defaultWaitExit(exit <-chan struct{}) {
 		this.httpServer.ConnState = nil
 	}
 
-	// TODO close will lead to race condition
-	//close(this.stateActiveCh)
-	//close(this.stateIdleCh)
-	//close(this.stateRemoveCh)
-
 	if this.onStop != nil {
 		this.onStop()
 	}
