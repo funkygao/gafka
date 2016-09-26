@@ -115,6 +115,9 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	case "badgroup_rater":
 		Options.BadGroupRateLimit = boolVal
 
+	case "badpub_rater":
+		Options.BadPubAppRateLimit = boolVal
+
 	case "refreshdb":
 		manager.Default.ForceRefresh()
 

@@ -495,7 +495,7 @@ Options:
     -option <key>=<val>
       Set kateway options value
       keys:
-      debug|gzip|badgroup_rater|hh|hhflush|jobshardid|accesslog|punish|500backoff|loglevel|
+      debug|gzip|badgroup_rater|badpub_rater|hh|hhflush|jobshardid|accesslog|punish|500backoff|loglevel|
       dryrun|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq
 
       e,g.
