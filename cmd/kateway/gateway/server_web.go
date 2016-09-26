@@ -40,9 +40,6 @@ type webServer struct {
 	// FIXME if http/https listener both enabled, must able to tell them apart
 	activeConnN int32
 
-	idleConns     map[net.Conn]struct{}
-	idleConnsLock sync.Mutex
-
 	closed chan struct{}
 }
 
@@ -53,7 +50,6 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int, gw *G
 		maxClients: maxClients,
 		router:     httprouter.New(),
 		closed:     make(chan struct{}),
-		idleConns:  make(map[net.Conn]struct{}, 100),
 	}
 
 	if Options.EnableHttpPanicRecover {
@@ -227,14 +223,8 @@ func (this *webServer) defaultConnStateMachine(c net.Conn, cs http.ConnState) {
 		}
 
 	case http.StateIdle:
-		this.idleConnsLock.Lock()
-		this.idleConns[c] = struct{}{}
-		this.idleConnsLock.Unlock()
 
 	case http.StateActive:
-		this.idleConnsLock.Lock()
-		delete(this.idleConns, c)
-		this.idleConnsLock.Unlock()
 
 	case http.StateClosed, http.StateHijacked:
 		atomic.AddInt32(&this.activeConnN, -1)
@@ -242,10 +232,6 @@ func (this *webServer) defaultConnStateMachine(c net.Conn, cs http.ConnState) {
 		if this.onConnCloseFunc != nil {
 			this.onConnCloseFunc(c)
 		}
-
-		this.idleConnsLock.Lock()
-		delete(this.idleConns, c)
-		this.idleConnsLock.Unlock()
 	}
 }
 
@@ -306,22 +292,10 @@ func (this *webServer) defaultWaitExit(exit <-chan struct{}) {
 		})
 
 		// timeout mechanism
-		if time.Since(waitStart) > Options.SubTimeout+time.Second {
-			log.Warn("%s still left %d conns after %s, forced to shutdown",
-				this.name, activeConnN, Options.SubTimeout)
+		if time.Since(waitStart) > time.Second {
+			log.Warn("%s still left %d conns, will be forced to shutdown", this.name, activeConnN)
 			break
 		}
-
-		this.idleConnsLock.Lock()
-		for conn := range this.idleConns {
-			if conn == nil {
-				continue
-			}
-
-			log.Trace("%s close idle conn from %s", this.name, conn.RemoteAddr())
-			conn.Close()
-		}
-		this.idleConnsLock.Unlock()
 
 		time.Sleep(time.Millisecond * 50)
 	}
