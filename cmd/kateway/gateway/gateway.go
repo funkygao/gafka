@@ -16,6 +16,7 @@ import (
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/hh"
 	hhdisk "github.com/funkygao/gafka/cmd/kateway/hh/disk"
+	hhdummy "github.com/funkygao/gafka/cmd/kateway/hh/dummy"
 	"github.com/funkygao/gafka/cmd/kateway/job"
 	jobdummy "github.com/funkygao/gafka/cmd/kateway/job/dummy"
 	jobmysql "github.com/funkygao/gafka/cmd/kateway/job/mysql"
@@ -179,6 +180,9 @@ func New(id string) *Gateway {
 				hhdisk.Auditor = &this.pubServer.auditor
 			}
 			hh.Default = hhdisk.New(cfg)
+
+		case "dummy":
+			hh.Default = hhdummy.New()
 
 		default:
 			panic("unkown hinted handoff type")
