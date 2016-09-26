@@ -79,6 +79,7 @@ echo
 #----------------------
 # manually pub/sub
 #----------------------
+telnet localhost 10891 # ehaproxy pub
 telnet localhost 9191
 POST /v1/msgs/foobar/v1 HTTP/1.1
 Host: localhost
