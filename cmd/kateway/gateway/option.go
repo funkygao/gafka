@@ -46,6 +46,7 @@ var (
 		FlushHintedOffOnly         bool
 		BadGroupRateLimit          bool
 		BadPubAppRateLimit         bool
+		RunSwaggerServer           bool
 		AuditPub                   bool
 		AuditSub                   bool
 		EnableGzip                 bool
@@ -126,6 +127,7 @@ func ParseFlags() {
 	flag.StringVar(&Options.InfluxDbName, "influxdbname", "pubsub", "influxdb db name")
 	flag.BoolVar(&Options.ShowVersion, "version", false, "show version and exit")
 	flag.BoolVar(&Options.Debug, "debug", false, "enable debug mode")
+	flag.BoolVar(&Options.RunSwaggerServer, "swagger", false, "run swagger server")
 	flag.BoolVar(&Options.GolangTrace, "gotrace", false, "go tool trace")
 	flag.BoolVar(&Options.AuditPub, "auditpub", true, "enable Pub audit")
 	flag.BoolVar(&Options.AuditSub, "auditsub", true, "enable Sub audit")

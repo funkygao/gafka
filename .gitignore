@@ -63,3 +63,4 @@ access_log*
 cmd/kateway/hhdata/
 cmd/kateway/hh/disk/hh/
 cmd/kateway/demo/java/PubsubDemo/target
+cmd/kateway/docs.go
