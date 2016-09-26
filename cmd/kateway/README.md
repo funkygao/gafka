@@ -71,6 +71,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
   - Quotas
   - Optional hardware isolation
   - REST API for provisioning, admin and stats
+  - swagger documentation
 - Mirror across data centers
 - Replicated storage and guaranteed at-least-once message delivery
 - Functional Features
@@ -178,16 +179,18 @@ d37c73f2b2bce85f7fa16b6a550d26c5372892ef
 
 ### TODO
 
-- [ ] hh index
-- [ ] hh should use AsyncPub method instead of SyncPub
-- [ ] integration: bad Pub/Sub rate limit
-- [ ] when consumer group decision didn't change, refuse to rebalance
-- [ ] Pub pool will create up to 100 * (count(topic) + count(partition)) goroutines
 - [ ] tagged metrics
-- [ ] mysql slave of manager to data sync with manager in memory
-- [ ] kguard apperr.go Line:128 restart if kafka conn broken
 - [ ] haproxy metrics export to InfluxDB
   http://user:pass@localhost:10890/stats?stats;csv
+- [ ] hh should use AsyncPub method instead of SyncPub
+- [ ] hh index
+- [ ] integration: bad Pub/Sub rate limit
+  - [X] Pub
+  - [ ] Sub
+- [ ] when consumer group decision didn't change, refuse to rebalance
+- [X] Pub pool will create up to 100 * (count(topic) + count(partition)) goroutines
+- [ ] mysql slave of manager to data sync with manager in memory
+- [ ] kguard apperr.go Line:128 restart if kafka conn broken
 - [X] kguard watch for same group consuming multiple topics
 - [X] when startup, hh Empty?
 - [X] man /v1/clusters director of cluster distribution

@@ -21,7 +21,9 @@ import (
 
 func init() {
 	gateway.ParseFlags()
-	gateway.ValidateFlags()
+	if !gateway.Options.RunSwaggerServer {
+		gateway.ValidateFlags()
+	}
 
 	gateway.EnsureServerUlimit()
 	debug.SetGCPercent(800) // same env GOGC. in golang1.7, we needn't concern about this
@@ -34,6 +36,11 @@ func main() {
 			debug.PrintStack()
 		}
 	}()
+
+	if gateway.Options.RunSwaggerServer {
+		runSwaggerServer()
+		return
+	}
 
 	if gateway.Options.Debug {
 		log.SetFlags(log.LstdFlags | log.Llongfile) // TODO zk sdk uses this
