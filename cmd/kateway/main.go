@@ -37,11 +37,6 @@ func main() {
 		}
 	}()
 
-	if gateway.Options.RunSwaggerServer {
-		runSwaggerServer()
-		return
-	}
-
 	if gateway.Options.Debug {
 		log.SetFlags(log.LstdFlags | log.Llongfile) // TODO zk sdk uses this
 		log.SetPrefix(color.Magenta("[log]"))

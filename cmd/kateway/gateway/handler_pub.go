@@ -16,16 +16,6 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-// @Title Publish a new message
-// @Description publish a message to some topic with version info
-// @Accept plain
-// @Param   topic     path    string     true        "topic name"
-// @Param   ver     path    string     true        "version"
-// @Param   key     query    string     false        "partition key"
-// @Param   Appid     header    string     true        "app id"
-// @Param   Pubkey     header    string     true        "pub key"
-// @Resource /v1/msgs
-// @Router /v1/msgs/{topic}/{ver} [post]
 // POST /v1/msgs/:topic/:ver?key=mykey&async=1&ack=all&hh=n
 func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (

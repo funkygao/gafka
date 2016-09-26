@@ -13,16 +13,6 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-// @Title Publish a new job
-// @Description publish a job to some topic with version info
-// @Accept plain
-// @Param   topic     path    string     true        "topic name"
-// @Param   ver     path    string     true        "version"
-// @Param   delay     query    int     true        "delay duration in seconds"
-// @Param   Appid     header    string     true        "app id"
-// @Param   Pubkey     header    string     true        "pub key"
-// @Resource /v1/jobs
-// @Router /v1/jobs/{topic}/{ver} [post]
 // POST /v1/jobs/:topic/:ver?delay=100|due=1471565204
 // TODO tag, partitionKey
 // TODO use dedicated metrics
