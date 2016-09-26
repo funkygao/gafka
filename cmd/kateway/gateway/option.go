@@ -138,7 +138,7 @@ func ParseFlags() {
 	flag.BoolVar(&Options.PermitStandbySub, "standbysub", false, "permits sub threads exceed partitions")
 	flag.BoolVar(&Options.EnableGzip, "gzip", false, "enable http response gzip")
 	flag.BoolVar(&Options.CpuAffinity, "cpuaffinity", false, "enable cpu affinity")
-	flag.BoolVar(&Options.BadGroupRateLimit, "badgroup_rater", false, "rate limit of bad consumer group")
+	flag.BoolVar(&Options.BadGroupRateLimit, "badgroup_rater", true, "rate limit of bad consumer group")
 	flag.BoolVar(&Options.Ratelimit, "raltelimit", false, "enable rate limit")
 	flag.BoolVar(&Options.EnableHttpPanicRecover, "httppanic", true, "enable http handler panic recover")
 	flag.BoolVar(&Options.DisableMetrics, "metricsoff", false, "disable metrics reporter")
