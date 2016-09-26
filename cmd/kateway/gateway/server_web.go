@@ -242,6 +242,10 @@ func (this *webServer) defaultConnStateMachine(c net.Conn, cs http.ConnState) {
 		if this.onConnCloseFunc != nil {
 			this.onConnCloseFunc(c)
 		}
+
+		this.idleConnsLock.Lock()
+		delete(this.idleConns, c)
+		this.idleConnsLock.Unlock()
 	}
 }
 
