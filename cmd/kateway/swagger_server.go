@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/template"
 
-	log "github.com/mgutz/logxi/v1"
+	log "github.com/funkygao/log4go"
 )
 
 var host = flag.String("host", "0.0.0.0", "Host")
@@ -15,8 +15,9 @@ var staticContent = flag.String("staticPath", "./swagger-ui", "Path to folder wi
 var apiurl = flag.String("api", "http://127.0.0.1", "The base path URI of the API service")
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	isJsonRequest := false
+	log.Trace("%s %s", r.Method, r.RequestURI)
 
+	isJsonRequest := false
 	if acceptHeaders, ok := r.Header["Accept"]; ok {
 		for _, acceptHeader := range acceptHeaders {
 			if strings.Contains(acceptHeader, "json") {
@@ -34,8 +35,9 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ApiDescriptionHandler(w http.ResponseWriter, r *http.Request) {
-	apiKey := strings.Trim(r.RequestURI, "/")
+	log.Trace("%s %s", r.Method, r.RequestURI)
 
+	apiKey := strings.Trim(r.RequestURI, "/")
 	if json, ok := apiDescriptionsJson[apiKey]; ok {
 		t, e := template.New("desc").Parse(json)
 		if e != nil {
@@ -48,21 +50,20 @@ func ApiDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// warning:
+// to make swagger server run, you need copy github.com/yvasiyarov/swagger/swagger-ui to current dir.
 func runSwaggerServer() {
 	flag.Parse()
 
-	// To serve a directory on disk (/tmp) under an alternate URL
-	// path (/tmpfiles/), use StripPrefix to modify the request
-	// URL's path before the FileServer sees it:
 	http.HandleFunc("/", IndexHandler)
 	http.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui/", http.FileServer(http.Dir(*staticContent))))
 
-	for apiKey, _ := range apiDescriptionsJson {
+	for apiKey := range apiDescriptionsJson {
 		http.HandleFunc("/"+apiKey+"/", ApiDescriptionHandler)
 	}
 
-	listenTo := *host + ":" + *port
-	log.Info("Star listen to %s", listenTo)
+	serverAddr := *host + ":" + *port
+	log.Info("server ready on %s", serverAddr)
 
-	http.ListenAndServe(listenTo, nil)
+	http.ListenAndServe(serverAddr, nil)
 }
