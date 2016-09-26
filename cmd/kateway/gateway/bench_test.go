@@ -72,17 +72,19 @@ func newGatewayForTest(b *testing.B, store string) *Gateway {
 	Options.Zone = zone
 	Options.PubHttpAddr = ":9191"
 	Options.SubHttpAddr = ":9192"
+	Options.ManHttpAddr = ":9193"
 	Options.Store = store
 	Options.PubPoolCapcity = 100
 	Options.Debug = false
 	Options.ManagerStore = "dummy"
 	Options.DummyCluster = "me"
-	Options.DisableMetrics = false
 	Options.MaxPubSize = 1 << 20
 	Options.MetaRefresh = time.Hour
 	Options.ReporterInterval = time.Hour
 	Options.InfluxServer = "none"
 	Options.InfluxDbName = "none"
+	Options.JobStore = "dummy"
+	Options.HintedHandoffType = "dummy"
 
 	ctx.LoadFromHome()
 
@@ -149,6 +151,11 @@ func BenchmarkKatewayPubKafka1K(b *testing.B) {
 }
 
 func BenchmarkKatewayPubDummy1K(b *testing.B) {
+	runBenchmarkPub(b, "dummy", 1<<10)
+}
+
+func BenchmarkKatewayPubDummy1KWithoutMetrics(b *testing.B) {
+	Options.DisableMetrics = true
 	runBenchmarkPub(b, "dummy", 1<<10)
 }
 
