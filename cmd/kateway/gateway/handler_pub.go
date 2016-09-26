@@ -59,7 +59,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), err)
 
 		this.pubMetrics.ClientError.Inc(1)
-		writeAuthFailure(w, err)
+		this.respond4XX(appid, w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -70,7 +70,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), msgLen)
 
 		this.pubMetrics.ClientError.Inc(1)
-		writeBadRequest(w, ErrTooBigMessage.Error())
+		this.respond4XX(appid, w, ErrTooBigMessage.Error(), http.StatusBadRequest)
 		return
 
 	case msgLen < Options.MinPubSize:
@@ -78,7 +78,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), msgLen)
 
 		this.pubMetrics.ClientError.Inc(1)
-		writeBadRequest(w, ErrTooSmallMessage.Error())
+		this.respond4XX(appid, w, ErrTooSmallMessage.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -91,7 +91,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 			r.Header.Get("User-Agent"), partitionKey)
 
 		this.pubMetrics.ClientError.Inc(1)
-		writeBadRequest(w, "too big key")
+		this.respond4XX(appid, w, "too big key", http.StatusBadRequest)
 		return
 	}
 
@@ -99,7 +99,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	tag = r.Header.Get(HttpHeaderMsgTag)
 	if tag != "" {
 		if len(tag) > Options.MaxMsgTagLen {
-			writeBadRequest(w, "too big tag")
+			this.respond4XX(appid, w, "too big tag", http.StatusBadRequest)
 			return
 		}
 
@@ -120,7 +120,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), err)
 
 		this.pubMetrics.ClientError.Inc(1)
-		writeBadRequest(w, ErrTooBigMessage.Error())
+		this.respond4XX(appid, w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -139,7 +139,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 			appid, r.RemoteAddr, realIp, topic, r.Header.Get("User-Agent"), ver)
 
 		this.pubMetrics.ClientError.Inc(1)
-		writeBadRequest(w, "invalid appid")
+		this.respond4XX(appid, w, "invalid appid", http.StatusBadRequest)
 		return
 	}
 
@@ -202,7 +202,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		if store.DefaultPubStore.IsSystemError(err) {
 			writeServerError(w, err.Error())
 		} else {
-			writeBadRequest(w, err.Error())
+			this.respond4XX(appid, w, err.Error(), http.StatusBadRequest)
 		}
 		return
 	}
