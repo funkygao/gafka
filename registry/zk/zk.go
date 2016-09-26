@@ -33,9 +33,10 @@ func (this *zkreg) Register(id string, data []byte) error {
 	err := this.zkzone.CreateEphemeralZnode(this.mypath(id), data)
 	if err == nil {
 		log.Debug("registered in zk: %s", this.mypath(id))
+		return nil
 	}
 
-	return err
+	return fmt.Errorf("%s %v", this.mypath(id), err)
 }
 
 func (this *zkreg) Registered(id string) (ok bool, err error) {
@@ -46,7 +47,7 @@ func (this *zkreg) Registered(id string) (ok bool, err error) {
 func (this *zkreg) Deregister(id string, oldData []byte) error {
 	data, _, err := this.zkzone.Conn().Get(this.mypath(id))
 	if err != nil {
-		return err
+		return fmt.Errorf("%s %v", this.mypath(id), err)
 	}
 
 	// ensure I own this znode
@@ -61,7 +62,7 @@ func (this *zkreg) WatchInstances() ([]string, <-chan zklib.Event, error) {
 	path := fmt.Sprintf("%s/%s", zk.KatewayIdsRoot, this.zkzone.Name())
 	ids, _, ch, err := this.zkzone.Conn().ChildrenW(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("%s %v", path, err)
 	}
 
 	instancePaths := make([]string, 0, len(ids))
