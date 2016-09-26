@@ -6,6 +6,11 @@ GIT_DIRTY=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 test:
 	go test -v -cover -coverprofile=cover -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY)"
 
+bench:benchmark-cpu-dumb
+
+bench-nometrics:
+	go test -v -run=XXX -benchmem -bench=^BenchmarkKatewayPubDummy1KWithoutMetrics -benchtime=20s -cpuprofile=prof.cpu; go tool pprof gateway.test prof.cpu
+
 benchmark-metrics-pubok:
 	go test -v -run=XXX -benchmem -bench=^BenchmarkMetricsPubOkCounter -benchtime=20s -cpuprofile=prof.cpu; go tool pprof gateway.test prof.cpu
 

@@ -11,7 +11,7 @@ func TestJwtToken(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBpZCI6ImFwcGlkIn0.YaURi84SXE2SYFgVnJzN8MW5PdN2xgHRqdNzPF_-usY", token)
 
-	appid, err := tokenDecode("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBpZCI6ImFwcGlkIn0.YaURi84SXE2SYFgVnJzN8MW5PdN2xgHRqdNzPF_-usY")
+	appid, err := tokenDecode(token)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "exp", appid)
 }
