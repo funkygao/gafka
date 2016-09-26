@@ -4,6 +4,7 @@ package gateway
 
 import (
 	"net"
+	"net/http"
 	"os"
 	"time"
 
@@ -17,12 +18,15 @@ type pubServer struct {
 	pubMetrics  *pubMetrics
 	throttlePub *ratelimiter.LeakyBuckets
 	auditor     log.Logger
+
+	throttleBadAppid *ratelimiter.LeakyBuckets
 }
 
 func newPubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *pubServer {
 	this := &pubServer{
-		webServer:   newWebServer("pub_server", httpAddr, httpsAddr, maxClients, gw),
-		throttlePub: ratelimiter.NewLeakyBuckets(Options.PubQpsLimit, time.Minute),
+		webServer:        newWebServer("pub_server", httpAddr, httpsAddr, maxClients, gw),
+		throttlePub:      ratelimiter.NewLeakyBuckets(Options.PubQpsLimit, time.Minute),
+		throttleBadAppid: ratelimiter.NewLeakyBuckets(3, time.Minute),
 	}
 	this.pubMetrics = NewPubMetrics(this.gw)
 	this.onConnNewFunc = this.onConnNew
@@ -67,4 +71,15 @@ func (this *pubServer) onConnClose(c net.Conn) {
 	if this.gw != nil && !Options.DisableMetrics {
 		this.gw.svrMetrics.ConcurrentPub.Dec(1)
 	}
+}
+
+func (this *pubServer) respond4XX(appid string, w http.ResponseWriter, err string, status int) {
+	if Options.BadPubAppRateLimit && appid != "" && !this.throttleBadAppid.Pour(appid, 1) {
+		writeQuotaExceeded(w)
+		return
+	}
+
+	punishClient()
+	w.Header().Set("Connection", "close")
+	_writeErrorResponse(w, err, status)
 }

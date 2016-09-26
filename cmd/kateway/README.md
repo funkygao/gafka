@@ -180,6 +180,7 @@ d37c73f2b2bce85f7fa16b6a550d26c5372892ef
 
 - [ ] hh index
 - [ ] hh should use AsyncPub method instead of SyncPub
+- [ ] integration: bad Pub/Sub rate limit
 - [ ] when consumer group decision didn't change, refuse to rebalance
 - [ ] Pub pool will create up to 100 * (count(topic) + count(partition)) goroutines
 - [ ] tagged metrics
