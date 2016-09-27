@@ -9,6 +9,7 @@ BUILD_TIME=$(date '+%Y-%m-%d-%H:%M:%S')
 INSTALL="no"
 GCDEBUG="no"
 RACE="no"
+BENCHCMP="no"
 BUILDALL="no"
 BENCHALL="no"
 FASTHTTP="no"
@@ -43,6 +44,7 @@ show_usage() {
     echo -e "`printf %-18s "Usage: $0"` [-h] help"
     echo -e "`printf %-18s ` [-a] build all executables"
     echo -e "`printf %-18s ` [-b] benchmark all dependent pkgs"
+    echo -e "`printf %-18s ` [-c] benchmark compare current repo with last commit"
     echo -e "`printf %-18s ` [-f] enable fasthttp pub"
     echo -e "`printf %-18s ` [-g] enable gc compile output"
     echo -e "`printf %-18s ` [-i] install"
@@ -55,7 +57,7 @@ show_usage() {
     echo -e "`printf %-18s ` -t <target> `ls -Cm cmd`"
 }
 
-args=`getopt abvqfgrhislt:p: $*`
+args=`getopt abcvqfgrhislt:p: $*`
 [ $? != 0 ] && echo "hs" && show_usage && exit 1
 
 set -- $args
@@ -67,6 +69,9 @@ do
           ;;
       -b):
           BENCHALL="yes"; shift
+          ;;
+      -c):
+          BENCHCMP="yes"; shift
           ;;
       -f):
           FASTHTTP="yes"; shift
@@ -131,6 +136,13 @@ if [ $BENCHALL == "yes" ]; then
     for target in `go list github.com/funkygao/gafka/cmd/kateway/... | grep -v '/bench' | grep -v '/demo'`; do
         echo "benchmarking $target"
         go test -v -run=XXX -benchmem -cpu=1,4,8,16 -test.bench=".*" $target
+    done
+    exit
+fi
+if [ $BENCHCMP == "yes" ]; then
+    for target in `go list github.com/funkygao/gafka/cmd/kateway/... | grep -v '/bench' | grep -v '/demo' | grep -v misc`; do
+        echo "benchmarking $target"
+        benchcmp-vcs $target
     done
     exit
 fi
