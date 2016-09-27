@@ -14,7 +14,7 @@ var (
 
 func init() {
 	bsb.New = func() interface{} {
-		return &bytes.Buffer{}
+		return bytes.NewBuffer(make([]byte, 100))
 	}
 
 	accessLogPool.New = func() interface{} {
