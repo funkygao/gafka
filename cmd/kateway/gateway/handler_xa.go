@@ -62,20 +62,17 @@ import (
 )
 
 //go:generate goannotation $GOFILE
-// @rest
-// POST /v1/xa/prepare/:topic/:ver
+// @rest POST /v1/xa/prepare/:topic/:ver
 func (this *pubServer) xa_prepare(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 
 }
 
-// @rest
-// POST /v1/xa/commit?id=xx
+// @rest POST /v1/xa/commit?id=xx
 func (this *pubServer) xa_commit(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 
 }
 
-// @rest
-// PUT /v1/xa/rollback?id=xx
+// @rest PUT /v1/xa/rollback?id=xx
 func (this *pubServer) xa_rollback(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 
 }

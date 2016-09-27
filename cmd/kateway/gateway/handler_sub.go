@@ -15,8 +15,7 @@ import (
 )
 
 //go:generate goannotation $GOFILE
-// @rest
-// GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&reset=<newest|oldest>&ack=1&q=<dead|retry>
+// @rest GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&reset=<newest|oldest>&ack=1&q=<dead|retry>
 func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		topic      string

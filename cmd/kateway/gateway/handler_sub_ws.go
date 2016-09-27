@@ -12,8 +12,7 @@ import (
 )
 
 //go:generate goannotation $GOFILE
-// @rest
-// GET /v1/ws/msgs/:appid/:topic/:ver?group=xx
+// @rest GET /v1/ws/msgs/:appid/:topic/:ver?group=xx
 func (this *subServer) subWsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

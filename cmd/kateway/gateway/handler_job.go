@@ -14,8 +14,7 @@ import (
 )
 
 //go:generate goannotation $GOFILE
-// @rest
-// POST /v1/jobs/:topic/:ver?delay=100|due=1471565204
+// @rest POST /v1/jobs/:topic/:ver?delay=100|due=1471565204
 // TODO tag, partitionKey
 // TODO use dedicated metrics
 func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

@@ -10,8 +10,7 @@ import (
 )
 
 //go:generate goannotation $GOFILE
-// @rest
-// POST /v1/ws/msgs/:topic/:ver
+// @rest POST /v1/ws/msgs/:topic/:ver
 // TODO not implemented yet
 func (this *pubServer) pubWsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)

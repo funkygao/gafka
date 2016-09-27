@@ -13,8 +13,7 @@ import (
 )
 
 //go:generate goannotation $GOFILE
-// @rest
-// POST /v1/raw/msgs/:cluster/:topic?key=mykey&async=1&ack=all
+// @rest POST /v1/raw/msgs/:cluster/:topic?key=mykey&async=1&ack=all
 func (this *pubServer) pubRawHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		cluster      string

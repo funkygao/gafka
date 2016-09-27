@@ -10,8 +10,7 @@ import (
 )
 
 //go:generate goannotation $GOFILE
-// @rest
-// GET /v1/auth
+// @rest GET /v1/auth
 func (this *pubServer) authHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		appid  = r.Header.Get("X-App-Id")
