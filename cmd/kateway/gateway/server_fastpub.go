@@ -112,8 +112,7 @@ func (this *pubServer) startServer(https bool) {
 
 		if https {
 			this.httpsListener, err = net.Listen("tcp", this.httpsServer.Addr)
-			this.httpsListener, err = setupHttpsListener(this.httpsListener,
-				this.gw.certFile, this.gw.keyFile)
+			this.httpsListener, _, err = setupHttpsListener(this.httpsListener, this.gw.certFile, this.gw.keyFile)
 			if err != nil {
 				panic(err)
 			}

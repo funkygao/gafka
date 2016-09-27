@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -142,10 +143,15 @@ func (this *webServer) startServer(https bool) {
 					continue
 				}
 
-				theListener, err = setupHttpsListener(this.httpsListener, this.gw.certFile, this.gw.keyFile)
+				var tlsConfig *tls.Config
+				theListener, tlsConfig, err = setupHttpsListener(this.httpsListener, this.gw.certFile, this.gw.keyFile)
 				if err != nil {
 					panic(err)
 				}
+
+				// if httpsServer.TLSConfig is nil, h2 is enabled by default
+				// otherwise, tlsConfig.NextProtos must contain 'h2'
+				this.httpsServer.TLSConfig = tlsConfig
 			} else {
 				theListener, err = net.Listen("tcp", this.httpServer.Addr)
 			}
