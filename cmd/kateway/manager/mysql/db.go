@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/mpool"
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
 	_ "github.com/funkygao/mysql"
@@ -34,6 +35,8 @@ type mysqlStore struct {
 
 	dryrunLock   sync.RWMutex
 	dryrunTopics map[string]map[string]map[string]struct{}
+
+	topicNames *mpool.Intern
 }
 
 func New(cf *config) *mysqlStore {
@@ -52,6 +55,7 @@ func New(cf *config) *mysqlStore {
 		refreshCh:              make(chan struct{}),
 		allowUnregisteredGroup: false,
 		dryrunTopics:           make(map[string]map[string]map[string]struct{}),
+		topicNames:             mpool.NewIntern(),
 	}
 }
 
