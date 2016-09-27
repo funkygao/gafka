@@ -15,6 +15,9 @@ check:
 	-go-nyet ./...
 	go tool nm -size -sort=size kateway | head -n 50
 
+doc:
+	@cd gateway; make doc
+
 build:
 	go build -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY) -X github.com/funkygao/gafka.BuiltAt=$(BUILD_TIME)"
 

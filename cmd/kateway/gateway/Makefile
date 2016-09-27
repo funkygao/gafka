@@ -4,7 +4,7 @@ GIT_ID=$(shell git rev-parse HEAD | cut -c1-7)
 GIT_DIRTY=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 
 gen:
-	go generate
+	REST_DOC=1 go generate
 
 doc:gen
 
