@@ -9,7 +9,7 @@ import (
 const (
 	cursorFile = "cursor.dmp"
 
-	defaultSegmentSize = 10 << 20
+	defaultSegmentSize = 100 << 20 // if each block=1k, can hold up to 100k blocks
 	maxBlockSize       = 1 << 20
 
 	defaultPurgeInterval = time.Minute * 10
@@ -29,6 +29,7 @@ var (
 
 	currentMagic = [2]byte{0, 0}
 
-	flushEveryBlocks = 10
+	// group commit
+	flushEveryBlocks = 100
 	flushInterval    = time.Second
 )

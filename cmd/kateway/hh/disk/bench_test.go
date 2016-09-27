@@ -4,7 +4,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/cmd/kateway/store/dummy"
@@ -58,10 +57,9 @@ func BenchmarkHintedHandoffAppendWithoutBufio(b *testing.B) {
 	b.SetBytes(int64(valLen))
 }
 
-func BenchmarkHintedHandoffAppendWithBufioAndFlushLess(b *testing.B) {
+func BenchmarkHintedHandoffAppendWithBufioAndFlushEvery1K(b *testing.B) {
 	DisableBufio = false
 	flushEveryBlocks = 1000
-	flushInterval = time.Minute
 
 	valLen := 1 << 10
 	val := []byte(strings.Repeat("X", valLen))

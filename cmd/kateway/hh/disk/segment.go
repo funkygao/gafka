@@ -122,7 +122,7 @@ func (s *segment) flush() (err error) {
 
 	now := time.Now()
 	if s.flushInflights >= flushEveryBlocks || now.Sub(s.lastFlush) >= flushInterval {
-		// time to flush the batch
+		// time to flush the batch, group commit
 		if err = s.wfile.Sync(); err == nil {
 			s.flushInflights = 0
 			s.lastFlush = now
