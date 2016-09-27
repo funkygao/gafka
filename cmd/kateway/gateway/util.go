@@ -112,7 +112,7 @@ func topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
 			}
 
 			p := strings.SplitN(grp, ".", 2) // grp is like 'appid.groupname'
-			if onlyMine && myAppid != p[0] {
+			if len(p) != 2 || (onlyMine && myAppid != p[0]) {
 				// this group does not belong to me
 				continue
 			}
