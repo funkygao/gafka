@@ -10,6 +10,7 @@ INSTALL="no"
 GCDEBUG="no"
 RACE="no"
 BUILDALL="no"
+BENCHALL="no"
 FASTHTTP="no"
 QA="no"
 GOSTATUS="no"
@@ -41,6 +42,7 @@ show_usage() {
     echo -e "build tool for gafka components"
     echo -e "`printf %-18s "Usage: $0"` [-h] help"
     echo -e "`printf %-18s ` [-a] build all executables"
+    echo -e "`printf %-18s ` [-b] benchmark all dependent pkgs"
     echo -e "`printf %-18s ` [-f] enable fasthttp pub"
     echo -e "`printf %-18s ` [-g] enable gc compile output"
     echo -e "`printf %-18s ` [-i] install"
@@ -53,7 +55,7 @@ show_usage() {
     echo -e "`printf %-18s ` -t <target> `ls -Cm cmd`"
 }
 
-args=`getopt avqfgrhislt:p: $*`
+args=`getopt abvqfgrhislt:p: $*`
 [ $? != 0 ] && echo "hs" && show_usage && exit 1
 
 set -- $args
@@ -62,6 +64,9 @@ do
   case "$i" in
       -a):
           BUILDALL="yes"; shift
+          ;;
+      -b):
+          BENCHALL="yes"; shift
           ;;
       -f):
           FASTHTTP="yes"; shift
@@ -119,6 +124,13 @@ fi
 if [ $BUILDALL == "yes" ]; then
     for target in `ls cmd`; do
         $0 -it $target
+    done
+    exit
+fi
+if [ $BENCHALL == "yes" ]; then
+    for target in `go list github.com/funkygao/gafka/cmd/kateway/... | grep -v '/bench' | grep -v '/demo'`; do
+        echo "benchmarking $target"
+        go test -v -run=XXX -benchmem -cpu=1,4,8,16 -test.bench=".*" $target
     done
     exit
 fi

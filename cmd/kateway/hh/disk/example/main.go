@@ -24,7 +24,7 @@ func main() {
 	log.Info("pprof ready on http://localhost:6786/debug/pprof")
 
 	cfg := disk.DefaultConfig()
-	cfg.Dir = "hh"
+	cfg.Dirs = []string{"hh"}
 	s := disk.New(cfg)
 	if err := s.Start(); err != nil {
 		panic(err)

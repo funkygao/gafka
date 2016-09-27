@@ -28,6 +28,6 @@ func TestServiceNextBaseDir(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		s.Append(fmt.Sprintf("c%d", i), "t1", []byte("key"), []byte("value"))
 
-		t.Logf("next dir: %s", s.nextBaseDir())
+		t.Logf("next dir: %s", s.(*Service).nextBaseDir())
 	}
 }

@@ -16,7 +16,7 @@ func init() {
 }
 
 func BenchmarkPubPool(b *testing.B) {
-	s := NewPubStore(100, 0, false, nil, false, true)
+	s := NewPubStore(100, 0, false, false, true)
 	p := newPubPool(s, "me", []string{"localhost:9092"}, 100)
 	for i := 0; i < b.N; i++ {
 		c, err := p.GetSyncProducer()

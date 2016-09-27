@@ -7,11 +7,11 @@ import (
 )
 
 func TestPubName(t *testing.T) {
-	p := NewPubStore(nil, false)
+	p := NewPubStore(false)
 	assert.Equal(t, "dummy", p.Name())
 }
 
 func TestSubName(t *testing.T) {
-	s := NewSubStore(nil, nil, false)
+	s := NewSubStore(nil, false)
 	assert.Equal(t, "dummy", s.Name())
 }

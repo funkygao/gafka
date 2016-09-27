@@ -25,5 +25,4 @@ func TestAll(t *testing.T) {
 	t.Logf("%+v", z.TopicPartitions("me", "app1.foobar.v1"))
 	t.Logf("%+v", z.ZkCluster("me"))
 	t.Logf("%+v", z.OnlineConsumersCount("me", "app1.foobar.v1", "group"))
-	t.Logf("%+v", z.Clusters())
 }

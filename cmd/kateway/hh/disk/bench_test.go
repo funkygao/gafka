@@ -3,7 +3,6 @@ package disk
 import (
 	"os"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -13,8 +12,7 @@ import (
 )
 
 func init() {
-	var wg sync.WaitGroup
-	store.DefaultPubStore = dummy.NewPubStore(&wg, false)
+	store.DefaultPubStore = dummy.NewPubStore(false)
 	log.Disable()
 }
 
