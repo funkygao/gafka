@@ -6,6 +6,9 @@ GIT_ID=$(git rev-parse HEAD | cut -c1-7)
 GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 BUILD_TIME=$(date '+%Y-%m-%d-%H:%M:%S')
 
+GREEN="\033[33;32m"
+RESET="\033[m"
+
 INSTALL="no"
 GCDEBUG="no"
 RACE="no"
@@ -141,7 +144,7 @@ if [ $BENCHALL == "yes" ]; then
 fi
 if [ $BENCHCMP == "yes" ]; then
     for target in `go list github.com/funkygao/gafka/cmd/kateway/... | grep -v '/bench' | grep -v '/demo' | grep -v misc`; do
-        echo "benchmarking $target"
+        echo -e "${GREEN}benchcmp-vcs $target${RESET}"
         benchcmp-vcs $target
     done
     exit
