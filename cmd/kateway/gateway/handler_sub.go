@@ -31,7 +31,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		offset     string
 		offsetN    int64 = -1
 		limit      int   // max messages to include in the message set
-		delayedAck bool  // explicit application level acknowledgement
+		delayedAck bool  // last acked partition/offset piggybacked on this request
 		err        error
 	)
 
