@@ -13,6 +13,8 @@ test:
 
 bench:benchmark-cpu-dumb
 
+benchk:benchmark-cpu-pub-kafka
+
 bench-nometrics:
 	go test -v -run=XXX -benchmem -bench=^BenchmarkKatewayPubDummy1KWithoutMetrics -benchtime=20s -cpuprofile=prof.cpu; go tool pprof gateway.test prof.cpu
 

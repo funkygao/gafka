@@ -84,7 +84,11 @@ func newGatewayForTest(b *testing.B, store string) *Gateway {
 	Options.InfluxServer = "none"
 	Options.InfluxDbName = "none"
 	Options.JobStore = "dummy"
-	Options.HintedHandoffType = "dummy"
+	Options.EnableHintedHandoff = true
+	Options.HintedHandoffDir = "hhdata"
+	Options.HintedHandoffType = "disk"
+
+	os.RemoveAll("hhdata")
 
 	ctx.LoadFromHome()
 
