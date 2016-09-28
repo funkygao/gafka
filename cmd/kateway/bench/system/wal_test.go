@@ -60,23 +60,27 @@ func BenchmarkFileAppendOpenWithFsync(b *testing.B) {
 	b.SetBytes(1024)
 }
 
+// dd if=/dev/zero of=_x bs=4096 count=2621440 # create a 10GB file beforehand
+// 1693 ns/op
 func BenchmarkPageCacheSeek(b *testing.B) {
-	path := "_file"
+	path := "_x"
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		b.Fatal(err)
 	}
 	defer f.Close()
-	defer os.Remove(path)
 
-	buf := make([]byte, 100)
-	sz := 1 << 20
-	f.WriteString(strings.Repeat("X", sz)) // all contents inside OS page cache
+	const bufSz = 1 << 10
+	buf := make([]byte, bufSz)
+	step := 10
+	sz := step << 30
+
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		offset := rand.Int63n(int64(sz) - 100)
+		offset := rand.Int63n(int64(sz) - bufSz)
 		f.Seek(offset, os.SEEK_SET)
-		io.ReadAtLeast(f, buf[0:], 100)
+		io.ReadAtLeast(f, buf[0:], bufSz)
 	}
 
 }
