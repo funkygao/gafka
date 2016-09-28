@@ -10,12 +10,12 @@ This is the first major release that is stable for production environment.
 
 Features:
 
-* #4 - job(schedulable message)
-* #5 - hinted handoff
-* #6 - webhook
-* #7 - avro message schema registry
-* #8 - server side message filter: message tag
-* #9 - display real consumer client ip instead of the kateway instance ip 
+* [#4](https://github.com/funkygao/gafka/issues/4) - job(schedulable message)
+* [#5(https://github.com/funkygao/gafka/issues/5) - hinted handoff
+* [#6](https://github.com/funkygao/gafka/issues/6) - webhook
+* [#7](https://github.com/funkygao/gafka/issues/7) - avro message schema registry
+* [#8](https://github.com/funkygao/gafka/issues/8) - server side message filter: message tag
+* [#9](https://github.com/funkygao/gafka/issues/9) - display real consumer client ip instead of the kateway instance ip 
 * swagger
 * introduced a new daemon: actord
 
