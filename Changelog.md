@@ -40,6 +40,7 @@ WIP:
 * shadow topic
 * tagged metrics
 * kateway as RM for 2PC
+* lower the chance of cg rebalance
 
 ## kguard
 

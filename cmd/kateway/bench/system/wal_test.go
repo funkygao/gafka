@@ -1,6 +1,8 @@
 package system
 
 import (
+	"io"
+	"math/rand"
 	"os"
 	"strings"
 	"testing"
@@ -56,4 +58,25 @@ func BenchmarkFileAppendOpenWithFsync(b *testing.B) {
 	}
 
 	b.SetBytes(1024)
+}
+
+func BenchmarkPageCacheSeek(b *testing.B) {
+	path := "_file"
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer f.Close()
+	defer os.Remove(path)
+
+	buf := make([]byte, 100)
+	sz := 1 << 20
+	f.WriteString(strings.Repeat("X", sz)) // all contents inside OS page cache
+
+	for i := 0; i < b.N; i++ {
+		offset := rand.Int63n(int64(sz) - 100)
+		f.Seek(offset, os.SEEK_SET)
+		io.ReadAtLeast(f, buf[0:], 100)
+	}
+
 }
