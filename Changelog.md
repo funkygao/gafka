@@ -28,7 +28,6 @@ Enhancements:
 * fixed a lot of race conditions
 * bad Pub/Sub client rate limit
 * message tag has no extra overhead: no mem copy/move
-* display both proxy and real remote ip of the Sub client
 * fixed potential memory/goroutine leak
 * dynamic gzip on demand
 * pub/sub audit
