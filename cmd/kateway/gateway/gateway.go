@@ -170,6 +170,9 @@ func New(id string) *Gateway {
 		// always create hh so that we can turn on/off it online
 		switch Options.HintedHandoffType {
 		case "disk":
+			if len(Options.HintedHandoffDir) == 0 {
+				panic("empty hh dir")
+			}
 			cfg := hhdisk.DefaultConfig()
 			cfg.Dirs = strings.Split(Options.HintedHandoffDir, ",")
 			if err := cfg.Validate(); err != nil {
