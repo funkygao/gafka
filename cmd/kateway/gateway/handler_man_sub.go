@@ -10,6 +10,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/cmd/kateway/meta"
+	"github.com/funkygao/gafka/cmd/kateway/store"
 	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
@@ -61,7 +62,7 @@ func (this *manServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 	var out = map[string]string{
-		"store": "kafka",
+		"store": store.DefaultSubStore.Name(),
 		"zk":    meta.Default.ZkCluster(cluster).NamedZkConnectAddr(),
 		"topic": manager.Default.KafkaTopic(hisAppid, topic, ver),
 		"group": myAppid + "." + group,

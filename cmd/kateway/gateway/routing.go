@@ -40,8 +40,12 @@ func (this *Gateway) buildRouting() {
 		this.manServer.Router().DELETE("/v1/manager/cache",
 			m(this.manServer.refreshManagerHandler))
 
+		// Pub related api for pubsub manager
+		this.manServer.Router().GET("/v1/raw/pub/:topic/:ver",
+			m(this.manServer.pubRawHandler))
+
 		// Sub related api for pubsub manager
-		this.manServer.Router().GET("/v1/raw/msgs/:appid/:topic/:ver",
+		this.manServer.Router().GET("/v1/raw/sub/:appid/:topic/:ver",
 			m(this.manServer.subRawHandler))
 		this.manServer.Router().GET("/v1/peek/:appid/:topic/:ver",
 			m(this.manServer.peekHandler))
