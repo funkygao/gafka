@@ -22,7 +22,7 @@ func (this *manServer) pubRawHandler(w http.ResponseWriter, r *http.Request, par
 	realIp := getHttpRemoteIp(r)
 
 	if err := manager.Default.OwnTopic(appid, r.Header.Get(HttpHeaderPubkey), topic); err != nil {
-		log.Error("raw[%s] %s(%s) {topic:%s, ver:%s}: %s",
+		log.Error("pub raw[%s] %s(%s) {topic:%s, ver:%s}: %s",
 			appid, r.RemoteAddr, realIp, topic, ver, err)
 
 		writeAuthFailure(w, err)

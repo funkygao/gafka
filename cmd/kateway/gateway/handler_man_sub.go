@@ -43,7 +43,7 @@ func (this *manServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 
 	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
-		log.Error("raw[%s] %s {topic:%s, ver:%s, hisapp:%s}: %s",
+		log.Error("sub raw[%s] %s {topic:%s, ver:%s, hisapp:%s}: %s",
 			myAppid, r.RemoteAddr, topic, ver, hisAppid, err)
 
 		writeAuthFailure(w, err)
@@ -52,7 +52,8 @@ func (this *manServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("cluster not found for raw subd app: %s", hisAppid)
+		log.Error("sub raw[%s] %s {topic:%s, ver:%s, hisapp:%s}: invalid appid",
+			myAppid, r.RemoteAddr, topic, ver, hisAppid)
 
 		writeBadRequest(w, "invalid appid")
 		return
