@@ -182,6 +182,7 @@ d37c73f2b2bce85f7fa16b6a550d26c5372892ef
 - [ ] tagged metrics
 - [ ] haproxy metrics export to InfluxDB
   http://user:pass@localhost:10890/stats?stats;csv
+- [ ] raft consensus
 - [ ] hh should use AsyncPub method instead of SyncPub
 - [ ] hh index
 - [ ] integration: bad Pub/Sub rate limit

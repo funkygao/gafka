@@ -125,7 +125,10 @@ func (this *Start) main() {
 			if len(instances) > 0 {
 				this.reload(instances)
 			} else {
+				// resilience to zk problem by local cache
 				log.Warn("backend all shutdown? skip this change")
+				time.Sleep(time.Second)
+				continue
 			}
 		}
 

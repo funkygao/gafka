@@ -68,8 +68,10 @@ func (this *zkMetaStore) refreshTopologyCache() error {
 
 		brokerList := this.clusters[cluster].BrokerList()
 		if len(brokerList) == 0 {
+			// zk might encounters problems
 			return ErrZkBroken
 		}
+
 		this.brokerList[cluster] = brokerList
 	}
 
@@ -104,7 +106,8 @@ func (this *zkMetaStore) Start() {
 
 				if err := this.refreshTopologyCache(); err != nil {
 					// zk connection broken, refuse to refresh cache
-					/// next tick, zk connection might be fixed
+					// resilience to zk problem by local cache
+					// next tick, zk connection might be fixed
 					log.Warn("meta refresh: %s", err)
 					continue
 				}
