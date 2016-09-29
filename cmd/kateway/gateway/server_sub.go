@@ -224,6 +224,8 @@ func (this *subServer) ackCommitter() {
 		this.gw.wg.Done()
 	}()
 
+	var n int64
+	const flushPerN int64 = 4000
 	for {
 		select {
 		case <-this.gw.shutdownCh:
@@ -257,6 +259,11 @@ func (this *subServer) ackCommitter() {
 					// TODO validation
 					this.ackedOffsets[ack.cluster][ack.topic][ack.group][ack.Partition] = ack.Offset
 				}
+
+				n++
+				if n%flushPerN == 0 {
+					this.commitOffsets()
+				}
 			} else {
 				// channel buffer drained, flush all offsets
 				// zk is still alive, safe to commit offsets
@@ -283,11 +290,11 @@ func (this *subServer) commitOffsets() {
 						continue
 					}
 
-					log.Debug("commit offset {C:%s T:%s G:%s P:%d O:%d}", cluster, topic, group, partition, offset)
+					log.Debug("cluster[%s] group[%s] commit offset {T:%s/%d O:%d}", cluster, group, topic, partition, offset)
 
-					if err := zkcluster.ResetConsumerGroupOffset(topic, group,
-						strconv.Itoa(partition), offset); err != nil {
-						log.Error("commitOffsets: %v", err)
+					if err := zkcluster.ResetConsumerGroupOffset(topic, group, strconv.Itoa(partition), offset); err != nil {
+						log.Error("cluster[%s] group[%s] commit offset {T:%s/%d O:%d} %v", cluster, group, topic, partition, offset, err)
+
 						if err == zk.ErrNoNode {
 							// invalid offset commit request, will not retry
 							this.ackedOffsets[cluster][topic][group][partition] = -1
