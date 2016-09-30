@@ -262,6 +262,7 @@ func (this *subServer) ackCommitter() {
 
 				n++
 				if n%flushPerN == 0 {
+					// TODO reset the tick timer?
 					this.commitOffsets()
 				}
 			} else {
