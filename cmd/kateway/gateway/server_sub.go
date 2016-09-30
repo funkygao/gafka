@@ -47,7 +47,7 @@ type subServer struct {
 
 func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subServer {
 	this := &subServer{
-		webServer:        newWebServer("sub_server", httpAddr, httpsAddr, maxClients, gw),
+		webServer:        newWebServer("sub_server", httpAddr, httpsAddr, maxClients, Options.HttpReadTimeout, gw),
 		closedConnCh:     make(chan string, 1<<10),
 		idleConns:        make(map[net.Conn]struct{}, 200),
 		wsReadLimit:      8 << 10,

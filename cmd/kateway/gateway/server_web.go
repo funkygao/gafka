@@ -44,7 +44,7 @@ type webServer struct {
 	closed chan struct{}
 }
 
-func newWebServer(name string, httpAddr, httpsAddr string, maxClients int, gw *Gateway) *webServer {
+func newWebServer(name string, httpAddr, httpsAddr string, maxClients int, idleTimeout time.Duration, gw *Gateway) *webServer {
 	this := &webServer{
 		name:       name,
 		gw:         gw,
@@ -65,7 +65,7 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int, gw *G
 		this.httpServer = &http.Server{
 			Addr:           httpAddr,
 			Handler:        this.router,
-			ReadTimeout:    Options.HttpReadTimeout,
+			ReadTimeout:    idleTimeout,
 			WriteTimeout:   Options.HttpWriteTimeout,
 			MaxHeaderBytes: Options.HttpHeaderMaxBytes,
 		}
@@ -75,7 +75,7 @@ func newWebServer(name string, httpAddr, httpsAddr string, maxClients int, gw *G
 		this.httpsServer = &http.Server{
 			Addr:           httpsAddr,
 			Handler:        this.router,
-			ReadTimeout:    Options.HttpReadTimeout,
+			ReadTimeout:    idleTimeout,
 			WriteTimeout:   Options.HttpWriteTimeout,
 			MaxHeaderBytes: Options.HttpHeaderMaxBytes,
 		}
