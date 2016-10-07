@@ -222,7 +222,7 @@ func (this *ZkCluster) ConsumerGroups() map[string]map[string]*ConsumerZnode {
 		for consumerId, data := range this.zone.ChildrenWithData(this.consumerGroupIdsPath(group)) {
 			c := newConsumerZnode(consumerId)
 			if err := c.from(data.data); err != nil {
-				log.Error("%s: %v", string(data.data), err)
+				log.Error("cluster[%s] consumer[%s] %s: %v", this.name, consumerId, string(data.data), err)
 				continue
 			}
 
