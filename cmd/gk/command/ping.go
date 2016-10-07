@@ -97,8 +97,6 @@ func (this *Ping) diagnose() {
 			kfk.Close()
 		}
 	})
-
-	log.Close()
 }
 
 func (*Ping) Synopsis() string {
