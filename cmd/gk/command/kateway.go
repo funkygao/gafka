@@ -149,7 +149,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 	// display mode
 	lines := make([]string, 0)
-	header := "Zone|Id|Host|Ip|Pprof|Build|Cpu|Mem|Go|P/S/hhIn/hhOut|Uptime"
+	header := "Zone|Id|Host|Ip|Pprof|Build|Cpu|Heap|Go|P/S/hhIn/hhOut|Uptime"
 	lines = append(lines, header)
 	forSortedZones(func(zkzone *zk.ZkZone) {
 		if this.zone != "" && zkzone.Name() != this.zone {
