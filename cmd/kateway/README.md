@@ -18,6 +18,7 @@ A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming me
 - Azure EventHub
 - Yahoo Pulsar
 - IBM Bluemix Message Hub
+- qcloud CMQ
 - aliyun MNS
   - order not guaranteed
   - backtracking not supported
