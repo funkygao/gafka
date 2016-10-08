@@ -67,6 +67,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		cluster      string
 		zone         string
 		topicPattern string
+		topicName    string
 		partitionId  int
 		wait         time.Duration
 		silence      bool
@@ -76,6 +77,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.StringVar(&topicPattern, "t", "", "")
+	cmdFlags.StringVar(&topicName, "tt", "", "")
 	cmdFlags.IntVar(&partitionId, "p", 0, "")
 	cmdFlags.BoolVar(&this.colorize, "color", true, "")
 	cmdFlags.Int64Var(&this.lastN, "last", -1, "")
@@ -105,11 +107,11 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	msgChan := make(chan *sarama.ConsumerMessage, 20000) // msg aggerator channel
 	if cluster == "" {
 		zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
-			this.consumeCluster(zkcluster, topicPattern, partitionId, msgChan)
+			this.consumeCluster(zkcluster, topicName, topicPattern, partitionId, msgChan)
 		})
 	} else {
 		zkcluster := zkzone.NewCluster(cluster)
-		this.consumeCluster(zkcluster, topicPattern, partitionId, msgChan)
+		this.consumeCluster(zkcluster, topicName, topicPattern, partitionId, msgChan)
 	}
 
 	signal.RegisterSignalsHandler(func(sig os.Signal) {
@@ -129,7 +131,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	)
 
 	var (
-		j          map[string]string
+		j          map[string]interface{}
 		prettyJSON bytes.Buffer
 	)
 
@@ -177,23 +179,23 @@ LOOP:
 					} else {
 						if this.bodyOnly {
 							if this.pretty {
-								if err = json.Indent(&prettyJSON, []byte(j[this.column]), "", "    "); err != nil {
+								if err = json.Indent(&prettyJSON, []byte(j[this.column].(string)), "", "    "); err != nil {
 									fmt.Println(err.Error())
 								} else {
 									fmt.Println(string(prettyJSON.Bytes()))
 								}
 							} else {
-								fmt.Println(j[this.column])
+								fmt.Println(j[this.column].(string))
 							}
 						} else if this.colorize {
 							this.Ui.Output(fmt.Sprintf("%s/%d %s k:%s v:%s",
 								color.Green(msg.Topic), msg.Partition,
-								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column]))
+								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column].(string)))
 						} else {
 							// colored UI will have invisible chars output
 							fmt.Println(fmt.Sprintf("%s/%d %s k:%s v:%s",
 								msg.Topic, msg.Partition,
-								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column]))
+								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column].(string)))
 						}
 					}
 
@@ -223,7 +225,6 @@ LOOP:
 
 			if this.limit > 0 && total >= this.limit {
 				break LOOP
-
 			}
 			if this.lastN > 0 && total >= int(this.lastN) {
 				break LOOP
@@ -235,7 +236,7 @@ LOOP:
 	return
 }
 
-func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topicPattern string,
+func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topicName, topicPattern string,
 	partitionId int, msgChan chan *sarama.ConsumerMessage) {
 	brokerList := zkcluster.BrokerList()
 	if len(brokerList) == 0 {
@@ -255,6 +256,9 @@ func (this *Peek) consumeCluster(zkcluster *zk.ZkCluster, topicPattern string,
 	}
 
 	for _, t := range topics {
+		if topicName != "" && topicName != t {
+			continue
+		}
 		if patternMatched(t, topicPattern) {
 			go this.simpleConsumeTopic(zkcluster, kfk, t, int32(partitionId), msgChan)
 		}
@@ -359,6 +363,9 @@ Options:
     -c cluster
 
     -t topic pattern
+
+    -tt topic name
+      Exact(instead of pattern) matching of topic name
     
     -p partition id
       -1 will peek all partitions of a topic
