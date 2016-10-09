@@ -40,6 +40,7 @@ type Start struct {
 	manPort    int
 	starting   bool
 	forwardFor bool
+	httpAddr   string
 
 	quitCh      chan struct{}
 	zkzone      *zk.ZkZone
@@ -57,6 +58,7 @@ func (this *Start) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&this.pubPort, "pub", 10891, "")
 	cmdFlags.IntVar(&this.subPort, "sub", 10892, "")
 	cmdFlags.IntVar(&this.manPort, "man", 10893, "")
+	cmdFlags.StringVar(&this.httpAddr, "addr", ":10894", "monitor http server addr")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -111,6 +113,7 @@ func (this *Start) main() {
 	registry.Default = zkr.New(this.zkzone)
 
 	log.Info("ehaproxy[%s] starting...", gafka.BuildId)
+	go runMonitorServer(this.httpAddr)
 
 	zkConnected := false
 	for {

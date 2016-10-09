@@ -17,5 +17,7 @@ func (this *controller) runWebServer() {
 
 func (this *controller) statusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf8")
+	w.Header().Set("Server", "actord")
+
 	w.Write(this.Bytes())
 }
