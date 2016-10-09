@@ -9,6 +9,7 @@ import (
 
 	"github.com/funkygao/fae/config"
 	"github.com/funkygao/fae/servant/mysql"
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	mdummy "github.com/funkygao/gafka/cmd/kateway/manager/dummy"
 	mmysql "github.com/funkygao/gafka/cmd/kateway/manager/mysql"
@@ -33,6 +34,7 @@ type controller struct {
 	auditor      log.Logger
 
 	ListenAddr string `json:"addr"`
+	Version    string `json:"version"`
 
 	ActorN, JobQueueN, WebhookN    sync2.AtomicInt32
 	JobExecutorN, WebhookExecutorN sync2.AtomicInt32
@@ -57,6 +59,7 @@ func New(zkzone *zk.ZkZone, listenAddr string, managerType string) Controller {
 		orchestrator: zkzone.NewOrchestrator(),
 		mc:           mysql.New(mcc),
 		ListenAddr:   listenAddr,
+		Version:      gafka.BuildId,
 	}
 	this.ident, err = this.generateIdent()
 	if err != nil {
