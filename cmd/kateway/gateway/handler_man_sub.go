@@ -59,7 +59,7 @@ func (this *manServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	log.Info("sub raw[%s] %s(%s): {app:%s, topic:%s, ver:%s group:%s}",
+	log.Info("sub raw[%s] %s(%s) {app:%s, topic:%s, ver:%s group:%s}",
 		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, group)
 
 	var out = map[string]string{
@@ -113,7 +113,7 @@ func (this *manServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 		}
 	}
 
-	log.Info("peek[%s] %s(%s): {app:%s topic:%s ver:%s n:%d wait:%s}",
+	log.Info("peek[%s] %s(%s) {app:%s topic:%s ver:%s n:%d wait:%s}",
 		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, waitParam)
 
 	if lastN > 100 {
@@ -218,7 +218,7 @@ LOOP:
 		case err = <-errs:
 			close(stopCh)
 
-			log.Error("peek[%s] %s(%s): {app:%s, topic:%s, ver:%s n:%d} %+v",
+			log.Error("peek[%s] %s(%s) {app:%s, topic:%s, ver:%s n:%d} %+v",
 				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, err)
 
 			writeServerError(w, err.Error())
@@ -270,14 +270,14 @@ func (this *manServer) resetSubOffsetHandler(w http.ResponseWriter, r *http.Requ
 
 	offsetN, err = strconv.ParseInt(offset, 10, 64)
 	if err != nil {
-		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
+		log.Error("sub reset offset[%s] %s(%s) {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, partition, group, offset, err)
 
 		writeBadRequest(w, err.Error())
 		return
 	}
 	if offsetN < 0 {
-		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} negative offset",
+		log.Error("sub reset offset[%s] %s(%s) {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} negative offset",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, partition, group, offset)
 
 		writeBadRequest(w, "offset must be positive")
@@ -286,7 +286,7 @@ func (this *manServer) resetSubOffsetHandler(w http.ResponseWriter, r *http.Requ
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
-		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
+		log.Error("sub reset offset[%s] %s(%s) {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, partition, group, offset, err)
 
 		writeAuthFailure(w, err)
@@ -295,14 +295,14 @@ func (this *manServer) resetSubOffsetHandler(w http.ResponseWriter, r *http.Requ
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} cluster not found",
+		log.Error("sub reset offset[%s] %s(%s) {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} cluster not found",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, partition, group, offset)
 
 		writeBadRequest(w, "invalid appid")
 		return
 	}
 
-	log.Info("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s}",
+	log.Info("sub reset offset[%s] %s(%s) {app:%s topic:%s ver:%s partition:%s group:%s offset:%s}",
 		myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, partition, group, offset)
 
 	zkcluster := meta.Default.ZkCluster(cluster)
@@ -310,7 +310,7 @@ func (this *manServer) resetSubOffsetHandler(w http.ResponseWriter, r *http.Requ
 	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	err = zkcluster.ResetConsumerGroupOffset(rawTopic, realGroup, partition, offsetN)
 	if err != nil {
-		log.Error("sub reset offset[%s] %s(%s): {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
+		log.Error("sub reset offset[%s] %s(%s) {app:%s topic:%s ver:%s partition:%s group:%s offset:%s} %v",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, partition, group, offset, err)
 
 		writeServerError(w, err.Error())
@@ -341,7 +341,7 @@ func (this *manServer) delSubGroupHandler(w http.ResponseWriter, r *http.Request
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
-		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+		log.Error("unsub[%s] %s(%s) {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group, err)
 
 		writeAuthFailure(w, err)
@@ -349,7 +349,7 @@ func (this *manServer) delSubGroupHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	if !manager.Default.ValidateGroupName(r.Header, group) {
-		log.Warn("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
+		log.Warn("unsub[%s] %s(%s) {app:%s, topic:%s, ver:%s, group:%s} invalid group name",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group)
 
 		writeBadRequest(w, "illegal group")
@@ -358,7 +358,7 @@ func (this *manServer) delSubGroupHandler(w http.ResponseWriter, r *http.Request
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
+		log.Error("unsub[%s] %s(%s) {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group)
 
 		writeBadRequest(w, "invalid appid")
@@ -369,11 +369,11 @@ func (this *manServer) delSubGroupHandler(w http.ResponseWriter, r *http.Request
 	if group != "" {
 		group = myAppid + "." + group
 	}
-	log.Info("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} zk:%s",
+	log.Info("unsub[%s] %s(%s) {app:%s, topic:%s, ver:%s, group:%s} zk:%s",
 		myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group, zkcluster.ConsumerGroupRoot(group))
 
 	if err := zkcluster.ZkZone().DeleteRecursive(zkcluster.ConsumerGroupRoot(group)); err != nil {
-		log.Error("unsub[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+		log.Error("unsub[%s] %s(%s) {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group, err)
 
 		if err == zk.ErrNotEmpty {
@@ -407,7 +407,7 @@ func (this *manServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Requ
 	realIp := getHttpRemoteIp(r)
 
 	if !manager.Default.ValidateGroupName(r.Header, group) {
-		log.Warn("shadow+ [%s/%s] %s(%s): %s.%s.%s illegal group name", myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver)
+		log.Warn("shadow+ [%s/%s] %s(%s) %s.%s.%s illegal group name", myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 		writeBadRequest(w, "illegal group")
 		return
@@ -415,17 +415,17 @@ func (this *manServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Requ
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
-		log.Error("shadow+ [%s/%s] %s(%s): %s.%s.%s %v", myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, err)
+		log.Error("shadow+ [%s/%s] %s(%s) %s.%s.%s %v", myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, err)
 
 		writeAuthFailure(w, err)
 		return
 	}
 
-	log.Info("shadow+ [%s/%s] %s(%s): %s.%s.%s", myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver)
+	log.Info("shadow+ [%s/%s] %s(%s) %s.%s.%s", myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("shadow+ [%s/%s] %s(%s): %s.%s.%s cluster not found", myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver)
+		log.Error("shadow+ [%s/%s] %s(%s) %s.%s.%s cluster not found", myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 		writeBadRequest(w, "invalid appid")
 		return
@@ -446,7 +446,7 @@ func (this *manServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Requ
 	for _, t := range shadowTopics {
 		lines, err := zkcluster.AddTopic(t, ts)
 		if err != nil {
-			log.Error("shadow+ [%s/%s] %s(%s): %s.%s.%s %s: %s", myAppid, group, r.RemoteAddr, realIp,
+			log.Error("shadow+ [%s/%s] %s(%s) %s.%s.%s %s: %s", myAppid, group, r.RemoteAddr, realIp,
 				hisAppid, topic, ver, t, err.Error())
 
 			writeServerError(w, err.Error())
@@ -462,7 +462,7 @@ func (this *manServer) addTopicShadowHandler(w http.ResponseWriter, r *http.Requ
 		}
 
 		if !ok {
-			log.Error("shadow+ [%s/%s] %s(%s): %s.%s.%s %s: %s", myAppid, group, r.RemoteAddr, realIp,
+			log.Error("shadow+ [%s/%s] %s(%s) %s.%s.%s %s: %s", myAppid, group, r.RemoteAddr, realIp,
 				hisAppid, topic, ver, t, strings.Join(lines, ";"))
 
 			writeServerError(w, strings.Join(lines, ";"))
@@ -502,7 +502,7 @@ func (this *manServer) subStatusHandler(w http.ResponseWriter, r *http.Request, 
 
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
 		hisAppid, topic, group); err != nil {
-		log.Error("sub status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} %v",
+		log.Error("sub status[%s] %s(%s) {app:%s, topic:%s, ver:%s, group:%s} %v",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group, err)
 
 		writeAuthFailure(w, err)
@@ -511,14 +511,14 @@ func (this *manServer) subStatusHandler(w http.ResponseWriter, r *http.Request, 
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("sub status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
+		log.Error("sub status[%s] %s(%s) {app:%s, topic:%s, ver:%s, group:%s} cluster not found",
 			myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group)
 
 		writeBadRequest(w, "invalid appid")
 		return
 	}
 
-	log.Info("sub status[%s] %s(%s): {app:%s, topic:%s, ver:%s, group:%s}",
+	log.Info("sub status[%s] %s(%s) {app:%s, topic:%s, ver:%s, group:%s}",
 		myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, group)
 
 	out, err := topicSubStatus(cluster, myAppid, hisAppid, topic, ver, group, true)
@@ -552,7 +552,7 @@ func (this *manServer) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
 	if err = manager.Default.OwnTopic(myAppid, r.Header.Get(HttpHeaderSubkey), topic); err != nil {
-		log.Error("subd status[%s] %s(%s): {topic:%s, ver:%s} %v",
+		log.Error("subd status[%s] %s(%s) {topic:%s, ver:%s} %v",
 			myAppid, r.RemoteAddr, realIp, topic, ver, err)
 
 		writeAuthFailure(w, err)
@@ -561,14 +561,14 @@ func (this *manServer) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 
 	cluster, found := manager.Default.LookupCluster(myAppid)
 	if !found {
-		log.Error("subd status[%s] %s(%s): {topic:%s, ver:%s} cluster not found",
+		log.Error("subd status[%s] %s(%s) {topic:%s, ver:%s} cluster not found",
 			myAppid, r.RemoteAddr, realIp, topic, ver)
 
 		writeBadRequest(w, "invalid appid")
 		return
 	}
 
-	log.Info("subd status[%s] %s(%s): {topic:%s, ver:%s}",
+	log.Info("subd status[%s] %s(%s) {topic:%s, ver:%s}",
 		myAppid, r.RemoteAddr, realIp, topic, ver)
 
 	out, err := topicSubStatus(cluster, myAppid, myAppid, topic, ver, "", false)

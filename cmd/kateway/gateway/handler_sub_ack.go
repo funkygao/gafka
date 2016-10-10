@@ -94,12 +94,12 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 		acks[i].group = realGroup
 	}
 
-	log.Debug("ack[%s/%s] %s(%s): {%s.%s.%s UA:%s} %+v",
+	log.Debug("ack[%s/%s] %s(%s) {%s.%s.%s UA:%s} %+v",
 		myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), acks)
 
 	if atomic.AddInt32(&this.ackShutdown, 1) == 0 {
 		// kateway is shutting down, ackCh is already closed
-		log.Warn("ack[%s/%s] %s(%s): {%s.%s.%s UA:%s} server is shutting down %+v ",
+		log.Warn("ack[%s/%s] %s(%s) {%s.%s.%s UA:%s} server is shutting down %+v ",
 			myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), acks)
 
 		writeServerError(w, "server is shutting down")

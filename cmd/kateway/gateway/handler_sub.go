@@ -107,7 +107,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			// convert partition and offset to int
 			offsetN, err = strconv.ParseInt(offset, 10, 64)
 			if err != nil {
-				log.Error("sub[%s/%s] %s(%s): {%s.%s.%s UA:%s} offset:%s",
+				log.Error("sub[%s/%s] %s(%s) {%s.%s.%s UA:%s} offset:%s",
 					myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), offset)
 
 				this.subMetrics.ClientError.Mark(1)
@@ -116,7 +116,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			}
 			partitionN, err = strconv.Atoi(partition)
 			if err != nil {
-				log.Error("sub[%s/%s] %s(%s): {%s.%s.%s UA:%s} partition:%s",
+				log.Error("sub[%s/%s] %s(%s) {%s.%s.%s UA:%s} partition:%s",
 					myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), partition)
 
 				this.subMetrics.ClientError.Mark(1)
@@ -124,7 +124,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 				return
 			}
 		} else if len(partition+offset) != 0 {
-			log.Error("sub[%s/%s] %s(%s): {%s.%s.%s P:%s O:%s UA:%s} partial ack",
+			log.Error("sub[%s/%s] %s(%s) {%s.%s.%s P:%s O:%s UA:%s} partial ack",
 				myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, partition, offset, r.Header.Get("User-Agent"))
 
 			this.subMetrics.ClientError.Mark(1)
@@ -135,7 +135,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 
 	shadow = query.Get("q")
 
-	log.Debug("sub[%s/%s] %s(%s): {%s.%s.%s q:%s batch:%d ack:%s P:%s O:%s UA:%s}",
+	log.Debug("sub[%s/%s] %s(%s) {%s.%s.%s q:%s batch:%d ack:%s P:%s O:%s UA:%s}",
 		myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, shadow,
 		limit, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"))
 
@@ -146,7 +146,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	// calculate raw topic according to shadow
 	if shadow != "" {
 		if !sla.ValidateShadowName(shadow) {
-			log.Error("sub[%s/%s] %s(%s): {%s.%s.%s q:%s UA:%s} invalid shadow name",
+			log.Error("sub[%s/%s] %s(%s) {%s.%s.%s q:%s UA:%s} invalid shadow name",
 				myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, shadow, r.Header.Get("User-Agent"))
 
 			this.subMetrics.ClientError.Mark(1)
@@ -155,7 +155,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		}
 
 		if !manager.Default.IsShadowedTopic(hisAppid, topic, ver, myAppid, group) {
-			log.Error("sub[%s/%s] %s(%s): {%s.%s.%s q:%s UA:%s} not a shadowed topic",
+			log.Error("sub[%s/%s] %s(%s) {%s.%s.%s q:%s UA:%s} not a shadowed topic",
 				myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, shadow, r.Header.Get("User-Agent"))
 
 			this.subMetrics.ClientError.Mark(1)
@@ -170,7 +170,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("sub[%s/%s] %s(%s): {%s.%s.%s UA:%s} cluster not found",
+		log.Error("sub[%s/%s] %s(%s) {%s.%s.%s UA:%s} cluster not found",
 			myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"))
 
 		this.subMetrics.ClientError.Mark(1)
@@ -208,10 +208,10 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			Offset:    offsetN,
 		}); err != nil {
 			// during rebalance, this might happen, but with no bad effects
-			log.Trace("sub land[%s/%s] %s(%s): {%s/%s ack:1 O:%s UA:%s} %v",
+			log.Trace("sub land[%s/%s] %s(%s) {%s/%s ack:1 O:%s UA:%s} %v",
 				myAppid, group, r.RemoteAddr, realIp, rawTopic, partition, offset, r.Header.Get("User-Agent"), err)
 		} else {
-			log.Debug("sub land[%s/%s] %s(%s): {T:%s/%s, O:%s}",
+			log.Debug("sub land[%s/%s] %s(%s) {T:%s/%s, O:%s}",
 				myAppid, group, r.RemoteAddr, realIp, rawTopic, partition, offset)
 		}
 	}
@@ -222,7 +222,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		// e,g. kafka: error while consuming app1.foobar.v1/0: EOF (kafka was shutdown)
-		log.Error("sub[%s/%s] %s(%s): {%s ack:%s P:%s O:%s UA:%s} %v",
+		log.Error("sub[%s/%s] %s(%s) {%s ack:%s P:%s O:%s UA:%s} %v",
 			myAppid, group, r.RemoteAddr, realIp, rawTopic, query.Get("ack"), partition, offset, r.Header.Get("User-Agent"), err)
 
 		if err != ErrClientGone {
@@ -242,7 +242,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 
 		// fetch.Close might be called by subServer.closedConnCh
 		if err = fetcher.Close(); err != nil {
-			log.Error("sub[%s/%s] %s(%s): %s %v", myAppid, group, r.RemoteAddr, realIp, rawTopic, err)
+			log.Error("sub[%s/%s] %s(%s) %s %v", myAppid, group, r.RemoteAddr, realIp, rawTopic, err)
 		}
 	}
 
@@ -337,7 +337,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request, real
 			}
 
 			if Options.AuditSub {
-				this.auditor.Trace("sub[%s/%s] %s(%s): {T:%s/%d O:%d}",
+				this.auditor.Trace("sub[%s/%s] %s(%s) {T:%s/%d O:%d}",
 					myAppid, group, r.RemoteAddr, realIp, msg.Topic, msg.Partition, msg.Offset)
 			}
 
@@ -377,7 +377,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request, real
 
 				if !tagSatisfied {
 					if !delayedAck {
-						log.Debug("sub auto commit offset with tag unmatched %s(%s): {G:%s, T:%s/%d, O:%d} %+v/%+v",
+						log.Debug("sub auto commit offset with tag unmatched %s(%s) {G:%s, T:%s/%d, O:%d} %+v/%+v",
 							r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset, tagConditions, tags)
 
 						fetcher.CommitUpto(msg)
@@ -419,7 +419,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request, real
 			}
 
 			if !delayedAck {
-				log.Debug("sub[%s/%s] %s(%s): auto commit offset {%s/%d O:%d}",
+				log.Debug("sub[%s/%s] %s(%s) auto commit offset {%s/%d O:%d}",
 					myAppid, group, r.RemoteAddr, realIp, msg.Topic, msg.Partition, msg.Offset)
 
 				// ignore the offset commit err on purpose:
@@ -435,7 +435,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request, real
 				// will get 1 duplicated msg.
 				fetcher.CommitUpto(msg)
 			} else {
-				log.Debug("sub[%s/%s] %s(%s): take off {%s/%d O:%d}",
+				log.Debug("sub[%s/%s] %s(%s) take off {%s/%d O:%d}",
 					myAppid, group, r.RemoteAddr, realIp, msg.Topic, msg.Partition, msg.Offset)
 			}
 
@@ -454,7 +454,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request, real
 			chunkedEver = true
 
 			if n == 1 {
-				log.Debug("sub idle timeout %s->1s %s(%s): {G:%s, T:%s/%d, O:%d B:%d}",
+				log.Debug("sub idle timeout %s->1s %s(%s) {G:%s, T:%s/%d, O:%d B:%d}",
 					idleTimeout, r.RemoteAddr, realIp, group, msg.Topic, msg.Partition, msg.Offset, limit)
 				idleTimeout = time.Second
 			}

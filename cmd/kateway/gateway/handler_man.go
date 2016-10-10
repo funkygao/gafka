@@ -234,8 +234,7 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	log.Info("option %s(%s): %s to %s, %#v", r.RemoteAddr, getHttpRemoteIp(r),
-		option, value, Options)
+	log.Info("option %s(%s) %s to %s, %#v", r.RemoteAddr, getHttpRemoteIp(r), option, value, Options)
 
 	w.Write(ResponseOk)
 }
@@ -251,7 +250,7 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("partitions[%s] %s(%s): {app:%s topic:%s ver:%s} invalid appid",
+		log.Error("partitions[%s] %s(%s) {app:%s topic:%s ver:%s} invalid appid",
 			appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 		writeBadRequest(w, "invalid appid")
@@ -259,19 +258,19 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	if !manager.Default.AuthAdmin(appid, pubkey) {
-		log.Warn("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s}",
+		log.Warn("suspicous partitions call from %s(%s) {cluster:%s app:%s key:%s topic:%s ver:%s}",
 			r.RemoteAddr, realIp, cluster, appid, pubkey, topic, ver)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
 		return
 	}
 
-	log.Info("partitions[%s] %s(%s): {cluster:%s app:%s topic:%s ver:%s}",
+	log.Info("partitions[%s] %s(%s) {cluster:%s app:%s topic:%s ver:%s}",
 		appid, r.RemoteAddr, realIp, cluster, hisAppid, topic, ver)
 
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
-		log.Error("suspicous partitions call from %s(%s): {cluster:%s app:%s key:%s topic:%s ver:%s} undefined cluster",
+		log.Error("suspicous partitions call from %s(%s) {cluster:%s app:%s key:%s topic:%s ver:%s} undefined cluster",
 			r.RemoteAddr, realIp, cluster, appid, pubkey, topic, ver)
 
 		writeBadRequest(w, "undefined cluster")
@@ -315,7 +314,7 @@ func (this *manServer) createWebhookHandler(w http.ResponseWriter, r *http.Reque
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
 	if !manager.Default.AuthAdmin(appid, pubkey) {
-		log.Warn("suspicous create webhook %s(%s): {appid:%s pubkey:%s topic:%s ver:%s}",
+		log.Warn("suspicous create webhook %s(%s) {appid:%s pubkey:%s topic:%s ver:%s}",
 			r.RemoteAddr, realIp, appid, pubkey, topic, ver)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
@@ -324,7 +323,7 @@ func (this *manServer) createWebhookHandler(w http.ResponseWriter, r *http.Reque
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("create webhook %s(%s): {appid:%s topic:%s ver:%s} undefined cluster",
+		log.Error("create webhook %s(%s) {appid:%s topic:%s ver:%s} undefined cluster",
 			r.RemoteAddr, realIp, appid, topic, ver)
 
 		writeBadRequest(w, "undefined cluster")
@@ -380,7 +379,7 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
 	if !manager.Default.AuthAdmin(appid, pubkey) {
-		log.Warn("suspicous create job %s(%s): {appid:%s pubkey:%s topic:%s ver:%s}",
+		log.Warn("suspicous create job %s(%s) {appid:%s pubkey:%s topic:%s ver:%s}",
 			r.RemoteAddr, realIp, appid, pubkey, topic, ver)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
@@ -389,19 +388,19 @@ func (this *manServer) createJobHandler(w http.ResponseWriter, r *http.Request, 
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("create job %s(%s): {appid:%s topic:%s ver:%s} invalid appid",
+		log.Error("create job %s(%s) {appid:%s topic:%s ver:%s} invalid appid",
 			r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 		writeBadRequest(w, "invalid appid")
 		return
 	}
 
-	log.Info("create job[%s] %s(%s): {appid:%s topic:%s ver:%s}",
+	log.Info("create job[%s] %s(%s) {appid:%s topic:%s ver:%s}",
 		appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	if err := job.Default.CreateJobQueue(Options.AssignJobShardId, hisAppid, rawTopic); err != nil {
-		log.Error("create job[%s] %s(%s): {shard:%d appid:%s topic:%s ver:%s} %v",
+		log.Error("create job[%s] %s(%s) {shard:%d appid:%s topic:%s ver:%s} %v",
 			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, topic, ver, err)
 
 		writeServerError(w, err.Error())
@@ -444,7 +443,7 @@ func (this *manServer) createTopicHandler(w http.ResponseWriter, r *http.Request
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("create topic[%s] %s(%s): {appid:%s topic:%s ver:%s} invalid appid",
+		log.Error("create topic[%s] %s(%s) {appid:%s topic:%s ver:%s} invalid appid",
 			appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 		writeBadRequest(w, "invalid appid")
@@ -452,7 +451,7 @@ func (this *manServer) createTopicHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	if !manager.Default.AuthAdmin(appid, pubkey) {
-		log.Warn("suspicous create topic %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
+		log.Warn("suspicous create topic %s(%s) {appid:%s pubkey:%s cluster:%s topic:%s ver:%s}",
 			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
@@ -461,7 +460,7 @@ func (this *manServer) createTopicHandler(w http.ResponseWriter, r *http.Request
 
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
-		log.Error("create topic[%s] %s(%s): {appid:%s cluster:%s topic:%s ver:%s} undefined cluster",
+		log.Error("create topic[%s] %s(%s) {appid:%s cluster:%s topic:%s ver:%s} undefined cluster",
 			appid, r.RemoteAddr, realIp, hisAppid, cluster, topic, ver)
 
 		writeBadRequest(w, "undefined cluster")
@@ -565,7 +564,7 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
 	if !manager.Default.AuthAdmin(appid, pubkey) {
-		log.Warn("suspicous alter topic from %s(%s): {appid:%s pubkey:%s topic:%s ver:%s}",
+		log.Warn("suspicous alter topic from %s(%s) {appid:%s pubkey:%s topic:%s ver:%s}",
 			r.RemoteAddr, realIp, appid, pubkey, topic, ver)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
@@ -574,7 +573,7 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("alter topic[%s] %s(%s): {app:%s topic:%s ver:%s} invalid appid",
+		log.Error("alter topic[%s] %s(%s) {app:%s topic:%s ver:%s} invalid appid",
 			appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
 
 		writeBadRequest(w, "invalid appid")
@@ -583,7 +582,7 @@ func (this *manServer) alterTopicHandler(w http.ResponseWriter, r *http.Request,
 
 	zkcluster := meta.Default.ZkCluster(cluster)
 	if zkcluster == nil {
-		log.Error("alter topic from %s(%s): {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
+		log.Error("alter topic from %s(%s) {appid:%s pubkey:%s cluster:%s topic:%s ver:%s} undefined cluster",
 			r.RemoteAddr, realIp, appid, pubkey, cluster, topic, ver)
 
 		writeBadRequest(w, "undefined cluster")
@@ -652,7 +651,7 @@ func (this *manServer) refreshManagerHandler(w http.ResponseWriter, r *http.Requ
 	realIp := getHttpRemoteIp(r)
 
 	if !manager.Default.AuthAdmin(appid, pubkey) {
-		log.Warn("suspicous refresh call from %s(%s): {app:%s key:%s}",
+		log.Warn("suspicous refresh call from %s(%s) {app:%s key:%s}",
 			r.RemoteAddr, realIp, appid, pubkey)
 
 		writeAuthFailure(w, manager.ErrAuthenticationFail)
@@ -666,7 +665,7 @@ func (this *manServer) refreshManagerHandler(w http.ResponseWriter, r *http.Requ
 
 	kateways, err := this.gw.zkzone.KatewayInfos()
 	if err != nil {
-		log.Error("refresh from %s(%s): %v", r.RemoteAddr, getHttpRemoteIp(r), err)
+		log.Error("refresh from %s(%s) %v", r.RemoteAddr, getHttpRemoteIp(r), err)
 
 		writeServerError(w, err.Error())
 		return

@@ -35,7 +35,7 @@ func (this *manServer) pubRawHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	log.Info("pub raw[%s] %s(%s): {topic:%s ver:%s}", appid, r.RemoteAddr, realIp, topic, ver)
+	log.Info("pub raw[%s] %s(%s) {topic:%s ver:%s}", appid, r.RemoteAddr, realIp, topic, ver)
 
 	var out = map[string]string{
 		"store":   store.DefaultPubStore.Name(),

@@ -1,6 +1,6 @@
 # kateway
 
-A fully-managed real-time secure and reliable RESTful Cloud Pub/Sub streaming message/job service.
+A fully-managed real-time secure and reliable geo-replicated RESTful Cloud Pub/Sub streaming message/job service.
 
     _/    _/              _/
        _/  _/      _/_/_/  _/_/_/_/    _/_/    _/      _/      _/    _/_/_/  _/    _/
