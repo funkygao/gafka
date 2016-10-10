@@ -24,3 +24,20 @@ Arguments for a deferred function call are evaluated when the defer statement is
 
 ### Read and Write Operation Reordering
 
+### how to optimize GC
+
+- reduce objects count
+
+  e,g. var a, b, c, d T -> arr []T{a, b, c, d}: 4 objects become 1 object
+
+### effecient storage of values
+
+    golang 
+    var i int32 = 1234 // i consumes exactly 4 bytes in memory
+
+    python
+    i = 1234           // consumes 24 bytes
+
+    java
+    int i = 1234       // consumes 4 bytes
+    Integer i = new Integer(4) // 24 bytes on 64bit os, 16B on 32bit os

@@ -52,6 +52,7 @@ buildrace:
 heap:
 	go tool pprof http://localhost:9194/debug/pprof/heap
 	go tool pprof --alloc_space http://localhost:9194/debug/pprof/heap
+	go tool pprof --alloc_objects http://localhost:9194/debug/pprof/heap
 
 genkey:
 	@mkdir ssl
