@@ -106,7 +106,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 
 		log.Error("+job[%s] %s(%s) {topic:%s, ver:%s} %s",
 			appid, r.RemoteAddr, realIp, topic, ver, err)
-		writeBadRequest(w, ErrTooBigMessage.Error())
+		writeBadRequest(w, ErrTooBigMessage.Error()) // TODO http.StatusRequestEntityTooLarge
 		return
 	}
 

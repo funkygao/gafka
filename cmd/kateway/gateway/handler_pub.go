@@ -121,7 +121,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), err)
 
 		this.pubMetrics.ClientError.Inc(1)
-		this.respond4XX(appid, w, err.Error(), http.StatusBadRequest)
+		this.respond4XX(appid, w, err.Error(), http.StatusBadRequest) // TODO http.StatusRequestEntityTooLarge
 		return
 	}
 
