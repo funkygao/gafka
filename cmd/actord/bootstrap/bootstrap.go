@@ -117,7 +117,7 @@ func Main() {
 	}
 	log.Trace("hh[%s] started", hh.Default.Name())
 
-	signal.RegisterSignalsHandler(func(sig os.Signal) {
+	signal.RegisterHandler(func(sig os.Signal) {
 		log.Info("actord[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))
 
 		log.Trace("controller[%s] stopping...", c.Id())

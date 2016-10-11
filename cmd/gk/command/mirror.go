@@ -79,7 +79,7 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 		this.zone1, this.cluster1,
 		this.zone2, this.cluster2,
 		gofmt.Comma(int64(limit*8)))
-	signal.RegisterSignalsHandler(func(sig os.Signal) {
+	signal.RegisterHandler(func(sig os.Signal) {
 		log.Printf("received signal: %s", strings.ToUpper(sig.String()))
 		log.Println("quiting...")
 

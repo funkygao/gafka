@@ -63,7 +63,7 @@ func (this *Mount) Run(args []string) (exitCode int) {
 		log.Critical(err)
 	}
 
-	signal.RegisterSignalsHandler(func(sig os.Signal) {
+	signal.RegisterHandler(func(sig os.Signal) {
 		var err error
 		for i := 0; i < 5; i++ {
 			err = fuse.Unmount(this.mountPoint)

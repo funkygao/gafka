@@ -114,7 +114,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		this.consumeCluster(zkcluster, topicName, topicPattern, partitionId, msgChan)
 	}
 
-	signal.RegisterSignalsHandler(func(sig os.Signal) {
+	signal.RegisterHandler(func(sig os.Signal) {
 		log.Printf("received signal: %s", strings.ToUpper(sig.String()))
 		log.Println("quiting...")
 

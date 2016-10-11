@@ -254,7 +254,7 @@ func (this *Gateway) InstanceInfo() []byte {
 func (this *Gateway) Start() (err error) {
 	log.Info("starting gateway[%s@%s]...", gafka.BuildId, gafka.BuiltAt)
 
-	signal.RegisterSignalsHandler(func(sig os.Signal) {
+	signal.RegisterHandler(func(sig os.Signal) {
 		this.shutdownOnce.Do(func() {
 			log.Info("gateway[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))
 
