@@ -12,5 +12,11 @@ ast:
 asm:
 	go tool compile -S foo.go
 
+compile:foo.go
+	go tool compile foo.go
+
+l:compile
+	go tool link -n -v -dumpdep foo.o
+
 help:
 	go tool compile

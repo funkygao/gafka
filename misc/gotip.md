@@ -41,3 +41,7 @@ Arguments for a deferred function call are evaluated when the defer statement is
     java
     int i = 1234       // consumes 4 bytes
     Integer i = new Integer(4) // 24 bytes on 64bit os, 16B on 32bit os
+
+### golang internals
+
+- all init() are executed in a single goroutine during runtime bootstrap
