@@ -21,6 +21,11 @@ type slabClass struct {
 	ch      chan *Message
 }
 
+// round n up to a multiple of a.  a must be a power of 2.
+func round(n, a int) int {
+	return (n + a - 1) &^ (a - 1)
+}
+
 var messagePool = []slabClass{
 	{maxSize: 256, ch: make(chan *Message, 20<<10)},     // 5MB   = 256 * 20K
 	{maxSize: 1024, ch: make(chan *Message, 50<<10)},    // 50MB  = 1K * 50K

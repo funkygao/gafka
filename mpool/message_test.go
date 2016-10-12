@@ -14,3 +14,16 @@ func TestMessageUsage(t *testing.T) {
 	assert.Equal(t, msg, string(m.Body))
 	assert.Equal(t, len(msg), len(m.Body))
 }
+
+func TestRound(t *testing.T) {
+	fixtures := assert.Fixtures{
+		assert.Fixture{Input: 2, Expected: 256},
+		assert.Fixture{Input: 198, Expected: 256},
+		assert.Fixture{Input: 256, Expected: 256},
+	}
+
+	for _, test := range fixtures {
+		assert.Equal(t, test.Expected.(int), round(test.Input.(int), 256))
+	}
+
+}
