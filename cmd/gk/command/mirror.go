@@ -102,6 +102,8 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	c1 := z1.NewCluster(this.cluster1)
 	c2 := z2.NewCluster(this.cluster2)
 
+	setupLogging("mirror.log", "trace", "panic")
+
 	this.runMirror(c1, c2, limit)
 
 	log.Info("bye mirror@%s", gafka.BuildId)
