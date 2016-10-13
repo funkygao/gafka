@@ -28,7 +28,9 @@ func (c *Config) realTopics(topics []string) []string {
 		// higher priority over exclusion
 		for _, t := range topics {
 			if _, present := c.TopicsOnly[t]; present {
-				r = append(r, t)
+				if _, internal := internalTopics[t]; !internal {
+					r = append(r, t)
+				}
 			}
 		}
 
@@ -36,13 +38,20 @@ func (c *Config) realTopics(topics []string) []string {
 	} else if len(c.ExcludedTopics) > 0 {
 		for _, t := range topics {
 			if _, present := c.ExcludedTopics[t]; !present {
-				r = append(r, t)
+				if _, internal := internalTopics[t]; !internal {
+					r = append(r, t)
+				}
 			}
 		}
 
 		return r
 	} else {
-		// TODO __consumer_offsets excluded
-		return topics
+		for _, t := range topics {
+			if _, internal := internalTopics[t]; !internal {
+				r = append(r, t)
+			}
+		}
 	}
+
+	return r
 }
