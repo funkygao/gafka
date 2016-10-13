@@ -60,8 +60,8 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			// FIXME when compressed, the bandwidth calculation is wrong
 			bytesN := len(msg.Topic) + len(msg.Key) + len(msg.Value) + 20 // payload overhead
 			if this.bandwidthRateLimiter != nil && !this.bandwidthRateLimiter.Pour(bytesN) {
-				time.Sleep(backoff)
 				log.Warn("%s -> bandwidth reached, backoff %s", gofmt.ByteSize(this.transferBytes), backoff)
+				time.Sleep(backoff)
 			}
 
 			this.transferBytes += int64(bytesN)
