@@ -72,6 +72,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 
 		case err := <-sub.Errors():
 			log.Error("sub %v", err)
+			return
 		}
 	}
 }
