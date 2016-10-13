@@ -105,6 +105,10 @@ func (this *Consumers) cleanupStaleConsumerGroups(zkzone *zk.ZkZone, clusterPatt
 				continue
 			}
 
+			if !patternMatched(group, this.groupPattern) {
+				continue
+			}
+
 			_, _, err := zkzone.Conn().Children(zkcluster.ConsumerGroupOffsetPath(group))
 			if err == nil {
 				// have offsets, unsafe to delete
