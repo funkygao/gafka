@@ -18,7 +18,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 		stopped <- struct{}{} // notify others I'm done
 	}()
 
-	active := false
+	active := true
 	backoff := time.Second * 8
 	idle := time.Second * 10
 	for {

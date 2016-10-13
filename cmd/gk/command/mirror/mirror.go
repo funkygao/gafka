@@ -86,7 +86,7 @@ func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster, limit int64) {
 	if err != nil {
 		panic(err)
 	}
-	log.Trace("pub[%s/%s] made", c2.ZkZone().Name(), c2.Name())
+	log.Trace("pub[%s/%s] created", c2.ZkZone().Name(), c2.Name())
 
 	go func(pub sarama.AsyncProducer, c *zk.ZkCluster) {
 		for {
