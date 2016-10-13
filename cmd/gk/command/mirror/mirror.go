@@ -24,8 +24,9 @@ import (
 type Mirror struct {
 	Config
 
-	quit chan struct{}
-	once sync.Once
+	startedAt time.Time
+	quit      chan struct{}
+	once      sync.Once
 
 	transferN     int64
 	transferBytes int64
@@ -67,13 +68,15 @@ func (this *Mirror) Main() (exitCode int) {
 
 	this.runMirror(c1, c2, limit)
 
-	log.Info("bye mirror@%s", gafka.BuildId)
+	log.Info("bye mirror@%s, %s", gafka.BuildId, time.Since(this.startedAt))
 	log.Close()
 
 	return
 }
 
 func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster, limit int64) {
+	this.startedAt = time.Now()
+
 	log.Info("start [%s/%s] -> [%s/%s] with bandwidth %sbps",
 		c1.ZkZone().Name(), c1.Name(),
 		c2.ZkZone().Name(), c2.Name(),
