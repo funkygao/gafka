@@ -12,14 +12,14 @@ func (this *Mirror) makePub(c2 *zk.ZkCluster) (sarama.AsyncProducer, error) {
 	cf := sarama.NewConfig()
 	cf.Metadata.RefreshFrequency = time.Minute * 10
 	cf.Metadata.Retry.Max = 3
-	cf.Metadata.Retry.Backoff = time.Millisecond * 10
+	cf.Metadata.Retry.Backoff = time.Second * 3
 
 	cf.Producer.Flush.Frequency = time.Second * 10 // TODO
 	cf.Producer.Flush.Messages = 1000
 	cf.Producer.Flush.MaxMessages = 0 // unlimited
 
 	cf.Producer.RequiredAcks = sarama.NoResponse
-	cf.Producer.Retry.Backoff = time.Millisecond * 10 // gk migrate will trigger this backoff
+	cf.Producer.Retry.Backoff = time.Second * 3
 	cf.Producer.Retry.Max = 3
 
 	switch this.Compress {
