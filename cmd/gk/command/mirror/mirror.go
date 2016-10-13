@@ -122,9 +122,9 @@ func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster, limit int64) {
 			continue
 		}
 
-		log.Info("#%d starting pump [%s/%s] -> [%s/%s] with group %s for topics %+v", round,
+		log.Info("#%d starting pump [%s/%s] -> [%s/%s] %d topics with group %s for %+v", round,
 			c1.ZkZone().Name(), c1.Name(),
-			c2.ZkZone().Name(), c2.Name(), group, topics)
+			c2.ZkZone().Name(), c2.Name(), len(topics), group, topics)
 
 		pumpStopper := make(chan struct{})
 		pumpStopped := make(chan struct{})

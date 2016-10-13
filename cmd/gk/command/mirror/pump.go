@@ -12,7 +12,7 @@ import (
 func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProducer,
 	stop, stopped chan struct{}) {
 	defer func() {
-		log.Info("closing sub...")
+		log.Trace("closing sub, commit offsets...")
 		sub.Close()
 
 		stopped <- struct{}{} // notify others I'm done
@@ -67,7 +67,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			this.transferBytes += int64(bytesN)
 			this.transferN++
 			if this.transferN%this.ProgressStep == 0 {
-				log.Info("%s %s %s", gofmt.Comma(this.transferN), gofmt.ByteSize(this.transferBytes), msg.Topic)
+				log.Trace("%s %s %s", gofmt.Comma(this.transferN), gofmt.ByteSize(this.transferBytes), msg.Topic)
 			}
 
 		case err := <-sub.Errors():
