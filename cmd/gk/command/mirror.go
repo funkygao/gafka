@@ -16,6 +16,7 @@ type Mirror struct {
 	zone1, zone2       string
 	cluster1, cluster2 string
 	excludes           string
+	topics             string
 	debug              bool
 	compress           string
 	autoCommit         bool
@@ -31,6 +32,7 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.cluster1, "c1", "", "")
 	cmdFlags.StringVar(&this.cluster2, "c2", "", "")
 	cmdFlags.StringVar(&this.excludes, "excluded", "", "")
+	cmdFlags.StringVar(&this.topics, "t", "", "")
 	cmdFlags.BoolVar(&this.debug, "debug", false, "")
 	cmdFlags.StringVar(&this.compress, "compress", "", "")
 	cmdFlags.Int64Var(&this.bandwidthLimit, "net", 100, "")
@@ -51,8 +53,14 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 		topicsExcluded[e] = struct{}{}
 	}
 
+	topicsOnly := make(map[string]struct{})
+	for _, t := range strings.Split(this.topics, ",") {
+		topicsOnly[t] = struct{}{}
+	}
+
 	cf := mirror.DefaultConfig()
 	cf.ExcludedTopics = topicsExcluded
+	cf.TopicsOnly = topicsOnly
 	cf.Z1 = this.zone1
 	cf.Z2 = this.zone2
 	cf.C1 = this.cluster1
@@ -91,6 +99,9 @@ Options:
     -c1 from cluster
 
     -c2 to cluster
+
+    -t comma seperated topic names
+      Only mirror for the specified topics.
 
     -exclude comma seperated topic names
 

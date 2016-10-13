@@ -111,6 +111,8 @@ func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster, limit int64) {
 			continue
 		}
 
+		topics = this.realTopics(topics)
+
 		// TODO remove '__consumer_offsets' from topics
 		sub, err := this.makeSub(c1, group, topics)
 		if err != nil {
@@ -141,6 +143,8 @@ func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster, limit int64) {
 				log.Error(err)
 				time.Sleep(time.Second * 10)
 			}
+
+			topics = this.realTopics(topics)
 
 			log.Info("[%s/%s] topics: %+v", c1.ZkZone().Name(), c1.Name(), topics)
 
