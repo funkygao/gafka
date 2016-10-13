@@ -42,6 +42,7 @@ func (c *Config) realTopics(topics []string) []string {
 
 		return r
 	} else {
+		// TODO __consumer_offsets excluded
 		return topics
 	}
 }

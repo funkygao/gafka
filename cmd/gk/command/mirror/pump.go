@@ -19,7 +19,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 	}()
 
 	active := true
-	backoff := time.Second * 8
+	backoff := time.Second * 2
 	idle := time.Second * 10
 	for {
 		select {
@@ -71,7 +71,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			}
 
 		case err := <-sub.Errors():
-			log.Error("sub %v", err)
+			log.Error("quitting pump %v", err)
 			return
 		}
 	}

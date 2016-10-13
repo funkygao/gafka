@@ -103,27 +103,28 @@ func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster, limit int64) {
 
 	group := this.groupName(c1, c2)
 	ever := true
+	round := 0
 	for ever {
+		round++
+
 		topics, topicsChanges, err := c1.WatchTopics()
 		if err != nil {
-			log.Error("[%s/%s]watch topics: %v", c1.ZkZone().Name(), c1.Name(), err)
+			log.Error("#%d [%s/%s]watch topics: %v", round, c1.ZkZone().Name(), c1.Name(), err)
 			time.Sleep(time.Second * 10)
 			continue
 		}
 
 		topics = this.realTopics(topics)
-
-		// TODO remove '__consumer_offsets' from topics
 		sub, err := this.makeSub(c1, group, topics)
 		if err != nil {
-			// TODO how to handle this err?
-			log.Error(err)
+			log.Error("#%d [%s/%s] %v", round, c1.ZkZone().Name(), c1.Name(), err)
 			time.Sleep(time.Second * 10)
+			continue
 		}
 
-		log.Info("starting pump [%s/%s] -> [%s/%s] with group %s",
+		log.Info("#%d starting pump [%s/%s] -> [%s/%s] with group %s for topics %+v", round,
 			c1.ZkZone().Name(), c1.Name(),
-			c2.ZkZone().Name(), c2.Name(), group)
+			c2.ZkZone().Name(), c2.Name(), group, topics)
 
 		pumpStopper := make(chan struct{})
 		pumpStopped := make(chan struct{})
@@ -132,31 +133,18 @@ func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster, limit int64) {
 		select {
 		case <-topicsChanges:
 			// TODO log the diff the topics
-			log.Warn("[%s/%s] topics changed, stopping pump...", c1.Name(), c2.Name())
+			log.Warn("#%d [%s/%s] topics changed, stopping pump...", round, c1.Name(), c2.Name())
 			pumpStopper <- struct{}{} // stop pump
 			<-pumpStopped             // await pump cleanup
 
-			// refresh c1 topics
-			topics, err = c1.Topics()
-			if err != nil {
-				// TODO how to handle this err?
-				log.Error(err)
-				time.Sleep(time.Second * 10)
-			}
-
-			topics = this.realTopics(topics)
-
-			log.Info("[%s/%s] topics: %+v", c1.ZkZone().Name(), c1.Name(), topics)
-
 		case <-this.quit:
-			log.Info("awaiting pump cleanup...")
+			log.Info("#%d awaiting pump cleanup...", round)
 			<-pumpStopped
 
 			ever = false
 
 		case <-pumpStopped:
 			// pump encounters problems, just retry
-			log.Warn("pump stopped for ?")
 		}
 	}
 
