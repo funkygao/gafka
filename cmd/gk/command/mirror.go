@@ -86,7 +86,7 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 
 	limit := 0
 	if this.bandwidthLimit > 0 {
-		limit := (1 << 20) * this.bandwidthLimit / 8
+		limit = (1 << 20) * this.bandwidthLimit / 8
 		this.bandwidthRateLimiter = ratelimiter.NewLeakyBucket(limit, time.Second)
 	}
 
