@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
@@ -93,7 +94,12 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	z2 := zk.NewZkZone(zk.DefaultConfig(this.zone2, ctx.ZoneZkAddrs(this.zone2)))
 	c1 := z1.NewCluster(this.cluster1)
 	c2 := z2.NewCluster(this.cluster2)
+
+	log.Info("starting %s", gafka.BuildId)
 	this.runMirror(c1, c2)
+
+	log.Info("bye %s", gafka.BuildId)
+	log.Close()
 
 	return
 }
@@ -152,10 +158,11 @@ LOOP:
 
 		case <-pumpStopped:
 			// pump encounters problems, just retry
-
+			log.Warn("pump stopped for ?")
 		}
 	}
 
+	log.Info("closing pub...")
 	pub.Close()
 }
 
@@ -203,9 +210,8 @@ func (this *Mirror) makeSub(c1 *zk.ZkCluster, group string, topics []string) (*c
 func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProducer,
 	stop, stopped chan struct{}) {
 	defer func() {
-		log.Info("pump cleanup...")
+		log.Info("closing sub...")
 		sub.Close()
-		log.Info("pump cleanup ok")
 
 		stopped <- struct{}{} // notify others I'm done
 	}()
@@ -217,13 +223,14 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 				return
 
 			case err := <-pub.Errors():
-				log.Error(err.Error())
+				log.Error("pub %v", err)
 			}
 		}
 	}(pub)
 
 	log.Info("start pumping")
 	active := false
+	backoff := time.Second * 2
 	for {
 		select {
 		case <-this.quit:
@@ -256,18 +263,20 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			// FIXME when compressed, the bandwidth calculation is wrong
 			bytesN := len(msg.Topic) + len(msg.Key) + len(msg.Value) + 20 // payload overhead
 			if !this.bandwidthRateLimiter.Pour(bytesN) {
-				time.Sleep(time.Second)
-				this.Ui.Warn(fmt.Sprintf("%s -> bandwidth reached, backoff 1s", gofmt.Comma(this.transferBytes)))
+				time.Sleep(backoff)
+				log.Warn("%s -> bandwidth reached, backoff %s", gofmt.ByteSize(this.transferBytes), backoff)
 			}
 			this.transferBytes += int64(bytesN)
 
 			this.transferN++
 			if this.transferN%this.progressStep == 0 {
-				log.Info(gofmt.Comma(this.transferN))
+				log.Info("%s %s %s", msg.Topic, gofmt.Comma(this.transferN), gofmt.ByteSize(this.transferBytes))
 			}
 
-		case err := <-sub.Errors():
-			log.Error(err.Error())
+		case err, ok := <-sub.Errors():
+			if ok {
+				log.Error("sub %v", err)
+			}
 		}
 	}
 }
