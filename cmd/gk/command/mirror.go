@@ -238,7 +238,8 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 
 	log.Info("start pumping")
 	active := false
-	backoff := time.Second * 3
+	backoff := time.Second * 8
+	idle := time.Second * 10
 	for {
 		select {
 		case <-this.quit:
@@ -248,7 +249,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			// yes sir!
 			return
 
-		case <-time.After(time.Second * 10):
+		case <-time.After(idle):
 			active = false
 			log.Info("idle 10s waiting for new message")
 
