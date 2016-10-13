@@ -24,10 +24,12 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 	for {
 		select {
 		case <-this.quit:
+			log.Trace("got signal quit")
 			return
 
 		case <-stop:
 			// yes sir!
+			log.Trace("got signal stop")
 			return
 
 		case <-time.After(idle):
