@@ -75,12 +75,6 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	}
 
 	this.quit = make(chan struct{})
-	limit := (1 << 20) * this.bandwidthLimit / 8
-	this.bandwidthRateLimiter = ratelimiter.NewLeakyBucket(limit, time.Second)
-	log.Info("start [%s/%s] -> [%s/%s] with bandwidth %sbps",
-		this.zone1, this.cluster1,
-		this.zone2, this.cluster2,
-		gofmt.Comma(int64(limit*8)))
 	signal.RegisterHandler(func(sig os.Signal) {
 		log.Info("received signal: %s", strings.ToUpper(sig.String()))
 		log.Info("quiting...")
@@ -89,6 +83,17 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 			close(this.quit)
 		})
 	}, syscall.SIGINT, syscall.SIGTERM)
+
+	limit := 0
+	if this.bandwidthLimit > 0 {
+		limit := (1 << 20) * this.bandwidthLimit / 8
+		this.bandwidthRateLimiter = ratelimiter.NewLeakyBucket(limit, time.Second)
+	}
+
+	log.Info("start [%s/%s] -> [%s/%s] with bandwidth %sbps",
+		this.zone1, this.cluster1,
+		this.zone2, this.cluster2,
+		gofmt.Comma(int64(limit*8)))
 
 	z1 := zk.NewZkZone(zk.DefaultConfig(this.zone1, ctx.ZoneZkAddrs(this.zone1)))
 	z2 := zk.NewZkZone(zk.DefaultConfig(this.zone2, ctx.ZoneZkAddrs(this.zone2)))
@@ -262,12 +267,12 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			// rate limit, never overflood the limited bandwidth between IDCs
 			// FIXME when compressed, the bandwidth calculation is wrong
 			bytesN := len(msg.Topic) + len(msg.Key) + len(msg.Value) + 20 // payload overhead
-			if !this.bandwidthRateLimiter.Pour(bytesN) {
+			if this.bandwidthRateLimiter != nil && !this.bandwidthRateLimiter.Pour(bytesN) {
 				time.Sleep(backoff)
 				log.Warn("%s -> bandwidth reached, backoff %s", gofmt.ByteSize(this.transferBytes), backoff)
 			}
-			this.transferBytes += int64(bytesN)
 
+			this.transferBytes += int64(bytesN)
 			this.transferN++
 			if this.transferN%this.progressStep == 0 {
 				log.Info("%s %s %s", msg.Topic, gofmt.Comma(this.transferN), gofmt.ByteSize(this.transferBytes))
@@ -308,6 +313,7 @@ Options:
 
     -net bandwidth limit in Mbps
       Defaults 100Mbps.
+      0 means unlimited.
 
     -step n
       Defaults 5000.
