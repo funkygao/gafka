@@ -180,6 +180,7 @@ d37c73f2b2bce85f7fa16b6a550d26c5372892ef
 
 ### TODO
 
+- [ ] mirror, when destination dies stop consuming
 - [ ] tagged metrics
 - [ ] Content-Length if batch pub
 - [ ] haproxy metrics export to InfluxDB
