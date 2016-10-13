@@ -23,6 +23,7 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+// target kafka auto.create.topics.enable=true
 type Mirror struct {
 	Ui  cli.Ui
 	Cmd string
@@ -111,8 +112,8 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 
 func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster, limit int64) {
 	log.Info("start [%s/%s] -> [%s/%s] with bandwidth %sbps",
-		this.zone1, this.cluster1,
-		this.zone2, this.cluster2,
+		c1.ZkZone().Name(), c1.Name(),
+		c2.ZkZone().Name(), c2.Name(),
 		gofmt.Comma(limit*8))
 
 	pub, err := this.makePub(c2)
@@ -126,24 +127,33 @@ func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster, limit int64) {
 				return
 
 			case err := <-pub.Errors():
+				// TODO
 				log.Error("pub[%s/%s] %v", c.ZkZone().Name(), c.Name(), err)
 			}
 		}
 	}(pub, c2)
 
-	topics, topicsChanges, err := c1.WatchTopics()
-	swallow(err)
-	log.Trace("[%s/%s] watch topics: %+v", c1.ZkZone().Name(), c1.Name(), topics)
-
 	group := this.groupName(c1, c2)
 	ever := true
 	for ever {
+		topics, topicsChanges, err := c1.WatchTopics()
+		if err != nil {
+			log.Error("[%s/%s]watch topics: %v", c1.ZkZone().Name(), c1.Name(), err)
+			time.Sleep(time.Second * 10)
+			continue
+		}
+
+		// TODO remove '__consumer_offsets' from topics
 		sub, err := this.makeSub(c1, group, topics)
 		if err != nil {
 			// TODO how to handle this err?
 			log.Error(err)
 			time.Sleep(time.Second * 10)
 		}
+
+		log.Info("starting pump [%s/%s] -> [%s/%s] with group %s",
+			c1.ZkZone().Name(), c1.Name(),
+			c2.ZkZone().Name(), c2.Name(), group)
 
 		pumpStopper := make(chan struct{})
 		pumpStopped := make(chan struct{})
@@ -236,7 +246,6 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 		stopped <- struct{}{} // notify others I'm done
 	}()
 
-	log.Info("start pumping")
 	active := false
 	backoff := time.Second * 8
 	idle := time.Second * 10
@@ -287,10 +296,8 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 				log.Info("%s %s %s", gofmt.Comma(this.transferN), gofmt.ByteSize(this.transferBytes), msg.Topic)
 			}
 
-		case err, ok := <-sub.Errors():
-			if ok {
-				log.Error("sub %v", err)
-			}
+		case err := <-sub.Errors():
+			log.Error("sub %v", err)
 		}
 	}
 }
