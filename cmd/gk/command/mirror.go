@@ -58,7 +58,7 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.compress, "compress", "", "")
 	cmdFlags.Int64Var(&this.bandwidthLimit, "net", 100, "")
 	cmdFlags.BoolVar(&this.autoCommit, "commit", true, "")
-	cmdFlags.Int64Var(&this.progressStep, "step", 5000, "")
+	cmdFlags.Int64Var(&this.progressStep, "step", 10000, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -84,50 +84,61 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 		})
 	}, syscall.SIGINT, syscall.SIGTERM)
 
-	limit := int64(0)
+	limit := (1 << 20) * this.bandwidthLimit / 8
 	if this.bandwidthLimit > 0 {
-		limit = (1 << 20) * this.bandwidthLimit / 8
-		this.bandwidthRateLimiter = ratelimiter.NewLeakyBucket(limit, time.Second)
+		this.bandwidthRateLimiter = ratelimiter.NewLeakyBucket(limit*10, time.Second*10)
 	}
 
-	log.Info("start [%s/%s] -> [%s/%s] with bandwidth %sbps",
-		this.zone1, this.cluster1,
-		this.zone2, this.cluster2,
-		gofmt.Comma(int64(limit*8)))
+	log.Info("starting mirror@%s", gafka.BuildId)
+
+	// pprof
+	debugAddr := "localhost:10009"
+	go http.ListenAndServe(debugAddr, nil)
+	log.Info("pprof ready on %s", debugAddr)
 
 	z1 := zk.NewZkZone(zk.DefaultConfig(this.zone1, ctx.ZoneZkAddrs(this.zone1)))
 	z2 := zk.NewZkZone(zk.DefaultConfig(this.zone2, ctx.ZoneZkAddrs(this.zone2)))
 	c1 := z1.NewCluster(this.cluster1)
 	c2 := z2.NewCluster(this.cluster2)
 
-	log.Info("starting %s", gafka.BuildId)
-	this.runMirror(c1, c2)
+	this.runMirror(c1, c2, limit)
 
-	log.Info("bye %s", gafka.BuildId)
+	log.Info("bye mirror@%s", gafka.BuildId)
 	log.Close()
 
 	return
 }
 
-func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster) {
+func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster, limit int64) {
+	log.Info("start [%s/%s] -> [%s/%s] with bandwidth %sbps",
+		this.zone1, this.cluster1,
+		this.zone2, this.cluster2,
+		gofmt.Comma(limit*8))
+
 	pub, err := this.makePub(c2)
 	swallow(err)
+	log.Trace("pub[%s/%s] made", c2.ZkZone().Name(), c2.Name())
+
+	go func(pub sarama.AsyncProducer, c *zk.ZkCluster) {
+		for {
+			select {
+			case <-this.quit:
+				return
+
+			case err := <-pub.Errors():
+				log.Error("pub[%s/%s] %v", c.ZkZone().Name(), c.Name(), err)
+			}
+		}
+	}(pub, c2)
 
 	topics, topicsChanges, err := c1.WatchTopics()
 	swallow(err)
-
-	log.Info("[%s/%s] topics: %+v", c1.ZkZone().Name(), c1.Name(), topics)
+	log.Trace("[%s/%s] watch topics: %+v", c1.ZkZone().Name(), c1.Name(), topics)
 
 	group := this.groupName(c1, c2)
-	sub, err := this.makeSub(c1, group, topics)
-	swallow(err)
-
-	// pprof
-	go http.ListenAndServe("localhost:10009", nil)
-
-LOOP:
-	for {
-		sub, err = this.makeSub(c1, group, topics)
+	ever := true
+	for ever {
+		sub, err := this.makeSub(c1, group, topics)
 		if err != nil {
 			// TODO how to handle this err?
 			log.Error(err)
@@ -140,6 +151,7 @@ LOOP:
 
 		select {
 		case <-topicsChanges:
+			// TODO log the diff the topics
 			log.Warn("[%s/%s] topics changed, stopping pump...", c1.Name(), c2.Name())
 			pumpStopper <- struct{}{} // stop pump
 			<-pumpStopped             // await pump cleanup
@@ -149,6 +161,7 @@ LOOP:
 			if err != nil {
 				// TODO how to handle this err?
 				log.Error(err)
+				time.Sleep(time.Second * 10)
 			}
 
 			log.Info("[%s/%s] topics: %+v", c1.ZkZone().Name(), c1.Name(), topics)
@@ -156,16 +169,18 @@ LOOP:
 		case <-this.quit:
 			log.Info("awaiting pump cleanup...")
 			<-pumpStopped
-			log.Info("total transferred: %s %smsgs",
-				gofmt.ByteSize(this.transferBytes),
-				gofmt.Comma(this.transferN))
-			break LOOP
+
+			ever = false
 
 		case <-pumpStopped:
 			// pump encounters problems, just retry
 			log.Warn("pump stopped for ?")
 		}
 	}
+
+	log.Info("total transferred: %s %smsgs",
+		gofmt.ByteSize(this.transferBytes),
+		gofmt.Comma(this.transferN))
 
 	log.Info("closing pub...")
 	pub.Close()
@@ -221,21 +236,9 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 		stopped <- struct{}{} // notify others I'm done
 	}()
 
-	go func(pub sarama.AsyncProducer) {
-		for {
-			select {
-			case <-this.quit:
-				return
-
-			case err := <-pub.Errors():
-				log.Error("pub %v", err)
-			}
-		}
-	}(pub)
-
 	log.Info("start pumping")
 	active := false
-	backoff := time.Second * 2
+	backoff := time.Second * 3
 	for {
 		select {
 		case <-this.quit:
@@ -247,11 +250,16 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 
 		case <-time.After(time.Second * 10):
 			active = false
-			log.Info("idle 10s waiting for new msg")
+			log.Info("idle 10s waiting for new message")
 
-		case msg := <-sub.Messages():
+		case msg, ok := <-sub.Messages():
+			if !ok {
+				log.Warn("sub encounters end of message stream")
+				return
+			}
+
 			if !active || this.debug {
-				log.Info("<-[%d] T:%s M:%s", this.transferN, msg.Topic, string(msg.Value))
+				log.Info("<-[#%d] T:%s M:%s", this.transferN, msg.Topic, string(msg.Value))
 			}
 			active = true
 
@@ -275,7 +283,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 			this.transferBytes += int64(bytesN)
 			this.transferN++
 			if this.transferN%this.progressStep == 0 {
-				log.Info("%s %s %s", msg.Topic, gofmt.Comma(this.transferN), gofmt.ByteSize(this.transferBytes))
+				log.Info("%s %s %s", gofmt.Comma(this.transferN), gofmt.ByteSize(this.transferBytes), msg.Topic)
 			}
 
 		case err, ok := <-sub.Errors():
@@ -287,7 +295,7 @@ func (this *Mirror) pump(sub *consumergroup.ConsumerGroup, pub sarama.AsyncProdu
 }
 
 func (*Mirror) Synopsis() string {
-	return "Continuously copy data between two Kafka clusters"
+	return "Continuously copy data between two remote Kafka clusters"
 }
 
 func (this *Mirror) Help() string {
