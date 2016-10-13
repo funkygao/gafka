@@ -109,9 +109,10 @@ func (this *Consumers) cleanupStaleConsumerGroups(zkzone *zk.ZkZone, clusterPatt
 				continue
 			}
 
-			_, _, err := zkzone.Conn().Children(zkcluster.ConsumerGroupOffsetPath(group))
+			path := zkcluster.ConsumerGroupOffsetPath(group)
+			_, _, err := zkzone.Conn().Children(path)
 			if err == nil {
-				// have offsets, unsafe to delete
+				this.Ui.Warn(fmt.Sprintf("%s not empty, unsafe to cleanup", path))
 				continue
 			}
 
