@@ -52,12 +52,16 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 
 	topicsExcluded := make(map[string]struct{})
 	for _, e := range strings.Split(this.excludes, ",") {
-		topicsExcluded[e] = struct{}{}
+		if e != "" {
+			topicsExcluded[e] = struct{}{}
+		}
 	}
 
 	topicsOnly := make(map[string]struct{})
 	for _, t := range strings.Split(this.topics, ",") {
-		topicsOnly[t] = struct{}{}
+		if t != "" {
+			topicsOnly[t] = struct{}{}
+		}
 	}
 
 	cf := mirror.DefaultConfig()
