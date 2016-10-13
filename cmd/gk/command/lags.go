@@ -27,6 +27,7 @@ type Lags struct {
 	problematicMode bool
 	tableFmt        bool
 	lagThreshold    int
+	lagTotal        int64
 }
 
 func (this *Lags) Run(args []string) (exitCode int) {
@@ -82,6 +83,8 @@ func (this *Lags) Run(args []string) (exitCode int) {
 			printSwallowedErrors(this.Ui, zkzone)
 		}
 
+		this.Ui.Output(fmt.Sprintf("Lag totals: %s", gofmt.Comma(this.lagTotal)))
+
 		return
 	}
 
@@ -106,6 +109,8 @@ func (this *Lags) Run(args []string) (exitCode int) {
 
 		printSwallowedErrors(this.Ui, zkzone)
 	}
+
+	this.Ui.Output(fmt.Sprintf("Lag totals: %s", gofmt.Comma(this.lagTotal)))
 
 	return
 }
@@ -154,6 +159,8 @@ func (this *Lags) printConsumersLagTable(zkcluster *zk.ZkCluster) {
 				this.Ui.Warn(fmt.Sprintf("%+v has no znode", consumer))
 				continue
 			}
+
+			this.lagTotal += consumer.Lag
 
 			lines = append(lines,
 				fmt.Sprintf("%s|%s/%s|%s|%s|%s|%s|%s",
@@ -242,6 +249,8 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 						uptime = gofmt.PrettySince(consumer.ConsumerZnode.Uptime())
 					}
 				}
+
+				this.lagTotal += consumer.Lag
 
 				lines = append(lines, fmt.Sprintf("\t%s %35s/%-2s %12s -> %-15s %s %-10s %s %s",
 					symbol,
