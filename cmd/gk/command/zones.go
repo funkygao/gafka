@@ -18,6 +18,7 @@ type Zones struct {
 	plain      bool
 	longFmt    bool
 	influxOnly bool
+	nameOnly   bool
 	zone       string
 }
 
@@ -27,6 +28,7 @@ func (this *Zones) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.BoolVar(&this.plain, "plain", false, "")
 	cmdFlags.BoolVar(&this.longFmt, "l", true, "")
+	cmdFlags.BoolVar(&this.nameOnly, "s", false, "")
 	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.BoolVar(&this.influxOnly, "i", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -93,6 +95,13 @@ func (this *Zones) Run(args []string) (exitCode int) {
 
 	}
 
+	if this.nameOnly {
+		for _, z := range zones {
+			fmt.Println(z[0])
+		}
+		return
+	}
+
 	if this.plain {
 		for _, z := range zones {
 			this.Ui.Output(fmt.Sprintf("%s:", z[0]))
@@ -131,6 +140,10 @@ Options:
 
     -l
       Use a long listing format.
+
+    -s
+      Use a short(name only) format.
+      Script friendly. i,e. for z in `gk zones -s`;do echo $i done
 
     -i
       Only display zones that has InfluxDB instances.
