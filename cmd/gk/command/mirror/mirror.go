@@ -20,7 +20,19 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+// Mirror maintains a replica of an existing kafka cluster.
+//
+//               mirror
+// kafka(source) ------------------> kafka(target)
+//               topics discover
+//               consumer balancing
+//
 // target kafka auto.create.topics.enable=true
+//
+// TODO
+// * sync pub to assure no message lost
+// * pub pool
+// * we might add a data channel between pub and sub
 type Mirror struct {
 	Config
 
