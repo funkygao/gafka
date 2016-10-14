@@ -97,7 +97,8 @@ func (this *Zones) Run(args []string) (exitCode int) {
 
 	if this.nameOnly {
 		for _, z := range zones {
-			fmt.Println(z[0])
+			// default zone name ends with '*'
+			fmt.Println(strings.TrimRight(z[0], "*"))
 		}
 		return
 	}
