@@ -23,6 +23,7 @@ type Mirror struct {
 	logLevel           string
 	bandwidthLimit     int64
 	progressStep       int64
+	showStatus         bool
 }
 
 func (this *Mirror) Run(args []string) (exitCode int) {
@@ -36,6 +37,7 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.topics, "t", "", "")
 	cmdFlags.StringVar(&this.logLevel, "level", "trace", "")
 	cmdFlags.BoolVar(&this.debug, "debug", false, "")
+	cmdFlags.BoolVar(&this.showStatus, "stat", false, "")
 	cmdFlags.StringVar(&this.compress, "compress", "", "")
 	cmdFlags.Int64Var(&this.bandwidthLimit, "net", 100, "")
 	cmdFlags.BoolVar(&this.autoCommit, "commit", true, "")
@@ -72,6 +74,7 @@ func (this *Mirror) Run(args []string) (exitCode int) {
 	cf.C1 = this.cluster1
 	cf.C2 = this.cluster2
 	cf.Debug = this.debug
+	cf.ShowStatus = this.showStatus
 	cf.Compress = this.compress
 	cf.BandwidthLimit = this.bandwidthLimit
 	cf.AutoCommit = this.autoCommit
@@ -110,6 +113,9 @@ Options:
       Only mirror for the specified topics.
 
     -level [debug|trace|info]
+
+    -stat
+      Show status. TODO
 
     -exclude comma seperated topic names
 

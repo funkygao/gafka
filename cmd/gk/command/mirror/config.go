@@ -10,11 +10,13 @@ type Config struct {
 	Debug          bool
 	AutoCommit     bool
 	ProgressStep   int64
+	ShowStatus     bool
 }
 
 func DefaultConfig() *Config {
 	return &Config{
 		Debug:          false,
+		ShowStatus:     false,
 		AutoCommit:     true,
 		ProgressStep:   5000,
 		ExcludedTopics: make(map[string]struct{}),
