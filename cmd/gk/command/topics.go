@@ -32,6 +32,7 @@ type Topics struct {
 	totalOffsets int64
 	ipInNumber   bool
 	plainMode    bool
+	count        int64
 	since        time.Duration
 }
 
@@ -66,6 +67,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&configged, "cf", false, "")
 	cmdFlags.BoolVar(&debug, "debug", false, "")
 	cmdFlags.BoolVar(&resetConf, "cfreset", false, "")
+	cmdFlags.Int64Var(&this.count, "count", 0, "")
 	cmdFlags.IntVar(&retentionInMinute, "retention", -1, "")
 	cmdFlags.IntVar(&replicas, "replicas", 2, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -80,6 +82,10 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		requireAdminRights("-add", "-del", "-retention").
 		invalid(args) {
 		return 2
+	}
+
+	if this.count > 0 {
+		this.verbose = true
 	}
 
 	if debug {
@@ -427,6 +433,10 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 				sarama.OffsetOldest)
 			swallow(err)
 
+			if this.count > 0 && (latestOffset-oldestOffset) < this.count {
+				continue
+			}
+
 			this.totalMsgs += latestOffset - oldestOffset
 			this.totalOffsets += latestOffset
 			if !underReplicated {
@@ -547,6 +557,9 @@ Options:
     
     -l
       Use a long listing format.
+
+    -count n
+      List topics those have flat message < n.
 
     -since duration
       Only display topics with ctime more recent than $since.
