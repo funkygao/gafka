@@ -143,7 +143,7 @@ Options:
 
     -s
       Use a short(name only) format.
-      Script friendly. i,e. for z in `gk zones -s`;do echo $i done
+      Script friendly.
 
     -i
       Only display zones that has InfluxDB instances.
