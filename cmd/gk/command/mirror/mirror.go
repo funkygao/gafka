@@ -107,6 +107,8 @@ func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster, limit int64) {
 				return
 
 			case err := <-pub.Errors():
+				// messages will only be returned here after all retry attempts are exhausted.
+				//
 				// e,g
 				// Failed to produce message to topic xx: write tcp src->kfk: i/o timeout
 				// kafka: broker not connected

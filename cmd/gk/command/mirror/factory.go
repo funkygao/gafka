@@ -14,11 +14,10 @@ func (this *Mirror) makePub(c2 *zk.ZkCluster) (sarama.AsyncProducer, error) {
 	cf.Metadata.Retry.Max = 3
 	cf.Metadata.Retry.Backoff = time.Second * 3
 
-	cf.Producer.Flush.Frequency = time.Second * 10 // TODO
+	cf.Producer.Flush.Frequency = time.Second // TODO
 	cf.Producer.Flush.Messages = 1000
 	cf.Producer.Flush.MaxMessages = 0 // unlimited
-
-	cf.Producer.RequiredAcks = sarama.NoResponse
+	cf.Producer.RequiredAcks = sarama.WaitForLocal
 	cf.Producer.Retry.Backoff = time.Second * 3
 	cf.Producer.Retry.Max = 3
 
