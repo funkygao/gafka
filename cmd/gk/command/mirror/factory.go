@@ -16,12 +16,16 @@ func (this *Mirror) makePub(c2 *zk.ZkCluster) (sarama.AsyncProducer, error) {
 
 	cf.ChannelBufferSize = 1000
 
-	cf.Producer.Flush.Frequency = time.Second // TODO
-	cf.Producer.Flush.Messages = 2000
-	cf.Producer.Flush.MaxMessages = 0 // unlimited
+	cf.Producer.Return.Errors = true
+	cf.Producer.Flush.Messages = 2000         // 2000 message in batch
+	cf.Producer.Flush.Frequency = time.Second // flush interval
+	cf.Producer.Flush.MaxMessages = 0         // unlimited
 	cf.Producer.RequiredAcks = sarama.WaitForLocal
-	cf.Producer.Retry.Backoff = time.Second * 3
+	cf.Producer.Retry.Backoff = time.Second * 4
 	cf.Producer.Retry.Max = 3
+	cf.Net.DialTimeout = time.Second * 30
+	cf.Net.WriteTimeout = time.Second * 30
+	cf.Net.ReadTimeout = time.Second * 30
 
 	switch this.Compress {
 	case "gzip":
@@ -38,7 +42,8 @@ func (this *Mirror) makeSub(c1 *zk.ZkCluster, group string, topics []string) (*c
 	cf.Zookeeper.Chroot = c1.Chroot()
 	cf.Offsets.CommitInterval = time.Second * 10
 	cf.Offsets.ProcessingTimeout = time.Second
-	cf.ChannelBufferSize = 100
+	cf.Consumer.Offsets.Initial = sarama.OffsetOldest
+	cf.ChannelBufferSize = 256
 	cf.Consumer.Return.Errors = true
 	cf.OneToOne = false
 
