@@ -107,7 +107,9 @@ func (this *Mirror) runMirror(c1, c2 *zk.ZkCluster, limit int64) {
 				return
 
 			case err := <-pub.Errors():
-				// TODO
+				// e,g
+				// Failed to produce message to topic xx: write tcp src->kfk: i/o timeout
+				// kafka: broker not connected
 				log.Error("pub[%s/%s] %v", c.ZkZone().Name(), c.Name(), err)
 			}
 		}
