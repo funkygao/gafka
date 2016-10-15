@@ -120,6 +120,10 @@ func patternMatched(s, pattern string) bool {
 			return !strings.Contains(s, pattern[1:])
 		}
 
+		if pattern[0] == '=' {
+			return s == pattern[1:]
+		}
+
 		if !strings.Contains(s, pattern) {
 			return false
 		}
