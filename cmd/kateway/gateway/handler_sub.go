@@ -24,6 +24,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		hisAppid   string
 		reset      string
 		group      string
+		realGroup  string
 		shadow     string
 		rawTopic   string
 		partition  string
@@ -41,6 +42,8 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 
 	query := r.URL.Query()
 	group = query.Get("group")
+	myAppid = r.Header.Get(HttpHeaderAppid)
+	realGroup = myAppid + "." + group
 	reset = query.Get("reset")
 	realIp := getHttpRemoteIp(r)
 
@@ -51,7 +54,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
-	if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(group, 0) {
+	if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(realGroup, 0) {
 		this.goodGroupLock.RLock()
 		_, good := this.goodGroupClients[r.RemoteAddr]
 		this.goodGroupLock.RUnlock()
@@ -78,7 +81,6 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	ver = params.ByName(UrlParamVersion)
 	topic = params.ByName(UrlParamTopic)
 	hisAppid = params.ByName(UrlParamAppid)
-	myAppid = r.Header.Get(HttpHeaderAppid)
 
 	// auth
 	if err = manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
@@ -179,7 +181,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	}
 
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
-		myAppid+"."+group, r.RemoteAddr, realIp, reset, Options.PermitStandbySub)
+		realGroup, r.RemoteAddr, realIp, reset, Options.PermitStandbySub)
 	if err != nil {
 		// e,g. kafka was totally shutdown
 		// e,g. too many consumers for the same group
@@ -190,7 +192,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 			writeServerError(w, err.Error())
 		} else {
 			this.subMetrics.ClientError.Mark(1)
-			if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(group, 1) {
+			if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(realGroup, 1) {
 				writeQuotaExceeded(w)
 			} else {
 				writeBadRequest(w, err.Error())
@@ -230,14 +232,14 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 				writeServerError(w, err.Error())
 			} else {
 				this.subMetrics.ClientError.Mark(1)
-				if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(group, 1) {
+				if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(realGroup, 1) {
 					writeQuotaExceeded(w)
 				} else {
 					writeBadRequest(w, err.Error())
 				}
 			}
 		} else if Options.BadGroupRateLimit && !store.DefaultSubStore.IsSystemError(err) {
-			this.throttleBadGroup.Pour(group, 1)
+			this.throttleBadGroup.Pour(realGroup, 1)
 		}
 
 		// fetch.Close might be called by subServer.closedConnCh
