@@ -90,6 +90,7 @@ func (this *Gateway) buildRouting() {
 		// health check
 		this.subServer.Router().GET("/alive", m(this.checkAliveHandler))
 
+		this.subServer.Router().GET("/v1/raw/msgs/:cluster/:topic", m(this.subServer.subRawHandler))
 		this.subServer.Router().GET("/v1/msgs/:appid/:topic/:ver", m(this.subServer.subHandler))
 		this.subServer.Router().PUT("/v1/msgs/:appid/:topic/:ver", m(this.subServer.buryHandler))
 		this.subServer.Router().GET("/v1/ws/msgs/:appid/:topic/:ver", m(this.subServer.subWsHandler))
