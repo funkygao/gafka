@@ -2,6 +2,12 @@
 
 ## kateway
 
+### 0.3.1
+
+Features:
+
+* [ ] sub raw kafka topic
+
 ### 0.3 - 2016-09-26
 
 **Upgrade from 0.2.6**: APIs for manager contain backwards incompatible changes.
