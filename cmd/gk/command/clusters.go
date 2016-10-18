@@ -219,7 +219,7 @@ func (this *Clusters) printRegisteredBrokers(zkzone *zk.ZkZone) {
 		this.Ui.Output(fmt.Sprintf("    %s(%s)", info.Name(), info.Nickname))
 		registeredBrokers := info.Roster
 		if len(registeredBrokers) == 0 {
-			this.Ui.Warn("        brokers not defined")
+			this.Ui.Warn("        brokers not registered")
 		} else {
 			for _, b := range registeredBrokers {
 				if this.ipInNumber {
@@ -444,7 +444,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, po
 			sort.Strings(brokers)
 			this.Ui.Info(color.Green("%31s %s", " ", strings.Join(brokers, ", ")))
 		} else {
-			this.Ui.Warn(fmt.Sprintf("%31s no live brokers", " "))
+			this.Ui.Warn(fmt.Sprintf("%31s no live registered brokers", " "))
 		}
 	}
 
