@@ -21,6 +21,8 @@ type Manager interface {
 	// Signature returns the hashed appid:secret of an app for identification.
 	Signature(appid string) string
 
+	Auth(appid, secret string) error
+
 	AllowSubWithUnregisteredGroup(bool)
 
 	// KafkaTopic returns raw kafka topic name.

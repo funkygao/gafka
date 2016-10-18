@@ -74,6 +74,10 @@ func (this *dummyStore) ForceRefresh() {
 
 }
 
+func (this *dummyStore) Auth(appid, secret string) error {
+	return nil
+}
+
 func (this *dummyStore) AuthAdmin(appid, pubkey string) bool {
 	return true
 }

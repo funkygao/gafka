@@ -124,6 +124,19 @@ func (this *mysqlStore) AuthAdmin(appid, pubkey string) bool {
 	return false
 }
 
+func (this *mysqlStore) Auth(appid, secret string) error {
+	if appid == "" || secret == "" {
+		return manager.ErrEmptyIdentity
+	}
+
+	// authentication
+	if s, present := this.appSecretMap[appid]; !present || s != secret {
+		return manager.ErrAuthenticationFail
+	}
+
+	return nil
+}
+
 func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 	appid = this.dev2app(appid)
 
