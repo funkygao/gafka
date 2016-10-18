@@ -55,7 +55,7 @@ func (this *subServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 	cluster = params.ByName("cluster")
 	myAppid = r.Header.Get(HttpHeaderAppid)
 
-	log.Debug("sub raw[%s/%s] %s(%s) {%s %s batch:%d UA:%s}",
+	log.Debug("sub raw[%s/%s] %s(%s) {%s/%s batch:%d UA:%s}",
 		myAppid, group, r.RemoteAddr, realIp, cluster, topic, limit, r.Header.Get("User-Agent"))
 
 	if !Options.DisableMetrics {
@@ -67,7 +67,7 @@ func (this *subServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 	if err != nil {
 		// e,g. kafka was totally shutdown
 		// e,g. too many consumers for the same group
-		log.Error("sub raw[%s/%s] %s(%s) {%s %s batch:%d UA:%s} %v",
+		log.Error("sub raw[%s/%s] %s(%s) {%s/%s batch:%d UA:%s} %v",
 			myAppid, group, r.RemoteAddr, realIp, cluster, topic, limit, r.Header.Get("User-Agent"), err)
 
 		if store.DefaultSubStore.IsSystemError(err) {
@@ -85,7 +85,7 @@ func (this *subServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 	if err != nil {
 		// e,g. broken pipe, io timeout, client gone
 		// e,g. kafka: error while consuming app1.foobar.v1/0: EOF (kafka was shutdown)
-		log.Error("sub raw[%s/%s] %s(%s) {%s %s batch:%d UA:%s} %v",
+		log.Error("sub raw[%s/%s] %s(%s) {%s/%s batch:%d UA:%s} %v",
 			myAppid, group, r.RemoteAddr, realIp, cluster, topic, limit, r.Header.Get("User-Agent"), err)
 
 		if err != ErrClientGone {
@@ -98,7 +98,7 @@ func (this *subServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 
 		// fetch.Close might be called by subServer.closedConnCh
 		if err = fetcher.Close(); err != nil {
-			log.Error("sub raw[%s/%s] %s(%s) {%s %s batch:%d UA:%s} %v",
+			log.Error("sub raw[%s/%s] %s(%s) {%s/%s batch:%d UA:%s} %v",
 				myAppid, group, r.RemoteAddr, realIp, cluster, topic, limit, r.Header.Get("User-Agent"), err)
 		}
 	}
@@ -174,6 +174,8 @@ func (this *subServer) pumpRawMessages(w http.ResponseWriter, r *http.Request, r
 					// when remote close silently, the write still ok
 					return err
 				}
+
+				fetcher.CommitUpto(msg)
 			} else {
 				// batch mode, write MessageSet
 				// MessageSet => [Partition(int32) Offset(int64) MessageSize(int32) Message] BigEndian
