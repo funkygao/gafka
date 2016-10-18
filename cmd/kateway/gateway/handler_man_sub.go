@@ -580,3 +580,42 @@ func (this *manServer) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 	b, _ := json.Marshal(out)
 	w.Write(b)
 }
+
+// @rest GET /v1/sub/status
+// response: [{"group":"group1","partition":"0","pold":0,"pubd":7827,"subd":324,"realip":"10.10.10.1"}]
+func (this *manServer) appSubStatusHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	var (
+		myAppid = r.Header.Get(HttpHeaderAppid)
+		subkey  = r.Header.Get(HttpHeaderSubkey)
+		realIp  = getHttpRemoteIp(r)
+	)
+
+	if !this.throttleSubStatus.Pour(realIp, 1) {
+		writeQuotaExceeded(w)
+		return
+	}
+
+	if err := manager.Default.Auth(myAppid, subkey); err != nil {
+		writeAuthFailure(w, err)
+		return
+	}
+
+	cluster, found := manager.Default.LookupCluster(myAppid)
+	if !found {
+		writeBadRequest(w, "invalid appid")
+		return
+	}
+
+	log.Info("app sub status[%s] %s(%s)", myAppid, r.RemoteAddr, realIp)
+
+	out, err := topicSubStatus(cluster, myAppid, myAppid, "", "", "", true)
+	if err != nil {
+		log.Error("app sub status[%s] %s(%s) %v", myAppid, r.RemoteAddr, realIp, err)
+
+		writeServerError(w, err.Error())
+		return
+	}
+
+	b, _ := json.Marshal(out)
+	w.Write(b)
+}
