@@ -148,14 +148,19 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	if async {
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
-	if query.Get("ack") == "all" {
+
+	ackAll := query.Get("ack") == "all"
+	if ackAll {
 		pubMethod = store.DefaultPubStore.SyncAllPub
 	}
 
 	hhDisabled = query.Get("hh") == "n" // yes | no
 
 	msgKey := []byte(partitionKey)
-	if Options.AllwaysHintedHandoff {
+	if ackAll {
+		// hh not applied
+		partition, offset, err = pubMethod(cluster, rawTopic, msgKey, msg.Body)
+	} else if Options.AllwaysHintedHandoff {
 		err = hh.Default.Append(cluster, rawTopic, msgKey, msg.Body)
 	} else if !hhDisabled && Options.EnableHintedHandoff && !hh.Default.Empty(cluster, rawTopic) {
 		err = hh.Default.Append(cluster, rawTopic, msgKey, msg.Body)

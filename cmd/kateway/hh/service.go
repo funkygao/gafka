@@ -1,4 +1,7 @@
 // Package hh provides a hinted handoff service for Pub.
+//
+// Hinted handoff is helpful for quick recovery from short term outages like
+// server restarts or rebalancing.
 package hh
 
 type Service interface {
