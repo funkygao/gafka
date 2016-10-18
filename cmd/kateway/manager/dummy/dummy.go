@@ -115,6 +115,10 @@ func (this *dummyStore) ValidateTopicName(topic string) bool {
 }
 
 func (this *dummyStore) ValidateGroupName(header http.Header, group string) bool {
+	if len(group) == 0 {
+		return false
+	}
+
 	if group == "invalid" {
 		return false
 	}
