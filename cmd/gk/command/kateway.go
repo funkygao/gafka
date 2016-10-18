@@ -496,10 +496,9 @@ Options:
       Set kateway options value
       keys:
       debug|gzip|badgroup_rater|badpub_rater|hh|hhflush|jobshardid|accesslog|punish|500backoff|loglevel|
-      dryrun|auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq
+      auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq
 
       e,g.
-      dryrun=<appid.topic.ver|clear>
       refreshdb=true
       badgroup_rater=true
       punish=3s

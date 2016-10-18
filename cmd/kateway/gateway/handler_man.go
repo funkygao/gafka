@@ -181,20 +181,6 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 			Options.InternalServerErrorBackoff = d
 		}
 
-	case "dryrun":
-		if value == "clear" {
-			manager.Default.ClearDryrunTopics()
-		} else {
-			parts := strings.SplitN(value, ".", 3) // appid.topic.ver
-			if len(parts) != 3 {
-				log.Warn("invalid option:%s=%s", option, value)
-				writeBadRequest(w, "invalid option")
-				return
-			}
-
-			manager.Default.MarkTopicDryrun(parts[0], parts[1], parts[2])
-		}
-
 	case "auditpub":
 		Options.AuditPub = boolVal
 
