@@ -37,6 +37,7 @@ var (
 		KillFile                   string
 		HintedHandoffType          string
 		HintedHandoffDir           string
+		AllwaysHintedHandoff       bool
 		ShowVersion                bool
 		Ratelimit                  bool
 		PermitStandbySub           bool
@@ -129,6 +130,7 @@ func ParseFlags() {
 	flag.BoolVar(&Options.Debug, "debug", false, "enable debug mode")
 	flag.BoolVar(&Options.RunSwaggerServer, "swagger", false, "run swagger server")
 	flag.BoolVar(&Options.GolangTrace, "gotrace", false, "go tool trace")
+	flag.BoolVar(&Options.AllwaysHintedHandoff, "allhh", false, "always use hh")
 	flag.BoolVar(&Options.AuditPub, "auditpub", true, "enable Pub audit")
 	flag.BoolVar(&Options.AuditSub, "auditsub", true, "enable Sub audit")
 	flag.BoolVar(&Options.UseCompress, "snappy", false, "backend store will snappy compress messages")

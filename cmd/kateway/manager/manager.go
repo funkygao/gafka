@@ -53,10 +53,6 @@ type Manager interface {
 	DeadPartitions() map[string]map[int32]struct{}
 
 	Dump() map[string]interface{}
-
-	IsDryrunTopic(appid, topic, ver string) bool
-	MarkTopicDryrun(appid, topic, ver string)
-	ClearDryrunTopics()
 }
 
 var Default Manager

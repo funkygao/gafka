@@ -3,7 +3,6 @@ package dummy
 import (
 	"net/http"
 	"strings"
-	"sync"
 
 	"github.com/funkygao/gafka/cmd/kateway/manager"
 	"github.com/funkygao/gafka/mpool"
@@ -11,15 +10,11 @@ import (
 
 type dummyStore struct {
 	cluster string
-
-	dryrunLock   sync.RWMutex
-	dryrunTopics map[string]map[string]map[string]struct{}
 }
 
 func New(cluster string) *dummyStore {
 	return &dummyStore{
-		cluster:      cluster,
-		dryrunTopics: make(map[string]map[string]map[string]struct{}),
+		cluster: cluster,
 	}
 }
 
@@ -50,33 +45,6 @@ func (this *dummyStore) TopicAppid(kafkaTopic string) string {
 
 func (this *dummyStore) Signature(appid string) string {
 	return ""
-}
-
-func (this *dummyStore) IsDryrunTopic(appid, topic, ver string) bool {
-	this.dryrunLock.RLock()
-	_, present := this.dryrunTopics[appid][topic][ver]
-	this.dryrunLock.RUnlock()
-
-	return present
-}
-
-func (this *dummyStore) MarkTopicDryrun(appid, topic, ver string) {
-	this.dryrunLock.Lock()
-	defer this.dryrunLock.Unlock()
-
-	if _, present := this.dryrunTopics[appid]; !present {
-		this.dryrunTopics[appid] = make(map[string]map[string]struct{})
-	}
-	if _, present := this.dryrunTopics[appid][topic]; !present {
-		this.dryrunTopics[appid][topic] = make(map[string]struct{})
-	}
-	this.dryrunTopics[appid][topic][ver] = struct{}{}
-}
-
-func (this *dummyStore) ClearDryrunTopics() {
-	this.dryrunLock.Lock()
-	this.dryrunTopics = make(map[string]map[string]map[string]struct{})
-	this.dryrunLock.Unlock()
 }
 
 func (this *dummyStore) TopicSchema(appid, topic, ver string) (string, error) {
@@ -160,7 +128,6 @@ func (this *dummyStore) IsShadowedTopic(hisAppid, topic, ver, myAppid, group str
 
 func (this *dummyStore) Dump() map[string]interface{} {
 	r := make(map[string]interface{})
-	r["dryrun"] = this.dryrunTopics
 	return r
 }
 

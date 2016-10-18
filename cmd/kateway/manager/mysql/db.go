@@ -3,7 +3,6 @@ package mysql
 import (
 	"database/sql"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/funkygao/gafka/ctx"
@@ -33,9 +32,6 @@ type mysqlStore struct {
 	deadPartitionMap    map[string]map[int32]struct{}           // topic:partitionId
 	topicSchemaMap      map[string]map[string]map[string]string // appid:topic:ver:schema
 
-	dryrunLock   sync.RWMutex
-	dryrunTopics map[string]map[string]map[string]struct{}
-
 	topicNames *mpool.Intern
 }
 
@@ -54,7 +50,6 @@ func New(cf *config) *mysqlStore {
 		shutdownCh:             make(chan struct{}),
 		refreshCh:              make(chan struct{}),
 		allowUnregisteredGroup: false,
-		dryrunTopics:           make(map[string]map[string]map[string]struct{}),
 		topicNames:             mpool.NewIntern(),
 	}
 }
