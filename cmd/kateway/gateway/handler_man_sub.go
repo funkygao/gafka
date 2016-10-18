@@ -582,7 +582,7 @@ func (this *manServer) subdStatusHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // @rest GET /v1/sub/status
-// response: [{"group":"group1","partition":"0","pold":0,"pubd":7827,"subd":324,"realip":"10.10.10.1"}]
+// response: [{"group":"group1","topic":"app1.foobar.v1","partition":"0","pold":0,"pubd":7827,"subd":324,"realip":"10.10.10.1"}]
 func (this *manServer) appSubStatusHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		myAppid = r.Header.Get(HttpHeaderAppid)
