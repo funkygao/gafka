@@ -608,7 +608,7 @@ func (this *manServer) appSubStatusHandler(w http.ResponseWriter, r *http.Reques
 
 	log.Info("app sub status[%s] %s(%s)", myAppid, r.RemoteAddr, realIp)
 
-	out, err := topicSubStatus(cluster, myAppid, myAppid, "", "", "", true)
+	out, err := topicSubStatus(cluster, myAppid, "", "", "", "", true)
 	if err != nil {
 		log.Error("app sub status[%s] %s(%s) %v", myAppid, r.RemoteAddr, realIp, err)
 
