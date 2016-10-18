@@ -95,6 +95,7 @@ func (this *Gateway) buildRouting() {
 		this.subServer.Router().PUT("/v1/msgs/:appid/:topic/:ver", m(this.subServer.buryHandler))
 		this.subServer.Router().GET("/v1/ws/msgs/:appid/:topic/:ver", m(this.subServer.subWsHandler))
 		this.subServer.Router().PUT("/v1/offsets/:appid/:topic/:ver/:group", m(this.subServer.ackHandler))
+		this.subServer.Router().PUT("/v1/raw/offsets/:cluster/:topic/:group", m(this.subServer.ackRawHandler))
 
 		// TODO deprecated
 		this.subServer.Router().GET("/topics/:appid/:topic/:ver", m(this.subServer.subHandler))

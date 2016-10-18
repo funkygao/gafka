@@ -111,3 +111,73 @@ func (this *subServer) ackHandler(w http.ResponseWriter, r *http.Request, params
 
 	w.Write(ResponseOk)
 }
+
+//go:generate goannotation $GOFILE
+// @rest PUT /v1/raw/offsets/:cluster/:topic/:group with json body
+func (this *subServer) ackRawHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	var (
+		topic   string
+		cluster string
+		myAppid string
+		group   string
+		err     error
+	)
+
+	group = params.ByName(UrlParamGroup)
+	cluster = params.ByName("cluster")
+	topic = params.ByName(UrlParamTopic)
+	myAppid = r.Header.Get(HttpHeaderAppid)
+
+	msgLen := int(r.ContentLength)
+	switch {
+	case int64(msgLen) > Options.MaxPubSize:
+		writeBadRequest(w, ErrTooBigMessage.Error())
+		return
+
+	case msgLen < Options.MinPubSize:
+		writeBadRequest(w, ErrTooSmallMessage.Error())
+		return
+	}
+
+	var msg *mpool.Message
+	msg = mpool.NewMessage(msgLen)
+	msg.Body = msg.Body[0:msgLen]
+	lbr := io.LimitReader(r.Body, Options.MaxPubSize+1)
+	if _, err = io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
+		msg.Free()
+
+		writeBadRequest(w, ErrTooBigMessage.Error())
+		return
+	}
+
+	var acks ackOffsets
+	if err = json.Unmarshal(msg.Body, &acks); err != nil {
+		msg.Free()
+
+		writeBadRequest(w, "invalid ack json body")
+		return
+	}
+
+	msg.Free()
+
+	realIp := getHttpRemoteIp(r)
+	realGroup := myAppid + "." + group
+	for i := 0; i < len(acks); i++ {
+		acks[i].cluster = cluster
+		acks[i].topic = topic
+		acks[i].group = realGroup
+	}
+
+	log.Debug("ack raw[%s/%s] %s(%s) {%s/%s UA:%s} %+v",
+		myAppid, group, r.RemoteAddr, realIp, cluster, topic, r.Header.Get("User-Agent"), acks)
+
+	if atomic.AddInt32(&this.ackShutdown, 1) == 0 {
+		writeServerError(w, "server is shutting down")
+		return
+	}
+
+	this.ackCh <- acks
+	atomic.AddInt32(&this.ackShutdown, -1)
+
+	w.Write(ResponseOk)
+}
