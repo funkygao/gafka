@@ -55,6 +55,8 @@ func (this *Gateway) buildRouting() {
 			m(this.manServer.subdStatusHandler))
 		this.manServer.Router().GET("/v1/status/:appid/:topic/:ver",
 			m(this.manServer.subStatusHandler))
+		this.manServer.Router().GET("/v1/sub/status",
+			m(this.manServer.appSubStatusHandler))
 		this.manServer.Router().DELETE("/v1/groups/:appid/:topic/:ver/:group",
 			m(this.manServer.delSubGroupHandler))
 		this.manServer.Router().PUT("/v1/offset/:appid/:topic/:ver/:group/:partition",

@@ -64,6 +64,7 @@ func checkUlimit(min int) {
 type SubStatus struct {
 	Appid          string `json:"appid,omitempty"`
 	Group          string `json:"group"`
+	Topic          string `json:"topic,omitempty"`
 	Partition      string `json:"partition"`
 	ProducedOldest int64  `json:"pold"`
 	ProducedNewest int64  `json:"pubd"`
@@ -74,6 +75,63 @@ type SubStatus struct {
 func topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
 	group string, onlyMine bool) ([]SubStatus, error) {
 	zkcluster := meta.Default.ZkCluster(cluster)
+
+	if hisAppid == "" && topic == "" && ver == "" {
+		// app sub status: only display online consumers
+		out := make([]SubStatus, 0, 10)
+
+		consumersByGroup := zkcluster.ConsumersByGroup(myAppid + ".")
+		fmt.Println(consumersByGroup)
+		sortedGroups := make([]string, 0, len(consumersByGroup))
+		for group, _ := range consumersByGroup {
+			sortedGroups = append(sortedGroups, group)
+		}
+		sort.Strings(sortedGroups)
+
+		for _, group := range sortedGroups {
+			p := strings.SplitN(group, ".", 2)
+			if len(p) != 2 {
+				continue
+			}
+
+			sortedTopicAndPartitionIds := make([]string, 0, len(consumersByGroup[group]))
+			consumers := make(map[string]zk.ConsumerMeta)
+			for _, t := range consumersByGroup[group] {
+				key := fmt.Sprintf("%s:%s", t.Topic, t.PartitionId)
+				sortedTopicAndPartitionIds = append(sortedTopicAndPartitionIds, key)
+
+				consumers[key] = t
+			}
+			sort.Strings(sortedTopicAndPartitionIds)
+
+			for _, topicAndPartitionId := range sortedTopicAndPartitionIds {
+				consumer := consumers[topicAndPartitionId]
+				parts := strings.SplitN(topicAndPartitionId, ":", 2)
+				if len(parts) != 2 {
+					continue
+				}
+
+				var realIP string
+				if consumer.Online && consumer.ConsumerZnode != nil {
+					realIP = consumer.ConsumerZnode.ClientRealIP()
+				}
+				stat := SubStatus{
+					Group:          p[1],
+					Partition:      consumer.PartitionId,
+					ProducedOldest: consumer.OldestOffset,
+					ProducedNewest: consumer.ProducerOffset,
+					Consumed:       consumer.ConsumerOffset,
+					ClientRealIP:   realIP,
+					Appid:          myAppid,
+					Topic:          parts[0],
+				}
+				out = append(out, stat)
+			}
+		}
+
+		return out, nil
+	}
+
 	if group != "" {
 		// if group is empty, find all groups
 		group = myAppid + "." + group

@@ -114,6 +114,10 @@ func (this *mysqlStore) ValidateGroupName(header http.Header, group string) bool
 	return true
 }
 
+func (this *mysqlStore) AllowSubWithUnregisteredGroup(yesOrNo bool) {
+	this.allowUnregisteredGroup = yesOrNo
+}
+
 func (this *mysqlStore) AuthAdmin(appid, pubkey string) bool {
 	if appid == "_psubAdmin_" && pubkey == "_wandafFan_" { // FIXME
 		return true
@@ -123,13 +127,12 @@ func (this *mysqlStore) AuthAdmin(appid, pubkey string) bool {
 }
 
 func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
-	if appid == "" || topic == "" || pubkey == "" {
+	if topic == "" {
 		return manager.ErrEmptyIdentity
 	}
 
-	// authentication
-	if secret, present := this.appSecretMap[appid]; !present || pubkey != secret {
-		return manager.ErrAuthenticationFail
+	if err := this.Auth(appid, pubkey); err != nil {
+		return err
 	}
 
 	// authorization
@@ -146,18 +149,26 @@ func (this *mysqlStore) OwnTopic(appid, pubkey, topic string) error {
 	return manager.ErrAuthorizationFail
 }
 
-func (this *mysqlStore) AllowSubWithUnregisteredGroup(yesOrNo bool) {
-	this.allowUnregisteredGroup = yesOrNo
-}
-
-func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string) error {
-	if appid == "" || hisTopic == "" {
+func (this *mysqlStore) Auth(appid, secret string) error {
+	if appid == "" || secret == "" {
 		return manager.ErrEmptyIdentity
 	}
 
 	// authentication
-	if secret, present := this.appSecretMap[appid]; !present || subkey != secret {
+	if s, present := this.appSecretMap[appid]; !present || s != secret {
 		return manager.ErrAuthenticationFail
+	}
+
+	return nil
+}
+
+func (this *mysqlStore) AuthSub(appid, subkey, hisAppid, hisTopic, group string) error {
+	if hisTopic == "" {
+		return manager.ErrEmptyIdentity
+	}
+
+	if err := this.Auth(appid, subkey); err != nil {
+		return err
 	}
 
 	// group verification
