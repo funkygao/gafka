@@ -187,6 +187,9 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	case "auditsub":
 		Options.AuditSub = boolVal
 
+	case "allhh":
+		Options.AllwaysHintedHandoff = boolVal
+
 	case "standbysub":
 		Options.PermitStandbySub = boolVal
 

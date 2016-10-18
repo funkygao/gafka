@@ -71,6 +71,10 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 		return
 	}
 
+	if this.configOption != "" {
+		this.configMode = true
+	}
+
 	if this.configMode {
 		if validateArgs(this, this.Ui).
 			require("-z").
@@ -476,8 +480,9 @@ Options:
     -checkup
       Checkup for online kateway instances
 
-	-curl
+    -curl
 	  Display curl command for manually checkup
+	  Use with checkup mode
 
     -visualog access log filename
       Visualize the kateway access log with Logstalgia
@@ -496,12 +501,13 @@ Options:
       Set kateway options value
       keys:
       debug|gzip|badgroup_rater|badpub_rater|hh|hhflush|jobshardid|accesslog|punish|500backoff|loglevel|
-      auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq
+      auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq|allhh
 
       e,g.
       refreshdb=true
       badgroup_rater=true
       punish=3s
+      allhh=true
       500backoff=2s
       maxreq=1000
       loglevel=<info|debug|trace|warn|alarm|error>

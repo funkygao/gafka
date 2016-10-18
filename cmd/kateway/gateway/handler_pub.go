@@ -155,7 +155,9 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	hhDisabled = query.Get("hh") == "n" // yes | no
 
 	msgKey := []byte(partitionKey)
-	if !hhDisabled && Options.EnableHintedHandoff && !hh.Default.Empty(cluster, rawTopic) {
+	if Options.AllwaysHintedHandoff {
+		err = hh.Default.Append(cluster, rawTopic, msgKey, msg.Body)
+	} else if !hhDisabled && Options.EnableHintedHandoff && !hh.Default.Empty(cluster, rawTopic) {
 		err = hh.Default.Append(cluster, rawTopic, msgKey, msg.Body)
 	} else if async {
 		if !hhDisabled && Options.EnableHintedHandoff {
