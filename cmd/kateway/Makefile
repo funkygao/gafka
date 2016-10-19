@@ -52,6 +52,9 @@ flame:
 buildrace:
 	@go build -race -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY) -X github.com/funkygao/gafka.BuiltAt=$(BUILD_TIME)"
 
+cpu:
+	go tool pprof http://localhost:9194/debug/pprof/profile?seconds=30
+
 heap:
 	go tool pprof kateway http://localhost:9194/debug/pprof/heap
 	go tool pprof --alloc_space kateway http://localhost:9194/debug/pprof/heap
