@@ -17,7 +17,6 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/gafka/zk"
-	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
@@ -69,15 +68,10 @@ func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, par
 	output["hh_delivers"] = strconv.FormatInt(hh.Default.DeliverN(), 10)
 	output["goroutines"] = strconv.Itoa(runtime.NumGoroutine())
 
-	var heapSize int64
-	if metrics.DefaultRegistry != nil {
-		if heap := metrics.DefaultRegistry.Get("runtime.MemStats.HeapSys"); heap != nil {
-			if gauge, ok := heap.(metrics.Gauge); ok {
-				heapSize = gauge.Value()
-			}
-		}
-	}
-	output["heap"] = gofmt.ByteSize(heapSize).String()
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
+	output["heap"] = gofmt.ByteSize(mem.HeapSys).String()
+	output["objects"] = gofmt.Comma(int64(mem.HeapObjects))
 
 	b, err := json.MarshalIndent(output, "", "    ")
 	if err != nil {
