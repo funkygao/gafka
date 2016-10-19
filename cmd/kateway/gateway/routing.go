@@ -104,10 +104,18 @@ func (this *Gateway) buildRouting() {
 	}
 
 	if this.debugMux != nil {
-		this.debugMux.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))
 		this.debugMux.HandleFunc("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-		this.debugMux.HandleFunc("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 		this.debugMux.HandleFunc("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+
+		// go tool pprof --alloc_space kateway http://localhost:9194/debug/pprof/heap
+		// go tool pprof --alloc_objects kateway http://localhost:9194/debug/pprof/heap
+		this.debugMux.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))
+
+		// go tool pprof 'http://localhost:9194/debug/pprof/profile?seconds=10'
+		this.debugMux.HandleFunc("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+
+		// wget 'http://localhost:9194/debug/pprof/trace?seconds=5' -O trace.out
+		// go tool trace trace.out
 		this.debugMux.HandleFunc("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 		go http.ListenAndServe(Options.DebugHttpAddr, gziphandler.GzipHandler(this.debugMux))
