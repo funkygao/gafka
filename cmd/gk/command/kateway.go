@@ -483,7 +483,7 @@ func (this *Kateway) generateFlameGraph(zkzone *zk.ZkZone) {
 			fmt.Println(scanner.Text())
 		}
 
-		this.Ui.Output("torch.svg generated"))
+		this.Ui.Output("torch.svg generated")
 	}
 
 }
