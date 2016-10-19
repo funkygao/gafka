@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -39,6 +40,7 @@ type Kateway struct {
 	checkup      bool
 	curl         bool
 	versionOnly  bool
+	flameGraph   bool
 	showZkNodes  bool
 }
 
@@ -52,6 +54,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.longFmt, "l", false, "")
 	cmdFlags.StringVar(&this.configOption, "option", "", "")
 	cmdFlags.BoolVar(&this.versionOnly, "ver", false, "")
+	cmdFlags.BoolVar(&this.flameGraph, "flame", false, "")
 	cmdFlags.StringVar(&this.logLevel, "loglevel", "", "")
 	cmdFlags.StringVar(&this.visualLog, "visualog", "", "")
 	cmdFlags.BoolVar(&this.showZkNodes, "zk", false, "")
@@ -59,6 +62,19 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.curl, "curl", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
+	}
+
+	if this.flameGraph {
+		if validateArgs(this, this.Ui).
+			require("-z", "-id").
+			requireAdminRights("-z").
+			invalid(args) {
+			return 2
+		}
+
+		zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+		this.generateFlameGraph(zkzone)
+		return
 	}
 
 	if this.visualLog != "" {
@@ -443,6 +459,35 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 
 }
 
+func (this *Kateway) generateFlameGraph(zkzone *zk.ZkZone) {
+	kws, _ := zkzone.KatewayInfos()
+	for _, kw := range kws {
+		if kw.Id != this.id {
+			continue
+		}
+
+		pprofAddr := kw.DebugAddr
+		if len(pprofAddr) > 0 && pprofAddr[0] == ':' {
+			pprofAddr = kw.Ip + pprofAddr
+		}
+		pprofAddr = fmt.Sprintf("http://%s/debug/pprof/profile", pprofAddr)
+		cmd := pipestream.New(os.Getenv("GOPATH")+"/bin/go-torch",
+			"-u", pprofAddr)
+		err := cmd.Open()
+		swallow(err)
+		defer cmd.Close()
+
+		scanner := bufio.NewScanner(cmd.Reader())
+		scanner.Split(bufio.ScanLines)
+		for scanner.Scan() {
+			fmt.Println(scanner.Text())
+		}
+
+		this.Ui.Output("torch.svg generated"))
+	}
+
+}
+
 func (this *Kateway) doVisualize() {
 	cmd := pipestream.New("/usr/local/bin/logstalgia", "-f", this.visualLog)
 	err := cmd.Open()
@@ -471,6 +516,12 @@ Options:
 
     -i
       Install kateway guide
+
+    -flame
+      Generate a kateway instance flame graph
+      Must install go-torch and FlameGraph in advance
+      e,g.
+      gk kateway -z prod -id 1 -flame
 
     -ver
       Display kateway version only
