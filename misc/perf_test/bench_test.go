@@ -137,3 +137,60 @@ func BenchmarkOneAlloc(b *testing.B) {
 		_ = s
 	}
 }
+
+// compare with BenchmarkStructAccess
+func BenchmarkMapAccess(b *testing.B) {
+	m := map[int]int{0: 0, 1: 1}
+	for i := 0; i < b.N; i++ {
+		_ = m[0] + m[1]
+	}
+}
+
+func BenchmarkStructAccess(b *testing.B) {
+	m := struct{ a, b int }{0, 1}
+	for i := 0; i < b.N; i++ {
+		_ = m.a + m.b
+	}
+}
+
+var empty = struct{}{}
+
+// compare with BenchmarkStructKeys
+func BenchmarkStringKeys(b *testing.B) {
+	s, n := "reasonably-long-but-present-unique-identifier", "non-present-unique-id"
+	m := map[string]struct{}{s: empty}
+	for i := 0; i < b.N; i++ {
+		_, _ = m[s]
+		_, _ = m[n]
+	}
+}
+
+func BenchmarkStructKeys(b *testing.B) {
+	type key struct{ a, b int }
+	k, n := key{0, 1}, key{1, 2}
+	m := map[key]struct{}{k: empty}
+	for i := 0; i < b.N; i++ {
+		_, _ = m[k]
+		_, _ = m[n]
+	}
+}
+
+func stacked() [128]int64 {
+	return [128]int64{}
+}
+
+func heaped() *[128]int64 {
+	return &[128]int64{}
+}
+
+func BenchmarkStackAlloc(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		stacked()
+	}
+}
+
+func BenchmarkHeapAlloc(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		heaped()
+	}
+}
