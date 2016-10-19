@@ -46,6 +46,9 @@ dummy:build
 bench:build
 	GOGC=800 GODEBUG=gctrace=1 ./kateway -zone local -pubhttp :9191 -pubhttps :9291 -subhttp :9192 -level trace -store kafka -id 1 -keyfile ssl/server.key -certfile ssl/server.pem -mstore dummy
 
+flame:
+	go-torch -u http://localhost:9194/debug/pprof/profile --title=kateway
+
 buildrace:
 	@go build -race -ldflags "-X github.com/funkygao/gafka.BuildId=$(GIT_ID)$(GIT_DIRTY) -X github.com/funkygao/gafka.BuiltAt=$(BUILD_TIME)"
 

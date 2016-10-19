@@ -65,3 +65,5 @@ cmd/kateway/hh/disk/hh/
 cmd/kateway/demo/java/PubsubDemo/target
 cmd/kateway/docs.go
 cmd/kateway/swagger-ui/
+cmd/kateway/torch.svg
+cmd/kateway/trace.out
