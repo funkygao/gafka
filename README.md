@@ -30,8 +30,8 @@ A full ecosystem that is built around kafka powered by golang.
      |  +---------+    +---------+      +--------+    +--------+               +---------+  |    |      |
      |  | kateway |    | kateway |      | actord |    | actord |                            |    |      +- Sub
      |  +---------+    +---------+      +--------+    +--------+                            |    |
-     |                      |               | executor                                      |    |    
-     |                      |            +--------------+                                   |    |   
+     |    | hh |         | hh |             | executor                                      |    |
+     |    +----+         +----+          +--------------+                                   |    |
      |                      |            |              |                                   |    |  
      |                      |       +---------+    +---------+  push                        |    |  
      |             +--------+       | JobTube |    | Webhook |------------>-----------------|----|---Endpoints
