@@ -29,12 +29,38 @@ func (this *Sample) Run(args []string) (exitCode int) {
 	case "c":
 		code = this.consumeSample()
 
+	case "o":
+		code = this.offsetCommitFetchSample()
+
 	case "p":
 		code = this.produceSample()
 	}
 	this.Ui.Output(strings.TrimSpace(code))
 
 	return
+}
+
+func (*Sample) offsetCommitFetchSample() string {
+	return fmt.Sprintf(`
+KafkaConsumer<K, V> consumer = new KafkaConsumer<K, V>(properties);
+...
+TopicPartition p0 = new TopicPartition("topic1", 0);
+TopicPartition p1 = new TopicPartition("topic1", 1);
+%s
+
+Map<TopicPartition, Long> offsets = new LinkedHashMap<TopicPartition, Long>();
+offsets.Put(p0, 123L);
+offsets.Put(p1, 4564L);
+
+%s
+consumer.commit(offsets, CommitType.SYNC);
+
+%s
+long committedOffset = consumer.committed(p1);
+        `,
+		color.Cyan("consumer.subscribe(p0, p1);"),
+		color.Cyan("// commit offsets"),
+		color.Cyan("//fetch offsets"))
 }
 
 func (*Sample) produceSample() string {
@@ -157,9 +183,10 @@ Usage: %s sample -mode mode
 
 Options:
 
-    -mode <c|p>
+    -mode <c|p|o>
       c: consumer 
       p: producer
+      o: consumer offsets managed by kafka instead of zk
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
