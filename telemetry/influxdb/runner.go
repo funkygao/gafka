@@ -73,7 +73,7 @@ func (this *runner) Start() error {
 	for {
 		select {
 		case <-this.quiting:
-			// flush
+			// drain
 			pts = pts[:0]
 			this.export(&pts)
 			this.dump(pts)
