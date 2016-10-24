@@ -285,12 +285,13 @@ func (q *queue) Rollback(b *block) (err error) {
 
 func (q *queue) Next(b *block) (err error) {
 	q.mu.RLock()
-	defer q.mu.RUnlock()
-
 	c := q.cursor
+	q.mu.RUnlock()
+
 	if c == nil {
 		return ErrQueueNotOpen
 	}
+
 	err = c.seg.ReadOne(b)
 	switch err {
 	case nil:
@@ -442,7 +443,8 @@ func (q *queue) trimHead() (err error) {
 
 // TODO skipCursorSegment skip the current corrupted cursor segment and
 // advance to next segment.
-// if tail corrupts, add new segment.
+// if tail corrupts, add new segment: Append will write to new segment and
+// reader read from the new segment.
 func (q *queue) skipCursorSegment() {
 
 }
