@@ -106,7 +106,7 @@ func (q *queue) Open() error {
 	)
 	if err := q.cursor.open(); err != nil {
 		// cursor file might not exist or json file corrupts
-		log.Warn("queue[%s] cursor: %s", q.ident(), err)
+		log.Warn("queue[%s] cursor: %s, move to head", q.ident(), err)
 		moveCursorToHead = true
 	} else {
 		// load segments from cursor checkpoint
