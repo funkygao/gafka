@@ -61,18 +61,17 @@ func TestQueueCorrupt(t *testing.T) {
 	//time.Sleep(time.Second)
 	for {
 		err := q.Next(&b)
-		q.Append(&b)
 		switch err {
 		case nil:
 			q.cursor.commitPosition()
 			t.Logf("    got block: %s/%s", string(b.key), string(b.value))
 
 		case ErrEOQ:
-			//t.Log("end of queue")
+			t.Log("end of queue")
 			return
 
 		case ErrSegmentCorrupt:
-			t.Error("shit")
+			t.Fatal("ErrSegmentCorrupt should have been handled by queue.Next()")
 			return
 
 		default:
