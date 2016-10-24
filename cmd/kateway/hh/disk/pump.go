@@ -106,13 +106,8 @@ func (q *queue) pump() {
 			case <-timer.After(pollSleep):
 			}
 
-		case ErrSegmentCorrupt:
-			log.Error("queue[%s] pump: %s +%v", q.ident(), err, q.cursor.pos)
-			q.skipCursorSegment()
-
 		default:
 			log.Error("queue[%s] pump: %s +%v", q.ident(), err, q.cursor.pos)
-			q.skipCursorSegment()
 		}
 	}
 }

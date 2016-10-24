@@ -86,8 +86,7 @@ func newQueue(baseDir string, ct clusterTopic, maxSize int64, purgeInterval, max
 		maxAge:         maxAge,
 		segments:       segments{},
 	}
-	q.cursor = newCursor(q)
-	q.index = newIndex(q)
+
 	return q
 }
 
@@ -95,6 +94,10 @@ func newQueue(baseDir string, ct clusterTopic, maxSize int64, purgeInterval, max
 func (q *queue) Open() error {
 	q.mu.Lock()
 	defer q.mu.Unlock()
+
+	q.quit = make(chan struct{})
+	q.cursor = newCursor(q)
+	q.index = newIndex(q)
 
 	if err := mkdirIfNotExist(q.dir); err != nil {
 		return err
@@ -106,7 +109,7 @@ func (q *queue) Open() error {
 	)
 	if err := q.cursor.open(); err != nil {
 		// cursor file might not exist or json file corrupts
-		log.Warn("queue[%s] cursor: %s, move to head", q.ident(), err)
+		log.Warn("queue[%s] cursor: %s, advance to head", q.ident(), err)
 		moveCursorToHead = true
 	} else {
 		// load segments from cursor checkpoint
@@ -142,8 +145,6 @@ func (q *queue) Open() error {
 }
 
 func (q *queue) Start() {
-	q.quit = make(chan struct{})
-
 	q.wg.Add(1)
 	go q.housekeeping()
 
@@ -439,12 +440,4 @@ func (q *queue) trimHead() (err error) {
 
 	q.head = q.segments[0]
 	return
-}
-
-// TODO skipCursorSegment skip the current corrupted cursor segment and
-// advance to next segment.
-// if tail corrupts, add new segment: Append will write to new segment and
-// reader read from the new segment.
-func (q *queue) skipCursorSegment() {
-
 }

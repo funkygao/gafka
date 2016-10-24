@@ -82,12 +82,7 @@ func (q *queue) FlushInflights(errCh chan<- error, wg *sync.WaitGroup) {
 			log.Debug("queue[%s] flushed %d inflights", q.ident(), okN)
 			return
 
-		case ErrSegmentCorrupt:
-			q.skipCursorSegment()
-			errCh <- err
-
 		default:
-			q.skipCursorSegment()
 			errCh <- err
 		}
 	}
