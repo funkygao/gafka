@@ -64,8 +64,6 @@ func (this *mysqlStore) Start() error {
 		return fmt.Errorf("manager[%s]: %v", this.Name(), err)
 	}
 
-	// TODO watch KatewayMysqlDsn znode
-
 	go func() {
 		ticker := time.NewTicker(this.cf.Refresh)
 		defer ticker.Stop()
