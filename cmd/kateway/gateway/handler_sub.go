@@ -61,7 +61,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 
 		if !good {
 			// this bad group client is in confinement period
-			log.Error("sub -(%s): group[%s] failure quota exceeded", realIp, realGroup)
+			log.Error("sub -(%s): group[%s] failure quota exceeded %s", realIp, realGroup, r.Header.Get("User-Agent"))
 			writeQuotaExceeded(w)
 			return
 		}
