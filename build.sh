@@ -36,9 +36,9 @@ validate() {
     echo "validating..."
     check_gofmt
     if [ $GOVER -gt 4 ]; then
-        go test -cover $(go list ./... | grep -v '/bench' | grep -v '/demo' | grep -v '/misc' | grep -v '/client') -ldflags "-X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
+        go test -race -cover $(go list ./... | grep -v '/bench' | grep -v '/demo' | grep -v '/misc' | grep -v '/client') -ldflags "-X github.com/funkygao/gafka.BuildId=${GIT_ID}${GIT_DIRTY} -w"
     else
-        go test -cover $(go list ./... | grep -v '/bench' | grep -v '/demo' | grep -v '/misc' | grep -v '/client') -ldflags "-X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
+        go test -race -cover $(go list ./... | grep -v '/bench' | grep -v '/demo' | grep -v '/misc' | grep -v '/client') -ldflags "-X github.com/funkygao/gafka.BuildId ${GIT_ID}${GIT_DIRTY} -w"
     fi
 }
 
@@ -124,6 +124,7 @@ if [ $FASTHTTP == "yes" ]; then
 fi
 if [ $VALIDATE == "yes" ]; then
     validate
+    exit
 fi
 if [ $GOSTATUS == "yes" ]; then
     gostatus all
