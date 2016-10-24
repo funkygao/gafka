@@ -30,4 +30,6 @@ func TestServiceNextBaseDir(t *testing.T) {
 
 		t.Logf("next dir: %s", s.(*Service).nextBaseDir())
 	}
+
+	s.Stop()
 }
