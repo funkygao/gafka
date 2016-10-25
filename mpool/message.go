@@ -83,8 +83,10 @@ func (this *Message) Free() (recycled bool) {
 	select {
 	case ch <- this:
 	default:
-		// should never happen
-		log.Critical("slab class[%d] full, silently drop", this.slabSize)
+		// e,g. channel size 10, NewMessage alloc 20 messages while nobody free's
+		// then 1-10 free ok, but 11-20 will trigger this branch
+		log.Warn("slab class[%d] full, fallback to GC", this.slabSize)
+		//this.bodyBuf = nil // FIXME should try it on after test, disabled because I am timid
 	}
 
 	return true
