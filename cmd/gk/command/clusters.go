@@ -15,6 +15,7 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/pmylund/sortutil"
 	"github.com/ryanuber/columnize"
 )
 
@@ -292,17 +293,28 @@ func (this *Clusters) verifyBrokers(zkzone *zk.ZkZone) {
 func (this *Clusters) printSummary(zkzone *zk.ZkZone, clusterPattern string, port string) {
 	lines := []string{"Zone|Cluster|Brokers|Topics|Partitions|FlatMsg|Cum"}
 
+	type summary struct {
+		zone, cluster               string
+		brokers, topics, partitions int
+		flat, cum                   int64
+	}
+	summaries := make([]summary, 0, 10)
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		if !patternMatched(zkcluster.Name(), clusterPattern) {
 			return
 		}
 
 		brokers, topics, partitions, flat, cum := this.clusterSummary(zkcluster)
-		lines = append(lines, fmt.Sprintf("%s|%s|%d|%d|%d|%s|%s",
-			zkzone.Name(), zkcluster.Name(), brokers, topics, partitions,
-			gofmt.Comma(flat), gofmt.Comma(cum)))
-	})
+		summaries = append(summaries, summary{zkzone.Name(), zkcluster.Name(), brokers, topics, partitions,
+			flat, cum})
 
+	})
+	sortutil.DescByField(summaries, "cum")
+	for _, s := range summaries {
+		lines = append(lines, fmt.Sprintf("%s|%s|%d|%d|%d|%s|%s",
+			s.zone, s.cluster, s.brokers, s.topics, s.partitions,
+			gofmt.Comma(s.flat), gofmt.Comma(s.cum)))
+	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
 }
 
