@@ -155,6 +155,8 @@ func (q *queue) Start() {
 // Close stops the queue for reading and writing
 func (q *queue) Close() error {
 	close(q.quit)
+	// wait for pump and housekeeping finish
+	q.wg.Wait()
 
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -169,7 +171,7 @@ func (q *queue) Close() error {
 	q.tail = nil
 	q.segments = nil
 
-	q.wg.Wait()
+	log.Trace("queue[%s] dumping cursor", q.ident())
 	if err := q.cursor.dump(); err != nil {
 		return err
 	}
