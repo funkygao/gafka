@@ -14,6 +14,8 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/gofmt"
+	"github.com/ryanuber/columnize"
 )
 
 type Clusters struct {
@@ -44,6 +46,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		addBroker      string
 		nickname       string
 		delBroker      string
+		summaryMode    bool
 	)
 	cmdFlags := flag.NewFlagSet("clusters", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -56,6 +59,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.IntVar(&replicas, "replicas", -1, "")
 	cmdFlags.StringVar(&delCluster, "del", "", "")
+	cmdFlags.BoolVar(&summaryMode, "sum", false, "")
 	cmdFlags.BoolVar(&this.neat, "neat", false, "")
 	cmdFlags.IntVar(&retentionHours, "retention", -1, "")
 	cmdFlags.IntVar(&priority, "priority", -1, "")
@@ -194,6 +198,12 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 		return
 	}
 
+	if summaryMode {
+		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+		this.printSummary(zkzone, clusterName, port)
+		return
+	}
+
 	// display mode
 	if zone != "" {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
@@ -277,6 +287,55 @@ func (this *Clusters) verifyBrokers(zkzone *zk.ZkZone) {
 			}
 		}
 	})
+}
+
+func (this *Clusters) printSummary(zkzone *zk.ZkZone, clusterPattern string, port string) {
+	lines := []string{"Zone|Cluster|Brokers|Topics|Partitions|FlatMsg|Cum"}
+
+	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		if !patternMatched(zkcluster.Name(), clusterPattern) {
+			return
+		}
+
+		brokers, topics, partitions, flat, cum := this.clusterSummary(zkcluster)
+		lines = append(lines, fmt.Sprintf("%s|%s|%d|%d|%d|%s|%s",
+			zkzone.Name(), zkcluster.Name(), brokers, topics, partitions,
+			gofmt.Comma(flat), gofmt.Comma(cum)))
+	})
+
+	this.Ui.Output(columnize.SimpleFormat(lines))
+}
+
+func (this *Clusters) clusterSummary(zkcluster *zk.ZkCluster) (brokers, topics, partitions int, flat, cum int64) {
+	brokerInfos := zkcluster.Brokers()
+	brokers = len(brokerInfos)
+
+	cf := sarama.NewConfig()
+	cf.Net.ReadTimeout = time.Second * 4
+	cf.Net.WriteTimeout = time.Second * 4
+	kfk, err := sarama.NewClient(zkcluster.BrokerList(), cf)
+	if err != nil {
+		this.Ui.Error(err.Error())
+		return
+	}
+	defer kfk.Close()
+
+	topicInfos, _ := kfk.Topics()
+	topics = len(topicInfos)
+	for _, t := range topicInfos {
+		alivePartitions, _ := kfk.WritablePartitions(t)
+		partitions += len(alivePartitions)
+
+		for _, partitionID := range alivePartitions {
+			latestOffset, _ := kfk.GetOffset(t, partitionID, sarama.OffsetNewest)
+			oldestOffset, _ := kfk.GetOffset(t, partitionID, sarama.OffsetOldest)
+			flat += (latestOffset - oldestOffset)
+			cum += latestOffset
+		}
+
+	}
+
+	return
 }
 
 func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, port string) {
@@ -473,6 +532,9 @@ Options:
     -z zone
 
     -c cluster name
+
+    -sum
+      Display summary of message.
 
     -l
       Use a long listing format.
