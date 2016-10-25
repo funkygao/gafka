@@ -55,7 +55,7 @@ func NewMessage(size int) *Message {
 	default:
 		// message pool empty:
 		// too busy or size greater than largest slab class
-		log.Trace("allocating message memory pool: %dB", size)
+		log.Trace("allocating message memory pool: %dB/%d", size, len(ch))
 
 		msg = &Message{}
 		msg.slabSize = size
@@ -85,7 +85,7 @@ func (this *Message) Free() (recycled bool) {
 	default:
 		// e,g. channel size 10, NewMessage alloc 20 messages while nobody free's
 		// then 1-10 free ok, but 11-20 will trigger this branch
-		log.Warn("slab class[%d] full, fallback to GC", this.slabSize)
+		log.Warn("slab class[%d] full %d, fallback to GC", this.slabSize, len(ch))
 		//this.bodyBuf = nil // FIXME should try it on after test, disabled because I am timid
 	}
 
