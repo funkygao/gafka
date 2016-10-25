@@ -3,6 +3,7 @@ package disk
 import (
 	"time"
 
+	"github.com/funkygao/golib/timewheel"
 	log "github.com/funkygao/log4go"
 )
 
@@ -28,6 +29,8 @@ var (
 	Auditor      *log.Logger
 
 	currentMagic = [2]byte{0, 0}
+
+	timer *timewheel.TimeWheel
 
 	// group commit
 	flushEveryBlocks = 100
