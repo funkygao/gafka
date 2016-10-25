@@ -405,6 +405,7 @@ func (this *ZkZone) ChildrenWithData(path string) map[string]zkData {
 	for _, name := range children {
 		data, stat, err := this.conn.Get(path + "/" + name)
 		if err != nil {
+			// e,g. /consumers/group/owners/topic/3 zk: node does not exist
 			log.Error("%s: %v", path+"/"+name, err)
 			continue
 		}
