@@ -58,7 +58,6 @@ func TestQueueCorrupt(t *testing.T) {
 	assert.Equal(t, nil, err)
 	defer q.Close()
 
-	//time.Sleep(time.Second)
 	for {
 		err := q.Next(&b)
 		switch err {

@@ -293,39 +293,51 @@ func (q *queue) Next(b *block) (err error) {
 		return ErrQueueNotOpen
 	}
 
-	err = c.seg.ReadOne(b)
-	switch err {
-	case nil:
-		q.emptyInflight.Set(0)
-		return c.advanceOffset(b.size())
-
-	case io.EOF:
-		// cursor might have:
-		// 1. reached end of the current segment: will advance to next segment
-		// 2. reached end of tail
-		if ok := c.advanceSegment(); !ok {
-			q.emptyInflight.Set(1)
-			return ErrEOQ
-		}
-
-		// advanced to next segment, read one block
+	for {
 		err = c.seg.ReadOne(b)
 		switch err {
 		case nil:
 			// bingo!
+			q.emptyInflight.Set(0)
 			return c.advanceOffset(b.size())
 
+		case ErrSegmentCorrupt:
+			log.Error("queue[%s] segment[%d/%d] corrupted, advance to %d/0", q.ident(), c.pos.SegmentID, c.pos.Offset, c.pos.SegmentID+1)
+
+			q.mu.Lock()
+			if c.seg.id == q.tail.id {
+				// tail corrupts: direct all append to new segment
+				segment, segerr := q.addSegment()
+				if err != nil {
+					q.mu.Unlock()
+					return segerr
+				} else {
+					q.tail = segment
+				}
+			}
+			q.mu.Unlock()
+
+			// advance cursor to new segment
+			if ok := c.advanceSegment(); !ok {
+				q.emptyInflight.Set(1)
+				return ErrEOQ
+			}
+
 		case io.EOF:
-			// tail is empty
-			return ErrEOQ
+			// cursor might have:
+			// 1. reached end of the current segment: will advance to next segment
+			// 2. reached end of tail
+			if ok := c.advanceSegment(); !ok {
+				q.emptyInflight.Set(1)
+				return ErrEOQ
+			}
 
 		default:
-			return
+			// unexpected err
+			return err
 		}
-
-	default:
-		return
 	}
+
 }
 
 func (q *queue) EmptyInflight() bool {
