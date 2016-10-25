@@ -428,7 +428,8 @@ func (this *Gateway) ServeForever() {
 			this.accessLogger.Stop()
 		}
 
-		// TODO concurrent store stop
+		// FIXME because the pub_server didn't close the idle conns, if now
+		// an idle client POST a message, will lead to panic: nil pointer
 		if store.DefaultPubStore != nil {
 			log.Trace("pub store[%s] stop...", store.DefaultPubStore.Name())
 			store.DefaultPubStore.Stop()
