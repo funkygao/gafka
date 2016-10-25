@@ -55,7 +55,7 @@ func NewMessage(size int) *Message {
 	default:
 		// message pool empty:
 		// too busy or size greater than largest slab class
-		log.Debug("allocating message memory pool: %dB", size)
+		log.Trace("allocating message memory pool: %dB", size)
 
 		msg = &Message{}
 		msg.slabSize = size
