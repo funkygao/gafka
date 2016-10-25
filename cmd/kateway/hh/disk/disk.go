@@ -70,7 +70,11 @@ func (this *Service) Stop() {
 	}
 
 	for _, q := range this.queues {
-		q.Close()
+		if err := q.Close(); err != nil {
+			log.Error("queue[%s] %v", q.ident(), err)
+		} else {
+			log.Trace("queue[%s] closed", q.ident())
+		}
 	}
 	this.queues = make(map[clusterTopic]*queue)
 
