@@ -31,21 +31,22 @@ type Kateway struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone         string
-	id           string
-	configMode   bool
-	logLevel     string
-	configOption string
-	longFmt      bool
-	install      bool
-	resetCounter string
-	visualLog    string
-	checkup      bool
-	curl         bool
-	versionOnly  bool
-	flameGraph   bool
-	benchmark    bool
-	showZkNodes  bool
+	zone           string
+	id             string
+	configMode     bool
+	logLevel       string
+	configOption   string
+	longFmt        bool
+	install        bool
+	resetCounter   string
+	visualLog      string
+	checkup        bool
+	curl           bool
+	versionOnly    bool
+	flameGraph     bool
+	benchmark      bool
+	benchmarkAsync bool
+	showZkNodes    bool
 
 	benchApp, benchSecret, benchTopic, benchVer, benchPubEndpoint string
 	benchId                                                       string
@@ -67,6 +68,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.showZkNodes, "zk", false, "")
 	cmdFlags.BoolVar(&this.checkup, "checkup", false, "")
 	cmdFlags.BoolVar(&this.benchmark, "bench", false, "")
+	cmdFlags.BoolVar(&this.benchmarkAsync, "async", false, "")
 	cmdFlags.BoolVar(&this.curl, "curl", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
@@ -428,6 +430,7 @@ func (this *Kateway) benchPub(seq int) {
 		if err := cli.Pub("", []byte(pubMsg), api.PubOption{
 			Topic: this.benchTopic,
 			Ver:   this.benchVer,
+			Async: this.benchmarkAsync,
 		}); err != nil {
 			log.Printf("%s/%d/%d %s", this.benchId, seq, i, err)
 			stress.IncCounter("fail", 1)
@@ -590,6 +593,9 @@ Options:
 
     -bench
       Run Pub benchmark agaist kateway cluster
+
+    -async
+      Run benchmark in async mode
 
     -flame
       Generate a kateway instance flame graph
