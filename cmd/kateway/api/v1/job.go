@@ -52,7 +52,7 @@ func (this *Client) AddJob(payload []byte, delay string, opt PubOption) (jobId s
 	// reuse the connection
 	response.Body.Close()
 
-	if response.StatusCode != http.StatusCreated {
+	if response.StatusCode != http.StatusCreated && response.StatusCode != http.StatusAccepted {
 		return "", errors.New(string(b))
 	}
 

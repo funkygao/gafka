@@ -71,7 +71,7 @@ func (this *Client) Pub(key string, msg []byte, opt PubOption) (err error) {
 		return
 	}
 
-	if response.StatusCode != http.StatusCreated {
+	if response.StatusCode != http.StatusCreated && response.StatusCode != http.StatusAccepted {
 		return errors.New(string(b))
 	}
 
