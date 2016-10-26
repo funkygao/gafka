@@ -18,6 +18,8 @@ import (
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/golib/pipestream"
+	"github.com/pmylund/sortutil"
+	"github.com/ryanuber/columnize"
 )
 
 type Topics struct {
@@ -48,6 +50,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		retentionInMinute       int
 		resetConf               bool
 		debug                   bool
+		summaryMode             bool
 		configged               bool
 	)
 	cmdFlags := flag.NewFlagSet("brokers", flag.ContinueOnError)
@@ -58,6 +61,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.StringVar(&addTopic, "add", "", "")
+	cmdFlags.BoolVar(&summaryMode, "sum", false, "")
 	cmdFlags.StringVar(&killTopic, "kill", "", "")
 	cmdFlags.StringVar(&restoreTopic, "restore", "", "")
 	cmdFlags.BoolVar(&this.plainMode, "plain", false, "")
@@ -163,6 +167,11 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		return
 	}
 
+	if summaryMode {
+		this.printSummary(zkzone, cluster)
+		return
+	}
+
 	if !this.verbose {
 		// output header
 		this.Ui.Output(fmt.Sprintf("%30s %-50s", "cluster", "topic"))
@@ -207,6 +216,63 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+type topicSummary struct {
+	zone, cluster, topic string
+	partitions           int
+	flat, cum            int64
+}
+
+func (this *Topics) printSummary(zkzone *zk.ZkZone, clusterPattern string) {
+	lines := []string{"Zone|Cluster|Topic|Partitions|FlatMsg|Cum"}
+
+	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		if !patternMatched(zkcluster.Name(), clusterPattern) {
+			return
+		}
+
+		summaries := this.clusterSummary(zkcluster)
+		sortutil.DescByField(summaries, "cum")
+		for _, s := range summaries {
+			lines = append(lines, fmt.Sprintf("%s|%s|%s|%d|%s|%s",
+				s.zone, s.cluster, s.topic, s.partitions, gofmt.Comma(s.flat), gofmt.Comma(s.cum)))
+		}
+
+	})
+
+	this.Ui.Output(columnize.SimpleFormat(lines))
+}
+
+func (this *Topics) clusterSummary(zkcluster *zk.ZkCluster) []topicSummary {
+	r := make([]topicSummary, 0, 10)
+
+	cf := sarama.NewConfig()
+	cf.Net.ReadTimeout = time.Second * 4
+	cf.Net.WriteTimeout = time.Second * 4
+	kfk, err := sarama.NewClient(zkcluster.BrokerList(), cf)
+	if err != nil {
+		this.Ui.Error(err.Error())
+		return nil
+	}
+	defer kfk.Close()
+
+	topicInfos, _ := kfk.Topics()
+	for _, t := range topicInfos {
+		flat := int64(0)
+		cum := int64(0)
+		alivePartitions, _ := kfk.WritablePartitions(t)
+		for _, partitionID := range alivePartitions {
+			latestOffset, _ := kfk.GetOffset(t, partitionID, sarama.OffsetNewest)
+			oldestOffset, _ := kfk.GetOffset(t, partitionID, sarama.OffsetOldest)
+			flat += (latestOffset - oldestOffset)
+			cum += latestOffset
+		}
+
+		r = append(r, topicSummary{zkcluster.ZkZone().Name(), zkcluster.Name(), t, len(alivePartitions), flat, cum})
+	}
+
+	return r
 }
 
 func (this *Topics) resetTopicConfig(zkcluster *zk.ZkCluster, topic string) {
@@ -528,6 +594,9 @@ Options:
 
     -t topic name pattern
       Only show topics like this give topic.
+
+    -sum
+      Print summary of topics in order.
 
     -cf
       Only show topics that have non-default configurations.    
