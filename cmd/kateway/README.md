@@ -181,7 +181,6 @@ d37c73f2b2bce85f7fa16b6a550d26c5372892ef
 ### TODO
 
 - [ ] cleanup of the idle->active pub clients during shutdown
-- [ ] mpool.Message Free FIXME
 - [ ] sub status display raw kafka offset status
 - [ ] mirror, when destination dies stop consuming
 - [ ] tagged metrics
