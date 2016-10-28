@@ -62,9 +62,10 @@ func (this *WatchSub) Run() {
 			return
 
 		case <-ticker.C:
-			lags := this.subLags()
+			//lags := this.subLags() // DISABLED
+			subLagGroups.Update(int64(0))
+
 			conflictGroups := this.subConflicts()
-			subLagGroups.Update(int64(lags))
 			subConflictGroup.Update(int64(conflictGroups))
 
 		}
