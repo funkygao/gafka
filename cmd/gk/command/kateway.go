@@ -297,7 +297,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	})
 
 	if this.versionOnly && len(lines) > 1 {
-		this.Ui.Output(columnize.SimpleFormat(lines))
+		fmt.Println(columnize.SimpleFormat(lines))
 	}
 
 	return
