@@ -305,6 +305,7 @@ func (this *manServer) resetSubOffsetHandler(w http.ResponseWriter, r *http.Requ
 	log.Info("sub reset offset[%s] %s(%s) {app:%s topic:%s ver:%s partition:%s group:%s offset:%s}",
 		myAppid, r.RemoteAddr, realIp, hisAppid, topic, ver, partition, group, offset)
 
+	// TODO stop all consumers of this group
 	zkcluster := meta.Default.ZkCluster(cluster)
 	realGroup := myAppid + "." + group
 	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
