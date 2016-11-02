@@ -155,7 +155,7 @@ func New(id string) *Gateway {
 			}
 			jm, err := jobmysql.New(id, mcc)
 			if err != nil {
-				panic(err)
+				panic(fmt.Errorf("mysql job: %v", err))
 			}
 
 			job.Default = jm
