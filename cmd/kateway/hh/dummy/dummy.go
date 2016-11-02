@@ -42,3 +42,5 @@ func (this *dummyStore) AppendN() int64 {
 func (this *dummyStore) DeliverN() int64 {
 	return 0
 }
+
+func (this *dummyStore) ResetCounters() {}

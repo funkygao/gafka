@@ -109,6 +109,14 @@ func (this *Service) DeliverN() (n int64) {
 	return
 }
 
+func (this *Service) ResetCounters() {
+	this.rwmux.RLock()
+	for _, q := range this.queues {
+		q.ResetCounters()
+	}
+	this.rwmux.RUnlock()
+}
+
 func (this *Service) Append(cluster, topic string, key, value []byte) error {
 	if this.closed {
 		return ErrNotOpen

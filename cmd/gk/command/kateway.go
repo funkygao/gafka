@@ -633,10 +633,11 @@ Options:
       Set kateway options value
       keys:
       debug|gzip|badgroup_rater|badpub_rater|hh|hhflush|jobshardid|accesslog|punish|500backoff|loglevel|
-      auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|ratelimit|maxreq|allhh
+      auditpub|refreshdb|auditsub|standbysub|unregroup|nometrics|resethh|ratelimit|maxreq|allhh
 
       e,g.
       refreshdb=true
+      resethh=true
       badgroup_rater=true
       punish=3s
       allhh=true

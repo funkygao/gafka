@@ -119,6 +119,9 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 	case "ratelimit":
 		Options.Ratelimit = boolVal
 
+	case "resethh":
+		hh.Default.ResetCounters()
+
 	case "hh":
 		Options.EnableHintedHandoff = boolVal
 		if !boolVal {

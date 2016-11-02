@@ -32,6 +32,9 @@ type Service interface {
 
 	// DeliverN returns all queues successfully delivered messages count total.
 	DeliverN() int64
+
+	// ResetCounters reset AppendN and DeliverN to 0.
+	ResetCounters()
 }
 
 var Default Service

@@ -191,6 +191,11 @@ func (q *queue) DeliverN() int64 {
 	return q.deliverN.Get()
 }
 
+func (q *queue) ResetCounters() {
+	q.appendN.Set(0)
+	q.deliverN.Set(0)
+}
+
 // Remove removes all underlying file-based resources for the queue.
 // It is an error to call this on an open queue.
 func (q *queue) Remove() (err error) {
