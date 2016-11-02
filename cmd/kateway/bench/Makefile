@@ -42,6 +42,9 @@ kwsync:bench.go
 	@echo bench against kateway in sync pub mode
 	@go run bench.go -neat -mode gw -addr "http://localhost:9191"
 
+benchslave:bench.go
+	@go run bench.go -neat -mode gw -addr "http://localhost:9191" -master "localhost:10093"
+
 kwsyncs:bench.go
 	@echo bench against kateway in sync pub mode
 	@go run bench.go -neat -mode gw -addr "https://localhost:9191"
