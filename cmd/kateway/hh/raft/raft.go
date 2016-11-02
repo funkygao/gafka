@@ -1,7 +1,7 @@
 package raft
 
 import (
-    "github.com/coreos/etcd/raft"
+	"github.com/coreos/etcd/raft"
 )
 
 type raft struct {
