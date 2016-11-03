@@ -39,7 +39,7 @@ func (this *WatchTopics) Run() {
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
-	pubQps := metrics.NewRegisteredMeter("pub.qps", nil)
+	pubQps := metrics.NewRegisteredMeter("pub.qps", nil) // TODO add tag cluster/topic
 	offsets := metrics.NewRegisteredGauge("msg.cum", nil)
 	topics := metrics.NewRegisteredGauge("topics", nil)
 	partitions := metrics.NewRegisteredGauge("partitions", nil)
