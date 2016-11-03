@@ -18,9 +18,10 @@ func init() {
 			Reader:      os.Stdin,
 			ErrorWriter: os.Stderr,
 		},
-		InfoColor:  cli.UiColorGreen,
-		ErrorColor: cli.UiColorRed,
-		WarnColor:  cli.UiColorYellow,
+		OutputColor: cli.UiColorNone,
+		InfoColor:   cli.UiColorGreen,
+		ErrorColor:  cli.UiColorRed,
+		WarnColor:   cli.UiColorYellow,
 	}
 	cmd := os.Args[0]
 
