@@ -92,7 +92,7 @@ else
 fi
 
 if [ ! -w "$ZOO_LOG_DIR" ] ; then
-mkdir -p "$ZOO_LOG_DIR"
+    mkdir -p "$ZOO_LOG_DIR"
 fi
 
 _ZOO_DAEMON_OUT="$ZOO_LOG_DIR/zookeeper.out"

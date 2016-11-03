@@ -53,12 +53,12 @@ fi
 
 if [ "x${ZOO_LOG_DIR}" = "x" ]
 then
-    ZOO_LOG_DIR="."
+    ZOO_LOG_DIR="$ZOOKEEPER_PREFIX/logs"
 fi
 
 if [ "x${ZOO_LOG4J_PROP}" = "x" ]
 then
-    ZOO_LOG4J_PROP="INFO,CONSOLE"
+    ZOO_LOG4J_PROP="INFO,ROLLINGFILE"
 fi
 
 if [ "$JAVA_HOME" != "" ]; then
