@@ -3,6 +3,7 @@ package zk
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -83,7 +84,7 @@ type ConsumerZnode struct {
 	Version      int            `json:"version"`
 	Subscription map[string]int `json:"subscription"` // topic:count
 	Pattern      string         `json:"pattern"`
-	Timestamp    string         `json:"timestamp"`
+	Timestamp    interface{}    `json:"timestamp"`
 }
 
 func newConsumerZnode(id string) *ConsumerZnode {
@@ -123,7 +124,18 @@ func (c *ConsumerZnode) Topics() []string {
 }
 
 func (c *ConsumerZnode) Uptime() time.Time {
-	return TimestampToTime(c.Timestamp)
+	var ts string
+	switch t := c.Timestamp.(type) {
+	case int:
+		ts = strconv.Itoa(t)
+	case float32:
+		ts = strconv.Itoa(int(t))
+	case float64:
+		ts = strconv.Itoa(int(t))
+	case string:
+		ts = t
+	}
+	return TimestampToTime(ts)
 }
 
 func (c *ConsumerZnode) String() string {
