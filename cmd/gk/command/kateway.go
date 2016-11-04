@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -123,7 +124,14 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	}
 
 	if this.install {
-		this.installGuide()
+		if validateArgs(this, this.Ui).
+			require("-z").
+			invalid(args) {
+			return 2
+		}
+
+		zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+		this.installGuide(zkzone)
 		return
 	}
 
@@ -303,16 +311,41 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Kateway) installGuide() {
-	this.Ui.Warn("FIRST: manager db GRANT access rights to this ip")
-	this.Ui.Info("gk deploy -kfkonly")
-	this.Ui.Info("mkdir -p /var/wd/kateway/sbin")
-	this.Ui.Info("cd /var/wd/kateway")
-	this.Ui.Info("nohup ./sbin/kateway -zone prod -id 1 -level trace -log kateway.log -crashlog panic -influxdbaddr http://10.213.1.223:8086 &")
-	this.Ui.Info("")
-	this.Ui.Info("yum install -y logstash")
-	this.Ui.Info("/etc/logstash/conf.d/kateway.conf")
-	this.Ui.Output(strings.TrimSpace(`
+func (this *Kateway) installGuide(zkzone *zk.ZkZone) {
+	this.Ui.Output(color.Red("manager db GRANT access rights to this ip"))
+	this.Ui.Output(color.Red("gk deploy -kfkonly"))
+	this.Ui.Output("")
+
+	this.Ui.Output("mkdir -p /var/wd/kateway/sbin")
+	this.Ui.Output("cd /var/wd/kateway")
+	kateways, err := zkzone.KatewayInfos()
+	swallow(err)
+	nextId := 1
+	for _, kw := range kateways {
+		id, _ := strconv.Atoi(kw.Id)
+		if nextId < id {
+			nextId = id
+		}
+	}
+	nextId++
+
+	zone := ctx.Zone(this.zone)
+	influxAddr := zone.InfluxAddr
+	if influxAddr != "" && !strings.HasPrefix(influxAddr, "http://") {
+		influxAddr = "http://" + influxAddr
+	}
+	var influxInfo string
+	if influxAddr != "" {
+		influxInfo = "-influxdbaddr " + influxAddr
+	}
+
+	this.Ui.Output(fmt.Sprintf(`nohup ./sbin/kateway -zone prod -id %d -debughttp ":10194" -level trace -log kateway.log -crashlog panic %s &`,
+		nextId, influxInfo))
+	this.Ui.Output("")
+
+	this.Ui.Output("yum install -y logstash")
+	this.Ui.Output("/etc/logstash/conf.d/kateway.conf")
+	this.Ui.Output(strings.TrimSpace(fmt.Sprintf(`
 input {
     file {
         path => "/var/wd/kateway/kateway.log"
@@ -326,13 +359,15 @@ input {
 
 output {
     kafka {
-        bootstrap_servers => "k11003a.mycorp.kfk.com:11003,k11003b.mycorp.kfk.com:11003"
+        bootstrap_servers => "%s:11003,%s:11003"
         topic_id => "pubsub_log"
     }
 }
-		`))
-	this.Ui.Info("chkconfig --add logstash")
-	this.Ui.Info("/etc/init.d/logstash start")
+		`, color.Red("k11003a.mycorp.kfk.com"), color.Red("k11003b.mycorp.kfk.com"))))
+	this.Ui.Output("")
+
+	this.Ui.Output("chkconfig --add logstash")
+	this.Ui.Output("/etc/init.d/logstash start")
 }
 
 func (this Kateway) getKatewayStatus(url string) string {
