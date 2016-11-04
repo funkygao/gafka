@@ -112,6 +112,4 @@ then
     CLASSPATH=`cygpath -wp "$CLASSPATH"`
 fi
 
-#echo "CLASSPATH=$CLASSPATH"
-
 SERVER_JVMFLAGS="-Xloggc:$ZOO_LOG_DIR/zookeeper-gc.log -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps"
