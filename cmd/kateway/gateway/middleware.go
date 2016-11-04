@@ -15,6 +15,9 @@ import (
 
 func (this *Gateway) middleware(h httprouter.Handle) httprouter.Handle {
 	var (
+		// GC will touch every single item of the map during mark and scan phase
+		// Go 1.5 https://github.com/golang/go/issues/9477
+		// TODO map[int64]int
 		connections   = make(map[string]int, 500) // remoteAddr:counter
 		connectionsMu sync.Mutex
 	)
