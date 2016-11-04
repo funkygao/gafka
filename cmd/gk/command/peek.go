@@ -58,6 +58,7 @@ type Peek struct {
 	quit     chan struct{}
 	once     sync.Once
 	column   string
+	beep     bool
 	pretty   bool
 	bodyOnly bool
 }
@@ -82,6 +83,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.pretty, "pretty", false, "")
 	cmdFlags.IntVar(&this.limit, "n", -1, "")
 	cmdFlags.StringVar(&this.column, "col", "", "")
+	cmdFlags.BoolVar(&this.beep, "beep", false, "")
 	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
 	cmdFlags.BoolVar(&silence, "s", false, "")
 	cmdFlags.DurationVar(&wait, "d", time.Hour, "")
@@ -171,6 +173,7 @@ LOOP:
 				stats.MsgCountPerSecond.Mark(1)
 				stats.MsgBytesPerSecond.Mark(int64(len(msg.Value)))
 			} else {
+				var outmsg string
 				if this.column != "" {
 					if err := json.Unmarshal(msg.Value, &j); err != nil {
 						this.Ui.Error(err.Error())
@@ -180,20 +183,20 @@ LOOP:
 								if err = json.Indent(&prettyJSON, []byte(j[this.column].(string)), "", "    "); err != nil {
 									fmt.Println(err.Error())
 								} else {
-									fmt.Println(string(prettyJSON.Bytes()))
+									outmsg = string(prettyJSON.Bytes())
 								}
 							} else {
-								fmt.Println(j[this.column].(string))
+								outmsg = j[this.column].(string)
 							}
 						} else if this.colorize {
-							this.Ui.Output(fmt.Sprintf("%s/%d %s k:%s v:%s",
+							outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
 								color.Green(msg.Topic), msg.Partition,
-								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column].(string)))
+								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column].(string))
 						} else {
 							// colored UI will have invisible chars output
-							fmt.Println(fmt.Sprintf("%s/%d %s k:%s v:%s",
+							outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
 								msg.Topic, msg.Partition,
-								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column].(string)))
+								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column].(string))
 						}
 					}
 
@@ -201,20 +204,28 @@ LOOP:
 					if this.bodyOnly {
 						if this.pretty {
 							json.Indent(&prettyJSON, msg.Value, "", "    ")
-							fmt.Println(string(prettyJSON.Bytes()))
+							outmsg = string(prettyJSON.Bytes())
 						} else {
-							fmt.Println(string(msg.Value))
+							outmsg = string(msg.Value)
 						}
 					} else if this.colorize {
-						this.Ui.Output(fmt.Sprintf("%s/%d %s k:%s, v:%s",
+						outmsg = fmt.Sprintf("%s/%d %s k:%s, v:%s",
 							color.Green(msg.Topic), msg.Partition,
-							gofmt.Comma(msg.Offset), string(msg.Key), string(msg.Value)))
+							gofmt.Comma(msg.Offset), string(msg.Key), string(msg.Value))
 					} else {
 						// colored UI will have invisible chars output
-						fmt.Println(fmt.Sprintf("%s/%d %s k:%s, v:%s",
+						outmsg = fmt.Sprintf("%s/%d %s k:%s, v:%s",
 							msg.Topic, msg.Partition,
-							gofmt.Comma(msg.Offset), string(msg.Key), string(msg.Value)))
+							gofmt.Comma(msg.Offset), string(msg.Key), string(msg.Value))
 					}
+				}
+
+				if outmsg != "" {
+					if this.beep {
+						outmsg += "\a"
+					}
+
+					this.Ui.Output(outmsg)
 				}
 			}
 
@@ -361,6 +372,9 @@ Options:
    
     -p partition id
       -1 will peek all partitions of a topic
+
+    -beep
+      Make a beep sound for each message
 
     -pretty
       Pretty print the json message body
