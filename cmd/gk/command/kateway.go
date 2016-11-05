@@ -32,22 +32,23 @@ type Kateway struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone           string
-	id             string
-	configMode     bool
-	logLevel       string
-	configOption   string
-	longFmt        bool
-	install        bool
-	resetCounter   string
-	visualLog      string
-	checkup        bool
-	curl           bool
-	versionOnly    bool
-	flameGraph     bool
-	benchmark      bool
-	benchmarkAsync bool
-	showZkNodes    bool
+	zone            string
+	id              string
+	configMode      bool
+	logLevel        string
+	configOption    string
+	longFmt         bool
+	install         bool
+	resetCounter    string
+	visualLog       string
+	checkup         bool
+	curl            bool
+	versionOnly     bool
+	flameGraph      bool
+	benchmark       bool
+	benchmarkAsync  bool
+	benchmarkMaster string
+	showZkNodes     bool
 
 	benchApp, benchSecret, benchTopic, benchVer, benchPubEndpoint string
 	benchId                                                       string
@@ -69,6 +70,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.showZkNodes, "zk", false, "")
 	cmdFlags.BoolVar(&this.checkup, "checkup", false, "")
 	cmdFlags.BoolVar(&this.benchmark, "bench", false, "")
+	cmdFlags.StringVar(&this.benchmarkMaster, "master", "", "")
 	cmdFlags.BoolVar(&this.benchmarkAsync, "async", false, "")
 	cmdFlags.BoolVar(&this.curl, "curl", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -451,6 +453,9 @@ func (this *Kateway) runBenchmark(zkzone *zk.ZkZone) {
 		log.SetOutput(os.Stdout)
 		stress.Flags.Round = 5
 		stress.Flags.Tick = 5
+		if this.benchmarkMaster != "" {
+			stress.Flags.MasterAddr = stress.MasterAddr(this.benchmarkMaster)
+		}
 		stress.RunStress(this.benchPub)
 	}
 
@@ -628,6 +633,9 @@ Options:
 
     -bench
       Run Pub benchmark agaist kateway cluster
+
+    -master
+      Benchmark master ip address
 
     -async
       Run benchmark in async mode
