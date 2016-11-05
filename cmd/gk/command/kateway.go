@@ -636,6 +636,7 @@ Options:
 
     -master
       Benchmark master ip address
+      If empty, this host serves as master
 
     -async
       Run benchmark in async mode
