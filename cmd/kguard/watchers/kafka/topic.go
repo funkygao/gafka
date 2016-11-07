@@ -6,6 +6,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
+	"github.com/funkygao/gafka/telemetry"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
@@ -25,6 +26,9 @@ type WatchTopics struct {
 	Stop   <-chan struct{}
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
+
+	pubQps      map[string]metrics.Meter
+	lastOffsets map[string]int64
 }
 
 func (this *WatchTopics) Init(ctx monitor.Context) {
@@ -39,13 +43,14 @@ func (this *WatchTopics) Run() {
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
-	pubQps := metrics.NewRegisteredMeter("pub.qps", nil) // TODO add tag cluster/topic
+	this.pubQps = make(map[string]metrics.Meter, 10)
+	this.lastOffsets = make(map[string]int64, 10)
+
 	offsets := metrics.NewRegisteredGauge("msg.cum", nil)
 	topics := metrics.NewRegisteredGauge("topics", nil)
 	partitions := metrics.NewRegisteredGauge("partitions", nil)
 	brokers := metrics.NewRegisteredGauge("brokers", nil)
 	newTopics := metrics.NewRegisteredGauge("kfk.newtopic.1d", nil)
-	var lastTotalOffsets int64
 	for {
 
 		select {
@@ -60,21 +65,6 @@ func (this *WatchTopics) Run() {
 			partitions.Update(p)
 			brokers.Update(b)
 			newTopics.Update(this.newTopicsSince(now, time.Hour*24))
-
-			if lastTotalOffsets > 0 {
-				if o-lastTotalOffsets >= 0 {
-					pubQps.Mark(o - lastTotalOffsets)
-					lastTotalOffsets = o
-				} else {
-					// e,g. some topics are dead, so the next total offset < lastTotalOffset
-					// in this case, we skip this offset metric: only log warning
-					log.Warn("offset backwards: %d %d", o, lastTotalOffsets)
-				}
-			} else {
-				// the 1st run inside the loop
-				lastTotalOffsets = o
-			}
-
 		}
 	}
 
@@ -134,6 +124,7 @@ func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 
 			topicsN++
 
+			offsetOfTopic := int64(0)
 			for _, partitionId := range partions {
 				latestOffset, err := kfk.GetOffset(topic, partitionId,
 					sarama.OffsetNewest)
@@ -145,7 +136,30 @@ func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 
 				partitionN++
 				totalOffsets += latestOffset
+				offsetOfTopic += latestOffset
 			}
+
+			// update pubQps metrics
+			tag := telemetry.Tag(zkcluster.Name(), topic, "v1")
+			if _, present := this.pubQps[tag]; !present {
+				this.pubQps[tag] = metrics.NewRegisteredMeter(tag+"pub.qps", nil)
+			}
+			lastOffset := this.lastOffsets[tag]
+			if lastOffset == 0 {
+				// first run
+				this.lastOffsets[tag] = offsetOfTopic
+			} else {
+				delta := offsetOfTopic - lastOffset
+				if delta >= 0 {
+					this.pubQps[tag].Mark(delta)
+					this.lastOffsets[tag] = offsetOfTopic
+				} else {
+					log.Warn("cluster[%s] topic[%s] offset backwards",
+						zkcluster.Name(), topic, offsetOfTopic, lastOffset)
+				}
+
+			}
+
 		}
 
 	})
