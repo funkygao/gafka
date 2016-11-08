@@ -163,13 +163,15 @@ func (this *Brokers) clusterBrokers(zone, cluster string, brokers map[string]*zk
 				brokerId, b.Addr(),
 				gofmt.PrettySince(b.Uptime())))
 		} else {
+			addr, _ := b.NamedAddr()
 			lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s",
 				zone, cluster,
-				brokerId, b.NamedAddr(),
+				brokerId, addr,
 				gofmt.PrettySince(b.Uptime())))
 		}
 
 	}
+
 	return lines
 }
 

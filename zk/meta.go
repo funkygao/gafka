@@ -158,8 +158,9 @@ func newBrokerZnode(id string) *BrokerZnode {
 }
 
 func (b BrokerZnode) NamedString() string {
+	addr, _ := b.NamedAddr()
 	return fmt.Sprintf("%s ver:%d uptime:%s",
-		b.NamedAddr(),
+		addr,
 		b.Version,
 		gofmt.PrettySince(b.Uptime()))
 }
@@ -183,13 +184,13 @@ func (b *BrokerZnode) Addr() string {
 	return fmt.Sprintf("%s:%d", b.Host, b.Port)
 }
 
-func (this *BrokerZnode) NamedAddr() string {
+func (this *BrokerZnode) NamedAddr() (string, bool) {
 	dns, present := ctx.ReverseDnsLookup(this.Host, this.Port)
 	if !present {
-		return this.Addr()
+		return this.Addr(), false
 	}
 
-	return fmt.Sprintf("%s:%d", dns, this.Port)
+	return fmt.Sprintf("%s:%d", dns, this.Port), true
 }
 
 type BrokerInfo struct {

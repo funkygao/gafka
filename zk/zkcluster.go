@@ -436,7 +436,22 @@ func (this *ZkCluster) OnlineConsumersCount(topic, group string) int {
 func (this *ZkCluster) NamedBrokerList() []string {
 	r := make([]string, 0)
 	for _, broker := range this.Brokers() {
-		r = append(r, broker.NamedAddr())
+		addr, _ := broker.NamedAddr()
+		r = append(r, addr)
+	}
+
+	return r
+}
+
+// OnlyNamedBrokerList only returns the brokers that has internal
+// reverse DNS records.
+func (this *ZkCluster) OnlyNamedBrokerList() []string {
+	r := make([]string, 0)
+	for _, broker := range this.Brokers() {
+		addr, hasDns := broker.NamedAddr()
+		if hasDns {
+			r = append(r, addr)
+		}
 	}
 
 	return r

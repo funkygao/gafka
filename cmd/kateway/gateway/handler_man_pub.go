@@ -40,7 +40,7 @@ func (this *manServer) pubRawHandler(w http.ResponseWriter, r *http.Request, par
 	var out = map[string]string{
 		"store":   store.DefaultPubStore.Name(),
 		"topic":   manager.Default.KafkaTopic(appid, topic, ver),
-		"brokers": strings.Join(meta.Default.ZkCluster(cluster).NamedBrokerList(), ","),
+		"brokers": strings.Join(meta.Default.ZkCluster(cluster).OnlyNamedBrokerList(), ","),
 	}
 	b, _ := json.Marshal(out)
 	w.Write(b)
