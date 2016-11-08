@@ -454,6 +454,14 @@ func (this *ZkCluster) OnlyNamedBrokerList() []string {
 		}
 	}
 
+	if len(r) == 0 {
+		// however, no brokers has dns records(e,g. in test/dev environment)
+		for _, broker := range this.Brokers() {
+			addr, _ := broker.NamedAddr()
+			r = append(r, addr)
+		}
+	}
+
 	return r
 }
 
