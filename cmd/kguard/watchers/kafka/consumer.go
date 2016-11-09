@@ -1,11 +1,13 @@
 package kafka
 
 import (
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kateway/structs"
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
+	"github.com/funkygao/gafka/telemetry"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	log "github.com/funkygao/log4go"
@@ -27,6 +29,9 @@ type WatchConsumers struct {
 	Wg     *sync.WaitGroup
 
 	offsetMtimeMap map[structs.GroupTopicPartition]time.Time
+
+	consumerQps map[string]metrics.Meter
+	lastOffsets map[string]int64
 }
 
 func (this *WatchConsumers) Init(ctx monitor.Context) {
@@ -59,6 +64,8 @@ func (this *WatchConsumers) Run() {
 			consumerGroupsOffline.Update(offline)
 			consumerGroupsOnline.Update(online)
 
+			this.runSubQpsTimer()
+
 		case <-frequentCommitTick.C:
 			tooFrequentOffsetCommit.Update(this.frequentOffsetCommit())
 		}
@@ -75,6 +82,7 @@ func (this *WatchConsumers) report() (online, offline int64) {
 			}
 		}
 	})
+
 	return
 }
 
@@ -109,4 +117,40 @@ func (this *WatchConsumers) frequentOffsetCommit() (n int64) {
 	})
 
 	return
+}
+
+func (this *WatchConsumers) runSubQpsTimer() {
+	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		consumerGroups := zkcluster.ConsumerGroups()
+		for group, _ := range consumerGroups {
+			offsetMap := zkcluster.ConsumerOffsetsOfGroup(group)
+			for topic, m := range offsetMap {
+				offsetOfGroupOnTopic := int64(0)
+				for _, offset := range m {
+					offsetOfGroupOnTopic += offset
+				}
+
+				// cluster, topic, group, offset
+				tag := telemetry.Tag(zkcluster.Name(), strings.Replace(topic, ".", "_", -1), strings.Replace(group, ".", "_", -1))
+				if _, present := this.consumerQps[tag]; !present {
+					this.consumerQps[tag] = metrics.NewRegisteredMeter(tag+"consumer.qps", nil)
+				}
+				lastOffset := this.lastOffsets[tag]
+				if lastOffset == 0 {
+					// first run
+					this.lastOffsets[tag] = offsetOfGroupOnTopic
+				} else {
+					delta := offsetOfGroupOnTopic - lastOffset
+					if delta >= 0 {
+						this.consumerQps[tag].Mark(delta)
+						this.lastOffsets[tag] = offsetOfGroupOnTopic
+					} else {
+						log.Warn("cluster[%s] topic[%s] group[%s] offset rewinds: %d %d",
+							zkcluster.Name(), topic, group, offsetOfGroupOnTopic, lastOffset)
+					}
+
+				}
+			}
+		}
+	})
 }
