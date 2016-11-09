@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -140,7 +141,7 @@ func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 			}
 
 			// update pubQps metrics
-			tag := telemetry.Tag(zkcluster.Name(), topic, "v1")
+			tag := telemetry.Tag(zkcluster.Name(), strings.Replace(topic, ".", "_", -1), "v1")
 			if _, present := this.pubQps[tag]; !present {
 				this.pubQps[tag] = metrics.NewRegisteredMeter(tag+"pub.qps", nil)
 			}
