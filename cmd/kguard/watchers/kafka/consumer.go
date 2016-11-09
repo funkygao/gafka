@@ -44,6 +44,9 @@ func (this *WatchConsumers) Init(ctx monitor.Context) {
 func (this *WatchConsumers) Run() {
 	defer this.Wg.Done()
 
+	this.consumerQps = make(map[string]metrics.Meter, 10)
+	this.lastOffsets = make(map[string]int64, 10)
+
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
