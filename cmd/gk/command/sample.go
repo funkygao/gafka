@@ -75,7 +75,10 @@ public class KafkaProducer {
         props.put("producer.type", "sync"); // sync | async
         props.put("serializer.class", "kafka.serializer.StringEncoder");
         props.put("key.serializer.class", "kafka.serializer.StringEncoder");
-        props.put("batch.num.messages", 200); // by default 200
+
+		// batch related
+        props.put("batch.num.messages", 200);      // by default 200
+        props.put("queue.buffering.max.ms", 5000); // by default 5s
  
         // %s
         // 0, means that the producer never waits for an acknowledgement from the broker
