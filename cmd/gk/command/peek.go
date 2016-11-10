@@ -82,7 +82,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.Int64Var(&this.lastN, "last", -1, "")
 	cmdFlags.BoolVar(&this.pretty, "pretty", false, "")
 	cmdFlags.IntVar(&this.limit, "n", -1, "")
-	cmdFlags.StringVar(&this.column, "col", "", "")
+	cmdFlags.StringVar(&this.column, "col", "", "") // TODO support multiple columns
 	cmdFlags.BoolVar(&this.beep, "beep", false, "")
 	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
 	cmdFlags.BoolVar(&silence, "s", false, "")
