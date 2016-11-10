@@ -72,8 +72,10 @@ public class KafkaProducer {
     private KafkaProducer(){
         Properties props = new Properties();
         props.put("%s", "k10101a.mycorp.kfk.com:10101,k10101b.mycorp.kfk.com:10101");
+        props.put("producer.type", "sync"); // sync | async
         props.put("serializer.class", "kafka.serializer.StringEncoder");
         props.put("key.serializer.class", "kafka.serializer.StringEncoder");
+        props.put("batch.num.messages", 200); // by default 200
  
         // %s
         // 0, means that the producer never waits for an acknowledgement from the broker
