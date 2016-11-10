@@ -25,6 +25,7 @@ type Consumers struct {
 	warnOnly     bool
 	byHost       bool
 	cleanup      bool
+	confirmYes   bool
 	topicPattern string
 }
 
@@ -44,6 +45,7 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.warnOnly, "warn", false, "")
 	cmdFlags.BoolVar(&this.ownerOnly, "own", false, "")
 	cmdFlags.BoolVar(&this.cleanup, "cleanup", false, "")
+	cmdFlags.BoolVar(&this.confirmYes, "yes", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -109,22 +111,30 @@ func (this *Consumers) cleanupStaleConsumerGroups(zkzone *zk.ZkZone, clusterPatt
 				continue
 			}
 
-			path := zkcluster.ConsumerGroupOffsetPath(group)
-			_, _, err := zkzone.Conn().Children(path)
-			if err == nil {
-				this.Ui.Warn(fmt.Sprintf("%s not empty, unsafe to cleanup", path))
-				continue
-			}
+			if !strings.HasPrefix(group, "console-consumer-") {
+				path := zkcluster.ConsumerGroupOffsetPath(group)
+				_, _, err := zkzone.Conn().Children(path)
+				if err == nil {
+					this.Ui.Warn(fmt.Sprintf("%s not empty, unsafe to cleanup", path))
+					continue
+				}
 
-			if err != gozk.ErrNoNode {
-				// should never happen
-				swallow(err)
+				if err != gozk.ErrNoNode {
+					// should never happen
+					swallow(err)
+				}
 			}
 
 			// have no offsets, safe to delete
-			yes, err := this.Ui.Ask(fmt.Sprintf("confirm to remove consumer group: %s? [y/N]", group))
+			yes, err := this.Ui.Ask(fmt.Sprintf("confirm to remove cluster[%s] consumer group: %s? [y/N]",
+				zkcluster.Name(), group))
 			swallow(err)
-			if strings.ToLower(yes) != "y" {
+			if this.confirmYes {
+				if strings.ToLower(yes) == "n" {
+					this.Ui.Info(fmt.Sprintf("%s skipped", group))
+					continue
+				}
+			} else if strings.ToLower(yes) != "y" {
 				this.Ui.Info(fmt.Sprintf("%s skipped", group))
 				continue
 			}
@@ -393,6 +403,9 @@ Options:
 
     -cleanup
       Cleanup the stale consumer groups after confirmation.
+
+    -yes
+      Work with -cleanup, input 'y' by default if confirm prompted.
 
     -byhost
       Display consumer groups by consumer hosts.
