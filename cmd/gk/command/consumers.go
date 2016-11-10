@@ -126,15 +126,20 @@ func (this *Consumers) cleanupStaleConsumerGroups(zkzone *zk.ZkZone, clusterPatt
 			}
 
 			// have no offsets, safe to delete
-			yes, err := this.Ui.Ask(fmt.Sprintf("confirm to remove cluster[%s] consumer group: %s? [y/N]",
-				zkcluster.Name(), group))
-			swallow(err)
 			if this.confirmYes {
+				yes, err := this.Ui.Ask(fmt.Sprintf("confirm to remove cluster[%s] consumer group: %s? [Y/n]",
+					zkcluster.Name(), group))
+				swallow(err)
+
 				if strings.ToLower(yes) == "n" {
 					this.Ui.Info(fmt.Sprintf("%s skipped", group))
 					continue
 				}
 			} else if strings.ToLower(yes) != "y" {
+				yes, err := this.Ui.Ask(fmt.Sprintf("confirm to remove cluster[%s] consumer group: %s? [y/N]",
+					zkcluster.Name(), group))
+				swallow(err)
+
 				this.Ui.Info(fmt.Sprintf("%s skipped", group))
 				continue
 			}
