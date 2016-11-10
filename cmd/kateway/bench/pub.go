@@ -77,7 +77,7 @@ func pubGatewayLoop(seq int) {
 		sz = msgSize + rand.Intn(msgSize)
 		no = atomic.AddInt64(&n, 1)
 
-		msg = fmt.Sprintf("topic is %s, %s w:%s seq:%-2d no:%-10d payload:%s",
+		msg = fmt.Sprintf("topic[哈哈] is %s, %s w:%s seq:%-2d no:%-10d payload:%s",
 			topic, time.Now(),
 			workerId, seq, no, strings.Repeat("X", sz))
 		if tag != "" {
