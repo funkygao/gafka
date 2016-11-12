@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -327,10 +328,15 @@ func (this *Members) displayLoadAvg(role string) {
 		loadAvg := strings.TrimSpace(parts[1])
 		if loadAvg[0] > '0' {
 			loadAvg += " !"
-			if loadAvg[0] > '2' {
+			avgs := strings.SplitN(loadAvg, ",", 3)
+			loadAvg1m, _ := strconv.ParseFloat(strings.TrimSpace(avgs[0]), 64)
+			if loadAvg1m > 3. {
 				loadAvg += "!"
 			}
-			if loadAvg[0] > '4' {
+			if loadAvg1m > 5. {
+				loadAvg += "!"
+			}
+			if loadAvg1m > 10. {
 				loadAvg += "!"
 			}
 		}
