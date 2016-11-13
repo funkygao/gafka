@@ -54,6 +54,13 @@ func init() {
 			}, nil
 		},
 
+		"redis": func() (cli.Command, error) {
+			return &command.Redis{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"histogram": func() (cli.Command, error) {
 			return &command.Histogram{
 				Ui:  ui,
