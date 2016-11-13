@@ -3,6 +3,7 @@ package zk
 import (
 	"bytes"
 	"fmt"
+	"time"
 
 	"github.com/funkygao/gafka/zk"
 	log "github.com/funkygao/log4go"
@@ -29,19 +30,63 @@ func (this *zkreg) Name() string {
 	return "zookeeper"
 }
 
-func (this *zkreg) Register(id string, data []byte) error {
-	err := this.zkzone.CreateEphemeralZnode(this.mypath(id), data)
+func (this *zkreg) Register(id string, data []byte) {
+	// https://issues.apache.org/jira/browse/ZOOKEEPER-1740
+	//
+	// might cause dead loop, but we accept it
+	for {
+		if err := this.createEphemeralPathExpectConflict(id, data); err != nil {
+			log.Error("register %s/%s: %v", id, string(data), err)
+
+			if err == zklib.ErrNodeExists {
+				// An ephemeral node may still exist even after its corresponding session has expired
+				// due to a Zookeeper bug, in this case we need to retry writing until the previous node is deleted
+				// and hence the write succeeds without ZkNodeExistsException
+				storedData, _, e := this.zkzone.Conn().Get(this.mypath(id))
+				if e == nil {
+					if bytes.Equal(data, storedData) {
+						// wait for the previous node to be deleted
+						time.Sleep(this.zkzone.SessionTimeout())
+					} else {
+						log.Error("conflict[%s] found, give up retry registering. expected: %s, got %s",
+							id, string(data), string(storedData))
+						return
+					}
+				} else {
+					log.Error("%s get data: %v", id, e)
+					continue
+				}
+			} else {
+				// retry
+				continue
+			}
+		} else {
+			// didn't encounter zk bug, happy ending
+			return
+		}
+	}
+
+}
+
+func (this *zkreg) createEphemeralPathExpectConflict(id string, data []byte) error {
+	path := this.mypath(id)
+	err := this.zkzone.CreateEphemeralZnode(path, data)
 	if err == nil {
 		log.Debug("registered in zk: %s", this.mypath(id))
 		return nil
 	}
 
-	return fmt.Errorf("%s %v", this.mypath(id), err)
-}
+	if err == zklib.ErrNodeExists {
+		_, _, e := this.zkzone.Conn().Get(this.mypath(id))
+		if e == zklib.ErrNoNode {
+			// the node disappeared; treat as if node exists
+			return err
+		} else {
+			return e
+		}
+	}
 
-func (this *zkreg) Registered(id string) (ok bool, err error) {
-	ok, _, err = this.zkzone.Conn().Exists(this.mypath(id))
-	return
+	return err
 }
 
 func (this *zkreg) Deregister(id string, oldData []byte) error {

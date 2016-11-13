@@ -38,7 +38,6 @@ import (
 	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
-	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
 // Gateway is a distributed Pub/Sub HTTP endpoint.
@@ -263,62 +262,7 @@ func (this *Gateway) Start() (err error) {
 	}, syscall.SIGINT, syscall.SIGTERM) // yes we ignore HUP
 
 	// keep watch on zk connection jitter
-	this.wg.Add(1)
-	go func() {
-		defer this.wg.Done()
-
-		evtCh, ok := this.zkzone.SessionEvents()
-		if !ok {
-			log.Error("someone else is stealing my zkzone events?")
-			return
-		}
-
-		// during connecting phase, the following events are fired:
-		// StateConnecting -> StateConnected -> StateHasSession
-		firstHandShaked := false
-		for {
-			select {
-			case <-this.shutdownCh:
-				return
-
-			case evt, ok := <-evtCh:
-				if !ok {
-					return
-				}
-
-				if !firstHandShaked {
-					if evt.State == zklib.StateHasSession {
-						firstHandShaked = true
-					}
-
-					continue
-				}
-
-				log.Warn("zk jitter: %+v", evt)
-
-				if evt.State == zklib.StateHasSession {
-					log.Warn("zk reconnected after session lost, watcher/ephemeral might be lost")
-
-					// ensure we can re-register safely after zk session expires
-					if registry.Default != nil {
-						registered, err := registry.Default.Registered(this.id)
-						if err != nil {
-							log.Error("registry: %s", err)
-						} else if !registered {
-							if err = registry.Default.Register(this.id, this.InstanceInfo()); err != nil {
-								log.Error("registry: %s", err)
-								this.zkzone.CallSOS(fmt.Sprintf("kateway[%s]", this.id), "gone")
-							} else {
-								log.Info("registry re-register kateway[%s] ok", this.id)
-							}
-						} else {
-							log.Info("registry lucky, ephemeral still present")
-						}
-					}
-				}
-			}
-		}
-	}()
+	go this.healthCheck()
 
 	meta.Default.Start()
 	log.Trace("meta store[%s] started", meta.Default.Name())
@@ -380,9 +324,7 @@ func (this *Gateway) Start() (err error) {
 
 	// the last thing is to register: notify others: come on baby!
 	if registry.Default != nil {
-		if err = registry.Default.Register(this.id, this.InstanceInfo()); err != nil {
-			panic(err)
-		}
+		registry.Default.Register(this.id, this.InstanceInfo())
 
 		log.Info("gateway[%s:%s] ready, registered in %s :-)", ctx.Hostname(), this.id,
 			registry.Default.Name())

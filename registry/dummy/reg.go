@@ -17,12 +17,8 @@ func (this *dummy) Name() string {
 	return "dummy"
 }
 
-func (this *dummy) Register(id string, data []byte) error {
-	return nil
-}
-
-func (this *dummy) Registered(id string) (ok bool, err error) {
-	return true, nil
+func (this *dummy) Register(id string, data []byte) {
+	return
 }
 
 func (this *dummy) Deregister(id string, oldData []byte) error {

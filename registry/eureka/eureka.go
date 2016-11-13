@@ -21,12 +21,8 @@ func (this *eureka) Name() string {
 	return "eureka"
 }
 
-func (this *eureka) Register(id string, data []byte) error {
-	return nil
-}
-
-func (this *eureka) Registered(id string) (ok bool, err error) {
-	return true, nil
+func (this *eureka) Register(id string, data []byte) {
+	return
 }
 
 func (this *eureka) Deregister(id string, oldData []byte) error {
