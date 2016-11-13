@@ -330,16 +330,13 @@ func (this *Members) displayLoadAvg(role string) {
 			continue
 		}
 
-		if load1m > 0. {
-			loadAvg += "!"
-			if load1m > 3. {
-				loadAvg += "!"
-			}
+		if load1m > 2. {
+			loadAvg += " !"
 			if load1m > 5. {
 				loadAvg += "!"
 			}
 			if load1m > 10. {
-				loadAvg += "!"
+				loadAvg += color.Red("!")
 			}
 		}
 
