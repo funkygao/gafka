@@ -155,7 +155,7 @@ func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 					this.pubQps[tag].Mark(delta)
 					this.lastOffsets[tag] = offsetOfTopic
 				} else {
-					log.Warn("cluster[%s] topic[%s] offset backwards: %d %d",
+					log.Warn("cluster[%s] topic[%s] offset backwards, skipped: %d <- %d",
 						zkcluster.Name(), topic, offsetOfTopic, lastOffset)
 				}
 

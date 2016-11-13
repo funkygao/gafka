@@ -41,6 +41,8 @@ func (this *WatchReplicas) Run() {
 
 	dead := metrics.NewRegisteredGauge("partitions.dead", nil)
 	outOfSync := metrics.NewRegisteredGauge("partitions.outofsync", nil)
+	badReplica := metrics.NewRegisteredGauge("partitions.badreplica", nil)
+
 	for {
 		select {
 		case <-this.Stop:
@@ -48,15 +50,16 @@ func (this *WatchReplicas) Run() {
 			return
 
 		case <-ticker.C:
-			deadPartitions, outOfSyncPartitions := this.report()
+			deadPartitions, outOfSyncPartitions, failReplicas := this.report()
 			dead.Update(deadPartitions)
 			outOfSync.Update(outOfSyncPartitions)
+			badReplica.Update(failReplicas)
 		}
 	}
 
 }
 
-func (this *WatchReplicas) report() (deadPartitions, outOfSyncPartitions int64) {
+func (this *WatchReplicas) report() (deadPartitions, outOfSyncPartitions, failReplicas int64) {
 	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		brokerList := zkcluster.BrokerList()
 		if len(brokerList) == 0 {
@@ -98,7 +101,7 @@ func (this *WatchReplicas) report() (deadPartitions, outOfSyncPartitions int64) 
 				replicas, err := kfk.Replicas(topic, partitionID)
 				if err != nil {
 					log.Error("cluster[%s] topic:%s/%d %v", zkcluster.Name(), topic, partitionID, err)
-					outOfSyncPartitions++
+					failReplicas++
 					continue
 				}
 

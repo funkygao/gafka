@@ -2,11 +2,13 @@ package external
 
 import (
 	"bufio"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/pipestream"
 	log "github.com/funkygao/log4go"
@@ -36,7 +38,7 @@ func (this *WatchLoadAvg) Run() {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
-	loadHigh := metrics.NewRegisteredGauge("zone.load2", nil)
+	loadHigh := metrics.NewRegisteredGauge("zone.highload", nil)
 
 	for {
 		select {
@@ -57,7 +59,7 @@ func (this *WatchLoadAvg) Run() {
 }
 
 func (this *WatchLoadAvg) highLoadCount() (n int64, err error) {
-	const threshold = '2'
+	const threshold = 6.
 
 	cmd := pipestream.New("consul", "exec",
 		"uptime", "|", "grep", "load")
@@ -71,18 +73,13 @@ func (this *WatchLoadAvg) highLoadCount() (n int64, err error) {
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
 		line := scanner.Text()
-		parts := strings.Split(line, "load average:")
-		if len(parts) < 2 {
+		load1m, e := ctx.ExtractLoadAvg1m(line)
+		if e != nil {
 			continue
 		}
 
-		loadAvgs := strings.TrimSpace(parts[1])
-		if loadAvgs[0] > threshold {
+		if load1m > threshold {
 			n++
-
-			fields := strings.Fields(line)
-			node := fields[0]
-			log.Warn("%s %s", node, loadAvgs)
 		}
 	}
 

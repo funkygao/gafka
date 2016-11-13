@@ -85,9 +85,9 @@ func (this *WatchActord) Run() {
 	}
 }
 
-// TODO
 func (this *WatchActord) watchWebhooks(now time.Time) {
-
+	webhoookRegistered := this.Zkzone.ChildrenWithData(zk.PubsubWebhooks)
+	webhooks.Update(int64(len(webhoookRegistered)))
 }
 
 func (this *WatchActord) watchJobs(now time.Time) (jLen, aLen, orphan, backlog, archive int64) {
