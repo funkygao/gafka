@@ -2,8 +2,6 @@ package external
 
 import (
 	"bufio"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 

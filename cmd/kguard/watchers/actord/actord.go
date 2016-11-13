@@ -65,6 +65,7 @@ func (this *WatchActord) Run() {
 	orphan := metrics.NewRegisteredGauge("actord.orphan", nil)
 	backlog := metrics.NewRegisteredGauge("actord.backlog.30s", nil)
 	archive := metrics.NewRegisteredGauge("actord.archive.30s", nil)
+	webhooks := metrics.NewRegisteredGauge("actord.webhooks", nil)
 
 	for {
 		select {
@@ -80,12 +81,12 @@ func (this *WatchActord) Run() {
 			backlog.Update(backlogN)
 			archive.Update(archiveN)
 
-			this.watchWebhooks(now)
+			this.watchWebhooks(webhooks, now)
 		}
 	}
 }
 
-func (this *WatchActord) watchWebhooks(now time.Time) {
+func (this *WatchActord) watchWebhooks(webhooks metrics.Gauge, now time.Time) {
 	webhoookRegistered := this.Zkzone.ChildrenWithData(zk.PubsubWebhooks)
 	webhooks.Update(int64(len(webhoookRegistered)))
 }
