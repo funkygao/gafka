@@ -61,6 +61,13 @@ func init() {
 			}, nil
 		},
 
+		"perf": func() (cli.Command, error) {
+			return &command.Perf{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"job": func() (cli.Command, error) {
 			return &command.Job{
 				Ui:  ui,
