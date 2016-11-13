@@ -324,9 +324,7 @@ func (this *Gateway) Start() (err error) {
 
 	// the last thing is to register: notify others: come on baby!
 	if registry.Default != nil {
-		if err = registry.Default.Register(this.id, this.InstanceInfo()); err != nil {
-			panic(err)
-		}
+		registry.Default.Register(this.id, this.InstanceInfo())
 
 		log.Info("gateway[%s:%s] ready, registered in %s :-)", ctx.Hostname(), this.id,
 			registry.Default.Name())

@@ -5,9 +5,7 @@ import (
 )
 
 type Backend interface {
-	Registered(id string) (bool, error)
-
-	Register(id string, data []byte) error
+	Register(id string, data []byte)
 
 	Deregister(id string, data []byte) error
 

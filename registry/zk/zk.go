@@ -29,19 +29,14 @@ func (this *zkreg) Name() string {
 	return "zookeeper"
 }
 
-func (this *zkreg) Register(id string, data []byte) error {
+func (this *zkreg) Register(id string, data []byte) {
+	// https://issues.apache.org/jira/browse/ZOOKEEPER-1740
 	err := this.zkzone.CreateEphemeralZnode(this.mypath(id), data)
 	if err == nil {
 		log.Debug("registered in zk: %s", this.mypath(id))
-		return nil
+		return
 	}
 
-	return fmt.Errorf("%s %v", this.mypath(id), err)
-}
-
-func (this *zkreg) Registered(id string) (ok bool, err error) {
-	ok, _, err = this.zkzone.Conn().Exists(this.mypath(id))
-	return
 }
 
 func (this *zkreg) Deregister(id string, oldData []byte) error {
