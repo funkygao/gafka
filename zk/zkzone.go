@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/funkygao/go-simplejson"
 	log "github.com/funkygao/log4go"
@@ -69,6 +70,10 @@ func (this *ZkZone) ZkAddrs() string {
 
 func (this *ZkZone) ZkAddrList() []string {
 	return strings.Split(this.conf.ZkAddrs, ",")
+}
+
+func (this *ZkZone) SessionTimeout() time.Duration {
+	return this.conf.SessionTimeout
 }
 
 func (this *ZkZone) Ping() error {
