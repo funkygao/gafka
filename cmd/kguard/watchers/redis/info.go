@@ -30,6 +30,7 @@ type WatchRedisInfo struct {
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
 
+	mu                        sync.Mutex
 	deadInstance, syncPartial metrics.Counter
 	instances                 metrics.Gauge
 	conns                     map[string]metrics.Gauge
@@ -162,6 +163,7 @@ func (this *WatchRedisInfo) updateRedisInfo(wg *sync.WaitGroup, host string, por
 
 	this.syncPartial.Inc(syncPartial)
 
+	this.mu.Lock()
 	this.conns[tag].Update(conns)
 	this.blocked[tag].Update(blocked)
 	this.usedMem[tag].Update(mem)
@@ -170,6 +172,7 @@ func (this *WatchRedisInfo) updateRedisInfo(wg *sync.WaitGroup, host string, por
 	this.rxKbps[tag].Update(int64(rxKbps))
 	this.txKbps[tag].Update(int64(txKbps))
 	this.expiredKeys[tag].Update(expiredKeys)
+	this.mu.Unlock()
 }
 
 func extractKeysCount(info string) (n int64) {
