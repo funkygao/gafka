@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/funkygao/Go-Redis"
@@ -30,8 +31,10 @@ type WatchRedisInfo struct {
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
 
+	deadN, syncPartialN int64
+
 	mu                        sync.Mutex
-	deadInstance, syncPartial metrics.Counter
+	deadInstance, syncPartial metrics.Gauge
 	instances                 metrics.Gauge
 	conns                     map[string]metrics.Gauge
 	blocked                   map[string]metrics.Gauge
@@ -57,8 +60,8 @@ func (this *WatchRedisInfo) Run() {
 	defer ticker.Stop()
 
 	this.instances = metrics.NewRegisteredGauge("redis.n", nil)
-	this.deadInstance = metrics.NewRegisteredCounter("redis.dead", nil)
-	this.syncPartial = metrics.NewRegisteredCounter("redis.sync.partial", nil)
+	this.deadInstance = metrics.NewRegisteredGauge("redis.dead", nil)
+	this.syncPartial = metrics.NewRegisteredGauge("redis.sync.partial", nil)
 
 	this.conns = make(map[string]metrics.Gauge, 10)
 	this.blocked = make(map[string]metrics.Gauge, 10)
@@ -118,6 +121,11 @@ func (this *WatchRedisInfo) Run() {
 			}
 
 			this.instances.Update(redisN)
+			this.syncPartial.Update(atomic.LoadInt64(&this.syncPartialN))
+			this.deadInstance.Update(atomic.LoadInt64(&this.deadN))
+			// reset for next round
+			atomic.StoreInt64(&this.syncPartialN, 0)
+			atomic.StoreInt64(&this.deadN, 0)
 			wg.Wait()
 
 		}
@@ -131,7 +139,7 @@ func (this *WatchRedisInfo) updateRedisInfo(wg *sync.WaitGroup, host string, por
 	client, err := redis.NewSynchClientWithSpec(spec)
 	if err != nil {
 		log.Error("redis[%s:%d]: %v", host, port, err)
-		this.deadInstance.Inc(1)
+		atomic.AddInt64(&this.deadN, 1)
 		return
 	}
 	defer client.Quit()
@@ -139,7 +147,7 @@ func (this *WatchRedisInfo) updateRedisInfo(wg *sync.WaitGroup, host string, por
 	infoMap, err := client.Info()
 	if err != nil {
 		log.Error("redis[%s:%d] info: %v", host, port, err)
-		this.deadInstance.Inc(1)
+		atomic.AddInt64(&this.deadN, 1)
 		return
 	}
 
@@ -161,7 +169,7 @@ func (this *WatchRedisInfo) updateRedisInfo(wg *sync.WaitGroup, host string, por
 	txKbps, _ := strconv.ParseFloat(infoMap["instantaneous_output_kbps"], 64)
 	expiredKeys, _ := strconv.ParseInt(infoMap["expired_keys"], 10, 64)
 
-	this.syncPartial.Inc(syncPartial)
+	atomic.AddInt64(&this.syncPartialN, syncPartial)
 
 	this.mu.Lock()
 	this.keys[tag].Update(keysN)
