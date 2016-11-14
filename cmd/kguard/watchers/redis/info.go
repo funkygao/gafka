@@ -3,6 +3,7 @@ package zk
 import (
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -29,12 +30,15 @@ type WatchRedisInfo struct {
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
 
-	deadInstance metrics.Counter
-	conns        map[string]metrics.Gauge
-	blocked      map[string]metrics.Gauge
-	usedMem      map[string]metrics.Gauge
-	ops          map[string]metrics.Gauge
-	rejected     map[string]metrics.Gauge
+	deadInstance, syncPartial metrics.Counter
+	conns                     map[string]metrics.Gauge
+	blocked                   map[string]metrics.Gauge
+	usedMem                   map[string]metrics.Gauge
+	ops                       map[string]metrics.Gauge
+	rejected                  map[string]metrics.Gauge
+	rxKbps                    map[string]metrics.Gauge
+	txKbps                    map[string]metrics.Gauge
+	expiredKeys               map[string]metrics.Gauge
 }
 
 func (this *WatchRedisInfo) Init(ctx monitor.Context) {
@@ -50,11 +54,15 @@ func (this *WatchRedisInfo) Run() {
 	defer ticker.Stop()
 
 	this.deadInstance = metrics.NewRegisteredCounter("redis.dead", nil)
+	this.syncPartial = metrics.NewRegisteredCounter("redis.sync.partial", nil)
 	this.conns = make(map[string]metrics.Gauge, 10)
 	this.blocked = make(map[string]metrics.Gauge, 10)
 	this.usedMem = make(map[string]metrics.Gauge, 10)
 	this.ops = make(map[string]metrics.Gauge, 10)
 	this.rejected = make(map[string]metrics.Gauge, 10)
+	this.rxKbps = make(map[string]metrics.Gauge, 10)
+	this.txKbps = make(map[string]metrics.Gauge, 10)
+	this.expiredKeys = make(map[string]metrics.Gauge, 10)
 
 	for {
 		select {
@@ -77,13 +85,17 @@ func (this *WatchRedisInfo) Run() {
 					continue
 				}
 
-				tag := telemetry.Tag(host, port, "v1")
+				// TODO ver=role(master|slave)
+				tag := telemetry.Tag(strings.Replace(host, ".", "_", -1), port, "v1")
 				if _, present := this.conns[tag]; !present {
-					this.conns[tag] = metrics.NewRegisteredGauge(tag+"redis.conns", nil)       // connected_clients
-					this.blocked[tag] = metrics.NewRegisteredGauge(tag+"redis.blocked", nil)   // blocked_clients
-					this.usedMem[tag] = metrics.NewRegisteredGauge(tag+"redis.mem.used", nil)  // used_memory
-					this.ops[tag] = metrics.NewRegisteredGauge(tag+"redis.ops", nil)           // instantaneous_ops_per_sec
-					this.rejected[tag] = metrics.NewRegisteredGauge(tag+"redis.rejected", nil) // rejected_connections
+					this.conns[tag] = metrics.NewRegisteredGauge(tag+"redis.conns", nil)              // connected_clients
+					this.blocked[tag] = metrics.NewRegisteredGauge(tag+"redis.blocked", nil)          // blocked_clients
+					this.usedMem[tag] = metrics.NewRegisteredGauge(tag+"redis.mem.used", nil)         // used_memory
+					this.ops[tag] = metrics.NewRegisteredGauge(tag+"redis.ops", nil)                  // instantaneous_ops_per_sec
+					this.rejected[tag] = metrics.NewRegisteredGauge(tag+"redis.rejected", nil)        // rejected_connections
+					this.rxKbps[tag] = metrics.NewRegisteredGauge(tag+"redis.rx.kbps", nil)           // instantaneous_input_kbps
+					this.txKbps[tag] = metrics.NewRegisteredGauge(tag+"redis.tx.kbps", nil)           // instantaneous_output_kbps
+					this.expiredKeys[tag] = metrics.NewRegisteredGauge(tag+"redis.expired.keys", nil) // expired_keys
 				}
 
 				wg.Add(1)
@@ -120,9 +132,19 @@ func (this *WatchRedisInfo) updateRedisInfo(wg *sync.WaitGroup, host string, por
 	mem, _ := strconv.ParseInt(infoMap["used_memory"], 10, 64)
 	ops, _ := strconv.ParseInt(infoMap["instantaneous_ops_per_sec"], 10, 64)
 	rejected, _ := strconv.ParseInt(infoMap["rejected_connections"], 10, 64)
+	syncPartial, _ := strconv.ParseInt(infoMap["sync_partial_err"], 10, 64)
+	rxKbps, _ := strconv.ParseInt(infoMap["instantaneous_input_kbps"], 10, 64)
+	txKbps, _ := strconv.ParseInt(infoMap["instantaneous_output_kbps"], 10, 64)
+	expiredKeys, _ := strconv.ParseInt(infoMap["expired_keys"], 10, 64)
+
+	this.syncPartial.Inc(syncPartial)
+
 	this.conns[tag].Update(conns)
 	this.blocked[tag].Update(blocked)
 	this.usedMem[tag].Update(mem)
 	this.ops[tag].Update(ops)
 	this.rejected[tag].Update(rejected)
+	this.rxKbps[tag].Update(rxKbps)
+	this.txKbps[tag].Update(txKbps)
+	this.expiredKeys[tag].Update(expiredKeys)
 }
