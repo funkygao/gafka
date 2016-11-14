@@ -50,6 +50,11 @@ func (this *WatchRedisInfo) Run() {
 	defer ticker.Stop()
 
 	this.deadInstance = metrics.NewRegisteredCounter("redis.dead", nil)
+	this.conns = make(map[string]metrics.Gauge, 10)
+	this.blocked = make(map[string]metrics.Gauge, 10)
+	this.usedMem = make(map[string]metrics.Gauge, 10)
+	this.ops = make(map[string]metrics.Gauge, 10)
+	this.rejected = make(map[string]metrics.Gauge, 10)
 
 	for {
 		select {
