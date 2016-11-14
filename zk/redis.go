@@ -11,7 +11,7 @@ func (this *ZkZone) redisZpath(host string, port int) string {
 func (this *ZkZone) AddRedis(host string, port int) {
 	this.connectIfNeccessary()
 
-	this.setZnode(this.redisZpath(host, port), nil)
+	this.createZnode(this.redisZpath(host, port), nil)
 }
 
 func (this *ZkZone) DelRedis(host string, port int) {
@@ -21,5 +21,7 @@ func (this *ZkZone) DelRedis(host string, port int) {
 }
 
 func (this *ZkZone) AllRedis() []string {
+	this.connectIfNeccessary()
+
 	return this.children(RedisMonPath)
 }
