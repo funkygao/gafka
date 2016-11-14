@@ -100,6 +100,7 @@ func (this *WatchRedisInfo) Run() {
 				// TODO ver=role(master|slave)
 				tag := telemetry.Tag(strings.Replace(host, ".", "_", -1), port, "v1")
 				if _, present := this.conns[tag]; !present {
+					this.mu.Lock()
 					this.conns[tag] = metrics.NewRegisteredGauge(tag+"redis.conns", nil)              // connected_clients
 					this.blocked[tag] = metrics.NewRegisteredGauge(tag+"redis.blocked", nil)          // blocked_clients
 					this.usedMem[tag] = metrics.NewRegisteredGauge(tag+"redis.mem.used", nil)         // used_memory
@@ -109,6 +110,7 @@ func (this *WatchRedisInfo) Run() {
 					this.txKbps[tag] = metrics.NewRegisteredGauge(tag+"redis.tx.kbps", nil)           // instantaneous_output_kbps
 					this.expiredKeys[tag] = metrics.NewRegisteredGauge(tag+"redis.expired.keys", nil) // expired_keys
 					this.keys[tag] = metrics.NewRegisteredGauge(tag+"redis.keys", nil)                // db0:keys=15500,expires=15500,avg_ttl=27438570
+					this.mu.Unlock()
 				}
 
 				wg.Add(1)
