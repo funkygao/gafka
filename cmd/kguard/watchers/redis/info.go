@@ -151,8 +151,6 @@ func (this *WatchRedisInfo) updateRedisInfo(wg *sync.WaitGroup, host string, por
 		}
 	}
 
-	this.keys[tag].Update(keysN)
-
 	conns, _ := strconv.ParseInt(infoMap["connected_clients"], 10, 64)
 	blocked, _ := strconv.ParseInt(infoMap["blocked_clients"], 10, 64)
 	mem, _ := strconv.ParseInt(infoMap["used_memory"], 10, 64)
@@ -166,6 +164,7 @@ func (this *WatchRedisInfo) updateRedisInfo(wg *sync.WaitGroup, host string, por
 	this.syncPartial.Inc(syncPartial)
 
 	this.mu.Lock()
+	this.keys[tag].Update(keysN)
 	this.conns[tag].Update(conns)
 	this.blocked[tag].Update(blocked)
 	this.usedMem[tag].Update(mem)
