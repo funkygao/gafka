@@ -40,6 +40,8 @@ func (this *WatchAppError) Init(ctx monitor.Context) {
 func (this *WatchAppError) Run() {
 	defer this.Wg.Done()
 
+	return // disable for now TODO
+
 	appError := metrics.NewRegisteredCounter("kateway.apperr", nil)
 	msgChan := make(chan *sarama.ConsumerMessage, 2000)
 
