@@ -45,7 +45,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		swallow(err)
 		zkzone.AddRedis(host, nport)
 	} else if del != "" {
-		host, port, err := net.SplitHostPort(add)
+		host, port, err := net.SplitHostPort(del)
 		swallow(err)
 
 		nport, err := strconv.Atoi(port)
