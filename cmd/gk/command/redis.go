@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -51,9 +52,13 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		swallow(err)
 		zkzone.DelRedis(host, nport)
 	} else if list {
-		for _, hostPort := range zkzone.AllRedis() {
-			this.Ui.Output(hostPort)
+		hostPorts := zkzone.AllRedis()
+		sort.Strings(hostPorts)
+		for _, hp := range hostPorts {
+			host, port, _ := net.SplitHostPort(hp)
+			this.Ui.Output(fmt.Sprintf("%16s %s", host, port))
 		}
+
 	}
 
 	return
