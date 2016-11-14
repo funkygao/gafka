@@ -28,7 +28,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&add, "add", "", "")
-	cmdFlags.BoolVar(&list, "list", false, "")
+	cmdFlags.BoolVar(&list, "list", true, "")
 	cmdFlags.StringVar(&del, "del", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -43,10 +43,6 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		nport, err := strconv.Atoi(port)
 		swallow(err)
 		zkzone.AddRedis(host, nport)
-	} else if list {
-		for _, hostPort := range zkzone.AllRedis() {
-			this.Ui.Output(hostPort)
-		}
 	} else if del != "" {
 		host, port, err := net.SplitHostPort(add)
 		swallow(err)
@@ -54,6 +50,10 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		nport, err := strconv.Atoi(port)
 		swallow(err)
 		zkzone.DelRedis(host, nport)
+	} else if list {
+		for _, hostPort := range zkzone.AllRedis() {
+			this.Ui.Output(hostPort)
+		}
 	}
 
 	return
