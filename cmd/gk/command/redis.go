@@ -3,8 +3,12 @@ package command
 import (
 	"flag"
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
 
+	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 )
 
@@ -15,12 +19,14 @@ type Redis struct {
 
 func (this *Redis) Run(args []string) (exitCode int) {
 	var (
+		zone string
 		add  string
 		list bool
 		del  string
 	)
 	cmdFlags := flag.NewFlagSet("redis", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
+	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&add, "add", "", "")
 	cmdFlags.BoolVar(&list, "list", false, "")
 	cmdFlags.StringVar(&del, "del", "", "")
@@ -28,19 +34,33 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+
 	if add != "" {
+		host, port, err := net.SplitHostPort(add)
+		swallow(err)
 
+		nport, err := strconv.Atoi(port)
+		swallow(err)
+		zkzone.AddRedis(host, nport)
 	} else if list {
-
+		for _, hostPort := range zkzone.AllRedis() {
+			this.Ui.Output(hostPort)
+		}
 	} else if del != "" {
+		host, port, err := net.SplitHostPort(add)
+		swallow(err)
 
+		nport, err := strconv.Atoi(port)
+		swallow(err)
+		zkzone.DelRedis(host, nport)
 	}
 
 	return
 }
 
 func (*Redis) Synopsis() string {
-	return "Manipulate redis instances to monitor"
+	return "Manipulate redis instances for kguard"
 }
 
 func (this *Redis) Help() string {
@@ -48,6 +68,8 @@ func (this *Redis) Help() string {
 Usage: %s redis [options]
 
     %s
+
+    -z zone
 
     -list
 
