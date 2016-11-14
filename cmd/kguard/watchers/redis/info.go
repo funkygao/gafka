@@ -133,8 +133,8 @@ func (this *WatchRedisInfo) updateRedisInfo(wg *sync.WaitGroup, host string, por
 	ops, _ := strconv.ParseInt(infoMap["instantaneous_ops_per_sec"], 10, 64)
 	rejected, _ := strconv.ParseInt(infoMap["rejected_connections"], 10, 64)
 	syncPartial, _ := strconv.ParseInt(infoMap["sync_partial_err"], 10, 64)
-	rxKbps, _ := strconv.ParseInt(infoMap["instantaneous_input_kbps"], 10, 64)
-	txKbps, _ := strconv.ParseInt(infoMap["instantaneous_output_kbps"], 10, 64)
+	rxKbps, _ := strconv.ParseFloat(infoMap["instantaneous_input_kbps"], 64)
+	txKbps, _ := strconv.ParseFloat(infoMap["instantaneous_output_kbps"], 64)
 	expiredKeys, _ := strconv.ParseInt(infoMap["expired_keys"], 10, 64)
 
 	this.syncPartial.Inc(syncPartial)
@@ -144,7 +144,7 @@ func (this *WatchRedisInfo) updateRedisInfo(wg *sync.WaitGroup, host string, por
 	this.usedMem[tag].Update(mem)
 	this.ops[tag].Update(ops)
 	this.rejected[tag].Update(rejected)
-	this.rxKbps[tag].Update(rxKbps)
-	this.txKbps[tag].Update(txKbps)
+	this.rxKbps[tag].Update(int64(rxKbps))
+	this.txKbps[tag].Update(int64(txKbps))
 	this.expiredKeys[tag].Update(expiredKeys)
 }
