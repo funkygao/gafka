@@ -31,6 +31,7 @@ type WatchRedisInfo struct {
 	Wg     *sync.WaitGroup
 
 	deadInstance, syncPartial metrics.Counter
+	instances                 metrics.Gauge
 	conns                     map[string]metrics.Gauge
 	blocked                   map[string]metrics.Gauge
 	usedMem                   map[string]metrics.Gauge
@@ -54,8 +55,10 @@ func (this *WatchRedisInfo) Run() {
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
+	this.instances = metrics.NewRegisteredGauge("redis.n", nil)
 	this.deadInstance = metrics.NewRegisteredCounter("redis.dead", nil)
 	this.syncPartial = metrics.NewRegisteredCounter("redis.sync.partial", nil)
+
 	this.conns = make(map[string]metrics.Gauge, 10)
 	this.blocked = make(map[string]metrics.Gauge, 10)
 	this.usedMem = make(map[string]metrics.Gauge, 10)
@@ -73,7 +76,11 @@ func (this *WatchRedisInfo) Run() {
 			return
 
 		case <-ticker.C:
-			var wg sync.WaitGroup
+			var (
+				wg     sync.WaitGroup
+				redisN int64
+			)
+
 			for _, hostPort := range this.Zkzone.AllRedis() {
 				host, port, err := net.SplitHostPort(hostPort)
 				if err != nil {
@@ -86,6 +93,8 @@ func (this *WatchRedisInfo) Run() {
 					log.Error("invalid redis instance: %s", hostPort)
 					continue
 				}
+
+				redisN++
 
 				// TODO ver=role(master|slave)
 				tag := telemetry.Tag(strings.Replace(host, ".", "_", -1), port, "v1")
@@ -105,6 +114,7 @@ func (this *WatchRedisInfo) Run() {
 				go this.updateRedisInfo(&wg, host, nport, tag)
 			}
 
+			this.instances.Update(redisN)
 			wg.Wait()
 
 		}
