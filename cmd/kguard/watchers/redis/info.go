@@ -1,4 +1,4 @@
-package zk
+package redis
 
 import (
 	"net"
@@ -39,6 +39,7 @@ type WatchRedisInfo struct {
 	rxKbps                    map[string]metrics.Gauge
 	txKbps                    map[string]metrics.Gauge
 	expiredKeys               map[string]metrics.Gauge
+	keys                      map[string]metrics.Gauge
 }
 
 func (this *WatchRedisInfo) Init(ctx monitor.Context) {
@@ -63,6 +64,7 @@ func (this *WatchRedisInfo) Run() {
 	this.rxKbps = make(map[string]metrics.Gauge, 10)
 	this.txKbps = make(map[string]metrics.Gauge, 10)
 	this.expiredKeys = make(map[string]metrics.Gauge, 10)
+	this.keys = make(map[string]metrics.Gauge, 10)
 
 	for {
 		select {
@@ -96,6 +98,7 @@ func (this *WatchRedisInfo) Run() {
 					this.rxKbps[tag] = metrics.NewRegisteredGauge(tag+"redis.rx.kbps", nil)           // instantaneous_input_kbps
 					this.txKbps[tag] = metrics.NewRegisteredGauge(tag+"redis.tx.kbps", nil)           // instantaneous_output_kbps
 					this.expiredKeys[tag] = metrics.NewRegisteredGauge(tag+"redis.expired.keys", nil) // expired_keys
+					this.keys[tag] = metrics.NewRegisteredGauge(tag+"redis.keys", nil)                // db0:keys=15500,expires=15500,avg_ttl=27438570
 				}
 
 				wg.Add(1)
@@ -127,6 +130,16 @@ func (this *WatchRedisInfo) updateRedisInfo(wg *sync.WaitGroup, host string, por
 		return
 	}
 
+	var keysN int64
+	// db0:keys=15500,expires=15500,avg_ttl=27438570
+	for key, value := range infoMap {
+		if strings.HasPrefix(key, "db") && strings.Contains(value, "keys=") {
+			keysN += extractKeysCount(value)
+		}
+	}
+
+	this.keys[tag].Update(keysN)
+
 	conns, _ := strconv.ParseInt(infoMap["connected_clients"], 10, 64)
 	blocked, _ := strconv.ParseInt(infoMap["blocked_clients"], 10, 64)
 	mem, _ := strconv.ParseInt(infoMap["used_memory"], 10, 64)
@@ -147,4 +160,20 @@ func (this *WatchRedisInfo) updateRedisInfo(wg *sync.WaitGroup, host string, por
 	this.rxKbps[tag].Update(int64(rxKbps))
 	this.txKbps[tag].Update(int64(txKbps))
 	this.expiredKeys[tag].Update(expiredKeys)
+}
+
+func extractKeysCount(info string) (n int64) {
+	parts := strings.SplitN(info, "keys=", 2)
+	if len(parts) != 2 {
+		return
+	}
+
+	p := strings.SplitN(parts[1], ",", 2)
+	if len(p) != 2 {
+		return
+	}
+
+	n, _ = strconv.ParseInt(p[0], 10, 64)
+	return
+
 }
