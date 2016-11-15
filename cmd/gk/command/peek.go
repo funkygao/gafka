@@ -178,25 +178,35 @@ LOOP:
 					if err := json.Unmarshal(msg.Value, &j); err != nil {
 						this.Ui.Error(err.Error())
 					} else {
+						var colVal string
+						switch t := j[this.column].(type) {
+						case string:
+							colVal = t
+						case float64:
+							colVal = fmt.Sprintf("%.0f", t)
+						case int:
+							colVal = fmt.Sprintf("%d", t)
+						}
+
 						if this.bodyOnly {
 							if this.pretty {
-								if err = json.Indent(&prettyJSON, []byte(j[this.column].(string)), "", "    "); err != nil {
+								if err = json.Indent(&prettyJSON, []byte(colVal), "", "    "); err != nil {
 									fmt.Println(err.Error())
 								} else {
 									outmsg = string(prettyJSON.Bytes())
 								}
 							} else {
-								outmsg = j[this.column].(string)
+								outmsg = colVal
 							}
 						} else if this.colorize {
 							outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
 								color.Green(msg.Topic), msg.Partition,
-								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column].(string))
+								gofmt.Comma(msg.Offset), string(msg.Key), colVal)
 						} else {
 							// colored UI will have invisible chars output
 							outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
 								msg.Topic, msg.Partition,
-								gofmt.Comma(msg.Offset), string(msg.Key), j[this.column].(string))
+								gofmt.Comma(msg.Offset), string(msg.Key), colVal)
 						}
 					}
 
