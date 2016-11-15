@@ -33,18 +33,20 @@ type WatchRedisInfo struct {
 
 	deadN, syncPartialN int64
 
-	mu                        sync.Mutex
-	deadInstance, syncPartial metrics.Gauge
-	instances                 metrics.Gauge
-	conns                     map[string]metrics.Gauge
-	blocked                   map[string]metrics.Gauge
-	usedMem                   map[string]metrics.Gauge
-	ops                       map[string]metrics.Gauge
-	rejected                  map[string]metrics.Gauge
-	rxKbps                    map[string]metrics.Gauge
-	txKbps                    map[string]metrics.Gauge
-	expiredKeys               map[string]metrics.Gauge
-	keys                      map[string]metrics.Gauge
+	mu           sync.Mutex
+	deadInstance metrics.Gauge
+	syncPartial  metrics.Gauge
+	hosts        metrics.Gauge
+	instances    metrics.Gauge
+	conns        map[string]metrics.Gauge
+	blocked      map[string]metrics.Gauge
+	usedMem      map[string]metrics.Gauge
+	ops          map[string]metrics.Gauge
+	rejected     map[string]metrics.Gauge
+	rxKbps       map[string]metrics.Gauge
+	txKbps       map[string]metrics.Gauge
+	expiredKeys  map[string]metrics.Gauge
+	keys         map[string]metrics.Gauge
 }
 
 func (this *WatchRedisInfo) Init(ctx monitor.Context) {
@@ -60,6 +62,7 @@ func (this *WatchRedisInfo) Run() {
 	defer ticker.Stop()
 
 	this.instances = metrics.NewRegisteredGauge("redis.n", nil)
+	this.hosts = metrics.NewRegisteredGauge("redis.hosts", nil)
 	this.deadInstance = metrics.NewRegisteredGauge("redis.dead", nil)
 	this.syncPartial = metrics.NewRegisteredGauge("redis.sync.partial", nil)
 
@@ -83,6 +86,7 @@ func (this *WatchRedisInfo) Run() {
 			var (
 				wg     sync.WaitGroup
 				redisN int64
+				hosts  = make(map[string]struct{})
 			)
 
 			for _, hostPort := range this.Zkzone.AllRedis() {
@@ -106,6 +110,7 @@ func (this *WatchRedisInfo) Run() {
 					log.Error("redis host[%s] ip: %v", host, err)
 				} else if len(ips) > 0 {
 					ip = ips[0].String()
+					hosts[ip] = struct{}{}
 				}
 				tag := telemetry.Tag(strings.Replace(host, ".", "_", -1), port, ip)
 				if _, present := this.conns[tag]; !present {
@@ -129,6 +134,8 @@ func (this *WatchRedisInfo) Run() {
 			this.instances.Update(redisN)
 			this.syncPartial.Update(atomic.LoadInt64(&this.syncPartialN))
 			this.deadInstance.Update(atomic.LoadInt64(&this.deadN))
+			this.hosts.Update(int64(len(hosts)))
+
 			// reset for next round
 			atomic.StoreInt64(&this.syncPartialN, 0)
 			atomic.StoreInt64(&this.deadN, 0)
