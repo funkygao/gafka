@@ -56,7 +56,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		sort.Strings(hostPorts)
 		for _, hp := range hostPorts {
 			host, port, _ := net.SplitHostPort(hp)
-			this.Ui.Output(fmt.Sprintf("%16s %s", host, port))
+			this.Ui.Output(fmt.Sprintf("%35s %s", host, port))
 		}
 
 		this.Ui.Output(fmt.Sprintf("Total %d", len(hostPorts)))
