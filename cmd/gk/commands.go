@@ -75,6 +75,13 @@ func init() {
 			}, nil
 		},
 
+		"sniff": func() (cli.Command, error) {
+			return &command.Sniff{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"job": func() (cli.Command, error) {
 			return &command.Job{
 				Ui:  ui,
