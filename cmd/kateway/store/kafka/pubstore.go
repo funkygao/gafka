@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"fmt"
 	l "log"
 	"os"
 	"sync"
@@ -11,6 +12,7 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/meta"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/golib/color"
+	gio "github.com/funkygao/golib/io"
 	log "github.com/funkygao/log4go"
 )
 
@@ -54,6 +56,13 @@ func (this *pubStore) Name() string {
 }
 
 func (this *pubStore) Start() (err error) {
+	if ctx.KafkaHome() == "" {
+		return fmt.Errorf("empty kafka_home in ~/.gafka.cf")
+	}
+	if !gio.DirExists(ctx.KafkaHome()) {
+		return fmt.Errorf("kafka not installed in %s, run 'gk deploy -kfkonly'", ctx.KafkaHome())
+	}
+
 	// warmup: create pools according the current kafka topology
 	for _, cluster := range meta.Default.ClusterNames() {
 		this.pubPools[cluster] = newPubPool(this, cluster,
