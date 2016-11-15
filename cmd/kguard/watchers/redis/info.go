@@ -100,8 +100,14 @@ func (this *WatchRedisInfo) Run() {
 
 				redisN++
 
-				// TODO ver=role(master|slave)
-				tag := telemetry.Tag(strings.Replace(host, ".", "_", -1), port, "v1")
+				var ip string
+				ips, err := net.LookupIP(host) // host in ip form is also ok e,g. 10.1.1.1
+				if err != nil {
+					log.Error("redis host[%s] ip: %v", host, err)
+				} else if len(ips) > 0 {
+					ip = ips[0].String()
+				}
+				tag := telemetry.Tag(strings.Replace(host, ".", "_", -1), port, ip)
 				if _, present := this.conns[tag]; !present {
 					this.mu.Lock()
 					this.conns[tag] = metrics.NewRegisteredGauge(tag+"redis.conns", nil)              // connected_clients

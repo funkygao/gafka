@@ -59,6 +59,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 			this.Ui.Output(fmt.Sprintf("%16s %s", host, port))
 		}
 
+		this.Ui.Output(fmt.Sprintf("Total %d", len(hostPorts)))
 	}
 
 	return

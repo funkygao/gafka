@@ -31,6 +31,7 @@ func Untag(name string) (appid, topic, ver, realname string) {
 	return
 }
 
+// TODO replace '.' with '_'
 func Tag(appid, topic, ver string) string {
 	tagBuf := make([]byte, 4+len(appid)+len(topic)+len(ver))
 	tagBuf[0] = charBraceletLeft
