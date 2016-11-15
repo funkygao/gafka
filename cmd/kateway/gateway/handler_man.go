@@ -326,7 +326,7 @@ func (this *manServer) createWebhookHandler(w http.ResponseWriter, r *http.Reque
 		log.Error("app[%s] %s(%s) create job: {appid:%s topic:%s ver:%s} %v",
 			appid, r.RemoteAddr, realIp, hisAppid, topic, ver, err)
 
-		writeServerError(w, err.Error())
+		writeBadRequest(w, err.Error())
 		return
 	}
 	r.Body.Close()
