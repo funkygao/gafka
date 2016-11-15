@@ -20,16 +20,18 @@ type Redis struct {
 
 func (this *Redis) Run(args []string) (exitCode int) {
 	var (
-		zone string
-		add  string
-		list bool
-		del  string
+		zone   string
+		add    string
+		list   bool
+		byHost bool
+		del    string
 	)
 	cmdFlags := flag.NewFlagSet("redis", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&add, "add", "", "")
 	cmdFlags.BoolVar(&list, "list", true, "")
+	cmdFlags.BoolVar(&byHost, "host", false, "")
 	cmdFlags.StringVar(&del, "del", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -52,14 +54,32 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		swallow(err)
 		zkzone.DelRedis(host, nport)
 	} else if list {
+		machineMap := make(map[string]struct{})
+		var machines []string
 		hostPorts := zkzone.AllRedis()
 		sort.Strings(hostPorts)
 		for _, hp := range hostPorts {
 			host, port, _ := net.SplitHostPort(hp)
-			this.Ui.Output(fmt.Sprintf("%35s %s", host, port))
+			ips, _ := net.LookupIP(host)
+			if _, present := machineMap[ips[0].String()]; !present {
+				machineMap[ips[0].String()] = struct{}{}
+
+				machines = append(machines, ips[0].String())
+			}
+			if !byHost {
+				this.Ui.Output(fmt.Sprintf("%35s %s", host, port))
+			}
+
 		}
 
-		this.Ui.Output(fmt.Sprintf("Total %d", len(hostPorts)))
+		if byHost {
+			sort.Strings(machines)
+			for _, ip := range machines {
+				this.Ui.Output(fmt.Sprintf("%20s", ip))
+			}
+		}
+
+		this.Ui.Output(fmt.Sprintf("Total instances:%d machines:%d", len(hostPorts), len(machines)))
 	}
 
 	return
@@ -78,6 +98,9 @@ Usage: %s redis [options]
     -z zone
 
     -list
+
+    -host
+      Work with -list, print host instead of redis instance
 
     -add host:port
 
