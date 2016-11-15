@@ -112,5 +112,6 @@ Currently gafka manages:
 - 2000+ kafka partitions
 - 10Billion messages per day
 - peak load
-  - 0.6Million message per second
+  - 1Million message per second
+  - 8TB transfered
 
