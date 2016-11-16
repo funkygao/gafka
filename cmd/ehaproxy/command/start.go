@@ -30,6 +30,8 @@ type Start struct {
 	Ui  cli.Ui
 	Cmd string
 
+	startedAt time.Time
+
 	zone       string
 	root       string
 	debugMode  bool
@@ -42,9 +44,9 @@ type Start struct {
 	forwardFor bool
 	httpAddr   string
 
-	quitCh      chan struct{}
-	zkzone      *zk.ZkZone
-	lastServers BackendServers
+	quitCh, closed chan struct{}
+	zkzone         *zk.ZkZone
+	lastServers    BackendServers
 }
 
 func (this *Start) Run(args []string) (exitCode int) {
@@ -80,7 +82,9 @@ func (this *Start) Run(args []string) (exitCode int) {
 
 	this.setupLogging(this.logfile, "info", "panic")
 	this.starting = true
+	this.startedAt = time.Now()
 	this.quitCh = make(chan struct{})
+	this.closed = make(chan struct{})
 	signal.RegisterHandler(func(sig os.Signal) {
 		log.Info("ehaproxy[%s] got signal: %s", gafka.BuildId, strings.ToUpper(sig.String()))
 		this.shutdown()
@@ -94,9 +98,14 @@ func (this *Start) Run(args []string) (exitCode int) {
 		close(this.quitCh)
 
 		log.Info("ehaproxy[%s] shutdown complete", gafka.BuildId)
+		log.Info("ehaproxy[%s] %s bye!", gafka.BuildId, time.Since(this.startedAt))
+
+		close(this.closed)
 	}, syscall.SIGINT, syscall.SIGTERM)
 
 	this.main()
+
+	<-this.closed
 	log.Close()
 
 	return
