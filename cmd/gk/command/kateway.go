@@ -521,7 +521,7 @@ func (this *Kateway) runSub(zkzone *zk.ZkZone) {
 	cf.Sub.Endpoint = zone.SubEndpoint
 	cli := api.NewClient(cf)
 
-	now := time.Now()
+	t1 := time.Now()
 	err := cli.Sub(api.SubOption{
 		AppId:     zone.SmokeHisApp,
 		Topic:     zone.SmokeTopic,
@@ -532,8 +532,11 @@ func (this *Kateway) runSub(zkzone *zk.ZkZone) {
 		if statusCode != http.StatusOK {
 			return fmt.Errorf("unexpected http status: %s, body:%s", http.StatusText(statusCode), string(subMsg))
 		}
-		this.Ui.Output(fmt.Sprintf("-> %s: %s", time.Since(now), string(subMsg)))
+
+		now := time.Now()
+		this.Ui.Output(fmt.Sprintf("-> %s: %s", now.Sub(t1), string(subMsg)))
 		time.Sleep(time.Millisecond * 100)
+		t1 = time.Now()
 
 		return nil
 	})
