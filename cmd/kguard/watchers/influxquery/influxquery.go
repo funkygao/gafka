@@ -89,8 +89,12 @@ func (this *WatchInfluxQuery) katewayMaxHeapSize() (float64, error) {
 		return 0, err
 	}
 
-	maxHeapSysInBytes := res[0].Series[0].Values[0][1].(json.Number)
-	return maxHeapSysInBytes.Float64()
+	if len(res) > 0 && len(res[0].Series) > 1 && len(res[0].Series[0].Values) > 0 && len(res[0].Series[0].Values[0]) > 1 {
+		maxHeapSysInBytes := res[0].Series[0].Values[0][1].(json.Number)
+		return maxHeapSysInBytes.Float64()
+	}
+
+	return 0, errInfluxResult
 }
 
 func (this *WatchInfluxQuery) pubLatency() (float64, error) {
