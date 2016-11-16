@@ -65,14 +65,14 @@ func (this *Monitor) Init() {
 	this.setupRoutes()
 
 	if logFile == "stdout" {
-		log.AddFilter("stdout", log.INFO, log.NewConsoleLogWriter())
+		log.AddFilter("stdout", log.TRACE, log.NewConsoleLogWriter())
 	} else {
 		log.DeleteFilter("stdout")
 
 		filer := log.NewFileLogWriter(logFile, true, false, 0644)
 		filer.SetRotateDaily(true)
 		filer.SetFormat("[%d %T] [%L] (%S) %M")
-		log.AddFilter("file", log.INFO, filer)
+		log.AddFilter("file", log.TRACE, filer)
 	}
 
 	rc, err := influxdb.NewConfig(this.influxdbAddr, this.influxdbDbName, "", "", time.Minute)
