@@ -108,7 +108,7 @@ func (this *WatchConsumers) frequentOffsetCommit() (n int64) {
 				gtp := structs.GroupTopicPartition{Group: group, Topic: c.Topic, PartitionID: c.PartitionId}
 				if t, present := this.offsetMtimeMap[gtp]; present {
 					if interval := c.Mtime.Time().Sub(t); interval < frequentThreshold {
-						log.Error("cluster[%s] group[%s] topic[%s/%s] too frequent offset commit: %s", zkcluster.Name(), group, c.Topic, c.PartitionId, interval)
+						log.Warn("cluster[%s] group[%s] topic[%s/%s] too frequent offset commit: %s", zkcluster.Name(), group, c.Topic, c.PartitionId, interval)
 
 						n++
 					}

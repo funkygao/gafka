@@ -70,6 +70,7 @@ func (this *Monitor) Init() {
 		log.DeleteFilter("stdout")
 
 		filer := log.NewFileLogWriter(logFile, true, false, 0644)
+		filer.SetRotateDaily(true)
 		filer.SetFormat("[%d %T] [%L] (%S) %M")
 		log.AddFilter("file", log.INFO, filer)
 	}

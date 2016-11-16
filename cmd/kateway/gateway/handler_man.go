@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"runtime"
 	"strconv"
 	"strings"
@@ -284,7 +285,7 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	w.Write([]byte(fmt.Sprintf(`{"num": %d}`, len(partitions))))
 }
 
-// @rest PUT /v1/webhook/:appid/:topic/:ver
+// @rest PUT /v1/webhook/:appid/:topic/:ver?group=xx
 func (this *manServer) createWebhookHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	topic := params.ByName(UrlParamTopic)
 	if !manager.Default.ValidateTopicName(topic) {
@@ -294,53 +295,112 @@ func (this *manServer) createWebhookHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	query := r.URL.Query()
+	group := query.Get("group")
 	realIp := getHttpRemoteIp(r)
 	hisAppid := params.ByName(UrlParamAppid)
-	appid := r.Header.Get(HttpHeaderAppid)
-	pubkey := r.Header.Get(HttpHeaderPubkey)
+	myAppid := r.Header.Get(HttpHeaderAppid)
 	ver := params.ByName(UrlParamVersion)
-	if !manager.Default.AuthAdmin(appid, pubkey) {
-		log.Warn("suspicous create webhook %s(%s) {appid:%s pubkey:%s topic:%s ver:%s}",
-			r.RemoteAddr, realIp, appid, pubkey, topic, ver)
 
-		writeAuthFailure(w, manager.ErrAuthenticationFail)
+	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
+		hisAppid, topic, group); err != nil {
+		log.Error("+webhook[%s/%s] -(%s): {%s.%s.%s UA:%s} %v",
+			myAppid, group, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), err)
+
+		writeAuthFailure(w, err)
 		return
 	}
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
-		log.Error("create webhook %s(%s) {appid:%s topic:%s ver:%s} undefined cluster",
-			r.RemoteAddr, realIp, appid, topic, ver)
+		log.Error("+webhook[%s/%s] -(%s): {%s.%s.%s UA:%s} undefined cluster",
+			myAppid, group, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"))
 
-		writeBadRequest(w, "undefined cluster")
+		writeBadRequest(w, "invalid appid")
 		return
 	}
 
-	log.Info("app[%s] %s(%s) create webhook: {appid:%s topic:%s ver:%s}",
-		appid, r.RemoteAddr, realIp, hisAppid, topic, ver)
+	log.Info("+webhook[%s/%s] %s(%s): {%s.%s.%s UA:%s}",
+		myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"))
 
 	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
 	var hook zk.WebhookMeta
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&hook); err != nil {
-		log.Error("app[%s] %s(%s) create job: {appid:%s topic:%s ver:%s} %v",
-			appid, r.RemoteAddr, realIp, hisAppid, topic, ver, err)
+		log.Error("+webhook[%s/%s] %s(%s): {%s.%s.%s UA:%s} %v",
+			myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), err)
 
-		writeServerError(w, err.Error())
+		writeBadRequest(w, err.Error())
 		return
 	}
 	r.Body.Close()
 
+	// validate the url
+	for _, ep := range hook.Endpoints {
+		_, err := url.ParseRequestURI(ep)
+		if err != nil {
+			log.Error("+webhook[%s/%s] %s(%s): {%s.%s.%s UA:%s} %+v %v",
+				myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), hook.Endpoints, err)
+
+			writeBadRequest(w, err.Error())
+			return
+		}
+	}
+
 	hook.Cluster = cluster // cluster is decided by server
 	if err := this.gw.zkzone.CreateOrUpdateWebhook(rawTopic, hook); err != nil {
-		log.Error("app[%s] %s(%s) create job: {shard:%d appid:%s topic:%s ver:%s} %v",
-			appid, r.RemoteAddr, realIp, Options.AssignJobShardId, hisAppid, topic, ver, err)
+		log.Error("+webhook[%s/%s] %s(%s): {%s.%s.%s UA:%s} %v",
+			myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), err)
 
 		writeServerError(w, err.Error())
 		return
 	}
 
 	w.Write(ResponseOk)
+}
+
+// @rest DELETE /v1/jobs/:appid/:topic/:ver?group=xx
+func (this *manServer) deleteWebhookHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	topic := params.ByName(UrlParamTopic)
+	if !manager.Default.ValidateTopicName(topic) {
+		log.Warn("illegal topic: %s", topic)
+
+		writeBadRequest(w, "illegal topic")
+		return
+	}
+
+	query := r.URL.Query()
+	group := query.Get("group")
+	realIp := getHttpRemoteIp(r)
+	hisAppid := params.ByName(UrlParamAppid)
+	myAppid := r.Header.Get(HttpHeaderAppid)
+	ver := params.ByName(UrlParamVersion)
+
+	if err := manager.Default.AuthSub(myAppid, r.Header.Get(HttpHeaderSubkey),
+		hisAppid, topic, group); err != nil {
+		log.Error("+webhook[%s/%s] -(%s): {%s.%s.%s UA:%s} %v",
+			myAppid, group, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), err)
+
+		writeAuthFailure(w, err)
+		return
+	}
+
+	/*
+		cluster, found := manager.Default.LookupCluster(hisAppid)
+		if !found {
+			log.Error("+webhook[%s/%s] -(%s): {%s.%s.%s UA:%s} undefined cluster",
+				myAppid, group, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"))
+
+			writeBadRequest(w, "invalid appid")
+			return
+		}
+
+		log.Info("+webhook[%s/%s] %s(%s): {%s.%s.%s UA:%s}",
+			myAppid, group, r.RemoteAddr, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"))
+
+		rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
+	*/
+
 }
 
 // @rest POST /v1/jobs/:appid/:topic/:ver
