@@ -43,6 +43,7 @@ type Kateway struct {
 	visualLog       string
 	checkup         bool
 	curl            bool
+	pub, sub        bool
 	versionOnly     bool
 	flameGraph      bool
 	benchmark       bool
@@ -71,6 +72,8 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.checkup, "checkup", false, "")
 	cmdFlags.BoolVar(&this.benchmark, "bench", false, "")
 	cmdFlags.StringVar(&this.benchmarkMaster, "master", "", "")
+	cmdFlags.BoolVar(&this.pub, "pub", false, "")
+	cmdFlags.BoolVar(&this.sub, "sub", false, "")
 	cmdFlags.BoolVar(&this.benchmarkAsync, "async", false, "")
 	cmdFlags.BoolVar(&this.curl, "curl", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -122,6 +125,18 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 
 	if this.visualLog != "" {
 		this.doVisualize()
+		return
+	}
+
+	if this.pub {
+		zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+		this.runPub(zkzone)
+		return
+	}
+
+	if this.sub {
+		zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+		this.runSub(zkzone)
 		return
 	}
 
@@ -481,6 +496,53 @@ func (this *Kateway) benchPub(seq int) {
 
 }
 
+func (this *Kateway) runPub(zkzone *zk.ZkZone) {
+	zone := ctx.Zone(zkzone.Name())
+	cf := api.DefaultConfig(zone.SmokeApp, zone.SmokeSecret)
+	cf.Pub.Endpoint = zone.PubEndpoint
+	cli := api.NewClient(cf)
+
+	for {
+		now := time.Now()
+		pubMsg := fmt.Sprintf("gk kateway -pub smoke test msg: [%s]", now)
+		err := cli.Pub("", []byte(pubMsg), api.PubOption{
+			Topic: zone.SmokeTopic,
+			Ver:   zone.SmokeTopicVersion,
+		})
+		this.Ui.Output(fmt.Sprintf("<- %s: %s %v", time.Since(now), pubMsg, err))
+
+		time.Sleep(time.Millisecond * 100)
+	}
+}
+
+func (this *Kateway) runSub(zkzone *zk.ZkZone) {
+	zone := ctx.Zone(zkzone.Name())
+	cf := api.DefaultConfig(zone.SmokeApp, zone.SmokeSecret)
+	cf.Sub.Endpoint = zone.SubEndpoint
+	cli := api.NewClient(cf)
+
+	now := time.Now()
+	err := cli.Sub(api.SubOption{
+		AppId:     zone.SmokeHisApp,
+		Topic:     zone.SmokeTopic,
+		Ver:       zone.SmokeTopicVersion,
+		Group:     zone.SmokeGroup,
+		AutoClose: false,
+	}, func(statusCode int, subMsg []byte) error {
+		if statusCode != http.StatusOK {
+			return fmt.Errorf("unexpected http status: %s, body:%s", http.StatusText(statusCode), string(subMsg))
+		}
+		this.Ui.Output(fmt.Sprintf("-> %s: %s", time.Since(now), string(subMsg)))
+		time.Sleep(time.Millisecond * 100)
+
+		return nil
+	})
+
+	if err != nil {
+		this.Ui.Error(err.Error())
+	}
+}
+
 func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 	zone := ctx.Zone(zkzone.Name())
 	var (
@@ -640,6 +702,12 @@ Options:
 
     -async
       Run benchmark in async mode
+
+    -pub
+      Continously pub
+
+    -sub
+      Continously sub
 
     -flame
       Generate a kateway instance flame graph
