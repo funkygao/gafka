@@ -150,7 +150,7 @@ func (this *Redis) runTop(zkzone *zk.ZkZone) {
 			lines = append(lines, fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s",
 				info.host, info.port,
 				gofmt.Comma(info.dbsize), gofmt.Comma(info.conns), gofmt.Comma(info.ops),
-				gofmt.Comma(info.rx*1024), gofmt.Comma(info.tx*1024)))
+				gofmt.ByteSize(info.rx*1024/8), gofmt.ByteSize(info.tx*1024/8)))
 		}
 
 		this.Ui.Output(columnize.SimpleFormat(lines))
