@@ -45,12 +45,17 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&add, "add", "", "")
 	cmdFlags.BoolVar(&list, "list", true, "")
 	cmdFlags.BoolVar(&byHost, "host", false, "")
+	cmdFlags.BoolVar(&top, "top", false, "")
+	cmdFlags.BoolVar(&slow, "slow", false, "")
 	cmdFlags.StringVar(&del, "del", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	if top {
+		list = false
+	}
 
 	if add != "" {
 		host, port, err := net.SplitHostPort(add)
@@ -66,37 +71,39 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		nport, err := strconv.Atoi(port)
 		swallow(err)
 		zkzone.DelRedis(host, nport)
-	} else if list {
-		machineMap := make(map[string]struct{})
-		var machines []string
-		hostPorts := zkzone.AllRedis()
-		sort.Strings(hostPorts)
-		for _, hp := range hostPorts {
-			host, port, _ := net.SplitHostPort(hp)
-			ips, _ := net.LookupIP(host)
-			if _, present := machineMap[ips[0].String()]; !present {
-				machineMap[ips[0].String()] = struct{}{}
+	} else {
+		if top {
+			this.runTop(zkzone)
+		} else if slow {
+			this.runSlowlog(zkzone)
+		} else if list {
+			machineMap := make(map[string]struct{})
+			var machines []string
+			hostPorts := zkzone.AllRedis()
+			sort.Strings(hostPorts)
+			for _, hp := range hostPorts {
+				host, port, _ := net.SplitHostPort(hp)
+				ips, _ := net.LookupIP(host)
+				if _, present := machineMap[ips[0].String()]; !present {
+					machineMap[ips[0].String()] = struct{}{}
 
-				machines = append(machines, ips[0].String())
-			}
-			if !byHost {
-				this.Ui.Output(fmt.Sprintf("%35s %s", host, port))
+					machines = append(machines, ips[0].String())
+				}
+				if !byHost {
+					this.Ui.Output(fmt.Sprintf("%35s %s", host, port))
+				}
+
 			}
 
+			if byHost {
+				sort.Strings(machines)
+				for _, ip := range machines {
+					this.Ui.Output(fmt.Sprintf("%20s", ip))
+				}
+			}
+
+			this.Ui.Output(fmt.Sprintf("Total instances:%d machines:%d", len(hostPorts), len(machines)))
 		}
-
-		if byHost {
-			sort.Strings(machines)
-			for _, ip := range machines {
-				this.Ui.Output(fmt.Sprintf("%20s", ip))
-			}
-		}
-
-		this.Ui.Output(fmt.Sprintf("Total instances:%d machines:%d", len(hostPorts), len(machines)))
-	} else if top {
-		this.runTop(zkzone)
-	} else if slow {
-		this.runSlowlog(zkzone)
 	}
 
 	return
@@ -140,7 +147,7 @@ func (this *Redis) runTop(zkzone *zk.ZkZone) {
 
 		for i := 0; i < min(limit, len(this.topInfos)); i++ {
 			info := this.topInfos[i]
-			lines = append(lines, fmt.Sprintf("%s|%d|%s|%s|%s|%s",
+			lines = append(lines, fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s",
 				info.host, info.port,
 				gofmt.Comma(info.dbsize), gofmt.Comma(info.conns), gofmt.Comma(info.ops),
 				gofmt.Comma(info.rx*1024), gofmt.Comma(info.tx*1024)))
@@ -158,14 +165,12 @@ func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
 	spec := redis.DefaultSpec().Host(host).Port(port)
 	client, err := redis.NewSynchClientWithSpec(spec)
 	if err != nil {
-		log.Error("redis[%s:%d]: %v", host, port, err)
 		return
 	}
 	defer client.Quit()
 
 	infoMap, err := client.Info()
 	if err != nil {
-		log.Error("redis[%s:%d] info: %v", host, port, err)
 		return
 	}
 
