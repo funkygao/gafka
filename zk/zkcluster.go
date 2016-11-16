@@ -221,6 +221,12 @@ func (this *ZkCluster) ConsumerGroups() map[string]map[string]*ConsumerZnode {
 		r[group] = make(map[string]*ConsumerZnode)
 		for consumerId, data := range this.zone.ChildrenWithData(this.consumerGroupIdsPath(group)) {
 			c := newConsumerZnode(consumerId)
+			if len(data.data) > 0 && data.data[0] != '{' {
+				// pykafka uses kafka __consumer_offsets as group coordinator
+				// but it leaves dirty topic name in zk
+				continue
+			}
+
 			if err := c.from(data.data); err != nil {
 				// found some python consumer sdk, their ids nodes value: topic_name
 				log.Error("cluster[%s] consumer[%s/%s %s] %s: %v", this.name, group, consumerId,
