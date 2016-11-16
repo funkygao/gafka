@@ -217,6 +217,13 @@ func shortIp(host string) string {
 	return strings.Join(parts[2:], ".")
 }
 
+func min(a, b int) int {
+	if a > b {
+		return b
+	}
+	return a
+}
+
 func toLogLevel(levelStr string) log.Level {
 	level := log.TRACE
 	switch levelStr {

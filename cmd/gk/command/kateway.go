@@ -529,16 +529,17 @@ func (this *Kateway) runSub(zkzone *zk.ZkZone) {
 		Group:     zone.SmokeGroup,
 		AutoClose: false,
 	}, func(statusCode int, subMsg []byte) error {
-		if statusCode != http.StatusOK {
-			return fmt.Errorf("unexpected http status: %s, body:%s", http.StatusText(statusCode), string(subMsg))
-		}
-
 		now := time.Now()
-		this.Ui.Output(fmt.Sprintf("-> %s: %s", now.Sub(t1), string(subMsg)))
+		var e error
+		if statusCode != http.StatusOK {
+			e = fmt.Errorf("unexpected http status: %s, body:%s", http.StatusText(statusCode), string(subMsg))
+		}
+		this.Ui.Output(fmt.Sprintf("-> %s: %s %v", now.Sub(t1), string(subMsg), e))
+
 		time.Sleep(time.Millisecond * 100)
 		t1 = time.Now()
 
-		return nil
+		return e
 	})
 
 	if err != nil {
