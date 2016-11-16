@@ -23,11 +23,12 @@ func (this *runner) dump(pts []client.Point) {
 		}
 	}
 
+	log.Trace("influxdb writing[%s] %d points", this.cf.database, len(pts))
 	if _, err := this.client.Write(client.BatchPoints{
 		Points:   pts,
 		Database: this.cf.database,
 	}); err != nil {
-		log.Error("influxdb write: %v", err)
+		log.Error("influxdb: %v", err)
 
 		// reconnect in next round
 		this.client = nil
