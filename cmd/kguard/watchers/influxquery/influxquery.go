@@ -2,6 +2,7 @@ package influxquery
 
 import (
 	"encoding/json"
+	"errors"
 	"sync"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	log "github.com/funkygao/log4go"
 	"github.com/influxdata/influxdb/client/v2"
 )
+
+var errInfluxResult = errors.New("bad reply from influx query result")
 
 func init() {
 	monitor.RegisterWatcher("influx.query", func() monitor.Watcher {
@@ -110,8 +113,12 @@ func (this *WatchInfluxQuery) pubLatency() (float64, error) {
 	//      Err:""
 	//    }
 	//  }
-	p99 := res[0].Series[0].Values[0][1].(json.Number) // values[0][0] is "time"
-	return p99.Float64()
+	if len(res) > 0 && len(res[0].Series) > 1 && len(res[0].Series[0].Values) > 0 && len(res[0].Series[0].Values[0]) > 1 {
+		p99 := res[0].Series[0].Values[0][1].(json.Number) // values[0][0] is "time"
+		return p99.Float64()
+	}
+
+	return 0., errInfluxResult
 }
 
 // queryDB convenience function to query the database
