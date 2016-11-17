@@ -35,7 +35,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		zone   string
 		add    string
 		list   bool
-		byHost bool
+		byHost int
 		del    string
 		top    bool
 		ping   bool
@@ -45,7 +45,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&add, "add", "", "")
 	cmdFlags.BoolVar(&list, "list", true, "")
-	cmdFlags.BoolVar(&byHost, "host", false, "")
+	cmdFlags.IntVar(&byHost, "host", 0, "")
 	cmdFlags.BoolVar(&top, "top", false, "")
 	cmdFlags.BoolVar(&ping, "ping", false, "")
 	cmdFlags.StringVar(&del, "del", "", "")
@@ -79,27 +79,38 @@ func (this *Redis) Run(args []string) (exitCode int) {
 			this.runPing(zkzone)
 		} else if list {
 			machineMap := make(map[string]struct{})
+			machinePortMap := make(map[string][]string)
 			var machines []string
 			hostPorts := zkzone.AllRedis()
 			sort.Strings(hostPorts)
 			for _, hp := range hostPorts {
 				host, port, _ := net.SplitHostPort(hp)
 				ips, _ := net.LookupIP(host)
-				if _, present := machineMap[ips[0].String()]; !present {
-					machineMap[ips[0].String()] = struct{}{}
+				ip := ips[0].String()
+				if _, present := machineMap[ip]; !present {
+					machineMap[ip] = struct{}{}
+					machinePortMap[ip] = make([]string, 0)
 
-					machines = append(machines, ips[0].String())
+					machines = append(machines, ip)
 				}
-				if !byHost {
+
+				if byHost == 0 {
 					this.Ui.Output(fmt.Sprintf("%35s %s", host, port))
+				} else {
+					machinePortMap[ip] = append(machinePortMap[ip], port)
 				}
 
 			}
 
-			if byHost {
+			if byHost > 0 {
 				sort.Strings(machines)
 				for _, ip := range machines {
-					this.Ui.Output(fmt.Sprintf("%20s", ip))
+					sort.Strings(machinePortMap[ip])
+					this.Ui.Info(fmt.Sprintf("%20s %2d ports", ip, len(machinePortMap[ip])))
+					if byHost > 1 {
+						this.Ui.Output(fmt.Sprintf("%+v", machinePortMap[ip]))
+					}
+
 				}
 			}
 
@@ -279,15 +290,17 @@ Usage: %s redis [options]
 
     -list
 
+    -host 1|2
+      Work with -list, print host instead of redis instance
+      1: only display host
+      2: 0 + port info
+
     -top
       Monitor all redis instances ops
 
     -ping
       Ping all redis instances
-
-    -host
-      Work with -list, print host instead of redis instance
-
+    
     -add host:port
 
     -del host:port
