@@ -37,6 +37,7 @@ type Redis struct {
 	topOrderColIdx int
 	beep           int64
 	topOrderCols   []string
+	ipInNum        bool
 }
 
 func (this *Redis) Run(args []string) (exitCode int) {
@@ -59,6 +60,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&top, "top", false, "")
 	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*10, "")
 	cmdFlags.BoolVar(&ping, "ping", false, "")
+	cmdFlags.BoolVar(&this.ipInNum, "n", false, "")
 	cmdFlags.Int64Var(&this.beep, "beep", 0, "")
 	cmdFlags.StringVar(&del, "del", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -255,7 +257,7 @@ func (this *Redis) drawSplash() {
 func (this *Redis) drawRow(row string, y int, fg, bg termbox.Attribute) {
 	x := 0
 	tuples := strings.SplitN(row, "|", 7)
-	row = fmt.Sprintf("%30s %8s %12s %9s %9s %13s %13s",
+	row = fmt.Sprintf("%30s %8s %15s %9s %9s %13s %13s",
 		tuples[0], tuples[1], tuples[2], tuples[3], tuples[4],
 		tuples[5], tuples[6])
 	for _, r := range row {
@@ -298,8 +300,18 @@ func (this *Redis) render() {
 	var (
 		sumDbsize, sumConns, sumOps, sumRx, sumTx int64
 	)
-	for i := 0; i < min(this.rows, len(this.topInfos)); i++ {
+	for i := 0; i < len(this.topInfos); i++ {
 		info := this.topInfos[i]
+		sumDbsize += info.dbsize
+		sumConns += info.conns
+		sumOps += info.ops
+		sumRx += info.rx * 1024 / 8
+		sumTx += info.tx * 1024 / 8
+
+		if i >= min(this.rows, len(this.topInfos)) {
+			continue
+		}
+
 		l := fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s",
 			info.host, info.port,
 			gofmt.Comma(info.dbsize), gofmt.Comma(info.conns), gofmt.Comma(info.ops),
@@ -325,11 +337,6 @@ func (this *Redis) render() {
 		}
 		lines = append(lines, l)
 
-		sumDbsize += info.dbsize
-		sumConns += info.conns
-		sumOps += info.ops
-		sumRx += info.rx * 1024 / 8
-		sumTx += info.tx * 1024 / 8
 	}
 	lines = append(lines, fmt.Sprintf("-TOTAL-|-%d-|%s|%s|%s|%s|%s",
 		len(this.topInfos),
@@ -367,6 +374,10 @@ func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
 	ops, _ := strconv.ParseInt(infoMap["instantaneous_ops_per_sec"], 10, 64)
 	rxKbps, _ := strconv.ParseFloat(infoMap["instantaneous_input_kbps"], 64)
 	txKbps, _ := strconv.ParseFloat(infoMap["instantaneous_output_kbps"], 64)
+
+	if this.ipInNum {
+		host = ipaddr(host)
+	}
 
 	this.mu.Lock()
 	this.topInfos = append(this.topInfos, redisTopInfo{
@@ -471,6 +482,9 @@ Usage: %s redis [options]
 
     -top
       Monitor all redis instances ops
+
+    -n
+      Show network addresses as numbers
 
     -sleep interval
       Sleep between -top refreshing screen. Defaults 10s

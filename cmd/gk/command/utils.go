@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"sort"
@@ -33,6 +34,11 @@ func validateArgs(cmd cli.Command, ui cli.Ui) *argsRule {
 		adminRequires: make(map[string]struct{}),
 		conditions:    make(map[string][]string),
 	}
+}
+
+func ipaddr(hostname string) string {
+	ips, _ := net.LookupIP(host)
+	return ips[0].String()
 }
 
 func (this *argsRule) require(option ...string) *argsRule {
