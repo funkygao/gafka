@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"flag"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -157,9 +158,10 @@ func (this *Monitor) ServeForever() {
 	}
 	apiListener, err := net.Listen("tcp", this.apiAddr)
 	if err == nil {
+		log.Info("api http server ready on %s", this.apiAddr)
 		go apiServer.Serve(apiListener)
 	} else {
-		log.Error("api http server: %v", err)
+		panic(fmt.Sprintf("api http server: %v", err))
 	}
 
 	backend, err := zookeeper.New(this.zkzone.ZkAddrList(), &store.Config{})

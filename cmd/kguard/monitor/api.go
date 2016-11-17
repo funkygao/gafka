@@ -9,6 +9,12 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+func (this *Monitor) setupRoutes() {
+	this.router = httprouter.New()
+	this.router.GET("/ver", this.versionHandler)
+	this.router.GET("/metrics", this.metricsHandler)
+}
+
 // GET /metrics
 func (this *Monitor) metricsHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
