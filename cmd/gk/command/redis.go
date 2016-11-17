@@ -237,7 +237,7 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 func (this *Redis) drawRow(row string, y int, fg, bg termbox.Attribute) {
 	x := 0
 	tuples := strings.SplitN(row, "|", 7)
-	row = fmt.Sprintf("%30s %7s %10s %10s %10s %10s %10s",
+	row = fmt.Sprintf("%30s %7s %12s %7s %8s %13s %13s",
 		tuples[0], tuples[1], tuples[2], tuples[3], tuples[4],
 		tuples[5], tuples[6])
 	for _, r := range row {
