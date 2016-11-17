@@ -149,7 +149,7 @@ type redisTopInfo struct {
 
 func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 	termui.Init()
-	this.rows = termui.TermHeight() - 4
+	this.rows = termui.TermHeight() - 2
 	defer termui.Close()
 
 	termbox.SetInputMode(termbox.InputEsc)
