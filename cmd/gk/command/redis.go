@@ -32,13 +32,14 @@ type Redis struct {
 
 func (this *Redis) Run(args []string) (exitCode int) {
 	var (
-		zone   string
-		add    string
-		list   bool
-		byHost int
-		del    string
-		top    bool
-		ping   bool
+		zone        string
+		add         string
+		list        bool
+		byHost      int
+		del         string
+		top         bool
+		topInterval time.Duration
+		ping        bool
 	)
 	cmdFlags := flag.NewFlagSet("redis", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -47,6 +48,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&list, "list", true, "")
 	cmdFlags.IntVar(&byHost, "host", 0, "")
 	cmdFlags.BoolVar(&top, "top", false, "")
+	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*5, "")
 	cmdFlags.BoolVar(&ping, "ping", false, "")
 	cmdFlags.StringVar(&del, "del", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -74,7 +76,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		zkzone.DelRedis(host, nport)
 	} else {
 		if top {
-			this.runTop(zkzone)
+			this.runTop(zkzone, topInterval)
 		} else if ping {
 			this.runPing(zkzone)
 		} else if list {
@@ -129,7 +131,7 @@ type redisTopInfo struct {
 	latency                    time.Duration
 }
 
-func (this *Redis) runTop(zkzone *zk.ZkZone) {
+func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 	termui.Init()
 	limit := termui.TermHeight() - 4
 	termui.Close()
@@ -182,7 +184,7 @@ func (this *Redis) runTop(zkzone *zk.ZkZone) {
 
 		this.Ui.Output(columnize.SimpleFormat(lines))
 
-		time.Sleep(time.Second * 5)
+		time.Sleep(interval)
 	}
 }
 
@@ -310,6 +312,10 @@ Usage: %s redis [options]
 
     -top
       Monitor all redis instances ops
+
+    -sleep interval
+      Sleep between -top refreshing screen. Defaults 5s
+      e,g 10s
 
     -ping
       Ping all redis instances
