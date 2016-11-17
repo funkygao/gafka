@@ -156,7 +156,7 @@ func (this *Monitor) ServeForever() {
 		Addr:    this.apiAddr,
 		Handler: this.router,
 	}
-	apiListener, err := net.Listen("tcp", this.apiAddr)
+	apiListener, err := net.Listen("tcp4", this.apiAddr)
 	if err == nil {
 		log.Info("api http server ready on %s", this.apiAddr)
 		go apiServer.Serve(apiListener)
@@ -194,6 +194,8 @@ func (this *Monitor) ServeForever() {
 			}
 
 		case <-this.quit:
+			apiListener.Close()
+			log.Info("api http server closed")
 			log.Info("kguard[%s@%s] bye!", gafka.BuildId, gafka.BuiltAt)
 			log.Close()
 			return
