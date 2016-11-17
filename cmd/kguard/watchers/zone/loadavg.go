@@ -77,6 +77,7 @@ func (this *WatchLoadAvg) highLoadCount() (n int64, err error) {
 		}
 
 		if load1m > threshold {
+			log.Warn(line)
 			n++
 		}
 	}

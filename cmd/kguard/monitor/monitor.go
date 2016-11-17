@@ -38,6 +38,8 @@ type Monitor struct {
 
 	candidate *leadership.Candidate
 
+	watchers []Watcher
+
 	inflight *sync.WaitGroup
 	stop     chan struct{} // broadcast to all watchers to stop, but might restart again
 	quit     chan struct{}
@@ -60,6 +62,7 @@ func (this *Monitor) Init() {
 
 	ctx.LoadFromHome()
 	this.zkzone = zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	this.watchers = make([]Watcher, 0, 10)
 	this.quit = make(chan struct{})
 
 	// export RESTful api
@@ -121,8 +124,11 @@ func (this *Monitor) Start() {
 	}()
 
 	this.inflight = new(sync.WaitGroup)
+	this.watchers = this.watchers[:0]
 	for name, watcherFactory := range registeredWatchers {
 		watcher := watcherFactory()
+		this.watchers = append(this.watchers, watcher)
+
 		watcher.Init(this)
 
 		log.Info("created and starting watcher: %s", name)

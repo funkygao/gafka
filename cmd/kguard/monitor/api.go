@@ -2,11 +2,13 @@ package monitor
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/go-metrics"
+	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -14,6 +16,23 @@ func (this *Monitor) setupRoutes() {
 	this.router = httprouter.New()
 	this.router.GET("/ver", this.versionHandler)
 	this.router.GET("/metrics", this.metricsHandler)
+	this.router.PUT("/set", this.configHandler)
+}
+
+// PUT /set?key=xx
+func (this *Monitor) configHandler(w http.ResponseWriter, r *http.Request,
+	params httprouter.Params) {
+	key := r.URL.Query().Get("key")
+	n := 0
+	for _, w := range this.watchers {
+		if s, ok := w.(Setter); ok {
+			s.Set(key)
+			n++
+		}
+	}
+
+	log.Info("key[%s] %d watchers applied", key, n)
+	w.Write([]byte(fmt.Sprintf("%d watchers applied", n)))
 }
 
 // GET /metrics?debug=1

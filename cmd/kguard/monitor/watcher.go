@@ -14,6 +14,10 @@ type Watcher interface {
 	Run()
 }
 
+type Setter interface {
+	Set(key string)
+}
+
 func RegisterWatcher(name string, factory func() Watcher) {
 	if _, present := registeredWatchers[name]; present {
 		panic(fmt.Sprintf("watcher[%s] cannot register twice", name))

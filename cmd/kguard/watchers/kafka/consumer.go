@@ -28,6 +28,8 @@ type WatchConsumers struct {
 	Tick   time.Duration
 	Wg     *sync.WaitGroup
 
+	logFrequentConsumer bool
+
 	offsetMtimeMap map[structs.GroupTopicPartition]time.Time
 
 	consumerQps map[string]metrics.Meter
@@ -38,7 +40,18 @@ func (this *WatchConsumers) Init(ctx monitor.Context) {
 	this.Zkzone = ctx.ZkZone()
 	this.Stop = ctx.StopChan()
 	this.Wg = ctx.Inflight()
+	this.logFrequentConsumer = false
 	this.offsetMtimeMap = make(map[structs.GroupTopicPartition]time.Time, 100)
+}
+
+func (this *WatchConsumers) Set(key string) {
+	switch key {
+	case "frequent-log-on":
+		this.logFrequentConsumer = true
+
+	case "frequent-log-off":
+		this.logFrequentConsumer = false
+	}
 }
 
 func (this *WatchConsumers) Run() {
@@ -108,7 +121,9 @@ func (this *WatchConsumers) frequentOffsetCommit() (n int64) {
 				gtp := structs.GroupTopicPartition{Group: group, Topic: c.Topic, PartitionID: c.PartitionId}
 				if t, present := this.offsetMtimeMap[gtp]; present {
 					if interval := c.Mtime.Time().Sub(t); interval < frequentThreshold {
-						log.Warn("cluster[%s] group[%s] topic[%s/%s] too frequent offset commit: %s", zkcluster.Name(), group, c.Topic, c.PartitionId, interval)
+						if this.logFrequentConsumer {
+							log.Warn("cluster[%s] group[%s] topic[%s/%s] too frequent offset commit: %s", zkcluster.Name(), group, c.Topic, c.PartitionId, interval)
+						}
 
 						n++
 					}
