@@ -37,7 +37,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		byHost bool
 		del    string
 		top    bool
-		slow   bool
+		ping   bool
 	)
 	cmdFlags := flag.NewFlagSet("redis", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -46,14 +46,14 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&list, "list", true, "")
 	cmdFlags.BoolVar(&byHost, "host", false, "")
 	cmdFlags.BoolVar(&top, "top", false, "")
-	cmdFlags.BoolVar(&slow, "slow", false, "")
+	cmdFlags.BoolVar(&ping, "ping", false, "")
 	cmdFlags.StringVar(&del, "del", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-	if top {
+	if top || ping {
 		list = false
 	}
 
@@ -74,8 +74,8 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	} else {
 		if top {
 			this.runTop(zkzone)
-		} else if slow {
-			this.runSlowlog(zkzone)
+		} else if ping {
+			this.runPing(zkzone)
 		} else if list {
 			machineMap := make(map[string]struct{})
 			var machines []string
@@ -113,6 +113,7 @@ type redisTopInfo struct {
 	host                       string
 	port                       int
 	dbsize, ops, rx, tx, conns int64
+	latency                    time.Duration
 }
 
 func (this *Redis) runTop(zkzone *zk.ZkZone) {
@@ -193,12 +194,61 @@ func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
 	this.mu.Unlock()
 }
 
-func (this *Redis) runSlowlog(zkzone *zk.ZkZone) {
+func (this *Redis) runPing(zkzone *zk.ZkZone) {
+	var wg sync.WaitGroup
+	this.topInfos = make([]redisTopInfo, 0, 100)
 
+	for _, hostPort := range zkzone.AllRedis() {
+		host, port, err := net.SplitHostPort(hostPort)
+		if err != nil {
+			this.Ui.Error(hostPort)
+			continue
+		}
+
+		nport, err := strconv.Atoi(port)
+		if err != nil || nport < 0 {
+			this.Ui.Error(hostPort)
+			continue
+		}
+
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, host string, port int) {
+			defer wg.Done()
+
+			t0 := time.Now()
+
+			spec := redis.DefaultSpec().Host(host).Port(port)
+			client, err := redis.NewSynchClientWithSpec(spec)
+			if err != nil {
+				this.Ui.Error(err.Error())
+			}
+			defer client.Quit()
+
+			if err := client.Ping(); err != nil {
+				this.Ui.Error(err.Error())
+			}
+
+			this.mu.Lock()
+			this.topInfos = append(this.topInfos, redisTopInfo{
+				host:    host,
+				port:    port,
+				latency: time.Since(t0),
+			})
+			this.mu.Unlock()
+		}(&wg, host, nport)
+	}
+	wg.Wait()
+
+	sortutil.AscByField(this.topInfos, "latency")
+	lines := []string{"Host|Port|latency"}
+	for _, info := range this.topInfos {
+		lines = append(lines, fmt.Sprintf("%s|%d|%s", info.host, info.port, info.latency))
+	}
+	this.Ui.Output(columnize.SimpleFormat(lines))
 }
 
 func (*Redis) Synopsis() string {
-	return "Manipulate redis instances for kguard"
+	return "Monitor redis instances"
 }
 
 func (this *Redis) Help() string {
@@ -214,8 +264,8 @@ Usage: %s redis [options]
     -top
       Monitor all redis instances ops
 
-    -slow
-      Monitor all redis instances slowlog
+    -ping
+      Ping all redis instances
 
     -host
       Work with -list, print host instead of redis instance
