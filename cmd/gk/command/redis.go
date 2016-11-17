@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/Go-Redis"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/gofmt"
 	log "github.com/funkygao/log4go"
@@ -113,6 +114,7 @@ type redisTopInfo struct {
 	host                       string
 	port                       int
 	dbsize, ops, rx, tx, conns int64
+	t0                         time.Time
 	latency                    time.Duration
 }
 
@@ -196,9 +198,10 @@ func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
 
 func (this *Redis) runPing(zkzone *zk.ZkZone) {
 	var wg sync.WaitGroup
-	this.topInfos = make([]redisTopInfo, 0, 100)
+	allRedis := zkzone.AllRedis()
+	this.topInfos = make([]redisTopInfo, 0, len(allRedis))
 
-	for _, hostPort := range zkzone.AllRedis() {
+	for _, hostPort := range allRedis {
 		host, port, err := net.SplitHostPort(hostPort)
 		if err != nil {
 			this.Ui.Error(hostPort)
@@ -220,31 +223,46 @@ func (this *Redis) runPing(zkzone *zk.ZkZone) {
 			spec := redis.DefaultSpec().Host(host).Port(port)
 			client, err := redis.NewSynchClientWithSpec(spec)
 			if err != nil {
-				this.Ui.Error(err.Error())
+				this.Ui.Error(fmt.Sprintf("[%s:%d] %v", host, port, err))
+				return
 			}
 			defer client.Quit()
 
 			if err := client.Ping(); err != nil {
-				this.Ui.Error(err.Error())
+				this.Ui.Error(fmt.Sprintf("[%s:%d] %v", host, port, err))
+				return
 			}
+
+			latency := time.Since(t0)
 
 			this.mu.Lock()
 			this.topInfos = append(this.topInfos, redisTopInfo{
 				host:    host,
 				port:    port,
-				latency: time.Since(t0),
+				t0:      t0,
+				latency: latency,
 			})
 			this.mu.Unlock()
 		}(&wg, host, nport)
 	}
 	wg.Wait()
 
+	latency := metrics.NewRegisteredHistogram("redis.latency", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015))
+
 	sortutil.AscByField(this.topInfos, "latency")
-	lines := []string{"Host|Port|latency"}
+	lines := []string{"Host|Port|At|latency"}
 	for _, info := range this.topInfos {
-		lines = append(lines, fmt.Sprintf("%s|%d|%s", info.host, info.port, info.latency))
+		latency.Update(info.latency.Nanoseconds() / 1e6)
+
+		lines = append(lines, fmt.Sprintf("%s|%d|%s|%s",
+			info.host, info.port, info.t0, info.latency))
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
+
+	// summary
+	ps := latency.Percentiles([]float64{0.90, 0.95, 0.99, 0.999})
+	this.Ui.Info(fmt.Sprintf("N:%d Min:%dms Max:%dms Mean:%.1fms 90%%:%.1fms 95%%:%.1fms 99%%:%.1fms",
+		latency.Count(), latency.Min(), latency.Max(), latency.Mean(), ps[0], ps[1], ps[2]))
 }
 
 func (*Redis) Synopsis() string {
