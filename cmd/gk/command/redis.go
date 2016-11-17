@@ -131,7 +131,7 @@ type redisTopInfo struct {
 
 func (this *Redis) runTop(zkzone *zk.ZkZone) {
 	termui.Init()
-	limit := termui.TermHeight() - 3
+	limit := termui.TermHeight() - 4
 	termui.Close()
 	this.topInfos = make([]redisTopInfo, 0, 100)
 	for {
@@ -159,13 +159,26 @@ func (this *Redis) runTop(zkzone *zk.ZkZone) {
 		sortutil.DescByField(this.topInfos, "ops")
 		lines := []string{"Host|Port|dbsize|conns|ops|rx/bps|tx/bps"}
 
+		var (
+			sumDbsize, sumConns, sumOps, sumRx, sumTx int64
+		)
 		for i := 0; i < min(limit, len(this.topInfos)); i++ {
 			info := this.topInfos[i]
 			lines = append(lines, fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s",
 				info.host, info.port,
 				gofmt.Comma(info.dbsize), gofmt.Comma(info.conns), gofmt.Comma(info.ops),
 				gofmt.ByteSize(info.rx*1024/8), gofmt.ByteSize(info.tx*1024/8)))
+
+			sumDbsize += info.dbsize
+			sumConns += info.conns
+			sumOps += info.ops
+			sumRx += info.rx * 1024 / 8
+			sumTx += info.tx * 1024 / 8
 		}
+		lines = append(lines, fmt.Sprintf("-TOTAL-|-%d-|%s|%s|%s|%s|%s",
+			len(this.topInfos),
+			gofmt.Comma(sumDbsize), gofmt.Comma(sumConns), gofmt.Comma(sumOps),
+			gofmt.ByteSize(sumRx), gofmt.ByteSize(sumTx)))
 
 		this.Ui.Output(columnize.SimpleFormat(lines))
 
