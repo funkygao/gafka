@@ -236,13 +236,6 @@ func init() {
 			}, nil
 		},
 
-		"zktop": func() (cli.Command, error) {
-			return &command.Zktop{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
 		"kateway": func() (cli.Command, error) {
 			return &command.Kateway{
 				Ui:  ui,
@@ -352,7 +345,7 @@ func init() {
 			}, nil
 		}, */
 
-		"zookeeper": func() (cli.Command, error) {
+		"zk": func() (cli.Command, error) {
 			return &command.Zookeeper{
 				Ui:  ui,
 				Cmd: cmd,

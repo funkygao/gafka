@@ -104,7 +104,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		msg.Body = msg.Body[0:msgLen]
 	}
 
-	// get the raw POST message
+	// get the raw POST message, if body more than content-length ignore the extra payload
 	lbr := io.LimitReader(r.Body, Options.MaxPubSize+1)
 	if _, err := io.ReadAtLeast(lbr, msg.Body, msgLen); err != nil {
 		msg.Free()
