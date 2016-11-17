@@ -18,6 +18,8 @@ import (
 	"github.com/funkygao/golib/gofmt"
 	log "github.com/funkygao/log4go"
 	"github.com/funkygao/termui"
+	"github.com/mattn/go-runewidth"
+	"github.com/nsf/termbox-go"
 	"github.com/pmylund/sortutil"
 	"github.com/ryanuber/columnize"
 )
@@ -28,6 +30,12 @@ type Redis struct {
 
 	mu       sync.Mutex
 	topInfos []redisTopInfo
+
+	quit           chan struct{}
+	rows           int
+	topOrderAsc    bool
+	topOrderColIdx int
+	topOrderCols   []string
 }
 
 func (this *Redis) Run(args []string) (exitCode int) {
@@ -48,7 +56,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&list, "list", true, "")
 	cmdFlags.IntVar(&byHost, "host", 0, "")
 	cmdFlags.BoolVar(&top, "top", false, "")
-	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*5, "")
+	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*10, "")
 	cmdFlags.BoolVar(&ping, "ping", false, "")
 	cmdFlags.StringVar(&del, "del", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -76,6 +84,10 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		zkzone.DelRedis(host, nport)
 	} else {
 		if top {
+			this.quit = make(chan struct{})
+			this.topOrderAsc = false
+			this.topOrderColIdx = 2 // ops by default
+			this.topOrderCols = []string{"dbsize", "conns", "ops", "rx", "tx"}
 			this.runTop(zkzone, topInterval)
 		} else if ping {
 			this.runPing(zkzone)
@@ -133,9 +145,21 @@ type redisTopInfo struct {
 
 func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 	termui.Init()
-	limit := termui.TermHeight() - 4
-	termui.Close()
+	this.rows = termui.TermHeight() - 4
+	defer termui.Close()
+
+	termbox.SetInputMode(termbox.InputEsc)
+	eventChan := make(chan termbox.Event, 16)
+	go this.handleEvents(eventChan)
+	go func() {
+		for {
+			ev := termbox.PollEvent()
+			eventChan <- ev
+		}
+	}()
+
 	this.topInfos = make([]redisTopInfo, 0, 100)
+	tick := time.NewTicker(interval)
 	for {
 		var wg sync.WaitGroup
 		this.topInfos = this.topInfos[:0]
@@ -157,21 +181,106 @@ func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 		}
 		wg.Wait()
 
-		this.render(limit)
-		time.Sleep(interval)
+		this.render()
+
+		select {
+		case <-tick.C:
+
+		case <-this.quit:
+			return
+		}
 	}
 }
 
-func (this *Redis) render(limit int) {
-	refreshScreen()
+func (this *Redis) handleEvents(eventChan chan termbox.Event) {
+	for ev := range eventChan {
+		switch ev.Type {
+		case termbox.EventKey:
+			switch ev.Key {
+			case termbox.KeyEsc:
+				close(this.quit)
+				return
 
-	sortutil.DescByField(this.topInfos, "ops")
-	lines := []string{"Host|Port|(d)bsize|(c)onns|(o)ps|(r)x/bps|(t)x/bps"}
+			case termbox.KeyArrowUp:
+				this.topOrderAsc = true
+				this.render()
+
+			case termbox.KeyArrowDown:
+				this.topOrderAsc = false
+				this.render()
+
+			case termbox.KeyArrowLeft:
+				this.topOrderColIdx--
+				if this.topOrderColIdx < 0 {
+					this.topOrderColIdx += len(this.topOrderCols)
+				}
+				this.render()
+
+			case termbox.KeyArrowRight:
+				this.topOrderColIdx++
+				if this.topOrderColIdx >= len(this.topOrderCols) {
+					this.topOrderColIdx -= len(this.topOrderCols)
+				}
+				this.render()
+			}
+
+			switch ev.Ch {
+			case 'q':
+				close(this.quit)
+				return
+			}
+
+		}
+	}
+}
+
+func (this *Redis) drawRow(row string, y int, fg, bg termbox.Attribute) {
+	x := 0
+	tuples := strings.SplitN(row, "|", 7)
+	row = fmt.Sprintf("%30s %7s %10s %10s %10s %10s %10s",
+		tuples[0], tuples[1], tuples[2], tuples[3], tuples[4],
+		tuples[5], tuples[6])
+	for _, r := range row {
+		termbox.SetCell(x, y, r, fg, bg)
+		// wide string must be considered
+		w := runewidth.RuneWidth(r)
+		if w == 0 || (w == 2 && runewidth.IsAmbiguousWidth(r)) {
+			w = 1
+		}
+		x += w
+	}
+
+}
+
+func (this *Redis) selectedCol() string {
+	return this.topOrderCols[this.topOrderColIdx]
+}
+
+func (this *Redis) render() {
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+
+	if this.topOrderAsc {
+		sortutil.AscByField(this.topInfos, this.topOrderCols[this.topOrderColIdx])
+	} else {
+		sortutil.DescByField(this.topInfos, this.topOrderCols[this.topOrderColIdx])
+	}
+	sortCols := make([]string, len(this.topOrderCols))
+	copy(sortCols, this.topOrderCols)
+	for i, col := range sortCols {
+		if col == this.selectedCol() {
+			if this.topOrderAsc {
+				sortCols[i] += ">"
+			} else {
+				sortCols[i] += "<"
+			}
+		}
+	}
+	lines := []string{fmt.Sprintf("Host|Port|%s", strings.Join(sortCols, "|"))}
 
 	var (
 		sumDbsize, sumConns, sumOps, sumRx, sumTx int64
 	)
-	for i := 0; i < min(limit, len(this.topInfos)); i++ {
+	for i := 0; i < min(this.rows, len(this.topInfos)); i++ {
 		info := this.topInfos[i]
 		lines = append(lines, fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s",
 			info.host, info.port,
@@ -189,7 +298,15 @@ func (this *Redis) render(limit int) {
 		gofmt.Comma(sumDbsize), gofmt.Comma(sumConns), gofmt.Comma(sumOps),
 		gofmt.ByteSize(sumRx), gofmt.ByteSize(sumTx)))
 
-	this.Ui.Output(columnize.SimpleFormat(lines))
+	for row, line := range lines {
+		if row == 0 {
+			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorCyan)
+		} else {
+			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorDefault)
+		}
+	}
+
+	termbox.Flush()
 }
 
 func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
@@ -318,7 +435,7 @@ Usage: %s redis [options]
       Monitor all redis instances ops
 
     -sleep interval
-      Sleep between -top refreshing screen. Defaults 5s
+      Sleep between -top refreshing screen. Defaults 10s
       e,g 10s
 
     -ping
