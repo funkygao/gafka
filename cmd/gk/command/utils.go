@@ -37,7 +37,7 @@ func validateArgs(cmd cli.Command, ui cli.Ui) *argsRule {
 }
 
 func ipaddr(hostname string) string {
-	ips, _ := net.LookupIP(host)
+	ips, _ := net.LookupIP(hostname)
 	return ips[0].String()
 }
 
