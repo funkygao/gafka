@@ -35,6 +35,7 @@ type Redis struct {
 	rows           int
 	topOrderAsc    bool
 	topOrderColIdx int
+	beep           int64
 	topOrderCols   []string
 }
 
@@ -58,6 +59,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&top, "top", false, "")
 	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*10, "")
 	cmdFlags.BoolVar(&ping, "ping", false, "")
+	cmdFlags.Int64Var(&this.beep, "beep", 0, "")
 	cmdFlags.StringVar(&del, "del", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -158,6 +160,8 @@ func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 		}
 	}()
 
+	this.drawSplash()
+
 	this.topInfos = make([]redisTopInfo, 0, 100)
 	tick := time.NewTicker(interval)
 	for {
@@ -234,10 +238,24 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 	}
 }
 
+func (this *Redis) drawSplash() {
+	splashes := []string{"loading", "loading redis", "loading redis top..."}
+	w, h := termbox.Size()
+	x, y := w/2-len(splashes[2])/2, h/2+1
+	for _, row := range splashes {
+		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+		for i, c := range row {
+			termbox.SetCell(x+i, y, c, termbox.ColorGreen, termbox.ColorDefault)
+		}
+		termbox.Flush()
+		time.Sleep(time.Millisecond * 1500)
+	}
+}
+
 func (this *Redis) drawRow(row string, y int, fg, bg termbox.Attribute) {
 	x := 0
 	tuples := strings.SplitN(row, "|", 7)
-	row = fmt.Sprintf("%30s %7s %12s %7s %8s %13s %13s",
+	row = fmt.Sprintf("%30s %8s %12s %9s %9s %13s %13s",
 		tuples[0], tuples[1], tuples[2], tuples[3], tuples[4],
 		tuples[5], tuples[6])
 	for _, r := range row {
@@ -282,10 +300,30 @@ func (this *Redis) render() {
 	)
 	for i := 0; i < min(this.rows, len(this.topInfos)); i++ {
 		info := this.topInfos[i]
-		lines = append(lines, fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s",
+		l := fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s",
 			info.host, info.port,
 			gofmt.Comma(info.dbsize), gofmt.Comma(info.conns), gofmt.Comma(info.ops),
-			gofmt.ByteSize(info.rx*1024/8), gofmt.ByteSize(info.tx*1024/8)))
+			gofmt.ByteSize(info.rx*1024/8), gofmt.ByteSize(info.tx*1024/8))
+		if this.beep > 0 {
+			var val int64
+			switch this.selectedCol() {
+			case "conns":
+				val = info.conns
+			case "rx":
+				val = info.rx
+			case "tx":
+				val = info.tx
+			case "dbsize":
+				val = info.dbsize
+			case "ops":
+				val = info.ops
+			}
+
+			if val > this.beep {
+				l += "\a"
+			}
+		}
+		lines = append(lines, l)
 
 		sumDbsize += info.dbsize
 		sumConns += info.conns
@@ -300,7 +338,7 @@ func (this *Redis) render() {
 
 	for row, line := range lines {
 		if row == 0 {
-			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorCyan)
+			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorBlue)
 		} else {
 			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorDefault)
 		}
@@ -437,6 +475,8 @@ Usage: %s redis [options]
     -sleep interval
       Sleep between -top refreshing screen. Defaults 10s
       e,g 10s
+
+    -beep threshold
 
     -ping
       Ping all redis instances
