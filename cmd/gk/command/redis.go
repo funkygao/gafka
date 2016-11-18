@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -244,6 +245,8 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 			switch ev.Key {
 			case termbox.KeyEsc:
 				close(this.quit)
+				termbox.Close()
+				os.Exit(0)
 				return
 
 			case termbox.KeyArrowUp:
@@ -272,6 +275,8 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 			switch ev.Ch {
 			case 'q':
 				close(this.quit)
+				termbox.Close()
+				os.Exit(0)
 				return
 
 			case 'f':
