@@ -287,8 +287,9 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 					for _, info := range this.topInfos[:this.freezeN] {
 						this.freezedPorts[strconv.Itoa(info.port)] = struct{}{}
 					}
+
+					this.topInfos = this.topInfos[:this.freezeN]
 				}
-				this.topInfos = this.topInfos[:this.freezeN]
 				this.mu.Unlock()
 				this.render()
 
