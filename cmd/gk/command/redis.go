@@ -58,7 +58,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&list, "list", true, "")
 	cmdFlags.IntVar(&byHost, "host", 0, "")
 	cmdFlags.BoolVar(&top, "top", false, "")
-	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*10, "")
+	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*5, "")
 	cmdFlags.BoolVar(&ping, "ping", false, "")
 	cmdFlags.BoolVar(&this.ipInNum, "n", false, "")
 	cmdFlags.Int64Var(&this.beep, "beep", 0, "")
@@ -91,7 +91,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 			this.quit = make(chan struct{})
 			this.topOrderAsc = false
 			this.topOrderColIdx = 2 // ops by default
-			this.topOrderCols = []string{"dbsize", "conns", "ops", "rx", "tx"}
+			this.topOrderCols = []string{"dbsize", "conns", "ops", "mem", "rx", "tx"}
 			this.runTop(zkzone, topInterval)
 		} else if ping {
 			this.runPing(zkzone)
@@ -140,11 +140,11 @@ func (this *Redis) Run(args []string) (exitCode int) {
 }
 
 type redisTopInfo struct {
-	host                       string
-	port                       int
-	dbsize, ops, rx, tx, conns int64
-	t0                         time.Time
-	latency                    time.Duration
+	host                            string
+	port                            int
+	dbsize, ops, rx, tx, conns, mem int64
+	t0                              time.Time
+	latency                         time.Duration
 }
 
 func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
@@ -256,10 +256,10 @@ func (this *Redis) drawSplash() {
 
 func (this *Redis) drawRow(row string, y int, fg, bg termbox.Attribute) {
 	x := 0
-	tuples := strings.SplitN(row, "|", 7)
-	row = fmt.Sprintf("%30s %8s %15s %9s %9s %13s %13s",
+	tuples := strings.SplitN(row, "|", 8)
+	row = fmt.Sprintf("%30s %8s %15s %9s %9s %13s %13s %13s",
 		tuples[0], tuples[1], tuples[2], tuples[3], tuples[4],
-		tuples[5], tuples[6])
+		tuples[5], tuples[6], tuples[7])
 	for _, r := range row {
 		termbox.SetCell(x, y, r, fg, bg)
 		// wide string must be considered
@@ -289,22 +289,23 @@ func (this *Redis) render() {
 	for i, col := range sortCols {
 		if col == this.selectedCol() {
 			if this.topOrderAsc {
-				sortCols[i] += ">"
+				sortCols[i] += " >"
 			} else {
-				sortCols[i] += "<"
+				sortCols[i] += " <"
 			}
 		}
 	}
 	lines := []string{fmt.Sprintf("Host|Port|%s", strings.Join(sortCols, "|"))}
 
 	var (
-		sumDbsize, sumConns, sumOps, sumRx, sumTx int64
+		sumDbsize, sumConns, sumOps, sumMem, sumRx, sumTx int64
 	)
 	for i := 0; i < len(this.topInfos); i++ {
 		info := this.topInfos[i]
 		sumDbsize += info.dbsize
 		sumConns += info.conns
 		sumOps += info.ops
+		sumMem += info.mem
 		sumRx += info.rx * 1024 / 8
 		sumTx += info.tx * 1024 / 8
 
@@ -312,9 +313,10 @@ func (this *Redis) render() {
 			continue
 		}
 
-		l := fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s",
+		l := fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s|%s",
 			info.host, info.port,
 			gofmt.Comma(info.dbsize), gofmt.Comma(info.conns), gofmt.Comma(info.ops),
+			gofmt.ByteSize(info.mem),
 			gofmt.ByteSize(info.rx*1024/8), gofmt.ByteSize(info.tx*1024/8))
 		if this.beep > 0 {
 			var val int64
@@ -329,6 +331,8 @@ func (this *Redis) render() {
 				val = info.dbsize
 			case "ops":
 				val = info.ops
+			case "mem":
+				val = info.mem
 			}
 
 			if val > this.beep {
@@ -338,9 +342,10 @@ func (this *Redis) render() {
 		lines = append(lines, l)
 
 	}
-	lines = append(lines, fmt.Sprintf("-TOTAL-|-%d-|%s|%s|%s|%s|%s",
+	lines = append(lines, fmt.Sprintf("-TOTAL-|-%d-|%s|%s|%s|%s|%s|%s",
 		len(this.topInfos),
 		gofmt.Comma(sumDbsize), gofmt.Comma(sumConns), gofmt.Comma(sumOps),
+		gofmt.ByteSize(sumMem),
 		gofmt.ByteSize(sumRx), gofmt.ByteSize(sumTx)))
 
 	for row, line := range lines {
@@ -372,6 +377,7 @@ func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
 	dbSize, _ := client.Dbsize()
 	conns, _ := strconv.ParseInt(infoMap["connected_clients"], 10, 64)
 	ops, _ := strconv.ParseInt(infoMap["instantaneous_ops_per_sec"], 10, 64)
+	mem, _ := strconv.ParseInt(infoMap["used_memory"], 10, 64)
 	rxKbps, _ := strconv.ParseFloat(infoMap["instantaneous_input_kbps"], 64)
 	txKbps, _ := strconv.ParseFloat(infoMap["instantaneous_output_kbps"], 64)
 
@@ -385,6 +391,7 @@ func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
 		port:   port,
 		dbsize: dbSize,
 		ops:    ops,
+		mem:    mem,
 		rx:     int64(rxKbps),
 		tx:     int64(txKbps),
 		conns:  conns,
@@ -446,12 +453,12 @@ func (this *Redis) runPing(zkzone *zk.ZkZone) {
 	latency := metrics.NewRegisteredHistogram("redis.latency", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015))
 
 	sortutil.AscByField(this.topInfos, "latency")
-	lines := []string{"Host|Port|At|latency"}
+	lines := []string{"Host|Port|latency"}
 	for _, info := range this.topInfos {
 		latency.Update(info.latency.Nanoseconds() / 1e6)
 
-		lines = append(lines, fmt.Sprintf("%s|%d|%s|%s",
-			info.host, info.port, info.t0, info.latency))
+		lines = append(lines, fmt.Sprintf("%s|%d|%s",
+			info.host, info.port, info.latency))
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
 
@@ -487,7 +494,7 @@ Usage: %s redis [options]
       Show network addresses as numbers
 
     -sleep interval
-      Sleep between -top refreshing screen. Defaults 10s
+      Sleep between -top refreshing screen. Defaults 5s
       e,g 10s
 
     -beep threshold
