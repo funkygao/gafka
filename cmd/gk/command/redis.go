@@ -258,7 +258,7 @@ func (this *Redis) drawSplash() {
 func (this *Redis) drawRow(row string, y int, fg, bg termbox.Attribute) {
 	x := 0
 	tuples := strings.SplitN(row, "|", 10)
-	row = fmt.Sprintf("%25s %8s %15s %9s %9s %13s %13s %5s %13s %13s",
+	row = fmt.Sprintf("%25s %8s %15s %9s %9s %13s %13s %6s %13s %13s",
 		tuples[0], tuples[1], tuples[2], tuples[3], tuples[4],
 		tuples[5], tuples[6], tuples[7], tuples[8], tuples[9])
 	for _, r := range row {
