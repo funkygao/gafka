@@ -24,7 +24,7 @@ type MetaStore interface {
 	AssignClusters() []map[string]string
 
 	TopicPartitions(cluster, topic string) []int32
-	OnlineConsumersCount(cluster, topic, group string) int
+	OnlineConsumersCount(cluster, topic, group string) (int, error)
 	ZkAddrs() []string
 	ZkChroot(cluster string) string
 

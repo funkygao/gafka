@@ -138,19 +138,18 @@ func (this *zkMetaStore) Stop() {
 	this.wg.Wait()
 }
 
-func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) int {
+func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) (int, error) {
 	// without cache
 	this.mu.Lock()
 	c, present := this.clusters[cluster]
 	this.mu.Unlock()
 
 	if !present {
-		log.Warn("invalid cluster: %s", cluster)
-		return 0
+		return 0, meta.ErrInvalidCluster
 	}
 
 	// FIXME will always lookup zk
-	return c.OnlineConsumersCount(topic, group)
+	return c.OnlineConsumersCount(topic, group), nil
 }
 
 func (this *zkMetaStore) TopicPartitions(cluster, topic string) []int32 {
