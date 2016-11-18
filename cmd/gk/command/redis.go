@@ -336,13 +336,13 @@ func (this *Redis) render() {
 			}
 
 			if val > this.beep {
-				l += "\a"
+				//l += "\a"
 			}
 		}
 		lines = append(lines, l)
 
 	}
-	lines = append(lines, fmt.Sprintf("-TOTAL-|-%d-|%s|%s|%s|%s|%s|%s",
+	lines = append(lines, fmt.Sprintf("-TOTAL-|%d|%s|%s|%s|%s|%s|%s",
 		len(this.topInfos),
 		gofmt.Comma(sumDbsize), gofmt.Comma(sumConns), gofmt.Comma(sumOps),
 		gofmt.ByteSize(sumMem),
@@ -352,7 +352,7 @@ func (this *Redis) render() {
 		if row == 0 {
 			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorBlue)
 		} else if row == len(lines)-1 {
-			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorYellow)
+			this.drawRow(line, row, termbox.ColorYellow, termbox.ColorDefault)
 		} else {
 			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorDefault)
 		}
