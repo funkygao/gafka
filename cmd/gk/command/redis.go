@@ -28,8 +28,10 @@ type Redis struct {
 	Ui  cli.Ui
 	Cmd string
 
-	mu       sync.Mutex
-	topInfos []redisTopInfo
+	mu           sync.Mutex
+	topInfos     []redisTopInfo
+	freezedPorts map[string]struct{}
+	freezeN      int
 
 	quit           chan struct{}
 	rows           int
@@ -38,6 +40,7 @@ type Redis struct {
 	beep           int64
 	topOrderCols   []string
 	ipInNum        bool
+	ports          map[string]struct{}
 }
 
 func (this *Redis) Run(args []string) (exitCode int) {
@@ -49,6 +52,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		del         string
 		top         bool
 		topInterval time.Duration
+		ports       string
 		ping        bool
 	)
 	cmdFlags := flag.NewFlagSet("redis", flag.ContinueOnError)
@@ -62,7 +66,9 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&ping, "ping", false, "")
 	cmdFlags.BoolVar(&this.ipInNum, "n", false, "")
 	cmdFlags.Int64Var(&this.beep, "beep", 0, "")
+	cmdFlags.IntVar(&this.freezeN, "freeze", 20, "")
 	cmdFlags.StringVar(&del, "del", "", "")
+	cmdFlags.StringVar(&ports, "port", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -92,6 +98,16 @@ func (this *Redis) Run(args []string) (exitCode int) {
 			this.topOrderAsc = false
 			this.topOrderColIdx = 2 // ops by default
 			this.topOrderCols = []string{"dbsize", "conns", "ops", "mem", "maxmem", "memp", "rx", "tx"}
+			this.freezedPorts = make(map[string]struct{})
+			this.ports = make(map[string]struct{})
+			for _, p := range strings.Split(ports, ",") {
+				tp := strings.TrimSpace(p)
+				if tp != "" {
+					this.ports[tp] = struct{}{}
+				}
+
+			}
+
 			this.runTop(zkzone, topInterval)
 		} else if ping {
 			this.runPing(zkzone)
@@ -177,6 +193,17 @@ func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 				continue
 			}
 
+			if len(this.ports) > 0 {
+				if _, present := this.ports[port]; !present {
+					continue
+				}
+			}
+			if len(this.freezedPorts) > 0 {
+				if _, present := this.freezedPorts[port]; !present {
+					continue
+				}
+			}
+
 			nport, err := strconv.Atoi(port)
 			if err != nil || nport < 0 {
 				log.Error("invalid redis instance: %s", hostPort)
@@ -235,6 +262,28 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 			case 'q':
 				close(this.quit)
 				return
+
+			case 'f':
+				// freeze the top20
+				this.mu.Lock()
+				if this.topOrderAsc {
+					sortutil.AscByField(this.topInfos, this.topOrderCols[this.topOrderColIdx])
+				} else {
+					sortutil.DescByField(this.topInfos, this.topOrderCols[this.topOrderColIdx])
+				}
+				if len(this.topInfos) > this.freezeN {
+					for _, info := range this.topInfos[:this.freezeN] {
+						this.freezedPorts[strconv.Itoa(info.port)] = struct{}{}
+					}
+				}
+				this.topInfos = this.topInfos[:this.freezeN]
+				this.mu.Unlock()
+				this.render()
+
+			case 'F':
+				// unfreeze
+				this.freezedPorts = make(map[string]struct{})
+
 			}
 
 		}
@@ -505,6 +554,14 @@ Usage: %s redis [options]
 
     -top
       Monitor all redis instances ops
+
+    -freeze n
+      TopN rows to freeze.
+      Press 'f' to freeze, 'F' to unfreeze
+
+    -port comma seperated port
+      Work with -top to limit redis instances
+      e,g. 10511,10522
 
     -n
       Show network addresses as numbers
