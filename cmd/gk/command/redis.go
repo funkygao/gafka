@@ -62,7 +62,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&list, "list", true, "")
 	cmdFlags.IntVar(&byHost, "host", 0, "")
 	cmdFlags.BoolVar(&top, "top", false, "")
-	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*5, "")
+	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*7, "")
 	cmdFlags.BoolVar(&ping, "ping", false, "")
 	cmdFlags.BoolVar(&this.ipInNum, "n", false, "")
 	cmdFlags.Int64Var(&this.beep, "beep", 0, "")
@@ -186,6 +186,17 @@ func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 	for {
 		var wg sync.WaitGroup
 		this.topInfos = this.topInfos[:0]
+		freezedPorts := make(map[string]struct{})
+
+		// clone freezedPorts to avoid concurrent map access
+		this.mu.Lock()
+		if len(this.freezedPorts) > 0 {
+			for port, _ := range this.freezedPorts {
+				freezedPorts[port] = struct{}{}
+			}
+		}
+		this.mu.Unlock()
+
 		for _, hostPort := range zkzone.AllRedis() {
 			host, port, err := net.SplitHostPort(hostPort)
 			if err != nil {
@@ -198,8 +209,8 @@ func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 					continue
 				}
 			}
-			if len(this.freezedPorts) > 0 {
-				if _, present := this.freezedPorts[port]; !present {
+			if len(freezedPorts) > 0 {
+				if _, present := freezedPorts[port]; !present {
 					continue
 				}
 			}
@@ -264,14 +275,10 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 				return
 
 			case 'f':
-				// freeze the top20
+				// freeze the topN
 				this.mu.Lock()
-				if this.topOrderAsc {
-					sortutil.AscByField(this.topInfos, this.topOrderCols[this.topOrderColIdx])
-				} else {
-					sortutil.DescByField(this.topInfos, this.topOrderCols[this.topOrderColIdx])
-				}
 				if len(this.topInfos) > this.freezeN {
+					// topInfos already sorted by render()
 					for _, info := range this.topInfos[:this.freezeN] {
 						this.freezedPorts[strconv.Itoa(info.port)] = struct{}{}
 					}
@@ -282,8 +289,9 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 
 			case 'F':
 				// unfreeze
+				this.mu.Lock()
 				this.freezedPorts = make(map[string]struct{})
-
+				this.mu.Unlock()
 			}
 
 		}
@@ -328,6 +336,9 @@ func (this *Redis) selectedCol() string {
 
 func (this *Redis) render() {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+
+	this.mu.Lock()
+	defer this.mu.Unlock()
 
 	if this.topOrderAsc {
 		sortutil.AscByField(this.topInfos, this.topOrderCols[this.topOrderColIdx])
@@ -567,7 +578,7 @@ Usage: %s redis [options]
       Show network addresses as numbers
 
     -sleep interval
-      Sleep between -top refreshing screen. Defaults 5s
+      Sleep between -top refreshing screen. Defaults 7s
       e,g 10s
 
     -beep threshold
