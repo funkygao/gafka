@@ -39,7 +39,11 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, rea
 		// the 1st barrier, consumer group is the final barrier
 		onlineN := meta.Default.OnlineConsumersCount(cluster, topic, group)
 		partitionN := len(meta.Default.TopicPartitions(cluster, topic))
-		if partitionN > 0 && onlineN >= partitionN {
+		if partitionN == 0 {
+			err = store.ErrInvalidTopic
+			return
+		}
+		if onlineN >= partitionN {
 			err = store.ErrTooManyConsumers
 			return
 		}
