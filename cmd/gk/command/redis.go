@@ -351,6 +351,8 @@ func (this *Redis) render() {
 	for row, line := range lines {
 		if row == 0 {
 			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorBlue)
+		} else if row == len(lines)-1 {
+			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorYellow)
 		} else {
 			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorDefault)
 		}
