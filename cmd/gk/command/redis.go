@@ -91,7 +91,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 			this.quit = make(chan struct{})
 			this.topOrderAsc = false
 			this.topOrderColIdx = 2 // ops by default
-			this.topOrderCols = []string{"dbsize", "conns", "ops", "mem", "rx", "tx"}
+			this.topOrderCols = []string{"dbsize", "conns", "ops", "mem", "maxmem", "memp", "rx", "tx"}
 			this.runTop(zkzone, topInterval)
 		} else if ping {
 			this.runPing(zkzone)
@@ -140,11 +140,12 @@ func (this *Redis) Run(args []string) (exitCode int) {
 }
 
 type redisTopInfo struct {
-	host                            string
-	port                            int
-	dbsize, ops, rx, tx, conns, mem int64
-	t0                              time.Time
-	latency                         time.Duration
+	host                                    string
+	port                                    int
+	dbsize, ops, rx, tx, conns, mem, maxmem int64
+	memp                                    float64
+	t0                                      time.Time
+	latency                                 time.Duration
 }
 
 func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
@@ -256,10 +257,10 @@ func (this *Redis) drawSplash() {
 
 func (this *Redis) drawRow(row string, y int, fg, bg termbox.Attribute) {
 	x := 0
-	tuples := strings.SplitN(row, "|", 8)
-	row = fmt.Sprintf("%30s %8s %15s %9s %9s %13s %13s %13s",
+	tuples := strings.SplitN(row, "|", 10)
+	row = fmt.Sprintf("%25s %8s %15s %9s %9s %13s %13s %5s %13s %13s",
 		tuples[0], tuples[1], tuples[2], tuples[3], tuples[4],
-		tuples[5], tuples[6], tuples[7])
+		tuples[5], tuples[6], tuples[7], tuples[8], tuples[9])
 	for _, r := range row {
 		termbox.SetCell(x, y, r, fg, bg)
 		// wide string must be considered
@@ -298,7 +299,7 @@ func (this *Redis) render() {
 	lines := []string{fmt.Sprintf("Host|Port|%s", strings.Join(sortCols, "|"))}
 
 	var (
-		sumDbsize, sumConns, sumOps, sumMem, sumRx, sumTx int64
+		sumDbsize, sumConns, sumOps, sumMem, sumRx, sumTx, sumMaxMem int64
 	)
 	for i := 0; i < len(this.topInfos); i++ {
 		info := this.topInfos[i]
@@ -306,6 +307,7 @@ func (this *Redis) render() {
 		sumConns += info.conns
 		sumOps += info.ops
 		sumMem += info.mem
+		sumMaxMem += info.maxmem
 		sumRx += info.rx * 1024 / 8
 		sumTx += info.tx * 1024 / 8
 
@@ -313,10 +315,11 @@ func (this *Redis) render() {
 			continue
 		}
 
-		l := fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s|%s",
+		l := fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
 			info.host, info.port,
 			gofmt.Comma(info.dbsize), gofmt.Comma(info.conns), gofmt.Comma(info.ops),
-			gofmt.ByteSize(info.mem),
+			gofmt.ByteSize(info.mem), gofmt.ByteSize(info.maxmem),
+			100.*info.memp,
 			gofmt.ByteSize(info.rx*1024/8), gofmt.ByteSize(info.tx*1024/8))
 		if this.beep > 0 {
 			var val int64
@@ -333,6 +336,9 @@ func (this *Redis) render() {
 				val = info.ops
 			case "mem":
 				val = info.mem
+			case "maxm":
+				val = info.maxmem
+
 			}
 
 			if val > this.beep {
@@ -342,10 +348,11 @@ func (this *Redis) render() {
 		lines = append(lines, l)
 
 	}
-	lines = append(lines, fmt.Sprintf("-TOTAL-|%d|%s|%s|%s|%s|%s|%s",
+	lines = append(lines, fmt.Sprintf("-TOTAL-|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
 		len(this.topInfos),
 		gofmt.Comma(sumDbsize), gofmt.Comma(sumConns), gofmt.Comma(sumOps),
-		gofmt.ByteSize(sumMem),
+		gofmt.ByteSize(sumMem), gofmt.ByteSize(sumMaxMem),
+		100.*float64(sumMem)/float64(sumMaxMem),
 		gofmt.ByteSize(sumRx), gofmt.ByteSize(sumTx)))
 
 	for row, line := range lines {
@@ -376,6 +383,11 @@ func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
 		return
 	}
 
+	maxMem, _ := client.MaxMemory()
+	if maxMem == 0 {
+		maxMem = 1 // FIXME
+	}
+
 	dbSize, _ := client.Dbsize()
 	conns, _ := strconv.ParseInt(infoMap["connected_clients"], 10, 64)
 	ops, _ := strconv.ParseInt(infoMap["instantaneous_ops_per_sec"], 10, 64)
@@ -394,6 +406,8 @@ func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
 		dbsize: dbSize,
 		ops:    ops,
 		mem:    mem,
+		maxmem: maxMem,
+		memp:   float64(mem) / float64(maxMem),
 		rx:     int64(rxKbps),
 		tx:     int64(txKbps),
 		conns:  conns,
