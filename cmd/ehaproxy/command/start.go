@@ -17,7 +17,10 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/registry"
 	zkr "github.com/funkygao/gafka/registry/zk"
+	"github.com/funkygao/gafka/telemetry"
+	"github.com/funkygao/gafka/telemetry/influxdb"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/gocli"
 	gio "github.com/funkygao/golib/io"
 	"github.com/funkygao/golib/locking"
@@ -44,6 +47,10 @@ type Start struct {
 	forwardFor bool
 	httpAddr   string
 
+	haproxyStatsUrl string
+	influxdbAddr    string
+	influxdbDbName  string
+
 	quitCh, closed chan struct{}
 	zkzone         *zk.ZkZone
 	lastServers    BackendServers
@@ -60,6 +67,9 @@ func (this *Start) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&this.pubPort, "pub", 10891, "")
 	cmdFlags.IntVar(&this.subPort, "sub", 10892, "")
 	cmdFlags.IntVar(&this.manPort, "man", 10893, "")
+	cmdFlags.StringVar(&this.haproxyStatsUrl, "statsurl", "", "")
+	cmdFlags.StringVar(&this.influxdbAddr, "influxaddr", "", "")
+	cmdFlags.StringVar(&this.influxdbDbName, "influxdb", "", "")
 	cmdFlags.StringVar(&this.httpAddr, "addr", ":10894", "monitor http server addr")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -83,6 +93,30 @@ func (this *Start) Run(args []string) (exitCode int) {
 	this.setupLogging(this.logfile, "info", "panic")
 	this.starting = true
 	this.startedAt = time.Now()
+
+	if this.haproxyStatsUrl != "" &&
+		this.influxdbAddr != "" && this.influxdbDbName != "" {
+		rc, err := influxdb.NewConfig(this.influxdbAddr, this.influxdbDbName, "", "", time.Minute)
+		if err != nil {
+			panic(err)
+		}
+		telemetry.Default = influxdb.New(metrics.DefaultRegistry, rc)
+		go func() {
+			log.Info("telemetry started: %s", telemetry.Default.Name())
+
+			if err := telemetry.Default.Start(); err != nil {
+				log.Error("telemetry: %v", err)
+			}
+		}()
+
+		m := haproxyMetrics{
+			ctx:      this,
+			interval: time.Second * 30,
+			uri:      this.haproxyStatsUrl,
+		}
+		go m.start()
+	}
+
 	this.quitCh = make(chan struct{})
 	this.closed = make(chan struct{})
 	signal.RegisterHandler(func(sig os.Signal) {
@@ -96,6 +130,11 @@ func (this *Start) Run(args []string) (exitCode int) {
 		locking.UnlockInstance(lockFilename)
 
 		close(this.quitCh)
+
+		if telemetry.Default != nil {
+			log.Info("stopping telemetry and flush all metrics...")
+			telemetry.Default.Stop()
+		}
 
 		log.Info("ehaproxy[%s] shutdown complete", gafka.BuildId)
 		log.Info("ehaproxy[%s] %s bye!", gafka.BuildId, time.Since(this.startedAt))
@@ -296,6 +335,13 @@ Options:
 
     -d
       Debug mode
+
+    -statsurl url
+      haproxy stats url
+
+    -influxaddr addr
+
+    -influxdb dbName
 
     -forwardfor
       Default false.

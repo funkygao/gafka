@@ -93,7 +93,7 @@ func (this *Monitor) Stop() {
 		log.Info("stopping all watchers ...")
 		close(this.stop)
 
-		log.Info("stopping reporter and flush all metrics...")
+		log.Info("stopping telemetry and flush all metrics...")
 		telemetry.Default.Stop()
 
 		this.candidate.Stop()
