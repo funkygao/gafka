@@ -89,7 +89,7 @@ func (this *WatchInfluxQuery) katewayMaxHeapSize() (float64, error) {
 		return 0, err
 	}
 
-	if len(res) > 0 && len(res[0].Series) > 1 && len(res[0].Series[0].Values) > 0 && len(res[0].Series[0].Values[0]) > 1 {
+	if len(res) > 0 && len(res[0].Series) >= 1 && len(res[0].Series[0].Values) > 0 && len(res[0].Series[0].Values[0]) > 1 {
 		maxHeapSysInBytes := res[0].Series[0].Values[0][1].(json.Number)
 		return maxHeapSysInBytes.Float64()
 	}
@@ -117,7 +117,7 @@ func (this *WatchInfluxQuery) pubLatency() (float64, error) {
 	//      Err:""
 	//    }
 	//  }
-	if len(res) > 0 && len(res[0].Series) > 1 && len(res[0].Series[0].Values) > 0 && len(res[0].Series[0].Values[0]) > 1 {
+	if len(res) > 0 && len(res[0].Series) >= 1 && len(res[0].Series[0].Values) > 0 && len(res[0].Series[0].Values[0]) > 1 {
 		p99 := res[0].Series[0].Values[0][1].(json.Number) // values[0][0] is "time"
 		return p99.Float64()
 	}
