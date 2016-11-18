@@ -2,6 +2,8 @@
 
 A full ecosystem that is built around kafka powered by golang.
 
+Hope it can help you.
+
 ### The Whole Picture
 
                 +-----------+
@@ -113,5 +115,5 @@ Currently gafka manages:
 - 10Billion messages per day
 - peak load
   - 1Million message per second
-  - 8TB transfered
+  - 8TB transfered per hour
 
