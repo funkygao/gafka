@@ -61,6 +61,13 @@ func init() {
 			}, nil
 		},
 
+		"jmx": func() (cli.Command, error) {
+			return &command.Jmx{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"histogram": func() (cli.Command, error) {
 			return &command.Histogram{
 				Ui:  ui,
