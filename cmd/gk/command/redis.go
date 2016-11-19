@@ -545,9 +545,9 @@ func (this *Redis) runPing(zkzone *zk.ZkZone) {
 	this.Ui.Output(columnize.SimpleFormat(lines))
 
 	// summary
-	ps := latency.Percentiles([]float64{0.90, 0.95, 0.99, 0.999})
-	this.Ui.Info(fmt.Sprintf("N:%d Min:%dms Max:%dms Mean:%.1fms 90%%:%.1fms 95%%:%.1fms 99%%:%.1fms",
-		latency.Count(), latency.Min(), latency.Max(), latency.Mean(), ps[0], ps[1], ps[2]))
+	ps := latency.Percentiles([]float64{0.7, 0.90, 0.95, 0.99, 0.999})
+	this.Ui.Info(fmt.Sprintf("N:%d Min:%dms Max:%dms Mean:%.1fms 70%%:%1.fms 90%%:%.1fms 95%%:%.1fms 99%%:%.1fms",
+		latency.Count(), latency.Min(), latency.Max(), latency.Mean(), ps[0], ps[1], ps[2], ps[3]))
 }
 
 func (*Redis) Synopsis() string {
