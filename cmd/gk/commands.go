@@ -2,8 +2,6 @@ package main
 
 import (
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/funkygao/gafka/cmd/gk/command"
 	"github.com/funkygao/gocli"
@@ -423,18 +421,4 @@ func init() {
 		},
 	}
 
-}
-
-func makeShutdownCh() <-chan struct{} {
-	ch := make(chan struct{})
-
-	sigCh := make(chan os.Signal, 4)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		for {
-			<-sigCh
-			ch <- struct{}{}
-		}
-	}()
-	return ch
 }
