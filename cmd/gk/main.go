@@ -10,6 +10,7 @@ import (
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/log4go"
 )
@@ -30,6 +31,31 @@ func main() {
 		}
 
 		if arg == "--generate-bash-completion" {
+			if len(args) > 1 {
+				// contextual auto complete
+				lastArg := args[len(args)-2]
+				switch lastArg {
+				case "-z": // zone
+					for _, zone := range ctx.SortedZones() {
+						fmt.Println(zone)
+					}
+					return
+
+				case "-c": // cluster
+					zone := ctx.ZkDefaultZone()
+					for i := 0; i < len(args)-1; i++ {
+						if args[i] == "-z" {
+							zone = args[i+1]
+						}
+					}
+					zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+					zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+						fmt.Println(zkcluster.Name())
+					})
+					return
+				}
+			}
+
 			for name := range commands {
 				fmt.Println(name)
 			}
