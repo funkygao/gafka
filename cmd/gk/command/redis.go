@@ -289,9 +289,9 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 					}
 
 					this.topInfos = this.topInfos[:this.freezeN]
-					this.render()
 				}
 				this.mu.Unlock()
+				this.render()
 
 			case 'F':
 				// unfreeze
