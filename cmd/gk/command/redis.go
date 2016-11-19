@@ -535,12 +535,12 @@ func (this *Redis) runPing(zkzone *zk.ZkZone) {
 	latency := metrics.NewRegisteredHistogram("redis.latency", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015))
 
 	sortutil.AscByField(this.topInfos, "latency")
-	lines := []string{"Host|Port|latency"}
-	for _, info := range this.topInfos {
+	lines := []string{"#|Host|Port|latency"}
+	for i, info := range this.topInfos {
 		latency.Update(info.latency.Nanoseconds() / 1e6)
 
-		lines = append(lines, fmt.Sprintf("%s|%d|%s",
-			info.host, info.port, info.latency))
+		lines = append(lines, fmt.Sprintf("%4d|%s|%d|%s",
+			i, info.host, info.port, info.latency))
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
 
