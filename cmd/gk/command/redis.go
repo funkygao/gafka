@@ -540,7 +540,7 @@ func (this *Redis) runPing(zkzone *zk.ZkZone) {
 		latency.Update(info.latency.Nanoseconds() / 1e6)
 
 		lines = append(lines, fmt.Sprintf("%4d|%s|%d|%s",
-			i, info.host, info.port, info.latency))
+			i+1, info.host, info.port, info.latency))
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
 
