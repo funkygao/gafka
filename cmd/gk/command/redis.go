@@ -35,14 +35,15 @@ type Redis struct {
 	freezeN             int
 	batchMode           bool
 
-	quit           chan struct{}
-	rows           int
-	topOrderAsc    bool
-	topOrderColIdx int
-	beep           int64
-	topOrderCols   []string
-	ipInNum        bool
-	ports          map[string]struct{}
+	quit                                              chan struct{}
+	rows                                              int
+	topOrderAsc                                       bool
+	topOrderColIdx                                    int
+	maxDbSize, maxConns, maxOps, maxMem, maxRx, maxTx int64
+	beep                                              int64
+	topOrderCols                                      []string
+	ipInNum                                           bool
+	ports                                             map[string]struct{}
 }
 
 func (this *Redis) Run(args []string) (exitCode int) {
@@ -385,7 +386,6 @@ func (this *Redis) render() {
 		lines = []string{fmt.Sprintf("Host|Port|%s", strings.Join(sortCols, "|"))}
 
 		sumDbsize, sumConns, sumOps, sumMem, sumRx, sumTx, sumMaxMem int64
-		maxDbSize, maxConns, maxOps, maxMem, maxRx, maxTx            int64
 	)
 	for i := 0; i < len(this.topInfos); i++ {
 		info := this.topInfos[i]
@@ -398,12 +398,12 @@ func (this *Redis) render() {
 		sumRx += info.rx * 1024 / 8
 		sumTx += info.tx * 1024 / 8
 
-		maxDbSize = max(maxDbSize, info.dbsize)
-		maxConns = max(maxConns, info.conns)
-		maxOps = max(maxOps, info.ops)
-		maxMem = max(maxMem, info.mem)
-		maxRx = max(maxRx, info.rx*1024/8)
-		maxTx = max(maxTx, info.tx*1024/8)
+		this.maxDbSize = max(this.maxDbSize, info.dbsize)
+		this.maxConns = max(this.maxConns, info.conns)
+		this.maxOps = max(this.maxOps, info.ops)
+		this.maxMem = max(this.maxMem, info.mem)
+		this.maxRx = max(this.maxRx, info.rx*1024/8)
+		this.maxTx = max(this.maxTx, info.tx*1024/8)
 
 		if i >= min(this.rows, len(this.topInfos)) {
 			break
@@ -443,10 +443,10 @@ func (this *Redis) render() {
 	}
 	lines = append(lines, fmt.Sprintf("-MAX-|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
 		len(this.topInfos),
-		gofmt.Comma(maxDbSize), gofmt.Comma(maxConns), gofmt.Comma(maxOps),
-		gofmt.ByteSize(maxMem), gofmt.ByteSize(sumMaxMem),
-		100.*float64(maxMem)/float64(sumMaxMem),
-		gofmt.ByteSize(maxRx), gofmt.ByteSize(maxTx)))
+		gofmt.Comma(this.maxDbSize), gofmt.Comma(this.maxConns), gofmt.Comma(this.maxOps),
+		gofmt.ByteSize(this.maxMem), gofmt.ByteSize(sumMaxMem),
+		100.*float64(this.maxMem)/float64(sumMaxMem),
+		gofmt.ByteSize(this.maxRx), gofmt.ByteSize(this.maxTx)))
 	lines = append(lines, fmt.Sprintf("-TOTAL-|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
 		len(this.topInfos),
 		gofmt.Comma(sumDbsize), gofmt.Comma(sumConns), gofmt.Comma(sumOps),
