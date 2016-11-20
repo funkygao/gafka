@@ -74,6 +74,7 @@ func main() {
 							fmt.Println(t)
 						}
 					}
+					return
 				}
 
 			}

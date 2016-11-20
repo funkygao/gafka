@@ -469,7 +469,7 @@ func (this *Redis) render() {
 			this.drawRow(line, row, termbox.ColorYellow, termbox.ColorDefault)
 		} else {
 			tuples := strings.Split(line, "|")
-			if _, present := this.warnPorts[tuples[1]]; present {
+			if _, present := this.warnPorts[tuples[1]]; !present {
 				this.drawRow(line, row, termbox.ColorDefault, termbox.ColorDefault)
 			} else {
 				this.drawRow(line, row, termbox.ColorDefault, termbox.ColorRed)
