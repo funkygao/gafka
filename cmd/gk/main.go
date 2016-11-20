@@ -53,7 +53,29 @@ func main() {
 						fmt.Println(zkcluster.Name())
 					})
 					return
+
+				case "-t": // topic
+					zone := ctx.ZkDefaultZone()
+					var cluster string
+					for i := 0; i < len(args)-1; i++ {
+						if args[i] == "-z" {
+							zone = args[i+1]
+						}
+
+						if args[i] == "-c" {
+							cluster = args[i+1]
+						}
+					}
+					if cluster != "" {
+						zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+						zkcluster := zkzone.NewCluster(cluster)
+						topics, _ := zkcluster.Topics()
+						for _, t := range topics {
+							fmt.Println(t)
+						}
+					}
 				}
+
 			}
 
 			for name := range commands {
