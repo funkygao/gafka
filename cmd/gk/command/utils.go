@@ -230,7 +230,7 @@ func min(a, b int) int {
 	return a
 }
 
-func max(a, b int) int {
+func max(a, b int64) int64 {
 	if a > b {
 		return a
 	}
