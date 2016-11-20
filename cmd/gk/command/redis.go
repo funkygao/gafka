@@ -44,6 +44,7 @@ type Redis struct {
 	topOrderCols                                      []string
 	ipInNum                                           bool
 	ports                                             map[string]struct{}
+	warnPorts                                         map[string]struct{}
 }
 
 func (this *Redis) Run(args []string) (exitCode int) {
@@ -68,7 +69,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*5, "")
 	cmdFlags.BoolVar(&ping, "ping", false, "")
 	cmdFlags.BoolVar(&this.ipInNum, "n", false, "")
-	cmdFlags.Int64Var(&this.beep, "beep", 0, "")
+	cmdFlags.Int64Var(&this.beep, "beep", 10000, "")
 	cmdFlags.IntVar(&this.freezeN, "freeze", 20, "")
 	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	cmdFlags.StringVar(&del, "del", "", "")
@@ -104,6 +105,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 			this.topOrderCols = []string{"dbsize", "conns", "ops", "mem", "maxmem", "memp", "rx", "tx"}
 			this.freezedPorts = make(map[string]struct{})
 			this.ports = make(map[string]struct{})
+			this.warnPorts = make(map[string]struct{})
 			for _, p := range strings.Split(ports, ",") {
 				tp := strings.TrimSpace(p)
 				if tp != "" {
@@ -398,6 +400,10 @@ func (this *Redis) render() {
 		sumRx += info.rx * 1024 / 8
 		sumTx += info.tx * 1024 / 8
 
+		if info.ops >= this.beep {
+			this.warnPorts[strconv.Itoa(info.port)] = struct{}{}
+		}
+
 		this.maxDbSize = max(this.maxDbSize, info.dbsize)
 		this.maxConns = max(this.maxConns, info.conns)
 		this.maxOps = max(this.maxOps, info.ops)
@@ -462,7 +468,12 @@ func (this *Redis) render() {
 		} else if row == len(lines)-1 {
 			this.drawRow(line, row, termbox.ColorYellow, termbox.ColorDefault)
 		} else {
-			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorDefault)
+			tuples := strings.Split(line, "|")
+			if _, present := this.warnPorts[tuples[1]]; present {
+				this.drawRow(line, row, termbox.ColorDefault, termbox.ColorDefault)
+			} else {
+				this.drawRow(line, row, termbox.ColorDefault, termbox.ColorRed)
+			}
 		}
 	}
 
