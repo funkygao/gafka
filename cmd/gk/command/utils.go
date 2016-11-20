@@ -230,6 +230,13 @@ func min(a, b int) int {
 	return a
 }
 
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 func toLogLevel(levelStr string) log.Level {
 	level := log.TRACE
 	switch levelStr {

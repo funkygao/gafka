@@ -29,10 +29,11 @@ type Redis struct {
 	Ui  cli.Ui
 	Cmd string
 
-	mu           sync.Mutex
-	topInfos     []redisTopInfo
-	freezedPorts map[string]struct{}
-	freezeN      int
+	mu                  sync.Mutex
+	topInfos, topInfos1 []redisTopInfo
+	freezedPorts        map[string]struct{}
+	freezeN             int
+	batchMode           bool
 
 	quit           chan struct{}
 	rows           int
@@ -63,11 +64,12 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&list, "list", true, "")
 	cmdFlags.IntVar(&byHost, "host", 0, "")
 	cmdFlags.BoolVar(&top, "top", false, "")
-	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*7, "")
+	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*5, "")
 	cmdFlags.BoolVar(&ping, "ping", false, "")
 	cmdFlags.BoolVar(&this.ipInNum, "n", false, "")
 	cmdFlags.Int64Var(&this.beep, "beep", 0, "")
 	cmdFlags.IntVar(&this.freezeN, "freeze", 20, "")
+	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	cmdFlags.StringVar(&del, "del", "", "")
 	cmdFlags.StringVar(&ports, "port", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -167,30 +169,35 @@ type redisTopInfo struct {
 
 func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 	termui.Init()
-	this.rows = termui.TermHeight() - 2
-	defer termui.Close()
+	this.rows = termui.TermHeight() - 4
+	if this.batchMode {
+		termbox.Close()
+	} else {
+		defer termui.Close()
 
-	termbox.SetInputMode(termbox.InputEsc)
-	eventChan := make(chan termbox.Event, 16)
-	go this.handleEvents(eventChan)
-	go func() {
-		for {
-			ev := termbox.PollEvent()
-			eventChan <- ev
-		}
-	}()
+		termbox.SetInputMode(termbox.InputEsc)
+		eventChan := make(chan termbox.Event, 16)
+		go this.handleEvents(eventChan)
+		go func() {
+			for {
+				ev := termbox.PollEvent()
+				eventChan <- ev
+			}
+		}()
 
-	this.drawSplash()
+		this.drawSplash()
+	}
 
 	this.topInfos = make([]redisTopInfo, 0, 100)
-	tick := time.NewTicker(interval)
+	this.topInfos1 = make([]redisTopInfo, 0, 100)
 	for {
 		var wg sync.WaitGroup
-		this.topInfos = this.topInfos[:0]
+
+		this.mu.Lock()
+		this.topInfos1 = this.topInfos1[:0]
 		freezedPorts := make(map[string]struct{})
 
 		// clone freezedPorts to avoid concurrent map access
-		this.mu.Lock()
 		if len(this.freezedPorts) > 0 {
 			for port, _ := range this.freezedPorts {
 				freezedPorts[port] = struct{}{}
@@ -223,14 +230,18 @@ func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 			}
 
 			wg.Add(1)
-			go this.updateRedisInfo(&wg, host, nport)
+			go this.updateRedisInfo(&wg, host, nport) // update happens on topInfos1
 		}
 		wg.Wait()
+
+		this.mu.Lock()
+		this.topInfos1, this.topInfos = this.topInfos, this.topInfos1
+		this.mu.Unlock()
 
 		this.render()
 
 		select {
-		case <-tick.C:
+		case <-time.After(interval):
 
 		case <-this.quit:
 			return
@@ -325,7 +336,12 @@ func (this *Redis) drawRow(row string, y int, fg, bg termbox.Attribute) {
 		tuples[0], tuples[1], tuples[2], tuples[3], tuples[4],
 		tuples[5], tuples[6], tuples[7], tuples[8], tuples[9])
 	for _, r := range row {
-		termbox.SetCell(x, y, r, fg, bg)
+		if this.batchMode {
+			this.Ui.Output(row)
+		} else {
+			termbox.SetCell(x, y, r, fg, bg)
+		}
+
 		// wide string must be considered
 		w := runewidth.RuneWidth(r)
 		if w == 0 || (w == 2 && runewidth.IsAmbiguousWidth(r)) {
@@ -341,7 +357,9 @@ func (this *Redis) selectedCol() string {
 }
 
 func (this *Redis) render() {
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	if !this.batchMode {
+		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	}
 
 	this.mu.Lock()
 	defer this.mu.Unlock()
@@ -362,13 +380,16 @@ func (this *Redis) render() {
 			}
 		}
 	}
-	lines := []string{fmt.Sprintf("Host|Port|%s", strings.Join(sortCols, "|"))}
 
 	var (
+		lines = []string{fmt.Sprintf("Host|Port|%s", strings.Join(sortCols, "|"))}
+
 		sumDbsize, sumConns, sumOps, sumMem, sumRx, sumTx, sumMaxMem int64
+		maxDbSize, maxConns, maxOps, maxMem, maxRx, maxTx            int64
 	)
 	for i := 0; i < len(this.topInfos); i++ {
 		info := this.topInfos[i]
+
 		sumDbsize += info.dbsize
 		sumConns += info.conns
 		sumOps += info.ops
@@ -377,8 +398,15 @@ func (this *Redis) render() {
 		sumRx += info.rx * 1024 / 8
 		sumTx += info.tx * 1024 / 8
 
+		maxDbSize = max(maxDbSize, info.dbsize)
+		maxConns = max(maxConns, info.conns)
+		maxOps = max(maxOps, info.ops)
+		maxMem = max(maxMem, info.mem)
+		maxRx = max(maxRx, info.rx*1024/8)
+		maxTx = max(maxTx, info.tx*1024/8)
+
 		if i >= min(this.rows, len(this.topInfos)) {
-			continue
+			break
 		}
 
 		l := fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
@@ -412,8 +440,13 @@ func (this *Redis) render() {
 			}
 		}
 		lines = append(lines, l)
-
 	}
+	lines = append(lines, fmt.Sprintf("-MAX-|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
+		len(this.topInfos),
+		gofmt.Comma(maxDbSize), gofmt.Comma(maxConns), gofmt.Comma(maxOps),
+		gofmt.ByteSize(maxMem), gofmt.ByteSize(sumMaxMem),
+		100.*float64(maxMem)/float64(sumMaxMem),
+		gofmt.ByteSize(maxRx), gofmt.ByteSize(maxTx)))
 	lines = append(lines, fmt.Sprintf("-TOTAL-|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
 		len(this.topInfos),
 		gofmt.Comma(sumDbsize), gofmt.Comma(sumConns), gofmt.Comma(sumOps),
@@ -424,6 +457,8 @@ func (this *Redis) render() {
 	for row, line := range lines {
 		if row == 0 {
 			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorBlue)
+		} else if row == len(lines)-2 {
+			this.drawRow(line, row, termbox.ColorMagenta, termbox.ColorDefault)
 		} else if row == len(lines)-1 {
 			this.drawRow(line, row, termbox.ColorYellow, termbox.ColorDefault)
 		} else {
@@ -431,7 +466,9 @@ func (this *Redis) render() {
 		}
 	}
 
-	termbox.Flush()
+	if !this.batchMode {
+		termbox.Flush()
+	}
 }
 
 func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
@@ -466,7 +503,7 @@ func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
 	}
 
 	this.mu.Lock()
-	this.topInfos = append(this.topInfos, redisTopInfo{
+	this.topInfos1 = append(this.topInfos1, redisTopInfo{
 		host:   host,
 		port:   port,
 		dbsize: dbSize,
@@ -584,10 +621,13 @@ Usage: %s redis [options]
       Show network addresses as numbers
 
     -sleep interval
-      Sleep between -top refreshing screen. Defaults 7s
+      Sleep between -top refreshing screen. Defaults 5s
       e,g 10s
 
     -beep threshold
+
+    -b
+      Batch mode
 
     -ping
       Ping all redis instances
