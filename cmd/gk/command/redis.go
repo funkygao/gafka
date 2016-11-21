@@ -40,6 +40,7 @@ type Redis struct {
 	topOrderAsc                                                  bool
 	topOrderColIdx                                               int
 	maxDbSize, maxConns, maxOps, maxMem, maxMaxMem, maxRx, maxTx int64
+	maxMemp                                                      float64
 	beep                                                         int64
 	topOrderCols                                                 []string
 	ipInNum                                                      bool
@@ -435,6 +436,9 @@ func (this *Redis) render() {
 		this.maxMaxMem = max(this.maxMaxMem, info.maxmem)
 		this.maxRx = max(this.maxRx, info.rx*1024/8)
 		this.maxTx = max(this.maxTx, info.tx*1024/8)
+		if info.memp > this.maxMemp {
+			this.maxMemp = info.memp
+		}
 
 		if i >= min(this.rows, len(this.topInfos)) {
 			break
