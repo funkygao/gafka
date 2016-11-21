@@ -263,6 +263,9 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 				os.Exit(0)
 				return
 
+			case termbox.KeySpace:
+				this.render()
+
 			case termbox.KeyArrowUp:
 				this.topOrderAsc = true
 				this.render()
@@ -292,6 +295,9 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 				termbox.Close()
 				os.Exit(0)
 				return
+
+			case 'h', '?':
+				this.drawHelp()
 
 			case 'f':
 				// freeze the topN
@@ -330,6 +336,24 @@ func (this *Redis) drawSplash() {
 		termbox.Flush()
 		time.Sleep(time.Millisecond * 1500)
 	}
+}
+
+func (this *Redis) drawHelp() {
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	help := []string{
+		"Help for Interactive Commands",
+		"",
+		"  h,?  Help",
+		"  f    Freeze the top N rows",
+		"  F    Unfreeze top N rows",
+		"  q    Quit",
+	}
+	for y, row := range help {
+		for x, c := range row {
+			termbox.SetCell(x, y, c, termbox.ColorDefault, termbox.ColorDefault)
+		}
+	}
+	termbox.Flush()
 }
 
 func (this *Redis) drawRow(row string, y int, fg, bg termbox.Attribute) {
