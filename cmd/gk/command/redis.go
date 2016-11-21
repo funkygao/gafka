@@ -35,16 +35,16 @@ type Redis struct {
 	freezeN             int
 	batchMode           bool
 
-	quit                                              chan struct{}
-	rows                                              int
-	topOrderAsc                                       bool
-	topOrderColIdx                                    int
-	maxDbSize, maxConns, maxOps, maxMem, maxRx, maxTx int64
-	beep                                              int64
-	topOrderCols                                      []string
-	ipInNum                                           bool
-	ports                                             map[string]struct{}
-	warnPorts                                         map[string]struct{}
+	quit                                                         chan struct{}
+	rows                                                         int
+	topOrderAsc                                                  bool
+	topOrderColIdx                                               int
+	maxDbSize, maxConns, maxOps, maxMem, maxMaxMem, maxRx, maxTx int64
+	beep                                                         int64
+	topOrderCols                                                 []string
+	ipInNum                                                      bool
+	ports                                                        map[string]struct{}
+	warnPorts                                                    map[string]struct{}
 }
 
 func (this *Redis) Run(args []string) (exitCode int) {
@@ -432,6 +432,7 @@ func (this *Redis) render() {
 		this.maxConns = max(this.maxConns, info.conns)
 		this.maxOps = max(this.maxOps, info.ops)
 		this.maxMem = max(this.maxMem, info.mem)
+		this.maxMaxMem = max(this.maxMaxMem, info.maxmem)
 		this.maxRx = max(this.maxRx, info.rx*1024/8)
 		this.maxTx = max(this.maxTx, info.tx*1024/8)
 
@@ -474,7 +475,7 @@ func (this *Redis) render() {
 	lines = append(lines, fmt.Sprintf("-MAX-|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
 		len(this.topInfos),
 		gofmt.Comma(this.maxDbSize), gofmt.Comma(this.maxConns), gofmt.Comma(this.maxOps),
-		gofmt.ByteSize(this.maxMem), gofmt.ByteSize(sumMaxMem),
+		gofmt.ByteSize(this.maxMem), gofmt.ByteSize(this.maxMaxMem),
 		100.*float64(this.maxMem)/float64(sumMaxMem),
 		gofmt.ByteSize(this.maxRx), gofmt.ByteSize(this.maxTx)))
 	lines = append(lines, fmt.Sprintf("-TOTAL-|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
