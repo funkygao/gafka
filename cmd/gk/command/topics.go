@@ -247,10 +247,7 @@ func (this *Topics) printSummary(zkzone *zk.ZkZone, clusterPattern string) {
 func (this *Topics) clusterSummary(zkcluster *zk.ZkCluster) []topicSummary {
 	r := make([]topicSummary, 0, 10)
 
-	cf := sarama.NewConfig()
-	cf.Net.ReadTimeout = time.Second * 4
-	cf.Net.WriteTimeout = time.Second * 4
-	kfk, err := sarama.NewClient(zkcluster.BrokerList(), cf)
+	kfk, err := sarama.NewClient(zkcluster.BrokerList(), saramaConfig())
 	if err != nil {
 		this.Ui.Error(err.Error())
 		return nil
@@ -395,10 +392,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 		}
 	}
 
-	cf := sarama.NewConfig()
-	cf.Net.ReadTimeout = time.Second * 4
-	cf.Net.WriteTimeout = time.Second * 4
-	kfk, err := sarama.NewClient(zkcluster.BrokerList(), cf)
+	kfk, err := sarama.NewClient(zkcluster.BrokerList(), saramaConfig())
 	if err != nil {
 		if this.verbose {
 			linesInTopicMode = this.echoOrBuffer(color.Yellow("%5s%+v %s", " ",

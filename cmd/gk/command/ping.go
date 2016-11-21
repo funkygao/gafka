@@ -79,7 +79,7 @@ func (this *Ping) diagnose() {
 		for _, broker := range registeredBrokers {
 			log.Debug("ping %s", broker.Addr())
 
-			kfk, err := sarama.NewClient([]string{broker.Addr()}, sarama.NewConfig())
+			kfk, err := sarama.NewClient([]string{broker.Addr()}, saramaConfig())
 			if err != nil {
 				log.Error("%25s %30s %s", broker.Addr(), broker.NamedAddr(), color.Red(err.Error()))
 

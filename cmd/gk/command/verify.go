@@ -78,7 +78,7 @@ func (this *Verify) Run(args []string) (exitCode int) {
 	this.zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		this.zkclusters[zkcluster.Name()] = zkcluster
 
-		kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
+		kfk, err := sarama.NewClient(zkcluster.BrokerList(), saramaConfig())
 		swallow(err)
 
 		this.kfkClients[zkcluster.Name()] = kfk

@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/ctx"
@@ -322,10 +321,7 @@ func (this *Clusters) clusterSummary(zkcluster *zk.ZkCluster) (brokers, topics, 
 	brokerInfos := zkcluster.Brokers()
 	brokers = len(brokerInfos)
 
-	cf := sarama.NewConfig()
-	cf.Net.ReadTimeout = time.Second * 4
-	cf.Net.WriteTimeout = time.Second * 4
-	kfk, err := sarama.NewClient(zkcluster.BrokerList(), cf)
+	kfk, err := sarama.NewClient(zkcluster.BrokerList(), saramaConfig())
 	if err != nil {
 		this.Ui.Error(err.Error())
 		return
@@ -412,10 +408,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, po
 			return
 		}
 
-		cf := sarama.NewConfig()
-		cf.Net.ReadTimeout = time.Second * 4
-		cf.Net.WriteTimeout = time.Second * 4
-		kfk, err := sarama.NewClient(brokerList, cf)
+		kfk, err := sarama.NewClient(brokerList, saramaConfig())
 		if err != nil {
 			ci.err = err.Error()
 			clusters = append(clusters, ci)

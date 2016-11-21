@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
@@ -34,6 +35,16 @@ func validateArgs(cmd cli.Command, ui cli.Ui) *argsRule {
 		adminRequires: make(map[string]struct{}),
 		conditions:    make(map[string][]string),
 	}
+}
+
+func saramaConfig() *sarama.Config {
+	cf := sarama.NewConfig()
+	cf.Net.DialTimeout = time.Second * 4
+	cf.Net.ReadTimeout = time.Second * 4
+	cf.Net.WriteTimeout = time.Second * 4
+	cf.Metadata.Retry.Max = 2
+	cf.Producer.Timeout = time.Second * 4
+	return cf
 }
 
 func ipaddr(hostname string) string {

@@ -66,7 +66,7 @@ func (this *Host) diagnose() {
 
 			clusters = append(clusters, cluster)
 
-			kfk, err := sarama.NewClient([]string{broker.Addr()}, sarama.NewConfig())
+			kfk, err := sarama.NewClient([]string{broker.Addr()}, saramaConfig())
 			if err != nil {
 				this.Ui.Error(err.Error())
 				continue
