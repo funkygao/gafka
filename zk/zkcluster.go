@@ -256,7 +256,7 @@ func (this *ZkCluster) ConsumerOffsetsOfGroup(group string) map[string]map[strin
 	for _, topic := range topics {
 		r[topic] = make(map[string]int64)
 		for partitionId, offsetData := range this.zone.ChildrenWithData(this.consumerGroupOffsetOfTopicPath(group, topic)) {
-			consumerOffset, err := strconv.ParseInt(string(offsetData.data), 10, 64)
+			consumerOffset, err := strconv.ParseInt(strings.TrimSpace(string(offsetData.data)), 10, 64)
 			if err != nil {
 				log.Error("kafka[%s] %s P:%s %v", this.name, topic, partitionId, err)
 			} else {
