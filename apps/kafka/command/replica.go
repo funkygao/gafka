@@ -25,8 +25,26 @@ HighWatermark LogEndOffset
 HW is updated only by leader of a partition.
 Each replica has a LEO.
 
-Leader of a partition manages replicas state in memory, replicas themselves dont.        
+Leader of a partition manages replicas state in memory, replicas themselves dont.
 
+updateLeaderHWAndMaybeExpandIsr()
+    // happens only on leader
+    1. It is not already in the ISR  
+    2. It is part of the assigned replica list
+    3. Its LEO >= leader.HW
+
+
+                        HighWatermark  
+                              |                   |  
+                              |<-- uncommitted -->|  
+                              |                   |  
++-----------------------------+-------------------+  
+| MESSAGE | ... ... | MESSAGE |      MESSAGE      |  
++-------------------+-----------------------------+  
+                    |                             |  
+                    |<------   unflushed   ------>|  
+                    |                             |  
+               RecoveryPoint                 LogEndOffset 
 
 		`)
 

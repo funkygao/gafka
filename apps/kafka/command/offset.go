@@ -21,6 +21,8 @@ func (this *OffsetManager) Run(args []string) (exitCode int) {
 	}
 
 	this.Ui.Output(`
+ByteBufferMessageSet.assignOffsets()
+		
 Topic: __consumer_offsets
 
 Key: [Group, Topic, Partition]
