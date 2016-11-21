@@ -480,7 +480,7 @@ func (this *Redis) render() {
 		len(this.topInfos),
 		gofmt.Comma(this.maxDbSize), gofmt.Comma(this.maxConns), gofmt.Comma(this.maxOps),
 		gofmt.ByteSize(this.maxMem), gofmt.ByteSize(this.maxMaxMem),
-		100.*float64(this.maxMem)/float64(sumMaxMem),
+		100.*this.maxMemp,
 		gofmt.ByteSize(this.maxRx), gofmt.ByteSize(this.maxTx)))
 	lines = append(lines, fmt.Sprintf("-TOTAL-|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
 		len(this.topInfos),
