@@ -71,6 +71,13 @@ func init() {
 				Cmd: cmd,
 			}, nil
 		},
+
+		"replica": func() (cli.Command, error) {
+			return &command.Replica{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
 	}
 
 }

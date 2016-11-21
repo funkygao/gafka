@@ -37,9 +37,18 @@ Kafka controller
         /brokers/topics/$topic/partitions/$partition/state
 
     subscribeChildChanges:
-        /brokers/topics   
+        /brokers/topics
+            if (newTopics.size > 0)
+                controller.onNewTopicCreation(newTopics, addedPartitionReplicaAssignment.keySet.toSet)
+
         /admin/delete_topics
+
         /brokers/ids
+             if (newBrokerIds.size > 0)
+                 controller.onBrokerStartup(newBrokerIds.toSeq)
+             if (deadBrokerIds.size > 0)
+                 controller.onBrokerFailure(deadBrokerIds.toSeq)
+
 		`)
 
 	return
