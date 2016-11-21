@@ -64,6 +64,13 @@ func init() {
 				Cmd: cmd,
 			}, nil
 		},
+
+		"controller": func() (cli.Command, error) {
+			return &command.Controller{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
 	}
 
 }
