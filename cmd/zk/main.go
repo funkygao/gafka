@@ -30,6 +30,18 @@ func main() {
 		}
 
 		if arg == "--generate-bash-completion" {
+			if len(args) > 1 {
+				// contextual auto complete
+				lastArg := args[len(args)-2]
+				switch lastArg {
+				case "-z": // zone
+					for _, zone := range ctx.SortedZones() {
+						fmt.Println(zone)
+					}
+					return
+				}
+			}
+
 			for name, _ := range commands {
 				fmt.Println(name)
 			}
