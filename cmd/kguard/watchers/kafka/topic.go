@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/anomalyzer"
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/telemetry"
 	"github.com/funkygao/gafka/zk"
@@ -30,12 +31,30 @@ type WatchTopics struct {
 
 	pubQps      map[string]metrics.Meter
 	lastOffsets map[string]int64
+
+	aggPubQpsGauge   metrics.Gauge
+	aggPubQpsAnomaly anomalyzer.Anomalyzer
 }
 
 func (this *WatchTopics) Init(ctx monitor.Context) {
 	this.Zkzone = ctx.ZkZone()
 	this.Stop = ctx.StopChan()
 	this.Wg = ctx.Inflight()
+
+	conf := &anomalyzer.AnomalyzerConf{
+		Sensitivity: 0.1,
+		UpperBound:  9000000, // 9M
+		LowerBound:  0,
+		ActiveSize:  1,
+		NSeasons:    4,
+		Methods:     []string{"diff", "fence", "highrank", "lowrank", "magnitude"},
+	}
+	var err error
+	this.aggPubQpsAnomaly, err = anomalyzer.NewAnomalyzer(conf, nil)
+	if err != nil {
+		panic(err)
+	}
+	this.aggPubQpsGauge = metrics.NewRegisteredGauge("pub.qps.anomaly", nil)
 }
 
 func (this *WatchTopics) Run() {
@@ -99,6 +118,7 @@ func (this *WatchTopics) newTopicsSince(now time.Time, since time.Duration) (n i
 
 func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 	partitionN int64, brokersN int64) {
+	var totalPubQpsRate1 float64
 	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		brokerList := zkcluster.BrokerList()
 		kfk, err := sarama.NewClient(brokerList, sarama.NewConfig())
@@ -161,9 +181,12 @@ func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 
 			}
 
+			totalPubQpsRate1 += this.pubQps[tag].Rate1()
 		}
 
 	})
+
+	this.aggPubQpsGauge.Update(int64(100 * this.aggPubQpsAnomaly.Push(totalPubQpsRate1)))
 
 	return
 }
