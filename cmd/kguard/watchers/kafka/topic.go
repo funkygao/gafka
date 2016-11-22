@@ -230,7 +230,7 @@ func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 
 	})
 
-	if time.Since(this.startedAt).Minutes() < 10. {
+	if time.Since(this.startedAt).Minutes() < 20. {
 		// mut for the beginning
 		this.aggPubQpsAnomalyGauge.Update(0)
 	} else {
