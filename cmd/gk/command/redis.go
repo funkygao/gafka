@@ -34,6 +34,7 @@ type Redis struct {
 	freezedPorts        map[string]struct{}
 	freezeN             int
 	batchMode           bool
+	debug               bool
 
 	quit                                                         chan struct{}
 	rows                                                         int
@@ -71,6 +72,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&ping, "ping", false, "")
 	cmdFlags.BoolVar(&this.ipInNum, "n", false, "")
 	cmdFlags.Int64Var(&this.beep, "beep", 10000, "")
+	cmdFlags.BoolVar(&this.debug, "d", false, "")
 	cmdFlags.IntVar(&this.freezeN, "freeze", 20, "")
 	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	cmdFlags.StringVar(&del, "del", "", "")
@@ -613,11 +615,20 @@ func (this *Redis) runPing(zkzone *zk.ZkZone) {
 
 	sortutil.AscByField(this.topInfos, "latency")
 	lines := []string{"#|Host|Port|latency"}
+	if this.debug {
+		lines = []string{"#|Host|Port|StartedAt|latency"}
+	}
 	for i, info := range this.topInfos {
 		latency.Update(info.latency.Nanoseconds() / 1e6)
 
-		lines = append(lines, fmt.Sprintf("%4d|%s|%d|%s",
-			i+1, info.host, info.port, info.latency))
+		if this.debug {
+			lines = append(lines, fmt.Sprintf("%4d|%s|%d|%s|%s",
+				i+1, info.host, info.port, info.t0, info.latency))
+		} else {
+			lines = append(lines, fmt.Sprintf("%4d|%s|%d|%s",
+				i+1, info.host, info.port, info.latency))
+		}
+
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
 
@@ -668,6 +679,9 @@ Usage: %s redis [options]
 
     -b
       Batch mode
+
+    -d
+      Debug
 
     -ping
       Ping all redis instances
