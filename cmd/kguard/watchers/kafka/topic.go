@@ -42,11 +42,12 @@ func (this *WatchTopics) Init(ctx monitor.Context) {
 	this.Wg = ctx.Inflight()
 
 	conf := &anomalyzer.AnomalyzerConf{
-		Sensitivity: 0.3,
-		UpperBound:  9000000, // 9M
-		LowerBound:  0,
-		ActiveSize:  10,
-		NSeasons:    4,
+		ActiveSize:  8,
+		NSeasons:    8,
+		Sensitivity: 0.3,     // magnitude
+		UpperBound:  9000000, // fence
+		LowerBound:  0,       // fence
+		PermCount:   1000,    // diff & rank
 		Methods:     []string{"diff", "fence", "highrank", "lowrank", "magnitude", "ks", "cdf"},
 	}
 	var err error
