@@ -46,7 +46,7 @@ type Redis struct {
 	topOrderCols                                                 []string
 	ipInNum                                                      bool
 	ports                                                        map[string]struct{}
-	warnPorts                                                    map[string]struct{}
+	warnPorts, selectedPorts                                     map[string]struct{}
 }
 
 func (this *Redis) Run(args []string) (exitCode int) {
@@ -109,6 +109,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 			this.freezedPorts = make(map[string]struct{})
 			this.ports = make(map[string]struct{})
 			this.warnPorts = make(map[string]struct{})
+			this.selectedPorts = make(map[string]struct{})
 			for _, p := range strings.Split(ports, ",") {
 				tp := strings.TrimSpace(p)
 				if tp != "" {
@@ -181,7 +182,7 @@ func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 	} else {
 		defer termui.Close()
 
-		termbox.SetInputMode(termbox.InputEsc)
+		termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
 		eventChan := make(chan termbox.Event, 16)
 		go this.handleEvents(eventChan)
 		go func() {
@@ -257,7 +258,21 @@ func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 
 func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 	for ev := range eventChan {
+
 		switch ev.Type {
+		case termbox.EventMouse:
+			if ev.Key == termbox.MouseLeft {
+				y := ev.MouseY
+				if y >= 1 && y <= this.rows {
+					// header, max/total lines excluded
+					this.mu.Lock()
+					this.selectedPorts[strconv.Itoa(this.topInfos[y-1].port)] = struct{}{}
+					this.mu.Unlock()
+					this.render()
+				}
+
+			}
+
 		case termbox.EventKey:
 			switch ev.Key {
 			case termbox.KeyEsc:
@@ -349,6 +364,7 @@ func (this *Redis) drawHelp() {
 		"  h,?  Help",
 		"  f    Freeze the top N rows",
 		"  F    Unfreeze top N rows",
+		"mouse  Click to select a row",
 		"  q    Quit",
 	}
 	for y, row := range help {
@@ -499,14 +515,19 @@ func (this *Redis) render() {
 
 	for row, line := range lines {
 		if row == 0 {
+			// header
 			this.drawRow(line, row, termbox.ColorDefault, termbox.ColorBlue)
 		} else if row == len(lines)-2 {
+			// max line
 			this.drawRow(line, row, termbox.ColorMagenta, termbox.ColorDefault)
 		} else if row == len(lines)-1 {
+			// total line
 			this.drawRow(line, row, termbox.ColorYellow, termbox.ColorDefault)
 		} else {
 			tuples := strings.Split(line, "|")
-			if _, present := this.warnPorts[tuples[1]]; !present {
+			if _, present := this.selectedPorts[tuples[1]]; present {
+				this.drawRow(line, row, termbox.ColorBlack, termbox.ColorCyan)
+			} else if _, present := this.warnPorts[tuples[1]]; !present {
 				this.drawRow(line, row, termbox.ColorDefault, termbox.ColorDefault)
 			} else {
 				this.drawRow(line, row, termbox.ColorDefault, termbox.ColorRed)
