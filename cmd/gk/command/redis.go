@@ -41,7 +41,7 @@ type Redis struct {
 	topOrderAsc                                                  bool
 	topOrderColIdx                                               int
 	maxDbSize, maxConns, maxOps, maxMem, maxMaxMem, maxRx, maxTx int64
-	maxMemp                                                      float64
+	maxMemp, maxTrp                                              float64
 	beep                                                         int64
 	topOrderCols                                                 []string
 	ipInNum                                                      bool
@@ -105,7 +105,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 			this.quit = make(chan struct{})
 			this.topOrderAsc = false
 			this.topOrderColIdx = 2 // ops by default
-			this.topOrderCols = []string{"dbsize", "conns", "ops", "mem", "maxmem", "memp", "rx", "tx"}
+			this.topOrderCols = []string{"dbsize", "conns", "ops", "mem", "maxmem", "memp", "rx", "tx", "trp"}
 			this.freezedPorts = make(map[string]struct{})
 			this.ports = make(map[string]struct{})
 			this.warnPorts = make(map[string]struct{})
@@ -168,7 +168,7 @@ type redisTopInfo struct {
 	host                                    string
 	port                                    int
 	dbsize, ops, rx, tx, conns, mem, maxmem int64
-	memp                                    float64
+	memp, trp                               float64
 	t0                                      time.Time
 	latency                                 time.Duration
 }
@@ -337,7 +337,7 @@ func (this *Redis) drawSplash() {
 			termbox.SetCell(x+i, y, c, termbox.ColorGreen, termbox.ColorDefault)
 		}
 		termbox.Flush()
-		time.Sleep(time.Millisecond * 1500)
+		time.Sleep(time.Millisecond * 1000)
 	}
 }
 
@@ -361,10 +361,10 @@ func (this *Redis) drawHelp() {
 
 func (this *Redis) drawRow(row string, y int, fg, bg termbox.Attribute) {
 	x := 0
-	tuples := strings.SplitN(row, "|", 10)
-	row = fmt.Sprintf("%25s %8s %15s %9s %9s %13s %13s %6s %13s %13s",
+	tuples := strings.SplitN(row, "|", 11)
+	row = fmt.Sprintf("%23s %6s %15s %9s %9s %13s %13s %6s %13s %13s %8s",
 		tuples[0], tuples[1], tuples[2], tuples[3], tuples[4],
-		tuples[5], tuples[6], tuples[7], tuples[8], tuples[9])
+		tuples[5], tuples[6], tuples[7], tuples[8], tuples[9], tuples[10])
 	for _, r := range row {
 		if this.batchMode {
 			this.Ui.Output(row)
@@ -441,17 +441,21 @@ func (this *Redis) render() {
 		if info.memp > this.maxMemp {
 			this.maxMemp = info.memp
 		}
+		if info.trp > this.maxTrp {
+			this.maxTrp = info.trp
+		}
 
 		if i >= min(this.rows, len(this.topInfos)) {
 			continue
 		}
 
-		l := fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
+		l := fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s|%8.1f",
 			info.host, info.port,
 			gofmt.Comma(info.dbsize), gofmt.Comma(info.conns), gofmt.Comma(info.ops),
 			gofmt.ByteSize(info.mem), gofmt.ByteSize(info.maxmem),
 			100.*info.memp,
-			gofmt.ByteSize(info.rx*1024/8), gofmt.ByteSize(info.tx*1024/8))
+			gofmt.ByteSize(info.rx*1024/8), gofmt.ByteSize(info.tx*1024/8),
+			info.trp)
 		if this.beep > 0 {
 			var val int64
 			switch this.selectedCol() {
@@ -478,18 +482,20 @@ func (this *Redis) render() {
 		}
 		lines = append(lines, l)
 	}
-	lines = append(lines, fmt.Sprintf("-MAX-|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
+	lines = append(lines, fmt.Sprintf("-MAX-|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s|%8.1f",
 		len(this.topInfos),
 		gofmt.Comma(this.maxDbSize), gofmt.Comma(this.maxConns), gofmt.Comma(this.maxOps),
 		gofmt.ByteSize(this.maxMem), gofmt.ByteSize(this.maxMaxMem),
 		100.*this.maxMemp,
-		gofmt.ByteSize(this.maxRx), gofmt.ByteSize(this.maxTx)))
-	lines = append(lines, fmt.Sprintf("-TOTAL-|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
+		gofmt.ByteSize(this.maxRx), gofmt.ByteSize(this.maxTx),
+		this.maxTrp))
+	lines = append(lines, fmt.Sprintf("-TOTAL-|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s|%8.1f",
 		len(this.topInfos),
 		gofmt.Comma(sumDbsize), gofmt.Comma(sumConns), gofmt.Comma(sumOps),
 		gofmt.ByteSize(sumMem), gofmt.ByteSize(sumMaxMem),
 		100.*float64(sumMem)/float64(sumMaxMem),
-		gofmt.ByteSize(sumRx), gofmt.ByteSize(sumTx)))
+		gofmt.ByteSize(sumRx), gofmt.ByteSize(sumTx),
+		float64(sumTx)/float64(sumRx)))
 
 	for row, line := range lines {
 		if row == 0 {
@@ -544,6 +550,12 @@ func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
 		host = ipaddr(host)
 	}
 
+	var trp float64
+	if rxKbps > 0. {
+		trp = txKbps / rxKbps
+	} else {
+		trp = 0.
+	}
 	this.mu.Lock()
 	this.topInfos1 = append(this.topInfos1, redisTopInfo{
 		host:   host,
@@ -555,6 +567,7 @@ func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
 		memp:   float64(mem) / float64(maxMem),
 		rx:     int64(rxKbps),
 		tx:     int64(txKbps),
+		trp:    trp,
 		conns:  conns - 1, // me excluded
 	})
 	this.mu.Unlock()
