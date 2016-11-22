@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -56,6 +57,46 @@ func (this *WatchTopics) Init(ctx monitor.Context) {
 		panic(err)
 	}
 	this.aggPubQpsGauge = metrics.NewRegisteredGauge("pub.qps.anomaly", nil)
+}
+
+// set?key=as:4
+func (this *WatchTopics) Set(key string) {
+	tuples := strings.SplitN(key, ":", 2)
+	if len(tuples) != 2 {
+		return
+	}
+
+	switch tuples[0] {
+	case "kta-as":
+		if n, err := strconv.Atoi(tuples[1]); err == nil && n > 0 {
+			this.aggPubQpsAnomaly.Conf.ActiveSize = n
+			log.Info("ActiveSize set to %d", n)
+		}
+
+	case "kta-ns":
+		if n, err := strconv.Atoi(tuples[1]); err == nil && n > 0 {
+			this.aggPubQpsAnomaly.Conf.NSeasons = n
+			log.Info("NSeasons set to %d", n)
+		}
+
+	case "kta-sen":
+		if f, err := strconv.ParseFloat(tuples[1], 64); err == nil && f > 0.01 {
+			this.aggPubQpsAnomaly.Conf.Sensitivity = f
+			log.Info("Sensitivity set to %f", f)
+		}
+
+	case "kta-upper":
+		if f, err := strconv.ParseFloat(tuples[1], 64); err == nil && f > 0.01 {
+			this.aggPubQpsAnomaly.Conf.UpperBound = f
+			log.Info("UpperBound set to %f", f)
+		}
+
+	case "kta-lower":
+		if f, err := strconv.ParseFloat(tuples[1], 64); err == nil && f > 0.01 {
+			this.aggPubQpsAnomaly.Conf.LowerBound = f
+			log.Info("LowerBound set to %f", f)
+		}
+	}
 }
 
 func (this *WatchTopics) Run() {
