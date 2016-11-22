@@ -33,7 +33,6 @@ type WatchTopics struct {
 	pubQps      map[string]metrics.Meter
 	lastOffsets map[string]int64
 
-	startedAt             time.Time
 	aggPubQpsAnomalyGauge metrics.Gauge
 	aggPubQpsAnomaly      anomalyzer.Anomalyzer
 }
@@ -44,6 +43,7 @@ func (this *WatchTopics) Init(ctx monitor.Context) {
 	this.Wg = ctx.Inflight()
 
 	conf := &anomalyzer.AnomalyzerConf{
+		Delay:       true,
 		ActiveSize:  8,
 		NSeasons:    8,
 		Sensitivity: 0.3,     // magnitude
@@ -60,7 +60,7 @@ func (this *WatchTopics) Init(ctx monitor.Context) {
 	this.aggPubQpsAnomalyGauge = metrics.NewRegisteredGauge("pub.qps.anomaly", nil)
 }
 
-// set?key=as:4
+// set?key=kta-as:4
 func (this *WatchTopics) Set(key string) {
 	tuples := strings.SplitN(key, ":", 2)
 	if len(tuples) != 2 {
@@ -106,7 +106,6 @@ func (this *WatchTopics) Run() {
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
-	this.startedAt = time.Now()
 	this.pubQps = make(map[string]metrics.Meter, 10)
 	this.lastOffsets = make(map[string]int64, 10)
 
@@ -230,12 +229,8 @@ func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 
 	})
 
-	if time.Since(this.startedAt).Minutes() < 20. {
-		// mut for the beginning
-		this.aggPubQpsAnomalyGauge.Update(0)
-	} else {
-		this.aggPubQpsAnomalyGauge.Update(int64(100 * this.aggPubQpsAnomaly.Push(totalPubQpsRate1)))
-	}
+	this.aggPubQpsAnomaly.Update([]float64{totalPubQpsRate1}) // avoid overflow
+	this.aggPubQpsAnomalyGauge.Update(int64(100 * this.aggPubQpsAnomaly.Eval()))
 
 	return
 }
