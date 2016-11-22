@@ -44,13 +44,13 @@ func (this *WatchTopics) Init(ctx monitor.Context) {
 
 	conf := &anomalyzer.AnomalyzerConf{
 		Delay:       true,
-		ActiveSize:  5,
-		NSeasons:    5,
+		ActiveSize:  2,
+		NSeasons:    59,
 		Sensitivity: 0.1,    // magnitude
-		UpperBound:  500000, // fence
-		LowerBound:  0,      // fence
+		UpperBound:  200000, // fence
+		LowerBound:  2000,   // fence
 		PermCount:   1000,   // diff & rank
-		Methods:     []string{"diff", "fence", "highrank", "lowrank", "magnitude", "ks", "cdf"},
+		Methods:     []string{"diff", "fence", "highrank", "lowrank", "magnitude", "ks"},
 	}
 	var err error
 	this.aggPubQpsAnomaly, err = anomalyzer.NewAnomalyzer(conf, nil)
