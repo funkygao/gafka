@@ -441,7 +441,7 @@ func (this *Redis) render() {
 		}
 
 		if i >= min(this.rows, len(this.topInfos)) {
-			break
+			continue
 		}
 
 		l := fmt.Sprintf("%s|%d|%s|%s|%s|%s|%s|%6.1f|%s|%s",
