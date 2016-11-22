@@ -553,7 +553,7 @@ func (this *Redis) updateRedisInfo(wg *sync.WaitGroup, host string, port int) {
 		memp:   float64(mem) / float64(maxMem),
 		rx:     int64(rxKbps),
 		tx:     int64(txKbps),
-		conns:  conns,
+		conns:  conns - 1, // me excluded
 	})
 	this.mu.Unlock()
 }
