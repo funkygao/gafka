@@ -35,6 +35,7 @@ type WatchTopics struct {
 
 	aggPubQpsAnomalyGauge metrics.Gauge
 	aggPubQpsAnomaly      anomalyzer.Anomalyzer
+	anomalyThreshold      int
 }
 
 func (this *WatchTopics) Init(ctx monitor.Context) {
@@ -47,7 +48,7 @@ func (this *WatchTopics) Init(ctx monitor.Context) {
 		ActiveSize:  2,
 		NSeasons:    59,
 		Sensitivity: 0.1,    // magnitude
-		UpperBound:  200000, // fence
+		UpperBound:  300000, // fence
 		LowerBound:  2000,   // fence
 		PermCount:   1000,   // diff & rank
 		Methods:     []string{"diff", "fence", "highrank", "lowrank", "magnitude", "ks"},
@@ -58,6 +59,7 @@ func (this *WatchTopics) Init(ctx monitor.Context) {
 		panic(err)
 	}
 	this.aggPubQpsAnomalyGauge = metrics.NewRegisteredGauge("pub.qps.anomaly", nil)
+	this.anomalyThreshold = 95
 }
 
 // set?key=kta-as:4
@@ -68,6 +70,12 @@ func (this *WatchTopics) Set(key string) {
 	}
 
 	switch tuples[0] {
+	case "kta-thr":
+		if n, err := strconv.Atoi(tuples[1]); err == nil && n > 0 {
+			this.anomalyThreshold = n
+			log.Info("threshold set to %d", n)
+		}
+
 	case "kta-as":
 		if n, err := strconv.Atoi(tuples[1]); err == nil && n > 0 {
 			this.aggPubQpsAnomaly.Conf.ActiveSize = n
@@ -230,7 +238,12 @@ func (this *WatchTopics) report() (totalOffsets int64, topicsN int64,
 	})
 
 	this.aggPubQpsAnomaly.Update([]float64{totalPubQpsRate1}) // avoid overflow
-	this.aggPubQpsAnomalyGauge.Update(int64(100 * this.aggPubQpsAnomaly.Eval()))
+	prob := int64(100 * this.aggPubQpsAnomaly.Eval())
+	if prob >= int64(this.anomalyThreshold) {
+		this.aggPubQpsAnomalyGauge.Update(prob)
+	} else {
+		this.aggPubQpsAnomalyGauge.Update(0)
+	}
 
 	return
 }
