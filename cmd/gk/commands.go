@@ -129,6 +129,13 @@ func init() {
 			}, nil
 		},
 
+		"ext4": func() (cli.Command, error) {
+			return &command.Ext4fs{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"agent": func() (cli.Command, error) {
 			return &command.Agent{
 				Ui:  ui,
