@@ -25,9 +25,11 @@ type Haproxy struct {
 }
 
 func (this *Haproxy) Run(args []string) (exitCode int) {
+	var top bool
 	cmdFlags := flag.NewFlagSet("haproxy", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.DefaultZone(), "")
+	cmdFlags.BoolVar(&top, "top", true, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -45,8 +47,19 @@ func (this *Haproxy) Run(args []string) (exitCode int) {
 	}
 
 	zone := ctx.Zone(this.zone)
-	for _, uri := range zone.HaProxyStatsUri {
-		this.fetchStats(uri)
+	if top {
+		for {
+			refreshScreen()
+			for _, uri := range zone.HaProxyStatsUri {
+				this.fetchStats(uri)
+			}
+
+			time.Sleep(time.Second * 5)
+		}
+	} else {
+		for _, uri := range zone.HaProxyStatsUri {
+			this.fetchStats(uri)
+		}
 	}
 
 	return
@@ -113,6 +126,9 @@ Usage: %s haproxy [options]
 Options:
 
     -z zone
+
+    -top
+      Top mode
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
