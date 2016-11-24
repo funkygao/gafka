@@ -24,7 +24,7 @@ func (this *Ext4fs) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if noJournal {
+	if noJournal != "" {
 		this.genNoJournalScript(noJournal)
 		return
 	}
