@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -69,7 +70,9 @@ func (this *Haproxy) fetchStats(statsUri string) {
 	records, err := reader.ReadAll()
 	swallow(err)
 
-	this.Ui.Info(statsUri)
+	u, err := url.Parse(statsUri)
+	swallow(err)
+	this.Ui.Info(u.Host)
 	cols := make(map[int]string) // col:name
 
 	lines := []string{strings.Join(this.cols, "|")}
