@@ -49,7 +49,7 @@ Usage: %s lookup [ip]:[port]
     %s
 
     e,g 
-      gk lookup 1.2.3.3
+      gk lookup 1.2.3.3:
       gk lookup :10008
 
 `, this.Cmd, this.Synopsis())

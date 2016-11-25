@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -126,6 +127,7 @@ func LookupIpPort(ip, port string) []string {
 
 	}
 
+	sort.Strings(r)
 	return r
 }
 
