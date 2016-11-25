@@ -1,6 +1,7 @@
 package command
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net"
@@ -19,6 +20,7 @@ import (
 	"github.com/funkygao/golib/gofmt"
 	log "github.com/funkygao/log4go"
 	"github.com/funkygao/termui"
+	"github.com/influxdata/influxdb/client/v2"
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 	"github.com/pmylund/sortutil"
@@ -29,6 +31,8 @@ type Redis struct {
 	Ui  cli.Ui
 	Cmd string
 
+	zone string
+
 	mu                  sync.Mutex
 	topInfos, topInfos1 []redisTopInfo
 	freezedPorts        map[string]struct{}
@@ -36,6 +40,8 @@ type Redis struct {
 	batchMode           bool
 	debug               bool
 	mainScreen          bool
+
+	w, h int
 
 	quit                                                         chan struct{}
 	rows                                                         int
@@ -52,7 +58,6 @@ type Redis struct {
 
 func (this *Redis) Run(args []string) (exitCode int) {
 	var (
-		zone        string
 		add         string
 		list        bool
 		byHost      int
@@ -64,7 +69,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	)
 	cmdFlags := flag.NewFlagSet("redis", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&add, "add", "", "")
 	cmdFlags.BoolVar(&list, "list", true, "")
 	cmdFlags.IntVar(&byHost, "host", 0, "")
@@ -82,7 +87,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	if top || ping {
 		list = false
 	}
@@ -178,7 +183,8 @@ type redisTopInfo struct {
 func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 	termui.Init()
 	this.mainScreen = true
-	this.rows = termui.TermHeight() - 3 // head,max/total
+	this.w, this.h = termbox.Size()
+	this.rows = this.h - 3 // head,max/total
 	if this.batchMode {
 		termbox.Close()
 	} else {
@@ -329,8 +335,17 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 					this.render()
 				}
 
+			case 'd':
+				if this.mainScreen {
+					this.mainScreen = false
+					this.drawDashboard()
+				}
+
 			case 'h', '?':
-				this.drawHelp()
+				if this.mainScreen {
+					this.mainScreen = false
+					this.drawHelp()
+				}
 
 			case 'f':
 				// freeze the topN
@@ -376,18 +391,82 @@ func (this *Redis) drawSplash() {
 	}
 }
 
-func (this *Redis) drawHelp() {
-	this.mainScreen = false
+func (this *Redis) drawDashboard() {
+	res, err := this.queryInfluxDB(`SELECT sum("value") FROM "redis.ops.gauge" WHERE time > now() - 2h GROUP BY time(1m) fill(0)`)
+	swallow(err)
 
+	termui.UseTheme("helloworld")
+	bc := termui.NewBarChart()
+	datas := []int{}
+	labels := []string{}
+
+	for row, cols := range res[0].Series[0].Values {
+		ops := cols[1].(json.Number)
+		f, _ := ops.Float64()
+		datas = append(datas, int(f))
+		labels = append(labels, fmt.Sprintf("%d", row))
+	}
+
+	bc.Border.Label = fmt.Sprintf("ops trend over last 2h/%d", len(datas))
+
+	if len(datas) > this.w-2 {
+		// trim to the latest data points
+		idx := len(datas) - this.w + 2
+		datas = datas[idx:]
+		labels = labels[idx:]
+	}
+
+	bc.Data = datas
+	bc.DataLabels = labels
+	bc.Width = this.w
+	bc.Height = this.h
+	bc.TextColor = termui.ColorGreen
+	bc.BarColor = termui.ColorRed
+	bc.NumColor = termui.ColorYellow
+	termui.Render(bc)
+}
+
+func (this *Redis) queryInfluxDB(cmd string) (res []client.Result, err error) {
+	addr := ctx.Zone(this.zone).InfluxAddr
+	if !strings.HasPrefix(addr, "http") {
+		addr = fmt.Sprintf("http://%s", addr)
+	}
+	cli, err := client.NewHTTPClient(client.HTTPConfig{
+		Addr:     addr,
+		Username: "",
+		Password: "",
+	})
+	if err != nil {
+		return
+	}
+
+	q := client.Query{
+		Command:  cmd,
+		Database: "kfk_prod",
+	}
+	if response, err := cli.Query(q); err == nil {
+		if response.Error() != nil {
+			return res, response.Error()
+		}
+		res = response.Results
+	} else {
+		return res, err
+	}
+
+	return res, nil
+}
+
+func (this *Redis) drawHelp() {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 	help := []string{
 		"Help for Interactive Commands",
 		"",
 		"  h,?  Help",
+		"  d    Draw dashboard",
 		"  f    Freeze the top N rows",
 		"  F    Unfreeze top N rows",
 		"mouse  Click to select a row",
-		"  q    Quit",
+		"  q    Quit current screen",
 	}
 	for y, row := range help {
 		for x, c := range row {
