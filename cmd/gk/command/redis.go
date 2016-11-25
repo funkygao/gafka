@@ -35,6 +35,7 @@ type Redis struct {
 	freezeN             int
 	batchMode           bool
 	debug               bool
+	mainScreen          bool
 
 	quit                                                         chan struct{}
 	rows                                                         int
@@ -176,6 +177,7 @@ type redisTopInfo struct {
 
 func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 	termui.Init()
+	this.mainScreen = true
 	this.rows = termui.TermHeight() - 3 // head,max/total
 	if this.batchMode {
 		termbox.Close()
@@ -245,7 +247,9 @@ func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 		this.topInfos1, this.topInfos = this.topInfos, this.topInfos1
 		this.mu.Unlock()
 
-		this.render()
+		if this.mainScreen {
+			this.render()
+		}
 
 		select {
 		case <-time.After(interval):
@@ -261,7 +265,7 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 
 		switch ev.Type {
 		case termbox.EventMouse:
-			if ev.Key == termbox.MouseLeft {
+			if this.mainScreen && ev.Key == termbox.MouseLeft {
 				y := ev.MouseY
 				if y >= 1 && y <= this.rows {
 					// header, max/total lines excluded
@@ -281,61 +285,77 @@ func (this *Redis) handleEvents(eventChan chan termbox.Event) {
 				os.Exit(0)
 				return
 
-			case termbox.KeySpace:
-				this.render()
-
 			case termbox.KeyArrowUp:
-				this.topOrderAsc = true
-				this.render()
+				if this.mainScreen {
+					this.topOrderAsc = true
+					this.render()
+				}
 
 			case termbox.KeyArrowDown:
-				this.topOrderAsc = false
-				this.render()
+				if this.mainScreen {
+					this.topOrderAsc = false
+					this.render()
+				}
 
 			case termbox.KeyArrowLeft:
-				this.topOrderColIdx--
-				if this.topOrderColIdx < 0 {
-					this.topOrderColIdx += len(this.topOrderCols)
+				if this.mainScreen {
+					this.topOrderColIdx--
+					if this.topOrderColIdx < 0 {
+						this.topOrderColIdx += len(this.topOrderCols)
+					}
+					this.render()
 				}
-				this.render()
 
 			case termbox.KeyArrowRight:
-				this.topOrderColIdx++
-				if this.topOrderColIdx >= len(this.topOrderCols) {
-					this.topOrderColIdx -= len(this.topOrderCols)
+				if this.mainScreen {
+					this.topOrderColIdx++
+					if this.topOrderColIdx >= len(this.topOrderCols) {
+						this.topOrderColIdx -= len(this.topOrderCols)
+					}
+					this.render()
 				}
-				this.render()
+
 			}
 
 			switch ev.Ch {
 			case 'q':
-				close(this.quit)
-				termbox.Close()
-				os.Exit(0)
-				return
+				if this.mainScreen {
+					close(this.quit)
+					termbox.Close()
+					os.Exit(0)
+					return
+				} else {
+					this.mainScreen = true
+					this.render()
+				}
 
 			case 'h', '?':
 				this.drawHelp()
 
 			case 'f':
 				// freeze the topN
-				this.mu.Lock()
-				if len(this.topInfos) > this.freezeN {
-					// topInfos already sorted by render()
-					for _, info := range this.topInfos[:this.freezeN] {
-						this.freezedPorts[strconv.Itoa(info.port)] = struct{}{}
-					}
+				if this.mainScreen {
+					this.mu.Lock()
+					if len(this.topInfos) > this.freezeN {
+						// topInfos already sorted by render()
+						for _, info := range this.topInfos[:this.freezeN] {
+							this.freezedPorts[strconv.Itoa(info.port)] = struct{}{}
+						}
 
-					this.topInfos = this.topInfos[:this.freezeN]
+						this.topInfos = this.topInfos[:this.freezeN]
+					}
+					this.mu.Unlock()
+					this.render()
 				}
-				this.mu.Unlock()
-				this.render()
 
 			case 'F':
 				// unfreeze
-				this.mu.Lock()
-				this.freezedPorts = make(map[string]struct{})
-				this.mu.Unlock()
+				if this.mainScreen {
+					this.mu.Lock()
+					this.freezedPorts = make(map[string]struct{})
+					this.mu.Unlock()
+				}
+
 			}
 
 		}
@@ -357,6 +377,8 @@ func (this *Redis) drawSplash() {
 }
 
 func (this *Redis) drawHelp() {
+	this.mainScreen = false
+
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 	help := []string{
 		"Help for Interactive Commands",
