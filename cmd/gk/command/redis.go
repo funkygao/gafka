@@ -392,38 +392,52 @@ func (this *Redis) drawSplash() {
 }
 
 func (this *Redis) drawDashboard() {
+	termui.UseTheme("helloworld")
+
+	ops := termui.NewSparkline()
+	ops.Title = "ops over the last 2h"
+	ops.Height = 6
+	ops.LineColor = termui.ColorGreen
+	opsDatas := []int{}
 	res, err := this.queryInfluxDB(`SELECT sum("value") FROM "redis.ops.gauge" WHERE time > now() - 2h GROUP BY time(1m) fill(0)`)
 	swallow(err)
-
-	termui.UseTheme("helloworld")
-	bc := termui.NewBarChart()
-	datas := []int{}
-	labels := []string{}
-
-	for row, cols := range res[0].Series[0].Values {
-		ops := cols[1].(json.Number)
-		f, _ := ops.Float64()
-		datas = append(datas, int(f))
-		labels = append(labels, fmt.Sprintf("%d", row))
+	for _, cols := range res[0].Series[0].Values {
+		f, _ := cols[1].(json.Number).Float64()
+		opsDatas = append(opsDatas, int(f))
 	}
+	ops.Data = opsDatas
 
-	bc.Border.Label = fmt.Sprintf("ops trend over last 2h/%d", len(datas))
-
-	if len(datas) > this.w-2 {
-		// trim to the latest data points
-		idx := len(datas) - this.w + 2
-		datas = datas[idx:]
-		labels = labels[idx:]
+	rx := termui.NewSparkline()
+	rx.Title = "rx over the last 2h"
+	rx.Height = 6
+	rx.LineColor = termui.ColorCyan
+	rxDatas := []int{}
+	res, err = this.queryInfluxDB(`SELECT sum("value") FROM "redis.rx.kbps.gauge" WHERE time > now() - 2h GROUP BY time(1m) fill(0)`)
+	swallow(err)
+	for _, cols := range res[0].Series[0].Values {
+		f, _ := cols[1].(json.Number).Float64()
+		rxDatas = append(rxDatas, int(f))
 	}
+	rx.Data = rxDatas
 
-	bc.Data = datas
-	bc.DataLabels = labels
-	bc.Width = this.w
-	bc.Height = this.h
-	bc.TextColor = termui.ColorGreen
-	bc.BarColor = termui.ColorRed
-	bc.NumColor = termui.ColorYellow
-	termui.Render(bc)
+	tx := termui.NewSparkline()
+	tx.Title = "tx over the last 2h"
+	tx.Height = 6
+	tx.LineColor = termui.ColorYellow
+	txDatas := []int{}
+	res, err = this.queryInfluxDB(`SELECT sum("value") FROM "redis.tx.kbps.gauge" WHERE time > now() - 2h GROUP BY time(1m) fill(0)`)
+	swallow(err)
+	for _, cols := range res[0].Series[0].Values {
+		f, _ := cols[1].(json.Number).Float64()
+		txDatas = append(txDatas, int(f))
+	}
+	tx.Data = txDatas
+
+	spls := termui.NewSparklines(ops, rx, tx)
+	spls.Width = this.w
+	spls.Height = this.h
+	spls.HasBorder = true
+	termui.Render(spls)
 }
 
 func (this *Redis) queryInfluxDB(cmd string) (res []client.Result, err error) {
