@@ -90,6 +90,45 @@ func UpgradeCenter() string {
 	return conf.upgradeCenter
 }
 
+func LookupIpPort(ip, port string) []string {
+	ensureLogLoaded()
+
+	var r []string
+	if ip != "" {
+		hosts, present := conf.reverseDns[ip]
+		if !present || len(hosts) == 0 {
+			return r
+		}
+
+		for _, name := range hosts {
+			if port != "" {
+				tuples := strings.Split(name, ".")
+				if !strings.Contains(tuples[0], port) {
+					continue
+				}
+			}
+
+			r = append(r, name)
+		}
+	} else if port != "" {
+		for _, hosts := range conf.reverseDns {
+			if len(hosts) == 0 {
+				continue
+			}
+
+			for _, name := range hosts {
+				tuples := strings.Split(name, ".")
+				if strings.Contains(tuples[0], port) {
+					r = append(r, name)
+				}
+			}
+		}
+
+	}
+
+	return r
+}
+
 func ReverseDnsLookup(ip string, port int) (string, bool) {
 	ensureLogLoaded()
 	hosts, present := conf.reverseDns[ip]

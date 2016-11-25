@@ -59,6 +59,13 @@ func init() {
 			}, nil
 		},
 
+		"lookup": func() (cli.Command, error) {
+			return &command.Lookup{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"jmx": func() (cli.Command, error) {
 			return &command.Jmx{
 				Ui:  ui,
