@@ -17,6 +17,7 @@ func (this *Monitor) setupRoutes() {
 	this.router.GET("/ver", this.versionHandler)
 	this.router.GET("/metrics", this.metricsHandler)
 	this.router.PUT("/set", this.configHandler)
+	this.router.POST("/alertHook", this.alertHookHandler) // zabbix will call me on alert event
 }
 
 // PUT /set?key=xx
