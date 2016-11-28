@@ -436,7 +436,7 @@ func (this *Redis) drawDashboard() {
 	spls := termui.NewSparklines(ops, rx, tx)
 	spls.Width = this.w
 	spls.Height = this.h
-	spls.HasBorder = true
+	spls.HasBorder = false
 	termui.Render(spls)
 }
 
