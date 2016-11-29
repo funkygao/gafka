@@ -73,7 +73,7 @@ func main() {
 	c.Commands = commands
 	c.HelpFunc = func(m map[string]cli.CommandFactory) string {
 		var buf bytes.Buffer
-		buf.WriteString(fmt.Sprintf("Helix management console\n\n"))
+		buf.WriteString(fmt.Sprintf("Helix administration console\n\n"))
 		buf.WriteString(cli.BasicHelpFunc(app)(m))
 		return buf.String()
 	}
