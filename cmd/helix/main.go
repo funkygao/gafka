@@ -50,9 +50,6 @@ func main() {
 			for name := range commands {
 				fmt.Println(name)
 			}
-			for _, cmd := range ctx.Aliases() {
-				fmt.Println(cmd)
-			}
 			return
 		}
 	}
