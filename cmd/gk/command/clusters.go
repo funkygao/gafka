@@ -309,12 +309,17 @@ func (this *Clusters) printSummary(zkzone *zk.ZkZone, clusterPattern string, por
 
 	})
 	sortutil.DescByField(summaries, "cum")
+	var totalFlat, totalCum int64
 	for _, s := range summaries {
 		lines = append(lines, fmt.Sprintf("%s|%s|%d|%d|%d|%s|%s",
 			s.zone, s.cluster, s.brokers, s.topics, s.partitions,
 			gofmt.Comma(s.flat), gofmt.Comma(s.cum)))
+
+		totalCum += s.cum
+		totalFlat += s.flat
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
+	this.Ui.Output(fmt.Sprintf("Flat:%s Cum:%s", gofmt.Comma(totalFlat), gofmt.Comma(totalCum)))
 }
 
 func (this *Clusters) clusterSummary(zkcluster *zk.ZkCluster) (brokers, topics, partitions int, flat, cum int64) {

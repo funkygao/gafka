@@ -227,6 +227,7 @@ type topicSummary struct {
 func (this *Topics) printSummary(zkzone *zk.ZkZone, clusterPattern string) {
 	lines := []string{"Zone|Cluster|Topic|Partitions|FlatMsg|Cum"}
 
+	var totalFlat, totalCum int64
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		if !patternMatched(zkcluster.Name(), clusterPattern) {
 			return
@@ -237,11 +238,15 @@ func (this *Topics) printSummary(zkzone *zk.ZkZone, clusterPattern string) {
 		for _, s := range summaries {
 			lines = append(lines, fmt.Sprintf("%s|%s|%s|%d|%s|%s",
 				s.zone, s.cluster, s.topic, s.partitions, gofmt.Comma(s.flat), gofmt.Comma(s.cum)))
+
+			totalCum += s.cum
+			totalFlat += s.flat
 		}
 
 	})
 
 	this.Ui.Output(columnize.SimpleFormat(lines))
+	this.Ui.Output(fmt.Sprintf("Flat:%s Cum:%s", gofmt.Comma(totalFlat), gofmt.Comma(totalCum)))
 }
 
 func (this *Topics) clusterSummary(zkcluster *zk.ZkCluster) []topicSummary {
