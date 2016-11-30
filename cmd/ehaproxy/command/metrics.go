@@ -35,10 +35,10 @@ type haproxyMetrics struct {
 }
 
 type proxyMetrics struct {
-	proxyName   string                    //pub, sub
-	proxyType   string                    //FRONTEND, BACKEND
-	metricsDefs []metricsDefine           //session.rate, session.pctg, ...
-	metricsMap  map[string]metricsWrapper //session.rate:gauge, ..
+	proxyName   string                     //pub, sub
+	proxyType   string                     //FRONTEND, BACKEND
+	metricsDefs []metricsDefine            //session.rate, session.pctg, ...
+	metricsMap  map[string]*metricsWrapper //session.rate:gauge, ..
 }
 
 type metricsDefine struct {
@@ -58,12 +58,15 @@ func (this *haproxyMetrics) start() {
 
 	tick := time.NewTicker(this.interval)
 	defer tick.Stop()
+
 	//init haproxy metrics settings
 	err := this.init()
 	if err != nil {
 		log.Error("haproxyMetrics init, %v", err)
 		return
 	}
+	log.Info("haproxyMetrics init succ")
+
 	for {
 		select {
 		case <-this.ctx.quitCh:
@@ -117,7 +120,10 @@ func (this *haproxyMetrics) reportStats() {
 }
 
 func (this *haproxyMetrics) init() (err error) {
-	//this.regCols()
+	//init col postion map
+	this.colMap = make(map[string]int)
+
+	//init metrics settings
 	err = this.initProxyMetrics()
 	if err != nil {
 		return err
@@ -148,6 +154,10 @@ func (this *haproxyMetrics) initProxyMetrics() (err error) {
 		{"resp.time.1024", "Gauge"}, {"session.time.1024", "Gauge"},
 	}
 
+	//init proxyMetricsMap
+	this.proxyMetricsMap = make(map[string]*proxyMetrics)
+
+	//init proxy
 	var pxFullName string
 	var pxName string
 	var pxType string
@@ -155,7 +165,9 @@ func (this *haproxyMetrics) initProxyMetrics() (err error) {
 	pxName = "pub"
 	pxType = "FRONTEND"
 	pubFrtProxyMetrics := proxyMetrics{proxyName: pxName, proxyType: pxType}
-	pubFrtProxyMetrics.metricsMap = make(map[string]metricsWrapper)
+	pubFrtProxyMetrics.metricsMap = make(map[string]*metricsWrapper)
+	pubFrtProxyMetrics.metricsDefs = make([]metricsDefine, 0)
+	pubFrtProxyMetrics.metricsDefs = frontendMetricsDefs
 	err = initMetrics(pubFrtProxyMetrics.metricsMap, pxName, pxType, frontendMetricsDefs)
 	if err != nil {
 		return err
@@ -168,8 +180,10 @@ func (this *haproxyMetrics) initProxyMetrics() (err error) {
 	pxName = "pub"
 	pxType = "BACKEND"
 	pubBckProxyMetrics := proxyMetrics{proxyName: pxName, proxyType: pxType}
-	pubBckProxyMetrics.metricsMap = make(map[string]metricsWrapper)
-	err = initMetrics(pubFrtProxyMetrics.metricsMap, pxName, pxType, backendMetricsDefs)
+	pubBckProxyMetrics.metricsMap = make(map[string]*metricsWrapper)
+	pubBckProxyMetrics.metricsDefs = make([]metricsDefine, 0)
+	pubBckProxyMetrics.metricsDefs = backendMetricsDefs
+	err = initMetrics(pubBckProxyMetrics.metricsMap, pxName, pxType, backendMetricsDefs)
 	if err != nil {
 		return err
 	}
@@ -181,7 +195,9 @@ func (this *haproxyMetrics) initProxyMetrics() (err error) {
 	pxName = "sub"
 	pxType = "FRONTEND"
 	subFrtProxyMetrics := proxyMetrics{proxyName: pxName, proxyType: pxType}
-	subFrtProxyMetrics.metricsMap = make(map[string]metricsWrapper)
+	subFrtProxyMetrics.metricsMap = make(map[string]*metricsWrapper)
+	subFrtProxyMetrics.metricsDefs = make([]metricsDefine, 0)
+	subFrtProxyMetrics.metricsDefs = frontendMetricsDefs
 	err = initMetrics(subFrtProxyMetrics.metricsMap, pxName, pxType, frontendMetricsDefs)
 	if err != nil {
 		return err
@@ -192,9 +208,11 @@ func (this *haproxyMetrics) initProxyMetrics() (err error) {
 
 	//set pub backend
 	pxName = "sub"
-	pxType = "FRONTEND"
+	pxType = "BACKEND"
 	subBckProxyMetrics := proxyMetrics{proxyName: pxName, proxyType: pxType}
-	subBckProxyMetrics.metricsMap = make(map[string]metricsWrapper)
+	subBckProxyMetrics.metricsMap = make(map[string]*metricsWrapper)
+	subFrtProxyMetrics.metricsDefs = make([]metricsDefine, 0)
+	subBckProxyMetrics.metricsDefs = backendMetricsDefs
 	err = initMetrics(subBckProxyMetrics.metricsMap, pxName, pxType, backendMetricsDefs)
 	if err != nil {
 		return err
@@ -206,23 +224,22 @@ func (this *haproxyMetrics) initProxyMetrics() (err error) {
 	return nil
 }
 
-func initMetrics(metricsWrapperMap map[string]metricsWrapper,
+func initMetrics(metricsWrapperMap map[string]*metricsWrapper,
 	proxyName string, proxyType string, metricsDefs []metricsDefine) (err error) {
 
 	for _, metricsDef := range metricsDefs {
-		fullGMetricsName := proxyName + "." + strings.ToLower(proxyType) + "." + metricsDef.metricsName
+		fullMetricsName := proxyName + "." + strings.ToLower(proxyType) + "." + metricsDef.metricsName
 
 		switch metricsDef.metricsType {
 		case "Gauge":
 			metricsWrapperMap[metricsDef.metricsName] =
-				metricsWrapper{metricsCollector: metrics.NewRegisteredGauge(fullGMetricsName, nil)}
+				&metricsWrapper{metricsCollector: metrics.NewRegisteredGauge(fullMetricsName, nil)}
 		case "Meter":
 			metricsWrapperMap[metricsDef.metricsName] =
-				metricsWrapper{meterBase: -1, //initial value to -1
-					metricsCollector: metrics.NewRegisteredMeter(fullGMetricsName, nil)}
+				&metricsWrapper{metricsCollector: metrics.NewRegisteredMeter(fullMetricsName, nil)}
 		default:
 			log.Warn("mstrics:%s, metrics type: %s unsupported",
-				fullGMetricsName, metricsDef.metricsType)
+				fullMetricsName, metricsDef.metricsType)
 			return ErrUnsupMetricsType
 		}
 	}
@@ -269,7 +286,7 @@ func (this *haproxyMetrics) isTargetProxy(pxFullName string) (present bool, pxMe
 
 func (this *haproxyMetrics) collectAllMetrics(row []string, pxMetrics *proxyMetrics) (err error) {
 	for metricsName, metricsWp := range pxMetrics.metricsMap {
-		err = this.collectOneMetrics(row, metricsName, &metricsWp)
+		err = this.collectOneMetrics(row, metricsName, metricsWp)
 		if err != nil {
 			return err
 		}
@@ -318,7 +335,7 @@ func (this *haproxyMetrics) collectOneGauge(row []string,
 		val, err = this.getQueueCurrent(row)
 	case "warnings.retr": //backend
 		val, err = this.getWarningsRetr(row)
-	case "warning.redis": //backend
+	case "warnings.redis": //backend
 		val, err = this.getWarningRedis(row)
 	case "queue.time.1024": //backend
 		val, err = this.getQueueTime(row)
@@ -378,15 +395,17 @@ func (this *haproxyMetrics) collectOneMeter(row []string,
 	}
 
 	//update meter
-	if (*meterBase) == -1 {
-		//the first time
-		(*meter).Mark(0)
-		*meterBase = val
-	} else {
-		delta := val - (*meterBase)
-		(*meter).Mark(delta)
-		*meterBase = val
+	delta := val - (*meterBase)
+	if delta < 0 {
+		//backward
+		log.Warn("metrics:%s, delta:%d, header:%#v, row:%v, %v, meter value backward",
+			metricsName, delta, this.colMap, row, err)
+		delta = 0 //set delta to 0
+
 	}
+
+	(*meter).Mark(delta)
+	*meterBase = val
 
 	return nil
 }
