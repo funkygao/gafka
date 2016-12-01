@@ -26,6 +26,7 @@ type Upgrade struct {
 	upgradeActord   bool
 	upgradeEhaproxy bool
 	upgradeConfig   bool
+	upgradeHelix    bool
 }
 
 func (this *Upgrade) Run(args []string) (exitCode int) {
@@ -37,6 +38,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.upgradeKateway, "k", false, "")
 	cmdFlags.BoolVar(&this.upgradeEhaproxy, "ha", false, "")
 	cmdFlags.BoolVar(&this.upgradeActord, "at", false, "")
+	cmdFlags.BoolVar(&this.upgradeHelix, "he", false, "")
 	cmdFlags.BoolVar(&this.upgradeZk, "zk", false, "")
 	cmdFlags.BoolVar(&this.upgradeKguard, "kg", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -111,6 +113,20 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 
 		case "u":
 			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/zk", gopath), this.uploadDir})
+		}
+
+		return
+	}
+
+	if this.upgradeHelix {
+		switch this.mode {
+		case "d":
+			this.runCmd("wget", []string{this.storeUrl("helix"), "-O", "helix"})
+			this.runCmd("chmod", []string{"a+x", "helix"})
+			this.runCmd("mv", []string{"-f", "helix", "/usr/bin/helix"})
+
+		case "u":
+			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/helix", gopath), this.uploadDir})
 		}
 
 		return
@@ -215,6 +231,9 @@ Options:
 
     -at
       Upgrade actord instead of gk
+
+    -he 
+      Upgrade helix instead of gk
 
     -m <d|u>
       Download or upload mode
