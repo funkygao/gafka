@@ -10,6 +10,8 @@ type zone struct {
 	InfluxAddr  string // localhost:8086
 	SwfEndpoint string // http://192.168.10.134:9195/v1
 
+	ZkHelix string // localhost:2181/helix
+
 	// smoke test related
 	PubEndpoint, SubEndpoint string // the load balancer addr
 	SmokeApp                 string
@@ -24,6 +26,7 @@ type zone struct {
 func (this *zone) loadConfig(section *ljconf.Conf) {
 	this.Name = section.String("name", "")
 	this.Zk = section.String("zk", "")
+	this.ZkHelix = section.String("zk_helix", "")
 	this.InfluxAddr = section.String("influxdb", "")
 	this.SwfEndpoint = section.String("swf", "")
 	this.PubEndpoint = section.String("pub_entry", "")

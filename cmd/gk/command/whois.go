@@ -22,6 +22,7 @@ type WhoisAppInfo struct {
 	CreateTime       string `db:"CreateTime"`
 	Status           string `db:"Status"`
 	AppSecret        string `db:"AppSecret"`
+	Raw              string `db:"Raw"`
 }
 
 type WhoisTopicInfo struct {
@@ -54,6 +55,7 @@ type Whois struct {
 	group      string
 	likeMode   bool
 	showSecret bool
+	rawOnly    bool
 
 	appInfos   []WhoisAppInfo
 	topicInfos []WhoisTopicInfo
@@ -67,6 +69,7 @@ func (this *Whois) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.app, "app", "", "")
 	cmdFlags.StringVar(&this.group, "g", "", "")
 	cmdFlags.StringVar(&this.topic, "t", "", "")
+	cmdFlags.BoolVar(&this.rawOnly, "raw", false, "")
 	cmdFlags.BoolVar(&this.likeMode, "l", false, "")
 	cmdFlags.BoolVar(&this.showSecret, "key", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -89,15 +92,24 @@ func (this *Whois) Run(args []string) (exitCode int) {
 	case this.topic+this.group == "":
 		// list apps
 		if this.showSecret {
-			table.SetHeader([]string{"Id", "Name", "Cluster", "Ctime", "Secret"})
+			table.SetHeader([]string{"Id", "Name", "Cluster", "Ctime", "Raw", "Secret"})
 		} else {
-			table.SetHeader([]string{"Id", "Name", "Cluster", "Ctime"})
+			table.SetHeader([]string{"Id", "Name", "Cluster", "Ctime", "Raw"})
 		}
+		var raw string
 		for _, ai := range this.appInfos {
-			if this.showSecret {
-				table.Append([]string{ai.AppId, ai.ApplicationName, ai.Cluster, ai.CreateTime, ai.AppSecret})
+			if ai.Raw == "1" {
+				raw = "N"
 			} else {
-				table.Append([]string{ai.AppId, ai.ApplicationName, ai.Cluster, ai.CreateTime})
+				raw = "Y"
+			}
+			if this.rawOnly && raw != "Y" {
+				continue
+			}
+			if this.showSecret {
+				table.Append([]string{ai.AppId, ai.ApplicationName, ai.Cluster, ai.CreateTime, raw, ai.AppSecret})
+			} else {
+				table.Append([]string{ai.AppId, ai.ApplicationName, ai.Cluster, ai.CreateTime, raw})
 			}
 		}
 
@@ -130,7 +142,7 @@ func (this *Whois) loadFromManager(dsn string) {
 	swallow(err)
 
 	// TODO fetch from topics_version
-	sql := "SELECT AppId,ApplicationName,ApplicationIntro,Cluster,CreateBy,CreateTime,Status,AppSecret FROM application"
+	sql := "SELECT AppId,ApplicationName,ApplicationIntro,Cluster,CreateBy,CreateTime,Status,AppSecret,Raw FROM application"
 	if this.app != "" {
 		sql += " WHERE AppId IN (" + this.app + ")"
 	}
@@ -213,6 +225,9 @@ Options:
     -g <group|all>
 
     -t <topic|all>
+
+    -raw
+      Only display app that is raw kafka mode enabled.
 
     -l
       Like mode. 
