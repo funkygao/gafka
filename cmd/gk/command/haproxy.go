@@ -75,6 +75,12 @@ func (this *Haproxy) fetchStats(statsUri string) {
 	swallow(err)
 	this.Ui.Info(u.Host)
 
+	sortedSvcs := make([]string, 0)
+	for svc, _ := range records {
+		sortedSvcs = append(sortedSvcs, svc)
+	}
+	sort.Strings(sortedSvcs)
+
 	sortedCols := make([]string, 0)
 	for k, _ := range records["pub"] {
 		sortedCols = append(sortedCols, k)
@@ -82,10 +88,10 @@ func (this *Haproxy) fetchStats(statsUri string) {
 	sort.Strings(sortedCols)
 
 	lines := []string{strings.Join(append([]string{"svc"}, sortedCols...), "|")}
-	for svc, stats := range records {
-		var vals []string
+	for _, svc := range sortedSvcs {
+		stats := records[svc]
 
-		vals = append(vals, svc)
+		var vals = []string{svc}
 		for _, k := range sortedCols {
 			v := stats[k]
 
