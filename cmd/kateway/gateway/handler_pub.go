@@ -179,7 +179,8 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		// hack byte string conv TODO
 		partition, offset, err = pubMethod(cluster, rawTopic, msgKey, msg.Body)
 		if err != nil && store.DefaultPubStore.IsSystemError(err) && !hhDisabled && Options.EnableHintedHandoff {
-			// resort to hinted handoff
+			log.Warn("pub[%s] %s(%s) {%s.%s.%s UA:%s} resort hh", appid, r.RemoteAddr, realIp,
+				appid, topic, ver, r.Header.Get("User-Agent"))
 			err = hh.Default.Append(cluster, rawTopic, msgKey, msg.Body)
 		}
 	}
@@ -188,8 +189,8 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	msg.Free()
 
 	if Options.AuditPub {
-		this.auditor.Trace("pub[%s] %s(%s) {topic:%s ver:%s UA:%s} {P:%d O:%d}",
-			appid, r.RemoteAddr, realIp, topic, ver, r.Header.Get("User-Agent"), partition, offset)
+		this.auditor.Trace("pub[%s] %s(%s) {%s.%s.%s UA:%s} {P:%d O:%d}",
+			appid, r.RemoteAddr, realIp, appid, topic, ver, r.Header.Get("User-Agent"), partition, offset)
 	}
 
 	if err != nil {
