@@ -46,13 +46,12 @@ defaults
 
     default-server minconn 50 maxconn 5000 inter 80s rise 2 fall 3
             
-listen dashboard
-    bind 0.0.0.0:10890
-    bind-process {{.CpuNum}}
-    stats refresh 30s
+{{range .Dashboard}}
+listen 127.0.0.1:{{.Port}}
+    bind 127.0.0.1:{{.Port}}
+    bind-process {{.Name}}
     stats uri /stats
-    stats realm Haproxy Manager
-    stats auth eadmin:adminPassOfDashboard1
+{{end}}
 
 listen pub
     bind 0.0.0.0:{{.PubPort}}
