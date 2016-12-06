@@ -1,12 +1,12 @@
 package command
 
 import (
-	"encoding/csv"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
+	"sort"
 	"strings"
 	"time"
 
@@ -21,9 +21,6 @@ type Haproxy struct {
 	Cmd string
 
 	zone string
-
-	cols    []string
-	colsMap map[string]struct{}
 }
 
 func (this *Haproxy) Run(args []string) (exitCode int) {
@@ -34,34 +31,6 @@ func (this *Haproxy) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&top, "top", true, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
-	}
-
-	// initialize the output columns, the order MUST match that of haproxy output
-	this.cols = []string{
-		"# pxname", // proxy name
-		"svname",   // service name
-		//"smax",     // max sessions
-		"stot", // total sessions
-		"bin",  // bytes in
-		"bout", // bytes out
-		//"dreq",  // denied requests
-		//"dresp", // denied response
-		//"ereq",     // request errors
-		//"econ",     // connection errors
-		"wredis", // redispatches (warning)
-		//"rate",     // number of sessions per second over last elapsed second
-		"rate_max", // max number of new sessions per second
-		"hrsp_1xx", // http responses with 1xx code
-		//"hrsp_2xx",
-		//"hrsp_3xx",
-		"hrsp_4xx",
-		"hrsp_5xx",
-		"cli_abrt", // number of data transfers aborted by the client
-		"srv_abrt", // number of data transfers aborted by the server (inc. in eresp)
-	}
-	this.colsMap = make(map[string]struct{})
-	for _, c := range this.cols {
-		this.colsMap[c] = struct{}{}
 	}
 
 	zone := ctx.Zone(this.zone)
@@ -93,44 +62,34 @@ func (this *Haproxy) fetchStats(statsUri string) {
 	swallow(err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		swallow(fmt.Errorf("fetch[%s] stats got status: %d", resp.StatusCode))
 	}
 
-	reader := csv.NewReader(resp.Body)
-	records, err := reader.ReadAll()
+	var records map[string]map[string]int64
+	reader := json.NewDecoder(resp.Body)
+	err = reader.Decode(&records)
 	swallow(err)
 
 	u, err := url.Parse(statsUri)
 	swallow(err)
 	this.Ui.Info(u.Host)
-	cols := make(map[int]string) // col:name
 
-	lines := []string{strings.Join(this.cols, "|")}
-	for i, row := range records {
-		if i == 0 {
-			// header
-			for j, col := range row {
-				cols[j] = col
-			}
-			continue
-		}
+	sortedCols := make([]string, 0)
+	for k, _ := range records["pub"] {
+		sortedCols = append(sortedCols, k)
+	}
+	sort.Strings(sortedCols)
 
-		if (row[0] != "pub" && row[0] != "sub") || row[1] == "BACKEND" || row[1] == "FRONTEND" {
-			continue
-		}
-
+	lines := []string{strings.Join(append([]string{"svc"}, sortedCols...), "|")}
+	for svc, stats := range records {
 		var vals []string
-		for j, col := range row {
-			if _, present := this.colsMap[cols[j]]; !present {
-				continue
-			}
 
-			if n, err := strconv.ParseInt(col, 10, 64); err == nil {
-				vals = append(vals, gofmt.Comma(n))
-			} else {
-				vals = append(vals, col)
-			}
+		vals = append(vals, svc)
+		for _, k := range sortedCols {
+			v := stats[k]
+
+			vals = append(vals, gofmt.Comma(v))
 		}
 
 		lines = append(lines, strings.Join(vals, "|"))

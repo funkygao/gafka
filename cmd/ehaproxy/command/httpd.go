@@ -28,6 +28,7 @@ func runMonitorServer(addr string) {
 var cols = []string{
 	"# pxname", // proxy name
 	"svname",   // service name
+	"scur",     // current sessions
 	//"smax",     // max sessions
 	"stot", // total sessions
 	"bin",  // bytes in
@@ -35,7 +36,7 @@ var cols = []string{
 	//"dreq",  // denied requests
 	//"dresp", // denied response
 	//"ereq",     // request errors
-	//"econ",     // connection errors
+	"econ",   // connection errors
 	"wredis", // redispatches (warning)
 	//"rate",     // number of sessions per second over last elapsed second
 	"rate_max", // max number of new sessions per second
