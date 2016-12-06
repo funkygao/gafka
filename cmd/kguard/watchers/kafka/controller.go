@@ -59,6 +59,7 @@ func (this *WatchControllers) report() (jitter int64) {
 		if mtime, present := this.controllers[cluster]; !present {
 			this.controllers[cluster] = controller.Mtime.Time()
 		} else if mtime != controller.Mtime.Time() {
+			log.Warn("controller[%s] jitter", cluster)
 			jitter++
 
 			this.controllers[cluster] = controller.Mtime.Time()
