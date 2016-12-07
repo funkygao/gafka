@@ -33,6 +33,9 @@ type Monitor struct {
 	apiAddr        string
 	externalDir    string
 
+	startedAt time.Time
+	leadAt    time.Time
+
 	router *httprouter.Router
 	zkzone *zk.ZkZone
 
@@ -112,7 +115,7 @@ func (this *Monitor) Stop() {
 
 func (this *Monitor) Start() {
 	this.leader = true
-
+	this.leadAt = time.Now()
 	this.stop = make(chan struct{})
 
 	go func() {
@@ -148,6 +151,7 @@ func (this *Monitor) Start() {
 func (this *Monitor) ServeForever() {
 	defer this.zkzone.Close()
 
+	this.startedAt = time.Now()
 	log.Info("kguard[%s@%s] starting...", gafka.BuildId, gafka.BuiltAt)
 
 	signal.RegisterHandler(func(sig os.Signal) {

@@ -73,6 +73,13 @@ func init() {
 			}, nil
 		},
 
+		"pps": func() (cli.Command, error) {
+			return &command.Pps{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"histogram": func() (cli.Command, error) {
 			return &command.Histogram{
 				Ui:  ui,

@@ -246,6 +246,11 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		if err = fetcher.Close(); err != nil {
 			log.Error("sub[%s/%s] %s(%s) %s %v", myAppid, group, r.RemoteAddr, realIp, rawTopic, err)
 		}
+	} else if w.Header().Get("Connection") == "close" {
+		// max req reached, synchronously close this connection
+		if err = fetcher.Close(); err != nil {
+			log.Error("sub[%s/%s] %s(%s) %s %v", myAppid, group, r.RemoteAddr, realIp, rawTopic, err)
+		}
 	}
 
 	if Options.BadGroupRateLimit {

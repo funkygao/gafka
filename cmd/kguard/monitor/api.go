@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/funkygao/gafka"
@@ -127,5 +128,16 @@ func (this *Monitor) metricsHandler(w http.ResponseWriter, r *http.Request,
 // GET /ver
 func (this *Monitor) versionHandler(w http.ResponseWriter, r *http.Request,
 	params httprouter.Params) {
-	w.Write([]byte(gafka.BuildId))
+	w.Header().Set("Content-Type", "application/json; charset=utf8")
+	w.Header().Set("Server", "kguard")
+
+	log.Info("%s ver", r.RemoteAddr)
+
+	v := map[string]string{
+		"version": gafka.BuildId,
+		"uptime":  strconv.FormatInt(this.startedAt.Unix(), 10),
+		"lead":    strconv.FormatInt(this.leadAt.Unix(), 10),
+	}
+	b, _ := json.Marshal(v)
+	w.Write(b)
 }

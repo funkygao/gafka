@@ -15,9 +15,9 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-func runMonitorServer(addr string) {
-	http.HandleFunc("/v1/ver", versionHandler)
-	http.HandleFunc("/v1/status", statusHandler)
+func (this *Start) runMonitorServer(addr string) {
+	http.HandleFunc("/v1/ver", this.versionHandler)
+	http.HandleFunc("/v1/status", this.statusHandler)
 
 	log.Info("status web server on %s ready", addr)
 	if err := http.ListenAndServe(addr, nil); err != nil {
@@ -28,6 +28,7 @@ func runMonitorServer(addr string) {
 var cols = []string{
 	"# pxname", // proxy name
 	"svname",   // service name
+	"scur",     // current sessions
 	//"smax",     // max sessions
 	"stot", // total sessions
 	"bin",  // bytes in
@@ -35,7 +36,7 @@ var cols = []string{
 	//"dreq",  // denied requests
 	//"dresp", // denied response
 	//"ereq",     // request errors
-	//"econ",     // connection errors
+	"econ",   // connection errors
 	"wredis", // redispatches (warning)
 	//"rate",     // number of sessions per second over last elapsed second
 	"rate_max", // max number of new sessions per second
@@ -57,7 +58,7 @@ func init() {
 }
 
 // TODO auth
-func statusHandler(w http.ResponseWriter, r *http.Request) {
+func (this *Start) statusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf8")
 	w.Header().Set("Server", "ehaproxy")
 
@@ -148,7 +149,7 @@ func fetchDashboardStats(statsUri string) (v map[string]map[string]int64) {
 	return
 }
 
-func versionHandler(w http.ResponseWriter, r *http.Request) {
+func (this *Start) versionHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf8")
 	w.Header().Set("Server", "ehaproxy")
 
@@ -156,6 +157,7 @@ func versionHandler(w http.ResponseWriter, r *http.Request) {
 
 	v := map[string]string{
 		"version": gafka.BuildId,
+		"uptime":  strconv.FormatInt(this.startedAt.Unix(), 10),
 	}
 	b, _ := json.Marshal(v)
 	w.Write(b)

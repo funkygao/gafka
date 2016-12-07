@@ -1,18 +1,19 @@
 package command
 
 import (
-	"encoding/csv"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/golib/top"
 	"github.com/ryanuber/columnize"
 )
 
@@ -21,58 +22,36 @@ type Haproxy struct {
 	Cmd string
 
 	zone string
-
-	cols    []string
-	colsMap map[string]struct{}
 }
 
 func (this *Haproxy) Run(args []string) (exitCode int) {
-	var top bool
+	var topMode bool
 	cmdFlags := flag.NewFlagSet("haproxy", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.DefaultZone(), "")
-	cmdFlags.BoolVar(&top, "top", true, "")
+	cmdFlags.BoolVar(&topMode, "top", true, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
-	// initialize the output columns, the order MUST match that of haproxy output
-	this.cols = []string{
-		"# pxname", // proxy name
-		"svname",   // service name
-		//"smax",     // max sessions
-		"stot", // total sessions
-		"bin",  // bytes in
-		"bout", // bytes out
-		//"dreq",  // denied requests
-		//"dresp", // denied response
-		//"ereq",     // request errors
-		//"econ",     // connection errors
-		"wredis", // redispatches (warning)
-		//"rate",     // number of sessions per second over last elapsed second
-		"rate_max", // max number of new sessions per second
-		"hrsp_1xx", // http responses with 1xx code
-		//"hrsp_2xx",
-		//"hrsp_3xx",
-		"hrsp_4xx",
-		"hrsp_5xx",
-		"cli_abrt", // number of data transfers aborted by the client
-		"srv_abrt", // number of data transfers aborted by the server (inc. in eresp)
-	}
-	this.colsMap = make(map[string]struct{})
-	for _, c := range this.cols {
-		this.colsMap[c] = struct{}{}
-	}
-
 	zone := ctx.Zone(this.zone)
-	if top {
-		for {
-			refreshScreen()
-			for _, uri := range zone.HaProxyStatsUri {
-				this.fetchStats(uri)
-			}
+	if topMode {
+		header, _ := this.getStats(zone.HaProxyStatsUri[0])
+		t := top.New(header, "%8s %4s %15s %15s %8s %6s %8s %10s %8s %8s %5s %7s %9s %6s")
+		go func() {
+			for {
+				rows := make([]string, 0)
+				for _, uri := range zone.HaProxyStatsUri {
+					_, r := this.getStats(uri)
+					rows = append(rows, r...)
+				}
+				t.Refresh(rows)
 
-			time.Sleep(time.Second * 5)
+				time.Sleep(time.Second * 5)
+			}
+		}()
+		if err := t.Start(); err != nil {
+			panic(err)
 		}
 	} else {
 		for _, uri := range zone.HaProxyStatsUri {
@@ -87,50 +66,106 @@ func (*Haproxy) Synopsis() string {
 	return "Query ehaproxy cluster for load stats"
 }
 
+func (this *Haproxy) getStats(statsUri string) (header string, rows []string) {
+	client := http.Client{Timeout: time.Second * 30}
+	resp, err := client.Get(statsUri)
+	swallow(err)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		swallow(fmt.Errorf("fetch[%s] stats got status: %d", resp.StatusCode))
+	}
+
+	var records map[string]map[string]int64
+	reader := json.NewDecoder(resp.Body)
+	err = reader.Decode(&records)
+	swallow(err)
+
+	u, err := url.Parse(statsUri)
+	swallow(err)
+	var shortHostname string
+	if strings.Contains(u.Host, ":") {
+		u.Host = u.Host[:strings.Index(u.Host, ":")]
+	}
+	tuples := strings.SplitN(u.Host, ".", 4)
+	if len(tuples) < 4 {
+		shortHostname = u.Host
+	} else {
+		shortHostname = tuples[3]
+	}
+	if len(shortHostname) > 8 {
+		shortHostname = shortHostname[:8]
+	}
+
+	sortedSvcs := make([]string, 0)
+	for svc, _ := range records {
+		sortedSvcs = append(sortedSvcs, svc)
+	}
+	sort.Strings(sortedSvcs)
+
+	sortedCols := make([]string, 0)
+	for k, _ := range records["pub"] {
+		sortedCols = append(sortedCols, k)
+	}
+	sort.Strings(sortedCols)
+
+	header = strings.Join(append([]string{"host", "svc"}, sortedCols...), "|")
+	for _, svc := range sortedSvcs {
+		stats := records[svc]
+
+		var vals = []string{shortHostname, svc}
+		for _, k := range sortedCols {
+			v := stats[k]
+
+			vals = append(vals, gofmt.Comma(v))
+		}
+
+		rows = append(rows, strings.Join(vals, "|"))
+	}
+
+	return
+}
+
 func (this *Haproxy) fetchStats(statsUri string) {
 	client := http.Client{Timeout: time.Second * 30}
 	resp, err := client.Get(statsUri)
 	swallow(err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		swallow(fmt.Errorf("fetch[%s] stats got status: %d", resp.StatusCode))
 	}
 
-	reader := csv.NewReader(resp.Body)
-	records, err := reader.ReadAll()
+	var records map[string]map[string]int64
+	reader := json.NewDecoder(resp.Body)
+	err = reader.Decode(&records)
 	swallow(err)
 
 	u, err := url.Parse(statsUri)
 	swallow(err)
 	this.Ui.Info(u.Host)
-	cols := make(map[int]string) // col:name
 
-	lines := []string{strings.Join(this.cols, "|")}
-	for i, row := range records {
-		if i == 0 {
-			// header
-			for j, col := range row {
-				cols[j] = col
-			}
-			continue
-		}
+	sortedSvcs := make([]string, 0)
+	for svc, _ := range records {
+		sortedSvcs = append(sortedSvcs, svc)
+	}
+	sort.Strings(sortedSvcs)
 
-		if (row[0] != "pub" && row[0] != "sub") || row[1] == "BACKEND" || row[1] == "FRONTEND" {
-			continue
-		}
+	sortedCols := make([]string, 0)
+	for k, _ := range records["pub"] {
+		sortedCols = append(sortedCols, k)
+	}
+	sort.Strings(sortedCols)
 
-		var vals []string
-		for j, col := range row {
-			if _, present := this.colsMap[cols[j]]; !present {
-				continue
-			}
+	lines := []string{strings.Join(append([]string{"svc"}, sortedCols...), "|")}
+	for _, svc := range sortedSvcs {
+		stats := records[svc]
 
-			if n, err := strconv.ParseInt(col, 10, 64); err == nil {
-				vals = append(vals, gofmt.Comma(n))
-			} else {
-				vals = append(vals, col)
-			}
+		var vals = []string{svc}
+		for _, k := range sortedCols {
+			v := stats[k]
+
+			vals = append(vals, gofmt.Comma(v))
 		}
 
 		lines = append(lines, strings.Join(vals, "|"))

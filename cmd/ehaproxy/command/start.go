@@ -161,7 +161,7 @@ func (this *Start) main() {
 	registry.Default = zkr.New(this.zkzone)
 
 	log.Info("ehaproxy[%s] starting...", gafka.BuildId)
-	go runMonitorServer(this.httpAddr)
+	go this.runMonitorServer(this.httpAddr)
 
 	zkConnected := false
 	for {

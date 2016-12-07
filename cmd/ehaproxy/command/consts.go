@@ -6,5 +6,5 @@ const (
 	configFile     = ".haproxy.cf"
 	haproxyPidFile = "haproxy.pid"
 
-	dashboardPortHead = 10890
+	dashboardPortHead = 10910
 )
