@@ -1,12 +1,21 @@
 package command
 
 import (
+	"encoding/json"
 	"errors"
+	"net/http"
 	"time"
-	//log "github.com/funkygao/log4go"
+
+	metrics "github.com/funkygao/go-metrics"
+	log "github.com/funkygao/log4go"
 )
 
 var (
+	ErrInvalidStatsRsp = errors.New("invalid stats response")
+	ErrEmptyStats      = errors.New("empty stats")
+	ErrUnsupService    = errors.New("unsupported service")
+	ErrMetricsNotFound = errors.New("metrics not found")
+
 	ErrUnsupMetricsType      = errors.New("unsupported metrics type")
 	ErrUnsupGaugeMetrics     = errors.New("unsupported gauge metrics")
 	ErrUnsupMeterMetrics     = errors.New("unsupported meter metrics")
@@ -19,27 +28,14 @@ type haproxyMetrics struct {
 	interval time.Duration
 	uri      string
 
-	colMapSetted    bool
-	colMap          map[string]int           //rate:33, scur:4, ...
-	proxyMetricsMap map[string]*proxyMetrics //pub.frontend:, pub.backend:, ...
+	isInited      bool
+	svcMetricsMap map[string]*servicMetrics //pub:..., sub:..., ...
 
 }
 
-type proxyMetrics struct {
-	proxyName   string                     //pub, sub
-	proxyType   string                     //FRONTEND, BACKEND
-	metricsDefs []metricsDefine            //session.rate, session.pctg, ...
-	metricsMap  map[string]*metricsWrapper //session.rate:gauge, ..
-}
-
-type metricsDefine struct {
-	metricsName string //session.rate, session.pctg,...
-	metricsType string //Gauge, Meter, ...
-}
-
-type metricsWrapper struct {
-	meterBase        int64
-	metricsCollector interface{} //Gauge, Meter, ...
+type servicMetrics struct {
+	svcName    string                   //pub, sub
+	metricsMap map[string]metrics.Gauge //rate:gauge, ..
 }
 
 func (this *haproxyMetrics) start() {
@@ -49,14 +45,6 @@ func (this *haproxyMetrics) start() {
 
 	tick := time.NewTicker(this.interval)
 	defer tick.Stop()
-
-	//init haproxy metrics settings
-	// err := this.init()
-	// if err != nil {
-	// 	log.Error("haproxyMetrics init, %v", err)
-	// 	return
-	// }
-	// log.Info("haproxyMetrics init succ")
 
 	for {
 		select {
@@ -71,4 +59,133 @@ func (this *haproxyMetrics) start() {
 
 func (this *haproxyMetrics) reportStats() {
 
+	//get stats
+	header, records, err := this.getStats(this.uri)
+	if err != nil {
+		log.Error("uri: %s, get stats error, %v", this.uri, err)
+		return
+	}
+
+	//init if needed
+	err = this.initMetrics(header, records)
+	if err != nil {
+		log.Error("uri: %s, init metrics error, %v", this.uri, err)
+		return
+	}
+
+	//update metrics
+	err = this.updateMetrics(records)
+	if err != nil {
+		log.Error("uri: %s, update metrics error, %v", this.uri, err)
+		return
+	}
+}
+
+func (this *haproxyMetrics) getStats(statsUri string) (header []string,
+	records map[string]map[string]int64, err error) {
+
+	client := http.Client{Timeout: time.Second * 30}
+	resp, err := client.Get(statsUri)
+	if err != nil {
+		log.Error("fetch[%s] error: %v", statsUri, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Error("fetch[%s] stats got status: %d", statsUri, resp.StatusCode)
+		err = ErrInvalidStatsRsp
+		return
+	}
+
+	reader := json.NewDecoder(resp.Body)
+	err = reader.Decode(&records)
+	if err != nil {
+		log.Error("fetch[%s] stats body[%s] decode err: %v", statsUri, resp.Body, err)
+		return
+	}
+
+	if len(records) <= 0 {
+		log.Error("fetch[%s] stats body[%s] empty stats: %v", statsUri, resp.Body, err)
+		err = ErrEmptyStats
+		return
+	}
+
+	//get header
+	for _, svcCols := range records {
+		for colName := range svcCols {
+			header = append(header, colName)
+		}
+		//only use the firet record to build header
+		break
+	}
+
+	return
+}
+
+func (this *haproxyMetrics) initMetrics(header []string,
+	records map[string]map[string]int64) (err error) {
+
+	if this.isInited {
+		return
+	}
+
+	//init svc
+	this.svcMetricsMap = make(map[string]*servicMetrics)
+	for svcName := range records {
+		svcMetrics := servicMetrics{}
+		err = initServiceMetrics(&svcMetrics, svcName, header)
+		if err != nil {
+			return err
+		}
+
+		//add to map
+		this.svcMetricsMap[svcName] = &svcMetrics
+	}
+
+	this.isInited = true
+	return
+}
+
+func initServiceMetrics(svcMetrics *servicMetrics, svcName string, header []string) (err error) {
+
+	svcMetrics.svcName = svcName
+
+	svcMetrics.metricsMap = make(map[string]metrics.Gauge)
+	for _, colName := range header {
+		fullMetricName := "haproxy." + svcName + "." + colName
+		svcMetrics.metricsMap[colName] = metrics.NewRegisteredGauge(fullMetricName, nil)
+	}
+	return
+}
+
+func (this *haproxyMetrics) updateMetrics(records map[string]map[string]int64) (err error) {
+
+	for svcName, svcCols := range records {
+		//find svc
+		svcMetrics, present := this.svcMetricsMap[svcName]
+		if !present {
+			log.Error("svcName[%s] not in svcMetricsMap[%#v]", svcName, this.svcMetricsMap)
+			err = ErrUnsupService
+			return err
+		}
+
+		//update col value
+		for colName, colVal := range svcCols {
+
+			//find gague
+			gauge, present := svcMetrics.metricsMap[colName]
+			if !present {
+				log.Error("colName[%s] not in metricsMap[%#v]", colName, svcMetrics.metricsMap)
+				err = ErrMetricsNotFound
+				return err
+			}
+
+			//update gauge
+			gauge.Update(colVal)
+		}
+
+	}
+
+	return
 }
