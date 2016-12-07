@@ -127,7 +127,7 @@ func fetchDashboardStats(statsUri string) (v map[string]map[string]int64) {
 			continue
 		}
 
-		if row[1] != "BACKEND" || (row[0] != "pub" && row[0] != "sub") {
+		if row[1] != "BACKEND" || (row[0] != "pub" && row[0] != "sub" && row[0] != "man") {
 			continue
 		}
 
