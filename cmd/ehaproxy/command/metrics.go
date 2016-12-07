@@ -51,12 +51,12 @@ func (this *haproxyMetrics) start() {
 	defer tick.Stop()
 
 	//init haproxy metrics settings
-	err := this.init()
-	if err != nil {
-		log.Error("haproxyMetrics init, %v", err)
-		return
-	}
-	log.Info("haproxyMetrics init succ")
+	// err := this.init()
+	// if err != nil {
+	// 	log.Error("haproxyMetrics init, %v", err)
+	// 	return
+	// }
+	// log.Info("haproxyMetrics init succ")
 
 	for {
 		select {
