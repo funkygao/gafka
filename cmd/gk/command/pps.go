@@ -50,21 +50,22 @@ func (this *Pps) showPps(nic string) {
 		btx, err := ioutil.ReadFile(tx)
 		swallow(err)
 
-		rxN, err := strconv.ParseInt(string(brx), 10, 64)
+		rxN, err := strconv.ParseInt(strings.TrimSpace(string(brx)), 10, 64)
 		swallow(err)
-		txN, err := strconv.ParseInt(string(btx), 10, 64)
+		txN, err := strconv.ParseInt(strings.TrimSpace(string(btx)), 10, 64)
 		swallow(err)
 
-		if lastRx != 0 && lastRx != 0 {
+		if lastRx != 0 && lastTx != 0 {
 			rxPps := (rxN - lastRx) / s
 			txPps := (txN - lastTx) / s
 			sumPps := rxPps + txPps
+
 			this.Ui.Output(fmt.Sprintf("%10s rx:%-8s tx:%-8s sum:%-8s",
 				nic, gofmt.Comma(rxPps), gofmt.Comma(txPps), gofmt.Comma(sumPps)))
 		}
 
 		lastRx = rxN
-		lastRx = txN
+		lastTx = txN
 
 		time.Sleep(this.interval)
 	}
