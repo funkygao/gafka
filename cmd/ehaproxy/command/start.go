@@ -260,7 +260,13 @@ func (this *Start) reload(kwInstances []string) {
 			}
 			servers.Man = append(servers.Man, be)
 		}
+	}
 
+	for i := 0; i < ctx.NumCPU(); i++ {
+		servers.Dashboard = append(servers.Dashboard, Backend{
+			Port: fmt.Sprintf("%d", dashboardPortHead+i),
+			Name: fmt.Sprintf("%d", i+1), // process id starts from 1
+		})
 	}
 
 	if servers.empty() {

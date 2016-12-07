@@ -19,15 +19,17 @@ type BackendServers struct {
 	ManPort     int
 	ForwardFor  bool
 
-	Pub []Backend
-	Sub []Backend
-	Man []Backend
+	Pub       []Backend
+	Sub       []Backend
+	Man       []Backend
+	Dashboard []Backend
 }
 
 func (this *BackendServers) reset() {
 	this.Pub = make([]Backend, 0)
 	this.Sub = make([]Backend, 0)
 	this.Man = make([]Backend, 0)
+	this.Dashboard = make([]Backend, 0)
 }
 
 func (this *BackendServers) empty() bool {

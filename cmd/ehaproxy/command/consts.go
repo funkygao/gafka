@@ -5,4 +5,6 @@ const (
 	defaultLogfile = "ehaproxy.log"
 	configFile     = ".haproxy.cf"
 	haproxyPidFile = "haproxy.pid"
+
+	dashboardPortHead = 10890
 )
