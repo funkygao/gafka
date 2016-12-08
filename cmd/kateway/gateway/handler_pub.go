@@ -179,8 +179,8 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		// hack byte string conv TODO
 		partition, offset, err = pubMethod(cluster, rawTopic, msgKey, msg.Body)
 		if err != nil && store.DefaultPubStore.IsSystemError(err) && !hhDisabled && Options.EnableHintedHandoff {
-			log.Warn("pub[%s] %s(%s) {%s.%s.%s UA:%s} resort hh", appid, r.RemoteAddr, realIp,
-				appid, topic, ver, r.Header.Get("User-Agent"))
+			log.Warn("pub[%s] %s(%s) {%s.%s.%s UA:%s} resort hh for: %v", appid, r.RemoteAddr, realIp,
+				appid, topic, ver, r.Header.Get("User-Agent"), err)
 			err = hh.Default.Append(cluster, rawTopic, msgKey, msg.Body)
 		}
 	}
