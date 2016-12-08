@@ -52,7 +52,7 @@ func (this *pubServer) addJobHandler(w http.ResponseWriter, r *http.Request, par
 		due = t1.Unix() + delay
 	}
 
-	if due < t1.Unix() {
+	if due <= t1.Unix() {
 		log.Error("+job[%s] %s(%s) due=%d before now?", appid, r.RemoteAddr, realIp, due)
 
 		writeBadRequest(w, "invalid param")
