@@ -15,11 +15,6 @@ var (
 	ErrEmptyStats      = errors.New("empty stats")
 	ErrUnsupService    = errors.New("unsupported service")
 	ErrMetricsNotFound = errors.New("metrics not found")
-
-	ErrUnsupMetricsType      = errors.New("unsupported metrics type")
-	ErrUnsupGaugeMetrics     = errors.New("unsupported gauge metrics")
-	ErrUnsupMeterMetrics     = errors.New("unsupported meter metrics")
-	ErrMetricsColumnNotFound = errors.New("metrics column not found")
 )
 
 type haproxyMetrics struct {
@@ -93,7 +88,7 @@ func (this *haproxyMetrics) getStats(statsUri string) (header []string,
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Error("fetch[%s] stats got status: %d", statsUri, resp.StatusCode)
+		log.Error("fetch[%s] stats:[%d] not ok", statsUri, resp.StatusCode)
 		err = ErrInvalidStatsRsp
 		return
 	}
@@ -106,7 +101,7 @@ func (this *haproxyMetrics) getStats(statsUri string) (header []string,
 	}
 
 	if len(records) <= 0 {
-		log.Error("fetch[%s] stats body[%s] empty stats: %v", statsUri, resp.Body, err)
+		log.Error("fetch[%s] stats body[%s] empty content", statsUri, resp.Body)
 		err = ErrEmptyStats
 		return
 	}
@@ -133,30 +128,25 @@ func (this *haproxyMetrics) initMetrics(header []string,
 	//init svc
 	this.svcMetricsMap = make(map[string]*servicMetrics)
 	for svcName := range records {
-		svcMetrics := servicMetrics{}
-		err = initServiceMetrics(&svcMetrics, svcName, header)
-		if err != nil {
-			return err
-		}
-
-		//add to map
-		this.svcMetricsMap[svcName] = &svcMetrics
+		//add new service metrics to map
+		svcMetrics := newServiceMetrics(svcName, header)
+		this.svcMetricsMap[svcName] = svcMetrics
 	}
 
 	this.isInited = true
 	return
 }
 
-func initServiceMetrics(svcMetrics *servicMetrics, svcName string, header []string) (err error) {
+func newServiceMetrics(svcName string, header []string) *servicMetrics {
 
-	svcMetrics.svcName = svcName
-
+	//svcMetrics.svcName = svcName
+	svcMetrics := servicMetrics{svcName: svcName}
 	svcMetrics.metricsMap = make(map[string]metrics.Gauge)
 	for _, colName := range header {
 		fullMetricName := "haproxy." + svcName + "." + colName
 		svcMetrics.metricsMap[colName] = metrics.NewRegisteredGauge(fullMetricName, nil)
 	}
-	return
+	return &svcMetrics
 }
 
 func (this *haproxyMetrics) updateMetrics(records map[string]map[string]int64) (err error) {
