@@ -59,7 +59,7 @@ func (this *WatchTopics) Init(ctx monitor.Context) {
 		panic(err)
 	}
 	this.aggPubQpsAnomalyGauge = metrics.NewRegisteredGauge("pub.qps.anomaly", nil)
-	this.anomalyThreshold = 95
+	this.anomalyThreshold = 97
 }
 
 // set?key=kta-as:4
