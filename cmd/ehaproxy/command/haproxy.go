@@ -106,7 +106,7 @@ func (this *Start) reloadHAproxy() (err error) {
 	}
 
 	if err = cmd.Start(); err == nil {
-		waitStartCh <- struct{}{}
+		waitStartCh <- struct{}{} // should close
 	}
 
 	return err
