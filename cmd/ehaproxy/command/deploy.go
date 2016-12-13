@@ -114,7 +114,7 @@ SYSLOGD_OPTIONS="-c 2 -r -m 0"
 service rsyslog restart
 
 vim /etc/logrotate.d/haproxy
-/varlog/haproxy*.log
+/var/log/haproxy*.log
 {
     rotate 4
     daily
