@@ -67,3 +67,4 @@ cmd/kateway/docs.go
 cmd/kateway/swagger-ui/
 cmd/kateway/torch.svg
 cmd/kateway/trace.out
+cmd/helix/helix

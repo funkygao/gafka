@@ -56,7 +56,7 @@ func (this *Cluster) Run(args []string) (exitCode int) {
 }
 
 func (*Cluster) Synopsis() string {
-	return "Cluster management"
+	return "Cluster management within a zone"
 }
 
 func (this *Cluster) Help() string {

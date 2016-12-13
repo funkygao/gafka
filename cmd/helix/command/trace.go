@@ -55,7 +55,7 @@ func (this *Trace) startTracing() {
 }
 
 func (*Trace) Synopsis() string {
-	return "Trace all events"
+	return "Trace all events within a cluster"
 }
 
 func (this *Trace) Help() string {

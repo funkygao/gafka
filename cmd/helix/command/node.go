@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/funkygao/gafka/ctx"
@@ -18,22 +19,58 @@ type Node struct {
 }
 
 func (this *Node) Run(args []string) (exitCode int) {
-	var zone string
+	var (
+		zone     string
+		cluster  string
+		addNode  string
+		dropNode string
+	)
 	cmdFlags := flag.NewFlagSet("node", flag.ContinueOnError)
 	cmdFlags.StringVar(&zone, "z", ctx.DefaultZone(), "")
+	cmdFlags.StringVar(&cluster, "c", "", "")
+	cmdFlags.StringVar(&addNode, "add", "", "")
+	cmdFlags.StringVar(&dropNode, "drop", "", "")
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
+	if cluster == "" {
+		this.Ui.Error("-c required")
+		return 2
+	}
+
 	this.admin = getConnectedAdmin(zone)
 	defer this.admin.Disconnect()
+
+	switch {
+	case addNode != "":
+		host, port, err := net.SplitHostPort(addNode)
+		must(err)
+		node := fmt.Sprintf("%s_%s", host, port)
+		must(this.admin.AddNode(cluster, node))
+
+	case dropNode != "":
+		host, port, err := net.SplitHostPort(dropNode)
+		must(err)
+		node := fmt.Sprintf("%s_%s", host, port)
+		must(this.admin.DropNode(cluster, node))
+
+	default:
+		instances, err := this.admin.Instances(cluster)
+		must(err)
+		for _, instance := range instances {
+			this.Ui.Output(instance)
+
+			// TODO display each instance info
+		}
+	}
 
 	return
 }
 
 func (*Node) Synopsis() string {
-	return "Node management"
+	return "Node/Instance/Participant of a cluster management"
 }
 
 func (this *Node) Help() string {
@@ -46,7 +83,11 @@ Options:
 
     -z zone
 
-   
+    -c cluster
+
+    -add host:port
+
+    -drop host:port
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)

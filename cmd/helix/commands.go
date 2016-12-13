@@ -24,21 +24,21 @@ func init() {
 	cmd := os.Args[0]
 
 	commands = map[string]cli.CommandFactory{
-		"cluster": func() (cli.Command, error) {
+		"clusters": func() (cli.Command, error) {
 			return &command.Cluster{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
 		},
 
-		"node": func() (cli.Command, error) {
+		"nodes": func() (cli.Command, error) {
 			return &command.Node{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
 		},
 
-		"resource": func() (cli.Command, error) {
+		"resources": func() (cli.Command, error) {
 			return &command.Resource{
 				Ui:  ui,
 				Cmd: cmd,

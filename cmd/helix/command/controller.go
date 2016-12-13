@@ -28,6 +28,11 @@ func (this *Controller) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	if this.cluster == "" {
+		this.Ui.Error("-c required")
+		return 2
+	}
+
 	this.admin = getConnectedAdmin(zone)
 	defer this.admin.Disconnect()
 
@@ -42,7 +47,7 @@ func (this *Controller) Run(args []string) (exitCode int) {
 }
 
 func (*Controller) Synopsis() string {
-	return "Controller management"
+	return "Controller of a cluster"
 }
 
 func (this *Controller) Help() string {
