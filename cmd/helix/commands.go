@@ -45,6 +45,13 @@ func init() {
 			}, nil
 		},
 
+		"controller": func() (cli.Command, error) {
+			return &command.Controller{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"trace": func() (cli.Command, error) {
 			return &command.Trace{
 				Ui:  ui,

@@ -4,11 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/go-helix"
-	"github.com/funkygao/go-helix/store/zk"
+	"github.com/funkygao/go-helix/model"
 	"github.com/funkygao/gocli"
 )
 
@@ -37,33 +36,22 @@ func (this *Trace) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	this.manager = zk.NewZKHelixManager(ctx.Zone(zone).ZkHelix, zk.WithSessionTimeout(time.Second*30))
-	if err := this.manager.Connect(); err != nil {
-		this.Ui.Error(err.Error())
-		return 2
-	}
+	this.manager = getConnectedManager(zone, this.cluster, helix.InstanceTypeSpectator)
+	defer this.manager.Disconnect()
 
 	this.startTracing()
-	this.manager.Close()
 
 	return
 }
 
 func (this *Trace) startTracing() {
-	tracer := this.manager.NewSpectator(this.cluster)
-	tracer.AddExternalViewChangeListener(func(externalViews []*helix.Record, context *helix.Context) {
+	this.manager.AddExternalViewChangeListener(func(externalViews []*model.Record, context *helix.Context) {
 
 	})
-	tracer.AddLiveInstanceChangeListener(func(liveInstances []*helix.Record, context *helix.Context) {
+	this.manager.AddLiveInstanceChangeListener(func(liveInstances []*model.Record, context *helix.Context) {
 
 	})
 
-	// startup
-	if err := tracer.Start(); err != nil {
-		this.Ui.Error(err.Error())
-		return
-	}
-	tracer.Close()
 }
 
 func (*Trace) Synopsis() string {

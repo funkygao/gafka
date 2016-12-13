@@ -4,11 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/go-helix"
-	"github.com/funkygao/go-helix/store/zk"
 	"github.com/funkygao/gocli"
 )
 
@@ -34,37 +32,23 @@ func (this *Cluster) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	this.admin = zk.NewZKHelixAdmin(ctx.Zone(zone).ZkHelix, zk.WithSessionTimeout(time.Second*30))
-	if err := this.admin.Connect(); err != nil {
-		this.Ui.Error(err.Error())
-		return 2
-	}
+	this.admin = getConnectedAdmin(zone)
+	defer this.admin.Disconnect()
 
 	switch {
 	case addCluster != "":
-		err := this.admin.AddCluster(addCluster)
-		if err != nil {
-			this.Ui.Error(err.Error())
-		} else {
-			this.Ui.Info(fmt.Sprintf("%s added", addCluster))
-		}
+		must(this.admin.AddCluster(addCluster))
+		this.Ui.Info(fmt.Sprintf("%s added", addCluster))
 
 	case dropCluster != "":
-		err := this.admin.DropCluster(dropCluster)
-		if err != nil {
-			this.Ui.Error(err.Error())
-		} else {
-			this.Ui.Info(fmt.Sprintf("%s dropped", dropCluster))
-		}
+		must(this.admin.DropCluster(dropCluster))
+		this.Ui.Info(fmt.Sprintf("%s dropped", dropCluster))
 
 	default:
 		clusters, err := this.admin.Clusters()
-		if err != nil {
-			this.Ui.Error(err.Error())
-		} else {
-			for _, c := range clusters {
-				this.Ui.Output(c)
-			}
+		must(err)
+		for _, c := range clusters {
+			this.Ui.Output(c)
 		}
 	}
 

@@ -10,17 +10,19 @@ import (
 	"github.com/funkygao/gocli"
 )
 
-type Node struct {
+type Controller struct {
 	Ui  cli.Ui
 	Cmd string
 
-	admin helix.HelixAdmin
+	admin   helix.HelixAdmin
+	cluster string
 }
 
-func (this *Node) Run(args []string) (exitCode int) {
+func (this *Controller) Run(args []string) (exitCode int) {
 	var zone string
-	cmdFlags := flag.NewFlagSet("node", flag.ContinueOnError)
+	cmdFlags := flag.NewFlagSet("controller", flag.ContinueOnError)
 	cmdFlags.StringVar(&zone, "z", ctx.DefaultZone(), "")
+	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -29,14 +31,21 @@ func (this *Node) Run(args []string) (exitCode int) {
 	this.admin = getConnectedAdmin(zone)
 	defer this.admin.Disconnect()
 
+	this.Ui.Info(fmt.Sprintf("leader: %s", this.admin.ControllerLeader(this.cluster)))
+	history, err := this.admin.ControllerHistory(this.cluster)
+	must(err)
+	for _, hostPort := range history {
+		this.Ui.Output(hostPort)
+	}
+
 	return
 }
 
-func (*Node) Synopsis() string {
-	return "Node management"
+func (*Controller) Synopsis() string {
+	return "Controller management"
 }
 
-func (this *Node) Help() string {
+func (this *Controller) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s node [options]
 
@@ -46,7 +55,7 @@ Options:
 
     -z zone
 
-   
+    -c cluster
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
