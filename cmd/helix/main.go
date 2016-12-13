@@ -10,6 +10,7 @@ import (
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/go-helix/store/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/log4go"
 )
@@ -36,15 +37,33 @@ func main() {
 				switch lastArg {
 				case "-z": // zone
 					for _, zone := range ctx.SortedZones() {
-						fmt.Println(zone)
+						if ctx.Zone(zone).ZkHelix != "" {
+							fmt.Println(zone)
+						}
 					}
 					return
 
 				case "-c": // cluster
-					// TODO list helix clusters
+					zone := ctx.ZkDefaultZone()
+					for i := 0; i < len(args)-1; i++ {
+						if args[i] == "-z" {
+							zone = args[i+1]
+						}
+					}
+					adm := zk.NewZkHelixAdmin(ctx.Zone(zone).ZkHelix)
+					if err := adm.Connect(); err != nil {
+						panic(err)
+					}
+					clusters, err := adm.Clusters()
+					if err != nil {
+						panic(err)
+					}
+					for _, cluster := range clusters {
+						fmt.Println(cluster)
+					}
+
 					return
 				}
-
 			}
 
 			for name := range commands {
