@@ -41,6 +41,8 @@ func (this *Trace) Run(args []string) (exitCode int) {
 
 	this.startTracing()
 
+	select {}
+
 	return
 }
 

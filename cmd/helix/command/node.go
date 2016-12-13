@@ -20,16 +20,16 @@ type Node struct {
 
 func (this *Node) Run(args []string) (exitCode int) {
 	var (
-		zone     string
-		cluster  string
-		addNode  string
-		dropNode string
+		zone    string
+		cluster string
+		add     string
+		drop    string
 	)
 	cmdFlags := flag.NewFlagSet("node", flag.ContinueOnError)
 	cmdFlags.StringVar(&zone, "z", ctx.DefaultZone(), "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
-	cmdFlags.StringVar(&addNode, "add", "", "")
-	cmdFlags.StringVar(&dropNode, "drop", "", "")
+	cmdFlags.StringVar(&add, "add", "", "")
+	cmdFlags.StringVar(&drop, "drop", "", "")
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -44,14 +44,14 @@ func (this *Node) Run(args []string) (exitCode int) {
 	defer this.admin.Disconnect()
 
 	switch {
-	case addNode != "":
-		host, port, err := net.SplitHostPort(addNode)
+	case add != "":
+		host, port, err := net.SplitHostPort(add)
 		must(err)
 		node := fmt.Sprintf("%s_%s", host, port)
 		must(this.admin.AddNode(cluster, node))
 
-	case dropNode != "":
-		host, port, err := net.SplitHostPort(dropNode)
+	case drop != "":
+		host, port, err := net.SplitHostPort(drop)
 		must(err)
 		node := fmt.Sprintf("%s_%s", host, port)
 		must(this.admin.DropNode(cluster, node))

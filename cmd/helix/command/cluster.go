@@ -19,15 +19,16 @@ type Cluster struct {
 
 func (this *Cluster) Run(args []string) (exitCode int) {
 	var (
-		zone        string
-		addCluster  string
-		dropCluster string
+		zone string
+		add  string
+		drop string
 	)
 	cmdFlags := flag.NewFlagSet("cluster", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.DefaultZone(), "")
-	cmdFlags.StringVar(&addCluster, "add", "", "")
-	cmdFlags.StringVar(&dropCluster, "drop", "", "")
+	cmdFlags.StringVar(&add, "add", "", "")
+	cmdFlags.StringVar(&drop, "drop", "", "")
+
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -36,19 +37,21 @@ func (this *Cluster) Run(args []string) (exitCode int) {
 	defer this.admin.Disconnect()
 
 	switch {
-	case addCluster != "":
-		must(this.admin.AddCluster(addCluster))
-		this.Ui.Info(fmt.Sprintf("%s added", addCluster))
+	case add != "":
+		must(this.admin.AddCluster(add))
+		this.Ui.Info(fmt.Sprintf("%s added", add))
 
-	case dropCluster != "":
-		must(this.admin.DropCluster(dropCluster))
-		this.Ui.Info(fmt.Sprintf("%s dropped", dropCluster))
+	case drop != "":
+		must(this.admin.DropCluster(drop))
+		this.Ui.Info(fmt.Sprintf("%s dropped", drop))
 
 	default:
 		clusters, err := this.admin.Clusters()
 		must(err)
 		for _, c := range clusters {
 			this.Ui.Output(c)
+
+			// TODO get cluster config
 		}
 	}
 
