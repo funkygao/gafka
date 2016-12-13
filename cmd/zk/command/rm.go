@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/funkygao/gafka/ctx"
@@ -16,7 +17,8 @@ type Rm struct {
 
 	zone      string
 	path      string
-	recursive bool // TODO
+	recursive bool
+	likeMode  bool
 }
 
 func (this *Rm) Run(args []string) (exitCode int) {
@@ -24,6 +26,7 @@ func (this *Rm) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.path, "p", "", "")
+	cmdFlags.BoolVar(&this.likeMode, "like", false, "")
 	cmdFlags.BoolVar(&this.recursive, "R", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -44,6 +47,26 @@ func (this *Rm) Run(args []string) (exitCode int) {
 	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	defer zkzone.Close()
 	if this.recursive {
+		if this.likeMode {
+			parent := path.Dir(this.path)
+			for p := range zkzone.ChildrenWithData(parent) {
+				realPath := parent + p
+				if patternMatched(realPath, this.path) {
+					this.Ui.Warn(fmt.Sprintf("deleting %s", realPath))
+
+					err := zkzone.DeleteRecursive(realPath)
+					if err != nil {
+						this.Ui.Error(err.Error())
+					} else {
+						this.Ui.Info(fmt.Sprintf("%s deleted ok", realPath))
+					}
+				}
+			}
+
+			return
+		}
+
+		// not like mode
 		err := zkzone.DeleteRecursive(this.path)
 		if err != nil {
 			this.Ui.Error(err.Error())
@@ -80,6 +103,9 @@ Options:
 
     -R
       Recursively remove subdirectories encountered.
+
+    -like
+      Pattern matching mode.
 
 `, this.Cmd)
 	return strings.TrimSpace(help)
