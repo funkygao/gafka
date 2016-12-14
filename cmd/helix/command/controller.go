@@ -39,6 +39,7 @@ func (this *Controller) Run(args []string) (exitCode int) {
 	this.Ui.Info(fmt.Sprintf("leader: %s", this.admin.ControllerLeader(this.cluster)))
 	history, err := this.admin.ControllerHistory(this.cluster)
 	must(err)
+	this.Ui.Output("history:")
 	for _, hostPort := range history {
 		this.Ui.Output(hostPort)
 	}

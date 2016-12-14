@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/gorequest"
 	"github.com/ryanuber/columnize"
 )
 
@@ -30,19 +32,26 @@ type Job struct {
 
 func (this *Job) Run(args []string) (exitCode int) {
 	var (
-		zone  string
-		appid string
+		zone    string
+		appid   string
+		initJob string
 	)
 	cmdFlags := flag.NewFlagSet("job", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.DefaultZone(), "")
 	cmdFlags.StringVar(&appid, "app", "", "")
 	cmdFlags.IntVar(&this.due, "d", 0, "")
+	cmdFlags.StringVar(&initJob, "init", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	this.zkzone = zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	if initJob != "" {
+		this.initializeJob(initJob)
+		return
+	}
+
 	if appid != "" {
 		this.displayAppJobs(appid)
 		return
@@ -51,6 +60,39 @@ func (this *Job) Run(args []string) (exitCode int) {
 	this.printResourcesAndActors()
 
 	return
+}
+
+func (this *Job) initializeJob(name string) {
+	tuples := strings.Split(name, ".")
+	if len(tuples) != 3 {
+		panic("invalid name")
+	}
+
+	kws, err := this.zkzone.KatewayInfos()
+	swallow(err)
+	if len(kws) < 1 {
+		panic("no live kateway instance")
+	}
+
+	uri := kws[0].ManAddr
+	if !strings.HasPrefix(uri, "http:") {
+		uri = fmt.Sprintf("http://%s", uri)
+	}
+	uri = fmt.Sprintf("%s/v1/jobs/%s/%s/%s", uri, tuples[0], tuples[1], tuples[2])
+	this.Ui.Info(uri)
+
+	req := gorequest.New()
+	resp, _, errs := req.Post(uri).Set("Appid", "_psubAdmin_").Set("Pubkey", "_wandafFan_").End()
+	if resp.StatusCode != http.StatusCreated {
+		this.Ui.Error(resp.Status)
+	} else if len(errs) > 0 {
+		for _, err = range errs {
+			this.Ui.Error(err.Error())
+		}
+	} else {
+		this.Ui.Info(fmt.Sprintf("%s initialized", name))
+	}
+
 }
 
 // TODO diagnose all app's jobs status
@@ -261,6 +303,11 @@ Options:
     -z zone
 
     -c cluster
+
+    -init job
+      Register a job topic.
+      e,g.
+        gk job -init 100.foobar.v2
 
     -app <app id>
       List app's real-time and archive job table contents.
