@@ -59,6 +59,7 @@ func (this *WatchInfluxQuery) Run() {
 
 	pubLatency := metrics.NewRegisteredGauge("_pub.latency.99", nil) // private metric name
 	katewayMaxHeap := metrics.NewRegisteredGauge("_kateway.max_heap", nil)
+	redisHighLoad := metrics.NewRegisteredGauge("redis.highload", nil)
 	for {
 		select {
 		case <-this.Stop:
@@ -79,8 +80,25 @@ func (this *WatchInfluxQuery) Run() {
 			} else {
 				katewayMaxHeap.Update(int64(maxHeap))
 			}
+
+			redisN, err := this.redisTopCpu()
+			if err != nil {
+				log.Error("influx.query[redis.top]: %v", err)
+			} else {
+				redisHighLoad.Update(int64(redisN))
+			}
 		}
 	}
+}
+
+func (this *WatchInfluxQuery) redisTopCpu() (int, error) {
+	// cpu usage > 50%
+	res, err := this.queryRedisDB(`SELECT cpu FROM "top" WHERE time > now() - 1m AND cpu >= 50`)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(res), nil
 }
 
 func (this *WatchInfluxQuery) katewayMaxHeapSize() (float64, error) {
@@ -141,6 +159,35 @@ func (this *WatchInfluxQuery) queryDB(cmd string) (res []client.Result, err erro
 	q := client.Query{
 		Command:  cmd,
 		Database: "pubsub", // FIXME for historical mistakes, we are using another db, not this.db
+	}
+	if response, err := this.cli.Query(q); err == nil {
+		if response.Error() != nil {
+			return res, response.Error()
+		}
+		res = response.Results
+	} else {
+		return res, err
+	}
+
+	return res, nil
+}
+
+// queryDB convenience function to query the database
+func (this *WatchInfluxQuery) queryRedisDB(cmd string) (res []client.Result, err error) {
+	if this.cli == nil {
+		this.cli, err = client.NewHTTPClient(client.HTTPConfig{
+			Addr:     this.addr,
+			Username: "",
+			Password: "",
+		})
+		if err != nil {
+			return
+		}
+	}
+
+	q := client.Query{
+		Command:  cmd,
+		Database: "redis", // FIXME for historical mistakes, we are using another db, not this.db
 	}
 	if response, err := this.cli.Query(q); err == nil {
 		if response.Error() != nil {
