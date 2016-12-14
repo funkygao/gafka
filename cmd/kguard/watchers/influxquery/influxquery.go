@@ -97,8 +97,11 @@ func (this *WatchInfluxQuery) redisTopCpu() (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	if len(res) > 0 {
+		return len(res[0].Series), nil
+	}
 
-	return len(res), nil
+	return 0, errInfluxResult
 }
 
 func (this *WatchInfluxQuery) katewayMaxHeapSize() (float64, error) {
