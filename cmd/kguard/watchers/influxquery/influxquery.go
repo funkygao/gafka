@@ -98,6 +98,7 @@ func (this *WatchInfluxQuery) redisTopCpu() (int, error) {
 		return 0, err
 	}
 	if len(res) > 0 {
+		log.Warn("%d redis instances using too much cpu", len(res[0].Series))
 		return len(res[0].Series), nil
 	}
 
