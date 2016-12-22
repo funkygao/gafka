@@ -73,6 +73,13 @@ func init() {
 			}, nil
 		},
 
+		"balance": func() (cli.Command, error) {
+			return &command.Balance{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"zklog": func() (cli.Command, error) {
 			return &command.ZkLog{
 				Ui:  ui,
