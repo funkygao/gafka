@@ -132,7 +132,7 @@ func (this *Balance) drawSummary() {
 		this.collectAll(i)
 	}
 
-	lines := []string{"Broker", "Cluster", "Topic", "P", "OPS"}
+	lines := []string{"Broker|Cluster|Topic|P|OPS"}
 	for host, offsetInfo := range this.lastHostOffsets {
 		for cluster, tps := range offsetInfo.offsetMap {
 			for tp, off := range tps {
