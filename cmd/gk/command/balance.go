@@ -12,6 +12,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/pmylund/sortutil"
 	"github.com/ryanuber/columnize"
 )
 
@@ -57,7 +58,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
-	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "refresh interval")
+	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -132,15 +133,22 @@ func (this *Balance) drawSummary() {
 		this.collectAll(i)
 	}
 
-	lines := []string{"Broker|Cluster|Topic|P|OPS"}
+	lines := []string{"Broker|TOPS|Cluster|Topic|Partition|OPS"}
 	for host, offsetInfo := range this.lastHostOffsets {
+		var hostTotalOps int64
+		for _, tps := range offsetInfo.offsetMap {
+			for _, off := range tps {
+				hostTotalOps += off
+			}
+		}
+
 		for cluster, tps := range offsetInfo.offsetMap {
 			for tp, off := range tps {
 				if off < 5 {
 					continue
 				}
 
-				lines = append(lines, fmt.Sprintf("%s|%s|%s|%d|%d", host, cluster, tp.Topic, tp.PartitionID, off))
+				lines = append(lines, fmt.Sprintf("%s|%d|%s|%s|%d|%d", host, hostTotalOps, cluster, tp.Topic, tp.PartitionID, off))
 			}
 		}
 	}
