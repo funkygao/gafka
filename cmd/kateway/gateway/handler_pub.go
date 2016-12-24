@@ -138,7 +138,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 
 	var (
 		partition int32
-		offset    int64
+		offset    int64 = -1
 		err       error
 		rawTopic  = manager.Default.KafkaTopic(appid, topic, ver)
 	)
@@ -178,9 +178,14 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	} else {
 		// hack byte string conv TODO
 		partition, offset, err = pubMethod(cluster, rawTopic, msgKey, msg.Body)
+		if err != nil {
+			// sarama didn't reset this, so I have to handle it
+			offset = -1
+		}
 		if err != nil && store.DefaultPubStore.IsSystemError(err) && !hhDisabled && Options.EnableHintedHandoff {
 			log.Warn("pub[%s] %s(%s) {%s.%s.%s UA:%s} resort hh for: %v", appid, r.RemoteAddr, realIp,
 				appid, topic, ver, r.Header.Get("User-Agent"), err)
+
 			err = hh.Default.Append(cluster, rawTopic, msgKey, msg.Body)
 		}
 	}
@@ -188,7 +193,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	// in case of request panic, mem pool leakage
 	msg.Free()
 
-	if Options.AuditPub {
+	if Options.AuditPub && err == nil && offset > -1 {
 		this.auditor.Trace("pub[%s] %s(%s) {%s.%s.%s UA:%s} {P:%d O:%d}",
 			appid, r.RemoteAddr, realIp, appid, topic, ver, r.Header.Get("User-Agent"), partition, offset)
 	}
