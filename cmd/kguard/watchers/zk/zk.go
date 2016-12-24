@@ -35,6 +35,7 @@ func (this *WatchZk) Init(ctx monitor.Context) {
 	this.Wg = ctx.Inflight()
 }
 
+// TODO monitor zk watchers count
 func (this *WatchZk) Run() {
 	defer this.Wg.Done()
 
@@ -45,6 +46,8 @@ func (this *WatchZk) Run() {
 	conns := metrics.NewRegisteredGauge("zk.conns", nil)
 	znodes := metrics.NewRegisteredGauge("zk.znodes", nil)
 	deadNodes := metrics.NewRegisteredGauge("zk.dead", nil)
+	reelect := metrics.NewRegisteredGauge("zk.reelect", nil)
+	lastLeader := ""
 	for {
 		select {
 		case <-this.Stop:
@@ -52,7 +55,7 @@ func (this *WatchZk) Run() {
 			return
 
 		case <-ticker.C:
-			r, c, z, d := this.collectMetrics()
+			r, c, z, d, l := this.collectMetrics()
 			if this.lastReceived > 0 {
 				qps.Update((r - this.lastReceived) / int64(this.Tick.Seconds()))
 			}
@@ -61,13 +64,22 @@ func (this *WatchZk) Run() {
 			conns.Update(c)
 			znodes.Update(z)
 			deadNodes.Update(d)
+			if lastLeader != "" && lastLeader != l {
+				reelect.Update(1)
+			} else {
+				reelect.Update(0)
+			}
+			lastLeader = l
 		}
 	}
 }
 
-func (this *WatchZk) collectMetrics() (received, conns, znodes, dead int64) {
-	for _, statOutput := range this.Zkzone.RunZkFourLetterCommand("stat") {
+func (this *WatchZk) collectMetrics() (received, conns, znodes, dead int64, leader string) {
+	for host, statOutput := range this.Zkzone.RunZkFourLetterCommand("stat") {
 		stat := zk.ParseStatResult(statOutput)
+		if stat.Mode == "L" {
+			leader = host
+		}
 		n, _ := strconv.Atoi(stat.Received)
 		received += int64(n)
 		n, _ = strconv.Atoi(stat.Connections)
