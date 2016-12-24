@@ -33,6 +33,10 @@ type WatchTopics struct {
 	pubQps      map[string]metrics.Meter
 	lastOffsets map[string]int64
 
+	// TODO during kafka failover, some messages might be lost
+	// we need trace this number
+	lostMsgs map[string]metrics.Gauge
+
 	aggPubQpsAnomalyGauge metrics.Gauge
 	aggPubQpsAnomaly      anomalyzer.Anomalyzer
 	anomalyThreshold      int
@@ -116,6 +120,7 @@ func (this *WatchTopics) Run() {
 
 	this.pubQps = make(map[string]metrics.Meter, 10)
 	this.lastOffsets = make(map[string]int64, 10)
+	this.lostMsgs = make(map[string]metrics.Gauge, 10)
 
 	offsets := metrics.NewRegisteredGauge("msg.cum", nil)
 	topics := metrics.NewRegisteredGauge("topics", nil)
