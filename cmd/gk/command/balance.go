@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"net"
@@ -8,14 +9,16 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/columnize"
 	"github.com/funkygao/gafka/cmd/kateway/structs"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/golib/pipestream"
+	consulapi "github.com/hashicorp/consul/api"
 	"github.com/pmylund/sortutil"
-	"github.com/ryanuber/columnize"
 )
 
 type hostLoadInfo struct {
@@ -70,6 +73,9 @@ type Balance struct {
 	host          string
 	atLeastTps    int64
 
+	loadAvgMap   map[string]float64
+	loadAvgReady chan struct{}
+
 	offsets     map[string]int64 // host => offset sum TODO
 	lastOffsets map[string]int64
 
@@ -91,6 +97,9 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
+
+	this.loadAvgReady = make(chan struct{})
+	this.loadAvgMap = make(map[string]float64)
 
 	this.signalsCh = make(map[string]chan struct{})
 	this.hostOffsetCh = make(chan map[string]hostOffsetInfo)
@@ -158,6 +167,8 @@ func (this *Balance) collectAll(seq int) {
 }
 
 func (this *Balance) drawBalance() {
+	go this.fetchLoadAvg()
+
 	for i := 0; i < 2; i++ {
 		this.startAll()
 		time.Sleep(this.interval)
@@ -182,6 +193,8 @@ func (this *Balance) drawBalance() {
 
 		hosts = append(hosts, h.host)
 	}
+
+	<-this.loadAvgReady
 
 	if !this.detailMode {
 		this.drawSummary(hosts)
@@ -241,7 +254,7 @@ func (c clusterQps) String() string {
 }
 
 func (this *Balance) drawSummary(sortedHosts []string) {
-	lines := []string{"Broker|P|TPS|Cluster/OPS"}
+	lines := []string{"Broker|Load1m|P|TPS|Cluster/OPS"}
 	var totalTps int64
 	var totalPartitions int
 	for _, host := range sortedHosts {
@@ -260,12 +273,57 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 
 		sortutil.AscByField(clusters, "cluster")
 
-		lines = append(lines, fmt.Sprintf("%s|%d|%s|%+v",
-			host, hostPartitions, gofmt.Comma(offsetInfo.Total()), clusters))
+		lines = append(lines, fmt.Sprintf("%s|%5.1f|%d|%s|%+v",
+			host, this.loadAvgMap[host], hostPartitions, gofmt.Comma(offsetInfo.Total()), clusters))
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
 	this.Ui.Output(fmt.Sprintf("-Total- Hosts:%d Partitions:%d Tps:%s",
 		len(sortedHosts), totalPartitions, gofmt.Comma(totalTps)))
+}
+
+func (this *Balance) fetchLoadAvg() {
+	defer close(this.loadAvgReady)
+
+	// get members host ip
+	cf := consulapi.DefaultConfig()
+	client, err := consulapi.NewClient(cf)
+	swallow(err)
+	members, err := client.Agent().Members(false)
+	swallow(err)
+
+	nodeHostMap := make(map[string]string, len(members))
+	for _, member := range members {
+		nodeHostMap[member.Name] = member.Addr
+	}
+
+	cmd := pipestream.New("consul", "exec", "uptime", "|", "grep", "load")
+	err = cmd.Open()
+	swallow(err)
+	defer cmd.Close()
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+		node := fields[0]
+		parts := strings.Split(line, "load average:")
+		if len(parts) < 2 {
+			continue
+		}
+		if strings.HasSuffix(node, ":") {
+			node = strings.TrimRight(node, ":")
+		}
+
+		load1m, err := ctx.ExtractLoadAvg1m(line)
+		if err != nil {
+			continue
+		}
+
+		host := nodeHostMap[node]
+		this.loadAvgMap[host] = load1m
+	}
+
 }
 
 func (this *Balance) clusterTopProducers(zkcluster *zk.ZkCluster) {
