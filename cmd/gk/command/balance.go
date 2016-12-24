@@ -245,9 +245,9 @@ func (c clusterQps) String() string {
 	if c.qps < 1000 {
 		return fmt.Sprintf("%s#%s/%d", c.cluster, partitions, c.qps)
 	} else if c.qps < 5000 {
-		return fmt.Sprintf("%s#%s/%s", c.cluster, partitions, color.Magenta("%d", c.qps))
-	} else if c.qps < 10000 {
 		return fmt.Sprintf("%s#%s/%s", c.cluster, partitions, color.Yellow("%d", c.qps))
+	} else if c.qps < 10000 {
+		return fmt.Sprintf("%s#%s/%s", c.cluster, partitions, color.Magenta("%d", c.qps))
 	}
 
 	return fmt.Sprintf("%s/%s/%s", c.cluster, partitions, color.Red("%d", c.qps))
