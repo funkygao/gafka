@@ -48,6 +48,10 @@ func (ho hostOffsetInfo) Total() (t int64) {
 	return
 }
 
+func (ho hostOffsetInfo) ClusterPartitions(cluster string) int {
+	return len(ho.offsetMap[cluster])
+}
+
 func (ho hostOffsetInfo) ClusterTotal(cluster string) (t int64) {
 	for _, qps := range ho.offsetMap[cluster] {
 		t += qps
@@ -62,7 +66,7 @@ type Balance struct {
 
 	zone, cluster string
 	interval      time.Duration
-	summaryMode   bool
+	detailMode    bool
 	host          string
 
 	offsets     map[string]int64 // host => offset sum TODO
@@ -81,7 +85,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "")
 	cmdFlags.StringVar(&this.host, "host", "", "")
-	cmdFlags.BoolVar(&this.summaryMode, "sum", false, "")
+	cmdFlags.BoolVar(&this.detailMode, "d", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -147,7 +151,6 @@ func (this *Balance) collectAll(seq int) {
 				}
 			}
 		}
-
 	}
 
 }
@@ -174,7 +177,7 @@ func (this *Balance) drawBalance() {
 		hosts = append(hosts, h.host)
 	}
 
-	if this.summaryMode {
+	if !this.detailMode {
 		this.drawSummary(hosts)
 		return
 	}
@@ -212,24 +215,51 @@ func (this *Balance) drawDetail(sortedHosts []string) {
 
 }
 
-func (this *Balance) drawSummary(sortedHosts []string) {
-	lines := []string{"#|Broker|Total|Cluster|OPS"}
-	var totalTps int64
-	var stripes = []string{"◉", "◎"}
-	for i, host := range sortedHosts {
-		offsetInfo := this.lastHostOffsets[host]
-		for cluster, _ := range offsetInfo.offsetMap {
-			hostTps := offsetInfo.Total()
-			clusterTps := offsetInfo.ClusterTotal(cluster)
-			totalTps += hostTps
+type clusterQps struct {
+	cluster    string
+	qps        int64
+	partitions int
+}
 
-			lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s",
-				stripes[i%2], host,
-				gofmt.Comma(hostTps), cluster, gofmt.Comma(clusterTps)))
+func (c clusterQps) String() string {
+	partitions := fmt.Sprintf("%d", c.partitions)
+	if c.qps < 1000 {
+		return fmt.Sprintf("%s/%s/%d", c.cluster, partitions, c.qps)
+	} else if c.qps < 5000 {
+		return fmt.Sprintf("%s/%s/%s", c.cluster, partitions, color.Magenta("%d", c.qps))
+	} else if c.qps < 10000 {
+		return fmt.Sprintf("%s/%s/%s", c.cluster, partitions, color.Yellow("%d", c.qps))
+	}
+
+	return fmt.Sprintf("%s/%s/%s", c.cluster, partitions, color.Red("%d", c.qps))
+}
+
+func (this *Balance) drawSummary(sortedHosts []string) {
+	lines := []string{"Broker|P|TPS|Cluster/OPS"}
+	var totalTps int64
+	var totalPartitions int
+	for _, host := range sortedHosts {
+		hostPartitions := 0
+		offsetInfo := this.lastHostOffsets[host]
+		var clusters []clusterQps
+		for cluster, _ := range offsetInfo.offsetMap {
+			clusterTps := offsetInfo.ClusterTotal(cluster)
+			clusterPartitions := offsetInfo.ClusterPartitions(cluster)
+			hostPartitions += clusterPartitions
+			totalTps += clusterTps
+			totalPartitions += clusterPartitions
+
+			clusters = append(clusters, clusterQps{cluster, clusterTps, clusterPartitions})
 		}
+
+		sortutil.AscByField(clusters, "cluster")
+
+		lines = append(lines, fmt.Sprintf("%s|%d|%s|%+v",
+			host, hostPartitions, gofmt.Comma(offsetInfo.Total()), clusters))
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
-	this.Ui.Output(fmt.Sprintf("-Total- Hosts:%d Tps:%s", len(sortedHosts), gofmt.Comma(totalTps)))
+	this.Ui.Output(fmt.Sprintf("-Total- Hosts:%d Partitions:%d Tps:%s",
+		len(sortedHosts), totalPartitions, gofmt.Comma(totalTps)))
 }
 
 func (this *Balance) clusterTopProducers(zkcluster *zk.ZkCluster) {
@@ -301,8 +331,8 @@ Options:
 
     -host broker ip
 
-    -sum
-      Display in summary mode.
+    -d
+      Display in detailed mode.
 
 `, this.Cmd, this.Synopsis(), ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
