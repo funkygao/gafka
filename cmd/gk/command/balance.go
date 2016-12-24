@@ -12,6 +12,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/pmylund/sortutil"
 	"github.com/ryanuber/columnize"
@@ -27,6 +28,14 @@ type hostLoadInfo struct {
 type hostOffsetInfo struct {
 	host      string
 	offsetMap map[string]map[structs.TopicPartition]int64 // cluster:tp:offset
+}
+
+func (ho hostOffsetInfo) Clusters() []string {
+	var r []string
+	for cluster, _ := range ho.offsetMap {
+		r = append(r, cluster)
+	}
+	return r
 }
 
 func (ho hostOffsetInfo) Total() (t int64) {
@@ -54,6 +63,7 @@ type Balance struct {
 	zone, cluster string
 	interval      time.Duration
 	summaryMode   bool
+	host          string
 
 	offsets     map[string]int64 // host => offset sum TODO
 	lastOffsets map[string]int64
@@ -70,6 +80,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "")
+	cmdFlags.StringVar(&this.host, "host", "", "")
 	cmdFlags.BoolVar(&this.summaryMode, "sum", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -130,7 +141,8 @@ func (this *Balance) collectAll(seq int) {
 				for cluster, tps := range offsetInfo.offsetMap {
 					for tp, off := range tps {
 						// 2nd loop, qps
-						this.lastHostOffsets[host].offsetMap[cluster][tp] = off - this.lastHostOffsets[host].offsetMap[cluster][tp]
+						// FIXME hard coding
+						this.lastHostOffsets[host].offsetMap[cluster][tp] = (off - this.lastHostOffsets[host].offsetMap[cluster][tp]) / int64(this.interval.Seconds())
 					}
 				}
 			}
@@ -155,7 +167,7 @@ func (this *Balance) drawBalance() {
 	for host, info := range this.lastHostOffsets {
 		sortedHosts = append(sortedHosts, hostTps{host, info.Total()})
 	}
-	sortutil.DescByField(sortedHosts, "tps")
+	sortutil.AscByField(sortedHosts, "tps")
 
 	var hosts []string
 	for _, h := range sortedHosts {
@@ -167,40 +179,43 @@ func (this *Balance) drawBalance() {
 		return
 	}
 
-	/*	type hostSummary struct {
-			cluster string
-			tp      structs.TopicPartition
-			qps     int64
-		}
+	this.drawDetail(hosts)
+}
 
+func (this *Balance) drawDetail(sortedHosts []string) {
+	type hostSummary struct {
+		cluster string
+		tp      structs.TopicPartition
+		qps     int64
+	}
+
+	for _, host := range sortedHosts {
 		var summary []hostSummary
-		lines := []string{"Broker|TOPS|Cluster|Topic|Partition|OPS"}
-		for _, host := range sortedHosts {
-			offsetInfo := this.lastHostOffsets[host]
-			var hostTotalOps int64
-			for _, tps := range offsetInfo.offsetMap {
-				for _, off := range tps {
-					hostTotalOps += off
-				}
-			}
+		offsetInfo := this.lastHostOffsets[host]
 
-			for cluster, tps := range offsetInfo.offsetMap {
-				for tp, off := range tps {
-					if off < 5 {
-						continue
-					}
-
-					lines = append(lines, fmt.Sprintf("%s|%d|%s|%s|%d|%d", host, hostTotalOps, cluster, tp.Topic, tp.PartitionID, off))
-				}
+		for cluster, tps := range offsetInfo.offsetMap {
+			for tp, qps := range tps {
+				summary = append(summary, hostSummary{cluster, tp, qps})
 			}
 		}
-		this.Ui.Output(columnize.SimpleFormat(lines))*/
+
+		sortutil.DescByField(summary, "qps")
+
+		this.Ui.Output(color.Green("%16s %8s %+v", host, gofmt.Comma(offsetInfo.Total()), offsetInfo.Clusters()))
+		for _, sum := range summary {
+			if sum.qps < 100 {
+				continue
+			}
+			this.Ui.Output(fmt.Sprintf("    %30s %8s %s", sum.cluster, gofmt.Comma(sum.qps), sum.tp))
+		}
+	}
+
 }
 
 func (this *Balance) drawSummary(sortedHosts []string) {
 	lines := []string{"#|Broker|Total|Cluster|OPS"}
 	var totalTps int64
-	var stripes = []string{"+", "-"}
+	var stripes = []string{"◉", "◎"}
 	for i, host := range sortedHosts {
 		offsetInfo := this.lastHostOffsets[host]
 		for cluster, _ := range offsetInfo.offsetMap {
@@ -245,6 +260,10 @@ func (this *Balance) clusterTopProducers(zkcluster *zk.ZkCluster) {
 				host, _, err := net.SplitHostPort(leader.Addr())
 				swallow(err)
 
+				if !patternMatched(host, this.host) {
+					continue
+				}
+
 				if _, present := hostOffsets[host]; !present {
 					hostOffsets[host] = hostOffsetInfo{host: host, offsetMap: make(map[string]map[structs.TopicPartition]int64)}
 				}
@@ -279,6 +298,8 @@ Options:
       Default %s
 
     -c cluster pattern
+
+    -host broker ip
 
     -sum
       Display in summary mode.
