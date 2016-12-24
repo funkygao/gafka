@@ -286,10 +286,8 @@ func (this *Balance) fetchLoadAvg() {
 
 	// get members host ip
 	cf := consulapi.DefaultConfig()
-	client, err := consulapi.NewClient(cf)
-	swallow(err)
-	members, err := client.Agent().Members(false)
-	swallow(err)
+	client, _ := consulapi.NewClient(cf)
+	members, _ := client.Agent().Members(false)
 
 	nodeHostMap := make(map[string]string, len(members))
 	for _, member := range members {
@@ -297,8 +295,7 @@ func (this *Balance) fetchLoadAvg() {
 	}
 
 	cmd := pipestream.New("consul", "exec", "uptime", "|", "grep", "load")
-	err = cmd.Open()
-	swallow(err)
+	cmd.Open()
 	defer cmd.Close()
 
 	scanner := bufio.NewScanner(cmd.Reader())
