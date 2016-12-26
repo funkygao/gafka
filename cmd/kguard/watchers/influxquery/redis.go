@@ -1,6 +1,7 @@
 package influxquery
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -27,6 +28,8 @@ type WatchRedis struct {
 
 	addr string
 	db   string
+
+	highLoadRedisInstances map[string]struct{} // key is port
 }
 
 func (this *WatchRedis) Init(ctx monitor.Context) {
@@ -36,6 +39,7 @@ func (this *WatchRedis) Init(ctx monitor.Context) {
 
 	this.addr = ctx.InfluxAddr()
 	this.db = "redis"
+	this.highLoadRedisInstances = make(map[string]struct{})
 }
 
 func (this *WatchRedis) Run() {
@@ -68,20 +72,42 @@ func (this *WatchRedis) Run() {
 }
 
 func (this *WatchRedis) redisTopCpu(usageThreshold int) (int, error) {
-	// TODO group by host:port
 	res, err := queryInfluxDB(this.addr, this.db,
-		fmt.Sprintf(`SELECT cpu FROM "top" WHERE time > now() - 1m AND cpu >=%d`, usageThreshold))
+		fmt.Sprintf(`SELECT cpu, port FROM "top" WHERE time > now() - 1m AND cpu >=%d`, usageThreshold))
 	if err != nil {
 		return 0, err
 	}
-	if len(res) > 0 {
-		n := len(res[0].Series)
-		if n > 0 {
-			log.Warn("%d redis instances using too much cpu", n)
-		}
 
-		return n, nil
+	newHighLoad := make(map[string]struct{})
+	for _, row := range res {
+		for _, x := range row.Series {
+			for _, val := range x.Values {
+				// val[0] is time
+				cpu, _ := val[1].(json.Number).Float64()
+				port := val[2].(string)
+				log.Warn("redis:%s using too much cpu %.1f", port, cpu)
+				newHighLoad[port] = struct{}{}
+			}
+		}
 	}
 
-	return 0, errInfluxResult
+	n := 0
+	for port := range newHighLoad {
+		if _, present := this.highLoadRedisInstances[port]; present {
+			// high cpu across at least 2 rounds
+			n++
+		} else {
+			// a new high load instance found
+			this.highLoadRedisInstances[port] = struct{}{}
+		}
+	}
+
+	for port := range this.highLoadRedisInstances {
+		if _, present := newHighLoad[port]; !present {
+			log.Info("redis:%s resumes to normal", port)
+			delete(this.highLoadRedisInstances, port)
+		}
+	}
+
+	return n, err
 }

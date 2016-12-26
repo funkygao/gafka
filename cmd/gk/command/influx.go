@@ -1,6 +1,7 @@
 package command
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"strings"
@@ -29,7 +30,12 @@ func (this *Influx) Run(args []string) (exitCode int) {
 	for _, row := range res {
 		for _, x := range row.Series {
 			fmt.Printf("cols: %+v\n", x.Columns)
-			fmt.Printf("vals: %+v\n", x.Values)
+			for _, val := range x.Values {
+				// val[0] is time
+				cpu, _ := val[1].(json.Number).Float64()
+				port := val[2].(string)
+				fmt.Printf("      port=%s cpu=%.2f\n", port, cpu)
+			}
 		}
 	}
 
