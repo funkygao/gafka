@@ -61,7 +61,7 @@ func (this *WatchRedis) Run() {
 			return
 
 		case <-ticker.C:
-			redisN, err := this.redisTopCpu(60)
+			redisN, err := this.redisTopCpu(72)
 			if err != nil {
 				log.Error("redis.query[redis.top]: %v", err)
 			} else {
