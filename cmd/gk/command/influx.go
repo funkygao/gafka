@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gocli"
 )
 
@@ -20,12 +21,16 @@ func (this *Influx) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	res, err := queryInfluxDB(this.addr, "redis",
-		fmt.Sprintf(`SELECT cpu, port FROM "top" WHERE time > now() - 1m AND cpu >=%d`, 30))
+	zone := ctx.Zone(ctx.DefaultZone())
+	res, err := queryInfluxDB(fmt.Sprintf("http://%s", zone.InfluxAddr), "redis",
+		fmt.Sprintf(`SELECT cpu, port FROM "top" WHERE time > now() - 1m AND cpu >=%d`, 10))
 	swallow(err)
 
 	for _, row := range res {
-		fmt.Printf("%+v", row)
+		for _, x := range row.Series {
+			fmt.Printf("cols: %+v\n", x.Columns)
+			fmt.Printf("vals: %+v\n", x.Values)
+		}
 	}
 
 	return
