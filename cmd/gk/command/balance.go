@@ -67,11 +67,12 @@ type Balance struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone, cluster string
-	interval      time.Duration
-	detailMode    bool
-	host          string
-	atLeastTps    int64
+	zone, cluster   string
+	interval        time.Duration
+	detailMode      bool
+	host            string
+	atLeastTps      int64
+	hideZeroClusetr bool
 
 	loadAvgMap   map[string]float64
 	loadAvgReady chan struct{}
@@ -90,6 +91,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
+	cmdFlags.BoolVar(&this.hideZeroClusetr, "nozero", true, "")
 	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "")
 	cmdFlags.StringVar(&this.host, "host", "", "")
 	cmdFlags.Int64Var(&this.atLeastTps, "over", 0, "")
@@ -268,13 +270,18 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			totalTps += clusterTps
 			totalPartitions += clusterPartitions
 
+			if this.hideZeroClusetr && clusterTps == 0 {
+				continue
+			}
+
 			clusters = append(clusters, clusterQps{cluster, clusterTps, clusterPartitions})
 		}
 
 		sortutil.AscByField(clusters, "cluster")
 
 		lines = append(lines, fmt.Sprintf("%s|%5.1f|%d|%s|%+v",
-			host, this.loadAvgMap[host], hostPartitions, gofmt.Comma(offsetInfo.Total()), clusters))
+			host, this.loadAvgMap[host], hostPartitions,
+			gofmt.Comma(offsetInfo.Total()), clusters))
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
 	this.Ui.Output(fmt.Sprintf("-Total- Hosts:%d Partitions:%d Tps:%s",
@@ -397,6 +404,9 @@ Options:
 
     -over number
       Only display brokers whose TPS over the number.
+
+    -nozero
+      Hide 0 OPS clusters. True by default.
 
 `, this.Cmd, this.Synopsis(), ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
