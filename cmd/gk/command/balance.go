@@ -30,6 +30,7 @@ type hostLoadInfo struct {
 
 type hostOffsetInfo struct {
 	host      string
+	brokerIDs map[string]int32                            // cluster:brokerID
 	offsetMap map[string]map[structs.TopicPartition]int64 // cluster:tp:offset
 }
 
@@ -95,7 +96,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "")
 	cmdFlags.StringVar(&this.host, "host", "", "")
 	cmdFlags.Int64Var(&this.atLeastTps, "over", 0, "")
-	cmdFlags.BoolVar(&this.detailMode, "d", false, "")
+	cmdFlags.BoolVar(&this.detailMode, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -139,17 +140,23 @@ func (this *Balance) collectAll(seq int) {
 			// record into allHostsTps
 			for host, offsetInfo := range offsets {
 				if _, present := this.allHostsTps[host]; !present {
-					this.allHostsTps[host] = hostOffsetInfo{host: host, offsetMap: make(map[string]map[structs.TopicPartition]int64)}
+					this.allHostsTps[host] = hostOffsetInfo{
+						host:      host,
+						brokerIDs: make(map[string]int32),
+						offsetMap: make(map[string]map[structs.TopicPartition]int64),
+					}
 				}
 
 				for cluster, tps := range offsetInfo.offsetMap {
 					if _, present := this.allHostsTps[host].offsetMap[cluster]; !present {
 						this.allHostsTps[host].offsetMap[cluster] = make(map[structs.TopicPartition]int64)
+						this.allHostsTps[host].brokerIDs[cluster] = make(map[string]int32)
 					}
 
 					for tp, off := range tps {
 						// 1st loop, offset
 						this.allHostsTps[host].offsetMap[cluster][tp] = off
+						this.allHostsTps[host].brokerIDs[cluster] = offsetInfo.brokerIDs[cluster]
 					}
 				}
 			}
@@ -208,9 +215,10 @@ func (this *Balance) drawBalance() {
 
 func (this *Balance) drawDetail(sortedHosts []string) {
 	type hostSummary struct {
-		cluster string
-		tp      structs.TopicPartition
-		qps     int64
+		cluster  string
+		tp       structs.TopicPartition
+		qps      int64
+		brokerID int32
 	}
 
 	for _, host := range sortedHosts {
@@ -219,7 +227,7 @@ func (this *Balance) drawDetail(sortedHosts []string) {
 
 		for cluster, tps := range offsetInfo.offsetMap {
 			for tp, qps := range tps {
-				summary = append(summary, hostSummary{cluster, tp, qps})
+				summary = append(summary, hostSummary{cluster, tp, qps, offsetInfo.brokerIDs[cluster]})
 			}
 		}
 
@@ -230,7 +238,9 @@ func (this *Balance) drawDetail(sortedHosts []string) {
 			if sum.qps < 100 {
 				continue
 			}
-			this.Ui.Output(fmt.Sprintf("    %30s %8s %s", sum.cluster, gofmt.Comma(sum.qps), sum.tp))
+
+			this.Ui.Output(fmt.Sprintf("    %30s %2d %8s %s#%d", sum.cluster, sum.brokerID,
+				gofmt.Comma(sum.qps), sum.tp.Topic, sum.tp.PartitionID))
 		}
 	}
 
@@ -366,10 +376,15 @@ func (this *Balance) clusterTopProducers(zkcluster *zk.ZkCluster) {
 				}
 
 				if _, present := hostOffsets[host]; !present {
-					hostOffsets[host] = hostOffsetInfo{host: host, offsetMap: make(map[string]map[structs.TopicPartition]int64)}
+					hostOffsets[host] = hostOffsetInfo{
+						host:      host,
+						offsetMap: make(map[string]map[structs.TopicPartition]int64),
+						brokerIDs: make(map[string]int32),
+					}
 				}
 				if _, present := hostOffsets[host].offsetMap[zkcluster.Name()]; !present {
 					hostOffsets[host].offsetMap[zkcluster.Name()] = make(map[structs.TopicPartition]int64)
+					hostOffsets[host].brokerIDs[zkcluster.Name()] = leader.ID()
 				}
 
 				tp := structs.TopicPartition{Topic: topic, PartitionID: partitionID}
@@ -402,8 +417,8 @@ Options:
 
     -host broker ip
 
-    -d
-      Display in detailed mode.
+    -l
+      Use a long listing format.
 
     -over number
       Only display brokers whose TPS over the number.
