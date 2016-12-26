@@ -17,6 +17,7 @@ import (
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	log "github.com/funkygao/log4go"
+	"github.com/influxdata/influxdb/client/v2"
 )
 
 type argsRule struct {
@@ -308,4 +309,36 @@ func setupLogging(logFile, level, crashLogFile string) {
 			gafka.Version, gafka.BuildId)
 	}
 
+}
+
+var (
+	errInfluxResult = fmt.Errorf("bad reply from influx query result")
+	influxClient    client.Client
+)
+
+func queryInfluxDB(addr, db, cmd string) (res []client.Result, err error) {
+	if influxClient == nil {
+		influxClient, err = client.NewHTTPClient(client.HTTPConfig{
+			Addr:     addr,
+			Username: "",
+			Password: "",
+		})
+		if err != nil {
+			return
+		}
+	}
+
+	if response, err := influxClient.Query(client.Query{
+		Command:  cmd,
+		Database: db,
+	}); err == nil {
+		if response.Error() != nil {
+			return res, response.Error()
+		}
+		res = response.Results
+	} else {
+		return res, err
+	}
+
+	return res, nil
 }

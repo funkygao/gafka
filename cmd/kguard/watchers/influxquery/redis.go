@@ -1,6 +1,7 @@
 package influxquery
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -56,7 +57,7 @@ func (this *WatchRedis) Run() {
 			return
 
 		case <-ticker.C:
-			redisN, err := this.redisTopCpu()
+			redisN, err := this.redisTopCpu(60)
 			if err != nil {
 				log.Error("redis.query[redis.top]: %v", err)
 			} else {
@@ -66,10 +67,10 @@ func (this *WatchRedis) Run() {
 	}
 }
 
-func (this *WatchRedis) redisTopCpu() (int, error) {
-	// cpu usage > 50%
+func (this *WatchRedis) redisTopCpu(usageThreshold int) (int, error) {
 	// TODO group by host:port
-	res, err := queryInfluxDB(this.addr, this.db, `SELECT cpu FROM "top" WHERE time > now() - 1m AND cpu >= 50`)
+	res, err := queryInfluxDB(this.addr, this.db,
+		fmt.Sprintf(`SELECT cpu FROM "top" WHERE time > now() - 1m AND cpu >=%d`, usageThreshold))
 	if err != nil {
 		return 0, err
 	}

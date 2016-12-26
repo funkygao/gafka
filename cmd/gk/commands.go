@@ -66,6 +66,13 @@ func init() {
 			}, nil
 		},
 
+		"influx": func() (cli.Command, error) {
+			return &command.Influx{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"jmx": func() (cli.Command, error) {
 			return &command.Jmx{
 				Ui:  ui,
