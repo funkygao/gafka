@@ -17,7 +17,9 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/golib/sync2"
 	log "github.com/funkygao/log4go"
 	"github.com/funkygao/termui"
 	"github.com/influxdata/influxdb/client/v2"
@@ -714,6 +716,7 @@ func (this *Redis) runPing(zkzone *zk.ZkZone) {
 	allRedis := zkzone.AllRedis()
 	this.topInfos = make([]redisTopInfo, 0, len(allRedis))
 
+	var deadN sync2.AtomicInt64
 	for _, hostPort := range allRedis {
 		host, port, err := net.SplitHostPort(hostPort)
 		if err != nil {
@@ -743,6 +746,7 @@ func (this *Redis) runPing(zkzone *zk.ZkZone) {
 
 			if err := client.Ping(); err != nil {
 				this.Ui.Error(fmt.Sprintf("[%s:%d] %v", host, port, err))
+				deadN.Add(1)
 				return
 			}
 
@@ -783,8 +787,8 @@ func (this *Redis) runPing(zkzone *zk.ZkZone) {
 
 	// summary
 	ps := latency.Percentiles([]float64{0.7, 0.90, 0.95, 0.99, 0.999})
-	this.Ui.Info(fmt.Sprintf("N:%d Min:%dms Max:%dms Mean:%.1fms 70%%:%1.fms 90%%:%.1fms 95%%:%.1fms 99%%:%.1fms",
-		latency.Count(), latency.Min(), latency.Max(), latency.Mean(), ps[0], ps[1], ps[2], ps[3]))
+	this.Ui.Output(fmt.Sprintf("N:%d Dead:%s Min:%dms Max:%dms Mean:%.1fms 70%%:%1.fms 90%%:%.1fms 95%%:%.1fms 99%%:%.1fms",
+		latency.Count(), color.Red("%d", deadN.Get()), latency.Min(), latency.Max(), latency.Mean(), ps[0], ps[1], ps[2], ps[3]))
 }
 
 func (*Redis) Synopsis() string {
