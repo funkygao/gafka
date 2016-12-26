@@ -150,7 +150,6 @@ func (this *Balance) collectAll(seq int) {
 				for cluster, tps := range offsetInfo.offsetMap {
 					if _, present := this.allHostsTps[host].offsetMap[cluster]; !present {
 						this.allHostsTps[host].offsetMap[cluster] = make(map[structs.TopicPartition]int64)
-						this.allHostsTps[host].brokerIDs[cluster] = make(map[string]int32)
 					}
 
 					for tp, off := range tps {
@@ -266,7 +265,19 @@ func (c clusterQps) String() string {
 }
 
 func (this *Balance) drawSummary(sortedHosts []string) {
+	type hintInfo struct {
+		cluster     string
+		host        string
+		brokerID    int32
+		clusterQps  int64
+		clustersQps int64 // all clusters on this host qps sum up
+	}
+
+	var hints []hintInfo
+	var hostHasClusters = make(map[string]int)
+
 	lines := []string{"Broker|Load1m|P|TPS|Cluster/OPS"}
+
 	var totalTps int64
 	var totalPartitions int
 	for _, host := range sortedHosts {
@@ -279,6 +290,15 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			hostPartitions += clusterPartitions
 			totalTps += clusterTps
 			totalPartitions += clusterPartitions
+
+			hostHasClusters[host]++
+			hints = append(hints, hintInfo{
+				cluster:     cluster,
+				host:        host,
+				brokerID:    offsetInfo.brokerIDs[cluster],
+				clusterQps:  clusterTps,
+				clustersQps: offsetInfo.Total(),
+			})
 
 			if this.hideZeroClusetr && clusterTps == 0 {
 				continue
@@ -296,6 +316,32 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 	this.Ui.Output(columnize.SimpleFormat(lines))
 	this.Ui.Output(fmt.Sprintf("-Total- Hosts:%d Partitions:%d Tps:%s",
 		len(sortedHosts), totalPartitions, gofmt.Comma(totalTps)))
+
+	// give the rebalance hints by cluster
+	this.Ui.Output("")
+	sortutil.DescByField(hints, "clustersQps")
+	lastHost := ""
+	var suspectedHosts []string
+	for _, h := range hints {
+		if hostHasClusters[h.host] < 2 {
+			// already dedicated broker for the cluster
+			continue
+		}
+
+		if h.clustersQps < 1500 {
+			// we don't care about non-busy broker
+			continue
+		}
+
+		if h.host == lastHost {
+			continue
+		}
+
+		lastHost = h.host
+
+		suspectedHosts = append(suspectedHosts, h.host)
+	}
+	this.Ui.Outputf("suspected brokers: %+v", suspectedHosts)
 }
 
 func (this *Balance) fetchLoadAvg() {
