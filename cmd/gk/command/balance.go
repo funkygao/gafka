@@ -68,12 +68,13 @@ type Balance struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone, cluster   string
-	interval        time.Duration
-	detailMode      bool
-	host            string
-	atLeastTps      int64
-	hideZeroClusetr bool
+	zone, cluster     string
+	interval          time.Duration
+	detailMode        bool
+	host              string
+	atLeastTps        int64
+	hideZeroClusetr   bool
+	skipKafkaInternal bool
 
 	loadAvgMap   map[string]float64
 	loadAvgReady chan struct{}
@@ -95,6 +96,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.hideZeroClusetr, "nozero", true, "")
 	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "")
 	cmdFlags.StringVar(&this.host, "host", "", "")
+	cmdFlags.BoolVar(&this.skipKafkaInternal, "skipk", true, "")
 	cmdFlags.Int64Var(&this.atLeastTps, "over", 0, "")
 	cmdFlags.BoolVar(&this.detailMode, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -405,6 +407,11 @@ func (this *Balance) clusterTopProducers(zkcluster *zk.ZkCluster) {
 		<-this.signalsCh[zkcluster.Name()]
 
 		for _, topic := range topics {
+			if topic == "__consumer_offsets" {
+				// skip kafka intennal topics
+				continue
+			}
+
 			partions, err := kfk.WritablePartitions(topic)
 			swallow(err)
 			for _, partitionID := range partions {
@@ -471,6 +478,9 @@ Options:
 
     -nozero
       Hide 0 OPS clusters. True by default.
+
+    -skipk
+      Skip kafka internal topic: __consumer_offsets. True by default.
 
 `, this.Cmd, this.Synopsis(), ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
