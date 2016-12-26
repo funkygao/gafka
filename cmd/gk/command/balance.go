@@ -303,6 +303,9 @@ func (this *Balance) fetchLoadAvg() {
 
 	cmd := pipestream.New("consul", "exec", "uptime", "|", "grep", "load")
 	cmd.Open()
+	if cmd.Reader() == nil {
+		return
+	}
 	defer cmd.Close()
 
 	scanner := bufio.NewScanner(cmd.Reader())
