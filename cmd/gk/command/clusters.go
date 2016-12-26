@@ -25,6 +25,7 @@ type Clusters struct {
 	verbose           bool
 	neat              bool
 	registeredBrokers bool
+	plainMode         bool
 	publicOnly        bool
 	ipInNumber        bool
 }
@@ -62,6 +63,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&summaryMode, "sum", false, "")
 	cmdFlags.BoolVar(&this.neat, "neat", false, "")
 	cmdFlags.IntVar(&retentionHours, "retention", -1, "")
+	cmdFlags.BoolVar(&this.plainMode, "plain", false, "")
 	cmdFlags.IntVar(&priority, "priority", -1, "")
 	cmdFlags.IntVar(&public, "public", -1, "")
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
@@ -374,6 +376,11 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, po
 			return
 		}
 
+		if this.plainMode {
+			this.Ui.Output(zkcluster.Name())
+			return
+		}
+
 		ci := clusterInfo{
 			name: zkcluster.Name(),
 			path: zkcluster.Chroot(),
@@ -450,6 +457,10 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, po
 			brokerInfos: info.Roster,
 		})
 	})
+
+	if this.plainMode {
+		return
+	}
 
 	this.Ui.Output(fmt.Sprintf("%s: %d", zkzone.Name(), len(clusters)))
 	if this.verbose {
@@ -605,6 +616,9 @@ Options:
 
     -verify
       Verify that the online brokers are consistent with the registered brokers.
+
+    -plain
+      Display cluster name only.
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)

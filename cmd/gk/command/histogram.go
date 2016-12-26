@@ -18,7 +18,7 @@ import (
 
 /*
 #!/bin/sh
-date >> /var/wd/topics_offsets/offsets; /usr/bin/gk topics -z prod -l -plain | grep CUM >> /var/wd/topics_offsets/offsets
+date >> /var/wd/topics_offsets/offsets; /usr/bin/gk topics -z prod -l | grep CUM >> /var/wd/topics_offsets/offsets
 
 date >> /var/wd/topics_offsets/network; consul exec ifconfig bond0 | grep 'RX bytes' | awk '{print $1,$3,$7}' | sort >> /var/wd/topics_offsets/network
 */
