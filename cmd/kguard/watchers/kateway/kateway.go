@@ -40,7 +40,7 @@ func (this *WatchKateway) Run() {
 
 	liveKateways := metrics.NewRegisteredGauge("kateway.live", nil)
 
-	// warmup
+	// warmup to avoid alert on startup
 	kws, _ := this.Zkzone.KatewayInfos()
 	liveKateways.Update(int64(len(kws)))
 

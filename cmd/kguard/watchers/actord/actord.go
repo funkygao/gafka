@@ -67,6 +67,9 @@ func (this *WatchActord) Run() {
 	archive := metrics.NewRegisteredGauge("actord.archive.30s", nil)
 	webhooks := metrics.NewRegisteredGauge("actord.webhooks", nil)
 
+	// warm up to avoid alert noise on startup
+	actors.Update(int64(len(this.Zkzone.ChildrenWithData(zk.PubsubActors))))
+
 	for {
 		select {
 		case <-this.Stop:
