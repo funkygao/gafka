@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"sort"
 	"strings"
@@ -33,9 +34,9 @@ type Topics struct {
 	totalMsgs    int64
 	totalOffsets int64
 	ipInNumber   bool
-	plainMode    bool
 	count        int64
 	since        time.Duration
+	brokerIp     string
 }
 
 func (this *Topics) Run(args []string) (exitCode int) {
@@ -64,10 +65,10 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&summaryMode, "sum", false, "")
 	cmdFlags.StringVar(&killTopic, "kill", "", "")
 	cmdFlags.StringVar(&restoreTopic, "restore", "", "")
-	cmdFlags.BoolVar(&this.plainMode, "plain", false, "")
 	cmdFlags.StringVar(&delTopic, "del", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
 	cmdFlags.DurationVar(&this.since, "since", 0, "")
+	cmdFlags.StringVar(&this.brokerIp, "host", "", "")
 	cmdFlags.BoolVar(&configged, "cf", false, "")
 	cmdFlags.BoolVar(&debug, "debug", false, "")
 	cmdFlags.BoolVar(&resetConf, "cfreset", false, "")
@@ -186,14 +187,8 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Topics-", this.topicN))
 		this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Partitions-", this.partitionN))
 		if this.verbose {
-			if this.plainMode {
-				fmt.Printf("%25s %s\n", "-FLAT Messages-", gofmt.Comma(this.totalMsgs))
-				fmt.Printf("%25s %s\n", "-CUM Messages-", gofmt.Comma(this.totalOffsets))
-			} else {
-				this.Ui.Output(fmt.Sprintf("%25s %s", "-FLAT Messages-", gofmt.Comma(this.totalMsgs)))
-				this.Ui.Output(fmt.Sprintf("%25s %s", "-CUM Messages-", gofmt.Comma(this.totalOffsets)))
-			}
-
+			this.Ui.Output(fmt.Sprintf("%25s %s", "-FLAT Messages-", gofmt.Comma(this.totalMsgs)))
+			this.Ui.Output(fmt.Sprintf("%25s %s", "-CUM Messages-", gofmt.Comma(this.totalOffsets)))
 		}
 		return
 	}
@@ -205,14 +200,8 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Topics-", this.topicN))
 	this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Partitions-", this.partitionN))
 	if this.verbose {
-		if this.plainMode {
-			fmt.Printf("%25s %s\n", "-FLAT Messages-", gofmt.Comma(this.totalMsgs))
-			fmt.Printf("%25s %s\n", "-CUM Messages-", gofmt.Comma(this.totalOffsets))
-		} else {
-			this.Ui.Output(fmt.Sprintf("%25s %s", "-FLAT Messages-", gofmt.Comma(this.totalMsgs)))
-			this.Ui.Output(fmt.Sprintf("%25s %s", "-CUM Messages-", gofmt.Comma(this.totalOffsets)))
-		}
-
+		this.Ui.Output(fmt.Sprintf("%25s %s", "-FLAT Messages-", gofmt.Comma(this.totalMsgs)))
+		this.Ui.Output(fmt.Sprintf("%25s %s", "-CUM Messages-", gofmt.Comma(this.totalOffsets)))
 	}
 
 	return
@@ -473,6 +462,13 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 			leader, err := kfk.Leader(topic, partitionID)
 			swallow(err)
 
+			leaderHost, _, err := net.SplitHostPort(leader.Addr())
+			swallow(err)
+
+			if this.brokerIp != "" && leaderHost != this.brokerIp {
+				continue
+			}
+
 			replicas, err := kfk.Replicas(topic, partitionID)
 			if err != nil {
 				this.Ui.Error(fmt.Sprintf("%s/%d %v", topic, partitionID, err))
@@ -636,8 +632,7 @@ Options:
 	  168h=1 week
 	  720h=1 month
 
-    -plain
-      Use fmt.Println instead of Ui.Output
+	-host broker ip   
 
     -n
       Show network addresses as numbers.
