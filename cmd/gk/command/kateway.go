@@ -527,6 +527,7 @@ func (this *Kateway) runSub(zkzone *zk.ZkZone) {
 		Topic:     zone.SmokeTopic,
 		Ver:       zone.SmokeTopicVersion,
 		Group:     zone.SmokeGroup,
+		Reset:     "newest",
 		AutoClose: false,
 	}, func(statusCode int, subMsg []byte) error {
 		now := time.Now()
