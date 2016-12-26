@@ -21,6 +21,8 @@ type mysqlStore struct {
 
 	allowUnregisteredGroup bool
 
+	adminUser, adminPass string
+
 	// mysql store, initialized on refresh
 	// TODO flatten the map's with struct
 	appClusterMap       map[string]string                       // appid:cluster
@@ -44,14 +46,21 @@ func New(cf *config) *mysqlStore {
 		panic("empty zookeeper addr")
 	}
 
-	return &mysqlStore{
+	zone := ctx.Zone(cf.Zone)
+	my := &mysqlStore{
 		cf:                     cf,
 		zkzone:                 zk.NewZkZone(zk.DefaultConfig(cf.Zone, zkAddrs)), // TODO session timeout
 		shutdownCh:             make(chan struct{}),
 		refreshCh:              make(chan struct{}),
 		allowUnregisteredGroup: false,
 		topicNames:             mpool.NewIntern(),
+		adminUser:              zone.AdminUser,
+		adminPass:              zone.AdminPass,
 	}
+	if my.adminUser == "" || my.adminPass == "" {
+		panic("empty admin_user or admin_pass")
+	}
+	return my
 }
 
 func (this *mysqlStore) Name() string {

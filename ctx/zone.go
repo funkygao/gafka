@@ -21,12 +21,16 @@ type zone struct {
 	SmokeTopicVersion        string
 	SmokeGroup               string
 	HaProxyStatsUri          []string
+
+	AdminUser, AdminPass string
 }
 
 func (this *zone) loadConfig(section *ljconf.Conf) {
 	this.Name = section.String("name", "")
 	this.Zk = section.String("zk", "")
 	this.ZkHelix = section.String("zk_helix", "")
+	this.AdminUser = section.String("admin_user", "_psubAdmin_")
+	this.AdminPass = section.String("admin_pass", "_wandafFan_")
 	this.InfluxAddr = section.String("influxdb", "")
 	this.SwfEndpoint = section.String("swf", "")
 	this.PubEndpoint = section.String("pub_entry", "")

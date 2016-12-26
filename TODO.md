@@ -14,4 +14,3 @@
   - return offset -1 instead of 0
   - return HTTP 202 instead of 201
 
-- [ ] admin auth

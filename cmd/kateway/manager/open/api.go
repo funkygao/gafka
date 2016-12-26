@@ -117,7 +117,7 @@ func (this *mysqlStore) ValidateGroupName(header http.Header, group string) bool
 }
 
 func (this *mysqlStore) AuthAdmin(appid, pubkey string) bool {
-	if appid == "_psubAdmin_" && pubkey == "_wandafFan_" { // FIXME
+	if appid == this.adminUser && pubkey == this.adminPass {
 		return true
 	}
 

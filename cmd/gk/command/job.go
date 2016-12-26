@@ -82,7 +82,8 @@ func (this *Job) initializeJob(name string) {
 	this.Ui.Info(uri)
 
 	req := gorequest.New()
-	resp, _, errs := req.Post(uri).Set("Appid", "_psubAdmin_").Set("Pubkey", "_wandafFan_").End()
+	zone := ctx.Zone(this.zkzone.Name())
+	resp, _, errs := req.Post(uri).Set("Appid", zone.AdminUser).Set("Pubkey", zone.AdminPass).End()
 	if resp.StatusCode != http.StatusCreated {
 		this.Ui.Error(resp.Status)
 	} else if len(errs) > 0 {
