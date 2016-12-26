@@ -187,6 +187,7 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 				appid, topic, ver, r.Header.Get("User-Agent"), err)
 
 			err = hh.Default.Append(cluster, rawTopic, msgKey, msg.Body)
+			// async = true
 		}
 	}
 
@@ -194,8 +195,8 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 	msg.Free()
 
 	if Options.AuditPub && err == nil && offset > -1 {
-		this.auditor.Trace("pub[%s] %s(%s) {%s.%s.%s UA:%s} {P:%d O:%d}",
-			appid, r.RemoteAddr, realIp, appid, topic, ver, r.Header.Get("User-Agent"), partition, offset)
+		this.auditor.Trace("pub[%s] %s(%s) {%s.%s.%s UA:%s} {P:%d O:%d} a=%v",
+			appid, r.RemoteAddr, realIp, appid, topic, ver, r.Header.Get("User-Agent"), partition, offset, async)
 	}
 
 	if err != nil {
