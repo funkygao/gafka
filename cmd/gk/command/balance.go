@@ -42,6 +42,19 @@ func (ho hostOffsetInfo) Clusters() []string {
 	return r
 }
 
+func (ho hostOffsetInfo) MightProblematic() bool {
+	if len(ho.offsetMap) < 2 {
+		return false
+	}
+	bigClusters := 0
+	for cluster, _ := range ho.offsetMap {
+		if ho.ClusterTotal(cluster) > 1000 {
+			bigClusters++
+		}
+	}
+	return bigClusters > 1
+}
+
 func (ho hostOffsetInfo) Total() (t int64) {
 	for _, tps := range ho.offsetMap {
 		for _, qps := range tps {
@@ -93,7 +106,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
-	cmdFlags.BoolVar(&this.hideZeroClusetr, "nozero", true, "")
+	cmdFlags.BoolVar(&this.hideZeroClusetr, "nozero", false, "")
 	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "")
 	cmdFlags.StringVar(&this.host, "host", "", "")
 	cmdFlags.BoolVar(&this.skipKafkaInternal, "skipk", true, "")
@@ -267,19 +280,7 @@ func (c clusterQps) String() string {
 }
 
 func (this *Balance) drawSummary(sortedHosts []string) {
-	type hintInfo struct {
-		cluster     string
-		host        string
-		brokerID    int32
-		clusterQps  int64
-		clustersQps int64 // all clusters on this host qps sum up
-	}
-
-	var hints []hintInfo
-	var hostHasClusters = make(map[string]int)
-
 	lines := []string{"Broker|Load1m|P|TPS|Cluster/OPS"}
-
 	var totalTps int64
 	var totalPartitions int
 	for _, host := range sortedHosts {
@@ -293,15 +294,6 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			totalTps += clusterTps
 			totalPartitions += clusterPartitions
 
-			hostHasClusters[host]++
-			hints = append(hints, hintInfo{
-				cluster:     cluster,
-				host:        host,
-				brokerID:    offsetInfo.brokerIDs[cluster],
-				clusterQps:  clusterTps,
-				clustersQps: offsetInfo.Total(),
-			})
-
 			if this.hideZeroClusetr && clusterTps == 0 {
 				continue
 			}
@@ -311,39 +303,20 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 
 		sortutil.AscByField(clusters, "cluster")
 
-		lines = append(lines, fmt.Sprintf("%s|%5.1f|%d|%s|%+v",
-			host, this.loadAvgMap[host], hostPartitions,
-			gofmt.Comma(offsetInfo.Total()), clusters))
+		if offsetInfo.MightProblematic() {
+			lines = append(lines, fmt.Sprintf("%s|%5.1f|%d|%s|%+v",
+				color.Green(host), this.loadAvgMap[host], hostPartitions,
+				gofmt.Comma(offsetInfo.Total()), clusters))
+		} else {
+			lines = append(lines, fmt.Sprintf("%s|%5.1f|%d|%s|%+v",
+				host, this.loadAvgMap[host], hostPartitions,
+				gofmt.Comma(offsetInfo.Total()), clusters))
+		}
+
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
 	this.Ui.Output(fmt.Sprintf("-Total- Hosts:%d Partitions:%d Tps:%s",
 		len(sortedHosts), totalPartitions, gofmt.Comma(totalTps)))
-
-	// give the rebalance hints by cluster
-	this.Ui.Output("")
-	sortutil.DescByField(hints, "clustersQps")
-	lastHost := ""
-	var suspectedHosts []string
-	for _, h := range hints {
-		if hostHasClusters[h.host] < 2 {
-			// already dedicated broker for the cluster
-			continue
-		}
-
-		if h.clustersQps < 1500 {
-			// we don't care about non-busy broker
-			continue
-		}
-
-		if h.host == lastHost {
-			continue
-		}
-
-		lastHost = h.host
-
-		suspectedHosts = append(suspectedHosts, h.host)
-	}
-	this.Ui.Outputf("suspected brokers: %+v", suspectedHosts)
 }
 
 func (this *Balance) fetchLoadAvg() {
@@ -477,7 +450,7 @@ Options:
       Only display brokers whose TPS over the number.
 
     -nozero
-      Hide 0 OPS clusters. True by default.
+      Hide 0 OPS clusters. False by default.
 
     -skipk
       Skip kafka internal topic: __consumer_offsets. True by default.
