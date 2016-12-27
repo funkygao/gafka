@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -77,6 +78,11 @@ func (ho hostOffsetInfo) ClusterTotal(cluster string) (t int64) {
 	return
 }
 
+type brokerModel struct {
+	disks    int
+	nicSpeed int
+}
+
 type Balance struct {
 	Ui  cli.Ui
 	Cmd string
@@ -92,6 +98,9 @@ type Balance struct {
 
 	loadAvgMap   map[string]float64
 	loadAvgReady chan struct{}
+
+	brokerModelMap   map[string]*brokerModel
+	brokerModelReady chan struct{}
 
 	offsets     map[string]int64 // host => offset sum TODO
 	lastOffsets map[string]int64
@@ -117,6 +126,9 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
+
+	this.brokerModelMap = make(map[string]*brokerModel)
+	this.brokerModelReady = make(chan struct{})
 
 	this.loadAvgReady = make(chan struct{})
 	this.loadAvgMap = make(map[string]float64)
@@ -193,6 +205,7 @@ func (this *Balance) collectAll(seq int) {
 
 func (this *Balance) drawBalance() {
 	go this.fetchLoadAvg()
+	go this.fetchBrokerModel()
 
 	for i := 0; i < 2; i++ {
 		this.startAll()
@@ -225,6 +238,7 @@ func (this *Balance) drawBalance() {
 	}
 
 	<-this.loadAvgReady
+	<-this.brokerModelReady
 
 	if !this.detailMode {
 		this.drawSummary(hosts)
@@ -314,7 +328,7 @@ func (c clusterQps) String() string {
 }
 
 func (this *Balance) drawSummary(sortedHosts []string) {
-	lines := []string{"Broker|Load1m|P|TPS|Cluster/OPS"}
+	lines := []string{"Broker|Load1m|Disk|Net|P|TPS|Cluster/OPS"}
 	var totalTps int64
 	var totalPartitions int
 	for _, host := range sortedHosts {
@@ -342,14 +356,15 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			load = color.Red("%5.1f", this.loadAvgMap[host])
 		}
 
+		model := this.brokerModelMap[host]
 		if offsetInfo.MightProblematic() {
-			lines = append(lines, fmt.Sprintf("%s|%s|%d|%s|%+v",
+			lines = append(lines, fmt.Sprintf("%s|%s|%d|%s|%d|%s|%+v",
 				color.Green("%-15s", host), // hack for color output alignment
-				load, hostPartitions,
+				load, model.disks, gofmt.Comma(int64(model.nicSpeed)), hostPartitions,
 				gofmt.Comma(offsetInfo.Total()), clusters))
 		} else {
-			lines = append(lines, fmt.Sprintf("%s|%s|%d|%s|%+v",
-				host, load, hostPartitions,
+			lines = append(lines, fmt.Sprintf("%s|%s|%d|%s|%d|%s|%+v",
+				host, load, model.disks, gofmt.Comma(int64(model.nicSpeed)), hostPartitions,
 				gofmt.Comma(offsetInfo.Total()), clusters))
 		}
 
@@ -357,6 +372,98 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 	this.Ui.Output(columnize.SimpleFormat(lines))
 	this.Ui.Output(fmt.Sprintf("-Total- Hosts:%d Partitions:%d Tps:%s",
 		len(sortedHosts), totalPartitions, gofmt.Comma(totalTps)))
+}
+
+func (this *Balance) fetchBrokerModel() {
+	defer close(this.brokerModelReady)
+
+	// get members host ip
+	cf := consulapi.DefaultConfig()
+	client, _ := consulapi.NewClient(cf)
+	members, _ := client.Agent().Members(false)
+
+	nodeHostMap := make(map[string]string, len(members))
+	for _, member := range members {
+		nodeHostMap[member.Name] = member.Addr
+	}
+
+	// get NIC speed
+	cmd := pipestream.New("consul", "exec", "ethtool", "bond0", "|", "grep", "Speed")
+	cmd.Open()
+	if cmd.Reader() == nil {
+		return
+	}
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "finished with exit code 0") ||
+			strings.Contains(line, "completed / acknowledged") {
+			continue
+		}
+		fields := strings.Fields(line)
+		node := fields[0]
+		parts := strings.Split(line, "Speed:")
+		if len(parts) < 2 {
+			continue
+		}
+		if strings.HasSuffix(node, ":") {
+			node = strings.TrimRight(node, ":")
+		}
+		host := nodeHostMap[node]
+
+		speedStr := strings.TrimSpace(parts[1]) // 20000Mb/s
+		tuples := strings.Split(speedStr, "Mb/s")
+		speed, _ := strconv.Atoi(tuples[0])
+
+		this.brokerModelMap[host] = &brokerModel{nicSpeed: speed}
+	}
+	cmd.Close()
+
+	// get disks count
+	cmd = pipestream.New("consul", "exec", "df")
+	cmd.Open()
+	if cmd.Reader() == nil {
+		return
+	}
+
+	scanner = bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "finished with exit code 0") ||
+			strings.Contains(line, "completed / acknowledged") ||
+			strings.Contains(line, "/home") ||
+			strings.Contains(line, "/boot") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+
+		node := fields[0]
+		if strings.HasSuffix(node, ":") {
+			node = strings.TrimRight(node, ":")
+		}
+		host := nodeHostMap[node]
+		if host == "" {
+			continue
+		}
+
+		if strings.HasPrefix(strings.TrimSpace(fields[1]), "/dev/") {
+			// kafka storage fs
+			broker := this.brokerModelMap[host]
+			if broker == nil {
+				// this host might not be broker: it has no bond0
+				continue
+			}
+
+			broker.disks++
+		}
+	}
+	cmd.Close()
 }
 
 func (this *Balance) fetchLoadAvg() {
