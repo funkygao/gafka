@@ -88,6 +88,7 @@ type Balance struct {
 	atLeastTps        int64
 	hideZeroClusetr   bool
 	skipKafkaInternal bool
+	byCluster         bool
 
 	loadAvgMap   map[string]float64
 	loadAvgReady chan struct{}
@@ -107,6 +108,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.hideZeroClusetr, "nozero", false, "")
+	cmdFlags.BoolVar(&this.byCluster, "bycluster", false, "")
 	cmdFlags.DurationVar(&this.interval, "i", time.Second*5, "")
 	cmdFlags.StringVar(&this.host, "host", "", "")
 	cmdFlags.BoolVar(&this.skipKafkaInternal, "skipk", true, "")
@@ -198,6 +200,11 @@ func (this *Balance) drawBalance() {
 		this.collectAll(i)
 	}
 
+	if this.byCluster {
+		this.drawClusterTps()
+		return
+	}
+
 	type hostTps struct {
 		host string
 		tps  int64
@@ -225,6 +232,33 @@ func (this *Balance) drawBalance() {
 	}
 
 	this.drawDetail(hosts)
+}
+
+func (this *Balance) drawClusterTps() {
+	clusters := make(map[string]int64)
+	type clusterInfo struct {
+		cluster string
+		qps     int64
+	}
+
+	for _, info := range this.allHostsTps {
+		for cluster, _ := range info.offsetMap {
+			clusters[cluster] += info.ClusterTotal(cluster)
+		}
+	}
+
+	var cis []clusterInfo
+	for cluster, qps := range clusters {
+		cis = append(cis, clusterInfo{cluster, qps})
+	}
+
+	sortutil.AscByField(cis, "qps")
+
+	lines := []string{"Cluster|TPS"}
+	for _, c := range cis {
+		lines = append(lines, fmt.Sprintf("%s|%d", c.cluster, c.qps))
+	}
+	this.Ui.Output(columnize.SimpleFormat(lines))
 }
 
 func (this *Balance) drawDetail(sortedHosts []string) {
@@ -457,6 +491,8 @@ Options:
 
     -nozero
       Hide 0 OPS clusters. False by default.
+
+    -bycluster      
 
     -skipk
       Skip kafka internal topic: __consumer_offsets. True by default.
