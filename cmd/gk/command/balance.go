@@ -303,13 +303,19 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 
 		sortutil.AscByField(clusters, "cluster")
 
+		load := fmt.Sprintf("%5.1f", this.loadAvgMap[host])
+		if this.loadAvgMap[host] > 2. {
+			load = color.Red("%5.1f", this.loadAvgMap[host])
+		}
+
 		if offsetInfo.MightProblematic() {
-			lines = append(lines, fmt.Sprintf("%s|%5.1f|%d|%s|%+v",
-				color.Green(host), this.loadAvgMap[host], hostPartitions,
+			lines = append(lines, fmt.Sprintf("%s|%s|%d|%s|%+v",
+				color.Green("%-15s", host), // hack for color output alignment
+				load, hostPartitions,
 				gofmt.Comma(offsetInfo.Total()), clusters))
 		} else {
-			lines = append(lines, fmt.Sprintf("%s|%5.1f|%d|%s|%+v",
-				host, this.loadAvgMap[host], hostPartitions,
+			lines = append(lines, fmt.Sprintf("%s|%s|%d|%s|%+v",
+				host, load, hostPartitions,
 				gofmt.Comma(offsetInfo.Total()), clusters))
 		}
 
