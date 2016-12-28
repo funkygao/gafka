@@ -29,7 +29,7 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 	)
 	cmdFlags := flag.NewFlagSet("zookeeper", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&zone, "z", "", "")
+	cmdFlags.StringVar(&zone, "z", ctx.DefaultZone(), "")
 	cmdFlags.StringVar(&this.flw, "c", "", "")
 	cmdFlags.StringVar(&this.zkHost, "host", "", "")
 	cmdFlags.BoolVar(&this.watchMode, "watch", false, "")
@@ -75,29 +75,14 @@ func (this *Zookeeper) Run(args []string) (exitCode int) {
 		refreshScreen()
 	}
 
-	if zone != "" {
-		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-		defer printSwallowedErrors(this.Ui, zkzone)
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	defer printSwallowedErrors(this.Ui, zkzone)
 
-		if this.leaderOnly {
-			this.printLeader(zkzone)
-		} else {
-			this.printZkStats(zkzone)
-		}
-
-		return
+	if this.leaderOnly {
+		this.printLeader(zkzone)
+	} else {
+		this.printZkStats(zkzone)
 	}
-
-	// print all zones by default
-	forSortedZones(func(zkzone *zk.ZkZone) {
-		if this.leaderOnly {
-			this.printLeader(zkzone)
-		} else {
-			this.printZkStats(zkzone)
-		}
-
-		printSwallowedErrors(this.Ui, zkzone)
-	})
 
 	return
 }

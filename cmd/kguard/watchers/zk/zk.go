@@ -2,6 +2,7 @@ package zk
 
 import (
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -47,6 +48,7 @@ func (this *WatchZk) Run() {
 	znodes := metrics.NewRegisteredGauge("zk.znodes", nil)
 	deadNodes := metrics.NewRegisteredGauge("zk.dead", nil)
 	reelect := metrics.NewRegisteredGauge("zk.reelect", nil)
+	watchers := metrics.NewRegisteredGauge("zk.watchers", nil)
 	lastLeader := ""
 	for {
 		select {
@@ -55,6 +57,8 @@ func (this *WatchZk) Run() {
 			return
 
 		case <-ticker.C:
+			watchers.Update(int64(this.collectWatchers()))
+
 			r, c, z, d, l := this.collectMetrics()
 			if this.lastReceived > 0 {
 				qps.Update((r - this.lastReceived) / int64(this.Tick.Seconds()))
@@ -88,6 +92,23 @@ func (this *WatchZk) collectMetrics() (received, conns, znodes, dead int64, lead
 		znodes = int64(n)
 		if stat.Mode == "" {
 			dead++
+		}
+	}
+
+	return
+}
+
+func (this *WatchZk) collectWatchers() (n int) {
+	for _, s := range this.Zkzone.RunZkFourLetterCommand("wchs") {
+		for _, line := range strings.Split(s, "\n") {
+			line = strings.TrimSpace(line)
+			tuples := strings.Split(line, "Total watches:")
+			if len(tuples) != 2 {
+				continue
+			}
+
+			watchers, _ := strconv.Atoi(tuples[1])
+			n += watchers
 		}
 	}
 
