@@ -50,6 +50,7 @@ type Kateway struct {
 	benchmarkAsync  bool
 	benchmarkMaster string
 	showZkNodes     bool
+	pubSleep        time.Duration
 
 	benchApp, benchSecret, benchTopic, benchVer, benchPubEndpoint string
 	benchId                                                       string
@@ -73,6 +74,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.benchmark, "bench", false, "")
 	cmdFlags.StringVar(&this.benchmarkMaster, "master", "", "")
 	cmdFlags.BoolVar(&this.pub, "pub", false, "")
+	cmdFlags.DurationVar(&this.pubSleep, "pubsleep", time.Millisecond*100, "")
 	cmdFlags.BoolVar(&this.sub, "sub", false, "")
 	cmdFlags.BoolVar(&this.benchmarkAsync, "async", false, "")
 	cmdFlags.BoolVar(&this.curl, "curl", false, "")
@@ -511,7 +513,7 @@ func (this *Kateway) runPub(zkzone *zk.ZkZone) {
 		})
 		this.Ui.Output(fmt.Sprintf("<- %s: %s %v", time.Since(now), pubMsg, err))
 
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(this.pubSleep)
 	}
 }
 
@@ -710,6 +712,8 @@ Options:
 
     -pub
       Continously pub
+      -publseep 3s
+       Default 100ms
 
     -sub
       Continously sub
