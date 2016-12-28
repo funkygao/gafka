@@ -328,7 +328,7 @@ func (c clusterQps) String() string {
 }
 
 func (this *Balance) drawSummary(sortedHosts []string) {
-	lines := []string{"Broker|Load1m|Disk|Net|P|TPS|Cluster/OPS"}
+	lines := []string{"Broker|Load1m|Disk|P|Net|TPS|Cluster/OPS"}
 	var totalTps int64
 	var totalPartitions int
 	for _, host := range sortedHosts {
@@ -351,20 +351,20 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 
 		sortutil.AscByField(clusters, "cluster")
 
-		load := fmt.Sprintf("%5.1f", this.loadAvgMap[host])
+		load := fmt.Sprintf("%-6.1f", this.loadAvgMap[host])
 		if this.loadAvgMap[host] > 2. {
-			load = color.Red("%5.1f", this.loadAvgMap[host])
+			load = color.Red("%-6.1f", this.loadAvgMap[host])
 		}
 
 		model := this.brokerModelMap[host]
 		if offsetInfo.MightProblematic() {
-			lines = append(lines, fmt.Sprintf("%s|%s|%d|%s|%d|%s|%+v",
+			lines = append(lines, fmt.Sprintf("%s|%s|%d|%d|%s|%s|%+v",
 				color.Green("%-15s", host), // hack for color output alignment
-				load, model.disks, gofmt.Comma(int64(model.nicSpeed)), hostPartitions,
+				load, model.disks, hostPartitions, gofmt.Comma(int64(model.nicSpeed)),
 				gofmt.Comma(offsetInfo.Total()), clusters))
 		} else {
-			lines = append(lines, fmt.Sprintf("%s|%s|%d|%s|%d|%s|%+v",
-				host, load, model.disks, gofmt.Comma(int64(model.nicSpeed)), hostPartitions,
+			lines = append(lines, fmt.Sprintf("%s|%s|%d|%d|%s|%s|%+v",
+				host, load, model.disks, hostPartitions, gofmt.Comma(int64(model.nicSpeed)),
 				gofmt.Comma(offsetInfo.Total()), clusters))
 		}
 
