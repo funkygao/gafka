@@ -93,6 +93,8 @@ func (this *TopBroker) drawDashboard() {
 
 	var totalMaxQps, totalMaxBrokerQps float64
 	for {
+		var idleN, busyN int
+
 		time.Sleep(this.interval)
 
 		this.startAll()
@@ -123,15 +125,22 @@ func (this *TopBroker) drawDashboard() {
 			}
 
 			if data.qps < 0 {
-				panic("negative qps")
+				panic(data.host + ": negative qps")
+			}
+
+			if data.qps < 100 {
+				idleN++
+			} else if data.qps > 1000 {
+				busyN++
 			}
 
 			this.renderQpsRow(data.host, data.qps, maxQps, maxWidth)
 		}
 
-		this.Ui.Output(fmt.Sprintf("%20s brokers:%d total:%s cum max[broker:%.1f total:%.1f]",
-			"-SUMMARY-",
-			len(datas), color.Green("%.1f", totalQps), totalMaxBrokerQps, totalMaxQps))
+		this.Ui.Output(fmt.Sprintf("%20s brokers:%d idle:%d busy:%d tps:%s cum max[broker:%.1f total:%.1f]",
+			"-SUMMARY-", len(datas),
+			idleN, busyN,
+			color.Green("%.1f", totalQps), totalMaxBrokerQps, totalMaxQps))
 	}
 
 }
