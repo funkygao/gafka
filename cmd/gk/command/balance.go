@@ -47,6 +47,7 @@ func (ho hostOffsetInfo) MightProblematic() bool {
 	if len(ho.offsetMap) < 2 {
 		return false
 	}
+
 	bigClusters := 0
 	for cluster, _ := range ho.offsetMap {
 		if ho.ClusterTotal(cluster) > 1000 {
@@ -328,7 +329,7 @@ func (c clusterQps) String() string {
 }
 
 func (this *Balance) drawSummary(sortedHosts []string) {
-	lines := []string{"Broker|Load1m|Disk|P|Net|TPS|Cluster/OPS"}
+	lines := []string{"Broker|Load|D|P|P/D|Net|TPS|Cluster/OPS"}
 	var totalTps int64
 	var totalPartitions int
 	for _, host := range sortedHosts {
@@ -351,24 +352,36 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 
 		sortutil.AscByField(clusters, "cluster")
 
-		load := fmt.Sprintf("%-6.1f", this.loadAvgMap[host])
+		load := fmt.Sprintf("%-4.1f", this.loadAvgMap[host])
 		if this.loadAvgMap[host] > 2. {
-			load = color.Red("%-6.1f", this.loadAvgMap[host])
+			load = color.Red("%-4.1f", this.loadAvgMap[host])
 		}
 
 		model := this.brokerModelMap[host]
-		if offsetInfo.MightProblematic() {
-			lines = append(lines, fmt.Sprintf("%s|%s|%d|%d|%s|%s|%+v",
-				color.Green("%-15s", host), // hack for color output alignment
-				load, model.disks, hostPartitions, gofmt.Comma(int64(model.nicSpeed)),
-				gofmt.Comma(offsetInfo.Total()), clusters))
-		} else {
-			lines = append(lines, fmt.Sprintf("%s|%s|%d|%d|%s|%s|%+v",
-				host, load, model.disks, hostPartitions, gofmt.Comma(int64(model.nicSpeed)),
-				gofmt.Comma(offsetInfo.Total()), clusters))
+		disks := fmt.Sprintf("%-2d", model.disks)
+		if model.disks < 3 {
+			// kafka need more disks
+			disks = color.Cyan("%-2d", model.disks)
 		}
 
+		if offsetInfo.MightProblematic() {
+			host = color.Yellow("%-15s", host) // hack for color output alignment
+		}
+
+		partitionsPerDisk := 0
+		if model.disks > 0 {
+			partitionsPerDisk = hostPartitions / model.disks
+		}
+		ppd := fmt.Sprintf("%-3d", partitionsPerDisk)
+		if offsetInfo.Total() > 5000 && partitionsPerDisk > 5 {
+			ppd = color.Red("%-3d", partitionsPerDisk)
+		}
+
+		lines = append(lines, fmt.Sprintf("%s|%s|%s|%d|%s|%d|%s|%+v",
+			host, load, disks, hostPartitions, ppd, model.nicSpeed/1000,
+			gofmt.Comma(offsetInfo.Total()), clusters))
 	}
+
 	this.Ui.Output(columnize.SimpleFormat(lines))
 	this.Ui.Output(fmt.Sprintf("-Total- Hosts:%d Partitions:%d Tps:%s",
 		len(sortedHosts), totalPartitions, gofmt.Comma(totalTps)))
