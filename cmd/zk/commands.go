@@ -8,9 +8,10 @@ import (
 )
 
 var commands map[string]cli.CommandFactory
+var ui cli.Ui
 
 func init() {
-	ui := &cli.ColoredUi{
+	ui = &cli.ColoredUi{
 		Ui: &cli.BasicUi{
 			Writer:      os.Stdout,
 			Reader:      os.Stdin,
