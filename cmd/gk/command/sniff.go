@@ -49,7 +49,7 @@ func (this *Sniff) Run(args []string) (exitCode int) {
 	}
 
 	this.Ui.Infof("starting sniff on interface %s", device)
-	snaplen := 1 << 20 // number of bytes max to read per packet
+	snaplen := int32(1 << 20) // max number of bytes to read per packet
 	handle, err := pcap.OpenLive(device, snaplen, true, pcap.BlockForever)
 	swallow(err)
 	defer handle.Close()
