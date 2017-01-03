@@ -166,7 +166,7 @@ func (this *Monitor) ServeForever() {
 		Addr:    this.apiAddr,
 		Handler: this.router,
 	}
-	apiListener, err := net.Listen("tcp4", this.apiAddr)
+	apiListener, err := net.Listen("tcp", this.apiAddr)
 	if err == nil {
 		log.Info("api http server ready on %s", this.apiAddr)
 		go apiServer.Serve(apiListener)
