@@ -377,8 +377,8 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			partitionsPerDisk = effectiveHostPartitions / model.disks
 		}
 		ppd := fmt.Sprintf("%-3d", partitionsPerDisk)
-		if offsetInfo.Total() > 5000 && partitionsPerDisk > 5 {
-			ppd = color.Red("%-3d", partitionsPerDisk)
+		if partitionsPerDisk > 5 {
+			ppd = color.Yellow("%-3d", partitionsPerDisk)
 		}
 
 		lines = append(lines, fmt.Sprintf("%s|%s|%s|%d|%s|%d|%s|%+v",
