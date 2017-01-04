@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/funkygao/gafka/ctx"
 	gzk "github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/zkclient"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
@@ -19,7 +21,10 @@ type Ls struct {
 	zone        string
 	path        string
 	recursive   bool
+	watch       bool
 	likePattern string
+
+	zc *zkclient.Client
 }
 
 func (this *Ls) Run(args []string) (exitCode int) {
@@ -27,6 +32,7 @@ func (this *Ls) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&this.recursive, "R", false, "")
+	cmdFlags.BoolVar(&this.watch, "w", false, "")
 	cmdFlags.StringVar(&this.likePattern, "like", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -48,8 +54,13 @@ func (this *Ls) Run(args []string) (exitCode int) {
 	defer zkzone.Close()
 	conn := zkzone.Conn()
 
-	if this.recursive {
+	if this.recursive && !this.watch {
 		this.showChildrenRecursively(conn, this.path)
+		return
+	}
+
+	if this.watch {
+		this.watchChildren(ctx.ZoneZkAddrs(this.zone))
 		return
 	}
 
@@ -64,6 +75,30 @@ func (this *Ls) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Ls) watchChildren(zkConnStr string) {
+	zc := zkclient.New(zkConnStr)
+	must(zc.Connect())
+
+	children, err := zc.Children(this.path)
+	must(err)
+	sort.Strings(children)
+	this.Ui.Outputf("%+v", children)
+
+	this.zc = zc
+
+	zc.SubscribeChildChanges(this.path, this)
+	select {}
+
+}
+
+func (this *Ls) HandleChildChange(parentPath string, lastChilds []string) error {
+	children, err := this.zc.Children(this.path)
+	sort.Strings(children)
+	must(err)
+	this.Ui.Outputf("%s %+v -> %+v", time.Now(), lastChilds, children)
+	return nil
 }
 
 func (this *Ls) showChildrenRecursively(conn *zk.Conn, path string) {
@@ -104,6 +139,9 @@ Options:
 
     -R
       Recursively list subdirectories encountered.
+
+    -w
+      Keep watching the children znode changes.
 
     -like pattern
       Only display znode whose path is like this pattern.
