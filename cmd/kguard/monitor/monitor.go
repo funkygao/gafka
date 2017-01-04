@@ -46,6 +46,7 @@ type Monitor struct {
 	inflight *sync.WaitGroup
 	stop     chan struct{} // broadcast to all watchers to stop, but might restart again
 	quit     chan struct{}
+	quitOnce sync.Once
 	leader   bool
 }
 
@@ -155,10 +156,12 @@ func (this *Monitor) ServeForever() {
 	log.Info("kguard[%s@%s] starting...", gafka.BuildId, gafka.BuiltAt)
 
 	signal.RegisterHandler(func(sig os.Signal) {
-		log.Info("kguard[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))
+		this.quitOnce.Do(func() {
+			log.Info("kguard[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))
 
-		this.Stop()
-		close(this.quit)
+			this.Stop()
+			close(this.quit)
+		})
 	}, syscall.SIGINT, syscall.SIGTERM)
 
 	// start the api server
