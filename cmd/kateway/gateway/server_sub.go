@@ -160,7 +160,15 @@ func (this *subServer) connStateHandler(c net.Conn, cs http.ConnState) {
 			this.gw.svrMetrics.ConcurrentSub.Dec(1)
 		}
 
-		this.closedConnCh <- c.RemoteAddr().String()
+		remoteAddr := c.RemoteAddr().String()
+		log.Debug("closed from %s", remoteAddr)
+
+		this.goodGroupLock.Lock()
+		delete(this.goodGroupClients, remoteAddr)
+		this.goodGroupLock.Unlock()
+
+		this.closedConnCh <- remoteAddr
+
 		this.idleConnsWg.Done()
 		atomic.AddInt32(&this.activeConnN, -1)
 
