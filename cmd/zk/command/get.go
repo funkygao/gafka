@@ -10,6 +10,7 @@ import (
 	gzk "github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/zkclient"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
@@ -21,7 +22,10 @@ type Get struct {
 	path        string
 	verbose     bool
 	recursive   bool
+	watch       bool
 	likePattern string
+
+	zc *zkclient.Client
 }
 
 func (this *Get) Run(args []string) (exitCode int) {
@@ -30,6 +34,7 @@ func (this *Get) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.BoolVar(&this.recursive, "R", false, "")
+	cmdFlags.BoolVar(&this.watch, "w", false, "")
 	cmdFlags.StringVar(&this.likePattern, "like", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -78,6 +83,14 @@ func (this *Get) Run(args []string) (exitCode int) {
 	data, stat, err := conn.Get(this.path)
 	must(err)
 
+	if this.watch {
+		this.Ui.Outputf("%s: %s", this.path, string(data))
+
+		this.watchZnode(zkzone.ZkAddrs())
+		select {}
+		return
+	}
+
 	if len(data) == 0 {
 		this.Ui.Output("empty znode")
 		return
@@ -93,6 +106,26 @@ func (this *Get) Run(args []string) (exitCode int) {
 	this.Ui.Output(string(data))
 
 	return
+}
+
+func (this *Get) watchZnode(zkConnStr string) {
+	zc := zkclient.New(zkConnStr)
+	must(zc.Connect())
+	this.zc = zc
+
+	zc.SubscribeDataChanges(this.path, this)
+}
+
+func (this *Get) HandleDataChange(dataPath string, data []byte) error {
+	data, err := this.zc.Get(dataPath)
+	must(err)
+	this.Ui.Outputf("%s->%s", dataPath, string(data))
+	return nil
+}
+
+func (this *Get) HandleDataDeleted(dataPath string) error {
+	this.Ui.Errorf("%s deleted", dataPath)
+	return nil
 }
 
 func (this *Get) showChildrenRecursively(conn *zk.Conn, path string) {
@@ -153,6 +186,9 @@ Options:
     
     -R
       Recursively show subdirectories znode encountered.
+
+    -w
+      Watch data changes.
 
     -l
       Use a long display format.
