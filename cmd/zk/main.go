@@ -12,13 +12,28 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/log4go"
+	"github.com/funkygao/zkclient"
 )
+
+func listChildren(zone, rootPath string) {
+	fmt.Println(rootPath)
+
+	zc := zkclient.New(ctx.ZoneZkAddrs(zone))
+	if err := zc.Connect(); err != nil {
+		panic(err)
+	}
+	children, _ := zc.Children(rootPath)
+	for _, c := range children {
+		fmt.Println("/" + c)
+	}
+}
 
 func main() {
 	ctx.LoadFromHome()
 	log.SetOutput(ioutil.Discard)
 	log4go.AddFilter("stdout", log4go.INFO, log4go.NewConsoleLogWriter())
 
+	var zone = ctx.DefaultZone()
 	app := os.Args[0]
 	args := os.Args[1:]
 	for _, arg := range args {
@@ -33,19 +48,31 @@ func main() {
 		if arg == "--generate-bash-completion" {
 			if len(args) > 1 {
 				// contextual auto complete
+				for i, arg := range args {
+					if arg == "-z" && len(args) > i {
+						zone = args[i+1]
+					}
+				}
+
 				lastArg := args[len(args)-2]
 				switch lastArg {
 				case "-z": // zone
-					for _, zone := range ctx.SortedZones() {
-						fmt.Println(zone)
+					for _, z := range ctx.SortedZones() {
+						fmt.Println(z)
 					}
-					return
+
+				default:
+					// autocomplete the root children
+					listChildren(zone, "/")
 				}
+
+				return
 			}
 
 			for name, _ := range commands {
 				fmt.Println(name)
 			}
+
 			return
 		}
 	}
