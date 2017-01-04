@@ -28,6 +28,8 @@ type WatchInfluxServer struct {
 
 	addr string
 	cli  client.Client
+
+	influxdbServerAlive metrics.Gauge
 }
 
 func (this *WatchInfluxServer) Init(ctx monitor.Context) {
@@ -35,6 +37,13 @@ func (this *WatchInfluxServer) Init(ctx monitor.Context) {
 	this.Stop = ctx.StopChan()
 	this.Wg = ctx.Inflight()
 	this.addr = ctx.InfluxAddr()
+
+	// warmup
+	if this.addr != "" {
+		this.influxdbServerAlive = metrics.NewRegisteredGauge("influxdb.alive", nil)
+		this.influxdbServerAlive.Update(int64(this.aliveInstances()))
+	}
+
 }
 
 func (this *WatchInfluxServer) Run() {
@@ -48,11 +57,6 @@ func (this *WatchInfluxServer) Run() {
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
-	var (
-		err                 error
-		influxdbServerAlive = metrics.NewRegisteredGauge("influxdb.alive", nil)
-	)
-
 	for {
 		select {
 		case <-this.Stop:
@@ -60,32 +64,35 @@ func (this *WatchInfluxServer) Run() {
 			return
 
 		case <-ticker.C:
-			if this.cli == nil {
-				this.cli, err = client.NewHTTPClient(client.HTTPConfig{
-					Addr:     this.addr,
-					Username: "",
-					Password: "",
-				})
-				if err != nil {
-					log.Error("influxdb.server: %v", err)
-					influxdbServerAlive.Update(0)
-					continue
-				}
-				if this.cli == nil {
-					log.Error("influxdb.server connected got nil cli")
-					influxdbServerAlive.Update(0)
-					continue
-				}
-			}
-
-			_, _, err = this.cli.Ping(time.Second * 4)
-			if err != nil {
-				log.Error("influxdb.server: %v", err)
-				influxdbServerAlive.Update(0)
-			} else {
-				influxdbServerAlive.Update(1)
-			}
+			this.influxdbServerAlive.Update(int64(this.aliveInstances()))
 
 		}
 	}
+}
+
+func (this *WatchInfluxServer) aliveInstances() int {
+	var err error
+	if this.cli == nil {
+		this.cli, err = client.NewHTTPClient(client.HTTPConfig{
+			Addr:     this.addr,
+			Username: "",
+			Password: "",
+		})
+		if err != nil {
+			log.Error("influxdb.server: %v", err)
+			return 0
+		}
+		if this.cli == nil {
+			log.Error("influxdb.server connected got nil cli")
+			return 0
+		}
+	}
+
+	_, _, err = this.cli.Ping(time.Second * 4)
+	if err != nil {
+		log.Error("influxdb.server: %v", err)
+		return 0
+	}
+
+	return 1 // TODO what if multiple influxdb instances?
 }
