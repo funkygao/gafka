@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/funkygao/gafka"
@@ -15,16 +16,19 @@ import (
 	"github.com/funkygao/zkclient"
 )
 
-func listChildren(zone, rootPath string) {
+func listChildren(zc *zkclient.Client, zone, rootPath string, depth int) {
+	if depth == 0 {
+		return
+	}
+
 	fmt.Println(rootPath)
 
-	zc := zkclient.New(ctx.ZoneZkAddrs(zone))
-	if err := zc.Connect(); err != nil {
-		panic(err)
-	}
 	children, _ := zc.Children(rootPath)
 	for _, c := range children {
-		fmt.Println("/" + c)
+		path := filepath.Join(rootPath, c)
+		fmt.Println(path)
+
+		listChildren(zc, zone, path, depth-1)
 	}
 }
 
@@ -63,7 +67,11 @@ func main() {
 
 				default:
 					// autocomplete the root children
-					listChildren(zone, "/")
+					zc := zkclient.New(ctx.ZoneZkAddrs(zone))
+					if err := zc.Connect(); err != nil {
+						panic(err)
+					}
+					listChildren(zc, zone, "/", 3)
 				}
 
 				return
