@@ -34,9 +34,12 @@ func (this *zkreg) Register(id string, data []byte) {
 	// https://issues.apache.org/jira/browse/ZOOKEEPER-1740
 	//
 	// might cause dead loop, but we accept it
+	loops := 0
 	for {
+		loops++
+
 		if err := this.createEphemeralPathExpectConflict(id, data); err != nil {
-			log.Error("register %s/%s: %v", id, string(data), err)
+			log.Error("#%d register %s/%s: %v", loops, id, string(data), err)
 
 			if err == zklib.ErrNodeExists {
 				// An ephemeral node may still exist even after its corresponding session has expired
@@ -62,6 +65,7 @@ func (this *zkreg) Register(id string, data []byte) {
 			}
 		} else {
 			// didn't encounter zk bug, happy ending
+			log.Trace("#%d created", loops)
 			return
 		}
 	}
