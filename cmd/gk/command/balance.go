@@ -334,12 +334,16 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 	var totalPartitions int
 	for _, host := range sortedHosts {
 		hostPartitions := 0
+		effectiveHostPartitions := 0
 		offsetInfo := this.allHostsTps[host]
 		var clusters []clusterQps
 		for cluster, _ := range offsetInfo.offsetMap {
 			clusterTps := offsetInfo.ClusterTotal(cluster)
 			clusterPartitions := offsetInfo.ClusterPartitions(cluster)
 			hostPartitions += clusterPartitions
+			if clusterTps > 10 {
+				effectiveHostPartitions += clusterPartitions
+			}
 			totalTps += clusterTps
 			totalPartitions += clusterPartitions
 
@@ -370,7 +374,7 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 
 		partitionsPerDisk := 0
 		if model.disks > 0 {
-			partitionsPerDisk = hostPartitions / model.disks
+			partitionsPerDisk = effectiveHostPartitions / model.disks
 		}
 		ppd := fmt.Sprintf("%-3d", partitionsPerDisk)
 		if offsetInfo.Total() > 5000 && partitionsPerDisk > 5 {
