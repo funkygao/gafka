@@ -50,7 +50,7 @@ func (this *WatchNgxErr) Run() {
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
 
-	ngerr := metrics.NewRegisteredGauge("ngx.err", nil)
+	ngerr := metrics.NewRegisteredGauge("_ngx.err", nil)
 	for {
 		select {
 		case <-this.Stop:
