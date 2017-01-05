@@ -2,7 +2,6 @@ package influxquery
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
@@ -69,29 +68,30 @@ func (this *WatchNgxErr) Run() {
 }
 
 func (this *WatchNgxErr) ngixErrSum() (int, error) {
-	res, err := queryInfluxDB(this.addr, this.db,
-		fmt.Sprintf(`SELECT mean("m1") FROM "pub.qps.meter" WHERE "appid" = 'logstash' AND "topic" = 'nginx_errlog_intra' AND time > now() - 1m GROUP BY time(1m) fill(0)`))
+	total := 0
+
+	queries := []string{
+		`SELECT mean("m1") FROM "pub.qps.meter" WHERE "appid" = 'logstash' AND "topic" = 'nginx_errlog_intra' AND time > now() - 1m GROUP BY time(1m) fill(0)`,
+		`SELECT mean("m1") FROM "pub.qps.meter" WHERE "appid" = 'logstash' AND "topic" = 'nginx_errlog_extra' AND time > now() - 1m GROUP BY time(1m) fill(0)`,
+	}
+	for _, q := range queries {
+		if n, err := this.runQuery(q); err != nil {
+			return total, err
+		} else {
+			total += n
+		}
+	}
+
+	return total, nil
+}
+
+func (this *WatchNgxErr) runQuery(q string) (int, error) {
+	res, err := queryInfluxDB(this.addr, this.db, q)
 	if err != nil {
 		return 0, err
 	}
 
 	total := 0
-	for _, row := range res {
-		for _, x := range row.Series {
-			for _, val := range x.Values {
-				// val[0] is time
-				n, _ := val[1].(json.Number).Float64()
-				total += int(n)
-			}
-		}
-	}
-
-	res, err = queryInfluxDB(this.addr, this.db,
-		fmt.Sprintf(`SELECT mean("m1") FROM "pub.qps.meter" WHERE "appid" = 'logstash' AND "topic" = 'nginx_errlog_extra' AND time > now() - 1m GROUP BY time(1m) fill(0)`))
-	if err != nil {
-		return 0, err
-	}
-
 	for _, row := range res {
 		for _, x := range row.Series {
 			for _, val := range x.Values {
