@@ -70,7 +70,7 @@ func (this *WatchNgxErr) Run() {
 
 func (this *WatchNgxErr) ngixErrSum() (int, error) {
 	res, err := queryInfluxDB(this.addr, this.db,
-		fmt.Sprintf(`SELECT mean("m5") FROM "pub.qps.meter" WHERE "appid" = 'logstash' AND "topic" = 'nginx_errlog_intra' AND time > now() - 1m GROUP BY time(1m) fill(0)`))
+		fmt.Sprintf(`SELECT mean("m1") FROM "pub.qps.meter" WHERE "appid" = 'logstash' AND "topic" = 'nginx_errlog_intra' AND time > now() - 1m GROUP BY time(1m) fill(0)`))
 	if err != nil {
 		return 0, err
 	}
@@ -87,7 +87,7 @@ func (this *WatchNgxErr) ngixErrSum() (int, error) {
 	}
 
 	res, err = queryInfluxDB(this.addr, this.db,
-		fmt.Sprintf(`SELECT mean("m5") FROM "pub.qps.meter" WHERE "appid" = 'logstash' AND "topic" = 'nginx_errlog_extra' AND time > now() - 1m GROUP BY time(1m) fill(0)`))
+		fmt.Sprintf(`SELECT mean("m1") FROM "pub.qps.meter" WHERE "appid" = 'logstash' AND "topic" = 'nginx_errlog_extra' AND time > now() - 1m GROUP BY time(1m) fill(0)`))
 	if err != nil {
 		return 0, err
 	}
