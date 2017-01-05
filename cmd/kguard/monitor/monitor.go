@@ -156,9 +156,9 @@ func (this *Monitor) ServeForever() {
 	log.Info("kguard[%s@%s] starting...", gafka.BuildId, gafka.BuiltAt)
 
 	signal.RegisterHandler(func(sig os.Signal) {
-		this.quitOnce.Do(func() {
-			log.Info("kguard[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))
+		log.Info("kguard[%s@%s] received signal: %s", gafka.BuildId, gafka.BuiltAt, strings.ToUpper(sig.String()))
 
+		this.quitOnce.Do(func() {
 			this.Stop()
 			close(this.quit)
 		})
