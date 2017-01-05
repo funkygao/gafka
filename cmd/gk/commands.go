@@ -52,6 +52,13 @@ func init() {
 			}, nil
 		},
 
+		"merkle": func() (cli.Command, error) {
+			return &command.Merkle{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"redis": func() (cli.Command, error) {
 			return &command.Redis{
 				Ui:  ui,
