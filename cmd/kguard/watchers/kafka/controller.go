@@ -56,6 +56,11 @@ func (this *WatchControllers) Run() {
 
 func (this *WatchControllers) report() (jitter int64) {
 	this.Zkzone.ForSortedControllers(func(cluster string, controller *zk.ControllerMeta) {
+		if controller == nil {
+			log.Warn("cluster[%s] has no controller", cluster)
+			return
+		}
+
 		if mtime, present := this.controllers[cluster]; !present {
 			this.controllers[cluster] = controller.Mtime.Time()
 		} else if mtime != controller.Mtime.Time() {
