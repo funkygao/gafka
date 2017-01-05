@@ -35,17 +35,18 @@ func (this *zkreg) Register(id string, data []byte) {
 	//
 	// might cause dead loop, but we accept it
 	loops := 0
+	path := this.mypath(id)
 	for {
 		loops++
 
-		if err := this.createEphemeralPathExpectConflict(id, data); err != nil {
-			log.Error("#%d register %s/%s: %v", loops, id, string(data), err)
+		if err := this.createEphemeralPathExpectConflict(path, data); err != nil {
+			log.Error("#%d register %s/%s: %v", loops, path, string(data), err)
 
 			if err == zklib.ErrNodeExists {
 				// An ephemeral node may still exist even after its corresponding session has expired
 				// due to a Zookeeper bug, in this case we need to retry writing until the previous node is deleted
 				// and hence the write succeeds without ZkNodeExistsException
-				storedData, _, e := this.zkzone.Conn().Get(this.mypath(id))
+				storedData, _, e := this.zkzone.Conn().Get(path)
 				if e == nil {
 					if bytes.Equal(data, storedData) {
 						// wait for the previous node to be deleted
@@ -65,23 +66,21 @@ func (this *zkreg) Register(id string, data []byte) {
 			}
 		} else {
 			// didn't encounter zk bug, happy ending
-			log.Trace("#%d created", loops)
+			log.Trace("#%d %s created", loops, path)
 			return
 		}
 	}
 
 }
 
-func (this *zkreg) createEphemeralPathExpectConflict(id string, data []byte) error {
-	path := this.mypath(id)
+func (this *zkreg) createEphemeralPathExpectConflict(path string, data []byte) error {
 	err := this.zkzone.CreateEphemeralZnode(path, data)
 	if err == nil {
-		log.Debug("registered in zk: %s", this.mypath(id))
 		return nil
 	}
 
 	if err == zklib.ErrNodeExists {
-		_, _, e := this.zkzone.Conn().Get(this.mypath(id))
+		_, _, e := this.zkzone.Conn().Get(path)
 		if e == zklib.ErrNoNode {
 			// the node disappeared; treat as if node exists
 			return err
