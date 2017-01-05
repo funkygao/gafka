@@ -16,6 +16,7 @@ type subMetrics struct {
 	SubQps      metrics.Meter
 	SubTryQps   metrics.Meter
 	ClientError metrics.Meter
+	ServerError metrics.Meter
 
 	expConsumeOk      *expvar.Int
 	expActiveConns    *expvar.Int
@@ -36,6 +37,7 @@ func NewSubMetrics(gw *Gateway) *subMetrics {
 		SubQps:      metrics.NewRegisteredMeter("sub.qps", metrics.DefaultRegistry),
 		SubTryQps:   metrics.NewRegisteredMeter("sub.try.qps", metrics.DefaultRegistry),
 		ClientError: metrics.NewRegisteredMeter(("sub.clienterr"), metrics.DefaultRegistry),
+		ServerError: metrics.NewRegisteredMeter("sub.servererr", metrics.DefaultRegistry),
 	}
 
 	if Options.DebugHttpAddr != "" {

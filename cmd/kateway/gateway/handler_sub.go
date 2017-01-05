@@ -186,12 +186,16 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	if err != nil {
 		// e,g. kafka was totally shutdown
 		// e,g. too many consumers for the same group
-		log.Error("sub[%s/%s] -(%s): {%s.%s.%s UA:%s} %v",
-			myAppid, group, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), err)
-
 		if store.DefaultSubStore.IsSystemError(err) {
+			log.Error("sub[%s/%s] -(%s): {%s.%s.%s UA:%s} %v",
+				myAppid, group, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), err)
+
+			this.subMetrics.ServerError.Mark(1)
 			writeServerError(w, err.Error())
 		} else {
+			log.Error("sub[%s/%s] -(%s): {%s.%s.%s UA:%s} %v",
+				myAppid, group, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), err)
+
 			this.subMetrics.ClientError.Mark(1)
 			if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(realGroup, 1) {
 				writeQuotaExceeded(w)
@@ -230,6 +234,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 
 		if err != ErrClientGone {
 			if store.DefaultSubStore.IsSystemError(err) {
+				this.subMetrics.ServerError.Mark(1)
 				writeServerError(w, err.Error())
 			} else {
 				this.subMetrics.ClientError.Mark(1)
@@ -247,18 +252,22 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		if err = fetcher.Close(); err != nil {
 			log.Error("sub[%s/%s] %s(%s) %s %v", myAppid, group, r.RemoteAddr, realIp, rawTopic, err)
 		}
-	} else if w.Header().Get("Connection") == "close" {
-		// max req reached, synchronously close this connection
-		if err = fetcher.Close(); err != nil {
-			log.Error("sub[%s/%s] %s(%s) %s %v", myAppid, group, r.RemoteAddr, realIp, rawTopic, err)
+	} else {
+		// sub ok
+		if w.Header().Get("Connection") == "close" {
+			// max req reached, synchronously close this connection
+			if err = fetcher.Close(); err != nil {
+				log.Error("sub[%s/%s] %s(%s) %s %v", myAppid, group, r.RemoteAddr, realIp, rawTopic, err)
+			}
 		}
-	}
 
-	if Options.BadGroupRateLimit {
-		// record the good consumer group client
-		this.goodGroupLock.Lock()
-		this.goodGroupClients[r.RemoteAddr] = struct{}{}
-		this.goodGroupLock.Unlock()
+		if Options.BadGroupRateLimit {
+			// record the good consumer group client
+			this.goodGroupLock.Lock()
+			this.goodGroupClients[r.RemoteAddr] = struct{}{}
+			this.goodGroupLock.Unlock()
+		}
+
 	}
 
 	if gz != nil {
