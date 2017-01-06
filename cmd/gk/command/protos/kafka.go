@@ -9,12 +9,15 @@ type kafka struct {
 	serverPort int
 }
 
-func (k *kafka) Unmarshal(payload []byte) string {
-	// response header
-	//================
-	// 0-3 message_size
-	// 4-7 correlation_id
+func (k *kafka) Unmarshal(srcPort, dstPort uint16, payload []byte) string {
+	if dstPort == uint16(k.serverPort) {
+		return k.unmarshalRequest(payload)
+	}
 
+	return k.unmarshalResponse(payload)
+}
+
+func (k *kafka) unmarshalRequest(payload []byte) string {
 	// request header
 	//===============
 	// 0-3 message_size
@@ -22,9 +25,6 @@ func (k *kafka) Unmarshal(payload []byte) string {
 	// 6-7 api_version
 	// 8-11 correlation_id
 	// 12-13 client_id length
-	if len(payload) < 10 {
-		return fmt.Sprintf("%+v", payload)
-	}
 
 	apiKey := binary.BigEndian.Uint16(payload[4:6])
 	switch apiKey {
@@ -63,6 +63,15 @@ func (k *kafka) Unmarshal(payload []byte) string {
 	case 19: // CreateTopics
 	case 20: // DeleteTopics
 	}
+
+	return ""
+}
+
+func (k *kafka) unmarshalResponse(payload []byte) string {
+	// response header
+	//================
+	// 0-3 message_size
+	// 4-7 correlation_id
 
 	return ""
 }

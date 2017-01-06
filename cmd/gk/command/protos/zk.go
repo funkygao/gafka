@@ -29,7 +29,7 @@ type zk struct {
 	serverPort int
 }
 
-func (z *zk) Unmarshal(payload []byte) string {
+func (z *zk) Unmarshal(srcPort, dstPort uint16, payload []byte) string {
 	r := ""
 	for _, b := range payload {
 		r += fmt.Sprintf("%02d ", b)

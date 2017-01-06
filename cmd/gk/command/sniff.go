@@ -71,25 +71,31 @@ func (this *Sniff) handlePacket(packet gopacket.Packet, prot protos.Protocol) {
 		return
 	}
 	ip, _ := ipLayer.(*layers.IPv4)
+	if ip == nil {
+		return
+	}
 
 	tcpLayer := packet.Layer(layers.LayerTypeTCP)
 	if tcpLayer == nil {
 		return
 	}
 	tcp, _ := tcpLayer.(*layers.TCP)
+	if tcp == nil {
+		return
+	}
 
 	applicationLayer := packet.ApplicationLayer()
 	if applicationLayer == nil {
 		return
 	}
 
-	output := prot.Unmarshal(applicationLayer.Payload())
+	output := prot.Unmarshal(uint16(tcp.SrcPort), uint16(tcp.DstPort), applicationLayer.Payload())
 	if len(output) == 0 {
 		return
 	}
 
-	this.Ui.Info(fmt.Sprintf("%s:%s -> %s:%s %dB",
-		ip.SrcIP, tcp.SrcPort, ip.DstIP, tcp.DstPort, len(applicationLayer.Payload())))
+	this.Ui.Infof("%s:%d -> %s:%d %dB",
+		ip.SrcIP, tcp.SrcPort, ip.DstIP, tcp.DstPort, len(applicationLayer.Payload()))
 	this.Ui.Output(output)
 }
 

@@ -1,7 +1,7 @@
 package protos
 
 type Protocol interface {
-	Unmarshal(payload []byte) string
+	Unmarshal(srcPort, dstPort uint16, payload []byte) string
 }
 
 func New(prot string, serverPort int) Protocol {
