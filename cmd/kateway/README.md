@@ -18,6 +18,7 @@ A fully-managed real-time secure and reliable geo-replicated RESTful Cloud Pub/S
 - Azure EventHub
 - Yahoo Pulsar
 - IBM Bluemix Message Hub
+- uber Cherami
 - qcloud CMQ
 - aliyun MNS
   - order not guaranteed

@@ -735,7 +735,7 @@ func (this *Kateway) runTop() {
 
 			t.Refresh(rows)
 
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * 3)
 		}
 	}()
 
