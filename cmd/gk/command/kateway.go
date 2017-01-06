@@ -692,7 +692,7 @@ func (this *Kateway) generateFlameGraph(zkzone *zk.ZkZone) {
 }
 
 func (this *Kateway) runTop() {
-	t := top.New("Zone|ID|IP|Version|CPU|Heap|Obj|Go|P|S|hhIn|hhOut|Uptime", "%6s %2s %15s %8s %3s %10s %12s %8s %5s %5s %8s %8s")
+	t := top.New("Zone|ID|IP|Version|CPU|Heap|Obj|Go|P|S|hhIn|hhOut", "%6s %2s %15s %8s %3s %10s %12s %8s %5s %5s %8s %8s")
 	go func() {
 		for {
 			rows := make([]string, 0)
