@@ -692,7 +692,8 @@ func (this *Kateway) generateFlameGraph(zkzone *zk.ZkZone) {
 }
 
 func (this *Kateway) runTop() {
-	t := top.New("Zone|ID|IP|Version|CPU|Heap|Obj|Go|P|S|hhIn|hhOut", "%6s %2s %15s %8s %3s %10s %12s %8s %5s %5s %8s %8s")
+	t := top.New("Zone|ID|IP|Version|CPU|Heap|Obj|GC|Go|Pub|Sub|hhIn|hhOut",
+		"%6s %2s %15s %8s %3s %10s %12s %6s %8s %5s %5s %8s %8s")
 	go func() {
 		for {
 			rows := make([]string, 0)
@@ -717,14 +718,15 @@ func (this *Kateway) runTop() {
 					hhDeliverN, _ := statusMap["hh_delivers"].(string)
 					subConn, _ := statusMap["subconn"].(string)
 					goN, _ := statusMap["goroutines"].(string)
+					gcN, _ := statusMap["num_gc"].(float64)
 
-					rows = append(rows, fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
+					rows = append(rows, fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|%s|%s",
 						zkzone.Name(),
 						kw.Id,
 						kw.Ip,
 						kw.Build,
 						kw.Cpu,
-						heapSize, heapObjs,
+						heapSize, heapObjs, int(gcN),
 						goN,
 						pubConn, subConn,
 						hhAppendN, hhDeliverN))

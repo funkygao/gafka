@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -68,6 +69,11 @@ func (this *manServer) statusHandler(w http.ResponseWriter, r *http.Request, par
 	output["hh_appends"] = strconv.FormatInt(hh.Default.AppendN(), 10)
 	output["hh_delivers"] = strconv.FormatInt(hh.Default.DeliverN(), 10)
 	output["goroutines"] = strconv.Itoa(runtime.NumGoroutine())
+
+	var gcStats debug.GCStats
+	debug.ReadGCStats(&gcStats)
+	output["num_gc"] = gcStats.NumGC
+	output["last_gc"] = gcStats.LastGC.Unix()
 
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
