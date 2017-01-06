@@ -88,8 +88,13 @@ func (this *Sniff) handlePacket(packet gopacket.Packet, prot protocol.Protocol) 
 		return
 	}
 
+	output := prot.Unmarshal(applicationLayer.Payload())
+	if len(output) == 0 {
+		return
+	}
+
 	this.Ui.Info(fmt.Sprintf("%s:%s -> %s:%s %dB", ip.SrcIP, tcp.SrcPort, ip.DstIP, tcp.DstPort, len(applicationLayer.Payload())))
-	this.Ui.Output(prot.Unmarshal(applicationLayer.Payload()))
+	this.Ui.Output(output)
 }
 
 func (this *Sniff) Synopsis() string {

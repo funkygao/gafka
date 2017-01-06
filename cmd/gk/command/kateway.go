@@ -23,6 +23,7 @@ import (
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/golib/pipestream"
 	"github.com/funkygao/golib/stress"
+	"github.com/funkygao/golib/top"
 	"github.com/pborman/uuid"
 	"github.com/ryanuber/columnize"
 	zklib "github.com/samuel/go-zookeeper/zk"
@@ -46,6 +47,7 @@ type Kateway struct {
 	pub, sub        bool
 	versionOnly     bool
 	flameGraph      bool
+	topMode         bool
 	benchmark       bool
 	benchmarkAsync  bool
 	benchmarkMaster string
@@ -73,6 +75,7 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.checkup, "checkup", false, "")
 	cmdFlags.BoolVar(&this.benchmark, "bench", false, "")
 	cmdFlags.StringVar(&this.benchmarkMaster, "master", "", "")
+	cmdFlags.BoolVar(&this.topMode, "top", false, "")
 	cmdFlags.BoolVar(&this.pub, "pub", false, "")
 	cmdFlags.DurationVar(&this.pubSleep, "pubsleep", time.Millisecond*100, "")
 	cmdFlags.BoolVar(&this.sub, "sub", false, "")
@@ -80,6 +83,11 @@ func (this *Kateway) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.curl, "curl", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 2
+	}
+
+	if this.topMode {
+		this.runTop()
+		return
 	}
 
 	if this.benchmark {
@@ -334,6 +342,18 @@ func (this *Kateway) installGuide(zkzone *zk.ZkZone) {
 	this.Ui.Output(color.Red("manager db GRANT access rights to this ip"))
 	this.Ui.Output(color.Red("gk deploy -kfkonly"))
 	this.Ui.Output("")
+
+	this.Ui.Output("sysctl net.core.somaxconn=16384")
+	this.Ui.Output("sysctl net.core.netdev_max_backlog=2500")
+
+	this.Ui.Output(`
+vim /etc/security/limits.conf
+*          soft    nofile          409600
+*          hard    nofile          409600
+
+*          soft    nproc          65535
+*          hard    nproc          65535
+		`)
 
 	this.Ui.Output("mkdir -p /var/wd/kateway/sbin")
 	this.Ui.Output("cd /var/wd/kateway")
@@ -671,6 +691,55 @@ func (this *Kateway) generateFlameGraph(zkzone *zk.ZkZone) {
 
 }
 
+func (this *Kateway) runTop() {
+	t := top.New("Zone|ID|IP|Version|CPU|Heap|Obj|Go|P|S|hhIn|hhOut|Uptime", "%6s %2s %15s %8s %3s %10s %12s %8s %5s %5s %8s %8s")
+	go func() {
+		for {
+			rows := make([]string, 0)
+			forSortedZones(func(zkzone *zk.ZkZone) {
+				if !patternMatched(zkzone.Name(), this.zone) {
+					return
+				}
+
+				kateways, err := zkzone.KatewayInfos()
+				swallow(err)
+
+				for _, kw := range kateways {
+					if this.id != "" && this.id != kw.Id {
+						continue
+					}
+
+					statusMap, _ := this.getKatewayStatusMap(kw.ManAddr)
+					heapSize, _ := statusMap["heap"].(string)
+					heapObjs, _ := statusMap["objects"].(string)
+					pubConn, _ := statusMap["pubconn"].(string)
+					hhAppendN, _ := statusMap["hh_appends"].(string)
+					hhDeliverN, _ := statusMap["hh_delivers"].(string)
+					subConn, _ := statusMap["subconn"].(string)
+					goN, _ := statusMap["goroutines"].(string)
+
+					rows = append(rows, fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
+						zkzone.Name(),
+						kw.Id,
+						kw.Ip,
+						kw.Build,
+						kw.Cpu,
+						heapSize, heapObjs,
+						goN,
+						pubConn, subConn,
+						hhAppendN, hhDeliverN))
+				}
+			})
+
+			t.Refresh(rows)
+
+			time.Sleep(time.Second * 5)
+		}
+	}()
+
+	swallow(t.Start())
+}
+
 func (this *Kateway) doVisualize() {
 	cmd := pipestream.New("/usr/local/bin/logstalgia", "-f", this.visualLog)
 	err := cmd.Open()
@@ -699,6 +768,9 @@ Options:
 
     -i
       Install kateway guide
+
+    -top
+      Top mode
 
     -bench
       Run Pub benchmark agaist kateway cluster
