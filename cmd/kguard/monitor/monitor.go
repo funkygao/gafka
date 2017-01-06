@@ -21,6 +21,7 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/signal"
+	"github.com/funkygao/golib/sync2"
 	log "github.com/funkygao/log4go"
 	"github.com/julienschmidt/httprouter"
 )
@@ -47,7 +48,7 @@ type Monitor struct {
 	stop     chan struct{} // broadcast to all watchers to stop, but might restart again
 	quit     chan struct{}
 	quitOnce sync.Once
-	leader   bool
+	leader   sync2.AtomicBool
 }
 
 func (this *Monitor) Init() {
@@ -91,8 +92,8 @@ func (this *Monitor) Init() {
 }
 
 func (this *Monitor) Stop() {
-	if this.leader {
-		this.leader = false
+	if this.leader.Get() {
+		this.leader.Set(false)
 
 		log.Info("stopping all watchers ...")
 		close(this.stop)
@@ -115,7 +116,7 @@ func (this *Monitor) Stop() {
 }
 
 func (this *Monitor) Start() {
-	this.leader = true
+	this.leader.Set(true)
 	this.leadAt = time.Now()
 	this.stop = make(chan struct{})
 
