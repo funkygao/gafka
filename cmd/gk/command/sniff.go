@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/funkygao/gafka/cmd/gk/command/protos"
 	"github.com/funkygao/gocli"
@@ -57,9 +58,27 @@ func (this *Sniff) Run(args []string) (exitCode int) {
 
 	// Use the handle as a packet source to process all packets
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+	packets := packetSource.Packets()
+	assembler := protos.Assembler()
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
 	this.Ui.Output("starting to read packets...")
-	for packet := range packetSource.Packets() {
-		this.handlePacket(packet, prot)
+	for {
+		select {
+		case packet := <-packets:
+			if packet == nil {
+				return
+			}
+			if packet.NetworkLayer() == nil || packet.TransportLayer() == nil || packet.TransportLayer().LayerType() != layers.LayerTypeTCP {
+				continue
+			}
+			tcp := packet.TransportLayer().(*layers.TCP)
+			assembler.AssembleWithTimestamp(packet.NetworkLayer().NetworkFlow(), tcp, packet.Metadata().Timestamp)
+
+		case <-ticker.C:
+			assembler.FlushOlderThan(time.Now().Add(time.Minute * -2))
+		}
 	}
 
 	return
@@ -94,7 +113,7 @@ func (this *Sniff) handlePacket(packet gopacket.Packet, prot protos.Protocol) {
 		return
 	}
 
-	this.Ui.Infof("%s:%d -> %s:%d %dB",
+	this.Ui.Outputf("%s:%d -> %s:%d %dB",
 		ip.SrcIP, tcp.SrcPort, ip.DstIP, tcp.DstPort, len(applicationLayer.Payload()))
 	this.Ui.Output(output)
 }
