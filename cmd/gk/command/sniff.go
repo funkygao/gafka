@@ -4,9 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"strings"
-	"time"
 
-	"github.com/funkygao/gafka/cmd/gk/command/protocol"
+	"github.com/funkygao/gafka/cmd/gk/command/protos"
 	"github.com/funkygao/gocli"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -20,17 +19,17 @@ type Sniff struct {
 
 func (this *Sniff) Run(args []string) (exitCode int) {
 	var (
-		device string
-		filter string
-		p      string
-		sleep  time.Duration
+		device     string
+		filter     string
+		protocol   string
+		serverPort int
 	)
 	cmdFlags := flag.NewFlagSet("sniff", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&device, "i", "", "")
 	cmdFlags.StringVar(&filter, "f", "", "")
-	cmdFlags.StringVar(&p, "p", "ascii", "")
-	cmdFlags.DurationVar(&sleep, "s", 0, "")
+	cmdFlags.StringVar(&protocol, "p", "ascii", "")
+	cmdFlags.IntVar(&serverPort, "sp", 0, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -41,14 +40,14 @@ func (this *Sniff) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	prot := protocol.New(p)
+	prot := protos.New(protocol, serverPort)
 	if prot == nil {
 		this.Ui.Error("unkown protocol")
 		this.Ui.Outputf(this.Help())
 		return 2
 	}
 
-	this.Ui.Infof("starting sniff on interface %s", device)
+	this.Ui.Outputf("starting sniff on interface %s", device)
 	snaplen := int32(1 << 20) // max number of bytes to read per packet
 	handle, err := pcap.OpenLive(device, snaplen, true, pcap.BlockForever)
 	swallow(err)
@@ -58,19 +57,15 @@ func (this *Sniff) Run(args []string) (exitCode int) {
 
 	// Use the handle as a packet source to process all packets
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-	this.Ui.Info("starting to read packets...")
+	this.Ui.Output("starting to read packets...")
 	for packet := range packetSource.Packets() {
 		this.handlePacket(packet, prot)
-
-		if sleep > 0 {
-			time.Sleep(sleep)
-		}
 	}
 
 	return
 }
 
-func (this *Sniff) handlePacket(packet gopacket.Packet, prot protocol.Protocol) {
+func (this *Sniff) handlePacket(packet gopacket.Packet, prot protos.Protocol) {
 	ipLayer := packet.Layer(layers.LayerTypeIPv4)
 	if ipLayer == nil {
 		return
@@ -93,7 +88,8 @@ func (this *Sniff) handlePacket(packet gopacket.Packet, prot protocol.Protocol) 
 		return
 	}
 
-	this.Ui.Info(fmt.Sprintf("%s:%s -> %s:%s %dB", ip.SrcIP, tcp.SrcPort, ip.DstIP, tcp.DstPort, len(applicationLayer.Payload())))
+	this.Ui.Info(fmt.Sprintf("%s:%s -> %s:%s %dB",
+		ip.SrcIP, tcp.SrcPort, ip.DstIP, tcp.DstPort, len(applicationLayer.Payload())))
 	this.Ui.Output(output)
 }
 
@@ -117,9 +113,8 @@ Options:
     -p ascii|zk|kafka
       Default protocol: ascii
 
-    -s sleep duration
-      e,g 5ms 1s
-   
+    -sp port
+      Server port
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)

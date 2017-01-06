@@ -1,4 +1,4 @@
-package protocol
+package protos
 
 import (
 	"fmt"
@@ -25,7 +25,9 @@ import (
 // =========== =========== =========== =========== == ==
 // len         xid         opcode      path len    path watch
 //
-type zk struct{}
+type zk struct {
+	serverPort int
+}
 
 func (z *zk) Unmarshal(payload []byte) string {
 	r := ""

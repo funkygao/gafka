@@ -1,11 +1,13 @@
-package protocol
+package protos
 
 import (
 	"encoding/binary"
 	"fmt"
 )
 
-type kafka struct{}
+type kafka struct {
+	serverPort int
+}
 
 func (k *kafka) Unmarshal(payload []byte) string {
 	// response header
