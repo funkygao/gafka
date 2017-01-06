@@ -59,7 +59,7 @@ func (this *Sniff) Run(args []string) (exitCode int) {
 	// Use the handle as a packet source to process all packets
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	packets := packetSource.Packets()
-	assembler := protos.Assembler()
+	assembler := protos.Assembler(protocol, serverPort, this.Ui)
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
