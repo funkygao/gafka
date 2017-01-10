@@ -31,7 +31,8 @@ type ZkZone struct {
 	errsLock sync.Mutex
 	errs     []error
 
-	zkclusters map[string]*ZkCluster
+	zkclustersLock sync.RWMutex
+	zkclusters     map[string]*ZkCluster
 }
 
 // NewZkZone creates a new ZkZone instance.
@@ -99,12 +100,34 @@ func (this *ZkZone) Conn() *zk.Conn {
 }
 
 func (this *ZkZone) NewCluster(cluster string) *ZkCluster {
-	if c, present := this.zkclusters[cluster]; present {
+	return this.NewclusterWithPath(cluster, this.ClusterPath(cluster))
+}
+
+func (this *ZkZone) NewclusterWithPath(cluster, path string) *ZkCluster {
+	this.zkclustersLock.RLock()
+	c, present := this.zkclusters[cluster]
+	this.zkclustersLock.RUnlock()
+	if present {
 		return c
 	}
 
-	c := this.NewclusterWithPath(cluster, this.ClusterPath(cluster))
+	this.zkclustersLock.Lock()
+	if c, present := this.zkclusters[cluster]; present {
+		this.zkclustersLock.Unlock()
+		return c
+	}
+
+	c = &ZkCluster{
+		zone:     this,
+		name:     cluster,
+		path:     path,
+		Roster:   make([]BrokerInfo, 0),
+		Replicas: 2,
+		Priority: 1,
+	}
 	this.zkclusters[cluster] = c
+	this.zkclustersLock.Unlock()
+
 	return c
 }
 
@@ -269,21 +292,6 @@ func (this *ZkZone) LoadKatewayMetrics(katewayId string, key string) ([]byte, er
 	path := katewayMetricsRootByKey(katewayId, key)
 	data, _, err := this.conn.Get(path)
 	return data, err
-}
-
-func (this *ZkZone) NewclusterWithPath(cluster, path string) *ZkCluster {
-	if c, present := this.zkclusters[cluster]; present {
-		return c
-	}
-
-	return &ZkCluster{
-		zone:     this,
-		name:     cluster,
-		path:     path,
-		Roster:   make([]BrokerInfo, 0),
-		Replicas: 2,
-		Priority: 1,
-	}
 }
 
 func (this *ZkZone) swallow(path string, err error) bool {
