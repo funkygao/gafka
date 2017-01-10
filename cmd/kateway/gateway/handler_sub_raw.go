@@ -12,7 +12,7 @@ import (
 )
 
 //go:generate goannotation $GOFILE
-// @rest GET /v1/raw/msgs/:cluster/:topic?group=xx&batch=10&reset=<newest|oldest>
+// @rest GET /v1/raw/msgs/:cluster/:topic?group=xx&batch=10&mux=1&reset=<newest|oldest>
 func (this *subServer) subRawHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		cluster string
@@ -63,7 +63,7 @@ func (this *subServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 	}
 
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, topic,
-		myAppid+"."+group, r.RemoteAddr, realIp, reset, Options.PermitStandbySub)
+		myAppid+"."+group, r.RemoteAddr, realIp, reset, Options.PermitStandbySub, query.Get("mux") == "1")
 	if err != nil {
 		// e,g. kafka was totally shutdown
 		// e,g. too many consumers for the same group
@@ -140,13 +140,6 @@ func (this *subServer) pumpRawMessages(w http.ResponseWriter, r *http.Request, r
 
 			return nil
 
-		case err := <-fetcher.Errors():
-			// e,g. consume a non-existent topic
-			// e,g. conn with broker is broken
-			// e,g. kafka: error while consuming foobar/0: EOF
-			// e,g. kafka: error while consuming foobar/2: read tcp 10.1.1.1:60088->10.1.1.2:11005: i/o timeout
-			return err
-
 		case <-this.timer.After(idleTimeout):
 			if chunkedEver {
 				return nil
@@ -155,6 +148,13 @@ func (this *subServer) pumpRawMessages(w http.ResponseWriter, r *http.Request, r
 			w.WriteHeader(http.StatusNoContent)
 			w.Write([]byte{}) // without this, client cant get response
 			return nil
+
+		case err := <-fetcher.Errors():
+			// e,g. consume a non-existent topic
+			// e,g. conn with broker is broken
+			// e,g. kafka: error while consuming foobar/0: EOF
+			// e,g. kafka: error while consuming foobar/2: read tcp 10.1.1.1:60088->10.1.1.2:11005: i/o timeout
+			return err
 
 		case msg, ok := <-fetcher.Messages():
 			if !ok {

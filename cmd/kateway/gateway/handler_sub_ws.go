@@ -12,7 +12,7 @@ import (
 )
 
 //go:generate goannotation $GOFILE
-// @rest GET /v1/ws/msgs/:appid/:topic/:ver?group=xx
+// @rest GET /v1/ws/msgs/:appid/:topic/:ver?group=xx&mux=1
 func (this *subServer) subWsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -76,7 +76,7 @@ func (this *subServer) subWsHandler(w http.ResponseWriter, r *http.Request, para
 	}
 
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
-		myAppid+"."+group, r.RemoteAddr, realIp, resetOffset, Options.PermitStandbySub)
+		myAppid+"."+group, r.RemoteAddr, realIp, resetOffset, Options.PermitStandbySub, query.Get("mux") == "1")
 	if err != nil {
 		log.Error("sub[%s] %s: %+v %v", myAppid, r.RemoteAddr, params, err)
 

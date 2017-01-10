@@ -73,7 +73,7 @@ func (this *subStore) Stop() {
 }
 
 func (this *subStore) Fetch(cluster, topic, group, remoteAddr, realIp,
-	resetOffset string, permitStandby bool) (store.Fetcher, error) {
+	resetOffset string, permitStandby, mux bool) (store.Fetcher, error) {
 	cg, err := this.subManager.PickConsumerGroup(cluster, topic, group, remoteAddr, realIp, resetOffset, permitStandby)
 	if err != nil {
 		return nil, err

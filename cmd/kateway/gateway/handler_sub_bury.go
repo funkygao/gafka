@@ -14,7 +14,7 @@ import (
 )
 
 //go:generate goannotation $GOFILE
-// @rest PUT /v1/msgs/:appid/:topic/:ver?group=xx&q=<dead|retry>
+// @rest PUT /v1/msgs/:appid/:topic/:ver?group=xx&mux=1&q=<dead|retry>
 // q=retry&X-Bury=dead means bury from retry queue to dead queue
 func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
@@ -140,7 +140,7 @@ func (this *subServer) buryHandler(w http.ResponseWriter, r *http.Request, param
 	}
 
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
-		myAppid+"."+group, r.RemoteAddr, realIp, "", Options.PermitStandbySub)
+		myAppid+"."+group, r.RemoteAddr, realIp, "", Options.PermitStandbySub, query.Get("mux") == "1")
 	if err != nil {
 		log.Error("bury[%s/%s] %s(%s) {%s UA:%s} %v",
 			myAppid, group, r.RemoteAddr, realIp, rawTopic, r.Header.Get("User-Agent"), err)

@@ -15,7 +15,7 @@ import (
 )
 
 //go:generate goannotation $GOFILE
-// @rest GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&reset=<newest|oldest>&ack=1&q=<dead|retry>
+// @rest GET /v1/msgs/:appid/:topic/:ver?group=xx&batch=10&mux=1&reset=<newest|oldest>&ack=1&q=<dead|retry>
 func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
 		topic      string
@@ -182,7 +182,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 	}
 
 	fetcher, err := store.DefaultSubStore.Fetch(cluster, rawTopic,
-		realGroup, r.RemoteAddr, realIp, reset, Options.PermitStandbySub)
+		realGroup, r.RemoteAddr, realIp, reset, Options.PermitStandbySub, query.Get("mux") == "1")
 	if err != nil {
 		// e,g. kafka was totally shutdown
 		// e,g. too many consumers for the same group
@@ -329,13 +329,6 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request, real
 
 			return nil
 
-		case err := <-fetcher.Errors():
-			// e,g. consume a non-existent topic
-			// e,g. conn with broker is broken
-			// e,g. kafka: error while consuming foobar/0: EOF
-			// e,g. kafka: error while consuming foobar/2: read tcp 10.1.1.1:60088->10.1.1.2:11005: i/o timeout
-			return err
-
 		case <-this.timer.After(idleTimeout):
 			if chunkedEver {
 				// response already sent in chunk
@@ -347,6 +340,13 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request, real
 			w.WriteHeader(http.StatusNoContent)
 			w.Write([]byte{}) // without this, client cant get response
 			return nil
+
+		case err := <-fetcher.Errors():
+			// e,g. consume a non-existent topic
+			// e,g. conn with broker is broken
+			// e,g. kafka: error while consuming foobar/0: EOF
+			// e,g. kafka: error while consuming foobar/2: read tcp 10.1.1.1:60088->10.1.1.2:11005: i/o timeout
+			return err
 
 		case msg, ok := <-fetcher.Messages():
 			if !ok {
