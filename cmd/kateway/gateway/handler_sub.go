@@ -254,8 +254,8 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		}
 	} else {
 		// sub ok
-		if w.Header().Get("Connection") == "close" {
-			// max req reached, synchronously close this connection
+		if r.Header.Get("Connection") == "close" || w.Header().Get("Connection") == "close" {
+			// synchronously close this fetcher before reply
 			if err = fetcher.Close(); err != nil {
 				log.Error("sub[%s/%s] %s(%s) %s %v", myAppid, group, r.RemoteAddr, realIp, rawTopic, err)
 			}
