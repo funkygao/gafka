@@ -94,7 +94,7 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, rea
 		this.clientMap[remoteAddr] = cg
 
 		if mux {
-			this.mux.register(group, remoteAddr, cg)
+			this.mux.register(remoteAddr, cg)
 		}
 	} else if mux && (err == consumergroup.ErrTooManyConsumers || err == store.ErrTooManyConsumers) {
 		if cg, err = this.mux.claim(group, remoteAddr); err == nil && cg != nil {

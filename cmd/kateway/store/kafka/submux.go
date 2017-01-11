@@ -23,8 +23,8 @@ import (
 type subMux struct {
 	streams map[string]*consumergroup.ConsumerGroup // remoteAddr: cg
 
-	idx map[string]int64                          // group:
-	cgs map[string][]*consumergroup.ConsumerGroup // group: []cg
+	idx   map[string]int64                          // group:
+	stock map[string][]*consumergroup.ConsumerGroup // group: []cg
 
 	lock sync.RWMutex
 }
@@ -32,7 +32,7 @@ type subMux struct {
 func newSubMux() *subMux {
 	return &subMux{
 		streams: make(map[string]*consumergroup.ConsumerGroup, 50),
-		cgs:     make(map[string][]*consumergroup.ConsumerGroup, 50),
+		stock:   make(map[string][]*consumergroup.ConsumerGroup, 50),
 		idx:     make(map[string]int64, 50),
 	}
 }
@@ -49,14 +49,14 @@ func (m *subMux) claim(group, remoteAddr string) (cg *consumergroup.ConsumerGrou
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	cgsN := int64(len(m.cgs[group]))
-	if cgsN == 0 {
+	stockN := int64(len(m.stock[group]))
+	if stockN == 0 {
 		err = store.ErrTooManyConsumers
 		return
 	}
 
 	// round robin
-	cg = m.cgs[group][m.idx[group]%cgsN]
+	cg = m.stock[group][m.idx[group]%stockN]
 
 	m.streams[remoteAddr] = cg
 	m.idx[group]++
@@ -66,28 +66,37 @@ func (m *subMux) claim(group, remoteAddr string) (cg *consumergroup.ConsumerGrou
 	return
 }
 
-func (m *subMux) register(group, remoteAddr string, cg *consumergroup.ConsumerGroup) {
+func (m *subMux) register(remoteAddr string, cg *consumergroup.ConsumerGroup) {
+	if cg.ID() == "" {
+		log.Warn("dead cg found: %+v", cg)
+		return
+	}
+
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	if _, present := m.cgs[group]; !present {
-		m.cgs[group] = make([]*consumergroup.ConsumerGroup, 0, 1)
+	group := cg.Name()
+	if _, present := m.stock[group]; !present {
+		m.stock[group] = []*consumergroup.ConsumerGroup{cg}
+		m.streams[remoteAddr] = cg
+		log.Debug("register %s/%s %+v", remoteAddr, group, m)
+		return
 	}
 
 	dup := false
-	for _, c := range m.cgs[group] {
-		if cg.ID() != "" && cg.ID() == c.ID() {
+	for _, c := range m.stock[group] {
+		if cg.ID() == c.ID() {
 			dup = true
 			break
 		}
 	}
-
-	m.streams[remoteAddr] = cg
 	if !dup {
-		m.cgs[group] = append(m.cgs[group], cg)
+		m.stock[group] = append(m.stock[group], cg)
 	}
 
-	log.Debug("register %+v", m)
+	m.streams[remoteAddr] = cg
+
+	log.Debug("register %s/%s %+v", remoteAddr, group, m)
 }
 
 func (m *subMux) kill(remoteAddr string) bool {
@@ -112,13 +121,13 @@ func (m *subMux) kill(remoteAddr string) bool {
 	}
 
 	if leftN == 0 {
-		newcgs := make([]*consumergroup.ConsumerGroup, 0)
-		for _, conn := range m.cgs[cg.Name()] {
+		newstock := make([]*consumergroup.ConsumerGroup, 0)
+		for _, conn := range m.stock[cg.Name()] {
 			if conn.ID() != cg.ID() {
-				newcgs = append(newcgs, conn)
+				newstock = append(newstock, conn)
 			}
 		}
-		m.cgs[cg.Name()] = newcgs
+		m.stock[cg.Name()] = newstock
 		log.Debug("safe to offload %s %+v", remoteAddr, m)
 		return true
 	}
@@ -129,5 +138,5 @@ func (m *subMux) kill(remoteAddr string) bool {
 }
 
 func (m *subMux) String() string {
-	return fmt.Sprintf("mux:{streams:%+v cgs:%+v}", m.streams, m.cgs)
+	return fmt.Sprintf("mux:{streams:%+v stock:%+v}", m.streams, m.stock)
 }
