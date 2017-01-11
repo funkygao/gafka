@@ -430,15 +430,6 @@ func (this *ZkCluster) Brokers() map[string]*BrokerZnode {
 	return r
 }
 
-// Returns distinct online consumers in group for a topic.
-func (this *ZkCluster) OnlineConsumersCount(topic, group string) int {
-	consumers := make(map[string]struct{})
-	for _, zkData := range this.zone.ChildrenWithData(this.consumerGroupOwnerOfTopicPath(group, topic)) {
-		consumers[string(zkData.data)] = struct{}{}
-	}
-	return len(consumers)
-}
-
 func (this *ZkCluster) NamedBrokerList() []string {
 	r := make([]string, 0)
 	for _, broker := range this.Brokers() {
