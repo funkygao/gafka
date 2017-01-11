@@ -73,6 +73,7 @@ func sub(id int) {
 		Ver:   "v1",
 		Group: group,
 		Tag:   tag,
+		Mux:   true,
 	}
 	if mode == "subx" {
 		err = c.SubX(opt, func(statusCode int, msg []byte,

@@ -138,54 +138,6 @@ func (this *zkMetaStore) Stop() {
 	this.wg.Wait()
 }
 
-func (this *zkMetaStore) OnlineConsumersCount(cluster, topic, group string) (int, error) {
-	// without cache
-	this.mu.Lock()
-	c, present := this.clusters[cluster]
-	this.mu.Unlock()
-
-	if !present {
-		return 0, meta.ErrInvalidCluster
-	}
-
-	// FIXME will always lookup zk
-	return c.OnlineConsumersCount(topic, group), nil
-}
-
-func (this *zkMetaStore) TopicPartitions(cluster, topic string) []int32 {
-	ct := structs.ClusterTopic{Cluster: cluster, Topic: topic}
-
-	this.pmapLock.RLock()
-	if partitionIDs, present := this.partitionsMap[ct]; present {
-		this.pmapLock.RUnlock()
-		return partitionIDs
-	}
-	this.pmapLock.RUnlock()
-
-	this.pmapLock.Lock()
-	defer this.pmapLock.Unlock()
-
-	// double check
-	if partitionIDs, present := this.partitionsMap[ct]; present {
-		return partitionIDs
-	}
-
-	// cache miss
-	this.mu.RLock()
-	c, ok := this.clusters[cluster]
-	this.mu.RUnlock()
-	if !ok {
-		log.Warn("invalid cluster: %s", cluster)
-		return nil
-	}
-
-	partitionIDs := c.Partitions(topic)
-	// set cache
-	this.partitionsMap[ct] = partitionIDs
-
-	return partitionIDs
-}
-
 func (this *zkMetaStore) BrokerList(cluster string) []string {
 	this.mu.RLock()
 	r := this.brokerList[cluster]

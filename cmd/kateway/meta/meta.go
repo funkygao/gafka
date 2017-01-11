@@ -23,8 +23,6 @@ type MetaStore interface {
 	// AssignClusters is director of cluster distribution.
 	AssignClusters() []map[string]string
 
-	TopicPartitions(cluster, topic string) []int32
-	OnlineConsumersCount(cluster, topic, group string) (int, error)
 	ZkAddrs() []string
 	ZkChroot(cluster string) string
 

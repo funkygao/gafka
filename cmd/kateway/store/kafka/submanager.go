@@ -15,16 +15,19 @@ import (
 type subManager struct {
 	clientMap     map[string]*consumergroup.ConsumerGroup // key is client remote addr, a client can only sub 1 topic
 	clientMapLock sync.RWMutex                            // TODO the lock is too big
+
+	mux *subMux
 }
 
 func newSubManager() *subManager {
 	return &subManager{
 		clientMap: make(map[string]*consumergroup.ConsumerGroup, 500),
+		mux:       newSubMux(),
 	}
 }
 
 func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, realIp string,
-	resetOffset string, permitStandby bool) (cg *consumergroup.ConsumerGroup, err error) {
+	resetOffset string, permitStandby, mux bool) (cg *consumergroup.ConsumerGroup, err error) {
 	// find consumger group from cache
 	var present bool
 	this.clientMapLock.RLock()
@@ -34,20 +37,9 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, rea
 		return
 	}
 
-	if !permitStandby {
-		// ensure concurrent sub threads didn't exceed partition count
-		// the 1st non-strict barrier, consumer group is the final barrier
-		partitionN := len(meta.Default.TopicPartitions(cluster, topic))
-		if partitionN == 0 {
-			err = store.ErrInvalidTopic
-			return
-		}
-		onlineN, e := meta.Default.OnlineConsumersCount(cluster, topic, group)
-		if e != nil {
-			return nil, e
-		}
-		if onlineN >= partitionN {
-			err = store.ErrTooManyConsumers
+	if mux {
+		// find stream from cache
+		if cg, present = this.mux.get(remoteAddr); present {
 			return
 		}
 	}
@@ -55,10 +47,13 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, rea
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 
-	// double check lock
-	cg, present = this.clientMap[remoteAddr]
-	if present {
+	if cg, present = this.clientMap[remoteAddr]; present {
 		return
+	}
+	if mux {
+		if cg, present = this.mux.get(remoteAddr); present {
+			return
+		}
 	}
 
 	// cache miss, create the consumer group for this client
@@ -94,10 +89,18 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, rea
 	}
 
 	// runs in serial
-	cg, err = consumergroup.JoinConsumerGroupRealIp(realIp, group, []string{topic},
-		meta.Default.ZkAddrs(), cf)
+	cg, err = consumergroup.JoinConsumerGroupRealIp(realIp, group, []string{topic}, meta.Default.ZkAddrs(), cf)
 	if err == nil {
 		this.clientMap[remoteAddr] = cg
+
+		if mux {
+			this.mux.register(remoteAddr, cg)
+		}
+	} else if mux && (err == consumergroup.ErrTooManyConsumers || err == store.ErrTooManyConsumers) {
+		if cg, err = this.mux.claim(group, remoteAddr); err == nil && cg != nil {
+			this.clientMap[remoteAddr] = cg
+		}
+
 	}
 
 	return
@@ -118,6 +121,11 @@ func (this *subManager) killClient(remoteAddr string) (err error) {
 		// e,g. client connects to Sub port but not Sub request(404), will lead to this case
 		// e,g. Sub a non-exist topic
 		return
+	}
+
+	if !this.mux.kill(remoteAddr) {
+		// still some client streams using this cg
+		return nil
 	}
 
 	if err = cg.Close(); err != nil {

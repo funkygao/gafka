@@ -344,6 +344,7 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request, real
 		case err := <-fetcher.Errors():
 			// e,g. consume a non-existent topic
 			// e,g. conn with broker is broken
+			// e,g. Consumers more than active partitions
 			// e,g. kafka: error while consuming foobar/0: EOF
 			// e,g. kafka: error while consuming foobar/2: read tcp 10.1.1.1:60088->10.1.1.2:11005: i/o timeout
 			return err
