@@ -20,7 +20,7 @@ defaults
     log global
     mode http # [tcp|http|health]
     backlog 10000
-    retries 0
+    retries 20
     maxconn 15000
     balance roundrobin
     errorfile 503 {{.HaproxyRoot}}/conf/503.http
@@ -57,8 +57,9 @@ listen pub
     bind 0.0.0.0:{{.PubPort}}
     balance source
     #cookie PUB insert indirect # indirect means not sending cookie to backend
+    #set rise to 200000000 to disable kateway recover by haproxy, we use ehaproxy to recover kateway
 {{range .Pub}}
-    server {{.Name}} {{.Addr}} weight {{.Cpu}}
+    server {{.Name}} {{.Addr}} weight {{.Cpu}} check inter 5s rise 200000000 fall 3
 {{end}}
 
 listen sub
@@ -69,11 +70,11 @@ listen sub
     #compression type text/html text/plain application/json
     #cookie SUB insert indirect
 {{range .Sub}}
-    server {{.Name}} {{.Addr}} weight {{.Cpu}}
+    server {{.Name}} {{.Addr}} weight {{.Cpu}} check inter 5s rise 200000000 fall 3
 {{end}}
 
 listen man
     bind 0.0.0.0:{{.ManPort}}
 {{range .Man}}
-    server {{.Name}} {{.Addr}} weight {{.Cpu}}
+    server {{.Name}} {{.Addr}} weight {{.Cpu}} check inter 5s rise 200000000 fall 3
 {{end}}

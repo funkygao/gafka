@@ -1,6 +1,6 @@
 global    
     # logging to rsyslog facility local3 [err warning info debug]   
-    log 127.0.0.1 local1 notice
+    log 127.0.0.1 local1 notice 
     log 127.0.0.1 local3 warning
     stats bind-process {{.CpuNum}}
     stats socket /tmp/haproxy.sock mode 0600 level admin
@@ -20,7 +20,7 @@ defaults
     log global
     mode http # [tcp|http|health]
     backlog 10000
-    retries 0
+    retries 20
     maxconn 15000
     balance roundrobin
     errorfile 500 {{.HaproxyRoot}}/conf/500.http
@@ -61,7 +61,7 @@ listen pub
     balance source
     #cookie PUB insert indirect # indirect means not sending cookie to backend
 {{range .Pub}}
-    server {{.Name}} {{.Addr}} weight {{.Cpu}}
+    server {{.Name}} {{.Addr}} weight {{.Cpu}} check inter 5s rise 200000000 fall 3
 {{end}}
 
 listen sub
@@ -72,11 +72,11 @@ listen sub
     #compression type text/html text/plain application/json
     #cookie SUB insert indirect
 {{range .Sub}}
-    server {{.Name}} {{.Addr}} weight {{.Cpu}}
+    server {{.Name}} {{.Addr}} weight {{.Cpu}} check inter 5s rise 200000000 fall 3
 {{end}}
 
 listen man
     bind 0.0.0.0:{{.ManPort}}
 {{range .Man}}
-    server {{.Name}} {{.Addr}} weight {{.Cpu}}
+    server {{.Name}} {{.Addr}} weight {{.Cpu}} check inter 5s rise 200000000 fall 3
 {{end}}

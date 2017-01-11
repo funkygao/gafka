@@ -174,6 +174,8 @@ func (this *Start) main() {
 
 		if zkConnected {
 			if len(instances) > 0 {
+				//reload delayed to make sure the redispatch has been finished
+				time.Sleep(30 * time.Second) //redispatch will be finished in 20s, so delay 30s
 				this.reload(instances)
 			} else {
 				// resilience to zk problem by local cache
