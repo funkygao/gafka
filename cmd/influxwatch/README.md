@@ -1,6 +1,6 @@
 # influxwatch
 
-A daemon that continuously watch influxdb access log to analyze the latency trend.
+A daemon that continuously watch influxdb access log to analyze the latency and payload size trend.
 
 ### How to run
 
