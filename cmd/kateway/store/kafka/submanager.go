@@ -37,23 +37,11 @@ func (this *subManager) PickConsumerGroup(cluster, topic, group, remoteAddr, rea
 		return
 	}
 
-	if mux {
-		// find stream from cache
-		if cg, present = this.mux.get(remoteAddr); present {
-			return
-		}
-	}
-
 	this.clientMapLock.Lock()
 	defer this.clientMapLock.Unlock()
 
 	if cg, present = this.clientMap[remoteAddr]; present {
 		return
-	}
-	if mux {
-		if cg, present = this.mux.get(remoteAddr); present {
-			return
-		}
 	}
 
 	// cache miss, create the consumer group for this client

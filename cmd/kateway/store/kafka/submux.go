@@ -37,14 +37,6 @@ func newSubMux() *subMux {
 	}
 }
 
-func (m *subMux) get(remoteAddr string) (*consumergroup.ConsumerGroup, bool) {
-	m.lock.RLock()
-	cg, present := m.streams[remoteAddr]
-	m.lock.RUnlock()
-
-	return cg, present
-}
-
 func (m *subMux) claim(group, remoteAddr string) (cg *consumergroup.ConsumerGroup, err error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
