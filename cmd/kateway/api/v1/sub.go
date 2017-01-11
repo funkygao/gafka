@@ -23,6 +23,7 @@ type SubOption struct {
 	Wait       string
 	Tag        string // tag filter
 	AutoClose  bool
+	Mux        bool
 }
 
 type SubHandler func(statusCode int, msg []byte) error
@@ -45,6 +46,9 @@ func (this *Client) Sub(opt SubOption, h SubHandler) error {
 	}
 	if opt.Wait != "" {
 		q.Set("wait", opt.Wait)
+	}
+	if opt.Mux {
+		q.Set("mux", "1")
 	}
 	u.RawQuery = q.Encode()
 	req, err := http.NewRequest("GET", u.String(), nil)
