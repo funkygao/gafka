@@ -51,7 +51,13 @@ func (this *WatchKateway) Run() {
 			return
 
 		case <-ticker.C:
-			kws, _ := this.Zkzone.KatewayInfos()
+			kws, err := this.Zkzone.KatewayInfos()
+			if err != nil {
+				log.Error("kateway.live %v", err)
+			}
+			if len(kws) < 2 {
+				log.Warn("kateway.live < 2: %+v", kws)
+			}
 			liveKateways.Update(int64(len(kws)))
 		}
 	}
