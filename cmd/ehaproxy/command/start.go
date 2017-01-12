@@ -174,8 +174,19 @@ func (this *Start) main() {
 
 		if zkConnected {
 			if len(instances) > 0 {
-				//reload delayed to make sure the redispatch has been finished
-				time.Sleep(30 * time.Second) //redispatch will be finished in 20s, so delay 30s
+				// According to haproxy's implementation logic,
+				// when haproxy begins to reload, the health check will be disabled,
+				// so that all redispatch after soft relaod in the old haproxy
+				// will be failed(refer to haproxy.tpl's "retry" specification to
+				// understand the relation between health check and redispatch)
+				// and client will get 503 error. In order to get succesful redispatch
+				// and no 503 error emitted, we should make sure all redispatches
+				// have been finished before soft reload. then the delay reload time
+				// interval should be greater than time interval for redispatch
+				// Our redispatch time interval will be 20s according to haproxy.tpl
+				// config file (also refer to "retry" specification), then the delay
+				// reload time interval > 20s, we choose a sound value: 30s
+				time.Sleep(30 * time.Second)
 				this.reload(instances)
 			} else {
 				// resilience to zk problem by local cache

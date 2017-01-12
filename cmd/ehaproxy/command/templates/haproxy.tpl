@@ -20,6 +20,22 @@ defaults
     log global
     mode http # [tcp|http|health]
     backlog 10000
+    # if "retries" and "option redispatch" are setted, according to haproxy's behavior, 
+    # the last retries will trigger redispatch, redispatch will recalcuate the target 
+    # server according to balance algorithm. However, balance source algorithm will get
+    # the same(original) server if this server is not marked as "DOWN" by health check,
+    # and subsequently, the redispatch procedure will be failed.
+    # In order to make a successful redispatch, we need to make sure the original server
+    # has been marked as "DOWN" before we begin to redispatch. Our health check config is
+    # like "inter 5s rise 200000000 fall 3", so the sufficient time interval for distinguish 
+    # the server as "DOWN" by health check will be 15s 
+    # (5*3,   |---5s---|---5s---|---5s---|)
+    # Whole Retry time interval should larger than 15s, so that when try to redispatch, 
+    # the server has been "DOWN", and balance source algorithm will recalculate a new server 
+    # for redipatch. A single retry interval between two retry is min(1s, connection.timeout), 
+    # "connection.timeout" in our config is also 1s, so a single retry interval is 1s
+    # To satisfy the condition that whole retry time interval > longest time interval for 
+    # distinguish "DOWN" server, we set retry count to 20, so that 20*1s > 15s
     retries 20
     maxconn 15000
     balance roundrobin
@@ -60,6 +76,7 @@ listen pub
     bind 0.0.0.0:{{.PubPort}}
     balance source
     #cookie PUB insert indirect # indirect means not sending cookie to backend
+    #set rise to 200000000 to disable kateway recover by haproxy, we use ehaproxy to recover kateway
 {{range .Pub}}
     server {{.Name}} {{.Addr}} weight {{.Cpu}} check inter 5s rise 200000000 fall 3
 {{end}}
