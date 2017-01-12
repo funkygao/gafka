@@ -82,6 +82,7 @@ var (
 		ManagerRefresh             time.Duration
 		HttpReadTimeout            time.Duration
 		HttpWriteTimeout           time.Duration
+		MaxWaitBeforeForceClose    time.Duration
 	}
 )
 
@@ -171,6 +172,7 @@ func ParseFlags() {
 	flag.DurationVar(&Options.ManagerRefresh, "manrefresh", time.Minute*5, "manager integration refresh interval")
 	flag.DurationVar(&Options.PubPoolIdleTimeout, "pubpoolidle", 0, "pub pool connect idle timeout")
 	flag.DurationVar(&Options.InternalServerErrorBackoff, "500backoff", time.Second, "internal server error backoff duration")
+	flag.DurationVar(&Options.MaxWaitBeforeForceClose, "maxwait", time.Second*20, "how long to wait for current active http connections close before forced close")
 
 	flag.Parse()
 }

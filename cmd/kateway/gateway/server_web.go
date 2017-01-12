@@ -285,27 +285,24 @@ func (this *webServer) defaultWaitExit(exit <-chan struct{}) {
 
 	// wait for all established http/https conns close
 	waitStart := time.Now()
-	var prompt sync.Once
+	log.Trace("%s awaiting active connections close...", this.name)
 	for {
 		activeConnN := atomic.LoadInt32(&this.activeConnN)
 		if activeConnN == 0 {
-			// good luck, all connections finished
 			break
 		}
 
-		prompt.Do(func() {
-			log.Trace("%s waiting for %d clients shutdown...", this.name, activeConnN)
-		})
+		log.Trace("%s waiting for %d active clients close...", this.name, activeConnN)
 
 		// timeout mechanism
-		if time.Since(waitStart) > time.Second {
-			log.Warn("%s still left %d conns, will be forced to shutdown", this.name, activeConnN)
+		if time.Since(waitStart) > Options.MaxWaitBeforeForceClose {
+			log.Warn("%s still left %d conns, will be forced to close", this.name, activeConnN)
 			break
 		}
 
-		time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Millisecond * 350)
 	}
-	log.Trace("%s all connections finished", this.name)
+	log.Trace("%s all connections closed", this.name)
 
 	if this.httpsServer != nil {
 		this.httpsServer.ConnState = nil

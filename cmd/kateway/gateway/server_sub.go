@@ -206,7 +206,7 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 	}
 
 	this.idleConnsLock.Lock()
-	t := time.Now().Add(time.Millisecond * 100)
+	t := time.Now().Add(Options.MaxWaitBeforeForceClose)
 	for c := range this.idleConns {
 		c.SetReadDeadline(t)
 	}
@@ -215,6 +215,9 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 	if this.idleConnsWg.WaitTimeout(Options.SubTimeout) {
 		log.Warn("%s waiting for all connected client close timeout: %s",
 			this.name, Options.SubTimeout)
+	} else {
+		// perfect shutdown
+		log.Trace("%s all connections closed", this.name)
 	}
 
 	this.subMetrics.Flush()
