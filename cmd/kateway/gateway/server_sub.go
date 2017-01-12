@@ -212,9 +212,9 @@ func (this *subServer) waitExit(exit <-chan struct{}) {
 	}
 	this.idleConnsLock.Unlock()
 
-	if this.idleConnsWg.WaitTimeout(Options.SubTimeout) {
+	if this.idleConnsWg.WaitTimeout(Options.MaxWaitBeforeForceClose) {
 		log.Warn("%s waiting for all connected client close timeout: %s",
-			this.name, Options.SubTimeout)
+			this.name, Options.MaxWaitBeforeForceClose)
 	} else {
 		// perfect shutdown
 		log.Trace("%s all connections closed", this.name)
