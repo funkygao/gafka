@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	_ "expvar" // register /debug/vars HTTP handler
 
@@ -346,6 +347,10 @@ func (this *Gateway) ServeForever() {
 				log.Info("de-registered from %s", registry.Default.Name())
 			}
 		}
+
+		// wait for the haproxy soft reload done
+		// 2s is not perfect TODO coordinate with ehaproxy to confirm all haproxy reloaded
+		time.Sleep(time.Second * 2)
 
 		close(this.shutdownCh)
 
