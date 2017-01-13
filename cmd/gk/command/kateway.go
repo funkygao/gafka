@@ -591,9 +591,9 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 	kws, err := zkzone.KatewayInfos()
 	swallow(err)
 	if zone.PubEndpoint != "" && zone.SubEndpoint != "" {
-		// add the load balancer endpoint
+		// add the load balancer entry point, i,e. the domain name endpoint
 		kws = append(kws, &zk.KatewayMeta{
-			Id:      "loadbalancer",
+			Id:      "entry",
 			PubAddr: zone.PubEndpoint,
 			SubAddr: zone.SubEndpoint,
 		})
