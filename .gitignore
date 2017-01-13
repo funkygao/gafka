@@ -46,7 +46,7 @@ cmd/actord/actord
 cmd/ehaproxy/.haproxy.cf
 cmd/kateway/bench/bench
 cmd/kateway/bench/httpdserver
-cmd/swfd/swfd
+cmd/influxwatch/influxwatch
 cmd/kateway/demo/pub
 cmd/zk/zk
 panic.dump
