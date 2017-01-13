@@ -25,6 +25,7 @@ import (
 	gio "github.com/funkygao/golib/io"
 	"github.com/funkygao/golib/locking"
 	"github.com/funkygao/golib/signal"
+	"github.com/funkygao/golib/sync2"
 	log "github.com/funkygao/log4go"
 	zklib "github.com/samuel/go-zookeeper/zk"
 )
@@ -54,6 +55,10 @@ type Start struct {
 	quitCh, closed chan struct{}
 	zkzone         *zk.ZkZone
 	lastServers    BackendServers
+
+	safeShutdown chan struct{}
+	quiting      sync2.AtomicBool
+	deadN        sync2.AtomicInt32
 }
 
 func (this *Start) Run(args []string) (exitCode int) {
@@ -125,8 +130,17 @@ func (this *Start) Run(args []string) (exitCode int) {
 
 	this.quitCh = make(chan struct{})
 	this.closed = make(chan struct{})
+	this.safeShutdown = make(chan struct{})
 	signal.RegisterHandler(func(sig os.Signal) {
 		log.Info("ehaproxy[%s] got signal: %s", gafka.BuildId, strings.ToUpper(sig.String()))
+
+		// work closely with F5 for graceful shutdown
+		this.quiting.Set(true)
+		<-this.safeShutdown
+
+		// wait for F5 mark me down
+		time.Sleep(time.Second * 2)
+
 		this.shutdown()
 
 		log.Info("removing %s", configFile)
