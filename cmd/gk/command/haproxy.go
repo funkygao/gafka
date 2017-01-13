@@ -22,6 +22,7 @@ type Haproxy struct {
 	Cmd string
 
 	zone string
+	svc  string
 }
 
 func (this *Haproxy) Run(args []string) (exitCode int) {
@@ -29,6 +30,7 @@ func (this *Haproxy) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("haproxy", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.DefaultZone(), "")
+	cmdFlags.StringVar(&this.svc, "svc", "", "")
 	cmdFlags.BoolVar(&topMode, "top", true, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -111,8 +113,11 @@ func (this *Haproxy) getStats(statsUri string) (header string, rows []string) {
 
 	header = strings.Join(append([]string{"host", "svc"}, sortedCols...), "|")
 	for _, svc := range sortedSvcs {
-		stats := records[svc]
+		if this.svc != "" && this.svc != svc {
+			continue
+		}
 
+		stats := records[svc]
 		var vals = []string{shortHostname, svc}
 		for _, k := range sortedCols {
 			v := stats[k]
@@ -183,6 +188,9 @@ Usage: %s haproxy [options]
 Options:
 
     -z zone
+
+    -svc name
+      Filter by svc name
 
     -top
       Top mode
