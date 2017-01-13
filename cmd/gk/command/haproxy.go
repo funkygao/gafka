@@ -37,7 +37,7 @@ func (this *Haproxy) Run(args []string) (exitCode int) {
 	zone := ctx.Zone(this.zone)
 	if topMode {
 		header, _ := this.getStats(zone.HaProxyStatsUri[0])
-		t := top.New(header, "%8s %4s %15s %15s %8s %6s %8s %10s %8s %8s %5s %7s %9s %6s")
+		t := top.New(header, "%8s %4s %21s %21s %9s %6s %8s %12s %8s %8s %7s %7s %14s %6s")
 		go func() {
 			for {
 				rows := make([]string, 0)
