@@ -38,7 +38,7 @@ defaults
     option forwardfor   # X-Forwarded-For: remote client ip
     {{end}}
     
-    timeout client          10m  # 客户端侧最大非活动时间
+    timeout client          1m   # 客户端侧最大非活动时间
     timeout server          10m  # 服务器侧最大非活动时间
     timeout connect         1s  # 连接服务器超时时间
     #timeout tunnel          10m
@@ -59,6 +59,7 @@ listen 127.0.0.1:{{.Port}}
 listen pub
     bind 0.0.0.0:{{.PubPort}}
     balance source
+    timeout client 5m
     #cookie PUB insert indirect # indirect means not sending cookie to backend
 {{range .Pub}}
     server {{.Name}} {{.Addr}} weight {{.Cpu}}
@@ -67,6 +68,7 @@ listen pub
 listen sub
     bind 0.0.0.0:{{.SubPort}}
     balance source
+    timeout client 40s
     #balance source # uri
     #compression algo gzip
     #compression type text/html text/plain application/json
