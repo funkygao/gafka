@@ -58,6 +58,8 @@ listen pub
     balance source
     timeout client 5m
     #cookie PUB insert indirect # indirect means not sending cookie to backend
+    acl url_alive path_beg /alive
+    use_backend alive if url_alive
 {{range .Pub}}
     server {{.Name}} {{.Addr}} weight {{.Cpu}}
 {{end}}
@@ -70,12 +72,19 @@ listen sub
     #compression algo gzip
     #compression type text/html text/plain application/json
     #cookie SUB insert indirect
+    acl url_alive path_beg /alive
+    use_backend alive if url_alive
 {{range .Sub}}
     server {{.Name}} {{.Addr}} weight {{.Cpu}}
 {{end}}
 
 listen man
     bind 0.0.0.0:{{.ManPort}}
+    acl url_alive path_beg /alive
+    use_backend alive if url_alive
 {{range .Man}}
     server {{.Name}} {{.Addr}} weight {{.Cpu}}
 {{end}}
+
+backend alive
+    server localhost :10894
