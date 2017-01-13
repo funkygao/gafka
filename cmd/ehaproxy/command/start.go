@@ -75,6 +75,12 @@ func (this *Start) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	if this.debugMode {
+		this.pubPort = 9191
+		this.subPort = 9192
+		this.manPort = 9193
+	}
+
 	lockFilename := fmt.Sprintf("%s/.lock", this.root)
 	if locking.InstanceLocked(lockFilename) {
 		panic(fmt.Sprintf("locked[%s] by another instance", lockFilename))
