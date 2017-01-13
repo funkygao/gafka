@@ -47,7 +47,7 @@ func (this *Haproxy) Run(args []string) (exitCode int) {
 				}
 				t.Refresh(rows)
 
-				time.Sleep(time.Second * 5)
+				time.Sleep(time.Second * 3)
 			}
 		}()
 		if err := t.Start(); err != nil {
