@@ -22,6 +22,10 @@ func (this *controller) watchZk() {
 			return
 
 		case evt := <-evtCh:
+			if evt.Path != "" {
+				continue
+			}
+
 			if !firstHandShaked {
 				if evt.State == zklib.StateHasSession {
 					firstHandShaked = true

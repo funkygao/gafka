@@ -24,6 +24,9 @@ func (this *Gateway) healthCheck() {
 			if !ok {
 				return
 			}
+			if evt.Path != "" {
+				continue
+			}
 
 			if !firstHandShaked {
 				if evt.State == zklib.StateHasSession {

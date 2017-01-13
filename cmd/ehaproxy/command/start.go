@@ -191,7 +191,7 @@ func (this *Start) main() {
 			if evt.State == zklib.StateHasSession && !zkConnected {
 				log.Info("zk connected")
 				zkConnected = true
-			} else if zkConnected {
+			} else if zkConnected && evt.Path == "" {
 				log.Warn("zk jitter: %+v", evt)
 			}
 
