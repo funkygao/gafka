@@ -56,6 +56,7 @@ type Start struct {
 	zkzone         *zk.ZkZone
 	lastServers    BackendServers
 
+	withF5       bool
 	safeShutdown chan struct{}
 	quiting      sync2.AtomicBool
 	deadN        sync2.AtomicInt32
@@ -72,6 +73,7 @@ func (this *Start) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&this.pubPort, "pub", 10891, "")
 	cmdFlags.IntVar(&this.subPort, "sub", 10892, "")
 	cmdFlags.IntVar(&this.manPort, "man", 10893, "")
+	cmdFlags.BoolVar(&this.withF5, "f5", false, "")
 	cmdFlags.StringVar(&this.haproxyStatsUrl, "statsurl", "", "")
 	cmdFlags.StringVar(&this.influxdbAddr, "influxaddr", "", "")
 	cmdFlags.StringVar(&this.influxdbDbName, "influxdb", "", "")
@@ -134,12 +136,14 @@ func (this *Start) Run(args []string) (exitCode int) {
 	signal.RegisterHandler(func(sig os.Signal) {
 		log.Info("ehaproxy[%s] got signal: %s", gafka.BuildId, strings.ToUpper(sig.String()))
 
-		// work closely with F5 for graceful shutdown
-		this.quiting.Set(true)
-		<-this.safeShutdown
+		if this.withF5 {
+			// work closely with F5 for graceful shutdown
+			this.quiting.Set(true)
+			<-this.safeShutdown
 
-		// wait for F5 mark me down
-		time.Sleep(time.Second * 2)
+			// wait for F5 mark me down
+			time.Sleep(time.Second * 2)
+		}
 
 		this.shutdown()
 
