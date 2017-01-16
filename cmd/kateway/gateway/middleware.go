@@ -24,6 +24,9 @@ func (this *Gateway) middleware(h httprouter.Handle) httprouter.Handle {
 
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		w.Header().Set("Server", "kateway")
+		if r.Header.Get("X-Trace") == "true" {
+			w.Header().Set("X-SERVERID", this.id)
+		}
 
 		// kateway response is mostly json, including error reponse
 		// for non-json response, handler can override this

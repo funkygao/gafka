@@ -35,6 +35,7 @@ curl -XDELETE -H'Appid: app1' -H'Pubkey: mypubkey' 'http://localhost:9191/v1/job
 # pub a topic
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hhhhhhhello world!' 'http://localhost:9191/v1/msgs/foobar/v1'
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d 'hello world!' 'http://localhost:9191/v1/msgs/foobar/v1'
+curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -H'X-Trace: true' -d 'hello world!' 'http://localhost:9191/v1/msgs/foobar/v1'
 curl -XPOST -H'Appid: app1' -H'Pubkey: mypubkey' -d '@/Users/funky/gopkg/src/github.com/funkygao/fae/contrib/resources/dashboard.png' 'http://localhost:9191/v1/msgs/foobar/v1'
 
 # sub a topic
