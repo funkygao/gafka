@@ -40,7 +40,7 @@ type subServer struct {
 
 	subMetrics *subMetrics
 
-	throttleBadGroup *ratelimiter.LeakyBuckets
+	badGroupBudget   *ratelimiter.LeakyBuckets
 	goodGroupClients map[string]struct{} // key is remote addr(port inclusive)
 	goodGroupLock    sync.RWMutex
 }
@@ -53,7 +53,7 @@ func newSubServer(httpAddr, httpsAddr string, maxClients int, gw *Gateway) *subS
 		wsReadLimit:      8 << 10,
 		wsPongWait:       time.Minute,
 		timer:            timewheel.NewTimeWheel(time.Second, 120),
-		throttleBadGroup: ratelimiter.NewLeakyBuckets(3, time.Minute),
+		badGroupBudget:   ratelimiter.NewLeakyBuckets(3, time.Minute),
 		goodGroupClients: make(map[string]struct{}, 100),
 		ackShutdown:      0,
 		ackCh:            make(chan ackOffsets, 100),

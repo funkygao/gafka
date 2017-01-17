@@ -54,7 +54,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		return
 	}
 
-	if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(realGroup, 0) {
+	if Options.BadGroupRateLimit && !this.badGroupBudget.Pour(realGroup, 0) {
 		this.goodGroupLock.RLock()
 		_, good := this.goodGroupClients[r.RemoteAddr]
 		this.goodGroupLock.RUnlock()
@@ -197,7 +197,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 				myAppid, group, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), err)
 
 			this.subMetrics.ClientError.Mark(1)
-			if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(realGroup, 1) {
+			if Options.BadGroupRateLimit && !this.badGroupBudget.Pour(realGroup, 1) {
 				writeQuotaExceeded(w)
 			} else {
 				writeBadRequest(w, err.Error())
@@ -238,14 +238,14 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 				writeServerError(w, err.Error())
 			} else {
 				this.subMetrics.ClientError.Mark(1)
-				if Options.BadGroupRateLimit && !this.throttleBadGroup.Pour(realGroup, 1) {
+				if Options.BadGroupRateLimit && !this.badGroupBudget.Pour(realGroup, 1) {
 					writeQuotaExceeded(w)
 				} else {
 					writeBadRequest(w, err.Error())
 				}
 			}
 		} else if Options.BadGroupRateLimit && !store.DefaultSubStore.IsSystemError(err) {
-			this.throttleBadGroup.Pour(realGroup, 1)
+			this.badGroupBudget.Pour(realGroup, 1)
 		}
 
 		// fetch.Close might be called by subServer.closedConnCh
