@@ -139,7 +139,10 @@ func (this *Start) Run(args []string) (exitCode int) {
 		if this.withF5 {
 			// work closely with F5 for graceful shutdown
 			this.quiting.Set(true)
-			<-this.safeShutdown
+			select {
+			case <-this.safeShutdown:
+			case <-time.After(time.Second * 30):
+			}
 
 			// wait for F5 mark me down
 			time.Sleep(time.Second * 2)
