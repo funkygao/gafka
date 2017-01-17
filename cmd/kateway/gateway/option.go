@@ -101,6 +101,13 @@ func ParseFlags() {
 		defaultManHttpsAddr = ""
 	)
 
+	flag.Usage = func() {
+		fmt.Println("Usage of kateway:")
+		fmt.Println("e,g.")
+		fmt.Println(`nohup kateway -zone prod -id 1 -level trace -debughttp ":10194" -log kateway.log -crashlog panic -influxdbaddr http://10.1.1.1:8086 &`)
+		fmt.Println()
+		flag.PrintDefaults()
+	}
 	flag.StringVar(&Options.Id, "id", "", "kateway id, the id must be unique within a host")
 	flag.StringVar(&Options.Zone, "zone", "", "kafka zone name")
 	flag.StringVar(&Options.PubHttpAddr, "pubhttp", defaultPubHttpAddr, "pub http bind addr")

@@ -361,6 +361,9 @@ Usage: %s start [options]
 
     Start %s system on localhost
 
+    e,g.
+    nohup ehaproxy start -f5 -influxdbaddr http://10.1.1.1:8086 &
+
 Options:
 
     -z zone

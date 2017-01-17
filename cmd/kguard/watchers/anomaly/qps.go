@@ -18,7 +18,7 @@ func init() {
 	})
 }
 
-// WatchQps watches zookeeper health.
+// WatchQps watches zookeeper health. TODO latency anomaly detection
 type WatchQps struct {
 	Zkzone *zk.ZkZone
 	Stop   <-chan struct{}

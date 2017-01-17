@@ -29,6 +29,13 @@ import (
 )
 
 func init() {
+	flag.Usage = func() {
+		fmt.Println("Usage of actord:")
+		fmt.Println("e,g.")
+		fmt.Println(`nohup actord -z prod -log actord.log -man mysql -addr :10916 -influxaddr http://10.1.1.1:8086 -influxdb pubsub &`)
+		fmt.Println()
+		flag.PrintDefaults()
+	}
 	flag.StringVar(&Options.Zone, "z", "", "zone")
 	flag.BoolVar(&Options.ShowVersion, "v", false, "show version and exit")
 	flag.BoolVar(&Options.ShowVersion, "version", false, "show version and exit")

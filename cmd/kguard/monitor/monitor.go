@@ -53,6 +53,13 @@ type Monitor struct {
 
 func (this *Monitor) Init() {
 	var logFile, zone string
+	flag.Usage = func() {
+		fmt.Println("Usage of kguard:")
+		fmt.Println("e,g.")
+		fmt.Println(`PUB=pub.mycorp.com SUB=sub.mycorp.com APPLOG_CLUSTER=xxx APPLOG_TOPIC=yyy MYAPP=30 HISAPP=30 APPKEY=abcd nohup ./sbin/kguard -db kfk_prod -z prod -log kguard.log -influxAddr http://10.1.1.1:8086`)
+		fmt.Println()
+		flag.PrintDefaults()
+	}
 	flag.StringVar(&logFile, "log", "stdout", "log filename")
 	flag.StringVar(&zone, "z", "", "zone, required")
 	flag.StringVar(&this.apiAddr, "http", ":10025", "api http server addr")

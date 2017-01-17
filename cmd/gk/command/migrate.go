@@ -34,6 +34,7 @@ type Migrate struct {
 	brokerId   string
 	partition  string
 	verifyMode bool
+	cancelMode bool
 }
 
 func (this *Migrate) Run(args []string) (exitCode int) {
@@ -45,6 +46,7 @@ func (this *Migrate) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.partition, "p", "", "")
 	cmdFlags.StringVar(&this.brokerId, "brokers", "", "")
 	cmdFlags.BoolVar(&this.verifyMode, "verify", false, "")
+	cmdFlags.BoolVar(&this.cancelMode, "cancel", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -268,6 +270,9 @@ Options:
 
     -verify
       Verify the migration ongoing.      
+
+    -cancel TODO
+      Cancel ongoing migration.
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)

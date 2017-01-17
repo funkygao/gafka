@@ -52,6 +52,13 @@ func init() {
 			}, nil
 		},
 
+		"capacity": func() (cli.Command, error) {
+			return &command.Capacity{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"merkle": func() (cli.Command, error) {
 			return &command.Merkle{
 				Ui:  ui,

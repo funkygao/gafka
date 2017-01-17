@@ -8,13 +8,14 @@ import (
 	"github.com/funkygao/gocli"
 )
 
-type Prodtest struct {
+// chain of dependencies, performance metrics, prioritization
+type Capacity struct {
 	Ui  cli.Ui
 	Cmd string
 }
 
-func (this *Prodtest) Run(args []string) (exitCode int) {
-	cmdFlags := flag.NewFlagSet("prodtest", flag.ContinueOnError)
+func (this *Capacity) Run(args []string) (exitCode int) {
+	cmdFlags := flag.NewFlagSet("capacity", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -23,13 +24,13 @@ func (this *Prodtest) Run(args []string) (exitCode int) {
 	return
 }
 
-func (this *Prodtest) Synopsis() string {
-	return "Run unit tests to find misconfigurations"
+func (this *Capacity) Synopsis() string {
+	return "Intent-based capacity planning generate resource allocation plan"
 }
 
-func (this *Prodtest) Help() string {
+func (this *Capacity) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s prodtest [options]
+Usage: %s capacity [options]
 
     %s
 
