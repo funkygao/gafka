@@ -46,6 +46,7 @@ func (this *Start) setupLogging(logFile, logLevel, crashLogFile string) {
 		filer := log.NewFileLogWriter(logFile, true, true, 0)
 		filer.SetFormat("[%d %T] [%L] (%S) %M")
 		filer.SetRotateSize(0)
+		filer.SetRotateKeepDuration(time.Hour * 24 * 30)
 		filer.SetRotateLines(0)
 		filer.SetRotateDaily(true)
 		log.AddFilter("file", level, filer)
