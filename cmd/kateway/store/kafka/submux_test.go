@@ -9,13 +9,9 @@ import (
 
 func TestSubMux(t *testing.T) {
 	mux := newSubMux()
-	if mux.get("group", "remoteAddr") != nil {
-		t.Fail()
-	}
-
 	cg := &consumergroup.ConsumerGroup{}
 	for i := 0; i < 5; i++ {
-		mux.put("group", fmt.Sprintf("127.0.0.1:%d", 10001+i), cg)
+		mux.register(fmt.Sprintf("127.0.0.1:%d", 10001+i), cg)
 	}
 	t.Logf("%+v", mux)
 

@@ -1,10 +1,20 @@
 language: go
 
 go:    
-    - 1.5
+    - 1.7
+    - tip
 
-script:
-    - ./build.sh -v
+install:
+     - go get -d -t -v ./...
+     - ./build.sh -it kateway
+     - ./build.sh -it gk
+     - ./build.sh -it actord
+     - ./build.sh -it ehaproxy
+     - ./build.sh -it kguard
+
+test:
+    - cd cmd; go vet ./...
+    - cd cmd; go test ./...
 
 # this should give us faster builds according to 
 # http://docs.travis-ci.com/user/migrating-from-legacy/

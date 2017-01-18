@@ -23,5 +23,4 @@ func TestAll(t *testing.T) {
 
 	t.Logf("%+v", z.BrokerList("me"))
 	t.Logf("%+v", z.ZkCluster("me"))
-	t.Logf("%d %+v", n, err)
 }
