@@ -191,6 +191,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 				myAppid, group, realIp, hisAppid, topic, ver, r.Header.Get("User-Agent"), err)
 
 			this.subMetrics.ServerError.Mark(1)
+			this.subMetrics.InternalErr.Inc(1)
 			writeServerError(w, err.Error())
 		} else {
 			log.Error("sub[%s/%s] -(%s): {%s.%s.%s UA:%s} %v",
@@ -235,6 +236,7 @@ func (this *subServer) subHandler(w http.ResponseWriter, r *http.Request, params
 		if err != ErrClientGone {
 			if store.DefaultSubStore.IsSystemError(err) {
 				this.subMetrics.ServerError.Mark(1)
+				this.subMetrics.InternalErr.Inc(1)
 				writeServerError(w, err.Error())
 			} else {
 				this.subMetrics.ClientError.Mark(1)

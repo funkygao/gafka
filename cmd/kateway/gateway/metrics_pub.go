@@ -24,6 +24,7 @@ type pubMetrics struct {
 	PubFailMap map[string]metrics.Counter
 	pubFailMu  sync.RWMutex
 
+	InternalErr metrics.Counter
 	ClientError metrics.Counter
 	PubQps      metrics.Meter
 	PubTryQps   metrics.Meter
@@ -40,6 +41,7 @@ func NewPubMetrics(gw *Gateway) *pubMetrics {
 		PubOkMap:   make(map[string]metrics.Counter),
 		PubFailMap: make(map[string]metrics.Counter),
 
+		InternalErr: metrics.NewRegisteredCounter("pub.internalerr", metrics.DefaultRegistry),
 		ClientError: metrics.NewRegisteredCounter("pub.clienterr", metrics.DefaultRegistry),
 		PubQps:      metrics.NewRegisteredMeter("pub.qps", metrics.DefaultRegistry),
 		PubTryQps:   metrics.NewRegisteredMeter("pub.try.qps", metrics.DefaultRegistry),

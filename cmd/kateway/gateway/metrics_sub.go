@@ -13,6 +13,7 @@ import (
 type subMetrics struct {
 	gw *Gateway
 
+	InternalErr metrics.Counter
 	SubQps      metrics.Meter
 	SubTryQps   metrics.Meter
 	ClientError metrics.Meter
@@ -34,6 +35,7 @@ func NewSubMetrics(gw *Gateway) *subMetrics {
 		gw:          gw,
 		ConsumeMap:  make(map[string]metrics.Counter),
 		ConsumedMap: make(map[string]metrics.Counter),
+		InternalErr: metrics.NewRegisteredCounter("sub.internalerr", metrics.DefaultRegistry),
 		SubQps:      metrics.NewRegisteredMeter("sub.qps", metrics.DefaultRegistry),
 		SubTryQps:   metrics.NewRegisteredMeter("sub.try.qps", metrics.DefaultRegistry),
 		ClientError: metrics.NewRegisteredMeter(("sub.clienterr"), metrics.DefaultRegistry),

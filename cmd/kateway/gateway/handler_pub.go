@@ -191,22 +191,22 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		}
 	}
 
-	// in case of request panic, mem pool leakage
-	msg.Free()
-
-	if Options.AuditPub && err == nil && offset > -1 {
+	if err != nil {
+		log.Error("pub[%s] %s(%s) {topic:%s.%s err:%s} '%s'", appid, r.RemoteAddr, realIp, topic, ver, err, string(msg.Body))
+	} else if Options.AuditPub && offset > -1 {
 		this.auditor.Trace("pub[%s] %s(%s) {%s.%s.%s UA:%s} {P:%d O:%d} a=%v",
 			appid, r.RemoteAddr, realIp, appid, topic, ver, r.Header.Get("User-Agent"), partition, offset, async)
 	}
 
-	if err != nil {
-		log.Error("pub[%s] %s(%s) {topic:%s ver:%s} %s", appid, r.RemoteAddr, realIp, topic, ver, err)
+	msg.Free()
 
+	if err != nil {
 		if !Options.DisableMetrics {
 			this.pubMetrics.PubFail(appid, topic, ver)
 		}
 
 		if store.DefaultPubStore.IsSystemError(err) {
+			this.pubMetrics.InternalErr.Inc(1)
 			writeServerError(w, err.Error())
 		} else {
 			this.respond4XX(appid, w, err.Error(), http.StatusBadRequest)
