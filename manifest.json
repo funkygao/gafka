@@ -10,6 +10,12 @@
             "branch": "master"
             "revision": "1a962df59630a6a683135929c768412f3ad79b2c"
             "version": "release-3.1"
+        },
+        "github.com/shirou/gopsutil": {
+            "revision": "1123132e5ad392485dbd16e0f09a0db8c963a2ab"
+        },
+        "github.com/influxdata/influxdb/client": {
+            "revision": "390a16925d8bce2955ef7a27bc423762566cd931"
         }
     }
 }
