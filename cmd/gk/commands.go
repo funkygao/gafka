@@ -262,8 +262,8 @@ func init() {
 			}, nil
 		},
 
-		"config": func() (cli.Command, error) {
-			return &command.Config{
+		"autocomplete": func() (cli.Command, error) {
+			return &command.Autocomplete{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
