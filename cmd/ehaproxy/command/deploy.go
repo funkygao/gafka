@@ -103,6 +103,7 @@ $UDPServerRun 514
 
 vim  /etc/rsyslog.d/haproxy.conf
 local1.*  /var/log/haproxy.log
+local2.*  /var/log/haproxy.log
 local3.*  /var/log/haproxy.log
 
 vim /etc/sysconfig/rsyslog
