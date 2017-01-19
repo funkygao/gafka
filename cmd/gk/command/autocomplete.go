@@ -3,9 +3,6 @@ package command
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"os/user"
-	"path/filepath"
 	"strings"
 
 	"github.com/funkygao/gocli"
