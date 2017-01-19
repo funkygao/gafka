@@ -9,6 +9,7 @@ import (
 
 	"github.com/funkygao/columnize"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/gofmt"
 	"github.com/shirou/gopsutil/disk"
 )
 
@@ -48,7 +49,7 @@ func (*Systool) runDiskTool() {
 		}
 		sort.Strings(sortedDisks)
 
-		lines := []string{"Disk|iops|read#|write#|mergedR#|mergedW#|readT|writeT|ioT|wio"}
+		lines := []string{"Disk|iops|read bytes|write bytes|read#|write#|mergedR#|mergedW#|readT|writeT|ioT|wio"}
 		for _, d := range sortedDisks {
 			diskSuffix := d[len(d)-1]
 			if diskSuffix > '9' || diskSuffix < '0' {
@@ -58,6 +59,8 @@ func (*Systool) runDiskTool() {
 
 			stat := stats[d]
 			if last, present := lastStats[d]; present {
+				stat.ReadBytes -= last.ReadBytes
+				stat.WriteBytes -= last.WriteBytes
 				stat.ReadCount -= last.ReadCount
 				stat.WriteCount -= last.WriteCount
 				stat.MergedReadCount -= last.MergedReadCount
@@ -68,14 +71,15 @@ func (*Systool) runDiskTool() {
 				stat.WeightedIO -= last.WeightedIO
 			}
 
-			lines = append(lines, fmt.Sprintf("%s|%d|%d|%d|%d|%d|%d|%d|%d|%d", stat.Name,
+			lines = append(lines, fmt.Sprintf("%s|%d|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d",
+				stat.Name,
 				stat.IopsInProgress,
+				gofmt.ByteSize(stat.ReadBytes), gofmt.ByteSize(stat.WriteBytes),
 				stat.ReadCount, stat.WriteCount,
 				stat.MergedReadCount, stat.MergedWriteCount,
 				stat.ReadTime, stat.WriteTime,
 				stat.IoTime,
 				stat.WeightedIO))
-
 		}
 
 		refreshScreen()
@@ -84,7 +88,7 @@ func (*Systool) runDiskTool() {
 		if len(lastStats) == 0 {
 			time.Sleep(time.Second * 5)
 		} else {
-			time.Sleep(time.Second * 2)
+			time.Sleep(time.Second * 3)
 		}
 
 		lastStats = stats
