@@ -80,6 +80,13 @@ func init() {
 			}, nil
 		},
 
+		"systool": func() (cli.Command, error) {
+			return &command.Systool{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"influx": func() (cli.Command, error) {
 			return &command.Influx{
 				Ui:  ui,
