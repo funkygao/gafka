@@ -70,6 +70,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		topicPattern string
 		partitionId  int
 		wait         time.Duration
+		tillNow      bool
 		silence      bool
 	)
 	cmdFlags := flag.NewFlagSet("peek", flag.ContinueOnError)
@@ -87,6 +88,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.Int64Var(&this.offset, "offset", sarama.OffsetNewest, "")
 	cmdFlags.BoolVar(&silence, "s", false, "")
 	cmdFlags.DurationVar(&wait, "d", time.Hour, "")
+	cmdFlags.BoolVar(&tillNow, "now", false, "")
 	cmdFlags.BoolVar(&this.bodyOnly, "body", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -166,7 +168,11 @@ LOOP:
 			return
 
 		case <-time.After(time.Second):
-			continue
+			if tillNow {
+				return
+			} else {
+				continue
+			}
 
 		case msg = <-msgChan:
 			if silence {
@@ -409,6 +415,9 @@ Options:
 
     -body
       Only display message body
+
+    -now
+      Iterate the stream till now
 
     -s
       Silence mode, only display statastics instead of message content
