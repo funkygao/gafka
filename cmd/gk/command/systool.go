@@ -37,6 +37,7 @@ func (this *Systool) Run(args []string) (exitCode int) {
 }
 
 func (*Systool) runDiskTool() {
+	var lastStats = make(map[string]disk.IOCountersStat)
 	for {
 		stats, err := disk.IOCounters()
 		swallow(err)
@@ -47,18 +48,40 @@ func (*Systool) runDiskTool() {
 		}
 		sort.Strings(sortedDisks)
 
-		lines := []string{"Disk|iops|read#|write#|mergedR#|mergedW#|readT|writeT|ioT"}
+		lines := []string{"Disk|iops|read#|write#|mergedR#|mergedW#|readT|writeT|ioT|wio"}
 		for _, d := range sortedDisks {
-			stat := stats[d]
+			diskSuffix := d[len(d)-1]
+			if diskSuffix > '9' || diskSuffix < '0' {
+				// not partitioned
+				continue
+			}
 
-			lines = append(lines, fmt.Sprintf("%s|%d|%d|%d|%d|%d|%d|%d|%d", stat.Name,
+			stat := stats[d]
+			if last, present := lastStats[d]; present {
+				stat.ReadCount -= last.ReadCount
+				stat.WriteCount -= last.WriteCount
+				stat.MergedReadCount -= last.MergedReadCount
+				stat.MergedWriteCount -= last.MergedWriteCount
+				stat.WriteTime -= last.WriteTime
+				stat.ReadTime -= last.ReadTime
+				stat.IoTime -= last.IoTime
+				stat.WeightedIO -= last.WeightedIO
+			}
+
+			lines = append(lines, fmt.Sprintf("%s|%d|%d|%d|%d|%d|%d|%d|%d|%d", stat.Name,
 				stat.IopsInProgress,
 				stat.ReadCount, stat.WriteCount,
 				stat.MergedReadCount, stat.MergedWriteCount,
 				stat.ReadTime, stat.WriteTime,
-				stat.IoTime))
+				stat.IoTime,
+				stat.WeightedIO))
+
 		}
+
+		refreshScreen()
 		fmt.Println(columnize.SimpleFormat(lines))
+
+		lastStats = stats
 
 		time.Sleep(time.Second * 2)
 	}
