@@ -81,9 +81,13 @@ func (*Systool) runDiskTool() {
 		refreshScreen()
 		fmt.Println(columnize.SimpleFormat(lines))
 
-		lastStats = stats
+		if len(lastStats) == 0 {
+			time.Sleep(time.Second * 5)
+		} else {
+			time.Sleep(time.Second * 2)
+		}
 
-		time.Sleep(time.Second * 2)
+		lastStats = stats
 	}
 
 }
