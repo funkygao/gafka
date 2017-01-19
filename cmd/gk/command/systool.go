@@ -52,7 +52,7 @@ func (*Systool) runDiskTool(interval time.Duration) {
 		}
 		sort.Strings(sortedDisks)
 
-		lines := []string{"Disk|iops|read bytes|write bytes|read#|write#|mergedR#|mergedW#|readT|writeT|ioT|wio"}
+		lines := []string{"Disk|io|iops|read bytes|write bytes|read#|write#|mergedR#|mergedW#|readT|writeT|ioT|wio"}
 		for _, d := range sortedDisks {
 			diskSuffix := d[len(d)-1]
 			if diskSuffix > '9' || diskSuffix < '0' {
@@ -85,9 +85,10 @@ func (*Systool) runDiskTool(interval time.Duration) {
 				wbytes = color.Red("%-11s", wbytes)
 			}
 
-			lines = append(lines, fmt.Sprintf("%s|%d|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d",
+			lines = append(lines, fmt.Sprintf("%s|%d|%d|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d",
 				stat.Name,
 				stat.IopsInProgress,
+				int(stat.ReadCount+stat.WriteCount)/int(interval.Seconds()),
 				rbytes, wbytes,
 				stat.ReadCount, stat.WriteCount,
 				stat.MergedReadCount, stat.MergedWriteCount,
