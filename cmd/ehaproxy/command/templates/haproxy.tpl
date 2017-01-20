@@ -1,6 +1,7 @@
 global    
     # logging to rsyslog facility local3 [err warning info debug]   
     log 127.0.0.1 local1 notice
+    log 127.0.0.1 local2 info
     log 127.0.0.1 local3 warning
     stats bind-process {{.CpuNum}}
     stats socket /tmp/haproxy.sock mode 0600 level admin
@@ -29,7 +30,7 @@ defaults
     errorfile 504 {{.HaproxyRoot}}/conf/504.http
     
     no option httpclose
-    option log-separate-errors
+    #option log-separate-errors
     option httplog
     option dontlognull  # 不记录健康检查的日志信息
     option abortonclose # 当服务器负载很高的时候，自动结束掉当前队列处理比较久的链接
@@ -53,6 +54,7 @@ defaults
 listen 127.0.0.1:{{.Port}}
     bind 127.0.0.1:{{.Port}}
     bind-process {{.Name}}
+    no log #disable logging for stats
     stats uri /stats
 {{end}}
     
@@ -63,6 +65,9 @@ listen pub
     #cookie PUB insert indirect # indirect means not sending cookie to backend
     acl url_alive path_beg /alive
     use_backend alive if url_alive
+    acl ge_200 status ge 200   # >=200
+    acl le_206 status le 206   # <=206
+    http-response set-log-level silent if ge_200 le_206  # (code >= 200 && code <=206) ==> silent
 {{range .Pub}}
     server {{.Name}} {{.Addr}} weight {{.Cpu}}
 {{end}}
@@ -77,6 +82,9 @@ listen sub
     #cookie SUB insert indirect
     acl url_alive path_beg /alive
     use_backend alive if url_alive
+    acl ge_200 status ge 200   # >=200
+    acl le_206 status le 206   # <=206
+    http-response set-log-level silent if ge_200 le_206  # (code >= 200 && code <=206) ==> silent
 {{range .Sub}}
     server {{.Name}} {{.Addr}} weight {{.Cpu}}
 {{end}}
@@ -85,6 +93,9 @@ listen man
     bind 0.0.0.0:{{.ManPort}}
     acl url_alive path_beg /alive
     use_backend alive if url_alive
+    acl ge_200 status ge 200   # >=200
+    acl le_206 status le 206   # <=206
+    http-response set-log-level silent if ge_200 le_206  # (code >= 200 && code <=206) ==> silent
 {{range .Man}}
     server {{.Name}} {{.Addr}} weight {{.Cpu}}
 {{end}}
