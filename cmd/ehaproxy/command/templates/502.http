@@ -3,4 +3,4 @@ Cache-Control: no-cache
 Connection: close
 Content-Type: application/json; charset=utf8
 
-{"errmsg":"Load balancer encountered bad response from backend"}
+{"errmsg":"ehaproxy - Load balancer encountered bad response from backend"}
