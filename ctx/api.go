@@ -172,7 +172,7 @@ func Alias(cmd string) (alias string, present bool) {
 
 func Aliases() []string {
 	r := make([]string, 0, len(conf.aliases))
-	for cmd, _ := range conf.aliases {
+	for cmd := range conf.aliases {
 		r = append(r, cmd)
 	}
 	return r

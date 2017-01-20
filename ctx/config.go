@@ -25,7 +25,7 @@ type config struct {
 
 func (c *config) sortedZones() []string {
 	sortedZones := make([]string, 0, len(c.zones))
-	for name, _ := range c.zones {
+	for name := range c.zones {
 		sortedZones = append(sortedZones, name)
 	}
 	sort.Strings(sortedZones)

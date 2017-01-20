@@ -197,7 +197,7 @@ func (this *ZkZone) KatewayInfos() ([]*KatewayMeta, error) {
 	path := fmt.Sprintf("%s/%s", KatewayIdsRoot, this.Name())
 	katewayInstances := this.ChildrenWithData(path)
 	sortedIds := make([]string, 0, len(katewayInstances))
-	for id, _ := range katewayInstances {
+	for id := range katewayInstances {
 		sortedIds = append(sortedIds, id)
 	}
 	sort.Strings(sortedIds)
@@ -455,7 +455,7 @@ func (this *ZkZone) PublicClusters() []*ZkCluster {
 func (this *ZkZone) ForSortedClusters(fn func(zkcluster *ZkCluster)) {
 	clusters := this.Clusters()
 	sortedNames := make([]string, 0, len(clusters))
-	for name, _ := range clusters {
+	for name := range clusters {
 		sortedNames = append(sortedNames, name)
 	}
 	sort.Strings(sortedNames)
@@ -558,7 +558,7 @@ func (this *ZkZone) controllers() map[string]*ControllerMeta {
 func (this *ZkZone) ForSortedControllers(fn func(cluster string, controller *ControllerMeta)) {
 	controllers := this.controllers()
 	sortedClusters := make([]string, 0, len(controllers))
-	for cluster, _ := range controllers {
+	for cluster := range controllers {
 		sortedClusters = append(sortedClusters, cluster)
 	}
 	sort.Strings(sortedClusters)
@@ -598,7 +598,7 @@ func (this *ZkZone) ForSortedBrokers(fn func(cluster string, brokers map[string]
 	// sort by cluster name
 	brokersOfClusters := this.brokers()
 	sortedClusters := make([]string, 0, len(brokersOfClusters))
-	for cluster, _ := range brokersOfClusters {
+	for cluster := range brokersOfClusters {
 		sortedClusters = append(sortedClusters, cluster)
 	}
 	sort.Strings(sortedClusters)
@@ -611,7 +611,7 @@ func (this *ZkZone) ForSortedBrokers(fn func(cluster string, brokers map[string]
 func (this *ZkZone) DiscoverClusters(rootPath string) ([]string, error) {
 	const BROKER_PATH = "/brokers/ids"
 	excludedPaths := map[string]struct{}{
-		"/zookeeper": struct{}{},
+		"/zookeeper": {},
 	}
 
 	result := make([]string, 0, 100)

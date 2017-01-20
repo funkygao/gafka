@@ -76,7 +76,7 @@ func (this *TopBroker) startAll() {
 }
 
 func (this *TopBroker) collectAll() {
-	for _, _ = range this.signalsCh {
+	for range this.signalsCh {
 		offsets := <-this.hostOffsetCh
 		for host, offsetSum := range offsets {
 			this.offsets[host] += offsetSum
@@ -169,7 +169,7 @@ type brokerQps struct {
 
 func (this *TopBroker) showAndResetCounters() ([]brokerQps, float64, float64) {
 	sortedHost := make([]string, 0, len(this.offsets))
-	for host, _ := range this.offsets {
+	for host := range this.offsets {
 		sortedHost = append(sortedHost, host)
 	}
 	sort.Strings(sortedHost)

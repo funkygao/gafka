@@ -89,24 +89,24 @@ func TestValidateGroupName(t *testing.T) {
 	}
 
 	fixtures := []fixture{
-		fixture{false, ""}, // group cannot be empty
-		fixture{true, "testA"},
-		fixture{true, "te_stA"},
-		fixture{true, "a"},
-		fixture{true, "111111"},
-		fixture{true, "Zb44444444"},
-		fixture{false, "a b"},
-		fixture{false, "a.adsf"},
-		fixture{false, "a.a.bbb3"},
-		fixture{false, "(xxx)"},
-		fixture{false, "[asdf"},
-		fixture{false, "'asdfasdf"},
-		fixture{false, "&asdf"},
-		fixture{false, ">adsf"},
-		fixture{false, "adf/asdf"},
-		fixture{false, "a+b4"},
-		fixture{true, "4-2323"},
-		fixture{false, "__smoketest__"},
+		{false, ""}, // group cannot be empty
+		{true, "testA"},
+		{true, "te_stA"},
+		{true, "a"},
+		{true, "111111"},
+		{true, "Zb44444444"},
+		{false, "a b"},
+		{false, "a.adsf"},
+		{false, "a.a.bbb3"},
+		{false, "(xxx)"},
+		{false, "[asdf"},
+		{false, "'asdfasdf"},
+		{false, "&asdf"},
+		{false, ">adsf"},
+		{false, "adf/asdf"},
+		{false, "a+b4"},
+		{true, "4-2323"},
+		{false, "__smoketest__"},
 	}
 	m := mysqlStore{}
 	for _, f := range fixtures {

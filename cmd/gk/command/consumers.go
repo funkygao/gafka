@@ -183,7 +183,7 @@ func (this *Consumers) printConsumersByHost(zkzone *zk.ZkZone, clusterPattern st
 	})
 
 	sortedHosts := make([]string, 0, len(outputs))
-	for host, _ := range outputs {
+	for host := range outputs {
 		sortedHosts = append(sortedHosts, host)
 	}
 	sort.Strings(sortedHosts)
@@ -207,7 +207,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 
 		consumerGroups := zkcluster.ConsumerGroups()
 		sortedGroups := make([]string, 0, len(consumerGroups))
-		for group, _ := range consumerGroups {
+		for group := range consumerGroups {
 			if !patternMatched(group, this.groupPattern) {
 				continue
 			}
@@ -234,7 +234,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 
 				for _, consumerId := range sortedIds {
 					c := consumersMap[consumerId]
-					for topic, _ := range c.Subscription {
+					for topic := range c.Subscription {
 						if !patternMatched(topic, this.topicPattern) {
 							continue
 						}
@@ -272,7 +272,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 									gofmt.PrettySince(c.Uptime())))
 						}
 
-						for partitionId, _ := range ownerByPartition {
+						for partitionId := range ownerByPartition {
 							if _, present := partitionsWithOffset[partitionId]; !present {
 								// this consumer is owner online, but has no offset
 								onlineSymbol := "◉"
@@ -320,7 +320,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 			if len(topics) > 1 {
 				// the same consumer group is consuming more than 1 topics
 				topicsLabel := make([]string, 0, len(topics))
-				for t, _ := range topics {
+				for t := range topics {
 					topicsLabel = append(topicsLabel, t)
 				}
 				this.Ui.Warn(fmt.Sprintf("%35s consuming: %+v", group, topicsLabel))
@@ -342,7 +342,7 @@ type consumerGroupOffset struct {
 func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, group, topic string, echo bool) []consumerGroupOffset {
 	offsetMap := zkcluster.ConsumerOffsetsOfGroup(group)
 	sortedTopics := make([]string, 0, len(offsetMap))
-	for t, _ := range offsetMap {
+	for t := range offsetMap {
 		sortedTopics = append(sortedTopics, t)
 	}
 	sort.Strings(sortedTopics)
@@ -355,7 +355,7 @@ func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, group, topic
 		}
 
 		sortedPartitionIds := make([]string, 0, len(offsetMap[t]))
-		for partitionId, _ := range offsetMap[t] {
+		for partitionId := range offsetMap[t] {
 			sortedPartitionIds = append(sortedPartitionIds, partitionId)
 		}
 		sort.Strings(sortedPartitionIds)

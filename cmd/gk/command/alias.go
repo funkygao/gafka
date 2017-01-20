@@ -25,7 +25,7 @@ func (this *Alias) Run(args []string) (exitCode int) {
 
 	aliases := ctx.AliasesWithValue()
 	sortedNames := make([]string, 0, len(aliases))
-	for name, _ := range aliases {
+	for name := range aliases {
 		sortedNames = append(sortedNames, name)
 	}
 	sort.Strings(sortedNames)

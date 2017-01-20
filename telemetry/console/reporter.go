@@ -12,7 +12,7 @@ import (
 )
 
 func runMetricsReporter(r metrics.Registry, d time.Duration) {
-	for _ = range time.Tick(d) {
+	for range time.Tick(d) {
 		sortedNames := make([]string, 0, 1000)
 		metricsMap := make(map[string]interface{}, 1000)
 		r.Each(func(name string, i interface{}) {

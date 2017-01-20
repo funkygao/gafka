@@ -31,7 +31,7 @@ func (this *Console) Run(args []string) (exitCode int) {
 	this.Line = liner.NewLiner()
 	this.Line.SetCtrlCAborts(false)
 	this.Line.SetCompleter(func(line string) (c []string) {
-		for cmd, _ := range this.Cmds {
+		for cmd := range this.Cmds {
 			if strings.HasPrefix(cmd, strings.ToLower(line)) {
 				c = append(c, cmd)
 			}
@@ -131,7 +131,7 @@ func (this *Console) doHelp() {
 	width := 0
 
 	cmds := make([]string, 0)
-	for cmd, _ := range this.Cmds {
+	for cmd := range this.Cmds {
 		cmds = append(cmds, cmd)
 	}
 	for _, cmd := range ctx.Aliases() {

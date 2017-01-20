@@ -213,7 +213,7 @@ func (this *Segment) printSummary() {
 	}
 
 	partitions := make([]string, 0, len(segments))
-	for dir, _ := range segments {
+	for dir := range segments {
 		partitions = append(partitions, dir)
 	}
 	sort.Strings(partitions)

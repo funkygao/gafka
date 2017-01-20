@@ -8,9 +8,9 @@ import (
 
 func TestSortBackendByName(t *testing.T) {
 	all := []Backend{
-		Backend{Name: "p2"},
-		Backend{Name: "p1"},
-		Backend{Name: "p3"},
+		{Name: "p2"},
+		{Name: "p1"},
+		{Name: "p3"},
 	}
 
 	r := sortBackendByName(all)

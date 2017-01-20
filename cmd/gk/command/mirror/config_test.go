@@ -18,7 +18,7 @@ func TestRealTopicsDumb(t *testing.T) {
 func TestRealTopicsWithExclusion(t *testing.T) {
 	cf := DefaultConfig()
 	cf.ExcludedTopics = map[string]struct{}{
-		"t1": struct{}{},
+		"t1": {},
 	}
 	topics := []string{"t1", "t2", "__consumer_offsets"}
 	assert.Equal(t, []string{"t2"}, cf.realTopics(topics))
@@ -30,7 +30,7 @@ func TestRealTopicsWithExclusion(t *testing.T) {
 func TestRealTopicsOnly(t *testing.T) {
 	cf := DefaultConfig()
 	cf.TopicsOnly = map[string]struct{}{
-		"t1": struct{}{},
+		"t1": {},
 	}
 	topics := []string{"t1", "t2", "__consumer_offsets"}
 	assert.Equal(t, []string{"t1"}, cf.realTopics(topics))

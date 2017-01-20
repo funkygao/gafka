@@ -123,7 +123,7 @@ func (this *Lags) printConsumersLagTable(zkcluster *zk.ZkCluster) {
 	// sort by group name
 	consumersByGroup := zkcluster.ConsumersByGroup(this.groupPattern)
 	sortedGroups := make([]string, 0, len(consumersByGroup))
-	for group, _ := range consumersByGroup {
+	for group := range consumersByGroup {
 		sortedGroups = append(sortedGroups, group)
 	}
 	sort.Strings(sortedGroups)
@@ -184,7 +184,7 @@ func (this *Lags) printConsumersLag(zkcluster *zk.ZkCluster) {
 	// sort by group name
 	consumersByGroup := zkcluster.ConsumersByGroup(this.groupPattern)
 	sortedGroups := make([]string, 0, len(consumersByGroup))
-	for group, _ := range consumersByGroup {
+	for group := range consumersByGroup {
 		sortedGroups = append(sortedGroups, group)
 	}
 	sort.Strings(sortedGroups)

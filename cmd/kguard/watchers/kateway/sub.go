@@ -179,7 +179,7 @@ func (this *WatchSub) subConflicts() (conflictGroups int) {
 			}
 
 			for _, c := range consumers {
-				for topic, _ := range c.Subscription {
+				for topic := range c.Subscription {
 					if len(groupTopicsMap[group]) == 0 {
 						groupTopicsMap[group] = make(map[string]struct{}, 5)
 					}

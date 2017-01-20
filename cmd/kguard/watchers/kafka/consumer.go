@@ -140,7 +140,7 @@ func (this *WatchConsumers) frequentOffsetCommit() (n int64) {
 func (this *WatchConsumers) runSubQpsTimer() {
 	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		consumerGroups := zkcluster.ConsumerGroups()
-		for group, _ := range consumerGroups {
+		for group := range consumerGroups {
 			offsetMap := zkcluster.ConsumerOffsetsOfGroup(group)
 			for topic, m := range offsetMap {
 				offsetOfGroupOnTopic := int64(0)

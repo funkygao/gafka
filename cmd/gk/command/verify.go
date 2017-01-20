@@ -98,7 +98,7 @@ func (this *Verify) Run(args []string) (exitCode int) {
 		}
 	})
 
-	for topic, _ := range this.problemeticTopics {
+	for topic := range this.problemeticTopics {
 		this.Ui.Warn(fmt.Sprintf("dup clusters found for topic: %s", topic))
 	}
 
@@ -273,7 +273,7 @@ func (this *Verify) verifySub() {
 func (this *Verify) fetchConsumerGroups(topic, cluster string) []string {
 	consumerGroups := this.zkclusters[cluster].ConsumerGroups()
 	sortedGroups := make([]string, 0, len(consumerGroups))
-	for group, _ := range consumerGroups {
+	for group := range consumerGroups {
 		sortedGroups = append(sortedGroups, group)
 	}
 

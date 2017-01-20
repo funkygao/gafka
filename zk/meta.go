@@ -117,7 +117,7 @@ func (c *ConsumerZnode) ClientRealIP() (ip string) {
 
 func (c *ConsumerZnode) Topics() []string {
 	r := make([]string, 0, len(c.Subscription))
-	for topic, _ := range c.Subscription {
+	for topic := range c.Subscription {
 		r = append(r, topic)
 	}
 	return r

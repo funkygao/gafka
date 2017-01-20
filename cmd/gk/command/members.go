@@ -100,7 +100,7 @@ func (this *Members) Run(args []string) (exitCode int) {
 	}
 
 	// all brokers should run consul
-	for broker, _ := range this.brokerHosts {
+	for broker := range this.brokerHosts {
 		if _, present := consulLiveMap[broker]; !present {
 			this.Ui.Warn(fmt.Sprintf("- %s", broker))
 		}
@@ -216,7 +216,7 @@ func (this *Members) executeOnRole(execCmd string, role string) {
 	wg.Wait()
 
 	sortedNodes := make([]string, 0, len(linesByNode))
-	for node, _ := range linesByNode {
+	for node := range linesByNode {
 		sortedNodes = append(sortedNodes, node)
 	}
 	sort.Strings(sortedNodes)
@@ -387,7 +387,7 @@ func (this *Members) nodesOfRole(role string) []string {
 		return nil
 	}
 
-	for host, _ := range container {
+	for host := range container {
 		r = append(r, this.hostNodeMap[host])
 	}
 	return r

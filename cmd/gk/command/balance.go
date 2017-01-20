@@ -37,7 +37,7 @@ type hostOffsetInfo struct {
 
 func (ho hostOffsetInfo) Clusters() []string {
 	var r []string
-	for cluster, _ := range ho.offsetMap {
+	for cluster := range ho.offsetMap {
 		r = append(r, cluster)
 	}
 	return r
@@ -49,7 +49,7 @@ func (ho hostOffsetInfo) MightProblematic() bool {
 	}
 
 	bigClusters := 0
-	for cluster, _ := range ho.offsetMap {
+	for cluster := range ho.offsetMap {
 		if ho.ClusterTotal(cluster) > 1000 {
 			bigClusters++
 		}
@@ -164,7 +164,7 @@ func (this *Balance) startAll() {
 }
 
 func (this *Balance) collectAll(seq int) {
-	for _, _ = range this.signalsCh {
+	for range this.signalsCh {
 		offsets := <-this.hostOffsetCh
 		if seq == 0 {
 			// record into allHostsTps
@@ -257,7 +257,7 @@ func (this *Balance) drawClusterTps() {
 	}
 
 	for _, info := range this.allHostsTps {
-		for cluster, _ := range info.offsetMap {
+		for cluster := range info.offsetMap {
 			clusters[cluster] += info.ClusterTotal(cluster)
 		}
 	}
@@ -337,7 +337,7 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 		effectiveHostPartitions := 0
 		offsetInfo := this.allHostsTps[host]
 		var clusters []clusterQps
-		for cluster, _ := range offsetInfo.offsetMap {
+		for cluster := range offsetInfo.offsetMap {
 			clusterTps := offsetInfo.ClusterTotal(cluster)
 			clusterPartitions := offsetInfo.ClusterPartitions(cluster)
 			hostPartitions += clusterPartitions

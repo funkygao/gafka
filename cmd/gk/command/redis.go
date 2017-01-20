@@ -216,7 +216,7 @@ func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 
 		// clone freezedPorts to avoid concurrent map access
 		if len(this.freezedPorts) > 0 {
-			for port, _ := range this.freezedPorts {
+			for port := range this.freezedPorts {
 				freezedPorts[port] = struct{}{}
 			}
 		}

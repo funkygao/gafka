@@ -77,7 +77,7 @@ func main() {
 				return
 			}
 
-			for name, _ := range commands {
+			for name := range commands {
 				fmt.Println(name)
 			}
 

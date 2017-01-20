@@ -82,7 +82,7 @@ func topicSubStatus(cluster string, myAppid, hisAppid, topic, ver string,
 
 		consumersByGroup := zkcluster.ConsumersByGroup(myAppid + ".")
 		sortedGroups := make([]string, 0, len(consumersByGroup))
-		for group, _ := range consumersByGroup {
+		for group := range consumersByGroup {
 			sortedGroups = append(sortedGroups, group)
 		}
 		sort.Strings(sortedGroups)

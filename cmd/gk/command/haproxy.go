@@ -100,13 +100,13 @@ func (this *Haproxy) getStats(statsUri string) (header string, rows []string) {
 	}
 
 	sortedSvcs := make([]string, 0)
-	for svc, _ := range records {
+	for svc := range records {
 		sortedSvcs = append(sortedSvcs, svc)
 	}
 	sort.Strings(sortedSvcs)
 
 	sortedCols := make([]string, 0)
-	for k, _ := range records["pub"] {
+	for k := range records["pub"] {
 		sortedCols = append(sortedCols, k)
 	}
 	sort.Strings(sortedCols)
@@ -151,13 +151,13 @@ func (this *Haproxy) fetchStats(statsUri string) {
 	this.Ui.Info(u.Host)
 
 	sortedSvcs := make([]string, 0)
-	for svc, _ := range records {
+	for svc := range records {
 		sortedSvcs = append(sortedSvcs, svc)
 	}
 	sort.Strings(sortedSvcs)
 
 	sortedCols := make([]string, 0)
-	for k, _ := range records["pub"] {
+	for k := range records["pub"] {
 		sortedCols = append(sortedCols, k)
 	}
 	sort.Strings(sortedCols)

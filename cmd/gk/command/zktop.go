@@ -81,7 +81,7 @@ func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 
 	stats := zkzone.RunZkFourLetterCommand("stat")
 	sortedHosts := make([]string, 0, len(stats))
-	for hp, _ := range stats {
+	for hp := range stats {
 		sortedHosts = append(sortedHosts, hp)
 	}
 	sort.Strings(sortedHosts)

@@ -615,7 +615,7 @@ func (this *ZkCluster) ResetConsumerGroupOffset(topic, group, partition string, 
 
 func (this *ZkCluster) ListChildren(recursive bool) ([]string, error) {
 	excludedPaths := map[string]struct{}{
-		"/zookeeper": struct{}{},
+		"/zookeeper": {},
 	}
 	result := make([]string, 0, 100)
 	queue := list.New()

@@ -203,7 +203,7 @@ type sortedStrMap struct {
 // TODO map[string]interface{}
 func sortStrMap(m map[string]int) sortedStrMap {
 	sortedKeys := make([]string, 0, len(m))
-	for key, _ := range m {
+	for key := range m {
 		sortedKeys = append(sortedKeys, key)
 	}
 	sort.Strings(sortedKeys)

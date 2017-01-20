@@ -143,7 +143,7 @@ func (this *Brokers) clusterBrokers(zone, cluster string, brokers map[string]*zk
 
 	// sort by broker id
 	sortedBrokerIds := make([]string, 0, len(brokers))
-	for brokerId, _ := range brokers {
+	for brokerId := range brokers {
 		sortedBrokerIds = append(sortedBrokerIds, brokerId)
 	}
 	sort.Strings(sortedBrokerIds)
@@ -255,7 +255,7 @@ func (this *Brokers) doShowVersions() {
 	swallow(scanner.Err())
 
 	sortedProceses := make([]string, 0, len(records))
-	for proc, _ := range records {
+	for proc := range records {
 		sortedProceses = append(sortedProceses, proc)
 	}
 	sort.Strings(sortedProceses)
@@ -263,7 +263,7 @@ func (this *Brokers) doShowVersions() {
 	procsWithSingleInstance := make([]string, 0)
 	for _, proc := range sortedProceses {
 		sortedHosts := make([]string, 0, len(records[proc]))
-		for host, _ := range records[proc] {
+		for host := range records[proc] {
 			sortedHosts = append(sortedHosts, host)
 		}
 		sort.Strings(sortedHosts)

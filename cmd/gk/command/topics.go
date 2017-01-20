@@ -136,7 +136,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 			// sort by topic name
 			configs := zkcluster.ConfiggedTopics()
 			sortedTopics := make([]string, 0, len(configs))
-			for topic, _ := range configs {
+			for topic := range configs {
 				sortedTopics = append(sortedTopics, topic)
 			}
 			sort.Strings(sortedTopics)
@@ -370,7 +370,7 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 
 	if this.verbose {
 		sortedBrokerIds := make([]string, 0, len(brokers))
-		for brokerId, _ := range brokers {
+		for brokerId := range brokers {
 			sortedBrokerIds = append(sortedBrokerIds, brokerId)
 		}
 		sort.Strings(sortedBrokerIds)

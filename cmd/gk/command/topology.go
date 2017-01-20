@@ -194,19 +194,19 @@ func (this *Topology) displayZoneTopology(zkzone *zk.ZkZone) {
 
 	hosts := make(map[string]struct{})
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
-		for host, _ := range brokerInstances[zkcluster.Name()] {
+		for host := range brokerInstances[zkcluster.Name()] {
 			hosts[host] = struct{}{}
 		}
 	})
 	sortedHosts := make([]string, 0)
-	for host, _ := range hosts {
+	for host := range hosts {
 		sortedHosts = append(sortedHosts, host)
 	}
 	sort.Strings(sortedHosts)
 
 	// sort by host ip
 	sortedClusters := make([]string, 0, len(brokerInstances))
-	for c, _ := range brokerInstances {
+	for c := range brokerInstances {
 		sortedClusters = append(sortedClusters, c)
 	}
 	sort.Strings(sortedClusters)
