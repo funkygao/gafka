@@ -43,7 +43,7 @@ func (this *Sniff) Run(args []string) (exitCode int) {
 
 	prot := protos.New(protocol, serverPort)
 	if prot == nil {
-		this.Ui.Error("unkown protocol")
+		this.Ui.Error("unknown protocol")
 		this.Ui.Outputf(this.Help())
 		return 2
 	}

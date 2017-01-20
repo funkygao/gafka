@@ -95,7 +95,7 @@ func (this *Gateway) pubHandler(ctx *fasthttp.RequestCtx, params fasthttprouter.
 		return
 	}
 
-	// write the reponse
+	// write the response
 	ctx.Write(ResponseOk)
 	if !options.DisableMetrics {
 		this.pubMetrics.PubOk(appid, topic, ver)

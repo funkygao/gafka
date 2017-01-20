@@ -188,7 +188,7 @@ func New(id string) *Gateway {
 			hh.Default = hhdummy.New()
 
 		default:
-			panic("unkown hinted handoff type")
+			panic("unknown hinted handoff type")
 		}
 
 		if Options.FlushHintedOffOnly {

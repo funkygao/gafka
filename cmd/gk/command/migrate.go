@@ -261,7 +261,7 @@ Options:
       You must know what that means before proceeding.
 
     -p partitionId   
-      Multiple partition ids seperated by comma or -.
+      Multiple partition ids separated by comma or -.
       e,g. -p 0,1
       e,g. -p 2-20
 

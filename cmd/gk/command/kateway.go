@@ -792,12 +792,12 @@ Options:
       Run benchmark in ack all mode
 
     -pub
-      Continously pub
+      Continuously pub
       -publseep 3s
        Default 100ms
 
     -sub
-      Continously sub
+      Continuously sub
 
     -flame
       Generate a kateway instance flame graph

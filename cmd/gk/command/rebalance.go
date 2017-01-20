@@ -37,7 +37,7 @@ func (this *Rebalance) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.StringVar(&this.topic, "t", "", "")
-	cmdFlags.StringVar(&this.partition, "p", "", "comma seperated ids")
+	cmdFlags.StringVar(&this.partition, "p", "", "comma separated ids")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -154,7 +154,7 @@ Options:
     -t topic
 
     -p partitionId
-      Multiple partition ids seperated by comma or -.
+      Multiple partition ids separated by comma or -.
       e,g. -p 0,1
       e,g. -p 0-19
 

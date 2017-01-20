@@ -138,7 +138,7 @@ Options:
 
     -t topic
 
-    -p partition ids seperated by comma
+    -p partition ids separated by comma
       e,g. 0,2
 
 `, this.Cmd, this.Synopsis())
