@@ -44,7 +44,7 @@ func (this *manServer) schemaHandler(w http.ResponseWriter, r *http.Request, par
 		return
 	}
 
-	// TODO lookup from manager and send reponse
+	// TODO lookup from manager and send response
 	schema, err := manager.Default.TopicSchema(hisAppid, topic, ver)
 	if err != nil {
 		writeBadRequest(w, err.Error())

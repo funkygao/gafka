@@ -46,7 +46,7 @@ func init() {
 	flag.StringVar(&Options.ManagerType, "man", "dummy", "manager type <dummy|mysql>")
 	flag.StringVar(&Options.InfluxDbname, "influxdb", "", "influxdb db name")
 	flag.StringVar(&Options.ListenAddr, "addr", ":9065", "monitor http server addr")
-	flag.StringVar(&Options.HintedHandoffDir, "hhdirs", "hh", "hinted handoff dirs seperated by comma")
+	flag.StringVar(&Options.HintedHandoffDir, "hhdirs", "hh", "hinted handoff dirs separated by comma")
 	flag.Parse()
 
 	if Options.ShowVersion {

@@ -2,7 +2,7 @@
 // metrics.Registry to durable storage.
 package telemetry
 
-// A Reporter continously scans metrics.Registry and
+// A Reporter continuously scans metrics.Registry and
 // persists all metrics to durable storage.
 type Reporter interface {
 	Name() string

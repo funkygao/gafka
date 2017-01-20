@@ -101,7 +101,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	}
 
 	if !ctx.CurrentUserIsRoot() {
-		this.Ui.Error("requires root priviledges!")
+		this.Ui.Error("requires root privileges!")
 		return 1
 	}
 
@@ -464,7 +464,7 @@ Options:
       Defaults to %s
 
     -log.dirs dirs
-      A comma seperated list of directories under which to store log files.
+      A comma separated list of directories under which to store log files.
 
 `, this.Cmd, this.Synopsis(), ctx.KafkaHome())
 	return strings.TrimSpace(help)

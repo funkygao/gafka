@@ -231,7 +231,7 @@ func pubGatewayLoop(seq int) {
 		req, err := http.NewRequest("POST", url,
 			bytes.NewBuffer([]byte(strings.Repeat("X", sz))))
 		if err != nil {
-			log.Fatalf("Error Occured. %+v", err)
+			log.Fatalf("Error Occurred: %+v", err)
 			stress.IncCounter("fail", 1)
 			return
 		}

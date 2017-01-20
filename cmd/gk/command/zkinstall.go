@@ -34,7 +34,7 @@ func (this *ZkInstall) Run(args []string) (exitCode int) {
 	}
 
 	if !ctx.CurrentUserIsRoot() {
-		this.Ui.Error("requires root priviledges!")
+		this.Ui.Error("requires root privileges!")
 		return 1
 	}
 
@@ -134,7 +134,7 @@ Options:
       myid of this zookeeper node
       id start from 1 instead of 0
 
-    -servers comma seperated ip addrs
+    -servers comma separated ip addrs
       e,g. 1:10.213.1.225,2:10.213.10.140,3:10.213.18.207
 
     -single

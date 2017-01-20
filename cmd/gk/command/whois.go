@@ -217,7 +217,7 @@ Options:
 
     -z zone
 
-    -app comma seperated appId
+    -app comma separated appId
 
     -key
       Show app secret key

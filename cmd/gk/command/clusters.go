@@ -607,7 +607,7 @@ Options:
       Register a permanent broker to a cluster.
       e,g. gk clusters -z prod -c foo -s -addbroker 0:10.1.2.3:10001
 
-    -delbroker comma seperated broker ids
+    -delbroker comma separated broker ids
       Delete a broker from a cluster.
       e,g. gk clusters -z prod -c foo -s -delbroker 5,6
 

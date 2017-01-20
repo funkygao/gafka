@@ -817,7 +817,7 @@ Usage: %s redis [options]
       TopN rows to freeze.
       Press 'f' to freeze, 'F' to unfreeze
 
-    -port comma seperated port
+    -port comma separated port
       Work with -top to limit redis instances
       e,g. 10511,10522
 

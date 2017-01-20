@@ -109,7 +109,7 @@ Options:
 
     -c2 to cluster
 
-    -t comma seperated topic names
+    -t comma separated topic names
       Only mirror for the specified topics.
 
     -level [debug|trace|info]
@@ -117,7 +117,7 @@ Options:
     -stat
       Show status. TODO
 
-    -exclude comma seperated topic names
+    -exclude comma separated topic names
 
     -net bandwidth limit in Mbps
       Defaults 100Mbps.
