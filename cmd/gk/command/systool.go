@@ -12,6 +12,7 @@ import (
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/net"
 )
 
 type Systool struct {
@@ -22,11 +23,13 @@ type Systool struct {
 func (this *Systool) Run(args []string) (exitCode int) {
 	var (
 		diskTool bool
+		netTool  bool
 		interval time.Duration
 	)
 	cmdFlags := flag.NewFlagSet("systool", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.BoolVar(&diskTool, "d", false, "")
+	cmdFlags.BoolVar(&netTool, "n", false, "")
 	cmdFlags.DurationVar(&interval, "i", time.Second*3, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -37,7 +40,34 @@ func (this *Systool) Run(args []string) (exitCode int) {
 		return
 	}
 
+	if netTool {
+		this.runNetTool(interval)
+		return
+	}
+
 	return
+}
+
+func (*Systool) runNetTool(interval time.Duration) {
+	for {
+		refreshScreen()
+
+		stats, err := net.ProtoCounters([]string{"tcp"})
+		swallow(err)
+
+		stat := stats[0].Stats
+		sortedName := make([]string, 0, len(stat))
+		for n := range stat {
+			sortedName = append(sortedName, n)
+		}
+		sort.Strings(sortedName)
+
+		for _, name := range sortedName {
+			fmt.Printf("%20s %d\n", name, stat[name])
+		}
+
+		time.Sleep(interval)
+	}
 }
 
 func (*Systool) runDiskTool(interval time.Duration) {
