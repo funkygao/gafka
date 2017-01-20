@@ -110,7 +110,7 @@ func (this *Job) displayAppJobs(appid string) {
 
 		sqlRealTime := fmt.Sprintf("SELECT job_id,payload,due_time FROM %s ORDER BY due_time DESC", table)
 		if this.due > 0 {
-			sqlRealTime = fmt.Sprintf("SELECT job_id,payload,due_time FROM %s WHERE due_time<=? ORDER BY due_time DESC",
+			sqlRealTime = fmt.Sprintf("SELECT job_id,payload,due_time FROM %s WHERE due_time<=%d ORDER BY due_time DESC",
 				table, time.Now().Unix()+int64(this.due))
 		}
 		rows, err := this.mc.Query(jm.AppPool, table, aid, sqlRealTime)

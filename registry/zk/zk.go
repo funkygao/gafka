@@ -100,7 +100,7 @@ func (this *zkreg) Deregister(id string, oldData []byte) error {
 
 	// ensure I own this znode
 	if !bytes.Equal(data, oldData) {
-		return fmt.Errorf("registry[%s] exp %, got %s", id, string(oldData), string(data))
+		return fmt.Errorf("registry[%s] exp %s, got %s", id, string(oldData), string(data))
 	}
 
 	return this.zkzone.Conn().Delete(this.mypath(id), -1)

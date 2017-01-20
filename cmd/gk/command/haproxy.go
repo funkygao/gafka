@@ -75,7 +75,7 @@ func (this *Haproxy) getStats(statsUri string) (header string, rows []string) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		swallow(fmt.Errorf("fetch[%s] stats got status: %d", resp.StatusCode))
+		swallow(fmt.Errorf("fetch[%s] stats got status: %d", statsUri, resp.StatusCode))
 	}
 
 	var records map[string]map[string]int64
@@ -138,7 +138,7 @@ func (this *Haproxy) fetchStats(statsUri string) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		swallow(fmt.Errorf("fetch[%s] stats got status: %d", resp.StatusCode))
+		swallow(fmt.Errorf("fetch[%s] stats got status: %d", statsUri, resp.StatusCode))
 	}
 
 	var records map[string]map[string]int64
