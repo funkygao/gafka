@@ -608,7 +608,7 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 			continue
 		}
 
-		this.Ui.Info(fmt.Sprintf("zone[%s] kateway[%s]", zkzone.Name(), kw.Id))
+		this.Ui.Outputf("zone[%s] kateway[%s]", zkzone.Name(), kw.Id)
 
 		// pub a message
 		cf := api.DefaultConfig(myApp, secret)
@@ -619,8 +619,8 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 		pubMsg := fmt.Sprintf("gk smoke test msg: [%s]", time.Now())
 
 		if this.curl {
-			this.Ui.Output(fmt.Sprintf(`curl -XPOST -H'Appid: %s' -H'Pubkey: %s' -d '%s' %s`,
-				myApp, secret, pubMsg, fmt.Sprintf("http://%s/v1/msgs/%s/%s", kw.PubAddr, topic, ver)))
+			this.Ui.Outputf(`curl -XPOST -H'Appid: %s' -H'Pubkey: %s' -d '%s' %s`,
+				myApp, secret, pubMsg, fmt.Sprintf("http://%s/v1/msgs/%s/%s", kw.PubAddr, topic, ver))
 		}
 
 		err = cli.Pub("", []byte(pubMsg), api.PubOption{
@@ -630,8 +630,8 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 		swallow(err)
 
 		if this.curl {
-			this.Ui.Output(fmt.Sprintf(`curl -XGET -H'Appid: %s' -H'Subkey: %s' %s`,
-				myApp, secret, fmt.Sprintf("http://%s/v1/msgs/%s/%s/%s?group=%s", kw.SubAddr, hisApp, topic, ver, group)))
+			this.Ui.Outputf(`curl -XGET -H'Appid: %s' -H'Subkey: %s' %s`,
+				myApp, secret, fmt.Sprintf("http://%s/v1/msgs/%s/%s/%s?group=%s", kw.SubAddr, hisApp, topic, ver, group))
 		}
 
 		// confirm that sub can get the pub'ed message
@@ -646,14 +646,14 @@ func (this *Kateway) runCheckup(zkzone *zk.ZkZone) {
 				return fmt.Errorf("unexpected http status: %s, body:%s", http.StatusText(statusCode), string(subMsg))
 			}
 			if len(subMsg) < 10 {
-				this.Ui.Warn(fmt.Sprintf("unexpected sub msg: %s", string(subMsg)))
+				this.Ui.Warnf("unexpected sub msg: %s", string(subMsg))
 			}
 
 			return api.ErrSubStop
 		})
 		swallow(err)
 
-		this.Ui.Info(fmt.Sprintf("    ok for %s@%s", kw.Id, kw.Build))
+		this.Ui.Infof("    ok for %s@%s", kw.Id, kw.Build)
 
 		// wait for server cleanup the sub conn
 		time.Sleep(time.Second)
