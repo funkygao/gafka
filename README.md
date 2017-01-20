@@ -28,7 +28,7 @@ Hope it can help you.
 
 - [kguard](https://github.com/funkygao/gafka/tree/master/cmd/kguard)
 
-  Kafka clusters body guard that emits health info to InfluxDB and exports key warnings to zabbix for alarting.
+  Kafka clusters body guard that emits health info to InfluxDB and exports key warnings to zabbix for alerting.
 
 ### The Whole Picture
 
