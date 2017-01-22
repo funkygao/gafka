@@ -79,7 +79,9 @@ func (this *WatchPubsub) runCheckup() error {
 
 	if len(kws) == 0 {
 		log.Error("%s", errKatewayAllGone)
-		return errKatewayAllGone
+
+		// check only the load balancer
+		kws = []*zk.KatewayMeta{}
 	}
 
 	var (
