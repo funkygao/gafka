@@ -176,5 +176,6 @@ func (this *Start) aliveHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("alive"))
 	}
 }

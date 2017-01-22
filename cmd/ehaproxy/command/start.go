@@ -15,6 +15,7 @@ import (
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/diagnostics"
 	"github.com/funkygao/gafka/registry"
 	zkr "github.com/funkygao/gafka/registry/zk"
 	"github.com/funkygao/gafka/telemetry"
@@ -137,11 +138,14 @@ func (this *Start) Run(args []string) (exitCode int) {
 		log.Info("ehaproxy[%s] got signal: %s", gafka.BuildId, strings.ToUpper(sig.String()))
 
 		if this.withF5 {
-			// work closely with F5 for graceful shutdown
+			log.Info("awaiting F5 mark me down...")
 			this.quiting.Set(true)
 			select {
 			case <-this.safeShutdown:
-			case <-time.After(time.Second * 30):
+				log.Info("F5 has marked me down")
+
+			case <-time.After(time.Second * 25):
+				log.Warn("timeout for awaiting F5")
 			}
 
 			// wait for F5 mark me down
@@ -169,6 +173,7 @@ func (this *Start) Run(args []string) (exitCode int) {
 		close(this.closed)
 	}, syscall.SIGINT, syscall.SIGTERM)
 
+	diagnostics.Start()
 	this.main()
 
 	<-this.closed
@@ -203,6 +208,12 @@ func (this *Start) main() {
 			if len(instances) > 0 {
 				this.reload(instances)
 			} else {
+				select {
+				case <-this.quitCh:
+					return
+				default:
+				}
+
 				// resilience to zk problem by local cache
 				log.Warn("backend all shutdown? skip this change")
 				time.Sleep(time.Second)
