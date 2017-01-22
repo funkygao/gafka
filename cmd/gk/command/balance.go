@@ -409,7 +409,7 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 		}
 
 		if _, present := this.allHostsTps[member.Addr]; !present {
-			this.Ui.Outputf("    slave only %s", member.Addr)
+			this.Ui.Warnf("    slave only %s", member.Addr)
 		}
 	}
 }
