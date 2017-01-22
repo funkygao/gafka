@@ -167,6 +167,7 @@ func (this *Start) versionHandler(w http.ResponseWriter, r *http.Request) {
 func (this *Start) aliveHandler(w http.ResponseWriter, r *http.Request) {
 	if this.quiting.Get() {
 		w.WriteHeader(http.StatusSeeOther)
+		w.Write([]byte("bye"))
 
 		log.Info("offloaded from %s for %s%s", r.RemoteAddr, r.Host, r.RequestURI)
 		if this.deadN.Add(1) == 3 {
