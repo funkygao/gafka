@@ -69,6 +69,7 @@ func (this *WatchZk) Run() {
 			znodes.Update(z)
 			deadNodes.Update(d)
 			if lastLeader != "" && lastLeader != l {
+				log.Warn("zk reelected: %s => %s", lastLeader, l)
 				reelect.Update(1)
 			} else {
 				reelect.Update(0)

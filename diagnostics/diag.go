@@ -7,7 +7,7 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
-var HttpAddr = "localhost:10002"
+var HttpAddr = "localhost:10120"
 
 func Start() {
 	go http.ListenAndServe(HttpAddr, nil)

@@ -4,7 +4,7 @@
             "revision": "388a9be86573de80c995eb4ca4c872a190cf12f0"
         },
         "github.com/samuel/go-zookeeper": {
-            "revision": "c86eba8e7e95efab81f6c0455332e49d39aed12f"
+            "revision": "1d7be4effb13d2d908342d349d71a284a7542693"
         },
         "github.com/coreos/etcd/raft": {
             "branch": "master",
