@@ -38,7 +38,7 @@ func (this *Gateway) healthCheck() {
 
 			log.Warn("zk jitter: %+v", evt)
 
-			if evt.State == zklib.StateHasSession {
+			if evt.State == zklib.StateHasSession && registry.Default != nil {
 				log.Warn("re-registering kateway[%s] in %s...", this.id, registry.Default.Name())
 				registry.Default.Register(this.id, this.InstanceInfo())
 				log.Info("re-register kateway[%s] in %s done", this.id, registry.Default.Name())

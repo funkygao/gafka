@@ -35,6 +35,7 @@ func (this *zkreg) Register(id string, data []byte) {
 	//
 	// might cause dead loop, but we accept it
 	loops := 0
+	backoffN := 0
 	path := this.mypath(id)
 	for {
 		loops++
@@ -48,6 +49,12 @@ func (this *zkreg) Register(id string, data []byte) {
 				log.Trace("#%d get %s: %v", loops, path, e)
 				if e == nil {
 					if bytes.Equal(data, storedData) {
+						backoffN++
+						if backoffN == 2 {
+							log.Warn("backoff %d times, give up retrying, might be registered", backoffN)
+							return
+						}
+
 						log.Trace("#%d %s backoff %s awaiting previous node gone", loops, path, this.zkzone.SessionTimeout())
 						time.Sleep(this.zkzone.SessionTimeout())
 					} else {
