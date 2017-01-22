@@ -100,6 +100,8 @@ type Balance struct {
 	loadAvgMap   map[string]float64
 	loadAvgReady chan struct{}
 
+	brokerHosts map[string]struct{}
+
 	brokerModelMap   map[string]*brokerModel
 	brokerModelReady chan struct{}
 
@@ -128,6 +130,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 		return 1
 	}
 
+	this.brokerHosts = make(map[string]struct{})
 	this.brokerModelMap = make(map[string]*brokerModel)
 	this.brokerModelReady = make(chan struct{})
 
@@ -142,6 +145,11 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	this.lastOffsets = make(map[string]int64)
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	zkzone.ForSortedBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
+		for _, brokerInfo := range brokers {
+			this.brokerHosts[brokerInfo.Host] = struct{}{}
+		}
+	})
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		if !patternMatched(zkcluster.Name(), this.cluster) {
 			return
@@ -389,6 +397,21 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 	this.Ui.Output(columnize.SimpleFormat(lines))
 	this.Ui.Output(fmt.Sprintf("-Total- Hosts:%d Partitions:%d Tps:%s",
 		len(sortedHosts), totalPartitions, gofmt.Comma(totalTps)))
+
+	// some members are slave only idle brokers
+	cf := consulapi.DefaultConfig()
+	client, _ := consulapi.NewClient(cf)
+	members, _ := client.Agent().Members(false)
+	for _, member := range members {
+		if _, present := this.brokerHosts[member.Addr]; !present {
+			// not a broker, ignored
+			continue
+		}
+
+		if _, present := this.allHostsTps[member.Addr]; !present {
+			this.Ui.Outputf("    slave only %s", member.Addr)
+		}
+	}
 }
 
 func (this *Balance) fetchBrokerModel() {
@@ -530,9 +553,7 @@ func (this *Balance) fetchLoadAvg() {
 
 func (this *Balance) clusterTopProducers(zkcluster *zk.ZkCluster) {
 	kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
-	if err != nil {
-		return
-	}
+	swallow(err)
 	defer kfk.Close()
 
 	for {
