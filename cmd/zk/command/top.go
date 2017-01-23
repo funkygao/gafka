@@ -100,7 +100,7 @@ func (this *Zktop) displayZoneTop(zkzone *zk.ZkZone) {
 				stat.Mode = color.Red("E")
 			}
 		} else if stat.Mode == "L" && !this.batchMode {
-			stat.Mode = color.Blue(stat.Mode)
+			stat.Mode = color.Green(stat.Mode)
 		}
 		var sentQps, recvQps int
 		if lastRecv, present := this.lastRecvs[hostPort]; present {
