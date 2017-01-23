@@ -50,6 +50,14 @@ input {
     }
 }
 
+filter {
+    multiline {
+        pattern => "^201" # e,g. this line begins with 2017-01-22
+        what => "previous"
+        negate => true
+    }
+}
+
 output {
     if [type] == "pubsub" {
          http {
