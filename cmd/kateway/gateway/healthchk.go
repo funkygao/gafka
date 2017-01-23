@@ -35,16 +35,17 @@ func (this *Gateway) healthCheck(birthCry chan struct{}) {
 
 			log.Warn("zk jitter: %+v", evt)
 
-			if evt.State == zklib.StateHasSession {
-				log.Trace("registering kateway[%s] in %s...", this.id, registry.Default.Name())
-				registry.Default.Register(this.id, this.InstanceInfo())
-				log.Trace("registered kateway[%s] in %s", this.id, registry.Default.Name())
+			if evt.State != zklib.StateHasSession {
+				continue
+			}
 
-				if !firstHandShaked {
-					firstHandShaked = true
-					close(birthCry)
-				}
+			log.Trace("registering kateway[%s] in %s...", this.id, registry.Default.Name())
+			registry.Default.Register(this.id, this.InstanceInfo())
+			log.Trace("registered kateway[%s] in %s", this.id, registry.Default.Name())
 
+			if !firstHandShaked {
+				firstHandShaked = true
+				close(birthCry)
 			}
 		}
 	}
