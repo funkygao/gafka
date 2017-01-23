@@ -262,9 +262,6 @@ func (this *Gateway) Start() (err error) {
 		})
 	}, syscall.SIGINT, syscall.SIGTERM) // yes we ignore HUP
 
-	// keep watch on zk connection jitter
-	go this.healthCheck()
-
 	meta.Default.Start()
 	log.Trace("meta store[%s] started", meta.Default.Name())
 
@@ -324,9 +321,10 @@ func (this *Gateway) Start() (err error) {
 	}
 
 	// the last thing is to register: notify others: come on baby!
+	registered := make(chan struct{})
+	go this.healthCheck(registered)
+	<-registered
 	if registry.Default != nil {
-		registry.Default.Register(this.id, this.InstanceInfo())
-
 		log.Info("gateway[%s:%s] ready, registered in %s :-)", ctx.Hostname(), this.id,
 			registry.Default.Name())
 	} else {

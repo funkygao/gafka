@@ -6,7 +6,12 @@ import (
 	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
-func (this *Gateway) healthCheck() {
+func (this *Gateway) healthCheck(birthCry chan struct{}) {
+	if registry.Default == nil {
+		close(birthCry)
+		return
+	}
+
 	evtCh, ok := this.zkzone.SessionEvents()
 	if !ok {
 		panic("someone else is stealing my zkzone events?")
@@ -28,20 +33,18 @@ func (this *Gateway) healthCheck() {
 				continue
 			}
 
-			if !firstHandShaked {
-				if evt.State == zklib.StateHasSession {
-					firstHandShaked = true
-				}
-
-				continue
-			}
-
 			log.Warn("zk jitter: %+v", evt)
 
-			if evt.State == zklib.StateHasSession && registry.Default != nil {
-				log.Warn("re-registering kateway[%s] in %s...", this.id, registry.Default.Name())
+			if evt.State == zklib.StateHasSession {
+				log.Trace("registering kateway[%s] in %s...", this.id, registry.Default.Name())
 				registry.Default.Register(this.id, this.InstanceInfo())
-				log.Info("re-register kateway[%s] in %s done", this.id, registry.Default.Name())
+				log.Trace("registered kateway[%s] in %s", this.id, registry.Default.Name())
+
+				if !firstHandShaked {
+					firstHandShaked = true
+					close(birthCry)
+				}
+
 			}
 		}
 	}
