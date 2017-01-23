@@ -50,8 +50,8 @@ func (this *zkreg) Register(id string, data []byte) {
 				if e == nil {
 					if bytes.Equal(data, storedData) {
 						backoffN++
-						if backoffN == 2 {
-							log.Warn("backoff %d times, give up retrying, might be registered", backoffN)
+						if backoffN == 3 {
+							log.Warn("backoff %d times, give up retrying, might been registered", backoffN-1)
 							return
 						}
 
