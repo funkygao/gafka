@@ -1,7 +1,6 @@
 package command
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"os"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gocli"
-	"github.com/funkygao/golib/pipestream"
 )
 
 type Upgrade struct {
@@ -51,11 +49,11 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	if this.upgradeConfig {
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl(".gafka.cf"), "-O", ".gafka.cf"})
-			this.runCmd("mv", []string{"-f", ".gafka.cf", filepath.Join(usr.HomeDir, ".gafka.cf")})
+			runCmd("wget", []string{this.storeUrl(".gafka.cf"), "-O", ".gafka.cf"})
+			runCmd("mv", []string{"-f", ".gafka.cf", filepath.Join(usr.HomeDir, ".gafka.cf")})
 
 		case "u":
-			this.runCmd("cp", []string{"-f", filepath.Join(usr.HomeDir, ".gafka.cf"), this.uploadDir})
+			runCmd("cp", []string{"-f", filepath.Join(usr.HomeDir, ".gafka.cf"), this.uploadDir})
 		}
 
 		return
@@ -64,12 +62,12 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	if this.upgradeActord {
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl("actord"), "-O", "actord"})
-			this.runCmd("chmod", []string{"a+x", "actord"})
-			this.runCmd("mv", []string{"-f", "actord", "/var/wd/actord/actord"})
+			runCmd("wget", []string{this.storeUrl("actord"), "-O", "actord"})
+			runCmd("chmod", []string{"a+x", "actord"})
+			runCmd("mv", []string{"-f", "actord", "/var/wd/actord/actord"})
 
 		case "u":
-			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/actord", gopath), this.uploadDir})
+			runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/actord", gopath), this.uploadDir})
 		}
 
 		return
@@ -78,12 +76,12 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	if this.upgradeEhaproxy {
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl("ehaproxy"), "-O", "ehaproxy"})
-			this.runCmd("chmod", []string{"a+x", "ehaproxy"})
-			this.runCmd("mv", []string{"-f", "ehaproxy", "/var/wd/ehaproxy/ehaproxy"})
+			runCmd("wget", []string{this.storeUrl("ehaproxy"), "-O", "ehaproxy"})
+			runCmd("chmod", []string{"a+x", "ehaproxy"})
+			runCmd("mv", []string{"-f", "ehaproxy", "/var/wd/ehaproxy/ehaproxy"})
 
 		case "u":
-			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/ehaproxy", gopath), this.uploadDir})
+			runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/ehaproxy", gopath), this.uploadDir})
 		}
 
 		return
@@ -92,13 +90,13 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	if this.upgradeKateway {
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl("kateway"), "-O", "kateway"})
-			this.runCmd("chmod", []string{"a+x", "kateway"})
-			this.runCmd("mv", []string{"-f", "kateway", "/var/wd/kateway/kateway"})
+			runCmd("wget", []string{this.storeUrl("kateway"), "-O", "kateway"})
+			runCmd("chmod", []string{"a+x", "kateway"})
+			runCmd("mv", []string{"-f", "kateway", "/var/wd/kateway/kateway"})
 
 		case "u":
 			this.Ui.Warn("you must run './build.sh -it kateway' first.")
-			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/kateway", gopath), this.uploadDir})
+			runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/kateway", gopath), this.uploadDir})
 		}
 
 		return
@@ -107,12 +105,12 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	if this.upgradeZk {
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl("zk"), "-O", "zk"})
-			this.runCmd("chmod", []string{"a+x", "zk"})
-			this.runCmd("mv", []string{"-f", "zk", "/usr/bin/zk"})
+			runCmd("wget", []string{this.storeUrl("zk"), "-O", "zk"})
+			runCmd("chmod", []string{"a+x", "zk"})
+			runCmd("mv", []string{"-f", "zk", "/usr/bin/zk"})
 
 		case "u":
-			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/zk", gopath), this.uploadDir})
+			runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/zk", gopath), this.uploadDir})
 		}
 
 		return
@@ -121,12 +119,12 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	if this.upgradeHelix {
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl("helix"), "-O", "helix"})
-			this.runCmd("chmod", []string{"a+x", "helix"})
-			this.runCmd("mv", []string{"-f", "helix", "/usr/bin/helix"})
+			runCmd("wget", []string{this.storeUrl("helix"), "-O", "helix"})
+			runCmd("chmod", []string{"a+x", "helix"})
+			runCmd("mv", []string{"-f", "helix", "/usr/bin/helix"})
 
 		case "u":
-			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/helix", gopath), this.uploadDir})
+			runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/helix", gopath), this.uploadDir})
 		}
 
 		return
@@ -135,12 +133,12 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	if this.upgradeKguard {
 		switch this.mode {
 		case "d":
-			this.runCmd("wget", []string{this.storeUrl("kguard"), "-O", "kguard"})
-			this.runCmd("chmod", []string{"a+x", "kguard"})
-			this.runCmd("mv", []string{"-f", "kguard", "/var/wd/kguard/kguard"})
+			runCmd("wget", []string{this.storeUrl("kguard"), "-O", "kguard"})
+			runCmd("chmod", []string{"a+x", "kguard"})
+			runCmd("mv", []string{"-f", "kguard", "/var/wd/kguard/kguard"})
 
 		case "u":
-			this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/kguard", gopath), this.uploadDir})
+			runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/kguard", gopath), this.uploadDir})
 		}
 
 		return
@@ -152,22 +150,22 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 		// upgrade gk
 		u, err := user.Current()
 		swallow(err)
-		this.runCmd("/usr/bin/gk", []string{"-v"})
-		this.runCmd("rm", []string{"-f", "gk"})
+		runCmd("/usr/bin/gk", []string{"-v"})
+		runCmd("rm", []string{"-f", "gk"})
 		if this.upgradeConfig {
-			this.runCmd("rm", []string{"-f", fmt.Sprintf("%s/.gafka.cf", u.HomeDir)})
+			runCmd("rm", []string{"-f", fmt.Sprintf("%s/.gafka.cf", u.HomeDir)})
 		}
-		this.runCmd("wget", []string{this.storeUrl("gk"), "-O", "gk"})
-		this.runCmd("chmod", []string{"a+x", "gk"})
-		this.runCmd("mv", []string{"-f", "gk", "/usr/bin/gk"})
-		this.runCmd("/usr/bin/gk", []string{"-v"})
+		runCmd("wget", []string{this.storeUrl("gk"), "-O", "gk"})
+		runCmd("chmod", []string{"a+x", "gk"})
+		runCmd("mv", []string{"-f", "gk", "/usr/bin/gk"})
+		runCmd("/usr/bin/gk", []string{"-v"})
 
 		// upgrade conf
-		this.runCmd("wget", []string{this.storeUrl(".gafka.cf"), "-O", ".gafka.cf"})
-		this.runCmd("mv", []string{"-f", ".gafka.cf", filepath.Join(usr.HomeDir, ".gafka.cf")})
+		runCmd("wget", []string{this.storeUrl(".gafka.cf"), "-O", ".gafka.cf"})
+		runCmd("mv", []string{"-f", ".gafka.cf", filepath.Join(usr.HomeDir, ".gafka.cf")})
 
 	case "u":
-		this.runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/gk", gopath), this.uploadDir})
+		runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/gk", gopath), this.uploadDir})
 
 	default:
 		this.Ui.Error("invalid mode")
@@ -180,26 +178,6 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 
 func (this *Upgrade) storeUrl(fn string) string {
 	return fmt.Sprintf("%s/%s", ctx.UpgradeCenter(), fn)
-}
-
-func (this *Upgrade) runCmd(c string, args []string) {
-	this.Ui.Output(fmt.Sprintf("  %s %+v", c, args))
-
-	cmd := pipestream.New(c, args...)
-	err := cmd.Open()
-	swallow(err)
-	defer cmd.Close()
-
-	scanner := bufio.NewScanner(cmd.Reader())
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		this.Ui.Output(fmt.Sprintf("    %s", scanner.Text()))
-	}
-	err = scanner.Err()
-	if err != nil {
-		this.Ui.Error(err.Error())
-	}
-
 }
 
 func (*Upgrade) Synopsis() string {

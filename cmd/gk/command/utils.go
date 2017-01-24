@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
+	"github.com/funkygao/golib/pipestream"
 	log "github.com/funkygao/log4go"
 	"github.com/influxdata/influxdb/client/v2"
 )
@@ -36,6 +38,22 @@ func validateArgs(cmd cli.Command, ui cli.Ui) *argsRule {
 		adminRequires: make(map[string]struct{}),
 		conditions:    make(map[string][]string),
 	}
+}
+
+func runCmd(c string, args []string) {
+	fmt.Printf("  %s %+v\n", c, args)
+
+	cmd := pipestream.New(c, args...)
+	err := cmd.Open()
+	swallow(err)
+	defer cmd.Close()
+
+	scanner := bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		fmt.Printf("    %s\n", scanner.Text())
+	}
+	swallow(scanner.Err())
 }
 
 func saramaConfig() *sarama.Config {

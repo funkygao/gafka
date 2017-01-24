@@ -1,0 +1,93 @@
+#!/bin/sh
+#
+# Startup / shutdown script for the gk agent
+#
+### BEGIN INIT INFO
+# Provides:          gkagent
+# Required-Start:    $network $local_fs
+# Required-Stop:
+# Should-Start:
+# Should-Stop:
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-Description:    gk agent
+# Description:          gk agent
+### END INIT INFO
+
+. /etc/init.d/functions
+
+if [ "$(id -u)" != "0" ]; then
+    echo "Must run as root"
+    exit 1
+fi
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+DAEMON=/usr/bin/gk
+PIDFILE=/tmp/gkagent.pid
+LOGFILE=/tmp/gkagent.log
+LOGLEVEL=debug
+CRASHLOG=/tmp/gkagent-panic.dump
+
+test -f $DAEMON || exit 0
+test -f $CONFIGFILE || exit 0
+
+# Otherwise, RHEL (and apparently Fedora) tries to "help" and set soft
+# limit of core file size to 0 for daemons. It's done as part of
+# daemon shell function shortly after changing user. See MB-6601
+DAEMON_COREFILE_LIMIT=unlimited
+
+start() {
+    touch $PIDFILE 
+    ulimit -n 40960
+    ulimit -c unlimited
+    ulimit -l unlimited
+    daemon "/usr/sbin/daemonize $DAEMON agent -start -pid $PIDFILE -level $LOGLEVEL -crashlog $CRASHLOG -log $LOGFILE"
+    errcode=$?
+    return $errcode
+}
+
+stop() {
+    daemon "$DAEMON -kill $PIDFILE"
+    errcode=$?
+    return $errcode
+}
+
+running() {
+    pidofproc -p $PIDFILE $DAEMON >/dev/null
+    errcode=$?
+    return $errcode
+}
+
+case $1 in
+    start)
+        if running ; then
+            warning && echo "gk agent is already started"
+            exit 0
+        fi
+        echo -n $"Starting gk agent"
+        start
+        echo
+        ;;
+    stop)
+        echo -n $"Stopping gk agent"
+        stop
+        echo
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    status)
+        if running ; then
+            echo "gk agent is running"
+            exit 0
+        else
+            echo "gk agent is not running"
+            exit 3
+        fi
+        ;;
+    *)
+        echo "Usage: /etc/init.d/gkagent {start|stop|restart|status}" >&2
+        exit 3
+esac
