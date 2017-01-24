@@ -9,6 +9,7 @@ import (
 
 var HttpAddr = "localhost:10120"
 
+// TODO access log
 func Start() {
 	go http.ListenAndServe(HttpAddr, nil)
 	log.Info("pprof ready on %s", HttpAddr)
