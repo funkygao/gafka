@@ -6,10 +6,12 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -26,7 +28,6 @@ import (
 	gio "github.com/funkygao/golib/io"
 	"github.com/funkygao/golib/locking"
 	"github.com/funkygao/golib/signal"
-	"github.com/funkygao/golib/sync2"
 	log "github.com/funkygao/log4go"
 	zklib "github.com/samuel/go-zookeeper/zk"
 )
@@ -47,7 +48,10 @@ type Start struct {
 	manPort    int
 	starting   bool
 	forwardFor bool
-	httpAddr   string
+
+	monitorListener net.Listener
+	monitorServer   *http.Server
+	httpAddr        string
 
 	haproxyStatsUrl string
 	influxdbAddr    string
@@ -57,10 +61,8 @@ type Start struct {
 	zkzone         *zk.ZkZone
 	lastServers    BackendServers
 
-	withF5       bool
-	safeShutdown chan struct{}
-	quiting      sync2.AtomicBool
-	deadN        sync2.AtomicInt32
+	withF5   bool
+	f5Notify sync.Once
 }
 
 func (this *Start) Run(args []string) (exitCode int) {
@@ -133,23 +135,18 @@ func (this *Start) Run(args []string) (exitCode int) {
 
 	this.quitCh = make(chan struct{})
 	this.closed = make(chan struct{})
-	this.safeShutdown = make(chan struct{})
 	signal.RegisterHandler(func(sig os.Signal) {
 		log.Info("ehaproxy[%s] got signal: %s", gafka.BuildId, strings.ToUpper(sig.String()))
 
 		if this.withF5 {
-			log.Info("awaiting F5 mark me down...")
-			this.quiting.Set(true)
-			select {
-			case <-this.safeShutdown:
+			this.f5Notify.Do(func() {
+				// notify F5 I'm dead
+				this.monitorListener.Close()
+
+				log.Info("awaiting F5 mark me down...")
+				time.Sleep(time.Second * 11)
 				log.Info("F5 has marked me down")
-
-			case <-time.After(time.Second * 25):
-				log.Warn("timeout for awaiting F5")
-			}
-
-			// wait for F5 mark me down
-			time.Sleep(time.Second * 2)
+			})
 		}
 
 		this.shutdown()
