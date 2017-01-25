@@ -35,6 +35,7 @@ var (
 	httpdRegex = regexp.MustCompile(`^\[httpd\]`) //log begin with [httpd]
 
 	ErrInvalidLogFormatLine = errors.New("invalid log format line")
+	ErrUselessLogLine       = errors.New("useless log line")
 )
 
 const (
@@ -188,7 +189,12 @@ func parseLine(line []byte) (postLatency, getLatency, postSize, getSize int64, m
 		return 0, 0, 0, 0, "", err
 	}
 
-	method = getMethod(req)
+	method, uri := getMethod(req)
+	err = isTargetReq(method, uri)
+	if err != nil {
+		return 0, 0, 0, 0, "", err
+	}
+
 	if method == "POST" {
 		postLatency = latency //microsecond
 		postSize = respSize   //bytes
@@ -199,8 +205,28 @@ func parseLine(line []byte) (postLatency, getLatency, postSize, getSize int64, m
 	return
 }
 
-func getMethod(req string) string {
+func getMethod(req string) (string, string) {
 	//req = r.Method+" "+uri+" "+r.Proto
 	items := strings.Split(req, " ")
-	return strings.ToUpper(items[0])
+	return strings.ToUpper(items[0]), strings.ToUpper(items[1])
+}
+
+func isTargetReq(method, uri string) (err error) {
+	if method == "POST" {
+		//in POST, only uri begin with /write will be parsed
+		if strings.HasPrefix(uri, "/write") {
+			return nil
+		} else {
+			return ErrUselessLogLine
+		}
+	} else if method == "GET" {
+		//in GET, only uri begin with /query will be parsed
+		if strings.HasPrefix(uri, "/query") {
+			return nil
+		} else {
+			return ErrUselessLogLine
+		}
+	}
+
+	return ErrUselessLogLine
 }
