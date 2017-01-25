@@ -134,6 +134,12 @@ func main() {
 
 func setupTelemetry() {
 	zone := ctx.Zone(z)
+
+	//add "http://" if not exist
+	if !strings.HasPrefix(zone.InfluxAddr, "http:") {
+		zone.InfluxAddr = fmt.Sprintf("http://%s", zone.InfluxAddr)
+	}
+
 	cf, err := influxdb.NewConfig(zone.InfluxAddr, "pubsub", "", "", time.Minute)
 	if err != nil {
 		panic(err)
