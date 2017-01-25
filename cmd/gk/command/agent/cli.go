@@ -7,6 +7,6 @@ import (
 )
 
 func (a *Agent) ListMembers() {
-	_, body, _ := gorequest.New().Get(fmt.Sprintf("localhost:%d", 10114)).End()
+	_, body, _ := gorequest.New().Get(fmt.Sprintf("localhost:%d", 10114+1)).End()
 	fmt.Println(string(body))
 }
