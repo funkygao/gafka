@@ -18,11 +18,15 @@ func (this *Agent) Run(args []string) (exitCode int) {
 	var (
 		install bool
 		start   bool
+		port    int
+		seeds   string
 	)
 	cmdFlags := flag.NewFlagSet("agent", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.BoolVar(&install, "install", false, "")
 	cmdFlags.BoolVar(&start, "start", false, "")
+	cmdFlags.IntVar(&port, "port", 0, "")
+	cmdFlags.StringVar(&seeds, "join", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -35,8 +39,16 @@ func (this *Agent) Run(args []string) (exitCode int) {
 	}
 
 	if start {
-		a := agent.New()
-		a.Start()
+		seedNodes := make([]string, 0)
+		for _, node := range strings.Split(seeds, ",") {
+			node = strings.TrimSpace(node)
+			if node == "" {
+				continue
+			}
+
+			seedNodes = append(seedNodes, node)
+		}
+		agent.New().ServeForever(port, seedNodes...)
 	}
 
 	return
@@ -59,6 +71,11 @@ Options:
 
     -start
       Start gk agent daemon
+
+    -port port
+
+    -join seeds
+      Comma seperated host:port
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
