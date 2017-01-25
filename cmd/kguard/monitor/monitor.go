@@ -22,8 +22,8 @@ import (
 	"github.com/funkygao/go-metrics"
 	"github.com/funkygao/golib/signal"
 	"github.com/funkygao/golib/sync2"
+	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
-	"github.com/julienschmidt/httprouter"
 )
 
 // Monitor is the engine that will start/stop plugin watchers.

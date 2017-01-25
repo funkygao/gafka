@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/funkygao/columnize"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/golib/top"
-	"github.com/ryanuber/columnize"
 )
 
 type Haproxy struct {

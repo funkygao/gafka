@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/funkygao/columnize"
 	"github.com/funkygao/gafka/cmd/kateway/api/v1"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
@@ -25,7 +26,6 @@ import (
 	"github.com/funkygao/golib/stress"
 	"github.com/funkygao/golib/top"
 	"github.com/pborman/uuid"
-	"github.com/ryanuber/columnize"
 	zklib "github.com/samuel/go-zookeeper/zk"
 )
 

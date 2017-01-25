@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/funkygao/columnize"
 	"github.com/funkygao/fae/config"
 	"github.com/funkygao/fae/servant/mysql"
 	"github.com/funkygao/gafka/cmd/kateway/job"
@@ -18,7 +19,6 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/gorequest"
-	"github.com/ryanuber/columnize"
 )
 
 type Job struct {

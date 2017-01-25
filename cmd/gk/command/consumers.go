@@ -6,12 +6,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/funkygao/columnize"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
-	"github.com/ryanuber/columnize"
 	gozk "github.com/samuel/go-zookeeper/zk"
 )
 

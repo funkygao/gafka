@@ -9,13 +9,13 @@ import (
 	"strings"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/columnize"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/pmylund/sortutil"
-	"github.com/ryanuber/columnize"
 )
 
 type Clusters struct {

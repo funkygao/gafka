@@ -9,8 +9,8 @@ import (
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/go-metrics"
+	"github.com/funkygao/httprouter"
 	log "github.com/funkygao/log4go"
-	"github.com/julienschmidt/httprouter"
 )
 
 func (this *Monitor) setupRoutes() {

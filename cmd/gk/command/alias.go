@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/funkygao/columnize"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gocli"
-	"github.com/ryanuber/columnize"
 )
 
 type Alias struct {

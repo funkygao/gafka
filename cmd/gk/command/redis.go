@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/funkygao/Go-Redis"
+	"github.com/funkygao/columnize"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
@@ -26,7 +27,6 @@ import (
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 	"github.com/pmylund/sortutil"
-	"github.com/ryanuber/columnize"
 )
 
 type Redis struct {

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/funkygao/columnize"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/sla"
 	"github.com/funkygao/gafka/zk"
@@ -20,7 +21,6 @@ import (
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/golib/pipestream"
 	"github.com/pmylund/sortutil"
-	"github.com/ryanuber/columnize"
 )
 
 type Topics struct {

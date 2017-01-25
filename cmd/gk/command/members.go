@@ -9,13 +9,13 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/funkygao/columnize"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/pipestream"
 	consulapi "github.com/hashicorp/consul/api"
-	"github.com/ryanuber/columnize"
 )
 
 // consul members will include:

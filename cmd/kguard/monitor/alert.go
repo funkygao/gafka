@@ -3,7 +3,7 @@ package monitor
 import (
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/funkygao/httprouter"
 )
 
 // POST /alertHook
