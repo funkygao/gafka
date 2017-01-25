@@ -59,6 +59,13 @@ func init() {
 			}, nil
 		},
 
+		"scale": func() (cli.Command, error) {
+			return &command.Scale{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"merkle": func() (cli.Command, error) {
 			return &command.Merkle{
 				Ui:  ui,
