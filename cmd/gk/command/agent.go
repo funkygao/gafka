@@ -16,16 +16,18 @@ type Agent struct {
 
 func (this *Agent) Run(args []string) (exitCode int) {
 	var (
-		install bool
-		start   bool
-		port    int
-		seeds   string
+		install     bool
+		listMembers bool
+		start       bool
+		port        int
+		seeds       string
 	)
 	cmdFlags := flag.NewFlagSet("agent", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.BoolVar(&install, "install", false, "")
 	cmdFlags.BoolVar(&start, "start", false, "")
-	cmdFlags.IntVar(&port, "port", 0, "")
+	cmdFlags.IntVar(&port, "port", 10114, "")
+	cmdFlags.BoolVar(&listMembers, "l", false, "")
 	cmdFlags.StringVar(&seeds, "join", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -51,6 +53,10 @@ func (this *Agent) Run(args []string) (exitCode int) {
 		agent.New().ServeForever(port, seedNodes...)
 	}
 
+	if listMembers {
+		agent.New().ListMembers()
+	}
+
 	return
 }
 
@@ -73,9 +79,13 @@ Options:
       Start gk agent daemon
 
     -port port
+      Defaults 10114
 
     -join seeds
       Comma seperated host:port
+
+    -l
+      List members
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
