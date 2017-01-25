@@ -306,11 +306,11 @@ func (this *Balance) drawDetail(sortedHosts []string) {
 
 		this.Ui.Output(color.Green("%16s %8s %+v", host, gofmt.Comma(offsetInfo.Total()), offsetInfo.Clusters()))
 		for _, sum := range summary {
-			if sum.qps < 100 {
+			if sum.qps < 2 {
 				continue
 			}
 
-			this.Ui.Output(fmt.Sprintf("    %30s %2d %8s %s#%d", sum.cluster, sum.brokerID,
+			this.Ui.Output(fmt.Sprintf("    %30s %8s %s#%d", sum.cluster,
 				gofmt.Comma(sum.qps), sum.tp.Topic, sum.tp.PartitionID))
 		}
 	}

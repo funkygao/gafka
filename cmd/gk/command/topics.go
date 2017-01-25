@@ -27,16 +27,17 @@ type Topics struct {
 	Ui  cli.Ui
 	Cmd string
 
-	topicPattern string
-	verbose      bool
-	topicN       int
-	partitionN   int
-	totalMsgs    int64
-	totalOffsets int64
-	ipInNumber   bool
-	count        int64
-	since        time.Duration
-	brokerIp     string
+	topicPattern   string
+	verbose        bool
+	topicN         int
+	partitionN     int
+	manyPartitionN int
+	totalMsgs      int64
+	totalOffsets   int64
+	ipInNumber     bool
+	count          int64
+	since          time.Duration
+	brokerIp       string
 }
 
 func (this *Topics) Run(args []string) (exitCode int) {
@@ -185,7 +186,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		this.displayTopicsOfCluster(zkcluster)
 
 		this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Topics-", this.topicN))
+		this.Ui.Output(fmt.Sprintf("%25s %d", "-TopicsOver1Partitions-", this.manyPartitionN))
 		this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Partitions-", this.partitionN))
+
 		if this.verbose {
 			this.Ui.Output(fmt.Sprintf("%25s %s", "-FLAT Messages-", gofmt.Comma(this.totalMsgs)))
 			this.Ui.Output(fmt.Sprintf("%25s %s", "-CUM Messages-", gofmt.Comma(this.totalOffsets)))
@@ -198,7 +201,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		this.displayTopicsOfCluster(zkcluster)
 	})
 	this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Topics-", this.topicN))
+	this.Ui.Output(fmt.Sprintf("%25s %d", "-TopicsOver1Partitions-", this.manyPartitionN))
 	this.Ui.Output(fmt.Sprintf("%25s %d", "-TOTAL Partitions-", this.partitionN))
+
 	if this.verbose {
 		this.Ui.Output(fmt.Sprintf("%25s %s", "-FLAT Messages-", gofmt.Comma(this.totalMsgs)))
 		this.Ui.Output(fmt.Sprintf("%25s %s", "-CUM Messages-", gofmt.Comma(this.totalOffsets)))
@@ -450,10 +455,15 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 
 		this.partitionN += len(partions)
 		if !this.verbose {
-			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%30s %s %3dP %dR %s",
+			partitionStr := fmt.Sprintf("%3d", len(partions))
+			if len(partions) > 1 {
+				partitionStr = color.Yellow("%3d", len(partions))
+				this.manyPartitionN++
+			}
+			linesInTopicMode = this.echoOrBuffer(fmt.Sprintf("%30s %s %sP %dR %s",
 				zkcluster.Name(),
 				color.Cyan("%-50s", topic),
-				len(partions), len(replicas),
+				partitionStr, len(replicas),
 				gofmt.PrettySince(topicsCtime[topic])), linesInTopicMode)
 			continue
 		}
