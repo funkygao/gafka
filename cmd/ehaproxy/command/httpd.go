@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,14 +17,26 @@ import (
 )
 
 func (this *Start) runMonitorServer(addr string) {
-	http.HandleFunc("/v1/ver", this.versionHandler)
-	http.HandleFunc("/v1/status", this.statusHandler)
-	http.HandleFunc("/alive", this.aliveHandler)
-
-	log.Info("status web server on %s ready", addr)
-	if err := http.ListenAndServe(addr, nil); err != nil {
-		log.Error("status web server: %s", err)
+	var err error
+	this.monitorListener, err = net.Listen("tcp", addr)
+	if err != nil {
+		panic(err)
 	}
+
+	mux := http.NewServeMux()
+
+	this.monitorServer = &http.Server{
+		Addr:    addr,
+		Handler: mux,
+	}
+
+	go this.monitorServer.Serve(this.monitorListener)
+
+	mux.HandleFunc("/v1/ver", this.versionHandler)
+	mux.HandleFunc("/v1/status", this.statusHandler)
+	mux.HandleFunc("/alive", this.aliveHandler)
+
+	log.Info("monitor web server on %s ready", addr)
 }
 
 var cols = []string{
@@ -165,18 +178,6 @@ func (this *Start) versionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *Start) aliveHandler(w http.ResponseWriter, r *http.Request) {
-	if this.quiting.Get() {
-		w.WriteHeader(http.StatusSeeOther)
-		w.Write([]byte("bye"))
-
-		log.Info("offloaded from %s for %s%s", r.RemoteAddr, r.Host, r.RequestURI)
-		if this.deadN.Add(1) == 3 {
-			// TODO more strict check rule: check each port
-			log.Info("enough death reported, safe to shutdown")
-			close(this.safeShutdown)
-		}
-	} else {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("alive"))
-	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("alive"))
 }
