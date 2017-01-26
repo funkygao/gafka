@@ -82,7 +82,7 @@ Options:
       Defaults 10114
 
     -join seeds
-      Comma seperated host:port
+      Comma separated host:port
 
     -l
       List members
