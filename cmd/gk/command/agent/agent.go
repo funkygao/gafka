@@ -13,6 +13,8 @@ import (
 	"github.com/pborman/uuid"
 )
 
+// Agent provides membership, failure detection, and event broadcast.
+// TODO LAN+WAN gossip
 type Agent struct {
 	*memberlist.Memberlist
 	broadcasts *memberlist.TransmitLimitedQueue
