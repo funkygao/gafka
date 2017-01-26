@@ -208,7 +208,7 @@ func parseLine(line []byte) (postLatency, getLatency, postSize, getSize int64, m
 func getMethod(req string) (string, string) {
 	//req = r.Method+" "+uri+" "+r.Proto
 	items := strings.Split(req, " ")
-	return strings.ToUpper(items[0]), strings.ToUpper(items[1])
+	return strings.ToUpper(items[0]), items[1]
 }
 
 func isTargetReq(method, uri string) (err error) {
