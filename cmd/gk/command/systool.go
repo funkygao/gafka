@@ -86,22 +86,28 @@ func (this *Systool) runIOScheduler() {
 	stats, err := disk.IOCounters()
 	swallow(err)
 
-	for _, stat := range stats {
-		diskSuffix := stat.Name[len(stat.Name)-1]
+	sortedDisks := make([]string, 0, len(stats))
+	for d := range stats {
+		sortedDisks = append(sortedDisks, d)
+	}
+	sort.Strings(sortedDisks)
+
+	for _, d := range sortedDisks {
+		diskSuffix := d[len(d)-1]
 		if diskSuffix >= '0' && diskSuffix <= '9' {
-			stat.Name = stat.Name[:len(stat.Name)-1]
+			// skip partition
+			continue
 		}
 
-		fn := fmt.Sprintf("/sys/block/%s/queue/scheduler", stat.Name)
+		fn := fmt.Sprintf("/sys/block/%s/queue/scheduler", d)
 		b, err := ioutil.ReadFile(fn)
 		swallow(err)
 
-		this.Ui.Outputf("%8s: %s", stat.Name, strings.TrimSpace(string(b)))
+		this.Ui.Outputf("%8s: %s", d, strings.TrimSpace(string(b)))
 		this.Ui.Outputf("%9s echo noop > %s", " ", fn)
 	}
 
-	this.Ui.Outputf("make sure dirty_background_ratio < dirty_ratio")
-
+	this.Ui.Infof("make sure dirty_background_ratio < dirty_ratio")
 }
 
 func (*Systool) runNetTool(interval time.Duration) {
