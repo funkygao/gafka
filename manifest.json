@@ -17,5 +17,8 @@
         "github.com/influxdata/influxdb/client": {
             "revision": "390a16925d8bce2955ef7a27bc423762566cd931"
         }
+        "github.com/hashicorp/memberlist": {
+            "revision": "9800c50ab79c002353852a9b1095e9591b161513"
+        }
     }
 }
