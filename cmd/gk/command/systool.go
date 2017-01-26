@@ -71,6 +71,7 @@ func (this *Systool) runVMTool(interval time.Duration) {
 		s, err := mem.VirtualMemory()
 		swallow(err)
 
+		this.Ui.Outputf("cache:        %s", gofmt.ByteSize(s.Cached))
 		this.Ui.Outputf("dirty:        %s", gofmt.ByteSize(s.Dirty))
 		this.Ui.Outputf("writeback:    %s", gofmt.ByteSize(s.Writeback))
 		this.Ui.Outputf("writebacktmp: %d", s.WritebackTmp)
