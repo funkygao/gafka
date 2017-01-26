@@ -10,7 +10,6 @@ import (
 	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
 	"github.com/hashicorp/memberlist"
-	"github.com/pborman/uuid"
 )
 
 // Agent provides membership, failure detection, and event broadcast.

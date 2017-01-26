@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"sort"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/mem"
 	"github.com/shirou/gopsutil/net"
 )
 
@@ -24,15 +26,29 @@ func (this *Systool) Run(args []string) (exitCode int) {
 	var (
 		diskTool bool
 		netTool  bool
+		ioSched  bool
+		vmTool   bool
 		interval time.Duration
 	)
 	cmdFlags := flag.NewFlagSet("systool", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.BoolVar(&diskTool, "d", false, "")
+	cmdFlags.BoolVar(&vmTool, "m", false, "")
 	cmdFlags.BoolVar(&netTool, "n", false, "")
+	cmdFlags.BoolVar(&ioSched, "io", false, "")
 	cmdFlags.DurationVar(&interval, "i", time.Second*3, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	if ioSched {
+		this.runIOScheduler()
+		return
+	}
+
+	if vmTool {
+		this.runVMTool(interval)
+		return
 	}
 
 	if diskTool {
@@ -46,6 +62,46 @@ func (this *Systool) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Systool) runVMTool(interval time.Duration) {
+	for {
+		refreshScreen()
+
+		s, err := mem.VirtualMemory()
+		swallow(err)
+
+		this.Ui.Outputf("dirty:        %s", gofmt.ByteSize(s.Dirty))
+		this.Ui.Outputf("writeback:    %s", gofmt.ByteSize(s.Writeback))
+		this.Ui.Outputf("writebacktmp: %d", s.WritebackTmp)
+		this.Ui.Outputf("shared:       %s", gofmt.ByteSize(s.Shared))
+		this.Ui.Outputf("slab:         %d", s.Slab)
+		this.Ui.Outputf("pagetables:   %d", s.PageTables)
+
+		time.Sleep(interval)
+	}
+}
+
+func (this *Systool) runIOScheduler() {
+	stats, err := disk.IOCounters()
+	swallow(err)
+
+	for _, stat := range stats {
+		diskSuffix := stat.Name[len(stat.Name)-1]
+		if diskSuffix >= '0' && diskSuffix <= '9' {
+			stat.Name = stat.Name[:len(stat.Name)-1]
+		}
+
+		fn := fmt.Sprintf("/sys/block/%s/queue/scheduler", stat.Name)
+		b, err := ioutil.ReadFile(fn)
+		swallow(err)
+
+		this.Ui.Outputf("%8s: %s", stat.Name, strings.TrimSpace(string(b)))
+		this.Ui.Outputf("%9s echo noop > %s", " ", fn)
+	}
+
+	this.Ui.Outputf("make sure dirty_background_ratio < dirty_ratio")
+
 }
 
 func (*Systool) runNetTool(interval time.Duration) {
@@ -156,8 +212,17 @@ Options:
     -d
       Disk diagnostics
 
+    -n
+      Network diagnostics
+
+    -m
+      VM diagnostics
+
     -i interval
       e,g. -i 3s
+
+    -io
+      IO scheduler
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
