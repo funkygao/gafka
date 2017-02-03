@@ -12,15 +12,15 @@ import (
 )
 
 func init() {
-	monitor.RegisterWatcher("influxdb.server", func() monitor.Watcher {
-		return &WatchInfluxServer{
+	monitor.RegisterWatcher("influxdb.instances", func() monitor.Watcher {
+		return &WatchInfluxdbInstances{
 			Tick: time.Minute,
 		}
 	})
 }
 
-// WatchInfluxServer continuously pings influxdb server.
-type WatchInfluxServer struct {
+// WatchInfluxdbInstances continuously pings influxdb servers.
+type WatchInfluxdbInstances struct {
 	Zkzone *zk.ZkZone
 	Stop   <-chan struct{}
 	Tick   time.Duration
@@ -32,7 +32,7 @@ type WatchInfluxServer struct {
 	influxdbServerAlive metrics.Gauge
 }
 
-func (this *WatchInfluxServer) Init(ctx monitor.Context) {
+func (this *WatchInfluxdbInstances) Init(ctx monitor.Context) {
 	this.Zkzone = ctx.ZkZone()
 	this.Stop = ctx.StopChan()
 	this.Wg = ctx.Inflight()
@@ -46,7 +46,7 @@ func (this *WatchInfluxServer) Init(ctx monitor.Context) {
 
 }
 
-func (this *WatchInfluxServer) Run() {
+func (this *WatchInfluxdbInstances) Run() {
 	defer this.Wg.Done()
 
 	if this.addr == "" {
@@ -60,7 +60,7 @@ func (this *WatchInfluxServer) Run() {
 	for {
 		select {
 		case <-this.Stop:
-			log.Info("influx.server stopped")
+			log.Info("influx.instances stopped")
 			return
 
 		case <-ticker.C:
@@ -70,7 +70,7 @@ func (this *WatchInfluxServer) Run() {
 	}
 }
 
-func (this *WatchInfluxServer) aliveInstances() int {
+func (this *WatchInfluxdbInstances) aliveInstances() int {
 	var err error
 	if this.cli == nil {
 		this.cli, err = client.NewHTTPClient(client.HTTPConfig{
@@ -79,18 +79,18 @@ func (this *WatchInfluxServer) aliveInstances() int {
 			Password: "",
 		})
 		if err != nil {
-			log.Error("influxdb.server: %v", err)
+			log.Error("influxdb.instances: %v", err)
 			return 0
 		}
 		if this.cli == nil {
-			log.Error("influxdb.server connected got nil cli")
+			log.Error("influxdb.instances connected got nil cli")
 			return 0
 		}
 	}
 
 	_, _, err = this.cli.Ping(time.Second * 4)
 	if err != nil {
-		log.Error("influxdb.server: %v", err)
+		log.Error("influxdb.instances: %v", err)
 		return 0
 	}
 
