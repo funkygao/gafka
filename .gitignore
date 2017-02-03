@@ -27,6 +27,7 @@ _testmain.go
 *.swp
 *.iml
 .idea/
+target/
 
 access_log
 prof.cpu
