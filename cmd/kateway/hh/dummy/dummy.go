@@ -4,6 +4,8 @@ import (
 	"github.com/funkygao/gafka/cmd/kateway/hh"
 )
 
+var _ hh.Service = &dummyStore{}
+
 type dummyStore struct {
 }
 

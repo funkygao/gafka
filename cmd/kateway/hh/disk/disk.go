@@ -13,6 +13,8 @@ import (
 	log "github.com/funkygao/log4go"
 )
 
+var _ hh.Service = &Service{}
+
 type Service struct {
 	cfg *Config
 
