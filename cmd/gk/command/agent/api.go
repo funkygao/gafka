@@ -24,7 +24,7 @@ func (a *Agent) stateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Agent) membersHandler(w http.ResponseWriter, r *http.Request) {
-	b, _ := json.Marshal(a.State()["members"])
+	b, _ := json.Marshal(a.State()["delegate"])
 	w.Write(b)
 }
 

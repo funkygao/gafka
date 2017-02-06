@@ -9,7 +9,7 @@ import (
 
 func (a *Agent) ListMembers(port int) {
 	_, body, _ := gorequest.New().Get(a.membersUri(port)).End()
-	v := []interface{}{}
+	v := map[string]interface{}{}
 	err := json.Unmarshal([]byte(body), &v)
 	if err != nil {
 		panic(err)
