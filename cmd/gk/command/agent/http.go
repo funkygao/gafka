@@ -4,15 +4,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	log "github.com/funkygao/log4go"
 )
 
-func (a *Agent) startServer(port int) {
-	http.HandleFunc("/v1/members", a.members)
+func (a *Agent) startAPIServer(port int) {
+	http.HandleFunc("/v1/state", a.stateHandler)
 
-	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	// FIXME security
+	addr := fmt.Sprintf(":%d", port)
+	log.Info("api server ready on %s", addr)
+	http.ListenAndServe(addr, nil)
 }
 
-func (a *Agent) members(w http.ResponseWriter, r *http.Request) {
-	b, _ := json.Marshal(a.Members())
+func (a *Agent) stateHandler(w http.ResponseWriter, r *http.Request) {
+	b, _ := json.Marshal(a.State())
 	w.Write(b)
 }

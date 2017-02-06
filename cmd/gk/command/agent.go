@@ -21,6 +21,7 @@ func (this *Agent) Run(args []string) (exitCode int) {
 		start       bool
 		port        int
 		seeds       string
+		tags        string
 	)
 	cmdFlags := flag.NewFlagSet("agent", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -29,6 +30,7 @@ func (this *Agent) Run(args []string) (exitCode int) {
 	cmdFlags.IntVar(&port, "port", 10114, "")
 	cmdFlags.BoolVar(&listMembers, "l", false, "")
 	cmdFlags.StringVar(&seeds, "join", "", "")
+	cmdFlags.StringVar(&tags, "tags", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -50,11 +52,11 @@ func (this *Agent) Run(args []string) (exitCode int) {
 
 			seedNodes = append(seedNodes, node)
 		}
-		agent.New().ServeForever(port, seedNodes...)
+		agent.New().ServeForever(port, strings.Split(tags, ","), seedNodes...)
 	}
 
 	if listMembers {
-		agent.New().ListMembers()
+		//agent.New().ListMembers()
 	}
 
 	return
@@ -83,6 +85,9 @@ Options:
 
     -join seeds
       Comma separated host:port
+
+    -tags tags
+      Comma separated tag list
 
     -l
       List members

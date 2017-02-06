@@ -7,17 +7,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/golib/peer"
 	"github.com/funkygao/golib/signal"
 	log "github.com/funkygao/log4go"
-	"github.com/hashicorp/memberlist"
-	"github.com/pborman/uuid"
 )
 
 // Agent provides membership, failure detection, and event broadcast.
 // TODO LAN+WAN gossip
 type Agent struct {
-	*memberlist.Memberlist
-	broadcasts *memberlist.TransmitLimitedQueue
+	*peer.Peer
 
 	quit chan struct{}
 	once sync.Once
@@ -30,7 +29,7 @@ func New() *Agent {
 	}
 }
 
-func (a *Agent) ServeForever(port int, seeds ...string) {
+func (a *Agent) ServeForever(port int, tags []string, seeds ...string) {
 	signal.RegisterHandler(func(sig os.Signal) {
 		log.Info("received signal: %s", strings.ToUpper(sig.String()))
 		log.Info("quiting...")
@@ -44,44 +43,17 @@ func (a *Agent) ServeForever(port int, seeds ...string) {
 		})
 	}, syscall.SIGINT, syscall.SIGTERM)
 
-	cf := memberlist.DefaultWANConfig()
-	hostname, _ := os.Hostname()
-	cf.Name = hostname + "-" + uuid.NewUUID().String()
-	cf.BindPort = port
-	cf.Delegate = newDelegate(a)
+	apiPort := port + 1
+	ip, _ := ctx.LocalIP()
 
-	var err error
-	a.Memberlist, err = memberlist.Create(cf)
+	p, err := peer.New(ip.String(), port, tags, seeds, apiPort, false)
 	if err != nil {
 		panic(err)
 	}
+	a.Peer = p
 
-	if len(seeds) > 0 {
-		n, err := a.Join(seeds)
-		if err != nil {
-			log.Error("join %+v: %s", seeds, err)
-		} else {
-			log.Info("joined %d seeds", n)
-		}
-	}
-
-	a.broadcasts = &memberlist.TransmitLimitedQueue{
-		NumNodes: func() int {
-			return a.NumMembers()
-		},
-		RetransmitMult: 3,
-	}
-
-	log.Info("local node: %+v", a.LocalNode())
-	go a.startServer(port + 1)
+	go a.startAPIServer(apiPort)
 
 	<-a.quit
 	log.Close()
-}
-
-func (a *Agent) xx() {
-	a.broadcasts.QueueBroadcast(&broadcast{
-		msg:    []byte("d"),
-		notify: nil,
-	})
 }
