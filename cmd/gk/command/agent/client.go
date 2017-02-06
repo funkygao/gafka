@@ -9,16 +9,14 @@ import (
 
 func (a *Agent) ListMembers(port int) {
 	_, body, _ := gorequest.New().Get(a.membersUri(port)).End()
-	v := map[string]interface{}{}
+	v := []interface{}{}
 	err := json.Unmarshal([]byte(body), &v)
 	if err != nil {
-		fmt.Println(err)
-		return
+		panic(err)
 	}
 	b, err := json.MarshalIndent(v, "", "    ")
 	if err != nil {
-		fmt.Println(err)
-		return
+		panic(err)
 	}
 
 	fmt.Println(string(b))

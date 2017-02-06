@@ -37,6 +37,8 @@ func (this *Agent) Run(args []string) (exitCode int) {
 
 	if install {
 		writeFileFromTemplate("template/init.d/gkagent", "/etc/init.d/gkagent", 0644, nil, nil)
+		runCmd("chmod", []string{"a+x", "/etc/init.d/gkagent"})
+		runCmd("yum", []string{"install", "-y", "daemonize"})
 		runCmd("chkconfig", []string{"--add", "gkagent"})
 		this.Ui.Info("installed")
 		return
