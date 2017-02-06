@@ -43,16 +43,14 @@ func (a *Agent) ServeForever(port int, tags []string, seeds ...string) {
 		})
 	}, syscall.SIGINT, syscall.SIGTERM)
 
-	apiPort := port + 1
 	ip, _ := ctx.LocalIP()
-
-	p, err := peer.New(ip.String(), port, tags, seeds, apiPort, false)
+	p, err := peer.New(ip.String(), port, tags, seeds, apiPort(port), false)
 	if err != nil {
 		panic(err)
 	}
 	a.Peer = p
 
-	go a.startAPIServer(apiPort)
+	go a.startAPIServer(apiPort(port))
 
 	<-a.quit
 	log.Close()

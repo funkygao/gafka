@@ -56,7 +56,7 @@ func (this *Agent) Run(args []string) (exitCode int) {
 	}
 
 	if listMembers {
-		//agent.New().ListMembers()
+		agent.New().ListMembers(port)
 	}
 
 	return
