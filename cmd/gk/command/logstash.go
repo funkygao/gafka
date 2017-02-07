@@ -48,6 +48,14 @@ input {
         path => "/var/wd/kateway/panic"
         type => "kateway_panic"
     }
+    file {
+        path => "/var/wd/kateway/audit/pub_audit.log"
+        type => "pubaudit"
+    }
+    file {
+        path => "/var/wd/kateway/audit/sub_audit.log"
+        type => "subaudit"
+    }
 }
 
 filter {
@@ -68,6 +76,16 @@ output {
                 "User-Agent" => "logstash"
              }
          }
+    } else if [type] == "pubaudit" {
+        kafka {
+            bootstrap_servers => "k11003a.mycorp.kfk.com:11003,k11003b.mycorp.kfk.com:11003"
+            topic_id => "pubaudit"
+        }
+    } else if [type] == "subaudit" {
+        kafka {
+            bootstrap_servers => "k11003a.mycorp.kfk.com:11003,k11003b.mycorp.kfk.com:11003"
+            topic_id => "subaudit"
+        }
     } else {
         kafka {
             bootstrap_servers => "k11003a.mycorp.kfk.com:11003,k11003b.mycorp.kfk.com:11003"
