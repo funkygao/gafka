@@ -61,6 +61,7 @@ type Peek struct {
 	beep     bool
 	pretty   bool
 	bodyOnly bool
+	grep     string
 }
 
 func (this *Peek) Run(args []string) (exitCode int) {
@@ -82,6 +83,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.colorize, "color", true, "")
 	cmdFlags.Int64Var(&this.lastN, "last", -1, "")
 	cmdFlags.BoolVar(&this.pretty, "pretty", false, "")
+	cmdFlags.StringVar(&this.grep, "grep", "", "")
 	cmdFlags.IntVar(&this.limit, "n", -1, "")
 	cmdFlags.StringVar(&this.column, "col", "", "") // TODO support multiple columns
 	cmdFlags.BoolVar(&this.beep, "beep", false, "")
@@ -137,6 +139,8 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		prettyJSON bytes.Buffer
 	)
 
+	grepB := []byte(this.grep)
+
 LOOP:
 	for {
 		if time.Since(startAt) >= wait {
@@ -179,6 +183,10 @@ LOOP:
 				stats.MsgCountPerSecond.Mark(1)
 				stats.MsgBytesPerSecond.Mark(int64(len(msg.Value)))
 			} else {
+				if len(grepB) > 0 && !bytes.Contains(msg.Value, grepB) {
+					continue
+				}
+
 				var outmsg string
 				if this.column != "" {
 					if err := json.Unmarshal(msg.Value, &j); err != nil {
@@ -418,6 +426,8 @@ Options:
 
     -now
       Iterate the stream till now
+
+    -grep pattern
 
     -s
       Silence mode, only display statastics instead of message content
