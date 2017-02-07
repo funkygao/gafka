@@ -14,37 +14,9 @@ var (
 	logLevel log.Level
 )
 
-func toLogLevel(levelStr string) log.Level {
-	level := log.TRACE
-	switch levelStr {
-	case "info":
-		level = log.INFO
-
-	case "warn":
-		level = log.WARNING
-
-	case "error":
-		level = log.ERROR
-
-	case "debug":
-		level = log.DEBUG
-
-	case "trace":
-		level = log.TRACE
-
-	case "alarm":
-		level = log.ALARM
-	}
-
-	return level
-}
-
 func SetupLogging(logFile, level, crashLogFile string) {
-	logLevel = toLogLevel(level)
-
-	for _, filter := range log.Global {
-		filter.Level = logLevel
-	}
+	logLevel = log.ToLogLevel(level, log.TRACE)
+	log.SetLevel(logLevel)
 
 	log.LogBufferLength = 10 << 10 // default 32, chan cap
 

@@ -11,31 +11,8 @@ import (
 )
 
 func (this *Start) setupLogging(logFile, logLevel, crashLogFile string) {
-	level := log.DEBUG
-	switch logLevel {
-	case "info":
-		level = log.INFO
-
-	case "warn":
-		level = log.WARNING
-
-	case "error":
-		level = log.ERROR
-
-	case "debug":
-		level = log.DEBUG
-
-	case "trace":
-		level = log.TRACE
-
-	case "alarm":
-		level = log.ALARM
-	}
-
-	for _, filter := range log.Global {
-		filter.Level = level
-	}
-
+	level := log.ToLogLevel(logLevel, log.DEBUG)
+	log.SetLevel(level)
 	log.LogBufferLength = 32 // default 32, chan cap
 
 	if logFile == "stdout" {

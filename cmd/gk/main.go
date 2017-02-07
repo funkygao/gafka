@@ -124,30 +124,7 @@ func main() {
 func setupLogging() {
 	log.SetOutput(ioutil.Discard)
 
-	level := log4go.DEBUG
-	switch ctx.LogLevel() {
-	case "info":
-		level = log4go.INFO
-
-	case "warn":
-		level = log4go.WARNING
-
-	case "error":
-		level = log4go.ERROR
-
-	case "debug":
-		level = log4go.DEBUG
-
-	case "trace":
-		level = log4go.TRACE
-
-	case "alarm":
-		level = log4go.ALARM
-	}
-
-	for _, filter := range log4go.Global {
-		filter.Level = level
-	}
-
+	level := log4go.ToLogLevel(ctx.LogLevel(), log4go.DEBUG)
+	log4go.SetLevel(level)
 	log4go.AddFilter("stdout", level, log4go.NewConsoleLogWriter())
 }

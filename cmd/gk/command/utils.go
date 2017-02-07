@@ -267,37 +267,9 @@ func max(a, b int64) int64 {
 	return b
 }
 
-func toLogLevel(levelStr string) log.Level {
-	level := log.TRACE
-	switch levelStr {
-	case "info":
-		level = log.INFO
-
-	case "warn":
-		level = log.WARNING
-
-	case "error":
-		level = log.ERROR
-
-	case "debug":
-		level = log.DEBUG
-
-	case "trace":
-		level = log.TRACE
-
-	case "alarm":
-		level = log.ALARM
-	}
-
-	return level
-}
-
 func setupLogging(logFile, level, crashLogFile string) {
-	logLevel := toLogLevel(level)
-
-	for _, filter := range log.Global {
-		filter.Level = logLevel
-	}
+	logLevel := log.ToLogLevel(level, log.TRACE)
+	log.SetLevel(logLevel)
 
 	log.LogBufferLength = 32 // default 32, chan cap
 
