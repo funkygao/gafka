@@ -42,7 +42,7 @@ start() {
     ulimit -n 40960
     ulimit -c unlimited
     ulimit -l unlimited
-    daemon "/usr/sbin/daemonize $DAEMON agent -start -pid $PIDFILE -level $LOGLEVEL -crashlog $CRASHLOG -log $LOGFILE"
+    GOMAXPROCS=2 daemon "/usr/sbin/daemonize $DAEMON agent -start -pid $PIDFILE -level $LOGLEVEL -crashlog $CRASHLOG -log $LOGFILE"
     errcode=$?
     return $errcode
 }
