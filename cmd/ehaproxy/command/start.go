@@ -17,7 +17,7 @@ import (
 
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
-	"github.com/funkygao/gafka/diagnostics"
+	"github.com/funkygao/gafka/diagnostics/agent"
 	"github.com/funkygao/gafka/registry"
 	zkr "github.com/funkygao/gafka/registry/zk"
 	"github.com/funkygao/gafka/telemetry"
@@ -170,7 +170,7 @@ func (this *Start) Run(args []string) (exitCode int) {
 		close(this.closed)
 	}, syscall.SIGINT, syscall.SIGTERM)
 
-	diagnostics.Start()
+	log.Info("pprof ready on %s", agent.Start())
 	this.main()
 
 	<-this.closed
