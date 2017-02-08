@@ -357,8 +357,8 @@ func (this *subServer) pumpMessages(w http.ResponseWriter, r *http.Request, real
 			}
 
 			if Options.AuditSub {
-				this.auditor.Trace("sub[%s/%s] %s(%s) {T:%s/%d O:%d}",
-					myAppid, group, r.RemoteAddr, realIp, msg.Topic, msg.Partition, msg.Offset)
+				this.auditor.Trace("sub[%s/%s] %s(%s) {T:%s/%d O:%d} dack=%v",
+					myAppid, group, r.RemoteAddr, realIp, msg.Topic, msg.Partition, msg.Offset, delayedAck)
 			}
 
 			partition := strconv.FormatInt(int64(msg.Partition), 10)
