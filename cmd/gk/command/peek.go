@@ -131,10 +131,9 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		startAt = time.Now()
 		msg     *sarama.ConsumerMessage
 		total   int
+		maxSize int64
 		bytesN  int64
-	)
 
-	var (
 		j          map[string]interface{}
 		prettyJSON bytes.Buffer
 	)
@@ -144,13 +143,15 @@ func (this *Peek) Run(args []string) (exitCode int) {
 LOOP:
 	for {
 		if time.Since(startAt) >= wait {
-			this.Ui.Output(fmt.Sprintf("Total: %s msgs, %s, elapsed: %s",
-				gofmt.Comma(int64(total)), gofmt.ByteSize(bytesN), time.Since(startAt)))
+			this.Ui.Outputf("Total: %s msgs, %s, elapsed: %s",
+				gofmt.Comma(int64(total)), gofmt.ByteSize(bytesN), time.Since(startAt))
 			elapsed := time.Since(startAt).Seconds()
 			if elapsed > 1. {
-				this.Ui.Output(fmt.Sprintf("Speed: %d/s", total/int(elapsed)))
+				this.Ui.Outputf("Speed: %d/s", total/int(elapsed))
 				if total > 0 {
-					this.Ui.Output(fmt.Sprintf("Size : %s/msg", gofmt.ByteSize(bytesN/int64(total))))
+					this.Ui.Outputf("Size : %s/msg max: %s",
+						gofmt.ByteSize(bytesN/int64(total)),
+						gofmt.ByteSize(maxSize))
 				}
 			}
 
@@ -163,9 +164,11 @@ LOOP:
 				gofmt.Comma(int64(total)), gofmt.ByteSize(bytesN), time.Since(startAt)))
 			elapsed := time.Since(startAt).Seconds()
 			if elapsed > 1. {
-				this.Ui.Output(fmt.Sprintf("Speed: %d/s", total/int(elapsed)))
+				this.Ui.Outputf("Speed: %d/s", total/int(elapsed))
 				if total > 0 {
-					this.Ui.Output(fmt.Sprintf("Size : %s/msg", gofmt.ByteSize(bytesN/int64(total))))
+					this.Ui.Outputf("Size : %s/msg max: %s",
+						gofmt.ByteSize(bytesN/int64(total)),
+						gofmt.ByteSize(maxSize))
 				}
 			}
 
@@ -254,7 +257,11 @@ LOOP:
 			}
 
 			total++
-			bytesN += int64(len(msg.Value))
+			msgSize := int64(len(msg.Value))
+			bytesN += msgSize
+			if msgSize > maxSize {
+				maxSize = msgSize
+			}
 
 			if this.limit > 0 && total >= this.limit {
 				break LOOP
