@@ -233,6 +233,51 @@ func (this *ZkCluster) ZombieConsumerGroups(autofix bool) (groups []string) {
 	return
 }
 
+func (this *ZkCluster) TailMessage(topic string, partitionID int32, lastN int) ([][]byte, error) {
+	kfk, err := sarama.NewClient(this.BrokerList(), sarama.NewConfig())
+	if err != nil {
+		return nil, err
+	}
+	defer kfk.Close()
+
+	msgs := make([][]byte, 0, lastN)
+	latestOffset, err := kfk.GetOffset(topic, partitionID, sarama.OffsetNewest)
+	if err != nil {
+		return nil, err
+	}
+
+	oldestOffset, err := kfk.GetOffset(topic, partitionID, sarama.OffsetOldest)
+	if err != nil {
+		return nil, err
+	}
+
+	offset := latestOffset - int64(lastN)
+	if offset < oldestOffset {
+		// no enough items to return
+		return nil, nil
+	}
+
+	consumer, err := sarama.NewConsumerFromClient(kfk)
+	if err != nil {
+		return nil, err
+	}
+	defer consumer.Close()
+
+	p, err := consumer.ConsumePartition(topic, partitionID, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer p.Close()
+
+	for i := 0; i < lastN; i++ {
+		msg := <-p.Messages()
+
+		msgs = append(msgs, msg.Value)
+	}
+
+	return msgs, nil
+}
+
 // Returns {groupName: {consumerId: consumer}}
 func (this *ZkCluster) ConsumerGroups() map[string]map[string]*ConsumerZnode {
 	r := make(map[string]map[string]*ConsumerZnode)
