@@ -214,6 +214,20 @@ func (this *ZkCluster) UnregisterBroker(id int) error {
 	return this.zone.setZnode(this.ClusterInfoPath(), data)
 }
 
+func (this *ZkCluster) ZombieConsumerGroups(autofix bool) (groups []string) {
+	for group, cz := range this.ConsumerGroups() {
+		for _, c := range cz {
+			for topic := range c.Subscription {
+				if len(this.OwnersOfGroupByTopic(group, topic)) == 0 {
+					groups = append(groups, group)
+				}
+			}
+		}
+	}
+
+	return
+}
+
 // Returns {groupName: {consumerId: consumer}}
 func (this *ZkCluster) ConsumerGroups() map[string]map[string]*ConsumerZnode {
 	r := make(map[string]map[string]*ConsumerZnode)

@@ -26,6 +26,7 @@ type Consumers struct {
 	byHost       bool
 	cleanup      bool
 	confirmYes   bool
+	zombie       bool
 	topicPattern string
 }
 
@@ -42,6 +43,7 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.onlineOnly, "online", false, "")
 	cmdFlags.BoolVar(&this.byHost, "byhost", false, "")
 	cmdFlags.StringVar(&this.topicPattern, "t", "", "")
+	cmdFlags.BoolVar(&this.zombie, "zb", false, "")
 	cmdFlags.BoolVar(&this.warnOnly, "warn", false, "")
 	cmdFlags.BoolVar(&this.ownerOnly, "own", false, "")
 	cmdFlags.BoolVar(&this.cleanup, "cleanup", false, "")
@@ -77,6 +79,8 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	switch {
+	case this.zombie:
+		this.printZombies(zkzone, cluster)
 	case this.cleanup:
 		this.cleanupStaleConsumerGroups(zkzone, cluster)
 	case this.byHost:
@@ -86,6 +90,21 @@ func (this *Consumers) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Consumers) printZombies(zkzone *zk.ZkZone, clusterPattern string) {
+	lines := []string{"Cluster|ZombieGroup"}
+	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		if !patternMatched(zkcluster.Name(), clusterPattern) {
+			return
+		}
+
+		for _, zombie := range zkcluster.ZombieConsumerGroups(false) {
+			lines = append(lines, fmt.Sprintf("%s|%s", zkcluster.Name(), zombie))
+		}
+	})
+
+	this.Ui.Output(columnize.SimpleFormat(lines))
 }
 
 func (this *Consumers) cleanupStaleConsumerGroups(zkzone *zk.ZkZone, clusterPattern string) {
@@ -398,6 +417,9 @@ Options:
     -g group name pattern
 
     -t topic pattern
+
+    -zb
+      Locate zombie consumer groups.
 
     -warn
       Only show groups that consumes multiple topics.
