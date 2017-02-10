@@ -215,15 +215,20 @@ func (this *ZkCluster) UnregisterBroker(id int) error {
 }
 
 func (this *ZkCluster) ZombieConsumerGroups(autofix bool) (groups []string) {
+	groupMap := make(map[string]struct{})
 	for group, cz := range this.ConsumerGroups() {
 		for _, c := range cz {
 			for topic := range c.Subscription {
 				if len(this.OwnersOfGroupByTopic(group, topic)) == 0 {
-					groups = append(groups, group)
+					groupMap[group] = struct{}{}
 				}
 			}
 		}
 	}
+	for g := range groupMap {
+		groups = append(groups, g)
+	}
+	sort.Strings(groups)
 
 	return
 }
