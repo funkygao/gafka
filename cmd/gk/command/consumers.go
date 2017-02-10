@@ -104,7 +104,11 @@ func (this *Consumers) printZombies(zkzone *zk.ZkZone, clusterPattern string) {
 		}
 	})
 
-	this.Ui.Output(columnize.SimpleFormat(lines))
+	if len(lines) == 1 {
+		this.Ui.Info("good")
+	} else {
+		this.Ui.Output(columnize.SimpleFormat(lines))
+	}
 }
 
 func (this *Consumers) cleanupStaleConsumerGroups(zkzone *zk.ZkZone, clusterPattern string) {
