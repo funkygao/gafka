@@ -47,6 +47,10 @@ func (this *WatchZombieConsumerGroups) Run() {
 		case <-ticker.C:
 			n := 0
 			this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+				if !zkcluster.Public {
+					continue
+				}
+
 				zbcg := zkcluster.ZombieConsumerGroups(false)
 				log.Warn("cluster[%s] zombies: %+v", zkcluster.Name(), zbcg)
 
