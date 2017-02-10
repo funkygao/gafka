@@ -48,7 +48,7 @@ func (this *WatchZombieConsumerGroups) Run() {
 			n := 0
 			this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 				if !zkcluster.Public {
-					continue
+					return
 				}
 
 				zbcg := zkcluster.ZombieConsumerGroups(false)
