@@ -36,6 +36,7 @@ func (this *WatchDbus) Run() {
 	dbs := metrics.NewRegisteredGauge("dbus.myslave.db", nil)
 	owner := metrics.NewRegisteredGauge("dbus.myslave.owenr", nil)
 	runner := metrics.NewRegisteredGauge("dbus.myslave.runner", nil)
+	orphanDbs := metrics.NewRegisteredGauge("db.myslave.orphan", nil)
 
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
@@ -51,7 +52,7 @@ func (this *WatchDbus) Run() {
 			dbs.Update(int64(dbN))
 			owner.Update(int64(ownerN))
 			runner.Update(int64(runnerN))
-
+			orphanDbs.Update(int64(dbN - ownerN))
 		}
 	}
 }
