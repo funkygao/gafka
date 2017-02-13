@@ -24,6 +24,7 @@ type Upgrade struct {
 	upgradeActord   bool
 	upgradeEhaproxy bool
 	upgradeConfig   bool
+	upgradeDbus     bool
 	upgradeHelix    bool
 }
 
@@ -38,6 +39,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.upgradeActord, "at", false, "")
 	cmdFlags.BoolVar(&this.upgradeHelix, "he", false, "")
 	cmdFlags.BoolVar(&this.upgradeZk, "zk", false, "")
+	cmdFlags.BoolVar(&this.upgradeDbus, "dbus", false, "")
 	cmdFlags.BoolVar(&this.upgradeKguard, "kg", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -68,6 +70,19 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 
 		case "u":
 			runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/actord", gopath), this.uploadDir})
+		}
+
+		return
+	}
+
+	if this.upgradeDbus {
+		switch this.mode {
+		case "d":
+			runCmd("wget", []string{this.storeUrl("dbusd"), "-O", "dbusd"})
+			runCmd("chmod", []string{"a+x", "dbusd"})
+
+		case "u":
+			runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/dbusd", gopath), this.uploadDir})
 		}
 
 		return
@@ -210,12 +225,15 @@ Options:
     -at
       Upgrade actord instead of gk
 
+    -dbus
+      Upgrade dbusd instead of gk
+
     -he 
       Upgrade helix instead of gk
 
     -m <d|u>
       Download or upload mode
-      Defaults download mode   
+      Defaults download mode
 
     -upload dir
       Upload the gk file to target dir, only run on gk file server
