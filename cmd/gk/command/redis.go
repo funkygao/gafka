@@ -801,6 +801,8 @@ Usage: %s redis [options]
 
     %s
 
+Options:
+
     -z zone
 
     -list

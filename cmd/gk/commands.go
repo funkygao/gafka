@@ -52,6 +52,13 @@ func init() {
 			}, nil
 		},
 
+		"dbus": func() (cli.Command, error) {
+			return &command.Dbus{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"capacity": func() (cli.Command, error) {
 			return &command.Capacity{
 				Ui:  ui,
