@@ -72,7 +72,7 @@ public class KafkaProducer {
     private KafkaProducer(){
         Properties props = new Properties();
         props.put("%s", "k10101a.mycorp.kfk.com:10101,k10101b.mycorp.kfk.com:10101");
-        props.put("producer.type", "sync"); // sync | async
+        props.put("%s", "sync"); // sync | async
         props.put("serializer.class", "kafka.serializer.StringEncoder");
         props.put("key.serializer.class", "kafka.serializer.StringEncoder");
 
@@ -107,6 +107,7 @@ public class KafkaProducer {
 }
         `,
 		color.Cyan("metadata.broker.list"),
+		color.Cyan("producer.type"),
 		color.Cyan("request.required.acks"),
 		color.Cyan("request.required.acks"))
 }
