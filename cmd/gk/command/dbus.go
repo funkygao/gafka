@@ -54,7 +54,7 @@ type binlogCheckpoint struct {
 }
 
 func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
-	lines := []string{"Mysql|File|Offset|dbus|role|uptime|pid"}
+	lines := []string{"Mysql|File|Offset|dbus|role|uptime|pid|msince"}
 	root := "/dbus/myslave"
 	dbs, _, err := zkzone.Conn().Children(root)
 	swallow(err)
@@ -68,7 +68,7 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 		swallow(json.Unmarshal(data, &v))
 
 		ownerPath := fmt.Sprintf("%s/owner", dbRoot)
-		owner, _, err := zkzone.Conn().Get(ownerPath)
+		owner, ownerStat, err := zkzone.Conn().Get(ownerPath)
 		swallow(err)
 
 		idsPath := fmt.Sprintf("%s/ids", dbRoot)
@@ -85,10 +85,12 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 			uptime := zk.ZkTimestamp(stat.Ctime).Time()
 
 			if r == string(owner) {
-				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|master|%s|%s",
-					db, v.File, gofmt.Comma(v.Offset), instance, gofmt.PrettySince(uptime), pid))
+				ownerTime := zk.ZkTimestamp(ownerStat.Mtime).Time()
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|master|%s|%s|%s",
+					db, v.File, gofmt.Comma(v.Offset), instance,
+					gofmt.PrettySince(uptime), pid, gofmt.PrettySince(ownerTime)))
 			} else {
-				lines = append(lines, fmt.Sprintf("%s| | |%s|slave|%s|%s",
+				lines = append(lines, fmt.Sprintf("%s| | |%s|slave|%s|%s| ",
 					db, instance, gofmt.PrettySince(uptime), pid))
 			}
 		}
