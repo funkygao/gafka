@@ -12,6 +12,7 @@ import (
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/gofmt"
 )
 
 type Dbus struct {
@@ -43,18 +44,17 @@ func (this *Dbus) Run(args []string) (exitCode int) {
 		refreshScreen()
 	}
 
-	this.checkMyslave(zkzone)
 	return
 }
 
 type binlogCheckpoint struct {
 	File   string `json:"file"`
-	Offset int    `json:"offset"`
+	Offset int64  `json:"offset"`
 	Owner  string `json:"owner"`
 }
 
 func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
-	lines := []string{"mysql|file|offset|dbus|role|uptime"}
+	lines := []string{"Mysql|File|Offset|dbus|role|uptime|pid"}
 	root := "/dbus/myslave"
 	dbs, _, err := zkzone.Conn().Children(root)
 	swallow(err)
@@ -76,10 +76,20 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 		swallow(err)
 
 		for _, r := range runners {
+			_, stat, err := zkzone.Conn().Get(fmt.Sprintf("%s/%s", idsPath, r))
+			swallow(err)
+
+			i := strings.LastIndex(r, "-")
+			instance := r[:i]
+			pid := r[i+1:]
+			uptime := zk.ZkTimestamp(stat.Ctime).Time()
+
 			if r == string(owner) {
-				lines = append(lines, fmt.Sprintf("%s|%s|%d|%s|master|xx", db, v.File, v.Offset, r))
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|master|%s|%s",
+					db, v.File, gofmt.Comma(v.Offset), instance, gofmt.PrettySince(uptime), pid))
 			} else {
-				lines = append(lines, fmt.Sprintf("%s| | |%s|master|xx", db, r))
+				lines = append(lines, fmt.Sprintf("%s| | |%s|slave|%s|%s",
+					db, instance, gofmt.PrettySince(uptime), pid))
 			}
 		}
 
