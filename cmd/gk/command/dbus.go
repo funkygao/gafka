@@ -13,6 +13,7 @@ import (
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/gofmt"
+	zklib "github.com/samuel/go-zookeeper/zk"
 )
 
 type Dbus struct {
@@ -69,7 +70,15 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 
 		ownerPath := fmt.Sprintf("%s/owner", dbRoot)
 		owner, ownerStat, err := zkzone.Conn().Get(ownerPath)
-		swallow(err)
+		if err != nil {
+			if err != zklib.ErrNoNode {
+				panic(err)
+			}
+
+			// an orphan binlog stream: no dbus consuming it
+			lines = append(lines, fmt.Sprintf("%s| | |%s|%s|%s|%s| ", db))
+			continue
+		}
 
 		idsPath := fmt.Sprintf("%s/ids", dbRoot)
 		runners, _, err := zkzone.Conn().Children(idsPath)
