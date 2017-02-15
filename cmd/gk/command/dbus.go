@@ -66,7 +66,10 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 		dbRoot := fmt.Sprintf("%s/%s", root, db)
 		data, _, err := zkzone.Conn().Get(dbRoot)
 		var v binlogCheckpoint
-		swallow(json.Unmarshal(data, &v))
+		if err = json.Unmarshal(data, &v); err != nil {
+			lines = append(lines, fmt.Sprintf("%s|?|?|-|-|-|-|-", db))
+			continue
+		}
 
 		ownerPath := fmt.Sprintf("%s/owner", dbRoot)
 		owner, ownerStat, err := zkzone.Conn().Get(ownerPath)
@@ -76,7 +79,8 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 			}
 
 			// an orphan binlog stream: no dbus consuming it
-			lines = append(lines, fmt.Sprintf("%s|-|-|-|-|-|-|-", db))
+			lines = append(lines, fmt.Sprintf("%s|%s|%s|-|-|-|-|-", db,
+				v.File, gofmt.Comma(v.Offset)))
 			continue
 		}
 
