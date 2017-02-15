@@ -54,7 +54,7 @@ type binlogCheckpoint struct {
 }
 
 func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
-	lines := []string{"Mysql|File|Offset|dbus|role|uptime|pid|msince"}
+	lines := []string{"Mysql|File|Offset|dbus|ver|role|uptime|pid|msince"}
 	root := "/dbus/myslave"
 	dbs, _, err := zkzone.Conn().Children(root)
 	swallow(err)
@@ -76,7 +76,7 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 		swallow(err)
 
 		for _, r := range runners {
-			_, stat, err := zkzone.Conn().Get(fmt.Sprintf("%s/%s", idsPath, r))
+			ver, stat, err := zkzone.Conn().Get(fmt.Sprintf("%s/%s", idsPath, r))
 			swallow(err)
 
 			i := strings.LastIndex(r, "-")
@@ -86,12 +86,12 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 
 			if r == string(owner) {
 				ownerTime := zk.ZkTimestamp(ownerStat.Mtime).Time()
-				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|master|%s|%s|%s",
-					db, v.File, gofmt.Comma(v.Offset), instance,
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|master|%s|%s|%s",
+					db, v.File, gofmt.Comma(v.Offset), instance, string(ver),
 					gofmt.PrettySince(uptime), pid, gofmt.PrettySince(ownerTime)))
 			} else {
-				lines = append(lines, fmt.Sprintf("%s| | |%s|slave|%s|%s| ",
-					db, instance, gofmt.PrettySince(uptime), pid))
+				lines = append(lines, fmt.Sprintf("%s| | |%s|%s|slave|%s|%s| ",
+					db, instance, string(ver), gofmt.PrettySince(uptime), pid))
 			}
 		}
 
