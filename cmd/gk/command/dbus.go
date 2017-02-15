@@ -76,7 +76,7 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 			}
 
 			// an orphan binlog stream: no dbus consuming it
-			lines = append(lines, fmt.Sprintf("%s| | |%s|%s|%s|%s| ", db))
+			lines = append(lines, fmt.Sprintf("%s|-|-|-|-|-|-|-", db))
 			continue
 		}
 
