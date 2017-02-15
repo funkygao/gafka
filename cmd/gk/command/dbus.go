@@ -54,7 +54,7 @@ type binlogCheckpoint struct {
 }
 
 func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
-	lines := []string{"Mysql|File|Offset|dbus|ver|role|uptime|pid|msince"}
+	lines := []string{"Mysql|File|Offset|dbus|ver|uptime|pid|msince"}
 	root := "/dbus/myslave"
 	dbs, _, err := zkzone.Conn().Children(root)
 	swallow(err)
@@ -86,11 +86,11 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 
 			if r == string(owner) {
 				ownerTime := zk.ZkTimestamp(ownerStat.Mtime).Time()
-				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|master|%s|%s|%s",
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
 					db, v.File, gofmt.Comma(v.Offset), instance, string(ver),
 					gofmt.PrettySince(uptime), pid, gofmt.PrettySince(ownerTime)))
 			} else {
-				lines = append(lines, fmt.Sprintf("%s| | |%s|%s|slave|%s|%s| ",
+				lines = append(lines, fmt.Sprintf("%s| | |%s|%s|%s|%s| ",
 					db, instance, string(ver), gofmt.PrettySince(uptime), pid))
 			}
 		}
