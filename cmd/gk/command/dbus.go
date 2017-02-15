@@ -67,8 +67,7 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 		data, _, err := zkzone.Conn().Get(dbRoot)
 		var v binlogCheckpoint
 		if err = json.Unmarshal(data, &v); err != nil {
-			lines = append(lines, fmt.Sprintf("%s|?|?|-|-|-|-|-", db))
-			continue
+			v.File = "?"
 		}
 
 		ownerPath := fmt.Sprintf("%s/owner", dbRoot)
