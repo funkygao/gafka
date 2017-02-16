@@ -5,8 +5,11 @@ import com.wanda.pubsub.client.enums.StatusCodeEnum;
 import com.wanda.pubsub.client.exception.AuthorityErrorException;
 import com.wanda.pubsub.client.pub.PubClient;
 import com.wanda.pubsub.client.sub.SubClient;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Properties;
 
 /**
  * PubSub demo!
@@ -18,6 +21,14 @@ public class App {
 
     public static void main(String[] args) {
         logger.info("Welcome to PubSub!");
+
+        // test default kafka ProducerConfig
+        Properties props = new Properties();
+        props.put("bootstrap.servers", "localhost:11");
+        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        KafkaProducer producer = new KafkaProducer(props);
+        logger.info("{}", producer);
 
         // MODIFY the params before usage!!!
         boolean subMode = true;
