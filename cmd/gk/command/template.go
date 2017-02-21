@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
+	"path"
 	"strconv"
 	"text/template"
 )
@@ -19,6 +20,10 @@ func writeFileFromTemplate(tplSrc, dst string, perm os.FileMode,
 		err = t.Execute(wr, data)
 		swallow(err)
 
+		if err = ioutil.WriteFile(dst, wr.Bytes(), perm); err != nil {
+			os.MkdirAll(path.Dir(dst), 0755)
+		}
+
 		err = ioutil.WriteFile(dst, wr.Bytes(), perm)
 		swallow(err)
 
@@ -26,6 +31,10 @@ func writeFileFromTemplate(tplSrc, dst string, perm os.FileMode,
 	}
 
 	// no template, just file copy
+	if err = ioutil.WriteFile(dst, b, perm); err != nil {
+		os.MkdirAll(path.Dir(dst), 0755)
+	}
+
 	err = ioutil.WriteFile(dst, b, perm)
 	swallow(err)
 

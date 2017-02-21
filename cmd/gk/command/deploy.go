@@ -348,9 +348,24 @@ func (this *Deploy) installHelix() {
 
 	// repo
 	dir = fmt.Sprintf("template/helix-core-0.6.7/repo")
-	files, err = AssetDir(dir)
-	swallow(err)
-	for _, file := range files {
+	for _, file := range []string{
+		"com/101tec/zkclient/0.5/zkclient-0.5.jar",
+		"com/google/guava/guava/15.0/guava-15.0.jar",
+		"commons-cli/commons-cli/1.2/commons-cli-1.2.jar",
+		"commons-codec/commons-codec/1.6/commons-codec-1.6.jar",
+		"commons-io/commons-io/1.4/commons-io-1.4.jar",
+		"io/netty/netty/3.10.5.Final/netty-3.10.5.Final.jar",
+		"jline/jline/0.9.94/jline-0.9.94.jar",
+		"log4j/log4j/1.2.15/log4j-1.2.15.jar",
+		"org/codehaus/jackson/jackson-core-asl/1.8.5/jackson-core-asl-1.8.5.jar",
+		"org/codehaus/jackson/jackson-mapper-asl/1.8.5/jackson-mapper-asl-1.8.5.jar",
+		"org/slf4j/slf4j-api/1.6.1/slf4j-api-1.6.1.jar",
+		"org/slf4j/slf4j-log4j12/1.6.1/slf4j-log4j12-1.6.1.jar",
+		"org/yaml/snakeyaml/1.12/snakeyaml-1.12.jar",
+		"org/apache/commons/commons-math/2.1/commons-math-2.1.jar",
+		"org/apache/helix/helix-core/0.6.7/helix-core-0.6.7.jar",
+		"org/apache/zookeeper/zookeeper/3.4.9/zookeeper-3.4.9.jar",
+	} {
 		writeFileFromTemplate(
 			fmt.Sprintf("%s/%s", dir, file),
 			fmt.Sprintf("/var/wd/helix/repo/%s", file),
