@@ -43,6 +43,7 @@ type Deploy struct {
 	influxdbPort     string
 	dryRun           bool
 	installKafkaOnly bool
+	installHelixOnly bool
 }
 
 // TODO
@@ -60,6 +61,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.ip, "ip", "", "")
 	cmdFlags.StringVar(&this.logDirs, "log.dirs", "", "")
 	cmdFlags.StringVar(&this.runAs, "user", "sre", "")
+	cmdFlags.BoolVar(&this.installHelixOnly, "helix", false, "")
 	cmdFlags.StringVar(&this.uninstall, "uninstall", "", "")
 	cmdFlags.BoolVar(&this.demoMode, "demo", false, "")
 	cmdFlags.BoolVar(&this.installKafkaOnly, "kfkonly", false, "")
@@ -113,6 +115,11 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 
 	if this.installKafkaOnly {
 		this.installKafka()
+		return
+	}
+
+	if this.installHelixOnly {
+		this.installHelix()
 		return
 	}
 
@@ -310,6 +317,50 @@ func (*Deploy) validateLogDirs(dirs string) (invalidDir string) {
 	return
 }
 
+func (this *Deploy) installHelix() {
+	this.Ui.Output("installing helix runtime...")
+
+	swallow(os.MkdirAll("/var/wd/helix/bin", 0755))
+	swallow(os.MkdirAll("/var/wd/helix/repo", 0755))
+	swallow(os.MkdirAll("/var/wd/helix/conf", 0755))
+
+	// bin
+	dir := fmt.Sprintf("template/helix-core-0.6.7/bin")
+	files, err := AssetDir(dir)
+	swallow(err)
+	for _, file := range files {
+		writeFileFromTemplate(
+			fmt.Sprintf("%s/%s", dir, file),
+			fmt.Sprintf("/var/wd/helix/bin/%s", file),
+			0755, nil, nil)
+	}
+
+	// conf
+	dir = fmt.Sprintf("template/helix-core-0.6.7/conf")
+	files, err = AssetDir(dir)
+	swallow(err)
+	for _, file := range files {
+		writeFileFromTemplate(
+			fmt.Sprintf("%s/%s", dir, file),
+			fmt.Sprintf("/var/wd/helix/conf/%s", file),
+			0644, nil, nil)
+	}
+
+	// repo
+	dir = fmt.Sprintf("template/helix-core-0.6.7/repo")
+	files, err = AssetDir(dir)
+	swallow(err)
+	for _, file := range files {
+		writeFileFromTemplate(
+			fmt.Sprintf("%s/%s", dir, file),
+			fmt.Sprintf("/var/wd/helix/repo/%s", file),
+			0644, nil, nil)
+	}
+
+	this.Ui.Info("helix runtime installed")
+	this.Ui.Warn("yum install -y jdk-1.7.0_65-fcs.x86_64")
+}
+
 func (this *Deploy) installKafka() {
 	this.Ui.Output("installing kafka runtime...")
 
@@ -426,6 +477,9 @@ Options:
 
     -kfkonly
       Only install kafka runtime on localhost.
+
+    -helix
+      Install helix only on localhost.
 
     -influx host:port
       InfluxDB server address used for kafka metrics reporter.
