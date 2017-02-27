@@ -25,7 +25,7 @@ func audit() {
 	}
 
 	z := ctx.Zone(zone)
-	if z.GkAuditCluster == "" || z.GkAuditTopic == "" {
+	if z == nil || z.GkAuditCluster == "" || z.GkAuditTopic == "" {
 		return
 	}
 
