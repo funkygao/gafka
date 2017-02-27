@@ -334,7 +334,7 @@ func (this *Peek) simpleConsumeTopic(zkcluster *zk.ZkCluster, kfk sarama.Client,
 					offset = oldestOffset
 				}
 
-				if offset == 0 {
+				if !this.watcher && offset == 0 {
 					// no message in store
 					return
 				}
@@ -377,7 +377,7 @@ func (this *Peek) consumePartition(zkcluster *zk.ZkCluster, kfk sarama.Client, c
 			msgCh <- msg
 
 			n++
-			if this.lastN > 0 && n >= this.lastN {
+			if !this.watcher && this.lastN > 0 && n >= this.lastN {
 				return
 			}
 		}
