@@ -13,13 +13,17 @@ import (
 )
 
 func audit() {
+	if len(os.Args) == 1 {
+		return
+	}
 	zone := ctx.DefaultZone()
 	for i, arg := range os.Args[1:] {
 		if arg == "-z" {
 			zone = os.Args[i+1]
 			break
 		}
-		if arg == "--generate-bash-completion" {
+		if arg == "--generate-bash-completion" || arg == "-v" || arg == "-version" || arg == "-h" {
+			// ignore
 			return
 		}
 	}
