@@ -62,6 +62,7 @@ type Peek struct {
 	pretty   bool
 	bodyOnly bool
 	grep     string
+	watcher  bool
 }
 
 func (this *Peek) Run(args []string) (exitCode int) {
@@ -84,6 +85,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.Int64Var(&this.lastN, "last", -1, "")
 	cmdFlags.BoolVar(&this.pretty, "pretty", false, "")
 	cmdFlags.StringVar(&this.grep, "grep", "", "")
+	cmdFlags.BoolVar(&this.watcher, "w", false, "")
 	cmdFlags.IntVar(&this.limit, "n", -1, "")
 	cmdFlags.StringVar(&this.column, "col", "", "") // TODO support multiple columns
 	cmdFlags.BoolVar(&this.beep, "beep", false, "")
@@ -266,7 +268,7 @@ LOOP:
 			if this.limit > 0 && total >= this.limit {
 				break LOOP
 			}
-			if this.lastN > 0 && total >= int(this.lastN) {
+			if !this.watcher && this.lastN > 0 && total >= int(this.lastN) {
 				break LOOP
 			}
 
@@ -415,6 +417,9 @@ Options:
 
     -last n
       Peek the most recent N messages
+
+    -w
+      Watcher mode: keep peeking
 
     -offset message offset value
       -1 OffsetNewest, -2 OffsetOldest. 
