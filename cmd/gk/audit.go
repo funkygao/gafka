@@ -10,6 +10,7 @@ import (
 	"github.com/funkygao/gafka"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/golib/bjtime"
 )
 
 func audit() {
@@ -49,7 +50,7 @@ func audit() {
 		panic(err)
 	}
 	u, _ := user.Current()
-	msg := fmt.Sprintf("[%s@%s] (%s) %+v", u.Name, ip.String(), gafka.BuildId, os.Args[1:])
+	msg := fmt.Sprintf("%s [%s@%s] (%s) %+v", bjtime.NowBj(), u.Name, ip.String(), gafka.BuildId, os.Args[1:])
 	p.SendMessage(&sarama.ProducerMessage{
 		Topic: z.GkAuditTopic,
 		Value: sarama.StringEncoder(msg),
