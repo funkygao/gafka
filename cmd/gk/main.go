@@ -18,6 +18,7 @@ import (
 func main() {
 	ctx.LoadFromHome()
 	setupLogging()
+	audit()
 
 	app := os.Args[0]
 	args := os.Args[1:]

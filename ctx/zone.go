@@ -22,6 +22,8 @@ type zone struct {
 	SmokeGroup               string
 	HaProxyStatsUri          []string
 
+	GkAuditCluster, GkAuditTopic string
+
 	AdminUser, AdminPass string
 }
 
@@ -42,6 +44,8 @@ func (this *zone) loadConfig(section *ljconf.Conf) {
 	this.SmokeHisApp = section.String("smoke_app_his", this.SmokeApp)
 	this.SmokeGroup = section.String("smoke_group", "__smoketestonly__")
 	this.HaProxyStatsUri = section.StringList("haproxy_stats", nil)
+	this.GkAuditCluster = section.String("gkaudit_cluster", "monitor")
+	this.GkAuditTopic = section.String("gkaudit_topic", "gk")
 	if this.Name == "" {
 		panic("empty zone name not allowed")
 	}
