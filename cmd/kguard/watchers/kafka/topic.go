@@ -23,6 +23,11 @@ func init() {
 	})
 }
 
+type partitionHistory struct {
+	n  int
+	at time.Time
+}
+
 // WatchTopics montor kafka total msg count over time.
 type WatchTopics struct {
 	Zkzone *zk.ZkZone
@@ -40,6 +45,8 @@ type WatchTopics struct {
 	aggPubQpsAnomalyGauge metrics.Gauge
 	aggPubQpsAnomaly      anomalyzer.Anomalyzer
 	anomalyThreshold      int
+
+	partitions map[string]map[string]partitionHistory // cluster:topic:count
 }
 
 func (this *WatchTopics) Init(ctx monitor.Context) {
@@ -64,6 +71,7 @@ func (this *WatchTopics) Init(ctx monitor.Context) {
 	}
 	this.aggPubQpsAnomalyGauge = metrics.NewRegisteredGauge("pub.qps.anomaly", nil)
 	this.anomalyThreshold = 97
+	this.partitions = make(map[string]map[string]partitionHistory)
 }
 
 // set?key=kta-as:4
@@ -127,6 +135,7 @@ func (this *WatchTopics) Run() {
 	partitions := metrics.NewRegisteredGauge("partitions", nil)
 	brokers := metrics.NewRegisteredGauge("brokers", nil)
 	newTopics := metrics.NewRegisteredGauge("kfk.newtopic.1d", nil)
+	partitionScales := metrics.NewRegisteredGauge("kafka.partition.scale", nil)
 	for {
 
 		select {
@@ -141,6 +150,7 @@ func (this *WatchTopics) Run() {
 			partitions.Update(p)
 			brokers.Update(b)
 			newTopics.Update(this.newTopicsSince(now, time.Hour*24))
+			partitionScales.Update(this.newlyScaledPartitions(time.Hour * 24))
 		}
 	}
 
@@ -150,21 +160,56 @@ func (this *WatchTopics) newTopicsSince(now time.Time, since time.Duration) (n i
 	excludedClusters := this.Zkzone.PublicClusters()
 	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 		// kateway topics excluded
-		clusterExcluded := false
 		for _, cluster := range excludedClusters {
 			if cluster.Name() == zkcluster.Name() {
-				clusterExcluded = true
-				break
+				return
 			}
-		}
-		if clusterExcluded {
-			return
 		}
 
 		// find recently how many topics created
-		for _, ctime := range zkcluster.TopicsCtime() {
+		for topic, ctime := range zkcluster.TopicsCtime() {
 			if now.Sub(ctime) <= since {
+				log.Info("kafka.topic newly created topic[%s/%s] within %s", zkcluster.Name(), topic, since)
 				n += 1
+			}
+		}
+	})
+
+	return
+}
+
+func (this *WatchTopics) newlyScaledPartitions(since time.Duration) (n int64) {
+	excludedClusters := this.Zkzone.PublicClusters()
+	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		// kateway topics excluded
+		for _, cluster := range excludedClusters {
+			if cluster.Name() == zkcluster.Name() {
+				return
+			}
+		}
+
+		if _, present := this.partitions[zkcluster.Name()]; !present {
+			this.partitions[zkcluster.Name()] = make(map[string]partitionHistory)
+		}
+		topics, err := zkcluster.Topics()
+		if err != nil {
+			log.Error("kafka.topic %v", err)
+			return
+		}
+
+		for _, topic := range topics {
+			newN := len(zkcluster.Partitions(topic))
+			if old, present := this.partitions[zkcluster.Name()][topic]; present {
+				if old.n != newN && time.Since(old.at) < since {
+					log.Warn("kafka.topic [%s/%s] scales partition %d->%d", zkcluster.Name(), topic, old.n, newN)
+
+					n++
+				}
+			}
+
+			this.partitions[zkcluster.Name()][topic] = partitionHistory{
+				n:  newN,
+				at: time.Now(),
 			}
 		}
 	})
