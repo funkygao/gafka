@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/funkygao/columnize"
+	"github.com/funkygao/dbus/pkg/myslave"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
@@ -48,14 +49,8 @@ func (this *Dbus) Run(args []string) (exitCode int) {
 	return
 }
 
-type binlogCheckpoint struct {
-	File   string `json:"file"`
-	Offset int64  `json:"offset"`
-	Owner  string `json:"owner"`
-}
-
 func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
-	lines := []string{"Mysql|File|Offset|dbus|ver|pid|uptime|msince"}
+	lines := []string{"Name|Mysql|File|Offset|dbus|ver|pid|uptime|msince"}
 	root := "/dbus/myslave"
 	dbs, _, err := zkzone.Conn().Children(root)
 	swallow(err)
@@ -65,7 +60,7 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 	for _, db := range dbs {
 		dbRoot := fmt.Sprintf("%s/%s", root, db)
 		data, _, err := zkzone.Conn().Get(dbRoot)
-		var v binlogCheckpoint
+		var v myslave.PositionerZk
 		if err = json.Unmarshal(data, &v); err != nil {
 			v.File = "?"
 		}
@@ -78,7 +73,7 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 			}
 
 			// an orphan binlog stream: no dbus consuming it
-			lines = append(lines, fmt.Sprintf("%s|%s|%s|-|-|-|-|-", db,
+			lines = append(lines, fmt.Sprintf("-|%s|%s|%s|-|-|-|-|-", db,
 				v.File, gofmt.Comma(v.Offset)))
 			continue
 		}
@@ -98,12 +93,12 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 
 			if r == string(owner) {
 				ownerTime := zk.ZkTimestamp(ownerStat.Mtime).Time()
-				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
-					db, v.File, gofmt.Comma(v.Offset), instance, string(ver), pid,
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s",
+					v.Name, db, v.File, gofmt.Comma(v.Offset), instance, string(ver), pid,
 					gofmt.PrettySince(uptime), gofmt.PrettySince(ownerTime)))
 			} else {
-				lines = append(lines, fmt.Sprintf("%s| | |%s|%s|%s|%s| ",
-					db, instance, string(ver), pid, gofmt.PrettySince(uptime)))
+				lines = append(lines, fmt.Sprintf("%s|%s| | |%s|%s|%s|%s| ",
+					v.Name, db, instance, string(ver), pid, gofmt.PrettySince(uptime)))
 			}
 		}
 
