@@ -20,6 +20,7 @@ import (
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/golib/signal"
+	"github.com/tidwall/gjson"
 )
 
 var (
@@ -136,7 +137,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		maxSize int64
 		bytesN  int64
 
-		j          map[string]interface{}
+		//j          map[string]interface{}
 		prettyJSON bytes.Buffer
 	)
 
@@ -194,39 +195,27 @@ LOOP:
 
 				var outmsg string
 				if this.column != "" {
-					if err := json.Unmarshal(msg.Value, &j); err != nil {
-						this.Ui.Error(err.Error())
-					} else {
-						var colVal string
-						switch t := j[this.column].(type) {
-						case string:
-							colVal = t
-						case float64:
-							colVal = fmt.Sprintf("%.0f", t)
-						case int:
-							colVal = fmt.Sprintf("%d", t)
-						}
-
-						if this.bodyOnly {
-							if this.pretty {
-								if err = json.Indent(&prettyJSON, []byte(colVal), "", "    "); err != nil {
-									fmt.Println(err.Error())
-								} else {
-									outmsg = string(prettyJSON.Bytes())
-								}
+					decoded := gjson.GetBytes(msg.Value, this.column)
+					colVal := decoded.String()
+					if this.bodyOnly {
+						if this.pretty {
+							if err := json.Indent(&prettyJSON, []byte(colVal), "", "    "); err != nil {
+								fmt.Println(err.Error())
 							} else {
-								outmsg = colVal
+								outmsg = string(prettyJSON.Bytes())
 							}
-						} else if this.colorize {
-							outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
-								color.Green(msg.Topic), msg.Partition,
-								gofmt.Comma(msg.Offset), string(msg.Key), colVal)
 						} else {
-							// colored UI will have invisible chars output
-							outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
-								msg.Topic, msg.Partition,
-								gofmt.Comma(msg.Offset), string(msg.Key), colVal)
+							outmsg = colVal
 						}
+					} else if this.colorize {
+						outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
+							color.Green(msg.Topic), msg.Partition,
+							gofmt.Comma(msg.Offset), string(msg.Key), colVal)
+					} else {
+						// colored UI will have invisible chars output
+						outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
+							msg.Topic, msg.Partition,
+							gofmt.Comma(msg.Offset), string(msg.Key), colVal)
 					}
 
 				} else {
