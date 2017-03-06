@@ -137,7 +137,6 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		maxSize int64
 		bytesN  int64
 
-		//j          map[string]interface{}
 		prettyJSON bytes.Buffer
 	)
 
