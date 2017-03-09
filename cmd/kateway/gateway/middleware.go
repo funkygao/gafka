@@ -28,6 +28,10 @@ func (this *Gateway) middleware(h httprouter.Handle) httprouter.Handle {
 			w.Header().Set("X-SERVERID", this.id)
 		}
 
+		if r.URL.Path == "/favicon.ico" {
+			return
+		}
+
 		// kateway response is mostly json, including error response
 		// for non-json response, handler can override this
 		w.Header().Set("Content-Type", "application/json; charset=utf8")
