@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -23,6 +24,7 @@ type Get struct {
 	verbose     bool
 	recursive   bool
 	watch       bool
+	urlDecode   bool
 	likePattern string
 
 	zc *zkclient.Client
@@ -34,6 +36,7 @@ func (this *Get) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.BoolVar(&this.recursive, "R", false, "")
+	cmdFlags.BoolVar(&this.urlDecode, "d", false, "")
 	cmdFlags.BoolVar(&this.watch, "w", false, "")
 	cmdFlags.StringVar(&this.likePattern, "like", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -145,6 +148,13 @@ func (this *Get) showChildrenRecursively(conn *zk.Conn, path string) {
 		// display znode content
 		data, stat, err := conn.Get(znode)
 		must(err)
+
+		if this.urlDecode {
+			if u, e := url.Parse(znode); e == nil {
+				znode = u.Path
+			}
+		}
+
 		if stat.EphemeralOwner > 0 {
 			if patternMatched(znode, this.likePattern) {
 				this.Ui.Output(color.Yellow(znode))
@@ -189,6 +199,9 @@ Options:
 
     -w
       Watch data changes.
+
+    -d
+      URLDecode the znode path.
 
     -l
       Use a long display format.
