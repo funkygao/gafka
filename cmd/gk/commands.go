@@ -52,6 +52,13 @@ func init() {
 			}, nil
 		},
 
+		"gc": func() (cli.Command, error) {
+			return &command.GC{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"dbus": func() (cli.Command, error) {
 			return &command.Dbus{
 				Ui:  ui,

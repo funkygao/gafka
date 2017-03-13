@@ -12,6 +12,8 @@ import (
 	"github.com/funkygao/dbus/pkg/myslave"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/go-helix"
+	hzk "github.com/funkygao/go-helix/store/zk"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/gofmt"
 	zklib "github.com/samuel/go-zookeeper/zk"
@@ -24,15 +26,43 @@ type Dbus struct {
 
 func (this *Dbus) Run(args []string) (exitCode int) {
 	var (
-		zone    string
-		topMode bool
+		zone         string
+		topMode      bool
+		helixCluster string
+		initCluster  string
+		addResource  string
 	)
 	cmdFlags := flag.NewFlagSet("dbus", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.StringVar(&helixCluster, "c", "", "")
 	cmdFlags.BoolVar(&topMode, "top", false, "")
+	cmdFlags.StringVar(&initCluster, "init", "", "")
+	cmdFlags.StringVar(&addResource, "add", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	if validateArgs(this, this.Ui).
+		requireAdminRights("-init", "-add").
+		invalid(args) {
+		return 2
+	}
+
+	if len(initCluster) != 0 {
+		this.initHelixCluster(initCluster, ctx.ZoneZkAddrs(zone))
+		return
+	}
+
+	if len(addResource) != 0 {
+		if len(helixCluster) == 0 {
+			this.Ui.Error("-c cluster is required")
+			this.Ui.Output(this.Help())
+			return
+		}
+
+		this.addResource(addResource, helixCluster, ctx.ZoneZkAddrs(zone))
+		return
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
@@ -47,6 +77,40 @@ func (this *Dbus) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Dbus) initHelixCluster(cluster string, zkSvr string) {
+	admin := hzk.NewZkHelixAdmin(zkSvr)
+	swallow(admin.Connect())
+
+	if ok, err := admin.IsClusterSetup(cluster); err != nil {
+		this.Ui.Error(err.Error())
+		return
+	} else if ok {
+		this.Ui.Warnf("cluster %s already exists, skipped")
+		return
+	}
+
+	swallow(admin.AddCluster(cluster))
+	swallow(admin.AllowParticipantAutoJoin(cluster, true))
+	this.Ui.Infof("cluster %s created", cluster)
+}
+
+func (this *Dbus) addResource(resource, cluster, zkSvr string) {
+	admin := hzk.NewZkHelixAdmin(zkSvr)
+	swallow(admin.Connect())
+
+	if ok, err := admin.IsClusterSetup(cluster); !ok || err != nil {
+		this.Ui.Errorf("cluster %s not setup", cluster)
+		return
+	}
+
+	partitions := 1
+	resourceOption := helix.DefaultAddResourceOption(partitions, helix.StateModelOnlineOffline)
+	resourceOption.RebalancerMode = helix.RebalancerModeFullAuto
+	swallow(admin.AddResource(cluster, resource, resourceOption))
+	swallow(admin.Rebalance(cluster, resource, 1))
+	this.Ui.Infof("%s for cluster %s added and rebalanced", resource, cluster)
 }
 
 func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
@@ -120,6 +184,13 @@ Usage: %s dbus [options]
 Options:
 
     -z zone
+
+    -init cluster
+      Initialize helix cluster.
+
+    -add mysql_host:mysql_port
+      Add a mysql instance as resource to helix.
+      Work with -c helix_cluster
 
     -top
       Run in top mode.
