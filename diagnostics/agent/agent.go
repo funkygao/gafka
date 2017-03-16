@@ -3,16 +3,27 @@
 package agent
 
 import (
+	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 )
 
-var HttpAddr = "localhost:10120"
+var (
+	HttpAddr = "localhost:10120"
+
+	// Errors is the channel to receive errors of pprof agent.
+	Errors = make(chan error, 1)
+)
 
 // Start starts the diagnostics agent on a host process. Once agent started,
 // user can retrieve diagnostics via the HttpAddr endpoint.
 func Start() (endpoint string) {
 	// TODO access log
-	go http.ListenAndServe(HttpAddr, nil)
+	go func() {
+		if err := http.ListenAndServe(HttpAddr, nil); err != nil {
+			Errors <- fmt.Errorf("pprf agent: %v", err)
+		}
+	}()
+
 	return HttpAddr
 }
