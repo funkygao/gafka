@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"sort"
 	"strings"
 
@@ -19,12 +20,13 @@ type Dump struct {
 	Ui  cli.Ui
 	Cmd string
 
-	zone    string
-	path    string
-	infile  string
-	outfile string
-	outdir  string
-	f       *os.File
+	zone       string
+	path       string
+	importFile string
+	infile     string
+	outfile    string
+	outdir     string
+	f          *os.File
 }
 
 func (this *Dump) Run(args []string) (exitCode int) {
@@ -33,15 +35,35 @@ func (this *Dump) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.outfile, "o", "zk.dump", "")
 	cmdFlags.StringVar(&this.infile, "in", "", "")
+	cmdFlags.StringVar(&this.importFile, "import", "", "")
 	cmdFlags.StringVar(&this.path, "p", "/", "")
 	cmdFlags.StringVar(&this.outdir, "dir", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
+	if validateArgs(this, this.Ui).
+		requireAdminRights("-import").
+		invalid(args) {
+		return 2
+	}
+
 	if this.zone == "" {
 		this.Ui.Error("unknown zone")
 		return 2
+	}
+
+	if this.importFile != "" {
+		if this.path == "" {
+			this.Ui.Error("-p required")
+			return 2
+		}
+
+		zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+		defer zkzone.Close()
+
+		this.importFromFile(zkzone)
+		return
 	}
 
 	if this.infile != "" {
@@ -95,6 +117,46 @@ func (this *Dump) Run(args []string) (exitCode int) {
 	return
 }
 
+func (this *Dump) importFromFile(zkzone *gzk.ZkZone) {
+	f, err := os.Open(this.importFile)
+	must(err)
+
+	for {
+		// read line, got the znode path
+		var buf [1]byte
+		zpath := make([]byte, 0, 8<<10)
+		for {
+			b := buf[:]
+			_, err := f.Read(b)
+			if err == io.EOF {
+				return
+			}
+			must(err)
+
+			if b[0] == '\n' {
+				break
+			}
+			zpath = append(zpath, b[0])
+		}
+
+		newPath := path.Join(this.path, string(zpath))
+		this.Ui.Infof("%50s -> [%s]%s", string(zpath), this.zone, newPath)
+
+		// read the znode data
+		// 1. data len
+		// 2. data itself
+		var dataLen int32
+		err = binary.Read(f, binary.BigEndian, &dataLen)
+		must(err)
+
+		zdata := make([]byte, dataLen)
+		_, err = io.ReadFull(f, zdata)
+		must(err)
+
+		must(zkzone.CreatePermenantZnode(newPath, zdata))
+	}
+}
+
 func (this *Dump) diplayDumppedFile() {
 	f, err := os.Open(this.infile)
 	must(err)
@@ -134,6 +196,9 @@ func (this *Dump) diplayDumppedFile() {
 	}
 }
 
+// serialization format:
+// path
+// len(4) value
 func (this *Dump) dump(conn *zk.Conn, path string) {
 	children, _, err := conn.Children(path)
 	if err != nil {
@@ -176,31 +241,33 @@ func (this *Dump) dump(conn *zk.Conn, path string) {
 }
 
 func (*Dump) Synopsis() string {
-	return "Dump permanent directories and contents of Zookeeper"
+	return "Dump/Import permanent znodes of Zookeeper"
 }
 
 func (this *Dump) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s dump -z zone [options]
 
-    Dump permanent directories and contents of Zookeeper
+    %s
 
 Options:
 
     -p path 
-      Zk root path
+      znode root path
 
     -o outfile
       Default zk.dump
       zone name will automatically prefix the final outfile.
 
-    -dir dir name
-      Run daily dump to this directoy. 
-      zk will automatically rotate target dumps output.
+    -import dumped file name
 
     -in dumpped input filename
       Display dumpped file contents in text format.
 
-`, this.Cmd)
+    -dir dir name
+      Run daily dump to this directoy. 
+      zk will automatically rotate target dumps output.
+
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

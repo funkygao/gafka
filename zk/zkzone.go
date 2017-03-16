@@ -387,6 +387,19 @@ func (this *ZkZone) CreateEphemeralZnode(path string, data []byte) error {
 	return err
 }
 
+func (this *ZkZone) CreatePermenantZnode(path string, data []byte) error {
+	this.connectIfNeccessary()
+
+	if err := this.ensureParentDirExists(path); err != nil {
+		return err
+	}
+
+	acl := zk.WorldACL(zk.PermAll)
+	flags := int32(0)
+	_, err := this.conn.Create(path, data, flags, acl)
+	return err
+}
+
 func (this *ZkZone) setZnode(path string, data []byte) error {
 	_, err := this.conn.Set(path, data, -1)
 	return err
