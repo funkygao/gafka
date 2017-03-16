@@ -21,7 +21,7 @@ func Start() (endpoint string) {
 	// TODO access log
 	go func() {
 		if err := http.ListenAndServe(HttpAddr, nil); err != nil {
-			Errors <- fmt.Errorf("pprf agent: %v", err)
+			Errors <- fmt.Errorf("pprof agent: %v", err)
 		}
 	}()
 
