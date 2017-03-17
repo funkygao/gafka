@@ -79,7 +79,7 @@ Usage: %s chaos [options]
 
     %s
 
-    A wrapper of %s
+    A wrapper for %s
 
 Options:
 
