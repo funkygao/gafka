@@ -27,7 +27,7 @@ func (this *Chaos) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("chaos", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&device, "i", "", "")
-	cmdFlags.StringVar(&mode, "mode", throttler.Start, "")
+	cmdFlags.StringVar(&mode, "mode", "start", "")
 	cmdFlags.IntVar(&latency, "latency", -1, "")
 	cmdFlags.StringVar(&ports, "ports", "", "")
 	cmdFlags.Float64Var(&loss, "loss", 0, "")
@@ -38,12 +38,21 @@ func (this *Chaos) Run(args []string) (exitCode int) {
 	}
 
 	log.SetOutput(os.Stdout)
+	var stop = false
+	switch mode {
+	case "start":
+		stop = false
+	case "stop":
+		stop = true
+	default:
+		this.Ui.Output(this.Help())
+		return 2
+	}
 	throttler.Run(&throttler.Config{
 		Device:      device,
-		Mode:        mode,
+		Stop:        stop,
 		Latency:     latency,
 		DryRun:      dryrun,
-		IPv6:        ipv6,
 		TargetPorts: strings.Split(ports, ","),
 		PacketLoss:  loss,
 	})
@@ -86,8 +95,6 @@ Options:
     -ports comma seperated port list
 
     -dryrun
-
-    -ipv6
 
 `, this.Cmd, this.Synopsis(), underlying)
 	return strings.TrimSpace(help)
