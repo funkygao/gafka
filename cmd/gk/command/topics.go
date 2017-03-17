@@ -50,6 +50,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		replicas                int
 		partitions              int
 		retentionInMinute       int
+		minInsyncReplicas       int
 		resetConf               bool
 		debug                   bool
 		summaryMode             bool
@@ -71,6 +72,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.DurationVar(&this.since, "since", 0, "")
 	cmdFlags.StringVar(&this.brokerIp, "host", "", "")
 	cmdFlags.BoolVar(&configged, "cf", false, "")
+	cmdFlags.IntVar(&minInsyncReplicas, "minisr", 0, "")
 	cmdFlags.BoolVar(&debug, "debug", false, "")
 	cmdFlags.BoolVar(&resetConf, "cfreset", false, "")
 	cmdFlags.Int64Var(&this.count, "count", 0, "")
@@ -84,8 +86,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		on("-add", "-c").
 		on("-del", "-c").
 		on("-retention", "-c", "-t").
+		on("-minisr", "-c", "-t").
 		on("-cfreset", "-c", "-t").
-		requireAdminRights("-add", "-del", "-retention").
+		requireAdminRights("-add", "-del", "-retention", "-minisr").
 		invalid(args) {
 		return 2
 	}
@@ -118,6 +121,18 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	if retentionInMinute > 0 {
 		zkcluster := zkzone.NewCluster(cluster)
 		this.configTopic(zkcluster, this.topicPattern, retentionInMinute)
+		return
+	}
+
+	if minInsyncReplicas > 0 {
+		zkcluster := zkzone.NewCluster(cluster)
+		ts := sla.DefaultSla()
+		ts.MinInsyncReplicas = minInsyncReplicas
+		output, err := zkcluster.AlterTopic(this.topicPattern, ts)
+		swallow(err)
+		for _, line := range output {
+			this.Ui.Output(line)
+		}
 		return
 	}
 
@@ -599,6 +614,9 @@ Options:
 
     -t topic name pattern
       Only show topics like this give topic.
+
+    -minisr n
+      Setup a topic's min.insync.replicas.
 
     -sum
       Print summary of topics in order.

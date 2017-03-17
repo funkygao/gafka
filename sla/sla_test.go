@@ -36,6 +36,8 @@ func TestSlaDumpForAlterTopic(t *testing.T) {
 	assert.Equal(t, 0, len(sla.DumpForAlterTopic()), " ")
 	sla.RetentionBytes = 10 << 20
 	assert.Equal(t, "--config retention.bytes=10485760", strings.Join(sla.DumpForAlterTopic(), " "))
+	sla.MinInsyncReplicas = 2
+	assert.Equal(t, "--config retention.bytes=10485760 --config min.insync.replicas=2", strings.Join(sla.DumpForAlterTopic(), " "))
 }
 
 func TestSlaRententionHoursFloat(t *testing.T) {
