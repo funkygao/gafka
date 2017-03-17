@@ -27,7 +27,7 @@ func (this *Chaos) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("chaos", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&device, "i", "", "")
-	cmdFlags.StringVar(&mode, "mode", "start", "")
+	cmdFlags.StringVar(&mode, "mode", "", "")
 	cmdFlags.IntVar(&latency, "latency", -1, "")
 	cmdFlags.StringVar(&ports, "ports", "", "")
 	cmdFlags.Float64Var(&loss, "loss", 0, "")
