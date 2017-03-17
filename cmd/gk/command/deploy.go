@@ -559,6 +559,9 @@ Options:
 
     -diff
       Compare the new deployment config with the installed kafka on localhost.
+      e,g.
+      gk deploy -z local -c me -demo
+      gk deploy -z local -c me -broker.id 1 -port 9092 -ip 10.1.1.1 -log.dirs /var/kfk_me/logs -diff
 
     -dryrun
       Default is true.
