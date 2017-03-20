@@ -53,6 +53,47 @@ func (this *WatchInfluxServer) Run() {
 	getSize := metrics.NewRegisteredHistogram("influxdb.size.get", nil, metrics.NewExpDecaySample(1028, 0.015))
 
 	msgChan := make(chan *sarama.ConsumerMessage, 128)
+
+	// begin handle log first
+	this.Wg.Add(1)
+	go func() {
+		defer this.Wg.Done()
+		httpdFormat := "[$prefix] $remote_addr $remote_log_name $remote_user [$start_time] \"$request\" $status $resp_bytes \"$referer\" \"$user_agent\" $req_id $time_elapsed"
+		this.parser = gonx.NewParser(httpdFormat)
+
+		for {
+			select {
+			case <-this.Stop:
+				log.Info("influxdb.server stopped")
+				return
+
+			case msg, ok := <-msgChan:
+				if !ok {
+					log.Info("influxdb.server EOF from access log stream")
+					return
+				}
+
+				pl, gl, ps, gs, m, err := this.parseMessage(msg.Value)
+				if err != nil {
+					if err != ErrLogEntrySkipped {
+						log.Error("influxdb.server: %v", err)
+					}
+
+					continue
+				}
+
+				if m == "POST" {
+					postLatency.Update(pl)
+					postSize.Update(ps)
+				} else if m == "GET" {
+					getLatency.Update(gl)
+					getSize.Update(gs)
+				}
+			}
+		}
+	}()
+
+	// consumeInfluxdbAccessLog is a blocked function call
 	if err := this.consumeInfluxdbAccessLog(msgChan); err != nil {
 		close(msgChan)
 
@@ -60,45 +101,11 @@ func (this *WatchInfluxServer) Run() {
 		return
 	}
 
-	httpdFormat := "[$prefix] $remote_addr $remote_log_name $remote_user [$start_time] \"$request\" $status $resp_bytes \"$referer\" \"$user_agent\" $req_id $time_elapsed"
-	this.parser = gonx.NewParser(httpdFormat)
-
-	for {
-		select {
-		case <-this.Stop:
-			log.Info("influxdb.server stopped")
-			return
-
-		case msg, ok := <-msgChan:
-			if !ok {
-				log.Info("influxdb.server EOF from access log stream")
-				return
-			}
-
-			pl, gl, ps, gs, m, err := this.parseMessage(msg.Value)
-			if err != nil {
-				if err != ErrLogEntrySkipped {
-					log.Error("influxdb.server: %v", err)
-				}
-
-				continue
-			}
-
-			if m == "POST" {
-				postLatency.Update(pl)
-				postSize.Update(ps)
-			} else if m == "GET" {
-				getLatency.Update(gl)
-				getSize.Update(gs)
-			}
-		}
-	}
-
 }
 
 func (this *WatchInfluxServer) parseMessage(message []byte) (postLatency, getLatency, postSize, getSize int64, method string, err error) {
 	msg := make(map[string]string)
-	if err = json.Unmarshal(message, msg); err != nil {
+	if err = json.Unmarshal(message, &msg); err != nil {
 		return
 	}
 
