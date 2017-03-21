@@ -137,8 +137,8 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 			}
 
 			// an orphan binlog stream: no dbus consuming it
-			lines = append(lines, fmt.Sprintf("-|%s|%s|%s|-|-|-|-|-", db,
-				v.File, gofmt.Comma(int64(v.Offset))))
+			lines = append(lines, fmt.Sprintf("-|%s|%s|%d|-|-|-|-|-", db,
+				v.File, v.Offset))
 			continue
 		}
 
@@ -157,8 +157,8 @@ func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
 
 			if r == string(owner) {
 				ownerTime := zk.ZkTimestamp(ownerStat.Mtime).Time()
-				lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s",
-					v.Name, db, v.File, gofmt.Comma(int64(v.Offset)), instance, string(ver), pid,
+				lines = append(lines, fmt.Sprintf("%s|%s|%s|%d|%s|%s|%s|%s|%s",
+					v.Name, db, v.File, v.Offset, instance, string(ver), pid,
 					gofmt.PrettySince(uptime), gofmt.PrettySince(ownerTime)))
 			} else {
 				lines = append(lines, fmt.Sprintf("%s|%s| | |%s|%s|%s|%s| ",
