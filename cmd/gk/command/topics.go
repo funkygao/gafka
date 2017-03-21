@@ -288,32 +288,36 @@ func (this *Topics) clusterSummary(zkcluster *zk.ZkCluster) []topicSummary {
 
 func (this *Topics) resetTopicConfig(zkcluster *zk.ZkCluster, topic string) {
 	zkAddrs := zkcluster.ZkConnectAddr()
-	key := "retention.ms"
-	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
-		fmt.Sprintf("--zookeeper %s", zkAddrs),
-		fmt.Sprintf("--alter"),
-		fmt.Sprintf("--topic %s", topic),
-		fmt.Sprintf("--deleteConfig %s", key),
-	)
-	err := cmd.Open()
-	swallow(err)
-	defer cmd.Close()
+	deleteConfig := func(key string) {
+		cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
+			fmt.Sprintf("--zookeeper %s", zkAddrs),
+			fmt.Sprintf("--alter"),
+			fmt.Sprintf("--topic %s", topic),
+			fmt.Sprintf("--delete-config %s", key),
+		)
+		err := cmd.Open()
+		swallow(err)
+		defer cmd.Close()
 
-	scanner := bufio.NewScanner(cmd.Reader())
-	scanner.Split(bufio.ScanLines)
+		scanner := bufio.NewScanner(cmd.Reader())
+		scanner.Split(bufio.ScanLines)
 
-	output := make([]string, 0)
-	for scanner.Scan() {
-		output = append(output, scanner.Text())
+		output := make([]string, 0)
+		for scanner.Scan() {
+			output = append(output, scanner.Text())
+		}
+		swallow(scanner.Err())
+
+		for _, line := range output {
+			this.Ui.Output(line)
+		}
 	}
-	swallow(scanner.Err())
+
+	deleteConfig("retention.ms")
+	deleteConfig("min.insync.replicas")
 
 	path := zkcluster.GetTopicConfigPath(topic)
 	this.Ui.Info(path)
-
-	for _, line := range output {
-		this.Ui.Output(line)
-	}
 }
 
 func (this *Topics) configTopic(zkcluster *zk.ZkCluster, topic string, retentionInMinute int) {
