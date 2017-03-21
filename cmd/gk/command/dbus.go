@@ -138,7 +138,7 @@ func (this *Dbus) resetPosition(zkzone *zk.ZkZone, addr string) {
 }
 
 func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
-	lines := []string{"Name|Mysql|File|Offset|dbus|ver|pid|uptime|msince"}
+	lines := []string{"Name|Mysql|File|Offset|dbus|revision|pid|uptime|msince"}
 	root := "/dbus/myslave"
 	dbs, _, err := zkzone.Conn().Children(root)
 	swallow(err)
