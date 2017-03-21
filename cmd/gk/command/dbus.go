@@ -31,6 +31,7 @@ func (this *Dbus) Run(args []string) (exitCode int) {
 		helixCluster string
 		initCluster  string
 		addResource  string
+		resetAddr    string
 	)
 	cmdFlags := flag.NewFlagSet("dbus", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -39,12 +40,13 @@ func (this *Dbus) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&topMode, "top", false, "")
 	cmdFlags.StringVar(&initCluster, "init", "", "")
 	cmdFlags.StringVar(&addResource, "add", "", "")
+	cmdFlags.StringVar(&resetAddr, "reset", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	if validateArgs(this, this.Ui).
-		requireAdminRights("-init", "-add").
+		requireAdminRights("-init", "-add", "-reset").
 		invalid(args) {
 		return 2
 	}
@@ -66,6 +68,12 @@ func (this *Dbus) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	if len(resetAddr) != 0 {
+		this.resetPosition(zkzone, resetAddr)
+		return
+	}
+
+	// show dbus owner status
 	for {
 		this.checkMyslave(zkzone)
 		if !topMode {
@@ -111,6 +119,22 @@ func (this *Dbus) addResource(resource, cluster, zkSvr string) {
 	swallow(admin.AddResource(cluster, resource, resourceOption))
 	swallow(admin.Rebalance(cluster, resource, 1))
 	this.Ui.Infof("%s for cluster %s added and rebalanced", resource, cluster)
+}
+
+func (this *Dbus) resetPosition(zkzone *zk.ZkZone, addr string) {
+	path := fmt.Sprintf("/dbus/myslave/%s", addr)
+	data, _, err := zkzone.Conn().Get(path)
+	swallow(err)
+
+	var v myslave.PositionerZk
+	swallow(json.Unmarshal(data, &v))
+	v.Offset = 4
+	data, err = json.Marshal(v)
+	swallow(err)
+	_, err = zkzone.Conn().Set(path, data, -1)
+	swallow(err)
+
+	this.Ui.Infof("ok for %s", path)
 }
 
 func (this *Dbus) checkMyslave(zkzone *zk.ZkZone) {
@@ -184,6 +208,9 @@ Usage: %s dbus [options]
 Options:
 
     -z zone
+
+    -reset mysql_host:mysql_port
+      Rewind a mysql binlog position to head of the current log file.
 
     -init cluster
       Initialize helix cluster.
