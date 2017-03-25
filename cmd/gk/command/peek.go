@@ -62,6 +62,7 @@ type Peek struct {
 	beep     bool
 	pretty   bool
 	bodyOnly bool
+	keyOnly  bool
 	grep     string
 	watcher  bool
 }
@@ -95,6 +96,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.DurationVar(&wait, "d", time.Hour, "")
 	cmdFlags.BoolVar(&tillNow, "now", false, "")
 	cmdFlags.BoolVar(&this.bodyOnly, "body", false, "")
+	cmdFlags.BoolVar(&this.keyOnly, "key", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -196,7 +198,11 @@ LOOP:
 				if this.column != "" {
 					decoded := gjson.GetBytes(msg.Value, this.column)
 					colVal := decoded.String()
-					if this.bodyOnly {
+					if this.keyOnly {
+						outmsg = fmt.Sprintf("%s/%d %s k:%s",
+							msg.Topic, msg.Partition,
+							gofmt.Comma(msg.Offset), string(msg.Key))
+					} else if this.bodyOnly {
 						if this.pretty {
 							if err := json.Indent(&prettyJSON, []byte(colVal), "", "    "); err != nil {
 								fmt.Println(err.Error())
@@ -218,7 +224,11 @@ LOOP:
 					}
 
 				} else {
-					if this.bodyOnly {
+					if this.keyOnly {
+						outmsg = fmt.Sprintf("%s/%d %s k:%s",
+							msg.Topic, msg.Partition,
+							gofmt.Comma(msg.Offset), string(msg.Key))
+					} else if this.bodyOnly {
 						if this.pretty {
 							json.Indent(&prettyJSON, msg.Value, "", "    ")
 							outmsg = string(prettyJSON.Bytes())
@@ -423,6 +433,9 @@ Options:
 
     -body
       Only display message body
+
+    -key
+      Only display message key
 
     -now
       Iterate the stream till now
