@@ -140,6 +140,15 @@ func (this *ZkZone) ensureParentDirExists(path string) error {
 	return nil
 }
 
+func (this *ZkZone) EnsurePathExists(path string) error {
+	this.connectIfNeccessary()
+	if err := this.mkdirRecursive(path); err != nil && err != zk.ErrNodeExists {
+		return err
+	}
+
+	return nil
+}
+
 func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 	this.connectIfNeccessary()
 
