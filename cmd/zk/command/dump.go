@@ -260,6 +260,10 @@ Options:
       zone name will automatically prefix the final outfile.
 
     -import dumped file name
+      e,g.
+      zk dump -z test -p /xxx/yyy
+      zk dump -import test.zk.dump -z prod -p /
+      this will clone /xxx/yyy of test zone into prod zone.
 
     -in dumpped input filename
       Display dumpped file contents in text format.
