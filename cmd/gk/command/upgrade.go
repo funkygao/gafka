@@ -82,6 +82,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 		case "d":
 			runCmd("wget", []string{this.storeUrl("dbc"), "-O", "dbc"})
 			runCmd("chmod", []string{"a+x", "dbc"})
+			runCmd("mv", []string{"-f", "dbc", "/usr/bin/dbc"})
 
 		case "u":
 			runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/dbc", gopath), this.uploadDir})
