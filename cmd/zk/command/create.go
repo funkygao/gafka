@@ -61,12 +61,12 @@ func (this *Create) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s create -z zone -p path
 
-    Create znode with initial data
+    %s
 
 Options:
 
     e,g. 'echo foo | zk create -z test -p /bar'
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

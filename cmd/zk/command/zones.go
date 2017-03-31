@@ -55,7 +55,7 @@ func (this *Zones) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s zones [zone ...]
 
-    Print zones defined in $HOME/.gafka.cf
-`, this.Cmd)
+    %s
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

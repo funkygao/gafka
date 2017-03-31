@@ -138,7 +138,7 @@ func (this *Zktop) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s zktop [options]
 
-    Unix “top” like utility for ZooKeeper
+   %s
 
 Options:
 
@@ -151,6 +151,6 @@ Options:
     -b
       Batch mode operation.
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

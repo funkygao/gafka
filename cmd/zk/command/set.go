@@ -52,19 +52,19 @@ func (this *Set) Run(args []string) (exitCode int) {
 }
 
 func (*Set) Synopsis() string {
-	return "Write znode data"
+	return "Set znode data"
 }
 
 func (this *Set) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s set -z zone -p path [options]
 
-    Write znode data
+    %s
 
 Options:
 
     e,g. 'echo foo | zk set -z test -p /bar'
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

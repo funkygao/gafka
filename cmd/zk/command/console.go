@@ -328,12 +328,12 @@ func (this *Console) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s console [options]
 
-    Interactive mode
+    %s
 
 Options:
 
     -z zone
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

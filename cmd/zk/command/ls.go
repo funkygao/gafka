@@ -131,7 +131,7 @@ func (this *Ls) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s ls [options] <path>
 
-    List znode children
+    %s
 
 Options:
 
@@ -146,6 +146,6 @@ Options:
     -like pattern
       Only display znode whose path is like this pattern.
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }
