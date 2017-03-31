@@ -104,7 +104,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	if addTopic != "" {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 		zkcluster := zkzone.NewCluster(cluster)
-		swallow(this.addTopic(zkcluster, addTopic, replicas, partitions))
+		swallow(this.addTopic(zkcluster, addTopic, replicas, partitions, minInsyncReplicas))
 
 		return
 	} else if delTopic != "" {
@@ -557,12 +557,15 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 }
 
 func (this *Topics) addTopic(zkcluster *zk.ZkCluster, topic string, replicas,
-	partitions int) error {
+	partitions, minInsyncReplicas int) error {
 	this.Ui.Info(fmt.Sprintf("creating kafka topic: %s", topic))
 
 	ts := sla.DefaultSla()
 	ts.Partitions = partitions
 	ts.Replicas = replicas
+	if minInsyncReplicas > 0 {
+		ts.MinInsyncReplicas = minInsyncReplicas
+	}
 	lines, err := zkcluster.AddTopic(topic, ts)
 	if err != nil {
 		return err
