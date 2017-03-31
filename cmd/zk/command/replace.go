@@ -31,8 +31,10 @@ func (this *Replace) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if this.zone == "" || this.from == "" || this.to == "" {
-		this.Ui.Output(this.Help())
+	if validateArgs(this, this.Ui).
+		require("-from", "-to").
+		requireAdminRights("-f").
+		invalid(args) {
 		return 2
 	}
 
