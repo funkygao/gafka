@@ -25,6 +25,7 @@ type Upgrade struct {
 	upgradeEhaproxy bool
 	upgradeConfig   bool
 	upgradeDbus     bool
+	upgradeDbc      bool
 	upgradeHelix    bool
 }
 
@@ -40,6 +41,7 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.upgradeHelix, "he", false, "")
 	cmdFlags.BoolVar(&this.upgradeZk, "zk", false, "")
 	cmdFlags.BoolVar(&this.upgradeDbus, "dbus", false, "")
+	cmdFlags.BoolVar(&this.upgradeDbc, "dbc", false, "")
 	cmdFlags.BoolVar(&this.upgradeKguard, "kg", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -70,6 +72,19 @@ func (this *Upgrade) Run(args []string) (exitCode int) {
 
 		case "u":
 			runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/actord", gopath), this.uploadDir})
+		}
+
+		return
+	}
+
+	if this.upgradeDbc {
+		switch this.mode {
+		case "d":
+			runCmd("wget", []string{this.storeUrl("dbc"), "-O", "dbc"})
+			runCmd("chmod", []string{"a+x", "dbc"})
+
+		case "u":
+			runCmd("cp", []string{"-f", fmt.Sprintf("%s/bin/dbc", gopath), this.uploadDir})
 		}
 
 		return
@@ -227,6 +242,9 @@ Options:
 
     -dbus
       Upgrade dbusd instead of gk
+
+    -dbc
+      Upgrade dbc intead of gk
 
     -he 
       Upgrade helix instead of gk
