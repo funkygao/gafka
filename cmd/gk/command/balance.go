@@ -112,6 +112,8 @@ type Balance struct {
 
 	hostOffsetCh chan map[string]hostOffsetInfo // key is host
 	signalsCh    map[string]chan struct{}
+
+	diskFull map[string]string
 }
 
 func (this *Balance) Run(args []string) (exitCode int) {
@@ -143,6 +145,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	this.allHostsTps = make(map[string]hostOffsetInfo)
 	this.offsets = make(map[string]int64)
 	this.lastOffsets = make(map[string]int64)
+	this.diskFull = make(map[string]string)
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	zkzone.ForSortedBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
@@ -313,6 +316,10 @@ func (this *Balance) drawDetail(sortedHosts []string) {
 			this.Ui.Output(fmt.Sprintf("    %30s %8s %s#%d", sum.cluster,
 				gofmt.Comma(sum.qps), sum.tp.Topic, sum.tp.PartitionID))
 		}
+	}
+
+	for host, info := range this.diskFull {
+		this.Ui.Outputf("%30s %s", host, info)
 	}
 
 }
@@ -501,6 +508,15 @@ func (this *Balance) fetchBrokerModel() {
 			}
 
 			broker.disks++
+
+			if len(fields) == 7 && strings.Contains(fields[5], "%") {
+				//     myhost.com: /dev/sdf1  3845678096 1288980780 2361348120  36% /data5
+				percent, err := strconv.Atoi(strings.TrimRight(fields[5], "%"))
+				swallow(err)
+				if percent > 80 {
+					this.diskFull[host] = fmt.Sprintf("%d %s", percent, fields[6])
+				}
+			}
 		}
 	}
 	cmd.Close()
