@@ -22,6 +22,8 @@ import (
 	"github.com/pmylund/sortutil"
 )
 
+const diskFullThreshold = 85
+
 type hostLoadInfo struct {
 	host            string
 	cluster         string
@@ -318,10 +320,6 @@ func (this *Balance) drawDetail(sortedHosts []string) {
 		}
 	}
 
-	for host, info := range this.diskFull {
-		this.Ui.Outputf("%30s %s", host, info)
-	}
-
 }
 
 type clusterQps struct {
@@ -419,6 +417,13 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			this.Ui.Warnf("    slave only %s", member.Addr)
 		}
 	}
+
+	if len(this.diskFull) > 0 {
+		this.Ui.Warn("DISK FULL")
+		for host, info := range this.diskFull {
+			this.Ui.Outputf("%30s %s", host, info)
+		}
+	}
 }
 
 func (this *Balance) fetchBrokerModel() {
@@ -509,16 +514,17 @@ func (this *Balance) fetchBrokerModel() {
 
 			broker.disks++
 
-			if len(fields) == 7 && strings.Contains(fields[5], "%") {
-				//     myhost.com: /dev/sdf1  3845678096 1288980780 2361348120  36% /data5
+			if len(fields) == 7 && strings.HasSuffix(fields[5], "%") {
+				// myhost.com: /dev/sdf1  3845678096 1288980780 2361348120  36% /data5
 				percent, err := strconv.Atoi(strings.TrimRight(fields[5], "%"))
 				swallow(err)
-				if percent > 80 {
-					this.diskFull[host] = fmt.Sprintf("%d %s", percent, fields[6])
+				if percent >= diskFullThreshold {
+					this.diskFull[host] = fmt.Sprintf("%s %d%%", fields[6], percent)
 				}
 			}
 		}
 	}
+
 	cmd.Close()
 }
 
