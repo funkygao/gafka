@@ -50,6 +50,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		replicas                int
 		partitions              int
 		retentionInMinute       int
+		retentionInDays         int
 		minInsyncReplicas       int
 		resetConf               bool
 		debug                   bool
@@ -77,6 +78,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&resetConf, "cfreset", false, "")
 	cmdFlags.Int64Var(&this.count, "count", 0, "")
 	cmdFlags.IntVar(&retentionInMinute, "retention", -1, "")
+	cmdFlags.IntVar(&retentionInDays, "retention.d", -1, "")
 	cmdFlags.IntVar(&replicas, "replicas", 2, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -118,6 +120,10 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	ensureZoneValid(zone)
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+
+	if retentionInDays > 0 {
+		retentionInMinute = retentionInDays * 24 * 60
+	}
 	if retentionInMinute > 0 {
 		zkcluster := zkzone.NewCluster(cluster)
 		this.configTopic(zkcluster, this.topicPattern, retentionInMinute)
@@ -653,6 +659,8 @@ Options:
 
     -retention n in minutes
       Config a kafka topic log retention.
+
+    -retention.d n in days
     
     -l
       Use a long listing format.
