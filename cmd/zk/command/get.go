@@ -78,7 +78,7 @@ func (this *Get) Run(args []string) (exitCode int) {
 					strings.Repeat(" ", 3), data))
 			}
 			this.Ui.Output(fmt.Sprintf("%s %s",
-				strings.Repeat(" ", 3), string(data)))
+				strings.Repeat(" ", 3), this.convertZdata(data)))
 		}
 
 		this.showChildrenRecursively(zkzone.Conn(), this.path)
