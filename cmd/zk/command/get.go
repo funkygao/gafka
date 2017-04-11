@@ -1,6 +1,8 @@
 package command
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/url"
@@ -24,6 +26,7 @@ type Get struct {
 	verbose     bool
 	recursive   bool
 	watch       bool
+	pretty      bool
 	urlDecode   bool
 	likePattern string
 
@@ -37,6 +40,7 @@ func (this *Get) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.verbose, "l", false, "")
 	cmdFlags.BoolVar(&this.recursive, "R", false, "")
 	cmdFlags.BoolVar(&this.urlDecode, "d", false, "")
+	cmdFlags.BoolVar(&this.pretty, "pretty", false, "")
 	cmdFlags.BoolVar(&this.watch, "w", false, "")
 	cmdFlags.StringVar(&this.likePattern, "like", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -87,7 +91,7 @@ func (this *Get) Run(args []string) (exitCode int) {
 	must(err)
 
 	if this.watch {
-		this.Ui.Outputf("%s: %s", this.path, string(data))
+		this.Ui.Outputf("%s: %s", this.path, this.convertZdata(data))
 
 		this.watchZnode(zkzone.ZkAddrs())
 		select {}
@@ -106,7 +110,7 @@ func (this *Get) Run(args []string) (exitCode int) {
 	this.Ui.Output(color.Green("Data Bytes"))
 	fmt.Println(data)
 	this.Ui.Output(color.Green("Data as String"))
-	this.Ui.Output(string(data))
+	this.Ui.Output(this.convertZdata(data))
 
 	return
 }
@@ -173,11 +177,25 @@ func (this *Get) showChildrenRecursively(conn *zk.Conn, path string) {
 					strings.Repeat(" ", 3), data))
 			}
 			this.Ui.Output(fmt.Sprintf("%s %s",
-				strings.Repeat(" ", 3), string(data)))
+				strings.Repeat(" ", 3), this.convertZdata(data)))
 		}
 
 		this.showChildrenRecursively(conn, znode)
 	}
+}
+
+func (this *Get) convertZdata(data []byte) string {
+	if !this.pretty {
+		return string(data)
+	}
+
+	var prettyJSON bytes.Buffer
+	if err := json.Indent(&prettyJSON, data, "    ", "    "); err == nil {
+		// it's a valid json
+		return prettyJSON.String()
+	}
+
+	return string(data)
 }
 
 func (*Get) Synopsis() string {
@@ -205,6 +223,9 @@ Options:
 
     -l
       Use a long display format.
+
+    -pretty
+      Try pretty print znode json data.
 
     -like pattern
       Only display znode whose path is like this pattern.

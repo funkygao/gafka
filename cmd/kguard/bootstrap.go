@@ -1,8 +1,10 @@
 package main
 
 import (
-	// internal plugins
+	// SOS
 	_ "github.com/funkygao/gafka/cmd/kguard/sos"
+
+	// internal watchers
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/actord"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/anomaly"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/external"
@@ -15,6 +17,6 @@ import (
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/zk"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/zone"
 
-	// external plugins
+	// external watchers
 	_ "github.com/funkygao/dbus/watchers"
 )
