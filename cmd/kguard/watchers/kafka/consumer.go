@@ -148,6 +148,7 @@ func (this *WatchConsumers) runSubQpsTimer() {
 			log.Error("cluster[%s] %v", zkcluster.Name(), err)
 			return
 		}
+		defer kfk.Close()
 
 		consumerGroups := zkcluster.ConsumerGroups()
 		for group := range consumerGroups {
