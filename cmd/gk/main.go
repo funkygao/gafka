@@ -90,7 +90,7 @@ func main() {
 		}
 	}
 
-	c := cli.NewCLI(app, gafka.Version+"-"+gafka.BuildId+"-"+gafka.BuiltAt)
+	c := cli.NewCLI(app, fmt.Sprintf("gk %s (%s@%s)", gafka.Version, gafka.BuildId, gafka.BuiltAt))
 	c.Args = os.Args[1:]
 	if len(os.Args) > 1 {
 		// command given, convert alias
