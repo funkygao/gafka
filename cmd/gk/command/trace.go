@@ -108,7 +108,7 @@ func (this *Trace) Run(args []string) (exitCode int) {
 		case msg := <-msgChan:
 			n++
 			if bytes.Contains(msg.Value, grepB) {
-				if _, present := excludedTopics[msg.Topic] {
+				if _, present := excludedTopics[msg.Topic]; present {
 					continue
 				}
 
