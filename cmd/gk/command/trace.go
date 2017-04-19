@@ -96,10 +96,11 @@ func (this *Trace) Run(args []string) (exitCode int) {
 						content = string(msg.Value)
 					} else {
 						content = string(prettyJSON.Bytes())
+						prettyJSON.Reset()
 					}
+				} else {
+					content = string(msg.Value)
 				}
-
-				prettyJSON.Reset()
 
 				this.Ui.Infof("%s %d/%d", color.Green("%40s", fmt.Sprintf("%s@%s", msg.Topic, msg.cluster)), msg.Partition, msg.Offset)
 				this.Ui.Output(content)
