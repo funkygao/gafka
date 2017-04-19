@@ -40,6 +40,7 @@ func (this *Trace) Run(args []string) (exitCode int) {
 		highlight    bool
 		pretty       bool
 		since        string
+		excludes     string
 		echoFirstMsg bool
 	)
 	cmdFlags := flag.NewFlagSet("trace", flag.ContinueOnError)
@@ -50,6 +51,7 @@ func (this *Trace) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&highlight, "highlight", false, "")
 	cmdFlags.StringVar(&this.grep, "grep", "", "")
 	cmdFlags.StringVar(&since, "since", "", "")
+	cmdFlags.StringVar(&excludes, "exclude", "", "")
 	cmdFlags.BoolVar(&pretty, "pretty", false, "")
 	cmdFlags.BoolVar(&echoFirstMsg, "checktime", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -87,6 +89,10 @@ func (this *Trace) Run(args []string) (exitCode int) {
 	}
 
 	grepB := []byte(this.grep)
+	excludedTopics := make(map[string]struct{})
+	for _, t := range strings.Split(excludes, ",") {
+		excludedTopics[t] = struct{}{}
+	}
 	var n int64
 	progressInterval := time.Second * 30
 	tick := time.NewTicker(progressInterval)
@@ -102,6 +108,10 @@ func (this *Trace) Run(args []string) (exitCode int) {
 		case msg := <-msgChan:
 			n++
 			if bytes.Contains(msg.Value, grepB) {
+				if _, present := excludedTopics[msg.Topic] {
+					continue
+				}
+
 				progressInterval = time.Minute
 				tick = time.NewTicker(progressInterval)
 
@@ -238,6 +248,8 @@ Options:
       -since '2006-01-02 15:04'
 
     -highlight
+
+    -exclude comma seperated topic names
 
     -checktime
       Print out first message from each topics to validate the time range is ok.
