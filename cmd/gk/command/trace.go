@@ -121,7 +121,7 @@ func (this *Trace) Run(args []string) (exitCode int) {
 
 				if pretty {
 					if err := json.Indent(&prettyJSON, msg.Value, "", "    "); err != nil {
-						this.Ui.Error(err.Error())
+						// FIXME when used with highlight, err: invalid character '\x1b' in string literal
 						content = string(msg.Value)
 					} else {
 						content = string(prettyJSON.Bytes())
