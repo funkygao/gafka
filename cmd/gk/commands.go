@@ -59,6 +59,13 @@ func init() {
 			}, nil
 		},
 
+		"trace": func() (cli.Command, error) {
+			return &command.Trace{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"gc": func() (cli.Command, error) {
 			return &command.GC{
 				Ui:  ui,
