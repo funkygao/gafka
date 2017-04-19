@@ -27,6 +27,7 @@ type Trace struct {
 	Cmd string
 
 	lastDuration time.Duration
+	firstMsgCh   chan clusterMessage
 	grep         string
 }
 
@@ -34,10 +35,12 @@ var defaultTopicRetention = time.Hour * 24 * 7
 
 func (this *Trace) Run(args []string) (exitCode int) {
 	var (
-		zone      string
-		from      string
-		highlight bool
-		pretty    bool
+		zone         string
+		from         string
+		highlight    bool
+		pretty       bool
+		since        string
+		echoFirstMsg bool
 	)
 	cmdFlags := flag.NewFlagSet("trace", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -46,7 +49,9 @@ func (this *Trace) Run(args []string) (exitCode int) {
 	cmdFlags.DurationVar(&this.lastDuration, "last", time.Hour, "")
 	cmdFlags.BoolVar(&highlight, "highlight", false, "")
 	cmdFlags.StringVar(&this.grep, "grep", "", "")
+	cmdFlags.StringVar(&since, "since", "", "")
 	cmdFlags.BoolVar(&pretty, "pretty", false, "")
+	cmdFlags.BoolVar(&echoFirstMsg, "checktime", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -57,9 +62,18 @@ func (this *Trace) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	this.Ui.Infof("seeking %s", this.grep)
+	if len(since) > 0 {
+		bj, _ := time.LoadLocation("Asia/Shanghai")
+		t, err := time.ParseInLocation("2006-01-02 15:04", since, bj)
+		swallow(err)
+
+		this.lastDuration = time.Since(t)
+	}
+
+	this.Ui.Infof("seeking %s %s ago", this.grep, this.lastDuration)
 
 	msgChan := make(chan clusterMessage, 2000)
+	this.firstMsgCh = make(chan clusterMessage, 100)
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	for _, clusterTopic := range strings.Split(from, ",") {
 		tuples := strings.SplitN(clusterTopic, "@", 2)
@@ -80,6 +94,11 @@ func (this *Trace) Run(args []string) (exitCode int) {
 	var content string
 	for {
 		select {
+		case msg := <-this.firstMsgCh:
+			if echoFirstMsg {
+				this.Ui.Outputf("%s %s/%d@%s %s", color.Yellow("|"), msg.Topic, msg.Partition, msg.cluster, string(msg.Value))
+			}
+
 		case msg := <-msgChan:
 			n++
 			if bytes.Contains(msg.Value, grepB) {
@@ -102,12 +121,12 @@ func (this *Trace) Run(args []string) (exitCode int) {
 					content = string(msg.Value)
 				}
 
-				this.Ui.Infof("%s %d/%d", color.Green("%40s", fmt.Sprintf("%s@%s", msg.Topic, msg.cluster)), msg.Partition, msg.Offset)
+				this.Ui.Infof("%s/%d@%s", msg.Topic, msg.Partition, msg.cluster)
 				this.Ui.Output(content)
 			}
 
 		case <-tick.C:
-			this.Ui.Outputf("%16s msgs received %s", gofmt.Comma(n), bjtime.TimeToString(time.Now()))
+			this.Ui.Outputf("%16s msgs received, %s", gofmt.Comma(n), bjtime.TimeToString(time.Now()))
 		}
 	}
 
@@ -176,8 +195,13 @@ func (this *Trace) consumePartition(zkcluster *zk.ZkCluster, kfk sarama.Client, 
 	}
 	defer p.Close()
 
+	first := true
 	for msg := range p.Messages() {
 		msgCh <- clusterMessage{ConsumerMessage: msg, cluster: zkcluster.Name()}
+		if first {
+			first = false
+			this.firstMsgCh <- clusterMessage{ConsumerMessage: msg, cluster: zkcluster.Name()}
+		}
 	}
 }
 
@@ -209,7 +233,14 @@ Options:
       -last 5m
       -last 5h
 
-    -highlight true|false
+    -since time
+      e,g.
+      -since '2006-01-02 15:04'
+
+    -highlight
+
+    -checktime
+      Print out first message from each topics to validate the time range is ok.
 
     -pretty
 
