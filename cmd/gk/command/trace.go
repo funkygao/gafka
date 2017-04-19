@@ -23,30 +23,36 @@ type Trace struct {
 
 func (this *Trace) Run(args []string) (exitCode int) {
 	var (
-		cluster      string
-		zone         string
-		topicPattern string
+		zone string
+		from string
 	)
 	cmdFlags := flag.NewFlagSet("trace", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
-	cmdFlags.StringVar(&cluster, "c", "", "")
-	cmdFlags.StringVar(&topicPattern, "t", "", "")
+	cmdFlags.StringVar(&from, "from", "", "")
 	cmdFlags.Int64Var(&this.lastDays, "last", 3, "")
 	cmdFlags.StringVar(&this.grep, "grep", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
-	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	if validateArgs(this, this.Ui).
+		require("-from", "-grep").
+		invalid(args) {
+		return 2
+	}
+
 	msgChan := make(chan *sarama.ConsumerMessage, 20000)
-	if cluster == "" {
-		zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
-			this.consumeCluster(zkcluster, topicPattern, msgChan)
-		})
-	} else {
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	for _, clusterTopic := range strings.Split(from, ",") {
+		tuples := strings.SplitN(clusterTopic, "@", 2)
+		if len(tuples) != 2 {
+			panic(clusterTopic)
+		}
+
+		cluster, topic := tuples[0], tuples[1]
 		zkcluster := zkzone.NewCluster(cluster)
-		this.consumeCluster(zkcluster, topicPattern, msgChan)
+		this.consumeCluster(zkcluster, topic, msgChan)
 	}
 
 	grepB := []byte(this.grep)
@@ -83,7 +89,6 @@ func (this *Trace) consumeCluster(zkcluster *zk.ZkCluster, topicPattern string,
 			go this.consumeTopic(zkcluster, kfk, t, msgChan)
 		}
 	}
-
 }
 
 func (this *Trace) consumeTopic(zkcluster *zk.ZkCluster, kfk sarama.Client, topic string,
@@ -109,7 +114,7 @@ func (this *Trace) consumeTopic(zkcluster *zk.ZkCluster, kfk sarama.Client, topi
 		swallow(err)
 
 		// most topics have retention of 7 days
-		offset = (latestOffset - oldestOffset) * 7 / this.lastDays
+		offset = oldestOffset + (latestOffset-oldestOffset)*this.lastDays/7
 		if offset <= 0 {
 			this.Ui.Warnf("%s/%d empty", topic, p)
 			continue
@@ -117,7 +122,6 @@ func (this *Trace) consumeTopic(zkcluster *zk.ZkCluster, kfk sarama.Client, topi
 
 		go this.consumePartition(zkcluster, kfk, consumer, topic, p, msgCh, offset)
 	}
-
 }
 
 func (this *Trace) consumePartition(zkcluster *zk.ZkCluster, kfk sarama.Client, consumer sarama.Consumer,
@@ -149,15 +153,16 @@ Options:
     -z zone
       Default %s
 
-    -c cluster
+    -from cluster@topic,cluster@topic,...
+      e,g.
+      -from logs@gateway,logstash@apache
 
-    -t topic pattern
+    -grep pattern
 
     -last days
       Trace messages from last N days.
       Default 3
 
-    -grep pattern
 `, this.Cmd, this.Synopsis(), ctx.ZkDefaultZone())
 	return strings.TrimSpace(help)
 }
