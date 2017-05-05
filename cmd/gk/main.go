@@ -43,6 +43,7 @@ func main() {
 					return
 
 				case "-c": // cluster
+					// not 'gk redis -c'
 					zone := ctx.ZkDefaultZone()
 					for i := 0; i < len(args)-1; i++ {
 						if args[i] == "-z" {
@@ -50,6 +51,23 @@ func main() {
 						}
 					}
 					zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+
+					gkRedis := false
+					for _, arg := range args {
+						if arg == "redis" {
+							gkRedis = true // gk redis -c
+							break
+						}
+					}
+
+					if gkRedis {
+						for _, c := range zkzone.AllRedisClusters() {
+							fmt.Println(c.Name)
+						}
+						return
+					}
+
+					// not 'gk redis -c'
 					zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 						fmt.Println(zkcluster.Name())
 					})

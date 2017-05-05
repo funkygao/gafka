@@ -68,6 +68,8 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		top         bool
 		topInterval time.Duration
 		ports       string
+		cluster     string
+		port        int
 		addCluster  string
 		delCluster  string
 		clusters    bool
@@ -80,8 +82,10 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&nodes, "nodes", true, "")
 	cmdFlags.IntVar(&byHost, "host", 0, "")
 	cmdFlags.BoolVar(&top, "top", false, "")
+	cmdFlags.IntVar(&port, "p", 0, "")
 	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*5, "")
 	cmdFlags.BoolVar(&ping, "ping", false, "")
+	cmdFlags.StringVar(&cluster, "c", "", "")
 	cmdFlags.BoolVar(&this.ipInNum, "n", false, "")
 	cmdFlags.Int64Var(&this.beep, "beep", 10000, "")
 	cmdFlags.BoolVar(&this.debug, "d", false, "")
@@ -99,6 +103,10 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	if top || ping {
 		nodes = false
+	}
+
+	if port != 0 {
+		clusters = true
 	}
 
 	if add != "" {
@@ -139,9 +147,26 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	} else if clusters {
 		lines := []string{"Cluster|Members"}
 		for _, c := range zkzone.AllRedisClusters() {
-			lines = append(lines, fmt.Sprintf("%s|%s", c.Name, c.Members))
+			if port > 0 {
+				for _, m := range c.Members {
+					if m.Port == port {
+						lines = append(lines, fmt.Sprintf("%s|%s", c.Name, c.Members))
+					}
+				}
+			} else if cluster != "" {
+				if c.Name == cluster {
+					lines = append(lines, fmt.Sprintf("%s|%s", c.Name, c.Members))
+					break
+				}
+			} else {
+				lines = append(lines, fmt.Sprintf("%s|%s", c.Name, c.Members))
+			}
 		}
-		this.Ui.Output(columnize.SimpleFormat(lines))
+
+		if len(lines) > 1 {
+			this.Ui.Output(columnize.SimpleFormat(lines))
+		}
+
 		return
 	} else {
 		if top {
@@ -158,10 +183,9 @@ func (this *Redis) Run(args []string) (exitCode int) {
 				if tp != "" {
 					this.ports[tp] = struct{}{}
 				}
-
 			}
 
-			this.runTop(zkzone, topInterval)
+			this.runTop(zkzone, topInterval, cluster)
 		} else if ping {
 			this.runPing(zkzone)
 		} else if nodes {
@@ -217,7 +241,7 @@ type redisTopInfo struct {
 	latency                                 time.Duration
 }
 
-func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
+func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration, cluster string) {
 	termui.Init()
 	this.mainScreen = true
 	this.w, this.h = termbox.Size()
@@ -242,6 +266,12 @@ func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 
 	this.topInfos = make([]redisTopInfo, 0, 100)
 	this.topInfos1 = make([]redisTopInfo, 0, 100)
+	nodeClusterMap := make(map[string]string) // host:port => cluster
+	for _, c := range zkzone.AllRedisClusters() {
+		for _, m := range c.Members {
+			nodeClusterMap[fmt.Sprintf("%s:%d", m.Host, m.Port)] = c.Name
+		}
+	}
 	for {
 		var wg sync.WaitGroup
 
@@ -258,6 +288,10 @@ func (this *Redis) runTop(zkzone *zk.ZkZone, interval time.Duration) {
 		this.mu.Unlock()
 
 		for _, hostPort := range zkzone.AllRedis() {
+			if cluster != "" && nodeClusterMap[hostPort] != cluster {
+				continue
+			}
+
 			host, port, err := net.SplitHostPort(hostPort)
 			if err != nil {
 				log.Error("invalid redis instance: %s", hostPort)
@@ -848,6 +882,10 @@ Options:
       1: only display host
       2: 0 + port info
 
+    -p port
+
+    -c cluster
+
     -clusters
       Display redis clusters
 
@@ -861,6 +899,9 @@ Options:
 
     -top
       Monitor all redis instances ops
+
+    -ports comma seperated port number
+      Work with -top to filter redis instances
 
     -freeze n
       TopN rows to freeze.
