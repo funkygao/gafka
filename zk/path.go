@@ -34,7 +34,8 @@ const (
 	EntityConfigPath        = "/config"
 	DeleteTopicsPath        = "/admin/delete_topics"
 
-	RedisMonPath = "/redis"
+	RedisMonPath     = "/redis"
+	RedisClusterRoot = "/rediscluster"
 )
 
 func katewayMetricsRootByKey(id, key string) string {

@@ -29,6 +29,7 @@ import (
 	"github.com/pmylund/sortutil"
 )
 
+// TODO add cluster
 type Redis struct {
 	Ui  cli.Ui
 	Cmd string
@@ -61,19 +62,22 @@ type Redis struct {
 func (this *Redis) Run(args []string) (exitCode int) {
 	var (
 		add         string
-		list        bool
+		nodes       bool
 		byHost      int
 		del         string
 		top         bool
 		topInterval time.Duration
 		ports       string
+		addCluster  string
+		delCluster  string
+		clusters    bool
 		ping        bool
 	)
 	cmdFlags := flag.NewFlagSet("redis", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&add, "add", "", "")
-	cmdFlags.BoolVar(&list, "list", true, "")
+	cmdFlags.BoolVar(&nodes, "nodes", true, "")
 	cmdFlags.IntVar(&byHost, "host", 0, "")
 	cmdFlags.BoolVar(&top, "top", false, "")
 	cmdFlags.DurationVar(&topInterval, "sleep", time.Second*5, "")
@@ -82,6 +86,9 @@ func (this *Redis) Run(args []string) (exitCode int) {
 	cmdFlags.Int64Var(&this.beep, "beep", 10000, "")
 	cmdFlags.BoolVar(&this.debug, "d", false, "")
 	cmdFlags.IntVar(&this.freezeN, "freeze", 20, "")
+	cmdFlags.StringVar(&addCluster, "addcluster", "", "")
+	cmdFlags.BoolVar(&clusters, "clusters", false, "")
+	cmdFlags.StringVar(&delCluster, "delcluster", "", "")
 	cmdFlags.BoolVar(&this.batchMode, "b", false, "")
 	cmdFlags.StringVar(&del, "del", "", "")
 	cmdFlags.StringVar(&ports, "port", "", "")
@@ -91,7 +98,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	if top || ping {
-		list = false
+		nodes = false
 	}
 
 	if add != "" {
@@ -108,6 +115,34 @@ func (this *Redis) Run(args []string) (exitCode int) {
 		nport, err := strconv.Atoi(port)
 		swallow(err)
 		zkzone.DelRedis(host, nport)
+	} else if addCluster != "" {
+		tuples := strings.SplitN(addCluster, "-", 2)
+		instances := make([]zk.RedisInstance, 0)
+		for _, hp := range strings.Split(tuples[1], ",") {
+			host, port, err := net.SplitHostPort(hp)
+			swallow(err)
+
+			nport, err := strconv.Atoi(port)
+			swallow(err)
+			instances = append(instances, zk.RedisInstance{
+				Host: host,
+				Port: nport,
+			})
+		}
+		zkzone.AddRedisCluster(tuples[0], instances)
+		this.Ui.Infof("%s added", tuples[0])
+		return
+	} else if delCluster != "" {
+		zkzone.DelRedisCluster(delCluster)
+		this.Ui.Infof("%s deleted", delCluster)
+		return
+	} else if clusters {
+		lines := []string{"Cluster|Members"}
+		for _, c := range zkzone.AllRedisClusters() {
+			lines = append(lines, fmt.Sprintf("%s|%s", c.Name, c.Members))
+		}
+		this.Ui.Output(columnize.SimpleFormat(lines))
+		return
 	} else {
 		if top {
 			this.quit = make(chan struct{})
@@ -129,7 +164,7 @@ func (this *Redis) Run(args []string) (exitCode int) {
 			this.runTop(zkzone, topInterval)
 		} else if ping {
 			this.runPing(zkzone)
-		} else if list {
+		} else if nodes {
 			machineMap := make(map[string]struct{})
 			machinePortMap := make(map[string][]string)
 			var machines []string
@@ -805,12 +840,24 @@ Options:
 
     -z zone
 
-    -list
+    -nodes
+	  Display each redis node(instance)
 
     -host 1|2
-      Work with -list, print host instead of redis instance
+      Work with -nodes, print host instead of redis instance
       1: only display host
       2: 0 + port info
+
+    -clusters
+      Display redis clusters
+
+    -addcluster cluster-host:port,host:port
+      e,g.
+      gk redis -addcluster account-1.1.1.1:5677,1.1.1.1:5678
+
+    -delcluster cluster
+      e,g.
+      gk redis -delcluster account
 
     -top
       Monitor all redis instances ops
