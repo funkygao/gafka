@@ -374,7 +374,12 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			load = color.Red("%-4.1f", this.loadAvgMap[host])
 		}
 
-		model := this.brokerModelMap[host]
+		model, present := this.brokerModelMap[host]
+		if !present {
+			this.Ui.Errorf("%s consul unreachable", host)
+			continue
+		}
+
 		disks := fmt.Sprintf("%-2d", model.disks)
 		if model.disks < 3 {
 			// kafka need more disks
