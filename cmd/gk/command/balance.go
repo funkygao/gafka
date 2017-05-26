@@ -409,10 +409,8 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			host, load, disks, hostPartitions, ppd, model.nicSpeed/1000,
 			gofmt.Comma(offsetInfo.Total()), clusters))
 	}
-	lines = append(lines, fmt.Sprintf("%d brokers|-|%d|%d|%d|%d|%s|-", len(sortedHosts),
-		totalDisks, totalPartitions, totalPartitions/totalDisks, totalBandwidth, gofmt.Comma(totalTps)))
-
 	this.Ui.Output(columnize.SimpleFormat(lines))
+
 	this.Ui.Output(fmt.Sprintf("-Total- Brokers:%d Partitions:%d Disks:%d Bandwidth:%dGbps Tps:%s",
 		len(sortedHosts), totalPartitions, totalDisks, totalBandwidth, gofmt.Comma(totalTps)))
 
