@@ -343,8 +343,12 @@ func (c clusterQps) String() string {
 
 func (this *Balance) drawSummary(sortedHosts []string) {
 	lines := []string{"Broker|Load|D|P|P/D|Net|TPS|Cluster/OPS"}
-	var totalTps int64
-	var totalPartitions int
+	var (
+		totalTps        int64
+		totalPartitions int
+		totalDisks      int
+		totalBandwidth  int
+	)
 	for _, host := range sortedHosts {
 		hostPartitions := 0
 		effectiveHostPartitions := 0
@@ -380,6 +384,8 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			continue
 		}
 
+		totalBandwidth += (model.nicSpeed / 1000)
+		totalDisks += model.disks
 		disks := fmt.Sprintf("%-2d", model.disks)
 		if model.disks < 3 {
 			// kafka need more disks
@@ -403,10 +409,10 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			host, load, disks, hostPartitions, ppd, model.nicSpeed/1000,
 			gofmt.Comma(offsetInfo.Total()), clusters))
 	}
+	lines = append(lines, fmt.Sprintf("%d brokers|-|%d|%d|%d|%d|%s|-", len(sortedHosts),
+		totalDisks, totalPartitions, totalPartitions/totalDisks, totalBandwidth, gofmt.Comma(totalTps)))
 
 	this.Ui.Output(columnize.SimpleFormat(lines))
-	this.Ui.Output(fmt.Sprintf("-Total- Hosts:%d Partitions:%d Tps:%s",
-		len(sortedHosts), totalPartitions, gofmt.Comma(totalTps)))
 
 	// some members are slave only idle brokers
 	cf := consulapi.DefaultConfig()
