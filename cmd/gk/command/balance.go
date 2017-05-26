@@ -413,6 +413,8 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 		totalDisks, totalPartitions, totalPartitions/totalDisks, totalBandwidth, gofmt.Comma(totalTps)))
 
 	this.Ui.Output(columnize.SimpleFormat(lines))
+	this.Ui.Output(fmt.Sprintf("-Total- Brokers:%d Partitions:%d Disks:%d Bandwidth:%dGbps Tps:%s",
+		len(sortedHosts), totalPartitions, totalDisks, totalBandwidth, gofmt.Comma(totalTps)))
 
 	// some members are slave only idle brokers
 	cf := consulapi.DefaultConfig()
