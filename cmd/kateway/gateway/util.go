@@ -46,7 +46,15 @@ func getHttpRemoteIp(r *http.Request) string {
 		return r.RemoteAddr[:idx]
 	}
 
-	return forwardFor // FIXME forwardFor might be comma separated ip list, but here for performance ignore it
+	// X-Forwarded-For: 10.1.1.1, 10.1.1.2
+	// use 10.1.1.1(head) as real ip: middleman will append instead of insert
+	if commaIdx := strings.Index(forwardFor, ","); commaIdx == -1 {
+		// not nested
+		return forwardFor
+	} else {
+		// head in the chain
+		return forwardFor[:commaIdx]
+	}
 }
 
 func checkUlimit(min int) {
