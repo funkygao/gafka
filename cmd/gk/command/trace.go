@@ -186,7 +186,16 @@ func (this *Trace) consumeTopic(zkcluster *zk.ZkCluster, kfk sarama.Client, topi
 		oldestOffset, err := kfk.GetOffset(topic, p, sarama.OffsetOldest)
 		swallow(err)
 
-		offset = latestOffset - (latestOffset-oldestOffset)*int64(this.lastDuration.Seconds())/int64(defaultTopicRetention.Seconds())
+		retention := defaultTopicRetention
+		cf, err := zkcluster.TopicConfigInfo(topic)
+		if err == nil {
+			retention = cf.RetentionSeconds()
+		}
+		if retention.Seconds() < 1 {
+			retention = defaultTopicRetention
+		}
+
+		offset = latestOffset - (latestOffset-oldestOffset)*int64(this.lastDuration.Seconds())/int64(retention.Seconds())
 		if offset <= 0 {
 			this.Ui.Warnf("%s/%d empty", topic, p)
 			continue

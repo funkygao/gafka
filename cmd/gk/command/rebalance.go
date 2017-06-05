@@ -137,7 +137,7 @@ func (this *Rebalance) executeReassignment() {
 }
 
 func (*Rebalance) Synopsis() string {
-	return "Restore the leadership balance for a given topic partition"
+	return "Restore the assigned broker for a given topic partition"
 }
 
 func (this *Rebalance) Help() string {
