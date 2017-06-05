@@ -22,6 +22,7 @@ type Produce struct {
 	benchMode            bool
 	benchmarkMaster      string
 	ackAll               bool
+	showErr              bool
 	zkcluster            *zk.ZkCluster
 }
 
@@ -31,6 +32,7 @@ func (this *Produce) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&this.cluster, "c", "", "")
 	cmdFlags.StringVar(&this.topic, "t", "", "")
+	cmdFlags.BoolVar(&this.showErr, "showerr", false, "")
 	cmdFlags.BoolVar(&this.ackAll, "ackall", false, "")
 	cmdFlags.BoolVar(&this.benchMode, "bench", false, "")
 	cmdFlags.StringVar(&this.benchmarkMaster, "master", "", "")
@@ -105,6 +107,9 @@ func (this *Produce) benchmarkProducer(seq int) {
 		})
 		if err != nil {
 			stress.IncCounter("fail", 1)
+			if this.showErr {
+				this.Ui.Error(err.Error())
+			}
 		} else {
 			stress.IncCounter("ok", 1)
 		}
@@ -130,6 +135,9 @@ Usage: %s produce [options]
 
     -bench
       Run in benchmark mode.
+
+    -showerr
+      Work with benchmark mode to display each error message.
 
     -ackall
       Replicate to all brokers before reply.
