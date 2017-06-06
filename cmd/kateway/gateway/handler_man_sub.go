@@ -240,6 +240,216 @@ LOOP:
 	w.Write(d)
 }
 
+// @rest GET /v1/fetch/:appid/:topic/:ver/:partition?offset=xx&n=1&wait=5s
+func (this *manServer) fetchHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	var (
+		myAppid   string
+		hisAppid  string
+		topic     string
+		ver       string
+		partition int32
+		offset    int64
+		followedN int64
+		rawTopic  string
+		err       error
+		wait      time.Duration
+	)
+
+	ver = params.ByName(UrlParamVersion)
+	topic = params.ByName(UrlParamTopic)
+	hisAppid = params.ByName(UrlParamAppid)
+	myAppid = r.Header.Get(HttpHeaderAppid)
+	pid, err := strconv.Atoi(params.ByName("partition"))
+	if err != nil {
+		writeBadRequest(w, "invalid partition")
+		return
+	}
+	partition = int32(pid)
+
+	cluster, found := manager.Default.LookupCluster(hisAppid)
+	if !found {
+		writeBadRequest(w, "invalid appid")
+		return
+	}
+
+	q := r.URL.Query()
+
+	offset, err = strconv.ParseInt(q.Get("offset"), 10, 64)
+	if err != nil {
+		writeBadRequest(w, "invalid offset param")
+		return
+	}
+
+	followedN, err = strconv.ParseInt(q.Get("n"), 10, 64)
+	if err != nil {
+		writeBadRequest(w, "invalid n param")
+		return
+	}
+
+	waitParam := q.Get("wait")
+	defaultWait := time.Second * 2
+	if waitParam != "" {
+		wait, _ = time.ParseDuration(waitParam)
+		if wait.Seconds() < 1 {
+			wait = defaultWait
+		} else if wait.Seconds() > 5. {
+			wait = defaultWait
+		}
+	}
+
+	log.Info("fetch[%s] %s(%s) {app:%s topic:%s ver:%s partition:%d offset:%d n:%d wait:%s}",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, offset, followedN, waitParam)
+
+	if followedN > 100 {
+		followedN = 100
+	}
+
+	// find rawTopic and cluster Info
+	rawTopic = manager.Default.KafkaTopic(hisAppid, topic, ver)
+	zkcluster := meta.Default.ZkCluster(cluster)
+
+	// create kfk client
+	cf := sarama.NewConfig()
+	cf.Consumer.Return.Errors = true // return err
+	kfk, err := sarama.NewClient(zkcluster.BrokerList(), cf)
+	if err != nil {
+		writeServerError(w, err.Error())
+		return
+	}
+	defer kfk.Close()
+
+	// check partition Info
+	partitions, err := kfk.Partitions(rawTopic)
+	if err != nil {
+		writeServerError(w, err.Error())
+		return
+	}
+
+	var isPartitionValid = false
+	for _, pid := range partitions {
+		if pid == partition {
+			isPartitionValid = true
+			break
+		}
+	}
+
+	if !isPartitionValid {
+		writeBadRequest(w, "partition parameter out of range")
+		return
+	}
+
+	// check and adjust offset range
+	latestOffset, err := kfk.GetOffset(rawTopic, partition, sarama.OffsetNewest)
+	if err != nil {
+		writeServerError(w, err.Error())
+		return
+	}
+	oldestOffset, err := kfk.GetOffset(rawTopic, partition, sarama.OffsetOldest)
+	if err != nil {
+		writeServerError(w, err.Error())
+		return
+	}
+
+	if offset >= latestOffset || offset < oldestOffset {
+		writeBadRequest(w, "offset out of range")
+		return
+	}
+
+	largestFollowed := latestOffset - offset
+	if followedN > largestFollowed {
+		followedN = largestFollowed
+	}
+
+	// fetch msg
+	msgChan := make(chan *sarama.ConsumerMessage, 10)
+	errs := make(chan error, 5)
+	stopCh := make(chan struct{})
+
+	go func() {
+		var localErr error
+		consumer, localErr := sarama.NewConsumerFromClient(kfk)
+		if localErr != nil {
+			select {
+			case errs <- localErr:
+				return
+			case <-stopCh:
+				return
+			}
+		}
+		defer consumer.Close()
+
+		p, localErr := consumer.ConsumePartition(rawTopic, partition, offset)
+		if localErr != nil {
+			select {
+			case errs <- localErr:
+				return
+			case <-stopCh:
+				return
+			}
+		}
+		defer p.Close()
+
+		fetchedN := int64(0)
+		for {
+			select {
+			case msg := <-p.Messages():
+				msgChan <- msg
+
+				fetchedN++
+				if fetchedN >= followedN {
+					return
+				}
+			case localErr = <-p.Errors():
+				if localErr != nil {
+					select {
+					case errs <- localErr:
+						return
+					case <-stopCh:
+						return
+					}
+				}
+			case <-stopCh:
+				return
+			}
+		}
+
+	}()
+
+	// aggregate msg and return
+	n := int64(0)
+	msgs := make([][]byte, 0, followedN)
+
+LOOP:
+	for {
+		select {
+		case <-time.After(wait):
+			break LOOP
+
+		case err = <-errs:
+			close(stopCh)
+
+			log.Error("fetch[%s] %s(%s) {app:%s, topic:%s, ver:%s partition:%d offset:%d n:%d} %+v",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, partition, offset, followedN, err)
+
+			writeServerError(w, err.Error())
+			return
+
+		case msg := <-msgChan:
+			msgs = append(msgs, msg.Value)
+
+			n++
+			if n >= followedN {
+				break LOOP
+			}
+		}
+	}
+
+	close(stopCh) // stop all the sub-goroutines
+
+	d, _ := json.Marshal(msgs) //Marshal for []byte will result in base64 encode value
+	w.Write(d)
+}
+
 // @rest PUT /v1/offset/:appid/:topic/:ver/:group/:partition?offset=xx
 func (this *manServer) resetSubOffsetHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var (
