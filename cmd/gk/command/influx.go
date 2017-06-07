@@ -31,9 +31,10 @@ func (this *Influx) Run(args []string) (exitCode int) {
 
 	for _, row := range res {
 		for _, x := range row.Series {
-			this.Ui.Outputf("cols: %+v\n", x.Columns)
-			this.Ui.Outputf("tags: %+v\n", x.Tags)
-
+			this.Ui.Outputf("name: %s", x.Name)
+			this.Ui.Outputf("tags: %+v", x.Tags)
+			this.Ui.Outputf("cols: %+v", x.Columns)
+			this.Ui.Outputf("vals:")
 			for _, val := range x.Values {
 				this.Ui.Outputf("%#v", val)
 			}
