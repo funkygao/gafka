@@ -481,16 +481,16 @@ func (this *ZkZone) CreateDbusCluster(name string) error {
 	if err := this.CreatePermenantZnode(path.Join(DbusRoot, name), nil); err != nil {
 		return err
 	}
-	if err := this.CreatePermenantZnode(path.Join(DbusRoot, name, "checkpoint"), nil); err != nil {
+	if err := this.CreatePermenantZnode(DbusCheckpointRoot(name), nil); err != nil {
 		return err
 	}
-	if err := this.CreatePermenantZnode(path.Join(DbusRoot, name, "conf"), nil); err != nil {
+	if err := this.CreatePermenantZnode(DbusConfig(name), nil); err != nil {
 		return err
 	}
-	if err := this.CreatePermenantZnode(path.Join(DbusRoot, name, "conf.d"), nil); err != nil {
+	if err := this.CreatePermenantZnode(DbusConfigDir(name), nil); err != nil {
 		return err
 	}
-	return this.CreatePermenantZnode(path.Join(DbusRoot, name, "cluster"), nil)
+	return this.CreatePermenantZnode(DbusClusterRoot(name), nil)
 }
 
 func (this *ZkZone) ForSortedDbusClusters(fn func(name string, data []byte)) {

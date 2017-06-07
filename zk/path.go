@@ -37,7 +37,11 @@ const (
 	RedisMonPath     = "/redis"
 	RedisClusterRoot = "/rediscluster"
 
-	DbusRoot = "/dbus"
+	DbusRoot           = "/dbus"
+	dbusConfPath       = "conf"
+	dbusCheckpointPath = "checkpoint"
+	dbusConfDirPath    = "conf.d"
+	dbusClusterPath    = "cluster"
 )
 
 func katewayMetricsRootByKey(id, key string) string {
