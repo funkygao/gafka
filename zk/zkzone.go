@@ -477,7 +477,20 @@ func (this *ZkZone) PublicClusters() []*ZkCluster {
 func (this *ZkZone) CreateDbusCluster(name string) error {
 	this.connectIfNeccessary()
 
-	return this.CreatePermenantZnode(path.Join(DbusRoot, name), nil)
+	this.CreatePermenantZnode(DbusRoot, nil)
+	if err := this.CreatePermenantZnode(path.Join(DbusRoot, name), nil); err != nil {
+		return err
+	}
+	if err := this.CreatePermenantZnode(path.Join(DbusRoot, name, "checkpoint"), nil); err != nil {
+		return err
+	}
+	if err := this.CreatePermenantZnode(path.Join(DbusRoot, name, "conf"), nil); err != nil {
+		return err
+	}
+	if err := this.CreatePermenantZnode(path.Join(DbusRoot, name, "conf.d"), nil); err != nil {
+		return err
+	}
+	return this.CreatePermenantZnode(path.Join(DbusRoot, name, "cluster"), nil)
 }
 
 func (this *ZkZone) ForSortedDbusClusters(fn func(name string, data []byte)) {
