@@ -493,6 +493,13 @@ func (this *ZkZone) CreateDbusCluster(name string) error {
 	return this.CreatePermenantZnode(DbusClusterRoot(name), nil)
 }
 
+func (this *ZkZone) DefaultDbusCluster() (cluster string) {
+	this.ForSortedDbusClusters(func(name string, _ []byte) {
+		cluster = name
+	})
+	return
+}
+
 func (this *ZkZone) ForSortedDbusClusters(fn func(name string, data []byte)) {
 	this.connectIfNeccessary()
 	m := make(map[string][]byte)
