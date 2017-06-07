@@ -1,7 +1,6 @@
 package command
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"strings"
@@ -16,25 +15,27 @@ type Influx struct {
 }
 
 func (this *Influx) Run(args []string) (exitCode int) {
+	var zone, db, sql string
 	cmdFlags := flag.NewFlagSet("influx", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
+	cmdFlags.StringVar(&zone, "z", ctx.DefaultZone(), "")
+	cmdFlags.StringVar(&db, "db", "", "")
+	cmdFlags.StringVar(&sql, "sql", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
-	zone := ctx.Zone(ctx.DefaultZone())
-	res, err := queryInfluxDB(fmt.Sprintf("http://%s", zone.InfluxAddr), "redis",
-		fmt.Sprintf(`SELECT cpu, port FROM "top" WHERE time > now() - 1m AND cpu >=%d`, 10))
+	z := ctx.Zone(zone)
+	res, err := queryInfluxDB(fmt.Sprintf("http://%s", z.InfluxAddr), db, sql)
 	swallow(err)
 
 	for _, row := range res {
 		for _, x := range row.Series {
-			fmt.Printf("cols: %+v\n", x.Columns)
+			this.Ui.Outputf("cols: %+v\n", x.Columns)
+			this.Ui.Outputf("tags: %+v\n", x.Tags)
+
 			for _, val := range x.Values {
-				// val[0] is time
-				cpu, _ := val[1].(json.Number).Float64()
-				port := val[2].(string)
-				fmt.Printf("      port=%s cpu=%.2f\n", port, cpu)
+				this.Ui.Outputf("%#v", val)
 			}
 		}
 	}
@@ -48,9 +49,17 @@ func (*Influx) Synopsis() string {
 
 func (this *Influx) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s influx
+Usage: %s influx [options]
 
     %s
+
+Options:
+
+    -z zone
+
+    -db db
+
+    -sql sql
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
