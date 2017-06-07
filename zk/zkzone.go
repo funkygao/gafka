@@ -474,6 +474,12 @@ func (this *ZkZone) PublicClusters() []*ZkCluster {
 	return r
 }
 
+func (this *ZkZone) CreateDbusCluster(name string) error {
+	this.connectIfNeccessary()
+
+	return this.CreatePermenantZnode(path.Join(DbusRoot, name), nil)
+}
+
 func (this *ZkZone) ForSortedDbusClusters(fn func(name string, data []byte)) {
 	this.connectIfNeccessary()
 	m := make(map[string][]byte)
