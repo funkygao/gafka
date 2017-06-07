@@ -474,6 +474,22 @@ func (this *ZkZone) PublicClusters() []*ZkCluster {
 	return r
 }
 
+func (this *ZkZone) ForSortedDbusClusters(fn func(name string, data []byte)) {
+	this.connectIfNeccessary()
+	m := make(map[string][]byte)
+	for c, d := range this.ChildrenWithData(DbusRoot) {
+		m[c] = d.Data()
+	}
+	sortedNames := make([]string, 0, len(m))
+	for name := range m {
+		sortedNames = append(sortedNames, name)
+	}
+	sort.Strings(sortedNames)
+	for _, name := range sortedNames {
+		fn(name, m[name])
+	}
+}
+
 func (this *ZkZone) ForSortedClusters(fn func(zkcluster *ZkCluster)) {
 	clusters := this.Clusters()
 	sortedNames := make([]string, 0, len(clusters))
