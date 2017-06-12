@@ -59,6 +59,7 @@ type Peek struct {
 	quit     chan struct{}
 	once     sync.Once
 	column   string
+	cols     []string
 	beep     bool
 	pretty   bool
 	bodyOnly bool
@@ -106,6 +107,9 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	}
 
 	this.quit = make(chan struct{})
+	if len(this.column) > 0 {
+		this.cols = strings.Split(this.column, ",")
+	}
 
 	if silence {
 		stats := newPeekStats()
@@ -196,31 +200,34 @@ LOOP:
 
 				var outmsg string
 				if this.column != "" {
-					decoded := gjson.GetBytes(msg.Value, this.column)
-					colVal := decoded.String()
-					if this.keyOnly {
-						outmsg = fmt.Sprintf("%s/%d %s k:%s",
-							msg.Topic, msg.Partition,
-							gofmt.Comma(msg.Offset), string(msg.Key))
-					} else if this.bodyOnly {
-						if this.pretty {
-							if err := json.Indent(&prettyJSON, []byte(colVal), "", "    "); err != nil {
-								fmt.Println(err.Error())
+					outmsg = ""
+					for _, col := range this.cols {
+						decoded := gjson.GetBytes(msg.Value, col)
+						colVal := decoded.String()
+						if this.keyOnly {
+							outmsg = fmt.Sprintf("%s/%d %s k:%s",
+								msg.Topic, msg.Partition,
+								gofmt.Comma(msg.Offset), string(msg.Key))
+						} else if this.bodyOnly {
+							if this.pretty {
+								if err := json.Indent(&prettyJSON, []byte(colVal), "", "    "); err != nil {
+									fmt.Println(err.Error())
+								} else {
+									outmsg = string(prettyJSON.Bytes())
+								}
 							} else {
-								outmsg = string(prettyJSON.Bytes())
+								outmsg += colVal + " "
 							}
+						} else if this.colorize {
+							outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
+								color.Green(msg.Topic), msg.Partition,
+								gofmt.Comma(msg.Offset), string(msg.Key), colVal)
 						} else {
-							outmsg = colVal
+							// colored UI will have invisible chars output
+							outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
+								msg.Topic, msg.Partition,
+								gofmt.Comma(msg.Offset), string(msg.Key), colVal)
 						}
-					} else if this.colorize {
-						outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
-							color.Green(msg.Topic), msg.Partition,
-							gofmt.Comma(msg.Offset), string(msg.Key), colVal)
-					} else {
-						// colored UI will have invisible chars output
-						outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
-							msg.Topic, msg.Partition,
-							gofmt.Comma(msg.Offset), string(msg.Key), colVal)
 					}
 
 				} else {
@@ -410,8 +417,12 @@ Options:
     -pretty
       Pretty print the json message body
 
-    -col json column name
+    -col comma seperated json column name
       Will json decode message and extract specified column value only
+      e,g.
+      -col data.user,data.ip
+      -col time
+      -col data.0.event_detail,data.0.host
 
     -last n
       Peek the most recent N messages
