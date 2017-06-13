@@ -11,4 +11,6 @@ var (
 	ErrIllegalTaggedMessage = errors.New("illegal tagged message")
 	ErrClientKilled         = errors.New("client killed")
 	ErrBadResponseWriter    = errors.New("ResponseWriter Close not supported")
+	ErrPartitionOutOfRange  = errors.New("partition out of range")
+	ErrOffsetOutOfRange     = errors.New("offset out of range")
 )
