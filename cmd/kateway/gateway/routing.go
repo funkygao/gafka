@@ -51,8 +51,6 @@ func (this *Gateway) buildRouting() {
 			m(this.manServer.subRawHandler))
 		this.manServer.Router().GET("/v1/peek/:appid/:topic/:ver",
 			m(this.manServer.peekHandler))
-		this.manServer.Router().GET("/v1/fetch/:appid/:topic/:ver/:partition",
-			m(this.manServer.fetchHandler))
 		this.manServer.Router().POST("/v1/shadow/:appid/:topic/:ver/:group",
 			m(this.manServer.addTopicShadowHandler))
 		this.manServer.Router().GET("/v1/subd/:topic/:ver",
