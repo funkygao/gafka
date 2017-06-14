@@ -66,6 +66,13 @@ func init() {
 			}, nil
 		},
 
+		"cpu": func() (cli.Command, error) {
+			return &command.Cpu{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"trace": func() (cli.Command, error) {
 			return &command.Trace{
 				Ui:  ui,
