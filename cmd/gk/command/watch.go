@@ -4,12 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/bjtime"
 )
 
-// TODO calculate how much data produced each day "github.com/hashicorp/go-memdb"
 type Watch struct {
 	Ui  cli.Ui
 	Cmd string
@@ -44,7 +45,10 @@ func (this *Watch) watchDir(path string, recursive bool) {
 		for {
 			select {
 			case event := <-w.Events:
-				this.Ui.Outputf("%+v", event)
+				if !(event.Op&fsnotify.Write == fsnotify.Write) {
+					this.Ui.Outputf("%s %8s %s ", bjtime.TimeToString(time.Now()), event.Op, event.Name)
+				}
+
 			case err := <-w.Errors:
 				this.Ui.Error(err.Error())
 			}
@@ -68,7 +72,7 @@ Usage: %s watch [options] path
     %s
 
     -R
-     Recursive.
+     Recursive. TODO
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
