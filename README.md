@@ -9,7 +9,7 @@
        __/ |                             
       |___/                              
 
-A full ecosystem that is built around kafka powered by golang.
+A full ecosystem for kafka/redis/PubSub/ElasticSearch/Zookeeper/haproxy.
 
 Hope it can help you.
 
@@ -34,6 +34,10 @@ Hope it can help you.
 - [zk](https://github.com/funkygao/gafka/tree/master/cmd/zk)
 
   A handy zookeeper CLI that supports recursive operation without any dependency.
+
+- [es](https://github.com/funkygao/gafka/tree/master/cmd/es)
+
+  ElasticSearch console.
 
 - [kguard](https://github.com/funkygao/gafka/tree/master/cmd/kguard)
 

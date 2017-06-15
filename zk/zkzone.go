@@ -474,6 +474,37 @@ func (this *ZkZone) PublicClusters() []*ZkCluster {
 	return r
 }
 
+func (this *ZkZone) CreateEsCluster(name string) error {
+	this.connectIfNeccessary()
+	return this.EnsurePathExists(esClusterPath(name))
+}
+
+func (this *ZkZone) NewEsCluster(name string) *EsCluster {
+	if len(name) == 0 {
+		panic("empty cluster name")
+	}
+
+	this.connectIfNeccessary()
+	return &EsCluster{
+		Name:   name,
+		zkzone: this,
+	}
+}
+
+func (this *ZkZone) ForSortedEsClusters(fn func(*EsCluster)) {
+	this.connectIfNeccessary()
+
+	sortedClusters := make([]string, 0)
+	for _, c := range this.children(esRoot) {
+		sortedClusters = append(sortedClusters, c)
+	}
+	sort.Strings(sortedClusters)
+
+	for _, c := range sortedClusters {
+		fn(this.NewEsCluster(c))
+	}
+}
+
 func (this *ZkZone) CreateDbusCluster(name string) error {
 	this.connectIfNeccessary()
 
