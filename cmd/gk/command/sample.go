@@ -76,7 +76,7 @@ public class KafkaProducer {
         props.put("serializer.class", "kafka.serializer.StringEncoder");
         props.put("key.serializer.class", "kafka.serializer.StringEncoder");
 
-		// batch related
+        // batch related
         props.put("batch.num.messages", 200);      // by default 200
         props.put("queue.buffering.max.ms", 5000); // by default 5s
  

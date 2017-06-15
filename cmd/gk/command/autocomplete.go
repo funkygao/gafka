@@ -22,7 +22,7 @@ func (this *Autocomplete) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if target != "gk" && target != "zk" {
+	if target != "gk" && target != "zk" && target != "dbc" && target != "es" {
 		this.Ui.Output(this.Help())
 		return 2
 	}
@@ -50,7 +50,7 @@ Usage: %s autocomplete [options]
 
 Options:
 
-    -for <gk|zk>
+    -for <gk|zk|dbc|es>
       Defaults gk
 
 `, this.Cmd, this.Synopsis())

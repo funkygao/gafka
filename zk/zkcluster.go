@@ -798,3 +798,31 @@ func (this *ZkCluster) processConsumerOffsetsMessage(msg *sarama.ConsumerMessage
 	log.Debug("%+v", partitionOffset)
 	return
 }
+
+type TopicConfig struct {
+	Config TopicConfigInfo `json:"config"`
+}
+
+type TopicConfigInfo struct {
+	RetentionMs string `json:"retention.ms"`
+}
+
+func (tci TopicConfigInfo) RetentionSeconds() time.Duration {
+	ms, err := strconv.ParseInt(tci.RetentionMs, 10, 64)
+	if err != nil {
+		return 0
+	}
+
+	return time.Millisecond * time.Duration(ms)
+}
+
+func (this *ZkCluster) TopicConfigInfo(topic string) (tci TopicConfigInfo, err error) {
+	path := this.GetTopicConfigPath(topic)
+	var data []byte
+	data, _, err = this.zone.conn.Get(path)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(data, &tci)
+	return
+}

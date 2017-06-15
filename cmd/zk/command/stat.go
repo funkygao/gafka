@@ -62,12 +62,12 @@ func (this *Stat) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s stat [options] <path>
 
-    Show znode status info
+    %s
 
 Options:
 
     -z zone
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

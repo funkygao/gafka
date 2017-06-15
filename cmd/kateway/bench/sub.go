@@ -76,8 +76,7 @@ func sub(id int) {
 		Mux:   true,
 	}
 	if mode == "subx" {
-		err = c.SubX(opt, func(statusCode int, msg []byte,
-			r *api.SubXResult) error {
+		err = c.SubX(opt, func(statusCode int, msg []byte, r *api.SubXResult) error {
 			i++
 			if n > 0 && i >= n {
 				return api.ErrSubStop

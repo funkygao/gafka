@@ -72,15 +72,20 @@ func (this *manServer) subRawHandler(w http.ResponseWriter, r *http.Request, par
 	w.Write(b)
 }
 
-// @rest GET /v1/peek/:appid/:topic/:ver?n=10&q=retry&wait=5s
+// @rest GET /v1/peek/:appid/:topic/:ver?n=10&q=retry&wait=5s&partition=0&offset=1
 func (this *manServer) peekHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	const (
+		AllPartitions = int32(-1)
+	)
 	var (
-		myAppid  string
-		hisAppid string
-		topic    string
-		ver      string
-		lastN    int
-		rawTopic string
+		myAppid   string
+		hisAppid  string
+		topic     string
+		ver       string
+		lastN     int
+		rawTopic  string
+		partition int32 = AllPartitions // partition and offset parameters should be setted together for partition peek
+		offset    int64
 	)
 
 	ver = params.ByName(UrlParamVersion)
@@ -95,6 +100,33 @@ func (this *manServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 	}
 
 	q := r.URL.Query()
+
+	strPid := q.Get("partition")
+	if strPid != "" {
+		pid, err := strconv.Atoi(strPid)
+		if err != nil || pid < 0 {
+			writeBadRequest(w, "invalid partition")
+			return
+		}
+		partition = int32(pid)
+	}
+
+	strOffset := q.Get("offset")
+	if strOffset != "" {
+		o, err := strconv.ParseInt(strOffset, 10, 64)
+		if err != nil || o < 0 {
+			writeBadRequest(w, "invalid offset")
+			return
+		}
+		offset = o
+	}
+
+	if (strPid == "" && strOffset != "") || (strPid != "" && strOffset == "") {
+		// partition and offset parameter should be setted together
+		writeBadRequest(w, "invalid partition and offset combination settings")
+		return
+	}
+
 	lastN, _ = strconv.Atoi(q.Get("n"))
 	if lastN == 0 {
 		// if n is not a number, lastN will be 0
@@ -113,8 +145,8 @@ func (this *manServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 		}
 	}
 
-	log.Info("peek[%s] %s(%s) {app:%s topic:%s ver:%s n:%d wait:%s}",
-		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, waitParam)
+	log.Info("peek[%s] %s(%s) {app:%s topic:%s ver:%s n:%d wait:%s partition:%s offset:%s}",
+		myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, waitParam, strPid, strOffset)
 
 	if lastN > 100 {
 		lastN = 100
@@ -123,7 +155,10 @@ func (this *manServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 	rawTopic = manager.Default.KafkaTopic(hisAppid, topic, ver)
 	zkcluster := meta.Default.ZkCluster(cluster)
 
-	kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
+	// create kfk client
+	cf := sarama.NewConfig()
+	cf.Consumer.Return.Errors = true // return err from Errors channel
+	kfk, err := sarama.NewClient(zkcluster.BrokerList(), cf)
 	if err != nil {
 		writeServerError(w, err.Error())
 		return
@@ -145,7 +180,17 @@ func (this *manServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 			}
 		}
 
+		var isPartitionValid = false
 		for _, p := range partitions {
+
+			// skip non-target partition
+			if partition != AllPartitions && p != partition {
+				continue
+			}
+
+			// make sure the partition is in the range
+			isPartitionValid = true
+
 			latestOffset, err := kfk.GetOffset(rawTopic, p, sarama.OffsetNewest)
 			if err != nil {
 				select {
@@ -165,9 +210,23 @@ func (this *manServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 				}
 			}
 
-			offset := latestOffset - int64(lastN)
-			if offset < oldestOffset {
-				offset = oldestOffset
+			if partition != AllPartitions {
+				// for partition peek, we need to make sure the target offset is what we want, don't adjust offset
+				// if offset is out of range, we need return error response
+				if offset >= latestOffset || offset < oldestOffset {
+					select {
+					case errs <- ErrOffsetOutOfRange:
+						return
+					case <-stopCh:
+						return
+					}
+				}
+			} else {
+				// for tail last peek, set offset to lastestOffset and left shifted by lastN
+				offset = latestOffset - int64(lastN)
+				if offset < oldestOffset {
+					offset = oldestOffset
+				}
 			}
 
 			go func(partitionId int32, offset int64) {
@@ -197,14 +256,34 @@ func (this *manServer) peekHandler(w http.ResponseWriter, r *http.Request, param
 					select {
 					case msg := <-p.Messages():
 						msgChan <- msg
-
+					case err := <-p.Errors():
+						if err != nil {
+							select {
+							case errs <- err:
+								return
+							case <-stopCh:
+								return
+							}
+						}
 					case <-stopCh:
 						return
 					}
 				}
 
 			}(p, offset)
+
 		}
+
+		// report partition out of range error
+		if !isPartitionValid {
+			select {
+			case errs <- ErrPartitionOutOfRange:
+				return
+			case <-stopCh:
+				return
+			}
+		}
+
 	}()
 
 	n := 0
@@ -218,10 +297,18 @@ LOOP:
 		case err = <-errs:
 			close(stopCh)
 
-			log.Error("peek[%s] %s(%s) {app:%s, topic:%s, ver:%s n:%d} %+v",
-				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, err)
+			log.Error("peek[%s] %s(%s) {app:%s, topic:%s, ver:%s n:%d partition:%s offset:%s} %+v",
+				myAppid, r.RemoteAddr, getHttpRemoteIp(r), hisAppid, topic, ver, lastN, strPid, strOffset, err)
 
-			writeServerError(w, err.Error())
+			switch err {
+			case ErrPartitionOutOfRange:
+				fallthrough
+			case ErrOffsetOutOfRange:
+				writeBadRequest(w, err.Error())
+			default:
+				writeServerError(w, err.Error())
+			}
+
 			return
 
 		case msg := <-msgChan:

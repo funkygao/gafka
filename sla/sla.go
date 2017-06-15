@@ -16,10 +16,11 @@ const (
 )
 
 const (
-	defaultRetentionBytes = -1     // unlimited
-	defaultRetentionHours = 7 * 24 // 7 days
-	defaultPartitions     = 1
-	defaultReplicas       = 2
+	defaultRetentionBytes    = -1     // unlimited
+	defaultRetentionHours    = 7 * 24 // 7 days
+	defaultPartitions        = 1
+	defaultReplicas          = 2
+	defaultMinInsyncReplicas = 1
 
 	maxReplicas       = 3
 	maxPartitions     = 20
@@ -27,18 +28,20 @@ const (
 )
 
 type TopicSla struct {
-	RetentionHours float64
-	RetentionBytes int
-	Partitions     int
-	Replicas       int
+	RetentionHours    float64
+	RetentionBytes    int
+	Partitions        int
+	Replicas          int
+	MinInsyncReplicas int
 }
 
 func DefaultSla() *TopicSla {
 	return &TopicSla{
-		RetentionBytes: -1,
-		RetentionHours: defaultRetentionHours,
-		Partitions:     defaultPartitions,
-		Replicas:       defaultReplicas,
+		RetentionBytes:    -1,
+		RetentionHours:    defaultRetentionHours,
+		Partitions:        defaultPartitions,
+		Replicas:          defaultReplicas,
+		MinInsyncReplicas: defaultMinInsyncReplicas,
 	}
 }
 
@@ -46,11 +49,12 @@ func (this *TopicSla) IsDefault() bool {
 	return this.Replicas == defaultReplicas &&
 		this.Partitions == defaultPartitions &&
 		this.RetentionBytes == defaultRetentionBytes &&
-		this.RetentionHours == defaultRetentionHours
+		this.RetentionHours == defaultRetentionHours &&
+		this.MinInsyncReplicas == defaultMinInsyncReplicas
 }
 
 func (this *TopicSla) Validate() error {
-	if this.Partitions > 50 {
+	if this.Partitions > 20 {
 		return ErrTooBigPartitions
 	}
 
@@ -102,6 +106,9 @@ func (this *TopicSla) DumpForAlterTopic() []string {
 	}
 	if this.Partitions != defaultPartitions {
 		r = append(r, fmt.Sprintf("--partitions %d", this.Partitions))
+	}
+	if this.MinInsyncReplicas != defaultMinInsyncReplicas {
+		r = append(r, fmt.Sprintf("--config min.insync.replicas=%d", this.MinInsyncReplicas))
 	}
 
 	return r

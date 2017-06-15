@@ -22,6 +22,8 @@ import (
 	"github.com/pmylund/sortutil"
 )
 
+const diskFullThreshold = 85
+
 type hostLoadInfo struct {
 	host            string
 	cluster         string
@@ -112,6 +114,8 @@ type Balance struct {
 
 	hostOffsetCh chan map[string]hostOffsetInfo // key is host
 	signalsCh    map[string]chan struct{}
+
+	diskFull map[string]string
 }
 
 func (this *Balance) Run(args []string) (exitCode int) {
@@ -143,6 +147,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	this.allHostsTps = make(map[string]hostOffsetInfo)
 	this.offsets = make(map[string]int64)
 	this.lastOffsets = make(map[string]int64)
+	this.diskFull = make(map[string]string)
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
 	zkzone.ForSortedBrokers(func(cluster string, brokers map[string]*zk.BrokerZnode) {
@@ -338,8 +343,12 @@ func (c clusterQps) String() string {
 
 func (this *Balance) drawSummary(sortedHosts []string) {
 	lines := []string{"Broker|Load|D|P|P/D|Net|TPS|Cluster/OPS"}
-	var totalTps int64
-	var totalPartitions int
+	var (
+		totalTps        int64
+		totalPartitions int
+		totalDisks      int
+		totalBandwidth  int
+	)
 	for _, host := range sortedHosts {
 		hostPartitions := 0
 		effectiveHostPartitions := 0
@@ -369,7 +378,14 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			load = color.Red("%-4.1f", this.loadAvgMap[host])
 		}
 
-		model := this.brokerModelMap[host]
+		model, present := this.brokerModelMap[host]
+		if !present {
+			this.Ui.Errorf("%s consul unreachable", host)
+			continue
+		}
+
+		totalBandwidth += (model.nicSpeed / 1000)
+		totalDisks += model.disks
 		disks := fmt.Sprintf("%-2d", model.disks)
 		if model.disks < 3 {
 			// kafka need more disks
@@ -393,10 +409,10 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			host, load, disks, hostPartitions, ppd, model.nicSpeed/1000,
 			gofmt.Comma(offsetInfo.Total()), clusters))
 	}
-
 	this.Ui.Output(columnize.SimpleFormat(lines))
-	this.Ui.Output(fmt.Sprintf("-Total- Hosts:%d Partitions:%d Tps:%s",
-		len(sortedHosts), totalPartitions, gofmt.Comma(totalTps)))
+
+	this.Ui.Output(fmt.Sprintf("-Total- Brokers:%d Partitions:%d Disks:%d Bandwidth:%dGbps Tps:%s",
+		len(sortedHosts), totalPartitions, totalDisks, totalBandwidth, gofmt.Comma(totalTps)))
 
 	// some members are slave only idle brokers
 	cf := consulapi.DefaultConfig()
@@ -410,6 +426,13 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 
 		if _, present := this.allHostsTps[member.Addr]; !present {
 			this.Ui.Warnf("    slave only %s", member.Addr)
+		}
+	}
+
+	if len(this.diskFull) > 0 {
+		this.Ui.Warn("DISK FULL")
+		for host, info := range this.diskFull {
+			this.Ui.Outputf("%30s %s", host, info)
 		}
 	}
 }
@@ -501,8 +524,18 @@ func (this *Balance) fetchBrokerModel() {
 			}
 
 			broker.disks++
+
+			if len(fields) == 7 && strings.HasSuffix(fields[5], "%") {
+				// myhost.com: /dev/sdf1  3845678096 1288980780 2361348120  36% /data5
+				percent, err := strconv.Atoi(strings.TrimRight(fields[5], "%"))
+				swallow(err)
+				if percent >= diskFullThreshold {
+					this.diskFull[host] = fmt.Sprintf("%s %d%%", fields[6], percent)
+				}
+			}
 		}
 	}
+
 	cmd.Close()
 }
 

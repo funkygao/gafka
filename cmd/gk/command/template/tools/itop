@@ -1,0 +1,142 @@
+#!/usr/bin/perl
+#
+#    Interrupts 'top-like' utility for Linux
+#
+#    Show the interrupts per second/per IRQ per CPU and TOTAL
+#
+# Usage
+# Default: display ALL CPUs (caution if you have many CPUs and a narrow screen) + TOTAL
+# if (CPUS > 8): DON'T display ALL CPUs, just the TOTAL
+#
+# -a, --all force display ALL CPUs (caution if you have many CPUs and a narrow screen) + TOTAL.
+# -t, --total DON'T display ALL CPUs, just the TOTAL.
+# -f <string>, --filter <string>: only display lines matching the specified filter string.
+# -i <number>, --interval <number>: update each <number> of seconds. Can be fractional.
+#
+use IO::File;
+use Term::Cap;
+use Getopt::Long;
+
+sub mycriteria {
+        if (($a =~ /(\d+)/) and ($b =~ /(\d+)/)) {
+            $a <=> $b;
+        } else {
+            lc $a cmp lc $b;
+        }
+}
+# Command line argument processing
+my $DISPLAYALL='';
+my $DISPLAYTOTAL='';
+# filter MUST have a space or by default we get nothing
+my $FILTER=' ';
+my $INTERVAL = 1.0;
+GetOptions('all' => \$DISPLAYALL,
+       'total' => \$DISPLAYTOTAL,
+       'filter=s' => \$FILTER,
+       'interval=f' => \$INTERVAL);
+
+if (($DISPLAYALL eq 1) and ($DISPLAYTOTAL eq 1)) {
+    die "Invalid options: cannot use both -t and -a.\n";
+}
+
+
+$term = Tgetent Term::Cap;
+print $term->Tputs('cl');
+
+$fh = new IO::File;
+
+if (!$fh->open("</proc/interrupts")) {
+    die "Unable to open /proc/interrupts";
+}
+
+$top = $fh->getpos();
+$first_time = 0;
+my $expand=0;
+while (1) {
+    $expand=0;
+    $fh->setpos($top);
+
+    # Read and parse interrupts
+    $header = <$fh>; # Header line
+    # Count CPUs
+    $cpus = () = $header =~ /CPU/g;
+    if (($DISPLAYALL eq 1) or ($cpus < 9)) {
+        $DISPALLCPU=1;
+    } elsif (($DISPLAYTOTAL eq 1) or ($cpus > 8)) {
+        $DISPALLCPU=0;
+    }
+
+    my %irqs;
+PARSE:  while (<$fh>) {
+        next PARSE if !/$FILTER/;
+        my @array = split(' ',$_);
+        $irq = $array[0];
+        chop($irq);
+        for ($cpu = 0; $cpu < $cpus; $cpu++) {
+            $icount = $array[$cpu+1];
+            $irqs{$irq}[$cpu] = $icount;
+        }
+        if (@array[-1] =~ /_hcd:/) {
+            $item = @array[-1];
+            # remove '_hcd' from usb names
+            $item =~ s/_hcd//;
+            $item =~ tr/,//d;
+            $irq_device{$irq}=$item;
+        } else {
+            $irq_device{$irq} = @array[-1];
+        }
+        # check if there more devices sharing the same IRQ
+        @revarray = reverse(@array);
+        foreach $item (@revarray[1..4]) {
+            if ($item =~ /,/) {
+                # remove '_hcd' from usb names
+                if ($item =~ /hci_hcd:/) {
+                    $item =~ s/_hcd//;
+                    $item =~ tr/,//d;
+                    $irq_device{$irq}=$item.",".$irq_device{$irq};
+                }
+            }
+            # Find biggest irq_device name
+            $cur_expand=length($irq_device{$irq});
+            if ($cur_expand > $expand) {
+                $expand = $cur_expand;
+            }
+        }
+    }
+
+    if ($first_time != 0) {
+        # Prepare sceeen
+        print $term->Tputs('ho');
+        # Output header
+        $cols=10+$expand;
+        $cols2=4+$expand;
+        if ($DISPALLCPU > 0) {
+            printf("%${cols}s%" . ($cpus + 1) * 10 . "s", "", "IRQs/Second\n");
+        } else {
+            printf("%${cols}s%" . 1 * 10 . "s", "", "IRQs/Second\n");
+        }
+        printf("%${cols2}s (%3s)  ", "Device", "IRQ");
+        if ($DISPALLCPU > 0) {
+            foreach ($cpu = 0; $cpu < $cpus; $cpu++) {
+                printf('%9s ', 'CPU' . $cpu);
+            }
+        }
+        printf("%9s\n", "TOTAL");
+        foreach $irq (sort mycriteria keys %irqs) {
+            printf("%${cols2}s (%3s): ", substr($irq_device{$irq}, 0, $cols2), $irq);
+            $total = 0;
+            for ($cpu = 0; $cpu < $cpus; $cpu ++) {
+                if ($DISPALLCPU > 0) {
+                    printf("%9.0f ", ($irqs{$irq}[$cpu] - $last{$irq}[$cpu]) / $INTERVAL);
+                }
+                $total += $irqs{$irq}[$cpu] - $last{$irq}[$cpu];
+            }
+            printf("%9.0f\n", $total / $INTERVAL);
+        }
+    }
+    $first_time = 1;
+
+
+    %last = %irqs;
+    select undef, undef, undef, $INTERVAL;
+}
