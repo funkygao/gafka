@@ -10,17 +10,17 @@ import (
 	"github.com/funkygao/gocli"
 )
 
-type Indices struct {
+type Health struct {
 	Ui  cli.Ui
 	Cmd string
 }
 
-func (this *Indices) Run(args []string) (exitCode int) {
+func (this *Health) Run(args []string) (exitCode int) {
 	var (
 		zone    string
 		cluster string
 	)
-	cmdFlags := flag.NewFlagSet("indices", flag.ContinueOnError)
+	cmdFlags := flag.NewFlagSet("health", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
@@ -29,17 +29,18 @@ func (this *Indices) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-	handleCatCommand(this.Ui, zkzone, cluster, "indices")
+	handleCatCommand(this.Ui, zkzone, cluster, "health")
+
 	return
 }
 
-func (*Indices) Synopsis() string {
-	return "List indices"
+func (*Health) Synopsis() string {
+	return "Health of cluster"
 }
 
-func (this *Indices) Help() string {
+func (this *Health) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s indices [options]
+Usage: %s health [options]
 
     %s
 

@@ -6,36 +6,41 @@ import (
 	"strings"
 
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 )
 
-type Checkup struct {
+type Threads struct {
 	Ui  cli.Ui
 	Cmd string
 }
 
-func (this *Checkup) Run(args []string) (exitCode int) {
+func (this *Threads) Run(args []string) (exitCode int) {
 	var (
 		zone    string
 		cluster string
 	)
-	cmdFlags := flag.NewFlagSet("checkup", flag.ContinueOnError)
+	cmdFlags := flag.NewFlagSet("threads", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
+
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	handleCatCommand(this.Ui, zkzone, cluster, "thread_pool")
+
 	return
 }
 
-func (*Checkup) Synopsis() string {
-	return "Health checkup of ElasticSearch clusters"
+func (*Threads) Synopsis() string {
+	return "Show cluster wide thread pool per node"
 }
 
-func (this *Checkup) Help() string {
+func (this *Threads) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s checkup [options]
+Usage: %s threads [options]
 
     %s
 

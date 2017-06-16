@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 )
 
@@ -26,11 +27,14 @@ func (this *Allocation) Run(args []string) (exitCode int) {
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
+
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	handleCatCommand(this.Ui, zkzone, cluster, "allocation")
 	return
 }
 
 func (*Allocation) Synopsis() string {
-	return "TODO"
+	return "Display #shards and disk space used by data node"
 }
 
 func (this *Allocation) Help() string {

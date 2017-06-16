@@ -22,3 +22,12 @@ func (ec *EsCluster) Nodes() []string {
 	path := fmt.Sprintf("%s/%s/node", esRoot, ec.Name)
 	return ec.zkzone.children(path)
 }
+
+func (ec *EsCluster) FirstBootstrapNode() string {
+	nodes := ec.Nodes()
+	if len(nodes) == 0 {
+		return ""
+	}
+
+	return nodes[0]
+}

@@ -66,8 +66,8 @@ func init() {
 			}, nil
 		},
 
-		"checkup": func() (cli.Command, error) {
-			return &command.Checkup{
+		"aliases": func() (cli.Command, error) {
+			return &command.Aliases{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
@@ -75,6 +75,48 @@ func init() {
 
 		"allocation": func() (cli.Command, error) {
 			return &command.Allocation{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"health": func() (cli.Command, error) {
+			return &command.Health{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"count": func() (cli.Command, error) {
+			return &command.Count{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"pending": func() (cli.Command, error) {
+			return &command.Pending{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"plugins": func() (cli.Command, error) {
+			return &command.Plugins{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"segments": func() (cli.Command, error) {
+			return &command.Segments{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"threads": func() (cli.Command, error) {
+			return &command.Threads{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
