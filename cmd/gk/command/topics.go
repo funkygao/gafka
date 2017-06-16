@@ -27,17 +27,18 @@ type Topics struct {
 	Ui  cli.Ui
 	Cmd string
 
-	topicPattern   string
-	verbose        bool
-	topicN         int
-	partitionN     int
-	manyPartitionN int
-	totalMsgs      int64
-	totalOffsets   int64
-	ipInNumber     bool
-	count          int64
-	since          time.Duration
-	brokerIp       string
+	topicPattern       string
+	verbose            bool
+	topicN             int
+	partitionN         int
+	manyPartitionN     int
+	totalMsgs          int64
+	totalOffsets       int64
+	ipInNumber         bool
+	count              int64
+	since              time.Duration
+	brokerIp           string
+	ignoreOffsetsTopic bool
 }
 
 func (this *Topics) Run(args []string) (exitCode int) {
@@ -71,6 +72,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&delTopic, "del", "", "")
 	cmdFlags.IntVar(&partitions, "partitions", 1, "")
 	cmdFlags.DurationVar(&this.since, "since", 0, "")
+	cmdFlags.BoolVar(&this.ignoreOffsetsTopic, "ignore_offsets", true, "")
 	cmdFlags.StringVar(&this.brokerIp, "host", "", "")
 	cmdFlags.BoolVar(&configged, "cf", false, "")
 	cmdFlags.IntVar(&minInsyncReplicas, "minisr", 0, "")
@@ -441,6 +443,10 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 
 	sortedTopics := make([]string, 0, len(topics))
 	for _, t := range topics {
+		if this.ignoreOffsetsTopic && t == "__consumer_offsets" {
+			continue
+		}
+
 		sortedTopics = append(sortedTopics, t)
 	}
 	sort.Strings(sortedTopics)
@@ -675,7 +681,11 @@ Options:
 	  168h=1 week
 	  720h=1 month
 
-	-host broker ip   
+	-host broker ip
+
+	-ignore_offsets
+	 Ignore kafka internal topic: __consumer_offsets
+	 True by default
 
     -n
       Show network addresses as numbers.
