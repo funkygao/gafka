@@ -34,11 +34,25 @@ const (
 	EntityConfigPath        = "/config"
 	DeleteTopicsPath        = "/admin/delete_topics"
 
-	RedisMonPath = "/redis"
+	RedisMonPath     = "/redis"
+	RedisClusterRoot = "/rediscluster"
+
+	DbusRoot           = "/dbus"
+	dbusConfPath       = "conf"
+	dbusCheckpointPath = "checkpoint"
+	dbusConfDirPath    = "conf.d"
+	dbusClusterPath    = "cluster"
+
+	// ElasticSearch
+	esRoot = "/_es"
 )
 
 func katewayMetricsRootByKey(id, key string) string {
 	return fmt.Sprintf("%s/%s/%s", katewayMetricsRoot, id, key)
+}
+
+func esClusterPath(cluster string) string {
+	return fmt.Sprintf("%s/%s", esRoot, cluster)
 }
 
 func ClusterPath(cluster string) string {

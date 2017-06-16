@@ -46,9 +46,9 @@ func (this *pubPool) buildPools() {
 	this.syncPool = pool.NewResourcePool(this.syncProducerFactory,
 		this.size, this.size, 0)
 	this.syncAllPool = pool.NewResourcePool(this.syncAllProducerFactory,
-		30, 30, 0) // should be enough TODO
-	this.asyncPool = pool.NewResourcePool(this.asyncProducerFactory,
 		this.size, this.size, 0)
+	this.asyncPool = pool.NewResourcePool(this.asyncProducerFactory,
+		20, 20, 0) // should be enough TODO
 }
 
 // TODO from live meta or zk?

@@ -27,6 +27,7 @@ func (this *Systool) Run(args []string) (exitCode int) {
 		diskTool bool
 		netTool  bool
 		ioSched  bool
+		itop     bool
 		vmTool   bool
 		interval time.Duration
 	)
@@ -36,6 +37,7 @@ func (this *Systool) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&vmTool, "m", false, "")
 	cmdFlags.BoolVar(&netTool, "n", false, "")
 	cmdFlags.BoolVar(&ioSched, "io", false, "")
+	cmdFlags.BoolVar(&itop, "itop", false, "")
 	cmdFlags.DurationVar(&interval, "i", time.Second*3, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -61,7 +63,17 @@ func (this *Systool) Run(args []string) (exitCode int) {
 		return
 	}
 
+	if itop {
+		this.runItop(interval)
+	}
+
 	return
+}
+
+func (this *Systool) runItop(interval time.Duration) {
+	path := "/tmp/itop.pl"
+	writeFileFromTemplate("template/tools/itop", path, 0755, nil, nil)
+	runCmd(path, []string{"-i", fmt.Sprintf("%d", int(interval.Seconds()))})
 }
 
 func (this *Systool) runVMTool(interval time.Duration) {
@@ -230,6 +242,9 @@ Options:
 
     -io
       IO scheduler
+
+    -itop
+      Interrupt top
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)

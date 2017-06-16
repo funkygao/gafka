@@ -4,8 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
+	"github.com/Shopify/sarama"
 	"github.com/funkygao/columnize"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
@@ -14,6 +16,12 @@ import (
 	"github.com/funkygao/golib/gofmt"
 	gozk "github.com/samuel/go-zookeeper/zk"
 )
+
+type consumerGroupOffset struct {
+	topic, partitionId string
+	offset             string // comma fmt
+	lag                string // comma fmt
+}
 
 type Consumers struct {
 	Ui  cli.Ui
@@ -217,11 +225,13 @@ func (this *Consumers) printConsumersByHost(zkzone *zk.ZkZone, clusterPattern st
 }
 
 func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPattern string) {
-	lines := make([]string, 0)
-	header := "Zone|Cluster|M|Host|ConsumerGroup|Topic/Partition|Offset|Uptime"
-	lines = append(lines, header)
+	lines := []string{"Zone|Cluster|M|Host|ConsumerGroup|Topic/Partition|Offset|Lag|Uptime"}
 
 	zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
+		swallow(err)
+		defer kfk.Close()
+
 		groupTopicsMap := make(map[string]map[string]struct{}) // group:sub topics
 
 		if !patternMatched(zkcluster.Name(), clusterPattern) {
@@ -270,7 +280,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 						ownerByPartition := zkcluster.OwnersOfGroupByTopic(group, topic)
 
 						partitionsWithOffset := make(map[string]struct{})
-						for _, offset := range this.displayGroupOffsets(zkcluster, group, topic, false) {
+						for _, offset := range this.displayGroupOffsets(zkcluster, kfk, group, topic, false) {
 
 							onlineSymbol := "◉"
 							isOwner := false
@@ -285,13 +295,13 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 							partitionsWithOffset[offset.partitionId] = struct{}{}
 
 							lines = append(lines,
-								fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
+								fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s",
 									zkzone.Name(), zkcluster.Name(),
 									onlineSymbol,
 									c.Host(),
 									group+"@"+c.Id[len(c.Id)-12:],
 									fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),
-									offset.offset,
+									offset.offset, offset.lag,
 									gofmt.PrettySince(c.Uptime())))
 						}
 
@@ -309,7 +319,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 								}
 
 								lines = append(lines,
-									fmt.Sprintf("%s|%s|%s|%s|%s|%s|?|%s",
+									fmt.Sprintf("%s|%s|%s|%s|%s|%s|?|?|%s",
 										zkzone.Name(), zkcluster.Name(),
 										onlineSymbol,
 										c.Host(),
@@ -323,18 +333,18 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 				}
 			} else {
 				// offline
-				for _, offset := range this.displayGroupOffsets(zkcluster, group, "", false) {
+				for _, offset := range this.displayGroupOffsets(zkcluster, kfk, group, "", false) {
 					if !patternMatched(offset.topic, this.topicPattern) {
 						continue
 					}
 
 					lines = append(lines,
-						fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s",
+						fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s",
 							zkzone.Name(), zkcluster.Name(),
 							"◎",
 							" ",
 							group, fmt.Sprintf("%s/%s", offset.topic, offset.partitionId),
-							offset.offset, " "))
+							offset.offset, offset.lag, " "))
 				}
 			}
 		}
@@ -357,12 +367,7 @@ func (this *Consumers) printConsumersByGroupTable(zkzone *zk.ZkZone, clusterPatt
 
 }
 
-type consumerGroupOffset struct {
-	topic, partitionId string
-	offset             string // comma fmt
-}
-
-func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, group, topic string, echo bool) []consumerGroupOffset {
+func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, kfk sarama.Client, group, topic string, echo bool) []consumerGroupOffset {
 	offsetMap := zkcluster.ConsumerOffsetsOfGroup(group)
 	sortedTopics := make([]string, 0, len(offsetMap))
 	for t := range offsetMap {
@@ -384,10 +389,14 @@ func (this *Consumers) displayGroupOffsets(zkcluster *zk.ZkCluster, group, topic
 		sort.Strings(sortedPartitionIds)
 
 		for _, partitionId := range sortedPartitionIds {
+			pid, _ := strconv.Atoi(partitionId)
+			latestOffset, _ := kfk.GetOffset(t, int32(pid), sarama.OffsetNewest)
+
 			r = append(r, consumerGroupOffset{
 				topic:       t,
 				partitionId: partitionId,
 				offset:      gofmt.Comma(offsetMap[t][partitionId]),
+				lag:         gofmt.Comma(latestOffset - offsetMap[t][partitionId]),
 			})
 
 			if echo {

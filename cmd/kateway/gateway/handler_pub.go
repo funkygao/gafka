@@ -143,15 +143,15 @@ func (this *pubServer) pubHandler(w http.ResponseWriter, r *http.Request, params
 		rawTopic  = manager.Default.KafkaTopic(appid, topic, ver)
 	)
 
-	pubMethod := store.DefaultPubStore.SyncPub
+	pubMethod := store.DefaultPubStore.SyncAllPub
 	async = query.Get("async") == "1"
 	if async {
 		pubMethod = store.DefaultPubStore.AsyncPub
 	}
 
-	ackAll := query.Get("ack") == "all"
+	ackAll := query.Get("ack") == "local"
 	if ackAll {
-		pubMethod = store.DefaultPubStore.SyncAllPub
+		pubMethod = store.DefaultPubStore.SyncPub
 	}
 
 	hhDisabled = query.Get("hh") == "n" // yes | no

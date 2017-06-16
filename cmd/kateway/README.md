@@ -128,6 +128,57 @@ A fully-managed real-time secure and reliable geo-replicated RESTful Cloud Pub/S
     GET /v1/subd/:topic/:ver
     GET /v1/status/:appid/:topic/:ver
 
+### The Big Picture
+
+                +-----------+
+                | VirtualIP |
+                +-----------+                                
+                      |
+              +--------------+                                 Alert   SOS   Dashboard
+              |              |                                    |     |       |              gk
+     +-------------------------------------------------------------------------------------------+
+     |        |              |                                    |     |       |                |
+     |  +----------+    +----------+                              |     |       |                |
+     |  | ehaproxy |    | ehaproxy |                              |     V       |                |
+     |  +----------+    +----------+                              |     |       |                |
+     |      |                |  | discovery                       |     |       |                |
+     |      +----------------+  |                                 +-------------+                |
+     |            | LB          |                                        |                       |
+     |            |             |   +--------------------+           +--------+                  |
+     |            |             +---|                    | election  |        | watch            |
+     |            |keepalive        | zookeeper ensemble |-----------| kguard |-------------+    |
+     |            |             +---|                    |           |        | aggragator  |    |
+     |            |             |   +--------------------+           +--------+             |    |
+     |            |     +-------+           |                                               |    |
+     |            |     | registry          | orchestration                                 |    |      +- Pub
+     |      +---------------+               |-----------+                      +---------+  |    | REST |
+     |      |               |               |           |                      | kateway |--|----|------|
+     |  +---------+    +---------+      +--------+    +--------+               +---------+  |    |      |
+     |  | kateway |    | kateway |      | actord |    | actord |                            |    |      +- Sub
+     |  +---------+    +---------+      +--------+    +--------+                            |    |
+     |    | hh |         | hh |             | executor                                      |    |
+     |    +----+         +----+          +--------------+                                   |    |
+     |                      |            |              |                                   |    |  
+     |                      |       +---------+    +---------+  push                        |    |  
+     |             +--------+       | JobTube |    | Webhook |------------>-----------------|----|---Endpoints
+     |             |        |       +---------+    +---------+                              |    |
+     |             |        |           | scheduler     | sub                               |    |
+     |        auth |        |job WAL    | dispatch      |                                   |    |
+     |      +------+        +---------------------------+------------------+                |    |
+     |      |               | tenant shard              | pubsub           | flush          |    |
+     |  +----------+    +---------+                 +-------+           +------+            |    |
+     |  | auth DB  |    | DB Farm |                 | kafka |           | TSDB |            |    |
+     |  +----------+    +---------+                 +-------+           +------+            |    |
+     |      |               |                           |                  |                |    |   
+     |      |               +----------------------------------------------+                |    |  
+     |      |                                   |                                           |    | 
+     |      |                                   +-------------------------------------------+    |
+     |      |                                                                                    |  
+     |      |                                                                               zone |   
+     +-------------------------------------------------------------------------------------------+
+            |
+        WebConsole 
+
 #### Management
 
     GET    /alive
@@ -181,6 +232,8 @@ d37c73f2b2bce85f7fa16b6a550d26c5372892ef
 
 ### TODO
 
+- [ ] tag move from body to key, only store hash(tag)
+- [ ] kw id replaced by zk sequence
 - [ ] cleanup of the idle->active pub clients during shutdown
 - [ ] sub status display raw kafka offset status
 - [ ] mirror, when destination dies stop consuming

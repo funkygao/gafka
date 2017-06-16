@@ -97,7 +97,7 @@ func (this *Rm) Help() string {
 	help := fmt.Sprintf(`
 Usage: %s rm -z zone -p path [options]
 
-    Remove znode
+    %s
 
 Options:
 
@@ -107,6 +107,6 @@ Options:
     -like
       Pattern matching mode.
 
-`, this.Cmd)
+`, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
 }

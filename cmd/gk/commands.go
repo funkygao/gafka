@@ -45,6 +45,20 @@ func init() {
 			}, nil
 		},
 
+		"watch": func() (cli.Command, error) {
+			return &command.Watch{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"chaos": func() (cli.Command, error) {
+			return &command.Chaos{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"time": func() (cli.Command, error) {
 			return &command.Time{
 				Ui:  ui,
@@ -52,8 +66,29 @@ func init() {
 			}, nil
 		},
 
-		"dbus": func() (cli.Command, error) {
-			return &command.Dbus{
+		"comma": func() (cli.Command, error) {
+			return &command.Comma{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"cpu": func() (cli.Command, error) {
+			return &command.Cpu{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"trace": func() (cli.Command, error) {
+			return &command.Trace{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"gc": func() (cli.Command, error) {
+			return &command.GC{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil

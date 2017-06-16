@@ -20,6 +20,7 @@ import (
 	"github.com/funkygao/golib/color"
 	"github.com/funkygao/golib/gofmt"
 	"github.com/funkygao/golib/signal"
+	"github.com/tidwall/gjson"
 )
 
 var (
@@ -58,10 +59,13 @@ type Peek struct {
 	quit     chan struct{}
 	once     sync.Once
 	column   string
+	cols     []string
 	beep     bool
 	pretty   bool
 	bodyOnly bool
+	keyOnly  bool
 	grep     string
+	watcher  bool
 }
 
 func (this *Peek) Run(args []string) (exitCode int) {
@@ -84,6 +88,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.Int64Var(&this.lastN, "last", -1, "")
 	cmdFlags.BoolVar(&this.pretty, "pretty", false, "")
 	cmdFlags.StringVar(&this.grep, "grep", "", "")
+	cmdFlags.BoolVar(&this.watcher, "w", false, "")
 	cmdFlags.IntVar(&this.limit, "n", -1, "")
 	cmdFlags.StringVar(&this.column, "col", "", "") // TODO support multiple columns
 	cmdFlags.BoolVar(&this.beep, "beep", false, "")
@@ -92,6 +97,7 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	cmdFlags.DurationVar(&wait, "d", time.Hour, "")
 	cmdFlags.BoolVar(&tillNow, "now", false, "")
 	cmdFlags.BoolVar(&this.bodyOnly, "body", false, "")
+	cmdFlags.BoolVar(&this.keyOnly, "key", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -101,6 +107,9 @@ func (this *Peek) Run(args []string) (exitCode int) {
 	}
 
 	this.quit = make(chan struct{})
+	if len(this.column) > 0 {
+		this.cols = strings.Split(this.column, ",")
+	}
 
 	if silence {
 		stats := newPeekStats()
@@ -134,7 +143,6 @@ func (this *Peek) Run(args []string) (exitCode int) {
 		maxSize int64
 		bytesN  int64
 
-		j          map[string]interface{}
 		prettyJSON bytes.Buffer
 	)
 
@@ -192,28 +200,23 @@ LOOP:
 
 				var outmsg string
 				if this.column != "" {
-					if err := json.Unmarshal(msg.Value, &j); err != nil {
-						this.Ui.Error(err.Error())
-					} else {
-						var colVal string
-						switch t := j[this.column].(type) {
-						case string:
-							colVal = t
-						case float64:
-							colVal = fmt.Sprintf("%.0f", t)
-						case int:
-							colVal = fmt.Sprintf("%d", t)
-						}
-
-						if this.bodyOnly {
+					outmsg = ""
+					for _, col := range this.cols {
+						decoded := gjson.GetBytes(msg.Value, col)
+						colVal := decoded.String()
+						if this.keyOnly {
+							outmsg = fmt.Sprintf("%s/%d %s k:%s",
+								msg.Topic, msg.Partition,
+								gofmt.Comma(msg.Offset), string(msg.Key))
+						} else if this.bodyOnly {
 							if this.pretty {
-								if err = json.Indent(&prettyJSON, []byte(colVal), "", "    "); err != nil {
+								if err := json.Indent(&prettyJSON, []byte(colVal), "", "    "); err != nil {
 									fmt.Println(err.Error())
 								} else {
 									outmsg = string(prettyJSON.Bytes())
 								}
 							} else {
-								outmsg = colVal
+								outmsg += colVal + " "
 							}
 						} else if this.colorize {
 							outmsg = fmt.Sprintf("%s/%d %s k:%s v:%s",
@@ -228,7 +231,11 @@ LOOP:
 					}
 
 				} else {
-					if this.bodyOnly {
+					if this.keyOnly {
+						outmsg = fmt.Sprintf("%s/%d %s k:%s",
+							msg.Topic, msg.Partition,
+							gofmt.Comma(msg.Offset), string(msg.Key))
+					} else if this.bodyOnly {
 						if this.pretty {
 							json.Indent(&prettyJSON, msg.Value, "", "    ")
 							outmsg = string(prettyJSON.Bytes())
@@ -266,7 +273,7 @@ LOOP:
 			if this.limit > 0 && total >= this.limit {
 				break LOOP
 			}
-			if this.lastN > 0 && total >= int(this.lastN) {
+			if !this.watcher && this.lastN > 0 && total >= int(this.lastN) {
 				break LOOP
 			}
 
@@ -332,7 +339,7 @@ func (this *Peek) simpleConsumeTopic(zkcluster *zk.ZkCluster, kfk sarama.Client,
 					offset = oldestOffset
 				}
 
-				if offset == 0 {
+				if !this.watcher && offset == 0 {
 					// no message in store
 					return
 				}
@@ -375,7 +382,7 @@ func (this *Peek) consumePartition(zkcluster *zk.ZkCluster, kfk sarama.Client, c
 			msgCh <- msg
 
 			n++
-			if this.lastN > 0 && n >= this.lastN {
+			if !this.watcher && this.lastN > 0 && n >= this.lastN {
 				return
 			}
 		}
@@ -410,11 +417,18 @@ Options:
     -pretty
       Pretty print the json message body
 
-    -col json column name
+    -col comma seperated json column name
       Will json decode message and extract specified column value only
+      e,g.
+      -col data.user,data.ip
+      -col time
+      -col data.0.event_detail,data.0.host
 
     -last n
       Peek the most recent N messages
+
+    -w
+      Watcher mode: keep peeking
 
     -offset message offset value
       -1 OffsetNewest, -2 OffsetOldest. 
@@ -430,6 +444,9 @@ Options:
 
     -body
       Only display message body
+
+    -key
+      Only display message key
 
     -now
       Iterate the stream till now

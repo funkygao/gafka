@@ -140,6 +140,15 @@ func (this *ZkZone) ensureParentDirExists(path string) error {
 	return nil
 }
 
+func (this *ZkZone) EnsurePathExists(path string) error {
+	this.connectIfNeccessary()
+	if err := this.mkdirRecursive(path); err != nil && err != zk.ErrNodeExists {
+		return err
+	}
+
+	return nil
+}
+
 func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 	this.connectIfNeccessary()
 
@@ -387,6 +396,19 @@ func (this *ZkZone) CreateEphemeralZnode(path string, data []byte) error {
 	return err
 }
 
+func (this *ZkZone) CreatePermenantZnode(path string, data []byte) error {
+	this.connectIfNeccessary()
+
+	if err := this.ensureParentDirExists(path); err != nil {
+		return err
+	}
+
+	acl := zk.WorldACL(zk.PermAll)
+	flags := int32(0)
+	_, err := this.conn.Create(path, data, flags, acl)
+	return err
+}
+
 func (this *ZkZone) setZnode(path string, data []byte) error {
 	_, err := this.conn.Set(path, data, -1)
 	return err
@@ -450,6 +472,79 @@ func (this *ZkZone) PublicClusters() []*ZkCluster {
 		}
 	})
 	return r
+}
+
+func (this *ZkZone) CreateEsCluster(name string) error {
+	this.connectIfNeccessary()
+	return this.EnsurePathExists(esClusterPath(name))
+}
+
+func (this *ZkZone) NewEsCluster(name string) *EsCluster {
+	if len(name) == 0 {
+		panic("empty cluster name")
+	}
+
+	this.connectIfNeccessary()
+	return &EsCluster{
+		Name:   name,
+		zkzone: this,
+	}
+}
+
+func (this *ZkZone) ForSortedEsClusters(fn func(*EsCluster)) {
+	this.connectIfNeccessary()
+
+	sortedClusters := make([]string, 0)
+	for _, c := range this.children(esRoot) {
+		sortedClusters = append(sortedClusters, c)
+	}
+	sort.Strings(sortedClusters)
+
+	for _, c := range sortedClusters {
+		fn(this.NewEsCluster(c))
+	}
+}
+
+func (this *ZkZone) CreateDbusCluster(name string) error {
+	this.connectIfNeccessary()
+
+	this.CreatePermenantZnode(DbusRoot, nil)
+	if err := this.CreatePermenantZnode(path.Join(DbusRoot, name), nil); err != nil {
+		return err
+	}
+	if err := this.CreatePermenantZnode(DbusCheckpointRoot(name), nil); err != nil {
+		return err
+	}
+	if err := this.CreatePermenantZnode(DbusConfig(name), nil); err != nil {
+		return err
+	}
+	if err := this.CreatePermenantZnode(DbusConfigDir(name), nil); err != nil {
+		return err
+	}
+	return this.CreatePermenantZnode(DbusClusterRoot(name), nil)
+}
+
+func (this *ZkZone) DefaultDbusCluster() (cluster string) {
+	this.ForSortedDbusClusters(func(name string, _ []byte) {
+		cluster = name
+	})
+	return
+}
+
+func (this *ZkZone) ForSortedDbusClusters(fn func(name string, data []byte)) {
+	this.connectIfNeccessary()
+	m := make(map[string][]byte)
+	for c, d := range this.ChildrenWithData(DbusRoot) {
+		m[c] = d.Data()
+	}
+	sortedNames := make([]string, 0, len(m))
+	for name := range m {
+		sortedNames = append(sortedNames, name)
+	}
+	sort.Strings(sortedNames)
+	for _, name := range sortedNames {
+		fn(name, m[name])
+	}
 }
 
 func (this *ZkZone) ForSortedClusters(fn func(zkcluster *ZkCluster)) {

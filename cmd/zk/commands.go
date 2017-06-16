@@ -66,6 +66,13 @@ func init() {
 			}, nil
 		},
 
+		"replace": func() (cli.Command, error) {
+			return &command.Replace{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"create": func() (cli.Command, error) {
 			return &command.Create{
 				Ui:  ui,

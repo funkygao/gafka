@@ -9,7 +9,7 @@
        __/ |                             
       |___/                              
 
-A full ecosystem that is built around kafka powered by golang.
+A full ecosystem for kafka/redis/PubSub/ElasticSearch/Zookeeper/haproxy.
 
 Hope it can help you.
 
@@ -35,60 +35,13 @@ Hope it can help you.
 
   A handy zookeeper CLI that supports recursive operation without any dependency.
 
+- [es](https://github.com/funkygao/gafka/tree/master/cmd/es)
+
+  ElasticSearch console.
+
 - [kguard](https://github.com/funkygao/gafka/tree/master/cmd/kguard)
 
   Kafka clusters body guard that emits health info to InfluxDB and exports key warnings to zabbix for alerting.
-
-### The Whole Picture
-
-                +-----------+
-                | VirtualIP |
-                +-----------+                                
-                      |
-              +--------------+                                 Alert   SOS   Dashboard
-              |              |                                    |     |       |              gk
-     +-------------------------------------------------------------------------------------------+
-     |        |              |                                    |     |       |                |
-     |  +----------+    +----------+                              |     |       |                |
-     |  | ehaproxy |    | ehaproxy |                              |     V       |                |
-     |  +----------+    +----------+                              |     |       |                |
-     |      |                |  | discovery                       |     |       |                |
-     |      +----------------+  |                                 +-------------+                |
-     |            | LB          |                                        |                       |
-     |            |             |   +--------------------+           +--------+                  |
-     |            |             +---|                    | election  |        | watch            |
-     |            |keepalive        | zookeeper ensemble |-----------| kguard |-------------+    |
-     |            |             +---|                    |           |        | aggragator  |    |
-     |            |             |   +--------------------+           +--------+             |    |
-     |            |     +-------+           |                                               |    |
-     |            |     | registry          | orchestration                                 |    |      +- Pub
-     |      +---------------+               |-----------+                      +---------+  |    | REST |
-     |      |               |               |           |                      | kateway |--|----|------|
-     |  +---------+    +---------+      +--------+    +--------+               +---------+  |    |      |
-     |  | kateway |    | kateway |      | actord |    | actord |                            |    |      +- Sub
-     |  +---------+    +---------+      +--------+    +--------+                            |    |
-     |    | hh |         | hh |             | executor                                      |    |
-     |    +----+         +----+          +--------------+                                   |    |
-     |                      |            |              |                                   |    |  
-     |                      |       +---------+    +---------+  push                        |    |  
-     |             +--------+       | JobTube |    | Webhook |------------>-----------------|----|---Endpoints
-     |             |        |       +---------+    +---------+                              |    |
-     |             |        |           | scheduler     | sub                               |    |
-     |        auth |        |job WAL    | dispatch      |                                   |    |
-     |      +------+        +---------------------------+------------------+                |    |
-     |      |               | tenant shard              | pubsub           | flush          |    |
-     |  +----------+    +---------+                 +-------+           +------+            |    |
-     |  | auth DB  |    | DB Farm |                 | kafka |           | TSDB |            |    |
-     |  +----------+    +---------+                 +-------+           +------+            |    |
-     |      |               |                           |                  |                |    |   
-     |      |               +----------------------------------------------+                |    |  
-     |      |                                   |                                           |    | 
-     |      |                                   +-------------------------------------------+    |
-     |      |                                                                                    |  
-     |      |                                                                               zone |   
-     +-------------------------------------------------------------------------------------------+
-            |
-        WebConsole 
 
 ### Install
 
@@ -125,4 +78,5 @@ Currently gafka manages:
 - peak load
   - 1Million message per second
   - 8TB transfered per hour
+- 5TB redis
 

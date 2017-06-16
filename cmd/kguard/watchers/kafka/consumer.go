@@ -1,10 +1,12 @@
 package kafka
 
 import (
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/Shopify/sarama"
 	"github.com/funkygao/gafka/cmd/kateway/structs"
 	"github.com/funkygao/gafka/cmd/kguard/monitor"
 	"github.com/funkygao/gafka/telemetry"
@@ -33,6 +35,7 @@ type WatchConsumers struct {
 	offsetMtimeMap map[structs.GroupTopicPartition]time.Time
 
 	consumerQps map[string]metrics.Meter
+	consumerLag map[string]metrics.Gauge
 	lastOffsets map[string]int64
 }
 
@@ -58,6 +61,7 @@ func (this *WatchConsumers) Run() {
 	defer this.Wg.Done()
 
 	this.consumerQps = make(map[string]metrics.Meter, 10)
+	this.consumerLag = make(map[string]metrics.Gauge, 10)
 	this.lastOffsets = make(map[string]int64, 10)
 
 	ticker := time.NewTicker(this.Tick)
@@ -139,20 +143,37 @@ func (this *WatchConsumers) frequentOffsetCommit() (n int64) {
 
 func (this *WatchConsumers) runSubQpsTimer() {
 	this.Zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
+		kfk, err := sarama.NewClient(zkcluster.BrokerList(), sarama.NewConfig())
+		if err != nil {
+			log.Error("cluster[%s] %v", zkcluster.Name(), err)
+			return
+		}
+		defer kfk.Close()
+
 		consumerGroups := zkcluster.ConsumerGroups()
 		for group := range consumerGroups {
 			offsetMap := zkcluster.ConsumerOffsetsOfGroup(group)
 			for topic, m := range offsetMap {
 				offsetOfGroupOnTopic := int64(0)
-				for _, offset := range m {
+				producedOffsets := int64(0)
+				for partitionID, offset := range m {
 					offsetOfGroupOnTopic += offset
+					pid, _ := strconv.Atoi(partitionID)
+					if latestOffset, err := kfk.GetOffset(topic, int32(pid), sarama.OffsetNewest); err != nil {
+						log.Error("cluster[%s] %s/%s: %v", zkcluster.Name(), topic, partitionID, err)
+					} else {
+						producedOffsets += latestOffset
+					}
 				}
+				lags := producedOffsets - offsetOfGroupOnTopic
 
 				// cluster, topic, group, offset
 				tag := telemetry.Tag(zkcluster.Name(), strings.Replace(topic, ".", "_", -1), strings.Replace(group, ".", "_", -1))
 				if _, present := this.consumerQps[tag]; !present {
+					this.consumerLag[tag] = metrics.NewRegisteredGauge(tag+"consumer.lag", nil)
 					this.consumerQps[tag] = metrics.NewRegisteredMeter(tag+"consumer.qps", nil)
 				}
+				this.consumerLag[tag].Update(lags)
 				lastOffset := this.lastOffsets[tag]
 				if lastOffset == 0 {
 					// first run

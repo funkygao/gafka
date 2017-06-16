@@ -232,12 +232,24 @@ func (this *manServer) setOptionHandler(w http.ResponseWriter, r *http.Request, 
 
 // @rest GET /v1/partitions/:appid/:topic/:ver
 func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+
+	type PartitionOffset struct {
+		OldestOffset int64 `json:"oldest"`
+		LatestOffset int64 `json:"latest"`
+	}
+
+	type PartitionInfo struct {
+		Number  int                        `json:"num"`
+		Offsets map[int32]*PartitionOffset `json:"offsets"`
+	}
+
 	topic := params.ByName(UrlParamTopic)
 	hisAppid := params.ByName(UrlParamAppid)
 	appid := r.Header.Get(HttpHeaderAppid)
 	pubkey := r.Header.Get(HttpHeaderPubkey)
 	ver := params.ByName(UrlParamVersion)
 	realIp := getHttpRemoteIp(r)
+	partitionInfo := PartitionInfo{Offsets: make(map[int32]*PartitionOffset)}
 
 	cluster, found := manager.Default.LookupCluster(hisAppid)
 	if !found {
@@ -277,7 +289,8 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 	}
 	defer kfk.Close()
 
-	partitions, err := kfk.Partitions(manager.Default.KafkaTopic(hisAppid, topic, ver))
+	rawTopic := manager.Default.KafkaTopic(hisAppid, topic, ver)
+	partitions, err := kfk.Partitions(rawTopic)
 	if err != nil {
 		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
 			zkcluster.Name(), r.RemoteAddr, realIp, hisAppid, topic, ver, err)
@@ -286,7 +299,40 @@ func (this *manServer) partitionsHandler(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	w.Write([]byte(fmt.Sprintf(`{"num": %d}`, len(partitions))))
+	partitionInfo.Number = len(partitions)
+
+	// get partition oldestOffset, latestOffset info
+	for _, p := range partitions {
+
+		oldestOffset, err := kfk.GetOffset(rawTopic, p, sarama.OffsetOldest)
+		if err != nil {
+			log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
+				zkcluster.Name(), r.RemoteAddr, realIp, hisAppid, topic, ver, err)
+
+			writeServerError(w, err.Error())
+		}
+
+		latestOffset, err := kfk.GetOffset(rawTopic, p, sarama.OffsetNewest)
+		if err != nil {
+			log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} %v",
+				zkcluster.Name(), r.RemoteAddr, realIp, hisAppid, topic, ver, err)
+
+			writeServerError(w, err.Error())
+		}
+
+		// store offset info
+		partitionInfo.Offsets[p] = &PartitionOffset{OldestOffset: oldestOffset, LatestOffset: latestOffset}
+	}
+
+	info, err := json.Marshal(partitionInfo)
+	if err != nil {
+		log.Error("cluster[%s] from %s(%s) {app:%s topic:%s ver:%s} {partitionInfo:%#v} %v",
+			zkcluster.Name(), r.RemoteAddr, realIp, hisAppid, topic, ver, partitionInfo, err)
+
+		writeServerError(w, err.Error())
+	}
+
+	w.Write(info)
 }
 
 // @rest PUT /v1/webhook/:appid/:topic/:ver?group=xx

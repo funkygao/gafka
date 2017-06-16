@@ -50,6 +50,8 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		replicas                int
 		partitions              int
 		retentionInMinute       int
+		retentionInDays         int
+		minInsyncReplicas       int
 		resetConf               bool
 		debug                   bool
 		summaryMode             bool
@@ -71,10 +73,12 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	cmdFlags.DurationVar(&this.since, "since", 0, "")
 	cmdFlags.StringVar(&this.brokerIp, "host", "", "")
 	cmdFlags.BoolVar(&configged, "cf", false, "")
+	cmdFlags.IntVar(&minInsyncReplicas, "minisr", 0, "")
 	cmdFlags.BoolVar(&debug, "debug", false, "")
 	cmdFlags.BoolVar(&resetConf, "cfreset", false, "")
 	cmdFlags.Int64Var(&this.count, "count", 0, "")
 	cmdFlags.IntVar(&retentionInMinute, "retention", -1, "")
+	cmdFlags.IntVar(&retentionInDays, "retention.d", -1, "")
 	cmdFlags.IntVar(&replicas, "replicas", 2, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -84,8 +88,9 @@ func (this *Topics) Run(args []string) (exitCode int) {
 		on("-add", "-c").
 		on("-del", "-c").
 		on("-retention", "-c", "-t").
+		on("-minisr", "-c", "-t").
 		on("-cfreset", "-c", "-t").
-		requireAdminRights("-add", "-del", "-retention").
+		requireAdminRights("-add", "-del", "-retention", "-minisr").
 		invalid(args) {
 		return 2
 	}
@@ -101,7 +106,7 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	if addTopic != "" {
 		zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 		zkcluster := zkzone.NewCluster(cluster)
-		swallow(this.addTopic(zkcluster, addTopic, replicas, partitions))
+		swallow(this.addTopic(zkcluster, addTopic, replicas, partitions, minInsyncReplicas))
 
 		return
 	} else if delTopic != "" {
@@ -115,9 +120,25 @@ func (this *Topics) Run(args []string) (exitCode int) {
 	ensureZoneValid(zone)
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+
+	if retentionInDays > 0 {
+		retentionInMinute = retentionInDays * 24 * 60
+	}
 	if retentionInMinute > 0 {
 		zkcluster := zkzone.NewCluster(cluster)
 		this.configTopic(zkcluster, this.topicPattern, retentionInMinute)
+		return
+	}
+
+	if minInsyncReplicas > 0 {
+		zkcluster := zkzone.NewCluster(cluster)
+		ts := sla.DefaultSla()
+		ts.MinInsyncReplicas = minInsyncReplicas
+		output, err := zkcluster.AlterTopic(this.topicPattern, ts)
+		swallow(err)
+		for _, line := range output {
+			this.Ui.Output(line)
+		}
 		return
 	}
 
@@ -273,32 +294,36 @@ func (this *Topics) clusterSummary(zkcluster *zk.ZkCluster) []topicSummary {
 
 func (this *Topics) resetTopicConfig(zkcluster *zk.ZkCluster, topic string) {
 	zkAddrs := zkcluster.ZkConnectAddr()
-	key := "retention.ms"
-	cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
-		fmt.Sprintf("--zookeeper %s", zkAddrs),
-		fmt.Sprintf("--alter"),
-		fmt.Sprintf("--topic %s", topic),
-		fmt.Sprintf("--deleteConfig %s", key),
-	)
-	err := cmd.Open()
-	swallow(err)
-	defer cmd.Close()
+	deleteConfig := func(key string) {
+		cmd := pipestream.New(fmt.Sprintf("%s/bin/kafka-topics.sh", ctx.KafkaHome()),
+			fmt.Sprintf("--zookeeper %s", zkAddrs),
+			fmt.Sprintf("--alter"),
+			fmt.Sprintf("--topic %s", topic),
+			fmt.Sprintf("--delete-config %s", key),
+		)
+		err := cmd.Open()
+		swallow(err)
+		defer cmd.Close()
 
-	scanner := bufio.NewScanner(cmd.Reader())
-	scanner.Split(bufio.ScanLines)
+		scanner := bufio.NewScanner(cmd.Reader())
+		scanner.Split(bufio.ScanLines)
 
-	output := make([]string, 0)
-	for scanner.Scan() {
-		output = append(output, scanner.Text())
+		output := make([]string, 0)
+		for scanner.Scan() {
+			output = append(output, scanner.Text())
+		}
+		swallow(scanner.Err())
+
+		for _, line := range output {
+			this.Ui.Output(line)
+		}
 	}
-	swallow(scanner.Err())
+
+	deleteConfig("retention.ms")
+	deleteConfig("min.insync.replicas")
 
 	path := zkcluster.GetTopicConfigPath(topic)
 	this.Ui.Info(path)
-
-	for _, line := range output {
-		this.Ui.Output(line)
-	}
 }
 
 func (this *Topics) configTopic(zkcluster *zk.ZkCluster, topic string, retentionInMinute int) {
@@ -538,12 +563,15 @@ func (this *Topics) displayTopicsOfCluster(zkcluster *zk.ZkCluster) {
 }
 
 func (this *Topics) addTopic(zkcluster *zk.ZkCluster, topic string, replicas,
-	partitions int) error {
+	partitions, minInsyncReplicas int) error {
 	this.Ui.Info(fmt.Sprintf("creating kafka topic: %s", topic))
 
 	ts := sla.DefaultSla()
 	ts.Partitions = partitions
 	ts.Replicas = replicas
+	if minInsyncReplicas > 0 {
+		ts.MinInsyncReplicas = minInsyncReplicas
+	}
 	lines, err := zkcluster.AddTopic(topic, ts)
 	if err != nil {
 		return err
@@ -600,6 +628,9 @@ Options:
     -t topic name pattern
       Only show topics like this give topic.
 
+    -minisr n
+      Setup a topic's min.insync.replicas.
+
     -sum
       Print summary of topics in order.
 
@@ -628,6 +659,8 @@ Options:
 
     -retention n in minutes
       Config a kafka topic log retention.
+
+    -retention.d n in days
     
     -l
       Use a long listing format.

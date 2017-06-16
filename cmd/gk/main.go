@@ -18,6 +18,7 @@ import (
 func main() {
 	ctx.LoadFromHome()
 	setupLogging()
+	audit()
 
 	app := os.Args[0]
 	args := os.Args[1:]
@@ -42,6 +43,7 @@ func main() {
 					return
 
 				case "-c": // cluster
+					// not 'gk redis -c'
 					zone := ctx.ZkDefaultZone()
 					for i := 0; i < len(args)-1; i++ {
 						if args[i] == "-z" {
@@ -49,6 +51,23 @@ func main() {
 						}
 					}
 					zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+
+					gkRedis := false
+					for _, arg := range args {
+						if arg == "redis" {
+							gkRedis = true // gk redis -c
+							break
+						}
+					}
+
+					if gkRedis {
+						for _, c := range zkzone.AllRedisClusters() {
+							fmt.Println(c.Name)
+						}
+						return
+					}
+
+					// not 'gk redis -c'
 					zkzone.ForSortedClusters(func(zkcluster *zk.ZkCluster) {
 						fmt.Println(zkcluster.Name())
 					})
@@ -89,7 +108,7 @@ func main() {
 		}
 	}
 
-	c := cli.NewCLI(app, gafka.Version+"-"+gafka.BuildId+"-"+gafka.BuiltAt)
+	c := cli.NewCLI(app, fmt.Sprintf("gk %s (%s@%s)", gafka.Version, gafka.BuildId, gafka.BuiltAt))
 	c.Args = os.Args[1:]
 	if len(os.Args) > 1 {
 		// command given, convert alias
