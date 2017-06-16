@@ -61,7 +61,7 @@ Options:
     -z zone
 
     -add name
-     Add a new dbus cluster.
+     Add a new ElasticSearch cluster.
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
