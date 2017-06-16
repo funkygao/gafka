@@ -1,6 +1,8 @@
 # es
 
-### ElasticSearch console
+ElasticSearch console
+
+### Usage
 
     $es
     ElasticSearch Console
