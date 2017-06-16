@@ -29,7 +29,7 @@ func (this *Health) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-	handleCatCommand(this.Ui, zkzone, cluster, "health")
+	handleCatCommand(this.Ui, zkzone, cluster, "health", "h=cluster,status,node.total,node.data,shards,pri,relo,init,unassign,pending_tasks")
 
 	return
 }
