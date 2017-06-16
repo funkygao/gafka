@@ -55,7 +55,8 @@ func (this *Normalize) normalizeUrl(fields []string) {
 }
 
 func (*Normalize) doNormalizeUrl(url string) string {
-	return strings.Split(url, "?")[0]
+	r := strings.Split(url, "?")[0]
+	return strings.Replace(r, "//", "/", -1)
 }
 
 func (*Normalize) Synopsis() string {
