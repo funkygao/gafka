@@ -27,9 +27,12 @@ func (this *Comma) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	i, err := strconv.ParseInt(args[len(args)-1], 10, 64)
-	swallow(err)
-	this.Ui.Outputf("%s -> %s", args[len(args)-1], gofmt.Comma(i))
+	arg := args[len(args)-1]
+	for _, n := range strings.Split(arg, ",") {
+		i, err := strconv.ParseInt(n, 10, 64)
+		swallow(err)
+		this.Ui.Outputf("%s -> %s", n, gofmt.Comma(i))
+	}
 
 	return
 }
@@ -40,7 +43,7 @@ func (*Comma) Synopsis() string {
 
 func (this *Comma) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s comma <integer>
+Usage: %s comma <integer[,integer]>
 
     %s
 

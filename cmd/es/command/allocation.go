@@ -29,7 +29,7 @@ func (this *Allocation) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-	handleCatCommand(this.Ui, zkzone, cluster, "allocation")
+	handleCatCommand(this.Ui, zkzone, cluster, "allocation", "h=shards,disk.total,disk.used,ip,node")
 	return
 }
 

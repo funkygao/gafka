@@ -36,7 +36,7 @@ func (this *Nodes) Run(args []string) (exitCode int) {
 		return
 	}
 
-	handleCatCommand(this.Ui, zkzone, cluster, "nodes")
+	handleCatCommand(this.Ui, zkzone, cluster, "nodes", "h=ip,heap.percent,ram.percent,load,node.role,master,name")
 
 	return
 }
