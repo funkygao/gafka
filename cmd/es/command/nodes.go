@@ -32,11 +32,11 @@ func (this *Nodes) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	if attrs {
-		handleCatCommand(this.Ui, zkzone, cluster, "nodeattrs", "h=ip,heap.percent,ram.percent,load,node.role,master,name")
+		handleCatCommand(this.Ui, zkzone, cluster, "nodeattrs")
 		return
 	}
 
-	handleCatCommand(this.Ui, zkzone, cluster, "nodes")
+	handleCatCommand(this.Ui, zkzone, cluster, "nodes", "h=ip,heap.percent,ram.percent,load,node.role,master,name")
 
 	return
 }
