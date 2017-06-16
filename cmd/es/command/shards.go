@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/funkygao/gafka/ctx"
+	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
 )
 
@@ -26,11 +27,14 @@ func (this *Shards) Run(args []string) (exitCode int) {
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
+
+	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
+	handleCatCommand(this.Ui, zkzone, cluster, "shards")
 	return
 }
 
 func (*Shards) Synopsis() string {
-	return "TODO"
+	return "Detailed view of what nodes contain which shards"
 }
 
 func (this *Shards) Help() string {

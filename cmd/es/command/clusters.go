@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/funkygao/columnize"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
@@ -18,11 +19,15 @@ type Clusters struct {
 func (this *Clusters) Run(args []string) (exitCode int) {
 	var (
 		zone       string
+		cluster    string
 		addCluster string
+		bootNode   string
 	)
 	cmdFlags := flag.NewFlagSet("clusters", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.StringVar(&cluster, "c", "", "")
+	cmdFlags.StringVar(&bootNode, "bootnode", "", "")
 	cmdFlags.StringVar(&addCluster, "add", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -37,10 +42,21 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 			this.Ui.Infof("%s created", addCluster)
 		}
 
+	case bootNode != "":
+		if cluster == "" {
+			this.Ui.Error("-c required")
+			return 2
+		}
+
+		ec := zkzone.NewEsCluster(cluster)
+		ec.AddNode(bootNode)
+
 	default:
+		lines := []string{"Custer|Bootstrap"}
 		zkzone.ForSortedEsClusters(func(ec *zk.EsCluster) {
-			this.Ui.Output(ec.Name)
+			lines = append(lines, fmt.Sprintf("%s|%s", ec.Name, strings.Join(ec.Nodes(), ",")))
 		})
+		this.Ui.Output(columnize.SimpleFormat(lines))
 	}
 
 	return
@@ -60,8 +76,13 @@ Options:
 
     -z zone
 
+    -c cluster
+
     -add name
      Add a new ElasticSearch cluster.
+
+    -bootnode host:port
+     Add a bootstrap node to a cluster.
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)

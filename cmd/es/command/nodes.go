@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/funkygao/columnize"
 	"github.com/funkygao/gafka/ctx"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
@@ -20,53 +19,30 @@ func (this *Nodes) Run(args []string) (exitCode int) {
 	var (
 		zone    string
 		cluster string
-		addNode string
+		attrs   bool
 	)
 	cmdFlags := flag.NewFlagSet("nodes", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
-	cmdFlags.StringVar(&addNode, "add", "", "")
+	cmdFlags.BoolVar(&attrs, "attrs", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
-	switch {
-	case addNode != "":
-		ec := zkzone.NewEsCluster(cluster)
-		if err := ec.AddNode(addNode); err != nil {
-			this.Ui.Error(err.Error())
-		} else {
-			this.Ui.Infof("%s added for cluster[%s]", addNode, cluster)
-		}
-
-	default: // list nodes
-		if cluster != "" {
-			ec := zkzone.NewEsCluster(cluster)
-			for _, node := range ec.Nodes() {
-				this.Ui.Output(node)
-			}
-			return
-		}
-
-		// zone wide
-		lines := []string{"Cluster|Node"}
-		zkzone.ForSortedEsClusters(func(ec *zk.EsCluster) {
-			for _, node := range ec.Nodes() {
-				lines = append(lines, fmt.Sprintf("%s|%s", ec.Name, node))
-			}
-		})
-		if len(lines) > 1 {
-			this.Ui.Output(columnize.SimpleFormat(lines))
-		}
+	if attrs {
+		handleCatCommand(this.Ui, zkzone, cluster, "nodeattrs")
+		return
 	}
+
+	handleCatCommand(this.Ui, zkzone, cluster, "nodes")
 
 	return
 }
 
 func (*Nodes) Synopsis() string {
-	return "Nodes of cluster"
+	return "Display nodes of cluster"
 }
 
 func (this *Nodes) Help() string {
@@ -81,8 +57,8 @@ Options:
 
     -c cluster
 
-    -add host:port
-     Add a new node.
+    -attrs
+     Display node attributes.
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)

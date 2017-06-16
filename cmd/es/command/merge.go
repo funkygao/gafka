@@ -2,9 +2,12 @@ package command
 
 import (
 	"fmt"
+	"io/ioutil"
+	"sort"
 	"strings"
 
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/gofmt"
 )
 
 type Merge struct {
@@ -20,6 +23,30 @@ func (this *Merge) Run(args []string) (exitCode int) {
 	}
 
 	return
+}
+
+func (this *Merge) render(path string) {
+	files, _ := ioutil.ReadDir(path)
+	m := make(map[string]int64)
+	for _, f := range files {
+		if f.Size() < 1 {
+			continue
+		}
+
+		segment := f.Name()[:5]
+		m[segment] += f.Size()
+	}
+	sortedNames := make([]string, 0, len(m))
+	for s := range m {
+		sortedNames = append(sortedNames, s)
+	}
+	sort.Strings(sortedNames)
+
+	for _, segment := range sortedNames {
+		size := m[segment]
+		this.Ui.Outputf("%10s %s", segment, gofmt.ByteSize(size))
+	}
+
 }
 
 func (*Merge) Synopsis() string {
