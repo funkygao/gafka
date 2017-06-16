@@ -66,6 +66,13 @@ func init() {
 			}, nil
 		},
 
+		"normalize": func() (cli.Command, error) {
+			return &command.Normalize{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"comma": func() (cli.Command, error) {
 			return &command.Comma{
 				Ui:  ui,
