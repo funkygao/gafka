@@ -2,13 +2,11 @@ package command
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
-	"strings"
 
-	"github.com/funkygao/dbus/pkg/cluster"
-	"github.com/funkygao/golib/version"
+	"github.com/funkygao/gafka/zk"
+	"github.com/funkygao/gocli"
 	"github.com/funkygao/gorequest"
 )
 
@@ -25,24 +23,28 @@ func swallow(err error) {
 	}
 }
 
-func callEsAPI(p cluster.Participant, api string, method string, body string) (string, []error) {
-	r := gorequest.New()
-	uri := fmt.Sprintf("%s/api/v1/%s", p.APIEndpoint(), api)
-	switch strings.ToUpper(method) {
-	case "PUT":
-		r = r.Put(uri)
-	case "POST":
-		r = r.Post(uri)
-	case "GET":
-		r = r.Get(uri)
+func handleCatCommand(ui cli.Ui, zkzone *zk.ZkZone, cluster string, cmd string) {
+	if cluster == "" {
+		// on all clusters
+		zkzone.ForSortedEsClusters(func(ec *zk.EsCluster) {
+			ui.Info(ec.Name)
+			ui.Output(callCatRequest(ec.FirstBootstrapNode(), cmd))
+		})
+
+		return
 	}
 
-	reply, replyBody, errs := r.
-		Set("User-Agent", fmt.Sprintf("dbus-%s", version.Revision)).
-		SendString(body).
-		End()
-	if reply.StatusCode != http.StatusOK {
-		return "", []error{fmt.Errorf("status %d", reply.StatusCode)}
+	ec := zkzone.NewEsCluster(cluster)
+	ui.Output(callCatRequest(ec.FirstBootstrapNode(), cmd))
+}
+
+func callCatRequest(endpoint string, api string) string {
+	uri := fmt.Sprintf("http://%s/_cat/%s?v", endpoint, api)
+	r := gorequest.New()
+	_, body, errs := r.Get(uri).End()
+	if len(errs) > 0 {
+		panic(errs[0])
 	}
-	return replyBody, errs
+
+	return body
 }
