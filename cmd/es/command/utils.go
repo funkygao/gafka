@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/gorequest"
 )
 
@@ -27,8 +29,14 @@ func handleCatCommand(ui cli.Ui, zkzone *zk.ZkZone, cluster string, cmd string) 
 	if cluster == "" {
 		// on all clusters
 		zkzone.ForSortedEsClusters(func(ec *zk.EsCluster) {
-			ui.Info(ec.Name)
-			ui.Output(callCatRequest(ec.FirstBootstrapNode(), cmd))
+			out := callCatRequest(ec.FirstBootstrapNode(), cmd)
+			lines := strings.Split(out, "\n")
+			if len(lines) > 2 {
+				ui.Outputf("%s (%d %s)", color.Green(ec.Name), len(lines)-1, cmd)
+			} else {
+				ui.Info(ec.Name)
+			}
+			ui.Output(out)
 		})
 
 		return
