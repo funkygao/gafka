@@ -236,14 +236,22 @@ func (this *Systool) showBandwidth(nic string) {
 
 	getBandWidth := func(tx, rx string) (int64, int64) {
 		brx, err := ioutil.ReadFile(rx)
-		swallow(err)
+		if err != nil {
+			return 0, 0
+		}
 		btx, err := ioutil.ReadFile(tx)
-		swallow(err)
+		if err != nil {
+			return 0, 0
+		}
 
 		rxN, err := strconv.ParseInt(strings.TrimSpace(string(brx)), 10, 64)
-		swallow(err)
+		if err != nil {
+			return 0, 0
+		}
 		txN, err := strconv.ParseInt(strings.TrimSpace(string(btx)), 10, 64)
-		swallow(err)
+		if err != nil {
+			return 0, 0
+		}
 
 		return txN, rxN
 	}
@@ -251,7 +259,7 @@ func (this *Systool) showBandwidth(nic string) {
 	txB, rxB := getBandWidth(tx, rx)
 	time.Sleep(time.Second)
 	txB1, rxB1 := getBandWidth(tx, rx)
-	this.Ui.Outputf("tx:%s rx:%s", gofmt.ByteSize((txB1-txB)*8), gofmt.ByteSize((rxB1-rxB)*8))
+	this.Ui.Outputf("tx:%s/s rx:%s/s", gofmt.ByteSize(txB1-txB), gofmt.ByteSize(rxB1-rxB))
 }
 
 func (this *Systool) showPps(nic string, interval time.Duration) {
