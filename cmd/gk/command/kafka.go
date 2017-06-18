@@ -3,10 +3,13 @@ package command
 import (
 	"flag"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 )
 
 type Kafka struct {
@@ -26,6 +29,8 @@ func (this *Kafka) Run(args []string) (exitCode int) {
 		return 2
 	}
 
+	sarama.Logger = log.New(os.Stderr, color.Magenta("[sarama]"), log.LstdFlags|log.Lshortfile)
+
 	broker := args[len(args)-1]
 	kfk, err := sarama.NewClient([]string{broker}, saramaConfig())
 	if err != nil {
@@ -34,6 +39,7 @@ func (this *Kafka) Run(args []string) (exitCode int) {
 	}
 	defer kfk.Close()
 
+	this.Ui.Info("get topics")
 	topics, err := kfk.Topics()
 	swallow(err)
 	if len(topics) == 0 {
@@ -41,17 +47,23 @@ func (this *Kafka) Run(args []string) (exitCode int) {
 	}
 
 	for _, topic := range topics {
+		this.Ui.Infof("  get writable partitions of topic[%s]", topic)
 		alivePartitions, err := kfk.WritablePartitions(topic)
 		swallow(err)
+
+		this.Ui.Infof("  get partitions of topic[%s]", topic)
 		partions, err := kfk.Partitions(topic)
 		swallow(err)
 		if len(alivePartitions) != len(partions) {
-			this.Ui.Errorf("topic[%s] has %d readonly partitions", topic, len(partions)-len(alivePartitions))
+			this.Ui.Errorf("  topic[%s] has %d readonly partitions", topic, len(partions)-len(alivePartitions))
 		}
 
 		for _, partitionID := range alivePartitions {
+			this.Ui.Infof("    get replicas of %s#%d", topic, partitionID)
 			_, err := kfk.Replicas(topic, partitionID)
-			swallow(err)
+			if err != nil {
+				this.Ui.Errorf("      <-%s", err.Error())
+			}
 		}
 	}
 
