@@ -31,6 +31,7 @@ func (this *Systool) Run(args []string) (exitCode int) {
 		itop            bool
 		vmTool          bool
 		bandwidthDevice string
+		plain           bool
 		ppsDevice       string
 		interval        time.Duration
 	)
@@ -42,6 +43,7 @@ func (this *Systool) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&ioSched, "io", false, "")
 	cmdFlags.StringVar(&ppsDevice, "pps", "", "")
 	cmdFlags.StringVar(&bandwidthDevice, "b", "", "")
+	cmdFlags.BoolVar(&plain, "plain", false, "")
 	cmdFlags.BoolVar(&itop, "itop", false, "")
 	cmdFlags.DurationVar(&interval, "i", time.Second*3, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -49,7 +51,7 @@ func (this *Systool) Run(args []string) (exitCode int) {
 	}
 
 	if bandwidthDevice != "" {
-		this.showBandwidth(bandwidthDevice)
+		this.showBandwidth(bandwidthDevice, plain)
 	}
 
 	if ppsDevice != "" {
@@ -230,7 +232,7 @@ func (*Systool) runDiskTool(interval time.Duration) {
 
 }
 
-func (this *Systool) showBandwidth(nic string) {
+func (this *Systool) showBandwidth(nic string, plain bool) {
 	tx := fmt.Sprintf("/sys/class/net/%s/statistics/tx_bytes", nic)
 	rx := fmt.Sprintf("/sys/class/net/%s/statistics/rx_bytes", nic)
 
@@ -259,6 +261,11 @@ func (this *Systool) showBandwidth(nic string) {
 	txB, rxB := getBandWidth(tx, rx)
 	time.Sleep(time.Second)
 	txB1, rxB1 := getBandWidth(tx, rx)
+	if plain {
+		this.Ui.Outputf("%d %d", (txB1 - txB), (rxB1 - rxB))
+		return
+	}
+
 	this.Ui.Outputf("tx:%s/s rx:%s/s", gofmt.ByteSize(txB1-txB), gofmt.ByteSize(rxB1-rxB))
 }
 

@@ -84,6 +84,8 @@ func (ho hostOffsetInfo) ClusterTotal(cluster string) (t int64) {
 type brokerModel struct {
 	disks    int
 	nicSpeed int
+	tx       int64
+	rx       int64
 }
 
 type Balance struct {
@@ -342,12 +344,13 @@ func (c clusterQps) String() string {
 }
 
 func (this *Balance) drawSummary(sortedHosts []string) {
-	lines := []string{"Broker|Load|D|P|P/D|Net|TPS|Cluster/OPS"}
+	lines := []string{"Broker|Load|D|P|P/D|Net|Tx|Rx|TPS|Cluster/OPS"}
 	var (
-		totalTps        int64
-		totalPartitions int
-		totalDisks      int
-		totalBandwidth  int
+		totalTps         int64
+		totalPartitions  int
+		totalDisks       int
+		totalBandwidth   int
+		totalRx, totalTx int64
 	)
 	for _, host := range sortedHosts {
 		hostPartitions := 0
@@ -384,6 +387,8 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			continue
 		}
 
+		totalRx += model.rx
+		totalTx += model.tx
 		totalBandwidth += (model.nicSpeed / 1000)
 		totalDisks += model.disks
 		disks := fmt.Sprintf("%-2d", model.disks)
@@ -405,14 +410,17 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			ppd = color.Yellow("%-3d", partitionsPerDisk)
 		}
 
-		lines = append(lines, fmt.Sprintf("%s|%s|%s|%d|%s|%d|%s|%+v",
+		lines = append(lines, fmt.Sprintf("%s|%s|%s|%d|%s|%d|%s|%s|%s|%+v",
 			host, load, disks, hostPartitions, ppd, model.nicSpeed/1000,
+			gofmt.ByteSize(model.tx), gofmt.ByteSize(model.rx),
 			gofmt.Comma(offsetInfo.Total()), clusters))
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
 
-	this.Ui.Output(fmt.Sprintf("-Total- Brokers:%d Partitions:%d Disks:%d Bandwidth:%dGbps Tps:%s",
-		len(sortedHosts), totalPartitions, totalDisks, totalBandwidth, gofmt.Comma(totalTps)))
+	this.Ui.Output(fmt.Sprintf("-Total- Brokers:%d Partitions:%d Disks:%d Bandwidth:%dGbps Tx:%s Rx:%s Tps:%s",
+		len(sortedHosts), totalPartitions, totalDisks, totalBandwidth,
+		gofmt.ByteSize(totalTx), gofmt.ByteSize(totalRx),
+		gofmt.Comma(totalTps)))
 
 	// some members are slave only idle brokers
 	cf := consulapi.DefaultConfig()
@@ -481,6 +489,44 @@ func (this *Balance) fetchBrokerModel() {
 		speed, _ := strconv.Atoi(tuples[0])
 
 		this.brokerModelMap[host] = &brokerModel{nicSpeed: speed}
+	}
+	cmd.Close()
+
+	// get alive RX/Tx bandwidth
+	cmd = pipestream.New("consul", "exec", "gk", "systool", "-b", "bond0", "-plain")
+	cmd.Open()
+	if cmd.Reader() == nil {
+		return
+	}
+
+	scanner = bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "finished with exit code 0") ||
+			strings.Contains(line, "completed / acknowledged") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+
+		node := fields[0]
+		if strings.HasSuffix(node, ":") {
+			node = strings.TrimRight(node, ":")
+		}
+		host := nodeHostMap[node]
+		if host == "" {
+			continue
+		}
+
+		parts := strings.Split(fields[3], " ")
+		tx, _ := strconv.ParseInt(parts[0], 10, 64)
+		rx, _ := strconv.ParseInt(parts[1], 10, 64)
+
+		this.brokerModelMap[host].tx = tx
+		this.brokerModelMap[host].rx = rx
 	}
 	cmd.Close()
 
