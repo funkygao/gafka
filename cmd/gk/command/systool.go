@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,12 +25,13 @@ type Systool struct {
 
 func (this *Systool) Run(args []string) (exitCode int) {
 	var (
-		diskTool bool
-		netTool  bool
-		ioSched  bool
-		itop     bool
-		vmTool   bool
-		interval time.Duration
+		diskTool  bool
+		netTool   bool
+		ioSched   bool
+		itop      bool
+		vmTool    bool
+		ppsDevice string
+		interval  time.Duration
 	)
 	cmdFlags := flag.NewFlagSet("systool", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
@@ -37,10 +39,16 @@ func (this *Systool) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&vmTool, "m", false, "")
 	cmdFlags.BoolVar(&netTool, "n", false, "")
 	cmdFlags.BoolVar(&ioSched, "io", false, "")
+	cmdFlags.StringVar(&ppsDevice, "pps", "", "")
 	cmdFlags.BoolVar(&itop, "itop", false, "")
 	cmdFlags.DurationVar(&interval, "i", time.Second*3, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
+	}
+
+	if ppsDevice != "" {
+		this.showPps(ppsDevice, interval)
+		return
 	}
 
 	if ioSched {
@@ -216,6 +224,39 @@ func (*Systool) runDiskTool(interval time.Duration) {
 
 }
 
+func (this *Systool) showPps(nic string, interval time.Duration) {
+	tx := fmt.Sprintf("/sys/class/net/%s/statistics/tx_packets", nic)
+	rx := fmt.Sprintf("/sys/class/net/%s/statistics/rx_packets", nic)
+
+	var lastTx, lastRx int64
+	s := int64(interval.Seconds())
+	for {
+		brx, err := ioutil.ReadFile(rx)
+		swallow(err)
+		btx, err := ioutil.ReadFile(tx)
+		swallow(err)
+
+		rxN, err := strconv.ParseInt(strings.TrimSpace(string(brx)), 10, 64)
+		swallow(err)
+		txN, err := strconv.ParseInt(strings.TrimSpace(string(btx)), 10, 64)
+		swallow(err)
+
+		if lastRx != 0 && lastTx != 0 {
+			rxPps := (rxN - lastRx) / s
+			txPps := (txN - lastTx) / s
+			sumPps := rxPps + txPps
+
+			this.Ui.Output(fmt.Sprintf("%10s rx:%-8s tx:%-8s sum:%-8s",
+				nic, gofmt.Comma(rxPps), gofmt.Comma(txPps), gofmt.Comma(sumPps)))
+		}
+
+		lastRx = rxN
+		lastTx = txN
+
+		time.Sleep(interval)
+	}
+}
+
 func (*Systool) Synopsis() string {
 	return "OS diagnostics tool"
 }
@@ -233,6 +274,9 @@ Options:
 
     -n
       Network diagnostics
+
+    -pps nic
+     Show PacketPerSecond of a NIC on Linux
 
     -m
       VM diagnostics
