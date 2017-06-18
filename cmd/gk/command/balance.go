@@ -344,7 +344,7 @@ func (c clusterQps) String() string {
 }
 
 func (this *Balance) drawSummary(sortedHosts []string) {
-	lines := []string{"Broker|Load|D|P|P/D|Net|Tx|Rx|TPS|Cluster/OPS"}
+	lines := []string{"Broker|Load|D|P|P/D|NIC|Tx|Rx|TPS|Cluster/OPS"}
 	var (
 		totalTps         int64
 		totalPartitions  int
@@ -521,9 +521,14 @@ func (this *Balance) fetchBrokerModel() {
 			continue
 		}
 
-		parts := strings.Split(fields[3], " ")
-		tx, _ := strconv.ParseInt(parts[0], 10, 64)
-		rx, _ := strconv.ParseInt(parts[1], 10, 64)
+		broker := this.brokerModelMap[host]
+		if broker == nil {
+			// this host might not be broker: it has no bond0
+			continue
+		}
+
+		tx, _ := strconv.ParseInt(fields[1], 10, 64)
+		rx, _ := strconv.ParseInt(fields[2], 10, 64)
 
 		this.brokerModelMap[host].tx = tx
 		this.brokerModelMap[host].rx = rx
