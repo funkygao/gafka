@@ -59,6 +59,13 @@ func init() {
 			}, nil
 		},
 
+		"kafka": func() (cli.Command, error) {
+			return &command.Kafka{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"time": func() (cli.Command, error) {
 			return &command.Time{
 				Ui:  ui,
