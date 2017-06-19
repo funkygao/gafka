@@ -309,8 +309,14 @@ func (this *Segment) doRender(segments map[string]map[int]map[int]int64) {
 		hours = append(hours, tuples[1])
 	}
 
-	bc1.Data = sizesInGB
-	bc1.DataLabels = hours
+	maxItems := (w - 2) / 4
+	begin := 0
+	if len(sizesInGB) > maxItems {
+		begin = len(sizesInGB) - maxItems
+	}
+
+	bc1.Data = sizesInGB[begin:]
+	bc1.DataLabels = hours[begin:]
 
 	bc1.Width = w
 	bc1.SetY(0)
