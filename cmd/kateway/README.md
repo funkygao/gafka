@@ -232,6 +232,7 @@ d37c73f2b2bce85f7fa16b6a550d26c5372892ef
 
 ### TODO
 
+- [ ] kguard watch GC for zk/kafka
 - [ ] tag move from body to key, only store hash(tag)
 - [ ] kw id replaced by zk sequence
 - [ ] cleanup of the idle->active pub clients during shutdown
