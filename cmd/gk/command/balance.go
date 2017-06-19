@@ -22,7 +22,7 @@ import (
 	"github.com/pmylund/sortutil"
 )
 
-const diskFullThreshold = 85
+var diskFullThreshold = 85
 
 type hostLoadInfo struct {
 	host            string
@@ -131,6 +131,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.host, "host", "", "")
 	cmdFlags.BoolVar(&this.skipKafkaInternal, "skipk", true, "")
 	cmdFlags.Int64Var(&this.atLeastTps, "over", 0, "")
+	cmdFlags.IntVar(&diskFullThreshold, "d", 85, "")
 	cmdFlags.BoolVar(&this.detailMode, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -714,6 +715,10 @@ Options:
 
     -l
       Use a long listing format.
+
+    -d n
+     Disk full percentage threshold.
+     Default 85.
 
     -over number
       Only display brokers whose TPS over the number.
