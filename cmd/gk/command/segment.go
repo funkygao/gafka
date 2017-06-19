@@ -294,7 +294,7 @@ func (this *Segment) doRender(segments map[string]map[int]map[int]int64) {
 			for hour, size := range hourSize {
 				dh := fmt.Sprintf("%d:%d", day, hour)
 				dayHours = append(dayHours, dh)
-				m[dh] = int(size / (1 << 20))
+				m[dh] = int(size / (1 << 30))
 			}
 		}
 	}
