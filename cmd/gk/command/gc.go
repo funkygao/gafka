@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 
@@ -57,7 +58,7 @@ func (this *GC) analyzeKafkaGCLog(name string) {
 
 		ut, rt, at := this.parseKafkaGCLine(string(line))
 		if ut > this.threshold || rt > this.threshold {
-			this.Ui.Outputf("%s user:%.2f real:%.2f", at, ut, rt)
+			this.Ui.Outputf("%s %s user:%.2f real:%.2f", path.Base(path.Dir(path.Dir(f.Name()))), at, ut, rt)
 		}
 	}
 }
