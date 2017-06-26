@@ -15,6 +15,8 @@ import (
 type Normalize struct {
 	Ui  cli.Ui
 	Cmd string
+
+	echoLine bool
 }
 
 func (this *Normalize) Run(args []string) (exitCode int) {
@@ -25,6 +27,7 @@ func (this *Normalize) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&fields, "f", "", "")
 	cmdFlags.StringVar(&mode, "m", "url", "")
+	cmdFlags.BoolVar(&this.echoLine, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -32,9 +35,89 @@ func (this *Normalize) Run(args []string) (exitCode int) {
 	switch mode {
 	case "url":
 		this.normalizeUrl(strings.Split(fields, ","))
+	case "ng":
+		this.normalizeNginxLatency(strings.Split(fields, ","))
+
 	}
 
 	return
+}
+
+// cat xx | awk '{print $11,$13,$14,$15}' | gk normalize -m ng
+func (this *Normalize) normalizeNginxLatency(fields []string) {
+	reader := bufio.NewReader(os.Stdin)
+	n, slowN := 0, 0
+	parts := make([]string, 100)
+	for {
+		l, e := gio.ReadLine(reader)
+		if e != nil {
+			break
+		}
+
+		n++
+
+		line := string(l)
+		tuples := strings.Fields(line)
+		if len(tuples) < 1 {
+			// empty line, ignored
+			continue
+		}
+
+		// strip '"'
+		for i, f := range tuples {
+			tuples[i] = strings.Replace(f, `"`, "", -1)
+			tuples[i] = strings.Replace(f, ",", "", -1)
+		}
+
+		if len(fields) > 0 {
+			// print specified fields
+			parts = parts[0:0]
+			for _, f := range fields {
+				i, err := strconv.Atoi(f)
+				swallow(err)
+				if i < 0 {
+					parts = append(parts, tuples[len(tuples)+i])
+				} else {
+					parts = append(parts, tuples[i])
+				}
+			}
+			if this.echoLine {
+				this.Ui.Outputf("%d %s", n, strings.Join(parts, " "))
+			} else {
+				this.Ui.Output(strings.Join(parts, " "))
+			}
+
+			continue
+		}
+
+		// parse nginx request_time and upstream_response_time
+		// 200 214 0.002 "0.001"
+		if len(tuples) != 4 {
+			this.Ui.Warn(line)
+			continue
+		}
+
+		request_time, _ := strconv.ParseFloat(tuples[2], 64)
+		upstream_response_time, _ := strconv.ParseFloat(tuples[3], 64)
+		if request_time-upstream_response_time > 0.05 {
+			if this.echoLine {
+				this.Ui.Warnf("%d %s", n, line)
+			} else {
+				this.Ui.Warn(line)
+			}
+		} else if request_time > 1. {
+			slowN++
+			if this.echoLine {
+				this.Ui.Outputf("%d %s", n, line)
+			} else {
+				this.Ui.Output(line)
+			}
+		}
+	}
+
+	if len(fields) == 0 {
+		this.Ui.Outputf("%d/%d=%f%%", slowN, n, 100.*float64(slowN)/float64(n))
+	}
 }
 
 func (this *Normalize) normalizeUrl(fields []string) {
@@ -73,10 +156,13 @@ Options:
 
     -f comma seperated fields
      e,g. -f 1,2
-     Fields index start from 0
+     Fields index start from 0, -1 means last field
 
-    -m <url>
-     Mode
+    -m <url|ng>
+     Mode 
+
+    -l
+     Echo line number
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
