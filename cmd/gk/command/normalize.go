@@ -16,7 +16,8 @@ type Normalize struct {
 	Ui  cli.Ui
 	Cmd string
 
-	echoLine bool
+	echoLine  bool
+	threshold float64
 }
 
 func (this *Normalize) Run(args []string) (exitCode int) {
@@ -27,6 +28,7 @@ func (this *Normalize) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&fields, "f", "", "")
 	cmdFlags.StringVar(&mode, "m", "url", "")
+	cmdFlags.Float64Var(&this.threshold, "t", 1., "")
 	cmdFlags.BoolVar(&this.echoLine, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -110,7 +112,7 @@ func (this *Normalize) normalizeNginxLatency(fields []string) {
 			} else {
 				this.Ui.Warn(line)
 			}
-		} else if request_time > 1. {
+		} else if request_time > this.threshold {
 			slowN++
 			if this.echoLine {
 				this.Ui.Outputf("%d %s", n, line)
@@ -165,6 +167,9 @@ Options:
 
     -m <url|ng>
      Mode 
+
+    -t nginx upstream reponse slow threshold
+     Default 1.0
 
     -l
      Echo line number
