@@ -73,6 +73,9 @@ func (this *Normalize) normalizeNginxLatency(fields []string) {
 			// print specified fields
 			parts = parts[0:0]
 			for _, f := range fields {
+				if len(f) == 0 {
+					continue
+				}
 				i, err := strconv.Atoi(f)
 				swallow(err)
 				if i < 0 {
@@ -81,10 +84,12 @@ func (this *Normalize) normalizeNginxLatency(fields []string) {
 					parts = append(parts, tuples[i])
 				}
 			}
-			if this.echoLine {
-				this.Ui.Outputf("%d %s", n, strings.Join(parts, " "))
-			} else {
-				this.Ui.Output(strings.Join(parts, " "))
+			if len(parts) > 0 {
+				if this.echoLine {
+					this.Ui.Outputf("%d %s", n, strings.Join(parts, " "))
+				} else {
+					this.Ui.Output(strings.Join(parts, " "))
+				}
 			}
 
 			continue
