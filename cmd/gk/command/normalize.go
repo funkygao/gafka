@@ -71,7 +71,7 @@ func (this *Normalize) normalizeNginxLatency(fields []string) {
 			tuples[i] = strings.Replace(f, ",", "", -1)
 		}
 
-		if len(fields) > 0 {
+		if len(fields) > 0 && fields[0] != "" {
 			// print specified fields
 			parts = parts[0:0]
 			for _, f := range fields {
