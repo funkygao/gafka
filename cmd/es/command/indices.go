@@ -13,6 +13,8 @@ import (
 type Indices struct {
 	Ui  cli.Ui
 	Cmd string
+
+	indexPattern string
 }
 
 func (this *Indices) Run(args []string) (exitCode int) {
@@ -22,8 +24,9 @@ func (this *Indices) Run(args []string) (exitCode int) {
 	)
 	cmdFlags := flag.NewFlagSet("indices", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.StringVar(&zone, "z", ctx.EsDefaultZone(), "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
+	cmdFlags.StringVar(&this.indexPattern, "i", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -48,6 +51,8 @@ Options:
     -z zone
 
     -c cluster
+
+    -i index pattern
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)

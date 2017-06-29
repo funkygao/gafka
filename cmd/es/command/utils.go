@@ -34,10 +34,8 @@ func handleCatCommand(ui cli.Ui, zkzone *zk.ZkZone, cluster string, cmd string, 
 			if len(lines) > 3 {
 				// -2: header and an empty ending line
 				ui.Outputf("%s (%d %s)", color.Green(ec.Name), len(lines)-2, cmd)
-			} else {
-				ui.Info(ec.Name)
+				ui.Output(out)
 			}
-			ui.Output(out)
 		})
 
 		return

@@ -60,6 +60,11 @@ func Zone(z string) *zone {
 	return conf.zones[z]
 }
 
+func EsDefaultZone() string {
+	ensureLogLoaded()
+	return conf.esDefaultZone
+}
+
 func ZkDefaultZone() string {
 	ensureLogLoaded()
 	return conf.zkDefaultZone
