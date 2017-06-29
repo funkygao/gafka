@@ -45,6 +45,13 @@ func init() {
 			}, nil
 		},
 
+		"farm": func() (cli.Command, error) {
+			return &command.Farm{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"watch": func() (cli.Command, error) {
 			return &command.Watch{
 				Ui:  ui,
