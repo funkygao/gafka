@@ -424,7 +424,7 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
 
-	this.Ui.Output(fmt.Sprintf("-Total- Brokers:%d Partitions:%d Disks:%d,%s/%s Bandwidth:%dGbps Tx:%s Rx:%s Tps:%s",
+	this.Ui.Output(fmt.Sprintf("-Total- Brokers:%d Partitions:%d Disks:%d,%s/%s Bandwidth:%dGbps Tx:%s/s Rx:%s/s Tps:%s",
 		len(sortedHosts), totalPartitions,
 		totalDisks, gofmt.ByteSize(totalDiskUsed*1024), gofmt.ByteSize(totalDiskSize*1024), // 1K-blocks
 		totalBandwidth,
