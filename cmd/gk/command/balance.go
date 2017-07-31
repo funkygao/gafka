@@ -86,6 +86,8 @@ type brokerModel struct {
 	nicSpeed int
 	tx       int64
 	rx       int64
+	diskSize int64
+	diskUsed int64
 }
 
 type Balance struct {
@@ -350,6 +352,8 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 		totalTps         int64
 		totalPartitions  int
 		totalDisks       int
+		totalDiskSize    int64
+		totalDiskUsed    int64
 		totalBandwidth   int
 		totalRx, totalTx int64
 	)
@@ -391,6 +395,8 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 		totalRx += model.rx
 		totalTx += model.tx
 		totalBandwidth += (model.nicSpeed / 1000)
+		totalDiskSize += model.diskSize
+		totalDiskUsed += model.diskUsed
 		totalDisks += model.disks
 		disks := fmt.Sprintf("%-2d", model.disks)
 		if model.disks < 3 {
@@ -418,8 +424,10 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
 
-	this.Ui.Output(fmt.Sprintf("-Total- Brokers:%d Partitions:%d Disks:%d Bandwidth:%dGbps Tx:%s Rx:%s Tps:%s",
-		len(sortedHosts), totalPartitions, totalDisks, totalBandwidth,
+	this.Ui.Output(fmt.Sprintf("-Total- Brokers:%d Partitions:%d Disks:%d,%s/%s Bandwidth:%dGbps Tx:%s Rx:%s Tps:%s",
+		len(sortedHosts), totalPartitions,
+		totalDisks, gofmt.ByteSize(totalDiskUsed*1024), gofmt.ByteSize(totalDiskSize*1024), // 1K-blocks
+		totalBandwidth,
 		gofmt.ByteSize(totalTx), gofmt.ByteSize(totalRx),
 		gofmt.Comma(totalTps)))
 
@@ -579,6 +587,14 @@ func (this *Balance) fetchBrokerModel() {
 
 			if len(fields) == 7 && strings.HasSuffix(fields[5], "%") {
 				// myhost.com: /dev/sdf1  3845678096 1288980780 2361348120  36% /data5
+
+				diskSize, err := strconv.ParseInt(fields[2], 10, 64)
+				swallow(err)
+				broker.diskSize += diskSize
+				diskUsed, err := strconv.ParseInt(fields[3], 10, 64)
+				swallow(err)
+				broker.diskUsed += diskUsed
+
 				percent, err := strconv.Atoi(strings.TrimRight(fields[5], "%"))
 				swallow(err)
 				if percent >= diskFullThreshold {
