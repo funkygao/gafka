@@ -47,8 +47,7 @@ func (this *Farm) Run(args []string) (exitCode int) {
 		data, _, err := zkzone.Conn().Get(path)
 		swallow(err)
 		var tags []string
-		err = json.Unmarshal(data, &tags)
-		swallow(err)
+		json.Unmarshal(data, &tags)
 		tags = append(tags, tuples[1])
 		data, err = json.Marshal(tags)
 		swallow(err)
@@ -66,7 +65,7 @@ func (this *Farm) Run(args []string) (exitCode int) {
 			data := children[c]
 			var v []string
 			json.Unmarshal(data.Data(), &v)
-			this.Ui.Outputf("%20s %+v", c, v)
+			this.Ui.Outputf("%16s %+v", c, v)
 		}
 
 	}
