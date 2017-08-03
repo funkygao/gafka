@@ -16,7 +16,7 @@ import (
 func (this *Monitor) cgLagsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Error(err.Error())
+			log.Error("%+v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	}()
