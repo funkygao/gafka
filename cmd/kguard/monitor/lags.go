@@ -14,6 +14,13 @@ import (
 // curl -XPOST -d'[{"cluster":"foo","topic":"t","group":"bar"}]' http://localhost/lags
 // TODO authz
 func (this *Monitor) cgLagsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}()
+
 	type lagRequestItem struct {
 		Cluster string `json:"cluster"`
 		Topic   string `json:"topic"`
@@ -22,9 +29,9 @@ func (this *Monitor) cgLagsHandler(w http.ResponseWriter, r *http.Request, param
 	type lagRequest []lagRequestItem
 
 	type partitionItem struct {
-		Id     string    `json:"id"`
-		Commit time.Time `json:"commit"`
-		Lag    int64     `json:"lag"`
+		Id     string `json:"id"`
+		Commit int    `json:"commit"`
+		Lag    int64  `json:"lag"`
 	}
 	type lagResponseItem struct {
 		Cluster    string          `json:"cluster"`
