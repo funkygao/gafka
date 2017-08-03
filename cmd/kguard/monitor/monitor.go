@@ -20,6 +20,7 @@ import (
 	"github.com/funkygao/gafka/telemetry/influxdb"
 	"github.com/funkygao/gafka/zk"
 	"github.com/funkygao/go-metrics"
+	"github.com/funkygao/golib/ratelimiter"
 	"github.com/funkygao/golib/signal"
 	"github.com/funkygao/golib/sync2"
 	"github.com/funkygao/httprouter"
@@ -49,6 +50,8 @@ type Monitor struct {
 	quit     chan struct{}
 	quitOnce sync.Once
 	leader   sync2.AtomicBool
+
+	rl *ratelimiter.LeakyBuckets
 }
 
 func (this *Monitor) Init() {
@@ -76,6 +79,7 @@ func (this *Monitor) Init() {
 	this.zkzone = zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 	this.watchers = make([]Watcher, 0, 10)
 	this.quit = make(chan struct{})
+	this.rl = ratelimiter.NewLeakyBuckets(3, time.Minute)
 
 	// export RESTful api
 	this.setupRoutes()

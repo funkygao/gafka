@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"github.com/funkygao/httprouter"
+	log "github.com/funkygao/log4go"
 )
 
 // POST /lag
 // e,g.
 // curl -XPOST -d'[{"cluster":"foo","topic":"t","group":"bar"}]' http://localhost/lags
-func (this *Monitor) cgLagsHandler(w http.ResponseWriter, r *http.Request,
-	params httprouter.Params) {
+// TODO authz
+func (this *Monitor) cgLagsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	type lagRequestItem struct {
 		Cluster string `json:"cluster"`
 		Topic   string `json:"topic"`
@@ -22,7 +23,7 @@ func (this *Monitor) cgLagsHandler(w http.ResponseWriter, r *http.Request,
 
 	type partitionItem struct {
 		Id     string    `json:"id"`
-		Uptime time.Time `json:"uptime"`
+		Commit time.Time `json:"commit"`
 		Lag    int64     `json:"lag"`
 	}
 	type lagResponseItem struct {
@@ -33,21 +34,29 @@ func (this *Monitor) cgLagsHandler(w http.ResponseWriter, r *http.Request,
 	}
 	type lagResponse []lagResponseItem
 
+	if !this.rl.Pour(r.RemoteAddr, 1) {
+		w.Header().Set("Connection", "close")
+		http.Error(w, "quota exceeded", http.StatusTooManyRequests)
+		return
+	}
+
 	dec := json.NewDecoder(r.Body)
 	var req lagRequest
 	err := dec.Decode(&req)
 	if err != nil {
+		log.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	// parse the request
+	// group by cluster
 	res := make(lagResponse, 0, len(req))
-	var clusters map[string]struct{}
+	var clusters = make(map[string]struct{})
 	for _, r := range req {
 		clusters[r.Cluster] = struct{}{}
 	}
+	// render response
 	for cluster := range clusters {
 		zkcluster := this.zkzone.NewCluster(cluster)
 		consumersByGroup := zkcluster.ConsumersByGroup("")
@@ -69,7 +78,7 @@ func (this *Monitor) cgLagsHandler(w http.ResponseWriter, r *http.Request,
 				item.Partitions = append(item.Partitions, partitionItem{
 					Id:     tp.PartitionId,
 					Lag:    tp.Lag,
-					Uptime: tp.Mtime.Time(),
+					Commit: int(time.Since(tp.Mtime.Time()).Seconds()),
 				})
 			}
 
