@@ -73,7 +73,7 @@ func (this *Monitor) cgLagsHandler(w http.ResponseWriter, r *http.Request, param
 			}
 
 			var item lagResponseItem
-			item.Cluster = r.Topic
+			item.Cluster = r.Cluster
 			item.Topic = r.Topic
 			item.Group = r.Group
 			item.Partitions = make([]partitionItem, 0)
