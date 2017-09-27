@@ -8,6 +8,7 @@ import (
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/actord"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/anomaly"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/external"
+	_ "github.com/funkygao/gafka/cmd/kguard/watchers/gc"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/haproxy"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/influxdb"
 	_ "github.com/funkygao/gafka/cmd/kguard/watchers/influxquery"

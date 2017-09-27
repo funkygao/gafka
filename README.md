@@ -1,4 +1,4 @@
-# gafka 
+# gafka [![Build Status](https://travis-ci.org/funkygao/gafka.png?branch=dev)](https://travis-ci.org/funkygao/gafka)
     
                        __   _            
                       / _| | |           

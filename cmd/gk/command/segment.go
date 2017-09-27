@@ -19,7 +19,9 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/golib/gofmt"
+	"github.com/funkygao/termui"
 	"github.com/golang/snappy"
+	"github.com/nsf/termbox-go"
 	"github.com/pmylund/sortutil"
 )
 
@@ -31,6 +33,7 @@ type Segment struct {
 	Cmd string
 
 	rootPath string
+	render   bool
 	filename string
 	limit    int
 }
@@ -39,6 +42,7 @@ func (this *Segment) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("segment", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.StringVar(&this.rootPath, "s", "", "")
+	cmdFlags.BoolVar(&this.render, "render", true, "")
 	cmdFlags.IntVar(&this.limit, "n", -1, "")
 	cmdFlags.StringVar(&this.filename, "f", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -212,6 +216,10 @@ func (this *Segment) printSummary() {
 		this.Ui.Error(err.Error())
 	}
 
+	if this.render {
+		this.doRender(segments)
+	}
+
 	partitions := make([]string, 0, len(segments))
 	for dir := range segments {
 		partitions = append(partitions, dir)
@@ -263,6 +271,64 @@ func (this *Segment) printSummary() {
 	return
 }
 
+func (this *Segment) doRender(segments map[string]map[int]map[int]int64) {
+	err := termui.Init()
+	swallow(err)
+	defer termui.Close()
+
+	if len(segments) > 1 {
+		panic("recursive dir not allowed")
+	}
+
+	termui.UseTheme("helloworld")
+
+	w, h := termbox.Size()
+
+	bc1 := termui.NewBarChart()
+	bc1.Border.Label = "Segement Size in GB"
+
+	dayHours := make([]string, 0)
+	m := make(map[string]int)
+	for _, dayHourSize := range segments {
+		for day, hourSize := range dayHourSize {
+			for hour, size := range hourSize {
+				dh := fmt.Sprintf("%d:%d", day, hour)
+				dayHours = append(dayHours, dh)
+				m[dh] = int(size / (1 << 30))
+			}
+		}
+	}
+	sort.Strings(dayHours)
+
+	sizesInGB := make([]int, 0)
+	hours := make([]string, 0, len(dayHours))
+	for _, dh := range dayHours {
+		sizesInGB = append(sizesInGB, m[dh])
+
+		tuples := strings.Split(dh, ":")
+		hours = append(hours, tuples[1])
+	}
+
+	maxItems := (w - 2) / 4
+	begin := 0
+	if len(sizesInGB) > maxItems {
+		begin = len(sizesInGB) - maxItems
+	}
+
+	bc1.Data = sizesInGB[begin:]
+	bc1.DataLabels = hours[begin:]
+
+	bc1.Width = w
+	bc1.SetY(0)
+	bc1.Height = h
+	bc1.TextColor = termui.ColorWhite
+	bc1.BarColor = termui.ColorRed
+	bc1.NumColor = termui.ColorYellow
+
+	termui.Render(bc1)
+	termbox.PollEvent()
+}
+
 func (*Segment) Synopsis() string {
 	return "Scan the kafka segments and display summary"
 }
@@ -274,13 +340,18 @@ Usage: %s segment [options]
     %s
 
     -f segment file name
-
-    -s dir
-      Sumamry of a segment dir.
-      Summary across partitions is supported if they have the same parent dir.
+     Display segment content.
 
     -n limit
-      Default unlimited.
+     Default unlimited.
+
+    -s dir
+     Sumamry of a segment dir.
+     Summary across partitions is supported if they have the same parent dir.    
+
+    -render
+     Render histogram. Work with '-s <dir>'.
+
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)

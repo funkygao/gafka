@@ -22,7 +22,7 @@ import (
 	"github.com/pmylund/sortutil"
 )
 
-const diskFullThreshold = 85
+var diskFullThreshold = 85
 
 type hostLoadInfo struct {
 	host            string
@@ -84,6 +84,10 @@ func (ho hostOffsetInfo) ClusterTotal(cluster string) (t int64) {
 type brokerModel struct {
 	disks    int
 	nicSpeed int
+	tx       int64
+	rx       int64
+	diskSize int64
+	diskUsed int64
 }
 
 type Balance struct {
@@ -129,6 +133,7 @@ func (this *Balance) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.host, "host", "", "")
 	cmdFlags.BoolVar(&this.skipKafkaInternal, "skipk", true, "")
 	cmdFlags.Int64Var(&this.atLeastTps, "over", 0, "")
+	cmdFlags.IntVar(&diskFullThreshold, "d", 85, "")
 	cmdFlags.BoolVar(&this.detailMode, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -342,12 +347,15 @@ func (c clusterQps) String() string {
 }
 
 func (this *Balance) drawSummary(sortedHosts []string) {
-	lines := []string{"Broker|Load|D|P|P/D|Net|TPS|Cluster/OPS"}
+	lines := []string{"Broker|Load|D|P|P/D|NIC|Tx|Rx|TPS|Cluster/OPS"}
 	var (
-		totalTps        int64
-		totalPartitions int
-		totalDisks      int
-		totalBandwidth  int
+		totalTps         int64
+		totalPartitions  int
+		totalDisks       int
+		totalDiskSize    int64
+		totalDiskUsed    int64
+		totalBandwidth   int
+		totalRx, totalTx int64
 	)
 	for _, host := range sortedHosts {
 		hostPartitions := 0
@@ -384,7 +392,11 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			continue
 		}
 
+		totalRx += model.rx
+		totalTx += model.tx
 		totalBandwidth += (model.nicSpeed / 1000)
+		totalDiskSize += model.diskSize
+		totalDiskUsed += model.diskUsed
 		totalDisks += model.disks
 		disks := fmt.Sprintf("%-2d", model.disks)
 		if model.disks < 3 {
@@ -405,14 +417,19 @@ func (this *Balance) drawSummary(sortedHosts []string) {
 			ppd = color.Yellow("%-3d", partitionsPerDisk)
 		}
 
-		lines = append(lines, fmt.Sprintf("%s|%s|%s|%d|%s|%d|%s|%+v",
+		lines = append(lines, fmt.Sprintf("%s|%s|%s|%d|%s|%d|%s|%s|%s|%+v",
 			host, load, disks, hostPartitions, ppd, model.nicSpeed/1000,
+			gofmt.ByteSize(model.tx), gofmt.ByteSize(model.rx),
 			gofmt.Comma(offsetInfo.Total()), clusters))
 	}
 	this.Ui.Output(columnize.SimpleFormat(lines))
 
-	this.Ui.Output(fmt.Sprintf("-Total- Brokers:%d Partitions:%d Disks:%d Bandwidth:%dGbps Tps:%s",
-		len(sortedHosts), totalPartitions, totalDisks, totalBandwidth, gofmt.Comma(totalTps)))
+	this.Ui.Output(fmt.Sprintf("-Total- Brokers:%d Partitions:%d Disks:%d,%s/%s Bandwidth:%dGbps Tx:%s/s Rx:%s/s Tps:%s",
+		len(sortedHosts), totalPartitions,
+		totalDisks, gofmt.ByteSize(totalDiskUsed*1024), gofmt.ByteSize(totalDiskSize*1024), // 1K-blocks
+		totalBandwidth,
+		gofmt.ByteSize(totalTx), gofmt.ByteSize(totalRx),
+		gofmt.Comma(totalTps)))
 
 	// some members are slave only idle brokers
 	cf := consulapi.DefaultConfig()
@@ -484,6 +501,49 @@ func (this *Balance) fetchBrokerModel() {
 	}
 	cmd.Close()
 
+	// get alive RX/Tx bandwidth
+	cmd = pipestream.New("consul", "exec", "gk", "systool", "-b", "bond0", "-plain")
+	cmd.Open()
+	if cmd.Reader() == nil {
+		return
+	}
+
+	scanner = bufio.NewScanner(cmd.Reader())
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "finished with exit code 0") ||
+			strings.Contains(line, "completed / acknowledged") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+
+		node := fields[0]
+		if strings.HasSuffix(node, ":") {
+			node = strings.TrimRight(node, ":")
+		}
+		host := nodeHostMap[node]
+		if host == "" {
+			continue
+		}
+
+		broker := this.brokerModelMap[host]
+		if broker == nil {
+			// this host might not be broker: it has no bond0
+			continue
+		}
+
+		tx, _ := strconv.ParseInt(fields[1], 10, 64)
+		rx, _ := strconv.ParseInt(fields[2], 10, 64)
+
+		this.brokerModelMap[host].tx = tx
+		this.brokerModelMap[host].rx = rx
+	}
+	cmd.Close()
+
 	// get disks count
 	cmd = pipestream.New("consul", "exec", "df")
 	cmd.Open()
@@ -527,6 +587,14 @@ func (this *Balance) fetchBrokerModel() {
 
 			if len(fields) == 7 && strings.HasSuffix(fields[5], "%") {
 				// myhost.com: /dev/sdf1  3845678096 1288980780 2361348120  36% /data5
+
+				diskSize, err := strconv.ParseInt(fields[2], 10, 64)
+				swallow(err)
+				broker.diskSize += diskSize
+				diskUsed, err := strconv.ParseInt(fields[3], 10, 64)
+				swallow(err)
+				broker.diskUsed += diskUsed
+
 				percent, err := strconv.Atoi(strings.TrimRight(fields[5], "%"))
 				swallow(err)
 				if percent >= diskFullThreshold {
@@ -663,6 +731,10 @@ Options:
 
     -l
       Use a long listing format.
+
+    -d n
+     Disk full percentage threshold.
+     Default 85.
 
     -over number
       Only display brokers whose TPS over the number.

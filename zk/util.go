@@ -45,7 +45,7 @@ func hostOfConsumer(consumerId string) string {
 
 	dashN := 0
 	var lo, hi int
-	for hi = len(consumerId) - 1; hi >= 0; hi-- {
+	for hi = len(consumerId) - 1; hi > 0; hi-- {
 		if consumerId[hi] == '-' {
 			dashN++
 			if dashN == 2 {

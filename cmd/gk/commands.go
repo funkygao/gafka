@@ -45,6 +45,13 @@ func init() {
 			}, nil
 		},
 
+		"farm": func() (cli.Command, error) {
+			return &command.Farm{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"watch": func() (cli.Command, error) {
 			return &command.Watch{
 				Ui:  ui,
@@ -54,6 +61,13 @@ func init() {
 
 		"chaos": func() (cli.Command, error) {
 			return &command.Chaos{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"kafka": func() (cli.Command, error) {
+			return &command.Kafka{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
@@ -166,13 +180,6 @@ func init() {
 
 		"zklog": func() (cli.Command, error) {
 			return &command.ZkLog{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
-		"pps": func() (cli.Command, error) {
-			return &command.Pps{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil

@@ -13,6 +13,8 @@ import (
 type Shards struct {
 	Ui  cli.Ui
 	Cmd string
+
+	index string
 }
 
 func (this *Shards) Run(args []string) (exitCode int) {
@@ -22,8 +24,9 @@ func (this *Shards) Run(args []string) (exitCode int) {
 	)
 	cmdFlags := flag.NewFlagSet("shards", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.StringVar(&zone, "z", ctx.EsDefaultZone(), "")
 	cmdFlags.StringVar(&cluster, "c", "", "")
+	cmdFlags.StringVar(&this.index, "i", "", "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -48,6 +51,8 @@ Options:
     -z zone
 
     -c cluster
+
+    -i index
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)

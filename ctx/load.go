@@ -22,6 +22,7 @@ func LoadConfig(fn string) {
 	conf.kafkaHome = cf.String("kafka_home", "")
 	conf.logLevel = cf.String("loglevel", "info")
 	conf.zkDefaultZone = cf.String("zk_default_zone", "")
+	conf.esDefaultZone = cf.String("es_default_zone", conf.zkDefaultZone)
 	conf.upgradeCenter = cf.String("upgrade_center", "")
 
 	conf.aliases = make(map[string]string)

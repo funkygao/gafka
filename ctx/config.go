@@ -17,6 +17,7 @@ type config struct {
 	kafkaHome     string
 	logLevel      string
 	zkDefaultZone string // zk command default zone name
+	esDefaultZone string
 	upgradeCenter string
 	zones         map[string]*zone // name:zone
 	aliases       map[string]string

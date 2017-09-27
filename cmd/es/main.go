@@ -42,7 +42,7 @@ func main() {
 					return
 
 				case "-c": // cluster
-					zone := ctx.ZkDefaultZone()
+					zone := ctx.EsDefaultZone()
 					for i := 0; i < len(args)-1; i++ {
 						if args[i] == "-z" {
 							// happy with panic

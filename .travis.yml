@@ -2,19 +2,23 @@ language: go
 
 go:    
     - 1.7
-    - tip
+    - 1.8
+
+before_install:
+    - sudo apt-get install -qq libpcap-dev
+    - go get github.com/funkygao/go-metrics
+    - go get github.com/jteeuwen/go-bindata
+    - go install github.com/jteeuwen/go-bindata/go-bindata
 
 install:
      - go get -d -t -v ./...
-     - ./build.sh -it kateway
-     - ./build.sh -it gk
-     - ./build.sh -it actord
-     - ./build.sh -it ehaproxy
-     - ./build.sh -it kguard
+     - ./build.sh -a
 
 test:
-    - cd cmd; go vet ./...
-    - cd cmd; go test ./...
+    - go test github.com/funkygao/gafka/cmd/kateway/gateway/...
+    - go test github.com/funkygao/gafka/cmd/kguard/...
+    - go test github.com/funkygao/gafka/sla
+    - go test github.com/funkygao/gafka/telemetry
 
 # this should give us faster builds according to 
 # http://docs.travis-ci.com/user/migrating-from-legacy/

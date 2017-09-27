@@ -302,14 +302,14 @@ func (this *Top) showAndResetCounters() {
 		} else if !this.dashboardGraph {
 			clusterAndTopic := strings.SplitN(counterFlip[num], ":", 2)
 			if this.longFmt {
-				this.Ui.Output(fmt.Sprintf("%25s %-30s %42s %20s %15.2f",
+				this.Ui.Output(fmt.Sprintf("%25s %-30s %42s %20s %15.1f",
 					clusterAndTopic[0],
 					strings.Join(this.brokers[counterFlip[num]], ","),
 					fmt.Sprintf("%s:%2d", clusterAndTopic[1], this.partitions[counterFlip[num]]),
 					gofmt.Comma(int64(num)),
 					mps))
 			} else {
-				this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
+				this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.1f",
 					clusterAndTopic[0],
 					fmt.Sprintf("%s:%2d", clusterAndTopic[1], this.partitions[counterFlip[num]]),
 					gofmt.Comma(int64(num)),
@@ -331,7 +331,7 @@ func (this *Top) showAndResetCounters() {
 	} else {
 		if this.longFmt {
 			// the catchall row
-			this.Ui.Output(fmt.Sprintf("%25s %-30s %42s %20s %15.2f",
+			this.Ui.Output(fmt.Sprintf("%25s %-30s %42s %20s %15.1f",
 				"-OTHERS-", "-", "-OTHERS-",
 				gofmt.Comma(int64(othersNum)),
 				othersMps))
@@ -341,7 +341,7 @@ func (this *Top) showAndResetCounters() {
 			for _, bs := range this.brokers {
 				distinctBrokerList[strings.Join(bs, ",")] = struct{}{}
 			}
-			this.Ui.Output(fmt.Sprintf("%25s %-30d %42s %20s %15.2f",
+			this.Ui.Output(fmt.Sprintf("%25s %-30d %42s %20s %15.1f",
 				"--TOTAL--", len(distinctBrokerList),
 				fmt.Sprintf("--TOTAL-- %d", len(this.counters)),
 				gofmt.Comma(int64(totalNum)),
@@ -351,19 +351,19 @@ func (this *Top) showAndResetCounters() {
 			if this.maxMps < totalMps {
 				this.maxMps = totalMps
 			}
-			this.Ui.Output(fmt.Sprintf("%25s %-30s %42s %20s %15.2f",
+			this.Ui.Output(fmt.Sprintf("%25s %-30s %42s %20s %15.1f",
 				"--MAX--", "-", "--MAX--",
 				"-",
 				this.maxMps))
 		} else {
 			// the catchall row
-			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
+			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.1f",
 				"-OTHERS-", "-OTHERS-",
 				gofmt.Comma(int64(othersNum)),
 				othersMps))
 
 			// total row
-			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
+			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.1f",
 				"--TOTAL--", "--TOTAL--",
 				gofmt.Comma(int64(totalNum)),
 				totalMps))
@@ -372,7 +372,7 @@ func (this *Top) showAndResetCounters() {
 			if this.maxMps < totalMps {
 				this.maxMps = totalMps
 			}
-			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.2f",
+			this.Ui.Output(fmt.Sprintf("%30s %50s %20s %15.1f",
 				"--MAX--", "--MAX--",
 				"-",
 				this.maxMps))
