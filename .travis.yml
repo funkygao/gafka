@@ -4,6 +4,10 @@ go:
     - 1.7
     - tip
 
+before_install:
+    - go install github.com/jteeuwen/go-bindata/go-bindata
+    - sudo apt-get install -qq libpcap-dev
+
 install:
      - go get -d -t -v ./...
      - ./build.sh -it kateway
@@ -14,6 +18,7 @@ install:
 
 test:
     - cd cmd; go vet ./...
+    - go test github.com/funkygao/gafka/cmd/kateway/gateway
     - cd cmd; go test ./...
 
 # this should give us faster builds according to 
