@@ -2,7 +2,7 @@ language: go
 
 go:    
     - 1.7
-    - tip
+    - 1.8
 
 before_install:
     - sudo apt-get install -qq libpcap-dev
