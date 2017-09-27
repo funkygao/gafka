@@ -196,7 +196,11 @@ func (this *Redis) Run(args []string) (exitCode int) {
 			sort.Strings(hostPorts)
 			for _, hp := range hostPorts {
 				host, port, _ := net.SplitHostPort(hp)
-				ips, _ := net.LookupIP(host)
+				ips, err := net.LookupIP(host)
+				if err != nil {
+					this.Ui.Error(err.Error())
+					continue
+				}
 				ip := ips[0].String()
 				if _, present := machineMap[ip]; !present {
 					machineMap[ip] = struct{}{}
