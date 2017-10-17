@@ -268,10 +268,6 @@ func (this *Top) showAndResetCounters() {
 	counterFlip := make(map[float64]string)
 	sortedNum := make([]float64, 0, len(this.counters))
 	for ct, num := range this.counters {
-		if this.topicPattern != "" && !strings.HasSuffix(ct, ":"+this.topicPattern) {
-			continue
-		}
-
 		counterFlip[num] = ct
 		if num > 100 { // TODO kill the magic number
 			sortedNum = append(sortedNum, num)
