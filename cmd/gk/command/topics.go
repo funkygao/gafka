@@ -123,6 +123,10 @@ func (this *Topics) Run(args []string) (exitCode int) {
 
 	zkzone := zk.NewZkZone(zk.DefaultConfig(zone, ctx.ZoneZkAddrs(zone)))
 
+	if retentionInDays == 0 {
+		this.Ui.Error("invalid retention")
+		return
+	}
 	if retentionInDays > 0 {
 		retentionInMinute = retentionInDays * 24 * 60
 	}
