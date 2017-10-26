@@ -685,11 +685,11 @@ Options:
 	  168h=1 week
 	  720h=1 month
 
-	-host broker ip
+    -host broker ip
 
-	-ignore_offsets
-	 Ignore kafka internal topic: __consumer_offsets
-	 True by default
+    -ignore_offsets
+     Ignore kafka internal topic: __consumer_offsets
+     True by default
 
     -n
       Show network addresses as numbers.
