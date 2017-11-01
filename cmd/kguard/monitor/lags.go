@@ -42,14 +42,15 @@ func (this *Monitor) cgLagsHandler(w http.ResponseWriter, r *http.Request, param
 	}
 	type lagResponse []lagResponseItem
 
-	log.Trace("API[lags] from %s", r.RemoteAddr)
+	origin := r.Header.Get("X-Ffan-Ident")
+	log.Trace("API[lags]@%s from %s", origin, r.RemoteAddr)
 
 	remoteIP := r.RemoteAddr
 	if idx := strings.Index(r.RemoteAddr, ":"); idx != -1 {
 		remoteIP = r.RemoteAddr[:idx]
 	}
 	if !this.rl.Pour(remoteIP, 1) {
-		log.Error("API[lags] from %s: quota exceeded", r.RemoteAddr)
+		log.Error("API[lags]@%s from %s: quota exceeded", origin, r.RemoteAddr)
 
 		time.Sleep(time.Second * 30) // punishment
 
