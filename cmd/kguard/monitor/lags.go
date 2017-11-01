@@ -3,6 +3,7 @@ package monitor
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/funkygao/httprouter"
@@ -41,9 +42,13 @@ func (this *Monitor) cgLagsHandler(w http.ResponseWriter, r *http.Request, param
 	}
 	type lagResponse []lagResponseItem
 
-	if !this.rl.Pour(r.RemoteAddr, 1) {
+	remoteIP := r.RemoteAddr
+	if idx := strings.Index(r.RemoteAddr, ":"); idx != -1 {
+		remoteIP = r.RemoteAddr[:idx]
+	}
+	if !this.rl.Pour(remoteIP, 1) {
 		w.Header().Set("Connection", "close")
-		http.Error(w, "quota exceeded", http.StatusTooManyRequests)
+		http.Error(w, "lags call quota exceeded", http.StatusTooManyRequests)
 		return
 	}
 
