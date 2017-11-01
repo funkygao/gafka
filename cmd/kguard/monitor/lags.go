@@ -51,7 +51,7 @@ func (this *Monitor) cgLagsHandler(w http.ResponseWriter, r *http.Request, param
 	if !this.rl.Pour(remoteIP, 1) {
 		log.Error("API[lags] from %s: quota exceeded", r.RemoteAddr)
 
-		time.Sleep(time.Second * 10) // punishment
+		time.Sleep(time.Second * 30) // punishment
 
 		w.Header().Set("Connection", "close")
 		http.Error(w, "lags call quota exceeded", http.StatusTooManyRequests)
