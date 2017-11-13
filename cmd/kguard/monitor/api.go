@@ -20,6 +20,7 @@ func (this *Monitor) setupRoutes() {
 	this.router.PUT("/set", this.configHandler)
 	this.router.POST("/alertHook", this.alertHookHandler) // zabbix will call me on alert event
 	this.router.POST("/lags", this.cgLagsHandler)
+	this.router.POST("/kfk/clusters", this.kfkClustersHandler)
 }
 
 // PUT /set?key=xx
