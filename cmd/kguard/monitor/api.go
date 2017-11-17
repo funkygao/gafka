@@ -22,6 +22,7 @@ func (this *Monitor) setupRoutes() {
 	this.router.POST("/lags", this.cgLagsHandler)
 	this.router.POST("/kfk/clusters", this.kfkClustersHandler)
 	this.router.POST("/kfk/topics", this.kfkTopicsHandler)
+	this.router.POST("/kfk/topicsGroups", this.kfkTopicsGroupsHandler)
 }
 
 // PUT /set?key=xx
