@@ -33,7 +33,7 @@ func TestZkClusterPath(t *testing.T) {
 	assert.Equal(t, "/test/consumers/console-group/offsets",
 		c.ConsumerGroupOffsetPath("console-group"))
 	assert.Equal(t, "/test/consumers/console-group/offsets/t1",
-		c.consumerGroupOffsetOfTopicPath("console-group", "t1"))
+		c.ConsumerGroupOffsetOfTopicPath("console-group", "t1"))
 	assert.Equal(t, "/test/consumers/console-group/offsets/t1/0",
 		c.consumerGroupOffsetOfTopicPartitionPath("console-group", "t1", "0"))
 	assert.Equal(t, "/test/consumers/console-group/owners/t1",
