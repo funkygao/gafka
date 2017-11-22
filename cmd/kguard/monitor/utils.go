@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+var (
+	ResponseOk = []byte(`{"ok":1}`)
+)
+
 func writeServerError(w http.ResponseWriter, err string) {
 	time.Sleep(time.Second) // todo, configurable
 
@@ -19,4 +23,11 @@ func _writeErrorResponse(w http.ResponseWriter, err string, code int) {
 	b, _ := json.Marshal(out)
 
 	http.Error(w, string(b), code)
+}
+
+func writeBadRequest(w http.ResponseWriter, err string) {
+	time.Sleep(time.Second) // todo, configurable
+
+	w.Header().Set("Connection", "close")
+	_writeErrorResponse(w, err, http.StatusBadRequest)
 }
