@@ -34,9 +34,10 @@ type WatchConsumers struct {
 
 	offsetMtimeMap map[structs.GroupTopicPartition]time.Time
 
-	consumerQps map[string]metrics.Meter
-	consumerLag map[string]metrics.Gauge
-	lastOffsets map[string]int64
+	consumerQps    map[string]metrics.Meter
+	consumerLag    map[string]metrics.Gauge
+	lastOffsets    map[string]int64
+	consumerCumMsg map[string]metrics.Gauge
 }
 
 func (this *WatchConsumers) Init(ctx monitor.Context) {
@@ -63,6 +64,7 @@ func (this *WatchConsumers) Run() {
 	this.consumerQps = make(map[string]metrics.Meter, 10)
 	this.consumerLag = make(map[string]metrics.Gauge, 10)
 	this.lastOffsets = make(map[string]int64, 10)
+	this.consumerCumMsg = make(map[string]metrics.Gauge, 10)
 
 	ticker := time.NewTicker(this.Tick)
 	defer ticker.Stop()
@@ -189,6 +191,13 @@ func (this *WatchConsumers) runSubQpsTimer() {
 					}
 
 				}
+
+				// update consumer.cum.msg
+				if _, present := this.consumerCumMsg[tag]; !present {
+					this.consumerCumMsg[tag] = metrics.NewRegisteredGauge(tag+"consumer.cum.msg", nil)
+				}
+				this.consumerCumMsg[tag].Update(offsetOfGroupOnTopic)
+
 			}
 		}
 	})
