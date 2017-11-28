@@ -12,5 +12,7 @@ var (
 	ErrGroupNotOnTopic   = errors.New("group not on this topic")
 	ErrHostConsulDead    = errors.New("host consul dead")
 	ErrHostNotExist      = errors.New("host not exist")
-	ErrInvalidConsulLine = errors.New("invliad consul line")
+	ErrInvalidConsulLine = errors.New("invalid consul line")
+	ErrPartitionNotExist = errors.New("partition not exist")
+	ErrOffsetOutOfRange  = errors.New("offset out of range")
 )
