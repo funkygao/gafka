@@ -441,3 +441,287 @@ func (this *Monitor) getMember(zkCluster *gzk.ZkCluster,
 
 	return
 }
+
+type GroupTopic struct {
+	Topic            string             `json:"topic"`
+	PartitionOffsets []*PartitionOffset `json:"partition_offsets"`
+	Group            *Group             `json:"groupInfo"`
+	ErrMsg           string             `json:"error"`
+}
+
+type GroupTopics struct {
+	Name        string        `json:"group"`
+	GroupTopics []*GroupTopic `json:"group_topics"`
+	ErrMsg      string        `json:"error"`
+}
+
+type ClusterGroupsTopics struct {
+	Name         string         `json:"cluster_name"`
+	GroupsTopics []*GroupTopics `json:"groups_topics"`
+	ErrMsg       string         `json:"error"`
+}
+
+type AllGroupsTopics struct {
+	All []*ClusterGroupsTopics `json:"all_groups_topics"`
+}
+
+// @rest POST /kfk/groupsWithTopics
+// find group's info with topic which is subscribed by this group (cluster --> group --> topic)
+// 1. specify cluster or all clusters, return error msg if cluster not exist
+// 2. specify groups or all groups, return error msg if group not exist
+// 3. specify topic or all topics, return error if topic not exist or group not on this topic
+// 4. return topics oldest and latest offset for each partition
+// 5. return group's offset on topic for each partition and last commit time
+// 6. return online group memId and up time
+// eg: curl -XPOST http://192.168.149.150:10025/kfk/groupsWithTopics -d'[{"cluster":"bigtopic_cluster_02", "groups_topics":[{"group":"my_cluster_02_cg_01", "topics":["cluster_02_topic_02"]}]}]'
+func (this *Monitor) kfkGroupsWithTopicsHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+
+	defer func() {
+		if err := recover(); err != nil {
+			log.Error("%+v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}()
+
+	type groupsTopicsRequestItem struct {
+		Group  string   `json:"group"`
+		Topics []string `json:"topics"`
+	}
+
+	type clustersGroupsTopicsRequestItem struct {
+		Cluster      string                    `json:"cluster"`
+		GroupsTopics []groupsTopicsRequestItem `json:"groups_topics"`
+	}
+
+	type clustersGroupsTopicsRequest []clustersGroupsTopicsRequestItem
+
+	dec := json.NewDecoder(r.Body)
+	var req clustersGroupsTopicsRequest
+	err := dec.Decode(&req)
+	if err != nil {
+		log.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	reqInfo := make(map[string]map[string][]string) // cluster --> groups --> topic
+	for _, c := range req {
+		groupstopics := make(map[string][]string)
+
+		for _, gts := range c.GroupsTopics {
+			groupstopics[gts.Group] = gts.Topics
+		}
+
+		reqInfo[c.Cluster] = groupstopics
+	}
+
+	groupsTopics, err := this.getGroupsTopics(reqInfo)
+	if err != nil {
+		log.Error("groups_topics:%v %v", reqInfo, err)
+		writeServerError(w, err.Error())
+		return
+	}
+
+	b, _ := json.Marshal(groupsTopics)
+	w.Write(b)
+	return
+}
+
+func (this *Monitor) getGroupsTopics(reqClusters map[string]map[string][]string) (allGroupsTopics AllGroupsTopics, err error) {
+
+	allClusters := this.zkzone.Clusters()
+
+	// preallocate all slot
+	if len(reqClusters) == 0 {
+		// we need to get all clusters
+		for cn, _ := range allClusters {
+			cgt := ClusterGroupsTopics{
+				Name: cn,
+			}
+
+			allGroupsTopics.All = append(allGroupsTopics.All, &cgt)
+		}
+	} else {
+		// we need to get target clusters
+		for reqC, _ := range reqClusters {
+			cgt := ClusterGroupsTopics{
+				Name: reqC,
+			}
+			// check cluster exist or not
+			if _, ok := allClusters[reqC]; !ok {
+				cgt.ErrMsg = ErrClusterNotExist.Error()
+			}
+
+			allGroupsTopics.All = append(allGroupsTopics.All, &cgt)
+		}
+	}
+
+	for _, cgt := range allGroupsTopics.All {
+		if cgt.ErrMsg == "" { // valid cluster
+			reqGroups, _ := reqClusters[cgt.Name]
+			err = this.getClusterGroupsTopics(cgt, reqGroups)
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	return
+}
+
+func (this *Monitor) getClusterGroupsTopics(cgt *ClusterGroupsTopics, reqGroups map[string][]string) (err error) {
+
+	zkCluster := this.zkzone.NewCluster(cgt.Name)
+
+	// cluster topic/group relationship summary info
+	// once get these, we can use it on each group info's query procedure
+	allTopics, allGroups, topicsGroupsOffset, groupsTopicsOffset, err := this.getClusterTopicsGroupsInfo(cgt.Name)
+	if err != nil {
+		return
+	}
+
+	kfkClient, err := sarama.NewClient(zkCluster.BrokerList(), saramaConfig())
+	if err != nil {
+		return
+	}
+	defer kfkClient.Close()
+
+	if len(reqGroups) == 0 {
+		// all topics info
+		for gn, _ := range allGroups {
+			gt := GroupTopics{
+				Name: gn,
+			}
+			cgt.GroupsTopics = append(cgt.GroupsTopics, &gt)
+		}
+	} else {
+		// we need to get target groups
+		for reqG, _ := range reqGroups {
+			gt := GroupTopics{
+				Name: reqG,
+			}
+			// check groups exist or not
+			if _, ok := allGroups[reqG]; !ok {
+				gt.ErrMsg = ErrGroupNotExist.Error()
+			}
+
+			cgt.GroupsTopics = append(cgt.GroupsTopics, &gt)
+		}
+	}
+
+	for _, gt := range cgt.GroupsTopics {
+		if gt.ErrMsg == "" { // valid cluster
+			reqTopics, _ := reqGroups[gt.Name]
+			err = this.getGroupTopics(zkCluster, kfkClient, allTopics, allGroups,
+				topicsGroupsOffset, groupsTopicsOffset, gt, reqTopics)
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	return
+}
+
+func (this *Monitor) getGroupTopics(zkCluster *gzk.ZkCluster,
+	kfkClient sarama.Client,
+	allTopics map[string]time.Time,
+	allGroups map[string]map[string]*gzk.ConsumerZnode,
+	topicsGroupsOffset map[string]map[string]map[string]int64,
+	groupsTopicsOffset map[string]map[string]map[string]int64,
+	gts *GroupTopics, reqTopics []string) (err error) {
+
+	allTopicsOnGroup := groupsTopicsOffset[gts.Name]
+	if len(reqTopics) == 0 {
+		// all topics on this group
+		for tn, _ := range allTopicsOnGroup {
+			gt := GroupTopic{
+				Topic: tn,
+			}
+			gts.GroupTopics = append(gts.GroupTopics, &gt)
+		}
+	} else {
+		// we need to get target topics
+		for _, reqT := range reqTopics {
+			gt := GroupTopic{
+				Topic: reqT,
+			}
+			// check topic exist or not
+			if allTopics == nil {
+				gt.ErrMsg = ErrTopicNotExist.Error()
+			} else if _, ok := allTopics[reqT]; !ok {
+				gt.ErrMsg = ErrTopicNotExist.Error()
+			} else if allTopicsOnGroup == nil {
+				gt.ErrMsg = ErrGroupNotOnTopic.Error()
+			} else if _, ok := allTopicsOnGroup[reqT]; !ok {
+				gt.ErrMsg = ErrGroupNotOnTopic.Error()
+			}
+
+			gts.GroupTopics = append(gts.GroupTopics, &gt)
+		}
+	}
+
+	for _, gt := range gts.GroupTopics {
+		if gt.ErrMsg == "" { // valid cluster
+			err = this.getGroupTopic(zkCluster, kfkClient, gts.Name, topicsGroupsOffset, allGroups, gt)
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	return
+}
+
+func (this *Monitor) getGroupTopic(zkCluster *gzk.ZkCluster,
+	kfkClient sarama.Client,
+	group string,
+	topicsGroupsOffset map[string]map[string]map[string]int64,
+	allGroups map[string]map[string]*gzk.ConsumerZnode,
+	gt *GroupTopic) (err error) {
+
+	// get topic's oldest and latest
+	allPartitions, err := kfkClient.Partitions(gt.Topic)
+	if err != nil {
+		return
+	}
+
+	for _, pid := range allPartitions {
+		var oldest, latest int64
+		oldest, latest, err = this.getPartitionOffset(kfkClient, gt.Topic, pid)
+		if err != nil {
+			return
+		}
+
+		po := PartitionOffset{
+			Id:     pid,
+			Oldest: oldest,
+			Latest: latest,
+		}
+
+		gt.PartitionOffsets = append(gt.PartitionOffsets, &po)
+	}
+
+	// sort
+	sort.Sort(PartitionOffsetOrderById(gt.PartitionOffsets))
+
+	gt.Group = &Group{
+		Name:    group,
+		Topic:   gt.Topic,
+		Offsets: make(map[int32]*GroupOffset),
+	}
+
+	var null struct{}
+	existedGroups := make(map[string]struct{})
+	if allGroupsOnTopic, present := topicsGroupsOffset[gt.Topic]; present {
+		for g, _ := range allGroupsOnTopic {
+			existedGroups[g] = null
+		}
+	}
+
+	err = this.getGroup(zkCluster, allGroups, existedGroups, gt.Group)
+
+	return
+
+}
