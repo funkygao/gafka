@@ -26,6 +26,7 @@ func (this *Monitor) setupRoutes() {
 	this.router.GET("/zk/cluster", this.zkClusterHandler)
 	this.router.POST("/kfk/hosts", this.hostsHandler)
 	this.router.PUT("/kfk/offset/:cluster/:topic/:group/:partition", this.resetOffsetHandler)
+	this.router.GET("/kfk/peek/:cluster/:topic/:partition/:offset/:count", this.kfkPeekHandler)
 }
 
 // PUT /set?key=xx
