@@ -168,3 +168,11 @@ func forAllSortedZones(fn func(zkzone *zk.ZkZone)) {
 		fn(zkzone)
 	}
 }
+
+func doZkAuthIfNecessary(zkzone *zk.ZkZone) {
+	if zkAuth := ctx.ZkAuth(zkzone.Name()); zkAuth != "" {
+		if err := zkzone.Auth(zkAuth); err != nil {
+			panic(err)
+		}
+	}
+}

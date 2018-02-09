@@ -39,8 +39,16 @@ func ZoneZkAddrs(zone string) (zkAddrs string) {
 	}
 
 	// should never happen
-	fmt.Printf("zone[%s] undefined\n", zone)
-	os.Exit(1)
+	panic(fmt.Sprintf("zone[%s] undefined\n", zone))
+}
+
+func ZkAuth(zone string) string {
+	ensureLogLoaded()
+
+	if z, present := conf.zones[zone]; present {
+		return z.ZkAuth
+	}
+
 	return ""
 }
 

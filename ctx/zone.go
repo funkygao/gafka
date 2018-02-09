@@ -22,6 +22,9 @@ type zone struct {
 	SmokeGroup               string
 	HaProxyStatsUri          []string
 
+	// zk digest user:passwd
+	ZkAuth string
+
 	GkAuditCluster, GkAuditTopic string
 
 	AdminUser, AdminPass string
@@ -29,7 +32,11 @@ type zone struct {
 
 func (this *zone) loadConfig(section *ljconf.Conf) {
 	this.Name = section.String("name", "")
+	if this.Name == "" {
+		panic("empty zone name not allowed")
+	}
 	this.Zk = section.String("zk", "")
+	this.ZkAuth = section.String("zk_auth", "")
 	this.ZkHelix = section.String("zk_helix", "")
 	this.AdminUser = section.String("admin_user", "_psubAdmin_")
 	this.AdminPass = section.String("admin_pass", "_wandafFan_")
@@ -46,7 +53,4 @@ func (this *zone) loadConfig(section *ljconf.Conf) {
 	this.HaProxyStatsUri = section.StringList("haproxy_stats", nil)
 	this.GkAuditCluster = section.String("gkaudit_cluster", "")
 	this.GkAuditTopic = section.String("gkaudit_topic", "gk")
-	if this.Name == "" {
-		panic("empty zone name not allowed")
-	}
 }

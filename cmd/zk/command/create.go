@@ -41,7 +41,9 @@ func (this *Create) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	doZkAuthIfNecessary(zkzone)
 	defer zkzone.Close()
+
 	conn := zkzone.Conn()
 
 	data := inData()

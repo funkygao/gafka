@@ -46,6 +46,7 @@ func (this *Replace) Run(args []string) (exitCode int) {
 	this.path = args[len(args)-1]
 
 	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	doZkAuthIfNecessary(zkzone)
 	defer zkzone.Close()
 
 	this.replaceZnodes(zkzone.Conn(), this.path, this.from, this.to)

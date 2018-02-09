@@ -149,6 +149,12 @@ func (this *ZkZone) EnsurePathExists(path string) error {
 	return nil
 }
 
+// echo -n user:passwd | openssl dgst -binary -sha1 | openssl base64
+func (this *ZkZone) Auth(userColonPasswd string) error {
+	this.connectIfNeccessary()
+	return this.conn.AddAuth("digest", []byte(userColonPasswd))
+}
+
 func (this *ZkZone) KatewayMysqlDsn() (string, error) {
 	this.connectIfNeccessary()
 

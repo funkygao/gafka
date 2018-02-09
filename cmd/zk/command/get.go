@@ -60,7 +60,9 @@ func (this *Get) Run(args []string) (exitCode int) {
 	this.path = args[len(args)-1]
 
 	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	doZkAuthIfNecessary(zkzone)
 	defer zkzone.Close()
+
 	if this.recursive {
 		data, stat, err := zkzone.Conn().Get(this.path)
 		must(err)

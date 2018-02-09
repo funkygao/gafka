@@ -45,7 +45,9 @@ func (this *Rm) Run(args []string) (exitCode int) {
 	}
 
 	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	doZkAuthIfNecessary(zkzone)
 	defer zkzone.Close()
+
 	if this.recursive {
 		if this.likeMode {
 			parent := path.Dir(this.path)

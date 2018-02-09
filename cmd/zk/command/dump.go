@@ -60,6 +60,7 @@ func (this *Dump) Run(args []string) (exitCode int) {
 		}
 
 		zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+		doZkAuthIfNecessary(zkzone)
 		defer zkzone.Close()
 
 		this.importFromFile(zkzone)
@@ -107,6 +108,7 @@ func (this *Dump) Run(args []string) (exitCode int) {
 	must(err)
 
 	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	doZkAuthIfNecessary(zkzone)
 	defer zkzone.Close()
 
 	this.dump(zkzone.Conn(), this.path)
