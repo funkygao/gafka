@@ -71,6 +71,12 @@ func main() {
 					if err := zc.Connect(); err != nil {
 						panic(err)
 					}
+
+					// do auth if necessary
+					if zkAuth := ctx.ZkAuth(zone); zkAuth != "" {
+						zkzone.Auth(zkAuth)
+					}
+
 					listChildren(zc, zone, "/", 3)
 				}
 
