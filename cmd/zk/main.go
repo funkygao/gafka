@@ -74,7 +74,7 @@ func main() {
 
 					// do auth if necessary
 					if zkAuth := ctx.ZkAuth(zone); zkAuth != "" {
-						zkzone.Auth(zkAuth)
+						zc.Auth(zkAuth)
 					}
 
 					listChildren(zc, zone, "/", 3)
