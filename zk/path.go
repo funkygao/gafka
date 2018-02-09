@@ -6,7 +6,7 @@ import (
 
 const (
 	clusterRoot     = "/_kafka_clusters"
-	clusterInfoRoot = "/_kafa_clusters_info"
+	clusterInfoRoot = "/_kafka_clusters_info"
 
 	KatewayIdsRoot     = "/_kateway/ids"
 	katewayMetricsRoot = "/_kateway/metrics"

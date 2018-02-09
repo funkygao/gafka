@@ -28,6 +28,7 @@ type Clusters struct {
 	plainMode         bool
 	publicOnly        bool
 	ipInNumber        bool
+	warnDns           bool
 }
 
 func (this *Clusters) Run(args []string) (exitCode int) {
@@ -66,6 +67,7 @@ func (this *Clusters) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.plainMode, "plain", false, "")
 	cmdFlags.IntVar(&priority, "priority", -1, "")
 	cmdFlags.IntVar(&public, "public", -1, "")
+	cmdFlags.BoolVar(&this.warnDns, "dns", false, "")
 	cmdFlags.BoolVar(&this.ipInNumber, "n", false, "")
 	cmdFlags.StringVar(&port, "port", "", "")
 	cmdFlags.StringVar(&addBroker, "addbroker", "", "")
@@ -528,7 +530,7 @@ func (this *Clusters) printClusters(zkzone *zk.ZkZone, clusterPattern string, po
 		}
 	}
 
-	if len(hostsWithoutDnsRecords) > 0 {
+	if this.warnDns && len(hostsWithoutDnsRecords) > 0 {
 		this.Ui.Warn("brokers without dns record:")
 		for _, broker := range hostsWithoutDnsRecords {
 			parts := strings.SplitN(broker, ":", 2)
