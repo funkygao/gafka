@@ -178,7 +178,7 @@ func (*Systool) runDiskTool(interval time.Duration) {
 			diskSuffix := d[len(d)-1]
 			if diskSuffix > '9' || diskSuffix < '0' {
 				// not partitioned
-				continue
+				//continue
 			}
 
 			stat := stats[d]
