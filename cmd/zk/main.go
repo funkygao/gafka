@@ -87,9 +87,14 @@ func main() {
 				fmt.Println(name)
 			}
 
+			for _, cmd := range ctx.Aliases() {
+				fmt.Println(cmd)
+			}
+
 			return
 		}
 	}
+
 	c := cli.NewCLI(app, gafka.Version+"-"+gafka.BuildId)
 	c.Args = os.Args[1:]
 	if len(os.Args) > 1 {
