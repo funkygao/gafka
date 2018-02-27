@@ -45,6 +45,13 @@ func init() {
 			}, nil
 		},
 
+		"jfs": func() (cli.Command, error) {
+			return &command.Jfs{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"acl": func() (cli.Command, error) {
 			return &command.Acl{
 				Ui:  ui,
