@@ -82,6 +82,7 @@ func (this *Jfs) showJfsZone(zkzone *gzk.ZkZone) {
 
 	var nodes []tfnode
 	var masterN int
+	var alertN int
 	var hosts = make(map[string]int)
 	for id, zd := range zkzone.ChildrenWithData("/jfs-root/tfnode") {
 		tn := this.parseTfnode(id, zd.Data())
@@ -91,6 +92,11 @@ func (this *Jfs) showJfsZone(zkzone *gzk.ZkZone) {
 
 		if tn.isMaster() {
 			masterN++
+			if tn.weight < 1 {
+				alertN++
+			}
+		} else if tn.weight < 0 {
+			alertN++
 		}
 
 		nodes = append(nodes, tn)
@@ -106,7 +112,7 @@ func (this *Jfs) showJfsZone(zkzone *gzk.ZkZone) {
 		for ip, n := range hosts {
 			lines = append(lines, fmt.Sprintf("%s|%d", ip, n))
 		}
-		this.Ui.Output(color.Green("%s %d", zkzone.Name()[len("jfs-"):], len(hosts)))
+		this.Ui.Outputf("%s %s", color.Green("%s %d", zkzone.Name()[len("jfs-"):], len(hosts)), color.Red("%d", alertN))
 		this.Ui.Output(columnize.SimpleFormat(lines))
 		return
 	}
@@ -121,9 +127,21 @@ func (this *Jfs) showJfsZone(zkzone *gzk.ZkZone) {
 
 	lines := []string{"#|Ip|Port|Weight|Location|Master"}
 	for _, n := range nodes {
-		lines = append(lines, fmt.Sprintf("%d|%s|%d|%d|%d|%v", n.id, n.ip, n.port, n.weight, n.location, n.isMaster()))
+		if n.isMaster() {
+			if n.weight < 1 {
+				lines = append(lines, fmt.Sprintf("%d|%s|%d|%d|%d|%s", n.id, n.ip, n.port, n.weight, n.location, color.Red("Y")))
+			} else {
+				lines = append(lines, fmt.Sprintf("%d|%s|%d|%d|%d|%s", n.id, n.ip, n.port, n.weight, n.location, color.Green("Y")))
+			}
+		} else {
+			if n.weight < 0 {
+				lines = append(lines, fmt.Sprintf("%d|%s|%d|%d|%d|%s", n.id, n.ip, n.port, n.weight, n.location, color.Red("n")))
+			} else {
+				lines = append(lines, fmt.Sprintf("%d|%s|%d|%d|%d|n", n.id, n.ip, n.port, n.weight, n.location))
+			}
+		}
 	}
-	this.Ui.Output(color.Green("%s Instances:%d/%d Hosts:%d", zkzone.Name()[len("jfs-"):], masterN, len(nodes), len(hosts)))
+	this.Ui.Outputf("%s %s", color.Green("%s Instances:%d/%d Hosts:%d", zkzone.Name()[len("jfs-"):], masterN, len(nodes), len(hosts)), color.Red("%d", alertN))
 	this.Ui.Output(columnize.SimpleFormat(lines))
 }
 
