@@ -174,7 +174,7 @@ Options:
     -m
       Shows masters only.
 
-    -sum
+    -s
       Summary mode.
 
     -asc field
