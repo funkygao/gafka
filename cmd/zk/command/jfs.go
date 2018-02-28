@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/funkygao/columnize"
-	"github.com/funkygao/gafka/ctx"
 	gzk "github.com/funkygao/gafka/zk"
 	"github.com/funkygao/gocli"
+	"github.com/funkygao/golib/color"
 	"github.com/funkygao/zkclient"
 	"github.com/pmylund/sortutil"
 )
@@ -47,7 +47,7 @@ type Jfs struct {
 func (this *Jfs) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("jfs", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
-	cmdFlags.StringVar(&this.zone, "z", ctx.ZkDefaultZone(), "")
+	cmdFlags.StringVar(&this.zone, "z", "", "")
 	cmdFlags.BoolVar(&this.masterOnly, "m", false, "")
 	cmdFlags.StringVar(&this.ascBy, "asc", "", "")
 	cmdFlags.StringVar(&this.descBy, "desc", "", "")
@@ -58,23 +58,39 @@ func (this *Jfs) Run(args []string) (exitCode int) {
 		return 1
 	}
 
-	if this.zone == "" {
-		this.Ui.Error("unknown zone")
-		return 2
-	}
+	// 172.19.150.101:20130,0|1
+	this.tfnodeExp = regexp.MustCompile(`^(\d+\.\d+\.\d+\.\d+):(\d+),(\d+)\|(\d+)$`)
 
-	zkzone := gzk.NewZkZone(gzk.DefaultConfig(this.zone, ctx.ZoneZkAddrs(this.zone)))
+	forAllSortedZones(func(zkzone *gzk.ZkZone) {
+		if this.zone != "" && zkzone.Name() != this.zone {
+			return
+		}
+
+		if !strings.HasPrefix(zkzone.Name(), "jfs-") {
+			return
+		}
+
+		this.showJfsZone(zkzone)
+	})
+
+	return
+}
+
+func (this *Jfs) showJfsZone(zkzone *gzk.ZkZone) {
 	doZkAuthIfNecessary(zkzone)
 	defer zkzone.Close()
 
-	this.tfnodeExp = regexp.MustCompile(`^(\d+\.\d+\.\d+\.\d+):(\d+),(\d+)\|(\d+)$`)
-
 	var nodes []tfnode
+	var masterN int
 	var hosts = make(map[string]int)
 	for id, zd := range zkzone.ChildrenWithData("/jfs-root/tfnode") {
 		tn := this.parseTfnode(id, zd.Data())
 		if this.masterOnly && !tn.isMaster() {
 			continue
+		}
+
+		if tn.isMaster() {
+			masterN++
 		}
 
 		nodes = append(nodes, tn)
@@ -90,6 +106,7 @@ func (this *Jfs) Run(args []string) (exitCode int) {
 		for ip, n := range hosts {
 			lines = append(lines, fmt.Sprintf("%s|%d", ip, n))
 		}
+		this.Ui.Output(color.Green("%s %d", zkzone.Name()[len("jfs-"):], len(hosts)))
 		this.Ui.Output(columnize.SimpleFormat(lines))
 		return
 	}
@@ -106,11 +123,8 @@ func (this *Jfs) Run(args []string) (exitCode int) {
 	for _, n := range nodes {
 		lines = append(lines, fmt.Sprintf("%d|%s|%d|%d|%d|%v", n.id, n.ip, n.port, n.weight, n.location, n.isMaster()))
 	}
+	this.Ui.Output(color.Green("%s Instances:%d/%d Hosts:%d", zkzone.Name()[len("jfs-"):], masterN, len(nodes), len(hosts)))
 	this.Ui.Output(columnize.SimpleFormat(lines))
-	this.Ui.Output("")
-	this.Ui.Outputf("Nodes:%d Hosts:%d", len(nodes), len(hosts))
-
-	return
 }
 
 func (this *Jfs) parseTfnode(id string, d []byte) (r tfnode) {
