@@ -16,11 +16,12 @@ import (
 )
 
 type tfnode struct {
-	id       int
-	ip       string
-	port     int
-	weight   int
-	location int
+	id           int
+	ip           string
+	port         int
+	weight       int
+	location     int
+	weightSymbol string
 }
 
 func (tn tfnode) isMaster() bool {
@@ -33,11 +34,11 @@ type Jfs struct {
 
 	zone string
 
-	masterOnly  bool
-	ascBy       string
-	descBy      string
-	groupMode   bool
-	summaryMode bool
+	masterOnly bool
+	ascBy      string
+	descBy     string
+	groupMode  bool
+	longList   bool
 
 	tfnodeExp *regexp.Regexp
 
@@ -51,7 +52,7 @@ func (this *Jfs) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.masterOnly, "m", false, "")
 	cmdFlags.StringVar(&this.ascBy, "asc", "", "")
 	cmdFlags.StringVar(&this.descBy, "desc", "", "")
-	cmdFlags.BoolVar(&this.summaryMode, "sum", false, "")
+	cmdFlags.BoolVar(&this.longList, "l", false, "")
 	cmdFlags.BoolVar(&this.groupMode, "g", false, "")
 
 	if err := cmdFlags.Parse(args); err != nil {
@@ -59,7 +60,7 @@ func (this *Jfs) Run(args []string) (exitCode int) {
 	}
 
 	// 172.19.150.101:20130,0|1
-	this.tfnodeExp = regexp.MustCompile(`^(\d+\.\d+\.\d+\.\d+):(\d+),(\d+)\|(\d+)$`)
+	this.tfnodeExp = regexp.MustCompile(`^(\d+\.\d+\.\d+\.\d+):(\d+),(\-)?(\d+)\|(\d+)$`)
 
 	forAllSortedZones(func(zkzone *gzk.ZkZone) {
 		if this.zone != "" && zkzone.Name() != this.zone {
@@ -85,7 +86,7 @@ func (this *Jfs) showJfsZone(zkzone *gzk.ZkZone) {
 	var alertN int
 	var hosts = make(map[string]int)
 	for id, zd := range zkzone.ChildrenWithData("/jfs-root/tfnode") {
-		tn := this.parseTfnode(id, zd.Data())
+		tn := this.parseTfnode(zkzone.Name(), id, zd.Data())
 		if this.masterOnly && !tn.isMaster() {
 			continue
 		}
@@ -107,7 +108,7 @@ func (this *Jfs) showJfsZone(zkzone *gzk.ZkZone) {
 		}
 	}
 
-	if this.summaryMode {
+	if !this.longList {
 		lines := []string{"Ip|Instances"}
 		for ip, n := range hosts {
 			lines = append(lines, fmt.Sprintf("%s|%d", ip, n))
@@ -129,15 +130,15 @@ func (this *Jfs) showJfsZone(zkzone *gzk.ZkZone) {
 	for _, n := range nodes {
 		if n.isMaster() {
 			if n.weight < 1 {
-				lines = append(lines, fmt.Sprintf("%d|%s|%d|%d|%d|%s", n.id, n.ip, n.port, n.weight, n.location, color.Red("Y")))
+				lines = append(lines, fmt.Sprintf("%d|%s|%d|%s|%d|%s", n.id, n.ip, n.port, fmt.Sprintf("%s%d", n.weightSymbol, n.weight), n.location, color.Red("Y")))
 			} else {
-				lines = append(lines, fmt.Sprintf("%d|%s|%d|%d|%d|%s", n.id, n.ip, n.port, n.weight, n.location, color.Green("Y")))
+				lines = append(lines, fmt.Sprintf("%d|%s|%d|%s|%d|%s", n.id, n.ip, n.port, fmt.Sprintf("%s%d", n.weightSymbol, n.weight), n.location, color.Green("Y")))
 			}
 		} else {
 			if n.weight < 0 {
-				lines = append(lines, fmt.Sprintf("%d|%s|%d|%d|%d|%s", n.id, n.ip, n.port, n.weight, n.location, color.Red("n")))
+				lines = append(lines, fmt.Sprintf("%d|%s|%d|%s|%d|%s", n.id, n.ip, n.port, fmt.Sprintf("%s%d", n.weightSymbol, n.weight), n.location, color.Red("n")))
 			} else {
-				lines = append(lines, fmt.Sprintf("%d|%s|%d|%d|%d|n", n.id, n.ip, n.port, n.weight, n.location))
+				lines = append(lines, fmt.Sprintf("%d|%s|%d|%s|%d|n", n.id, n.ip, n.port, fmt.Sprintf("%s%d", n.weightSymbol, n.weight), n.location))
 			}
 		}
 	}
@@ -145,14 +146,21 @@ func (this *Jfs) showJfsZone(zkzone *gzk.ZkZone) {
 	this.Ui.Output(columnize.SimpleFormat(lines))
 }
 
-func (this *Jfs) parseTfnode(id string, d []byte) (r tfnode) {
+func (this *Jfs) parseTfnode(zone string, id string, d []byte) (r tfnode) {
 	// d: 172.19.150.101:20130,0|1
 	// FindAllStringSubmatch: [["172.19.150.101:20130,0|1" "172.19.150.101" "20130" "0" "1"]]
-	tuples := this.tfnodeExp.FindAllStringSubmatch(string(d), -1)[0]
+	matches := this.tfnodeExp.FindAllStringSubmatch(string(d), -1)
+	if len(matches) == 0 {
+		this.Ui.Errorf("%s unrecognized tfnode value: %s", zone, string(d))
+		return r
+	}
+
+	tuples := matches[0]
 	r.ip = tuples[1]
 	r.port, _ = strconv.Atoi(tuples[2])
-	r.weight, _ = strconv.Atoi(tuples[3])
-	r.location, _ = strconv.Atoi(tuples[4])
+	r.weightSymbol = tuples[3]
+	r.weight, _ = strconv.Atoi(tuples[4])
+	r.location, _ = strconv.Atoi(tuples[5])
 	r.id, _ = strconv.Atoi(id)
 	return
 }
@@ -174,8 +182,8 @@ Options:
     -m
       Shows masters only.
 
-    -s
-      Summary mode.
+    -l
+      Long list format.
 
     -asc field
       Valid fields are: id|ip|port|weight|location.
