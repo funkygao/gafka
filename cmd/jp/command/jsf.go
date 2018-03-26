@@ -12,13 +12,13 @@ import (
 	"github.com/funkygao/gocli"
 )
 
-//   go:generate java -jar /Users/funky/bin/antlr-4.7-complete.jar -Dlanguage=Go -o parser template/Java.g4
-
 type Jsf struct {
 	Ui  cli.Ui
 	Cmd string
 
 	*java.BaseJavaParserListener // https://godoc.org/bramp.net/antlr4/java#BaseJavaParserListener
+
+	packageName, interfaceName, annotationName string
 }
 
 func (this *Jsf) Run(args []string) (exitCode int) {
@@ -47,6 +47,7 @@ func (this *Jsf) scanJsfServices(root string) {
 			return nil
 		}
 		if !strings.HasSuffix(strings.ToLower(f.Name()), "service.java") {
+			// all dubbo services reside in *Service.java
 			return nil
 		}
 
@@ -60,24 +61,92 @@ func (this *Jsf) scanJsfServices(root string) {
 		// create the parser
 		parser := java.NewJavaParser(stream)
 		parser.BuildParseTrees = true
-		//parser.AddErrorListener(antlr.NewDiagnosticErrorListener(true))
+		//parser.AddErrorListener(antlr.NewDiagnosticErrorListener(true)) TODO
 		// walk the tree
 		antlr.ParseTreeWalkerDefault.Walk(this, parser.CompilationUnit())
-
 		return nil
 	}))
 }
 
-func (this *Jsf) EnterAnnotation(ctx *java.AnnotationContext) {
-	this.Ui.Outputf("annotation %s", ctx.ElementValue().GetText())
+func (this *Jsf) EnterPackageDeclaration(ctx *java.PackageDeclarationContext) {
+	this.packageName = ctx.GetText()[len("package") : len(ctx.GetText())-1]
+}
+
+func (this *Jsf) EnterInterfaceDeclaration(ctx *java.InterfaceDeclarationContext) {
+	this.interfaceName = ctx.GetTokens(java.JavaLexerIDENTIFIER)[0].GetText()
 }
 
 func (this *Jsf) EnterInterfaceMethodDeclaration(ctx *java.InterfaceMethodDeclarationContext) {
-	this.Ui.Outputf("interface %s", ctx.GetText())
+	methodName := ctx.GetTokens(java.JavaLexerIDENTIFIER)[0]
+	if strings.HasPrefix(methodName.GetText(), "echo") {
+		// ignore health check method
+		return
+	}
+
+	this.Ui.Outputf("%10s %s.%s.%s", "Jsf", this.packageName, this.interfaceName, methodName)
+}
+
+func (this *Jsf) EnterAnnotation(ctx *java.AnnotationContext) {
+	this.annotationName = ctx.GetText()
+}
+
+func (this *Jsf) ExitAnnotation(ctx *java.AnnotationContext) {
+}
+
+func (this *Jsf) EnterCompilationUnit(ctx *java.CompilationUnitContext) {
+
+}
+
+func (this *Jsf) EnterConstDeclaration(ctx *java.ConstDeclarationContext) {
+
+}
+
+func (this *Jsf) EnterDefaultValue(ctx *java.DefaultValueContext) {
+
+}
+
+func (this *Jsf) EnterElementValue(ctx *java.ElementValueContext) {
+
+}
+
+func (this *Jsf) EnterElementValuePair(ctx *java.ElementValuePairContext) {
+
+}
+
+func (this *Jsf) EnterFieldDeclaration(ctx *java.FieldDeclarationContext) {
+
+}
+
+func (this *Jsf) EnterClassDeclaration(ctx *java.ClassDeclarationContext) {
+
+}
+
+func (this *Jsf) EnterArguments(ctx *java.ArgumentsContext) {
+
+}
+
+func (this *Jsf) EnterBlock(ctx *java.BlockContext) {
+
+}
+
+func (this *Jsf) EnterMethodDeclaration(ctx *java.MethodDeclarationContext) {
+
+}
+
+func (this *Jsf) EnterBlockStatement(ctx *java.BlockStatementContext) {
+
+}
+
+func (this *Jsf) EnterCatchClause(ctx *java.CatchClauseContext) {
+
+}
+
+func (this *Jsf) EnterFinallyBlock(ctx *java.FinallyBlockContext) {
+
 }
 
 func (*Jsf) Synopsis() string {
-	return "Extract JSF provider services from java files"
+	return "List JSF provider services from java files"
 }
 
 func (this *Jsf) Help() string {

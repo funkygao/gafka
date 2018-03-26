@@ -68,3 +68,4 @@ cmd/kateway/swagger-ui/
 cmd/kateway/torch.svg
 cmd/kateway/trace.out
 cmd/es/es
+cmd/jp/jp
