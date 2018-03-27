@@ -23,6 +23,7 @@ type Provider struct {
 	longFormat  bool
 	dumpMode    bool
 	maxDumped   int
+	umpKey      bool
 
 	*java.BaseJavaParserListener // https://godoc.org/bramp.net/antlr4/java#BaseJavaParserListener
 
@@ -42,6 +43,7 @@ func (this *Provider) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.BoolVar(&this.compactMode, "c", false, "")
 	cmdFlags.BoolVar(&this.longFormat, "l", false, "")
+	cmdFlags.BoolVar(&this.umpKey, "u", false, "")
 	cmdFlags.BoolVar(&this.dumpMode, "d", true, "")
 	cmdFlags.IntVar(&this.maxDumped, "max", 10, "")
 	if err := cmdFlags.Parse(args); err != nil {
@@ -51,6 +53,10 @@ func (this *Provider) Run(args []string) (exitCode int) {
 	if len(args) == 0 {
 		this.Ui.Error("missing path")
 		return 2
+	}
+
+	if this.umpKey {
+		this.longFormat = true
 	}
 
 	this.interfaces = make([]string, 0, 100)
@@ -153,7 +159,10 @@ func (this *Provider) EnterInterfaceMethodDeclaration(ctx *java.InterfaceMethodD
 		this.providers[fullInterfaceName] = &jsfProvider{name: fullInterfaceName, methodN: 1}
 	}
 
-	if this.longFormat {
+	if this.umpKey {
+		implClass := fmt.Sprintf("%s.impl.%sImpl", this.packageName, this.interfaceName)
+		this.Ui.Outputf("%80s.%s", implClass, methodName)
+	} else if this.longFormat {
 		this.Ui.Outputf("%80s %s", fullInterfaceName, methodName)
 	}
 
@@ -238,6 +247,9 @@ Options:
     -d
       Dump interfaces to %s.
       Default is true.
+
+    -u
+      Display in ump keys.
 
     -max N
       How many interfaces are dumped at most.

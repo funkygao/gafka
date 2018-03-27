@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/browser"
 )
 
+// http://open.ump.jd.com/queryMonitorData
+// 存活监控
 type Ump struct {
 	Ui  cli.Ui
 	Cmd string
@@ -19,7 +21,7 @@ type Ump struct {
 
 func (this *Ump) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("ump", flag.ContinueOnError)
-	cmdFlags.StringVar(&this.appName, "app", "", "")
+	cmdFlags.StringVar(&this.appName, "app", "eclp-goods", "")
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -64,7 +66,7 @@ e,g. jp ump -app eclp-goods com.jd.eclp.master.goods.service.impl.GoodsServiceIm
 Options:
 
     -app appName
-      e,g. eclp-goods
+      Default is eclp-goods.
       Valid apps: eclp-goods, eclp-master
 
 `, this.Cmd, this.Synopsis())
