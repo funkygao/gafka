@@ -9,7 +9,9 @@ import (
 
 	"bramp.net/antlr4/java" // Precompiled Go versions of Java grammar
 	"github.com/antlr/antlr4/runtime/Go/antlr"
+	"github.com/funkygao/columnize"
 	"github.com/funkygao/gocli"
+	"github.com/pmylund/sortutil"
 )
 
 type Provider struct {
@@ -17,18 +19,26 @@ type Provider struct {
 	Cmd string
 
 	compactMode bool
+	longFormat  bool
 
 	*java.BaseJavaParserListener // https://godoc.org/bramp.net/antlr4/java#BaseJavaParserListener
 
 	packageName, interfaceName, annotationName string
 
 	interfaces []string
+	providers  map[string]*jsfProvider
+}
+
+type jsfProvider struct {
+	name    string
+	methodN int
 }
 
 func (this *Provider) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("provider", flag.ContinueOnError)
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.BoolVar(&this.compactMode, "c", false, "")
+	cmdFlags.BoolVar(&this.longFormat, "l", false, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -39,10 +49,32 @@ func (this *Provider) Run(args []string) (exitCode int) {
 	}
 
 	this.interfaces = make([]string, 0, 100)
+	this.providers = make(map[string]*jsfProvider, 10)
 	this.scanProviderServices(args[len(args)-1])
+
+	// report the parsing phase
 	if this.compactMode {
 		this.Ui.Output(strings.Join(this.interfaces, ","))
+		return
 	}
+
+	// display the summary
+	summary := make([]jsfProvider, 0, len(this.providers))
+	for _, p := range this.providers {
+		summary = append(summary, *p)
+	}
+	sortutil.AscByField(summary, "methodN")
+
+	interfaceN, methodN := 0, 0
+	lines := []string{"Interface|Methods"}
+	for _, p := range summary {
+		lines = append(lines, fmt.Sprintf("%s|%d", p.name, p.methodN))
+		interfaceN++
+		methodN += p.methodN
+	}
+	this.Ui.Output(columnize.SimpleFormat(lines))
+	this.Ui.Output(strings.Repeat("-", 80))
+	this.Ui.Outputf("Interface:%d Method:%d", interfaceN, methodN)
 
 	return
 }
@@ -96,8 +128,16 @@ func (this *Provider) EnterInterfaceMethodDeclaration(ctx *java.InterfaceMethodD
 		return
 	}
 
-	if !this.compactMode {
-		this.Ui.Outputf("%10s %s.%s.%s", "Jsf", this.packageName, this.interfaceName, methodName)
+	fullInterfaceName := fmt.Sprintf("%s.%s", this.packageName, this.interfaceName)
+	if _, present := this.providers[fullInterfaceName]; present {
+		this.providers[fullInterfaceName].methodN++
+	} else {
+
+		this.providers[fullInterfaceName] = &jsfProvider{name: fullInterfaceName, methodN: 1}
+	}
+
+	if this.longFormat {
+		this.Ui.Outputf("%80s %s", fullInterfaceName, methodName)
 	}
 
 	this.annotationName = ""
@@ -174,8 +214,12 @@ Usage: %s provider path
 
 Options:
 
-    -c 
-      Compact mode.
+    -c
+      Compact mode. 
+      Generate interface names seperated by comma.
+
+    -l
+      Use a long listing format.
 
 `, this.Cmd, this.Synopsis())
 	return strings.TrimSpace(help)
