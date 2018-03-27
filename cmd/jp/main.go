@@ -41,7 +41,7 @@ func main() {
 	c.Commands = commands
 	c.HelpFunc = func(m map[string]cli.CommandFactory) string {
 		var buf bytes.Buffer
-		buf.WriteString(fmt.Sprintf("Java static parser\n\n"))
+		buf.WriteString(fmt.Sprintf("Java static Parser\n\n"))
 		buf.WriteString(cli.BasicHelpFunc(app)(m))
 		return buf.String()
 	}

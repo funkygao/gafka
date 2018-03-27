@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,6 +21,8 @@ type Provider struct {
 
 	compactMode bool
 	longFormat  bool
+	dumpMode    bool
+	maxDumped   int
 
 	*java.BaseJavaParserListener // https://godoc.org/bramp.net/antlr4/java#BaseJavaParserListener
 
@@ -39,6 +42,8 @@ func (this *Provider) Run(args []string) (exitCode int) {
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	cmdFlags.BoolVar(&this.compactMode, "c", false, "")
 	cmdFlags.BoolVar(&this.longFormat, "l", false, "")
+	cmdFlags.BoolVar(&this.dumpMode, "d", true, "")
+	cmdFlags.IntVar(&this.maxDumped, "max", 10, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
@@ -75,6 +80,20 @@ func (this *Provider) Run(args []string) (exitCode int) {
 	this.Ui.Output(columnize.SimpleFormat(lines))
 	this.Ui.Output(strings.Repeat("-", 80))
 	this.Ui.Outputf("Interface:%d Method:%d", interfaceN, methodN)
+
+	if this.dumpMode {
+		interfaces := make([]string, 0, this.maxDumped)
+		sortutil.DescByField(summary, "methodN")
+		for i, p := range summary {
+			if i >= this.maxDumped {
+				break
+			}
+
+			interfaces = append(interfaces, p.name)
+		}
+
+		ioutil.WriteFile(jsfFile(), []byte(strings.Join(interfaces, ",")), 0600)
+	}
 
 	return
 }
@@ -115,9 +134,7 @@ func (this *Provider) EnterPackageDeclaration(ctx *java.PackageDeclarationContex
 
 func (this *Provider) EnterInterfaceDeclaration(ctx *java.InterfaceDeclarationContext) {
 	this.interfaceName = ctx.GetTokens(java.JavaLexerIDENTIFIER)[0].GetText()
-	if this.compactMode {
-		this.interfaces = append(this.interfaces, fmt.Sprintf("%s.%s", this.packageName, this.interfaceName))
-	}
+	this.interfaces = append(this.interfaces, fmt.Sprintf("%s.%s", this.packageName, this.interfaceName))
 }
 
 func (this *Provider) EnterInterfaceMethodDeclaration(ctx *java.InterfaceMethodDeclarationContext) {
@@ -218,9 +235,17 @@ Options:
       Compact mode. 
       Generate interface names seperated by comma.
 
+    -d
+      Dump interfaces to %s.
+      Default is true.
+
+    -max N
+      How many interfaces are dumped at most.
+      Default is 10.
+
     -l
       Use a long listing format.
 
-`, this.Cmd, this.Synopsis())
+`, this.Cmd, this.Synopsis(), jsfFile())
 	return strings.TrimSpace(help)
 }
