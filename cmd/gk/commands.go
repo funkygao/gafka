@@ -31,26 +31,27 @@ func init() {
 			}, nil
 		},
 
-		"?": func() (cli.Command, error) {
-			return &command.Faq{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+		/*
+			"?": func() (cli.Command, error) {
+				return &command.Faq{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"haproxy": func() (cli.Command, error) {
-			return &command.Haproxy{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"haproxy": func() (cli.Command, error) {
+				return &command.Haproxy{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"farm": func() (cli.Command, error) {
-			return &command.Farm{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"farm": func() (cli.Command, error) {
+				return &command.Farm{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},*/
 
 		"watch": func() (cli.Command, error) {
 			return &command.Watch{
@@ -80,12 +81,20 @@ func init() {
 			}, nil
 		},
 
-		"normalize": func() (cli.Command, error) {
-			return &command.Normalize{
+		"jsf": func() (cli.Command, error) {
+			return &command.Jsf{
 				Ui:  ui,
 				Cmd: cmd,
 			}, nil
 		},
+
+		/*
+			"normalize": func() (cli.Command, error) {
+				return &command.Normalize{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},*/
 
 		"comma": func() (cli.Command, error) {
 			return &command.Comma{
@@ -108,33 +117,35 @@ func init() {
 			}, nil
 		},
 
-		"gc": func() (cli.Command, error) {
-			return &command.GC{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+		/*
+			"gc": func() (cli.Command, error) {
+				return &command.GC{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"capacity": func() (cli.Command, error) {
-			return &command.Capacity{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"capacity": func() (cli.Command, error) {
+				return &command.Capacity{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"scale": func() (cli.Command, error) {
-			return &command.Scale{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"scale": func() (cli.Command, error) {
+				return &command.Scale{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"merkle": func() (cli.Command, error) {
-			return &command.Merkle{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"merkle": func() (cli.Command, error) {
+				return &command.Merkle{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
+		*/
 
 		"redis": func() (cli.Command, error) {
 			return &command.Redis{
@@ -143,12 +154,13 @@ func init() {
 			}, nil
 		},
 
-		"lookup": func() (cli.Command, error) {
-			return &command.Lookup{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+		/*
+			"lookup": func() (cli.Command, error) {
+				return &command.Lookup{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},*/
 
 		"systool": func() (cli.Command, error) {
 			return &command.Systool{
@@ -164,12 +176,13 @@ func init() {
 			}, nil
 		},
 
-		"jmx": func() (cli.Command, error) {
-			return &command.Jmx{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+		/*
+			"jmx": func() (cli.Command, error) {
+				return &command.Jmx{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},*/
 
 		"balance": func() (cli.Command, error) {
 			return &command.Balance{
@@ -178,19 +191,20 @@ func init() {
 			}, nil
 		},
 
-		"zklog": func() (cli.Command, error) {
-			return &command.ZkLog{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+		/*
+			"zklog": func() (cli.Command, error) {
+				return &command.ZkLog{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"histogram": func() (cli.Command, error) {
-			return &command.Histogram{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"histogram": func() (cli.Command, error) {
+				return &command.Histogram{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},*/
 
 		"perf": func() (cli.Command, error) {
 			return &command.Perf{
@@ -256,19 +270,20 @@ func init() {
 			}, nil
 		},
 
-		"agent": func() (cli.Command, error) {
-			return &command.Agent{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+		/*
+			"agent": func() (cli.Command, error) {
+				return &command.Agent{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"disable": func() (cli.Command, error) {
-			return &command.Disable{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"disable": func() (cli.Command, error) {
+				return &command.Disable{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},*/
 
 		"produce": func() (cli.Command, error) {
 			return &command.Produce{
@@ -284,26 +299,27 @@ func init() {
 			}, nil
 		},
 
-		"move": func() (cli.Command, error) {
-			return &command.Move{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+		/*
+			"move": func() (cli.Command, error) {
+				return &command.Move{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"verify": func() (cli.Command, error) {
-			return &command.Verify{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"verify": func() (cli.Command, error) {
+				return &command.Verify{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"whois": func() (cli.Command, error) {
-			return &command.Whois{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"whois": func() (cli.Command, error) {
+				return &command.Whois{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},*/
 
 		"sample": func() (cli.Command, error) {
 			return &command.Sample{
@@ -312,12 +328,13 @@ func init() {
 			}, nil
 		},
 
-		"zkinstall": func() (cli.Command, error) {
-			return &command.ZkInstall{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+		/*
+			"zkinstall": func() (cli.Command, error) {
+				return &command.ZkInstall{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},*/
 
 		"mirror": func() (cli.Command, error) {
 			return &command.Mirror{
@@ -340,19 +357,20 @@ func init() {
 			}, nil
 		},
 
-		"webhook": func() (cli.Command, error) {
-			return &command.Webhook{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+		/*
+			"webhook": func() (cli.Command, error) {
+				return &command.Webhook{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"mount": func() (cli.Command, error) {
-			return &command.Mount{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"mount": func() (cli.Command, error) {
+				return &command.Mount{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},*/
 
 		"offset": func() (cli.Command, error) {
 			return &command.Offset{
@@ -389,12 +407,13 @@ func init() {
 			}, nil
 		},
 
-		"discover": func() (cli.Command, error) {
-			return &command.Discover{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+		/*
+			"discover": func() (cli.Command, error) {
+				return &command.Discover{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},*/
 
 		"checkup": func() (cli.Command, error) {
 			return &command.Checkup{
@@ -424,58 +443,58 @@ func init() {
 			}, nil
 		},
 
-		"console": func() (cli.Command, error) {
-			return &command.Console{
-				Ui:   ui,
-				Cmd:  cmd,
-				Cmds: commands,
-			}, nil
-		},
+		/*
+			"console": func() (cli.Command, error) {
+				return &command.Console{
+					Ui:   ui,
+					Cmd:  cmd,
+					Cmds: commands,
+				}, nil
+			},
 
-		"members": func() (cli.Command, error) {
-			return &command.Members{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
-
-		/* TODOs
+			"members": func() (cli.Command, error) {
+				return &command.Members{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
 
-		"rebalance": func() (cli.Command, error) {
-			return &command.Rebalance{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
 
-		"producers": func() (cli.Command, error) {
-			return &command.Producers{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"rebalance": func() (cli.Command, error) {
+				return &command.Rebalance{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"ssh": func() (cli.Command, error) {
-			return &command.Ssh{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"producers": func() (cli.Command, error) {
+				return &command.Producers{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"verifyreplicas": func() (cli.Command, error) {
-			return &command.VerifyReplicas{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		},
+			"ssh": func() (cli.Command, error) {
+				return &command.Ssh{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
 
-		"audit": func() (cli.Command, error) {
-			return &command.Audit{
-				Ui:  ui,
-				Cmd: cmd,
-			}, nil
-		}, */
+			"verifyreplicas": func() (cli.Command, error) {
+				return &command.VerifyReplicas{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			},
+
+			"audit": func() (cli.Command, error) {
+				return &command.Audit{
+					Ui:  ui,
+					Cmd: cmd,
+				}, nil
+			}, */
 
 		"zk": func() (cli.Command, error) {
 			return &command.Zookeeper{
