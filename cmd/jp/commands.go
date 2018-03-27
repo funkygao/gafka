@@ -24,6 +24,20 @@ func init() {
 	cmd := os.Args[0]
 
 	commands = map[string]cli.CommandFactory{
+		"provider": func() (cli.Command, error) {
+			return &command.Provider{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
+		"ump": func() (cli.Command, error) {
+			return &command.Ump{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
+
 		"jsf": func() (cli.Command, error) {
 			return &command.Jsf{
 				Ui:  ui,
