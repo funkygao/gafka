@@ -80,10 +80,12 @@ func (this *Jsf) EnterInterfaceMethodDeclaration(ctx *java.InterfaceMethodDeclar
 	methodName := ctx.GetTokens(java.JavaLexerIDENTIFIER)[0]
 	if strings.HasPrefix(methodName.GetText(), "echo") {
 		// ignore health check method
+		this.annotationName = ""
 		return
 	}
 
 	this.Ui.Outputf("%10s %s.%s.%s", "Jsf", this.packageName, this.interfaceName, methodName)
+	this.annotationName = ""
 }
 
 func (this *Jsf) EnterAnnotation(ctx *java.AnnotationContext) {
