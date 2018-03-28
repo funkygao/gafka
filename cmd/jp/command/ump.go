@@ -9,8 +9,12 @@ import (
 	"github.com/pkg/browser"
 )
 
+var UmpAppNames = []string{"eclp-goods", "eclp-master"}
+
 // http://open.ump.jd.com/queryMonitorData
 // 存活监控
+// JVM
+// 业务
 type Ump struct {
 	Ui  cli.Ui
 	Cmd string

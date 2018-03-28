@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/funkygao/gafka"
+	cmds "github.com/funkygao/gafka/cmd/jp/command"
 	"github.com/funkygao/gocli"
 	"github.com/funkygao/log4go"
 )
@@ -28,6 +29,19 @@ func main() {
 		}
 
 		if arg == "--generate-bash-completion" {
+			if len(args) > 1 {
+				// contextual auto complete
+				lastArg := args[len(args)-2]
+				switch lastArg {
+				case "-app":
+					// jp ump -app
+					for _, app := range cmds.UmpAppNames {
+						fmt.Println(app)
+					}
+					return
+				}
+			}
+
 			for name := range commands {
 				fmt.Println(name)
 			}

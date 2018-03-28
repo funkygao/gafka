@@ -44,6 +44,13 @@ func init() {
 				Cmd: cmd,
 			}, nil
 		},
+
+		"log": func() (cli.Command, error) {
+			return &command.Log{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
 	}
 
 }
