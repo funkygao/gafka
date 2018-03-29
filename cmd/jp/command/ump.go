@@ -55,6 +55,10 @@ func (this *Ump) showReport(keys []string) {
 	}
 }
 
+// curl -i -XPOST -H"Content-Type: application/json" -H'token:xx' http://open.ump.jd.com/queryMonitorData -d'{"monitorType": "Method", "scope":"Key", "dataType":"AVG,TP90,TP99,TP999,TotalCount,SuccessCount,FailCount,AvailRate", "scopeValues":"com.jd.eclp.master.goods.service.impl.GoodsServiceImpl.getGoods", "dagaCycle":"oneMinute", "startTime":"", "endTime":""}'
+func (this *Ump) fetchUmpMetrics() {
+}
+
 func (*Ump) Synopsis() string {
 	return "Display UMP page for a specified key"
 }

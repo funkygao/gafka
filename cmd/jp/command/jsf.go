@@ -14,22 +14,22 @@ type Jsf struct {
 	Ui  cli.Ui
 	Cmd string
 
-	loadFile bool
-	umpKey   string
+	appName string
+	umpKey  string
 }
 
 func (this *Jsf) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("jsf", flag.ContinueOnError)
-	cmdFlags.BoolVar(&this.loadFile, "l", false, "")
-	cmdFlags.StringVar(&this.umpKey, "i", "", "`")
+	cmdFlags.StringVar(&this.appName, "app", "", "")
+	cmdFlags.StringVar(&this.umpKey, "k", "", "`")
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
 	}
 
 	var interfaceNames []string
-	if this.loadFile {
-		b, err := ioutil.ReadFile(jsfFile())
+	if this.appName != "" {
+		b, err := ioutil.ReadFile(jsfFile(this.appName))
 		swallow(err)
 		interfaceNames = strings.Split(string(b), ",")
 	} else if this.umpKey != "" {
@@ -82,13 +82,13 @@ Usage: %s jsf interface
 
 Options:    
 
-    -l
+    -app appName
       Load interfaces from %s
 
-    -i ump key
+    -k ump key
       Implementation method name.
       e,g. com.jd.eclp.master.goods.service.impl.GoodsServiceImpl.getGoods
 
-`, this.Cmd, this.Synopsis(), jsfFile())
+`, this.Cmd, this.Synopsis(), jsfFile(this.appName))
 	return strings.TrimSpace(help)
 }

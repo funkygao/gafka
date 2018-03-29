@@ -21,9 +21,9 @@ type Provider struct {
 
 	compactMode bool
 	longFormat  bool
-	dumpMode    bool
 	maxDumped   int
 	umpKey      bool
+	appName     string
 
 	*java.BaseJavaParserListener // https://godoc.org/bramp.net/antlr4/java#BaseJavaParserListener
 
@@ -44,7 +44,7 @@ func (this *Provider) Run(args []string) (exitCode int) {
 	cmdFlags.BoolVar(&this.compactMode, "c", false, "")
 	cmdFlags.BoolVar(&this.longFormat, "l", false, "")
 	cmdFlags.BoolVar(&this.umpKey, "u", false, "")
-	cmdFlags.BoolVar(&this.dumpMode, "d", true, "")
+	cmdFlags.StringVar(&this.appName, "app", "", "")
 	cmdFlags.IntVar(&this.maxDumped, "max", 10, "")
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -87,7 +87,7 @@ func (this *Provider) Run(args []string) (exitCode int) {
 	this.Ui.Output(strings.Repeat("-", 80))
 	this.Ui.Outputf("Interface:%d Method:%d", interfaceN, methodN)
 
-	if this.dumpMode {
+	if this.appName != "" {
 		interfaces := make([]string, 0, this.maxDumped)
 		sortutil.DescByField(summary, "methodN")
 		for i, p := range summary {
@@ -98,7 +98,7 @@ func (this *Provider) Run(args []string) (exitCode int) {
 			interfaces = append(interfaces, p.name)
 		}
 
-		ioutil.WriteFile(jsfFile(), []byte(strings.Join(interfaces, ",")), 0600)
+		ioutil.WriteFile(jsfFile(this.appName), []byte(strings.Join(interfaces, ",")), 0600)
 	}
 
 	return
@@ -244,20 +244,19 @@ Options:
       Compact mode. 
       Generate interface names seperated by comma.
 
-    -d
+    -app appName
       Dump interfaces to %s.
-      Default is true.
 
     -u
       Display in ump keys.
 
     -max N
       How many interfaces are dumped at most.
-      Default is 10.
+      Default is 10.    
 
     -l
       Use a long listing format.
 
-`, this.Cmd, this.Synopsis(), jsfFile())
+`, this.Cmd, this.Synopsis(), jsfFile(this.appName))
 	return strings.TrimSpace(help)
 }

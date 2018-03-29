@@ -1,15 +1,16 @@
 package command
 
 import (
+	"fmt"
 	"os/user"
 	"path/filepath"
 	"strings"
 )
 
-func jsfFile() string {
+func jsfFile(app string) string {
 	u, err := user.Current()
 	swallow(err)
-	return filepath.Join(u.HomeDir, ".jsf")
+	return filepath.Join(u.HomeDir, fmt.Sprintf(".%s.jsf", app))
 }
 
 func swallow(err error) {
