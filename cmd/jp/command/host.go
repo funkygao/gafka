@@ -29,7 +29,6 @@ func (this *Host) Run(args []string) (exitCode int) {
 		return 2
 	}
 
-	this.appName = strings.Replace(this.appName, "-", "_", -1)
 	this.listServers(this.appName)
 
 	return
@@ -46,7 +45,7 @@ func (*Host) Synopsis() string {
 
 func (this *Host) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s host
+Usage: %s servers
 
     %s
 

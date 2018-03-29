@@ -6,10 +6,9 @@ import (
 	"strings"
 
 	"github.com/funkygao/gocli"
+	//"github.com/funkygao/gorequest"
 	"github.com/pkg/browser"
 )
-
-var UmpAppNames = []string{"eclp-goods", "eclp-master"}
 
 // http://open.ump.jd.com/queryMonitorData
 // 存活监控
@@ -25,7 +24,7 @@ type Ump struct {
 
 func (this *Ump) Run(args []string) (exitCode int) {
 	cmdFlags := flag.NewFlagSet("ump", flag.ContinueOnError)
-	cmdFlags.StringVar(&this.appName, "app", "eclp-goods", "")
+	cmdFlags.StringVar(&this.appName, "app", "eclp_goods", "")
 	cmdFlags.Usage = func() { this.Ui.Output(this.Help()) }
 	if err := cmdFlags.Parse(args); err != nil {
 		return 1
@@ -65,10 +64,11 @@ func (*Ump) Synopsis() string {
 
 func (this *Ump) Help() string {
 	help := fmt.Sprintf(`
-Usage: %s ump key
+Usage: %s ump keys
 
     %s
 
+keys seperated by comma
 e,g. jp ump -app eclp-goods com.jd.eclp.master.goods.service.impl.GoodsServiceImpl.getGoods
 
 Options:
