@@ -51,6 +51,13 @@ func init() {
 				Cmd: cmd,
 			}, nil
 		},
+
+		"servers": func() (cli.Command, error) {
+			return &command.Host{
+				Ui:  ui,
+				Cmd: cmd,
+			}, nil
+		},
 	}
 
 }

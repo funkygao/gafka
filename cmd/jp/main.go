@@ -31,14 +31,20 @@ func main() {
 		if arg == "--generate-bash-completion" {
 			if len(args) > 1 {
 				// contextual auto complete
+				subCmd := args[0]
 				lastArg := args[len(args)-2]
+				// universal options: all subcmd share the same option sematics
 				switch lastArg {
 				case "-app":
-					// jp ump -app
 					for _, app := range cmds.UmpAppNames {
 						fmt.Println(app)
 					}
 					return
+				}
+				// subcmd dedicated autocomplete
+				switch subCmd {
+				case "ump":
+
 				}
 			}
 
