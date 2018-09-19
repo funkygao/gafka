@@ -126,6 +126,11 @@ public class KafkaConsumer {
         props.put("auto.commit.interval.ms", "60000");   // 1m
         //props.put("auto.offset.reset", "smallest");    // largest | smallest
         props.put("serializer.class", "kafka.serializer.StringEncoder");
+
+        // batch related
+        props.put("fetch.min.bytes", 128<<10);
+        props.put("fetch.wait.max.ms", 1000);
+
         ConsumerConfig config = new ConsumerConfig(props);
 
         consumer = kafka.consumer.Consumer.createJavaConsumerConnector(config);
