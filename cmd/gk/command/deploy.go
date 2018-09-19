@@ -77,7 +77,7 @@ func (this *Deploy) Run(args []string) (exitCode int) {
 	cmdFlags.StringVar(&this.kafkaBaseDir, "kafka.base", ctx.KafkaHome(), "")
 	cmdFlags.StringVar(&this.brokerId, "broker.id", "", "")
 	cmdFlags.StringVar(&this.tcpPort, "port", "", "")
-	cmdFlags.StringVar(&this.rootPah, "root", "/var/wd", "")
+	cmdFlags.StringVar(&this.rootPah, "root", "/export/servers", "")
 	cmdFlags.StringVar(&this.ip, "ip", "", "")
 	cmdFlags.StringVar(&this.logDirs, "log.dirs", "", "")
 	cmdFlags.StringVar(&this.runAs, "user", "sre", "")
